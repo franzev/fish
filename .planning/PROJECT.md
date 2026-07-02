@@ -26,16 +26,16 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ Design tokens via Tailwind v4 `@theme` in `apps/web/app/globals.css` — existing
 - ✓ Shared type contracts: roles + chat limits in `packages/core`, auth/database types in `packages/supabase` — existing
 - ✓ Supabase Edge Function stub for send-message (validation only, no persistence) — existing
+- ✓ Pure monochrome token set — black/white/greys only via `light-dark()`, WCAG-contrast-tested — Validated in Phase 1: Monochrome design system you can see
+- ✓ Light and dark monochrome themes from day one — both schemes resolve from one token ladder, no first-paint flash — Validated in Phase 1
+- ✓ UI kit hardened: Button/Input/Card/Progress states (disabled, loading, error), visible two-tone focus ring (regression-tripwired), reduced motion — Validated in Phase 1
+- ✓ UI kit expanded for upcoming screens: Alert (notice/error/success), theme toggle; Tabler-only icon guard — Validated in Phase 1
+- ✓ UI kit demo page (`/kit`) showing every component in every state, both themes — the contract for future screens — Validated in Phase 1
 
 ### Active
 
-- [ ] Pure monochrome token set — black/white/greys only; all color tokens (lime primary, pink/yellow accents) removed
-- [ ] Light and dark monochrome themes from day one — tokens support both schemes
-- [ ] Existing UI kit hardened: states (disabled, loading, error), accessibility, focus, reduced motion
-- [ ] UI kit expanded with the base components upcoming screens need (respecting 56px tap targets, one primary action per screen)
-- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later
+- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for this milestone; THEM-02 is v2)
 - [ ] App shell and layout: nav, page structure, empty states — calm, one-action-per-screen chrome
-- [ ] UI kit demo page showing every component in every state, both themes — the contract for future screens
 - [ ] Email/password auth: sign up, log in, log out, email verification, password reset, session persists across refresh
 - [ ] Client/coach roles wired to `packages/core` contracts; signup always creates clients
 - [ ] Database foundation: Supabase migrations (profiles, coach-client relationship), RLS policies enforcing coach/client boundaries
@@ -60,6 +60,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — in pure monochrome, notices distinguish by weight/structure, not hue).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
 - `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
+- **Current state (2026-07-02):** Phase 1 complete — monochrome dual-theme token system, hardened UI kit (Button, Input, Card, Progress, Alert), `/kit` demo page, 71 passing tests (WCAG contrast, focus-ring tripwire, icon-source guard). Known debt: monorepo scaffold (`package.json`, `pnpm-workspace.yaml`, `packages/`, parts of `apps/web`) is still untracked in git — commit it before Phase 2 builds on it.
 
 ## Constraints
 
@@ -75,13 +76,13 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Pure monochrome first, no color tokens | If the UI works in monochrome, the hierarchy is right; color is a later deliberate layer | — Pending |
-| Light + dark themes from day one | Tokens must support both schemes; retrofitting a second theme is costlier | — Pending |
+| Pure monochrome first, no color tokens | If the UI works in monochrome, the hierarchy is right; color is a later deliberate layer | ✓ Good — Phase 1 shipped the full kit in monochrome, contrast-tested |
+| Light + dark themes from day one | Tokens must support both schemes; retrofitting a second theme is costlier | ✓ Good — one `light-dark()` ladder drives both themes, verified in Phase 1 |
 | Coach accounts are seed-only | Open "I'm a coach" pickers let anyone claim coach powers | — Pending |
 | Assignment is seed-only this milestone | Schema + RLS + coach view make the relationship real; UI deferred to shrink scope | — Pending |
 | Signup always creates clients | Simplest safe default; role escalation is a manual act | — Pending |
-| Tabler Icons as the only icon set | One consistent stroke style; no mixed icon sources | — Pending |
-| Lexend (body) + Fraunces (display) | Lexend is designed for reading fluency — right for the ADHD audience; Fraunces provides warm heading contrast | — Pending |
+| Tabler Icons as the only icon set | One consistent stroke style; no mixed icon sources | ✓ Good — enforced by an icon-source test since Phase 1 |
+| Lexend (body) + Fraunces (display) | Lexend is designed for reading fluency — right for the ADHD audience; Fraunces provides warm heading contrast | ✓ Good — loaded and demonstrated on `/kit` in Phase 1 |
 
 ## Evolution
 
@@ -101,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-02 after initialization*
+*Last updated: 2026-07-02 after Phase 1 completion*
