@@ -107,6 +107,13 @@ const textPairs: Array<[fg: string, bg: string]> = [
   ["notice", "surface"],
   ["error", "surface"],
   ["success", "surface"],
+  // WR-04: rendered-but-previously-unasserted pairings (closes the gap noted
+  // in 01-VERIFICATION.md — these already pass on disk, this guards them).
+  ["muted", "surface"], // placeholder/hint text on the input surface
+  ["body", "surface-2"], // elevated-card / alt-row body text
+  ["foreground", "surface-2"], // elevated-card / alt-row heading text
+  ["notice", "bg"], // feedback text rendered directly on the page canvas
+  ["error", "bg"], // feedback text rendered directly on the page canvas
 ];
 
 /** UI-component pairs: WCAG 2.1 AA non-text contrast — ratio >= 3.0. */
