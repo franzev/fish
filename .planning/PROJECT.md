@@ -65,6 +65,8 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 
 - **Tech stack**: Next.js App Router + TypeScript + Tailwind v4 (CSS-first) + Supabase — locked by AGENTS.md; no Express/Node API service
 - **Design**: Pure monochrome (black/white/greys), both light and dark themes — user decision, hierarchy before color
+- **Iconography**: Tabler Icons (https://tabler.io/icons) — single icon set, consistent stroke style
+- **Typography**: Lexend (body/UI — designed for reading fluency, fits the neurodivergent audience) + Fraunces (headings/display serif)
 - **Product**: Coach-first, code-second — no learning features without manual coach validation
 - **Security**: Signup can only create clients; coach role granted manually; every table gets RLS
 - **Package manager**: pnpm only (lockfile is pnpm-lock.yaml)
@@ -78,6 +80,8 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 | Coach accounts are seed-only | Open "I'm a coach" pickers let anyone claim coach powers | — Pending |
 | Assignment is seed-only this milestone | Schema + RLS + coach view make the relationship real; UI deferred to shrink scope | — Pending |
 | Signup always creates clients | Simplest safe default; role escalation is a manual act | — Pending |
+| Tabler Icons as the only icon set | One consistent stroke style; no mixed icon sources | — Pending |
+| Lexend (body) + Fraunces (display) | Lexend is designed for reading fluency — right for the ADHD audience; Fraunces provides warm heading contrast | — Pending |
 
 ## Evolution
 
