@@ -1,0 +1,10 @@
+.DS_Store
+.next/
+*.tsbuildinfo
+node_modules/
+dist/
+build/
+DerivedData/
+.gradle/
+*.xcuserstate
+xcuserdata/
