@@ -51,11 +51,11 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   3. Signing up reliably creates exactly one profile row (a failing trigger never silently blocks the signup), and a seed script creates a coach account and assigns clients to it.
   4. Role is stored and enforced server-side — an authenticated user cannot escalate themselves to coach — and RLS on every table lets a client read only their own data while a coach reads only their own assigned clients.
 **Plans**: 5 plans (4 waves)
-- [ ] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy), proxy.ts session refresh, local [auth] config, authRedirects.home
-- [ ] 02-02-PLAN.md — DB schema: hardened profiles + handle_new_user trigger, coach_clients (UNIQUE client_id), RLS via SECURITY DEFINER helpers, role-escalation guard, schema push + regenerated types
-- [ ] 02-03-PLAN.md — Idempotent TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, seeded RLS/escalation verification, D-14 deploy checklist
-- [ ] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home + logout, expired-link screen, FISH-voice confirmation email
-- [ ] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery-session set-new-password → /home, FISH-voice recovery email
+- [ ] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy at apps/web root), proxy.ts session refresh, local [auth] config (keys verified vs generated schema), authRedirects.home
+- [ ] 02-02-PLAN.md — DB schema in 5 ordered migrations (profiles → trigger → coach_clients+role-integrity → is_coach_of helper+policies → role guard; helper created after the table it references), RLS via SECURITY DEFINER helper (caller-role-checked), safe-field UPDATE policy so the guard is exercised, schema push + types split into database.generated.ts
+- [ ] 02-03-PLAN.md — Idempotent (pagination-safe) TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, scripted anon-session RLS/escalation verification (verify-rls.ts), D-14 deploy checklist
+- [ ] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home (redirects signed-out visitors to /login) + logout, type-aware expired-link screen, Suspense-wrapped search-param screens, FISH-voice confirmation email
+- [ ] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery via template-hardcoded next=/reset-password (Mailpit URL verified) → set-new-password → /home, FISH-voice recovery email
 
 ### Phase 3: Role-aware home
 **Goal**: After logging in, a person lands inside a calm app shell on the home that matches their role — a client on the client home, a coach on the coach home listing only their assigned clients — with signed-out users always redirected to login and empty states that guide rather than alarm.
