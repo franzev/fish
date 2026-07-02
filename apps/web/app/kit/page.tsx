@@ -1,7 +1,36 @@
 import { KitThemeToggle } from "@/components/kit/theme-toggle";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, Progress } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconInfoCircle,
+} from "@tabler/icons-react";
+
+const tokenSwatches = [
+  { name: "bg", className: "bg-bg" },
+  { name: "surface", className: "bg-surface" },
+  { name: "surface-2", className: "bg-surface-2" },
+  { name: "border", className: "bg-border" },
+  { name: "border-strong", className: "bg-border-strong" },
+  { name: "foreground", className: "bg-foreground" },
+  { name: "body", className: "bg-body" },
+  { name: "muted", className: "bg-muted" },
+  { name: "primary", className: "bg-primary" },
+  { name: "on-primary", className: "bg-on-primary" },
+  { name: "notice", className: "bg-notice" },
+  { name: "error", className: "bg-error" },
+  { name: "success", className: "bg-success" },
+];
+
+const iconSamples = [
+  { name: "IconInfoCircle (notice)", Icon: IconInfoCircle },
+  { name: "IconAlertCircle (error)", Icon: IconAlertCircle },
+  { name: "IconCircleCheck (success)", Icon: IconCircleCheck },
+];
 
 /* The design-system contract page (D-12). One long calm scroll, no nav,
    ships unlinked in production (D-15). The theme toggle is the page's own
@@ -22,6 +51,59 @@ export default function KitPage() {
           <KitThemeToggle />
         </div>
       </header>
+
+      <section className="mb-10">
+        <h2 className="mb-4 text-xl">Tokens</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {tokenSwatches.map((s) => (
+            <div key={s.name} className="space-y-2">
+              <div
+                className={cn(
+                  "h-12 w-full rounded-control border border-border",
+                  s.className
+                )}
+              />
+              <p className="text-[13px] text-muted">{s.name}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 text-xl">Typography</h2>
+        <div className="space-y-5">
+          <div>
+            <p className="mb-1 text-[13px] text-muted">Display — 32px / 600 / Fraunces</p>
+            <h1 className="text-[32px]">The whole job is to remove choices</h1>
+          </div>
+          <div>
+            <p className="mb-1 text-[13px] text-muted">Heading — 20px / 600 / Fraunces</p>
+            <h2 className="text-[20px]">Every screen, one action</h2>
+          </div>
+          <div>
+            <p className="mb-1 text-[13px] text-muted">Body — 17px / 400 / Lexend</p>
+            <p className="text-[17px] text-body">
+              Calm, spacious copy that reads easily and never scolds.
+            </p>
+          </div>
+          <div>
+            <p className="mb-1 text-[13px] text-muted">Label — 14px / 400–500 / Lexend</p>
+            <p className="text-[14px] text-muted">Field labels, hints, and captions.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 text-xl">Icons</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {iconSamples.map(({ name, Icon }) => (
+            <div key={name} className="space-y-2">
+              <Icon size={20} stroke={1.75} aria-hidden="true" className="text-foreground" />
+              <p className="text-[13px] text-muted">{name}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="mb-10">
         <h2 className="mb-4 text-xl">Button</h2>
@@ -99,6 +181,19 @@ export default function KitPage() {
         <div className="space-y-3">
           <p className="text-[14px] text-muted">Visual only — never a grade</p>
           <Progress value={40} label="Step 2 of 5" />
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 text-xl">Alert</h2>
+        <div className="space-y-3">
+          <Alert tone="notice">
+            That doesn&apos;t look like an email yet. Check the spelling?
+          </Alert>
+          <Alert tone="error">
+            Something needs your attention before you can continue.
+          </Alert>
+          <Alert tone="success">You&apos;re all set.</Alert>
         </div>
       </section>
 
