@@ -98,3 +98,12 @@ None - no external service configuration required.
 ---
 *Phase: 01-monochrome-design-system-you-can-see*
 *Completed: 2026-07-02*
+
+## Self-Check: PASSED
+
+- FOUND: apps/web/tests/focus-ring.test.ts
+- FOUND: .planning/phases/01-monochrome-design-system-you-can-see/01-04-SUMMARY.md
+- FOUND: `:focus-visible` rule present in apps/web/app/globals.css
+- FOUND: commit ceee9b6 (test: RED tripwire)
+- FOUND: commit c91c3b4 (feat: GREEN fix + WR-04 coverage)
+- FOUND: commit 88cb728 (docs: SUMMARY)
