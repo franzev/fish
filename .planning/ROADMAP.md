@@ -17,7 +17,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 ## Phases
 
-- [ ] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark
+- [x] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (completed 2026-07-02)
 - [ ] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS
 - [ ] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients
 
@@ -36,7 +36,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Monochrome light-dark() tokens, Vitest + WCAG contrast test, hardened Button, dev theme toggle, /kit slice
 - [x] 01-02-PLAN.md — Input notice/error two-tier split + Card elevation + Progress, added to /kit
-- [ ] 01-03-PLAN.md — Alert (notice/error/success) + tokens/typography/icons sections + icon-source guard + phase visual verification
+- [x] 01-03-PLAN.md — Alert (notice/error/success) + tokens/typography/icons sections + icon-source guard + phase visual verification
 **UI hint**: yes
 
 ### Phase 2: Secure account you can return to
@@ -68,7 +68,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monochrome design system you can see | 2/3 | In Progress|  |
+| 1. Monochrome design system you can see | 3/3 | Complete   | 2026-07-02 |
 | 2. Secure account you can return to | 0/? | Not started | - |
 | 3. Role-aware home | 0/? | Not started | - |
 

@@ -20,7 +20,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **KIT-01**: Button, Input, Card, and Progress render correct default/hover/focus/disabled/loading/error states (as applicable) in both themes
 - [x] **KIT-02**: Errors and notices are distinguishable in monochrome through weight, structure, and iconography — never red, and copy never scolds
-- [ ] **KIT-03**: New base components required by this milestone's screens (auth forms, shell, landings, empty states) are built in the shared kit — needs-driven, no speculative components
+- [x] **KIT-03**: New base components required by this milestone's screens (auth forms, shell, landings, empty states) are built in the shared kit — needs-driven, no speculative components
 - [x] **KIT-04**: Every interactive control is at least 56px tall
 - [x] **KIT-05**: Every interactive element shows a visible keyboard focus state, and all non-essential motion is suppressed under prefers-reduced-motion
 - [x] **KIT-06**: A UI kit demo page shows every component in every state in both themes — the visual contract for future screens
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOKN-06 | Phase 1 | Complete |
 | KIT-01 | Phase 1 | Complete |
 | KIT-02 | Phase 1 | Complete |
-| KIT-03 | Phase 1 | Pending |
+| KIT-03 | Phase 1 | Complete |
 | KIT-04 | Phase 1 | Complete |
 | KIT-05 | Phase 1 | Complete |
 | KIT-06 | Phase 1 | Complete |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-07-02T08:42:19.372Z"
+stopped_at: Completed 01-03-PLAN.md (phase 01 all plans complete)
+last_updated: "2026-07-02T09:27:28.163Z"
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 33
 ---
 
 # Project State: FISH — Monochrome Foundations
@@ -25,33 +25,34 @@ progress:
 
 ## Current Position
 
-Phase: 01 (monochrome-design-system-you-can-see) — EXECUTING
-Plan: 01-02 complete (2 of 3); next is 01-03-PLAN.md
+Phase: 01 (monochrome-design-system-you-can-see) — COMPLETE
+Plan: 01-03 complete (3 of 3); phase 01 has no remaining plans
 
-- **Phase:** 1 — Monochrome design system you can see
-- **Plan:** 01-02 complete (2 of 3); next is 01-03-PLAN.md
-- **Status:** Ready to execute
-- **Progress:** [███████░░░] 67%
+- **Phase:** 1 — Monochrome design system you can see (complete)
+- **Plan:** 01-03 complete (3 of 3)
+- **Status:** Phase complete — ready for phase verification / Phase 2 planning
+- **Progress:** [██████████] 100%
 
 ## Roadmap Snapshot
 
 | Phase | Goal (short) | Requirements | Status |
 |-------|--------------|--------------|--------|
-| 1 | Dual-theme monochrome tokens + hardened UI kit, provable on a demo page | TOKN-01..06, KIT-01..06 | Not started |
+| 1 | Dual-theme monochrome tokens + hardened UI kit, provable on a demo page | TOKN-01..06, KIT-01..06 | Complete (2026-07-02) |
 | 2 | Full linear auth loop backed by hardened profiles + coach-client schema with RLS | AUTH-01..06, DB-01..04 | Not started |
 | 3 | App shell, protected routing, calm role-aware landings | SHEL-01..02, ROUT-01..04 | Not started |
 
 ## Performance Metrics
 
 - **Phases planned:** 3
-- **Phases complete:** 0
-- **Plans complete:** 2
+- **Phases complete:** 1
+- **Plans complete:** 3
 - **Requirements mapped:** 28 / 28
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 01 | 01 | 12 min | 3 | 10 |
 | 01 | 02 | 8 min | 2 | 6 |
+| 01 | 03 | 41 min | 3 | 9 |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Plan: 01-02 complete (2 of 3); next is 01-03-PLAN.md
 - 01-01: Vitest locked as the test framework (first test infrastructure; jsdom + RTL + jest-dom, @/ alias).
 - 01-02: `--shadow-card` uses a single shadow layer (not a two-layer shadow) to avoid comma-parsing ambiguity between `light-dark()`'s two arguments and `box-shadow`'s own comma-separated layer list inside the Tailwind v4 `@theme` block.
 - 01-02: Input's disabled field reuses `disabled:opacity-50`, matching Button's existing disabled treatment, for a consistent calm/dim disabled language across the kit.
+- 01-03: Theme overrides must be stylesheet `color-scheme` rules (`data-kit-theme` attribute on html), never inline `style.colorScheme` — Lightning CSS downlevels `light-dark()` into a prefers-color-scheme variable polyfill that only build-time-visible `color-scheme` declarations can flip. Verify theme work against the *served* CSS, not the authored CSS.
+- 01-03: Layout-stability contract — no control changes size on state change: loading overlays an absolutely-centered spinner over the still-mounted `opacity-0` label, Button variants share a constant border width, and active states signal with color only (never a font-weight flip).
 
 ### Sequencing constraints (from research)
 
@@ -103,11 +106,11 @@ Plan: 01-02 complete (2 of 3); next is 01-03-PLAN.md
 
 ## Session Continuity
 
-- **Last session:** 2026-07-02T08:42:19.368Z
-- **Stopped at:** Completed 01-02-PLAN.md
+- **Last session:** 2026-07-02T09:27:10.211Z
+- **Stopped at:** Completed 01-03-PLAN.md (phase 01 all plans complete)
 - **Resume file:** None
-- **Next action:** `/gsd:execute-phase 1` to run 01-03-PLAN.md.
-- **Files:** `.planning/phases/01-monochrome-design-system-you-can-see/01-02-SUMMARY.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`.
+- **Next action:** `/gsd:verify-work 1` to verify the phase, then `/gsd:plan-phase 2`.
+- **Files:** `.planning/phases/01-monochrome-design-system-you-can-see/01-03-SUMMARY.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation.*
