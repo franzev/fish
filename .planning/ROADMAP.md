@@ -17,7 +17,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 ## Phases
 
-- [ ] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (3/3 plans executed; verification 2026-07-02: 1 blocking gap — primary-button focus ring)
+- [ ] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (3/3 plans executed; verification 2026-07-02: 1 blocking gap — primary-button focus ring; gap-closure plan 01-04 created)
 - [ ] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS
 - [ ] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients
 
@@ -33,10 +33,11 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   2. Toggling the system between light and dark switches the whole page cleanly, every token (including error, disabled, and focus states) resolves correctly in both, and the first paint on load never flashes the wrong theme.
   3. Body/UI text renders in Lexend and headings in Fraunces on the demo page, and every icon comes from Tabler with no other icon set present.
   4. Every interactive control is at least 56px tall, shows a visible keyboard focus state, suppresses non-essential motion under prefers-reduced-motion, and distinguishes notices from errors through weight, structure, and iconography rather than red.
-**Plans**: 3 plans
+**Plans**: 4 plans (3 executed + 1 gap-closure)
 - [x] 01-01-PLAN.md — Monochrome light-dark() tokens, Vitest + WCAG contrast test, hardened Button, dev theme toggle, /kit slice
 - [x] 01-02-PLAN.md — Input notice/error two-tier split + Card elevation + Progress, added to /kit
 - [x] 01-03-PLAN.md — Alert (notice/error/success) + tokens/typography/icons sections + icon-source guard + phase visual verification
+- [ ] 01-04-PLAN.md — Gap closure: fix inverted primary-button focus ring + regression tripwire (KIT-05) + close WR-04 contrast-coverage gap
 **UI hint**: yes
 
 ### Phase 2: Secure account you can return to
@@ -68,7 +69,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monochrome design system you can see | 3/3 | Complete   | 2026-07-02 |
+| 1. Monochrome design system you can see | 3/4 | Gap closure planned | - |
 | 2. Secure account you can return to | 0/? | Not started | - |
 | 3. Role-aware home | 0/? | Not started | - |
 
