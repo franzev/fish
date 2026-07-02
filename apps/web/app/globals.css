@@ -56,6 +56,11 @@
 
   /* ---- Tap targets (ND rule: nothing tiny or fiddly) ---- */
   --size-control: 56px;           /* min height for buttons & inputs       */
+
+  /* ---- Elevation (D-06): a token, not a dark: branch ----
+     Soft shadow in light; dark relies on the surface lightness-step
+     already in the ladder, so the shadow resolves to none there. */
+  --shadow-card: light-dark(0 4px 16px oklch(0.15 0 0 / 0.08), none);
 }
 
 /* ---- Base ---- */
