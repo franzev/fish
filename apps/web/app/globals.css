@@ -71,6 +71,19 @@
     color-scheme: light dark;
     -webkit-text-size-adjust: 100%;
   }
+  /* Dev theme override for /kit's KitThemeToggle. These MUST be stylesheet
+     rules, not inline styles: the CSS pipeline (Lightning CSS) downlevels
+     light-dark() into a prefers-color-scheme variable polyfill, and only
+     color-scheme declarations visible at build time get compiled into the
+     matching polyfill-variable flips — an inline style.colorScheme mutation
+     never re-resolves the tokens. Attribute specificity (0,1,1) beats both
+     the html rule above and the polyfill's media-query flip. */
+  html[data-kit-theme="light"] {
+    color-scheme: light;
+  }
+  html[data-kit-theme="dark"] {
+    color-scheme: dark;
+  }
   body {
     background-color: var(--color-bg);
     color: var(--color-body);

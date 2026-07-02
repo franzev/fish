@@ -11,9 +11,16 @@ export function KitThemeToggle() {
   const [mode, setMode] = useState<ThemeOverride>("system");
 
   useEffect(() => {
-    // Overriding color-scheme re-resolves every light-dark() token natively.
-    document.documentElement.style.colorScheme =
-      mode === "system" ? "light dark" : mode;
+    // Flip a data attribute, not an inline style: globals.css carries
+    // html[data-kit-theme] color-scheme rules that the build pipeline
+    // (Lightning CSS) compiles into its light-dark() polyfill-variable
+    // flips. An inline style.colorScheme mutation is invisible to that
+    // polyfill, so tokens would never re-resolve (the reported /kit bug).
+    if (mode === "system") {
+      delete document.documentElement.dataset.kitTheme;
+    } else {
+      document.documentElement.dataset.kitTheme = mode;
+    }
   }, [mode]);
 
   return (
