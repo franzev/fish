@@ -95,13 +95,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| TOKN-01 | Phase 1 | Pending |
+| TOKN-02 | Phase 1 | Pending |
+| TOKN-03 | Phase 1 | Pending |
+| TOKN-04 | Phase 1 | Pending |
+| TOKN-05 | Phase 1 | Pending |
+| TOKN-06 | Phase 1 | Pending |
+| KIT-01 | Phase 1 | Pending |
+| KIT-02 | Phase 1 | Pending |
+| KIT-03 | Phase 1 | Pending |
+| KIT-04 | Phase 1 | Pending |
+| KIT-05 | Phase 1 | Pending |
+| KIT-06 | Phase 1 | Pending |
+| AUTH-01 | Phase 2 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 2 | Pending |
+| AUTH-04 | Phase 2 | Pending |
+| AUTH-05 | Phase 2 | Pending |
+| AUTH-06 | Phase 2 | Pending |
+| DB-01 | Phase 2 | Pending |
+| DB-02 | Phase 2 | Pending |
+| DB-03 | Phase 2 | Pending |
+| DB-04 | Phase 2 | Pending |
+| SHEL-01 | Phase 3 | Pending |
+| SHEL-02 | Phase 3 | Pending |
+| ROUT-01 | Phase 3 | Pending |
+| ROUT-02 | Phase 3 | Pending |
+| ROUT-03 | Phase 3 | Pending |
+| ROUT-04 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- v1 requirements: 28 total
+- Mapped to phases: 28
+- Unmapped: 0 ✓
+
+> Note: an earlier count of "24" was carried in some initialization inputs. The actual requirement set is 28 (TOKN 6 + KIT 6 + SHEL 2 + AUTH 6 + DB 4 + ROUT 4). Count corrected during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-02*
-*Last updated: 2026-07-02 after initial definition*
+*Last updated: 2026-07-02 after roadmap traceability mapping*
