@@ -50,7 +50,12 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   2. A person can log in with email and password, stays logged in across a browser refresh and restart, and can log out from an authenticated screen; a "forgot password" email link lands them on a single-field "set new password" screen.
   3. Signing up reliably creates exactly one profile row (a failing trigger never silently blocks the signup), and a seed script creates a coach account and assigns clients to it.
   4. Role is stored and enforced server-side — an authenticated user cannot escalate themselves to coach — and RLS on every table lets a client read only their own data while a coach reads only their own assigned clients.
-**Plans**: TBD
+**Plans**: 5 plans (4 waves)
+- [ ] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy), proxy.ts session refresh, local [auth] config, authRedirects.home
+- [ ] 02-02-PLAN.md — DB schema: hardened profiles + handle_new_user trigger, coach_clients (UNIQUE client_id), RLS via SECURITY DEFINER helpers, role-escalation guard, schema push + regenerated types
+- [ ] 02-03-PLAN.md — Idempotent TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, seeded RLS/escalation verification, D-14 deploy checklist
+- [ ] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home + logout, expired-link screen, FISH-voice confirmation email
+- [ ] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery-session set-new-password → /home, FISH-voice recovery email
 
 ### Phase 3: Role-aware home
 **Goal**: After logging in, a person lands inside a calm app shell on the home that matches their role — a client on the client home, a coach on the coach home listing only their assigned clients — with signed-out users always redirected to login and empty states that guide rather than alarm.
@@ -70,7 +75,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
-| 2. Secure account you can return to | 0/? | Not started | - |
+| 2. Secure account you can return to | 0/5 | Planned | - |
 | 3. Role-aware home | 0/? | Not started | - |
 
 ## Coverage
