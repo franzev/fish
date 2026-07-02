@@ -81,10 +81,14 @@
     line-height: 1.15;
     letter-spacing: -0.01em;
   }
-  /* Visible keyboard focus everywhere — accessibility floor. */
+  /* Visible keyboard focus everywhere — accessibility floor.
+     Two-tone ring (D-05): inner + outer bands in opposite tones so the
+     ring stays visible against the inverted primary fill in BOTH themes
+     (Pitfall 4) as well as against default surfaces. */
   :focus-visible {
-    outline: 3px solid var(--color-primary);
+    outline: 2px solid light-dark(oklch(1 0 0), oklch(0.15 0 0));
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px light-dark(oklch(0.15 0 0), oklch(1 0 0));
     border-radius: 6px;
   }
   /* Respect reduced motion. */
