@@ -17,7 +17,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 ## Phases
 
-- [x] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (completed 2026-07-02)
+- [ ] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (3/3 plans executed; verification 2026-07-02: 1 blocking gap — primary-button focus ring)
 - [ ] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS
 - [ ] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients
 
