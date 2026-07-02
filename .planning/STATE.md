@@ -3,12 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-07-02T08:32:36.301Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-07-02T08:42:19.372Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -25,12 +26,12 @@ progress:
 ## Current Position
 
 Phase: 01 (monochrome-design-system-you-can-see) — EXECUTING
-Plan: 2 of 3
+Plan: 01-02 complete (2 of 3); next is 01-03-PLAN.md
 
 - **Phase:** 1 — Monochrome design system you can see
-- **Plan:** 01-01 complete (1 of 3); next is 01-02-PLAN.md
-- **Status:** Executing Phase 01
-- **Progress:** [███░░░░░░░] 33%
+- **Plan:** 01-02 complete (2 of 3); next is 01-03-PLAN.md
+- **Status:** Ready to execute
+- **Progress:** [███████░░░] 67%
 
 ## Roadmap Snapshot
 
@@ -44,12 +45,13 @@ Plan: 2 of 3
 
 - **Phases planned:** 3
 - **Phases complete:** 0
-- **Plans complete:** 1
+- **Plans complete:** 2
 - **Requirements mapped:** 28 / 28
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 01 | 01 | 12 min | 3 | 10 |
+| 01 | 02 | 8 min | 2 | 6 |
 
 ## Accumulated Context
 
@@ -67,6 +69,8 @@ Plan: 2 of 3
 - 01-01: Contrast test parses globals.css at test time — single source of truth, token edits auto-re-verified.
 - 01-01: `--color-primary-press` name kept (semantic, not hue) so Button hover/active classes carry forward.
 - 01-01: Vitest locked as the test framework (first test infrastructure; jsdom + RTL + jest-dom, @/ alias).
+- 01-02: `--shadow-card` uses a single shadow layer (not a two-layer shadow) to avoid comma-parsing ambiguity between `light-dark()`'s two arguments and `box-shadow`'s own comma-separated layer list inside the Tailwind v4 `@theme` block.
+- 01-02: Input's disabled field reuses `disabled:opacity-50`, matching Button's existing disabled treatment, for a consistent calm/dim disabled language across the kit.
 
 ### Sequencing constraints (from research)
 
@@ -99,11 +103,11 @@ Plan: 2 of 3
 
 ## Session Continuity
 
-- **Last session:** 2026-07-02T08:31:03Z
-- **Stopped at:** Completed 01-01-PLAN.md
+- **Last session:** 2026-07-02T08:42:19.368Z
+- **Stopped at:** Completed 01-02-PLAN.md
 - **Resume file:** None
-- **Next action:** `/gsd:execute-phase 1` to run 01-02-PLAN.md.
-- **Files:** `.planning/phases/01-monochrome-design-system-you-can-see/01-01-SUMMARY.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`.
+- **Next action:** `/gsd:execute-phase 1` to run 01-03-PLAN.md.
+- **Files:** `.planning/phases/01-monochrome-design-system-you-can-see/01-02-SUMMARY.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation.*

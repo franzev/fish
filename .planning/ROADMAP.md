@@ -35,7 +35,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   4. Every interactive control is at least 56px tall, shows a visible keyboard focus state, suppresses non-essential motion under prefers-reduced-motion, and distinguishes notices from errors through weight, structure, and iconography rather than red.
 **Plans**: 3 plans
 - [x] 01-01-PLAN.md — Monochrome light-dark() tokens, Vitest + WCAG contrast test, hardened Button, dev theme toggle, /kit slice
-- [ ] 01-02-PLAN.md — Input notice/error two-tier split + Card elevation + Progress, added to /kit
+- [x] 01-02-PLAN.md — Input notice/error two-tier split + Card elevation + Progress, added to /kit
 - [ ] 01-03-PLAN.md — Alert (notice/error/success) + tokens/typography/icons sections + icon-source guard + phase visual verification
 **UI hint**: yes
 
@@ -68,7 +68,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monochrome design system you can see | 1/3 | In Progress|  |
+| 1. Monochrome design system you can see | 2/3 | In Progress|  |
 | 2. Secure account you can return to | 0/? | Not started | - |
 | 3. Role-aware home | 0/? | Not started | - |
 
