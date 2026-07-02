@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Not started
-last_updated: "2026-07-02T07:29:34.209Z"
+status: executing
+last_updated: "2026-07-02T08:32:36.301Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +20,17 @@ progress:
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Current milestone:** Monochrome Foundations (design system + auth foundation)
-- **Current focus:** Phase 1 — Monochrome design system you can see
+- **Current focus:** Phase 01 — monochrome-design-system-you-can-see
 
 ## Current Position
 
+Phase: 01 (monochrome-design-system-you-can-see) — EXECUTING
+Plan: 2 of 3
+
 - **Phase:** 1 — Monochrome design system you can see
-- **Plan:** None yet (run `/gsd:plan-phase 1`)
-- **Status:** Not started
-- **Progress:** [--------------------] 0/3 phases complete
+- **Plan:** 01-01 complete (1 of 3); next is 01-02-PLAN.md
+- **Status:** Executing Phase 01
+- **Progress:** [███░░░░░░░] 33%
 
 ## Roadmap Snapshot
 
@@ -41,8 +44,12 @@ progress:
 
 - **Phases planned:** 3
 - **Phases complete:** 0
-- **Plans complete:** 0
+- **Plans complete:** 1
 - **Requirements mapped:** 28 / 28
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 01 | 01 | 12 min | 3 | 10 |
 
 ## Accumulated Context
 
@@ -53,6 +60,13 @@ progress:
 - Coach accounts are seed-only; assignment is seed-only this milestone (schema + RLS + coach view make the relationship real, UI deferred).
 - Signup always creates clients; role escalation is a manual act.
 - Tabler Icons as the only icon set; Lexend (body) + Fraunces (display) as the type pairing.
+
+### Decisions (from execution)
+
+- 01-01: Border tokens tuned darker/lighter than plan proposal (light 0.64/0.55-strong, dark 0.55/0.65-strong) — plan values failed the WCAG 3:1 UI gate; the contrast test is the acceptance gate.
+- 01-01: Contrast test parses globals.css at test time — single source of truth, token edits auto-re-verified.
+- 01-01: `--color-primary-press` name kept (semantic, not hue) so Button hover/active classes carry forward.
+- 01-01: Vitest locked as the test framework (first test infrastructure; jsdom + RTL + jest-dom, @/ alias).
 
 ### Sequencing constraints (from research)
 
@@ -73,7 +87,9 @@ progress:
 ### Todos / open questions (from research gaps)
 
 - [ ] Decide whether Phase 1 formalizes `packages/tokens/src/tokens.json` as a portable source, or keeps hand-written CSS this milestone (THEM-02 is v2).
-- [ ] Define actual oklch token values for light + dark before Phase 1 commit.
+- [x] Define actual oklch token values for light + dark before Phase 1 commit — done in 01-01 (globals.css ladder, contrast-test verified).
+- [ ] `apps/web/app/page.tsx` still references removed accent-pink/accent-yellow utilities — see phase deferred-items.md.
+- [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
 - [ ] Confirm Supabase environments (local / staging / prod): linked project, per-env email templates, Site URL / Redirect URLs — checklist during Phase 2.
 - [ ] Confirm future Edge Function signatures (assign-client) inform the coach-client schema design in Phase 2.
 
@@ -83,8 +99,11 @@ progress:
 
 ## Session Continuity
 
-- **Next action:** Review the roadmap draft, then `/gsd:plan-phase 1`.
-- **Files:** `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`, `.planning/research/SUMMARY.md`, `.planning/codebase/ARCHITECTURE.md`.
+- **Last session:** 2026-07-02T08:31:03Z
+- **Stopped at:** Completed 01-01-PLAN.md
+- **Resume file:** None
+- **Next action:** `/gsd:execute-phase 1` to run 01-02-PLAN.md.
+- **Files:** `.planning/phases/01-monochrome-design-system-you-can-see/01-01-SUMMARY.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation.*

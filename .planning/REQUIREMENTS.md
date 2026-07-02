@@ -9,21 +9,21 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Design Tokens & Theming
 
-- [ ] **TOKN-01**: All UI renders in pure monochrome — black, white, and greys only; no hue-based color values remain in the token set
-- [ ] **TOKN-02**: Tokens use role-based semantic names (e.g. surface, foreground, notice) — no hue names like accent-pink, so color can be layered in later without renaming
-- [ ] **TOKN-03**: Light and dark themes are both fully specified — every token (including error/disabled/focus states) resolves correctly in both
-- [ ] **TOKN-04**: Theme follows the user's system preference automatically with no flash of wrong theme on first paint
-- [ ] **TOKN-05**: Lexend renders as the body/UI font and Fraunces as the heading/display font on every screen
-- [ ] **TOKN-06**: Tabler Icons is the single icon source; no other icon sets are imported
+- [x] **TOKN-01**: All UI renders in pure monochrome — black, white, and greys only; no hue-based color values remain in the token set
+- [x] **TOKN-02**: Tokens use role-based semantic names (e.g. surface, foreground, notice) — no hue names like accent-pink, so color can be layered in later without renaming
+- [x] **TOKN-03**: Light and dark themes are both fully specified — every token (including error/disabled/focus states) resolves correctly in both
+- [x] **TOKN-04**: Theme follows the user's system preference automatically with no flash of wrong theme on first paint
+- [x] **TOKN-05**: Lexend renders as the body/UI font and Fraunces as the heading/display font on every screen
+- [x] **TOKN-06**: Tabler Icons is the single icon source; no other icon sets are imported
 
 ### UI Kit
 
-- [ ] **KIT-01**: Button, Input, Card, and Progress render correct default/hover/focus/disabled/loading/error states (as applicable) in both themes
+- [x] **KIT-01**: Button, Input, Card, and Progress render correct default/hover/focus/disabled/loading/error states (as applicable) in both themes
 - [ ] **KIT-02**: Errors and notices are distinguishable in monochrome through weight, structure, and iconography — never red, and copy never scolds
 - [ ] **KIT-03**: New base components required by this milestone's screens (auth forms, shell, landings, empty states) are built in the shared kit — needs-driven, no speculative components
-- [ ] **KIT-04**: Every interactive control is at least 56px tall
-- [ ] **KIT-05**: Every interactive element shows a visible keyboard focus state, and all non-essential motion is suppressed under prefers-reduced-motion
-- [ ] **KIT-06**: A UI kit demo page shows every component in every state in both themes — the visual contract for future screens
+- [x] **KIT-04**: Every interactive control is at least 56px tall
+- [x] **KIT-05**: Every interactive element shows a visible keyboard focus state, and all non-essential motion is suppressed under prefers-reduced-motion
+- [x] **KIT-06**: A UI kit demo page shows every component in every state in both themes — the visual contract for future screens
 
 ### App Shell
 
@@ -95,18 +95,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOKN-01 | Phase 1 | Pending |
-| TOKN-02 | Phase 1 | Pending |
-| TOKN-03 | Phase 1 | Pending |
-| TOKN-04 | Phase 1 | Pending |
-| TOKN-05 | Phase 1 | Pending |
-| TOKN-06 | Phase 1 | Pending |
-| KIT-01 | Phase 1 | Pending |
+| TOKN-01 | Phase 1 | Complete |
+| TOKN-02 | Phase 1 | Complete |
+| TOKN-03 | Phase 1 | Complete |
+| TOKN-04 | Phase 1 | Complete |
+| TOKN-05 | Phase 1 | Complete |
+| TOKN-06 | Phase 1 | Complete |
+| KIT-01 | Phase 1 | Complete |
 | KIT-02 | Phase 1 | Pending |
 | KIT-03 | Phase 1 | Pending |
-| KIT-04 | Phase 1 | Pending |
-| KIT-05 | Phase 1 | Pending |
-| KIT-06 | Phase 1 | Pending |
+| KIT-04 | Phase 1 | Complete |
+| KIT-05 | Phase 1 | Complete |
+| KIT-06 | Phase 1 | Complete |
 | AUTH-01 | Phase 2 | Pending |
 | AUTH-02 | Phase 2 | Pending |
 | AUTH-03 | Phase 2 | Pending |
