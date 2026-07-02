@@ -61,3 +61,43 @@ describe("Button", () => {
     expect(button.querySelector(".animate-spin")).toBeNull();
   });
 });
+
+/* Layout stability: no Button state change may alter its rendered size.
+   Loading overlays a spinner over the (hidden, still-mounted) label instead
+   of inserting inline content, and every variant carries a constant border
+   width so the box model never differs. */
+describe("Button layout stability", () => {
+  it("keeps the label mounted while loading — hidden with opacity, never removed", () => {
+    const { getByText } = render(<Button loading>Saving</Button>);
+    const label = getByText("Saving");
+    expect(label.className).toContain("opacity-0");
+  });
+
+  it("shows the label normally when not loading", () => {
+    const { getByText } = render(<Button>Saving</Button>);
+    expect(getByText("Saving").className).not.toContain("opacity-0");
+  });
+
+  it("overlays the spinner absolutely centered — no inline space inserted", () => {
+    const { getByRole } = render(<Button loading>Saving</Button>);
+    const button = getByRole("button");
+    expect(button.className).toContain("relative");
+    const spinner = button.querySelector(".animate-spin");
+    expect(spinner).not.toBeNull();
+    expect(spinner!.className).toContain("absolute");
+    expect(spinner!.className).not.toContain("mr-2");
+  });
+
+  it("every variant carries a constant border width so no variant changes the box model", () => {
+    const { getByRole, rerender } = render(<Button>Go</Button>);
+    const classes = () => getByRole("button").className.split(/\s+/);
+    expect(classes()).toContain("border");
+    expect(classes()).toContain("border-transparent");
+    rerender(<Button variant="secondary">Go</Button>);
+    expect(classes()).toContain("border");
+    expect(classes()).toContain("border-border");
+    rerender(<Button variant="ghost">Go</Button>);
+    expect(classes()).toContain("border");
+    expect(classes()).toContain("border-transparent");
+  });
+});

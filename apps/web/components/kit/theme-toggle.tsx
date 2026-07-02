@@ -33,8 +33,10 @@ export function KitThemeToggle() {
           aria-pressed={mode === opt}
           className={cn(
             "min-h-[var(--size-control)] rounded-control border px-4 text-[15px] transition-colors",
+            // Active state signals with color only — a font-weight flip
+            // would resize the buttons on every click (layout stability).
             mode === opt
-              ? "border-border-strong bg-surface-2 font-medium text-foreground"
+              ? "border-border-strong bg-surface-2 text-foreground"
               : "border-border bg-surface text-muted hover:text-body"
           )}
         >

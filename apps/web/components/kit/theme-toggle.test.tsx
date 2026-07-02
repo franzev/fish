@@ -45,6 +45,18 @@ describe("KitThemeToggle", () => {
       "false"
     );
   });
+
+  it("switching the active option never changes font weight — no width jump", () => {
+    // Layout stability: a weight flip resizes the buttons on every click.
+    // The active state is signalled by bg/border/text color only.
+    const { getByRole } = render(<KitThemeToggle />);
+    fireEvent.click(getByRole("button", { name: "light" }));
+    for (const name of ["system", "light", "dark"]) {
+      expect(getByRole("button", { name }).className).not.toMatch(
+        /font-(medium|semibold|bold)/
+      );
+    }
+  });
 });
 
 describe("globals.css theme-override hooks", () => {
