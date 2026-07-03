@@ -46,6 +46,12 @@ function checkNoRecursion(label: string, error: { code?: string; message: string
 
 async function checkClientBoundary(): Promise<void> {
   const supabase = await signInAs(client1.email, client1.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("DB-03 client boundary: resolve own user id", false, userError?.message);
+    return;
+  }
+  const ownId = userData.user.id;
   const { data, error } = await supabase.from("profiles").select("*");
   checkNoRecursion("DB-03 client boundary", error);
   if (error) {
@@ -55,9 +61,10 @@ async function checkClientBoundary(): Promise<void> {
   const rows = data ?? [];
   const onlyOwnRow = rows.length === 1;
   report("DB-03 client boundary: sees exactly one row (own)", onlyOwnRow, `got ${rows.length} rows`);
-  const otherEmails = ["client2@fish.dev", "client3@fish.dev", "coach@fish.dev"];
-  const leaked = rows.some((row) => otherEmails.includes((row as { display_name?: string }).display_name ?? ""));
-  report("DB-03 client boundary: no other accounts visible", !leaked);
+  // Identity-based leak check: profiles has no email column and display
+  // names are seed-mutable, so any row whose id is not our own is a leak.
+  const leaked = rows.some((row) => (row as { id?: string }).id !== ownId);
+  report("DB-03 client boundary: no other accounts visible", !leaked, leaked ? "row(s) with a foreign id returned" : undefined);
 }
 
 async function checkCoachBoundary(): Promise<void> {
