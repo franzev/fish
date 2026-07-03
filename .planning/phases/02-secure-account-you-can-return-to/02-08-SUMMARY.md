@@ -192,6 +192,17 @@ _Note: TDD tasks 1 and 2 each committed feat/fix with tests in the same commit r
 **Total deviations:** 3 (1 auto-fixed bug, 1 user design decision spanning two commits + a superseded first attempt, 1 consistency addition)
 **Impact on plan:** The RSC-safety fix was a necessary correctness fix caught by the plan's own verification gate before checkpoint sign-off. The notice-overlay rework was a direct, explicit user design decision at the checkpoint — it materially evolves the design system (Alert tones now carry deliberate hue, layout-stability contract extended to "notices never reflow the card") but stayed within this plan's scope (the same two pages, the same Alert component) rather than requiring a new plan. No scope creep beyond what the checkpoint asked for.
 
+### Post-approval polish (after plan sign-off)
+
+**4. [Post-approval polish] Input/form spacing rebalanced — reserved-row contract preserved**
+- **Found during:** User review of `/login` after this plan was marked complete: "input spacing doesnt look good" — the vertical gap below each input read as a hole.
+- **Root cause:** The 02-07 layout-stability fix's reserved message row (`mt-2` = 8px + `min-h-[22px]` = 22px, on `apps/web/components/ui/input.tsx`) stacked with each auth form's `space-y-5` (20px) gap, producing 50px from an input's bottom edge to the next label — vs only 8px from a label to its own field above it. The reserved row and the form gap were double-counting the same visual gap.
+- **Fix:** Tightened the row's own top margin (`mt-2` → `mt-1`, 8px → 4px) and each auth form's gap (`space-y-5` → `space-y-1`, 20px → 4px), applied identically across all six auth forms (login, signup, forgot-password, reset-password, expired-link, check-inbox — including check-inbox, whose form has no `Input`, for consistency). `min-h-[22px]` on the reserved row is unchanged — it remains the floor for the tallest hint/notice/error message (20px icon + 14px text at default line-height, flex `items-center`, ≈21px content), so the layout-stability contract from 02-07 (row always mounted, constant min-height, messages render inside without resizing the field) is fully preserved.
+- **New rhythm:** input bottom border → next label = `mt-1` (4px) + `min-h-[22px]` (22px) + `space-y-1` (4px) = **30px**, identical on every auth form (down from 50px).
+- **Files modified:** `apps/web/components/ui/input.tsx`, `apps/web/app/login/page.tsx`, `apps/web/app/signup/page.tsx`, `apps/web/app/forgot-password/page.tsx`, `apps/web/app/reset-password/page.tsx`, `apps/web/app/expired-link/page.tsx`, `apps/web/app/check-inbox/page.tsx`
+- **Verification:** Full suite green (152/152 — no test asserted the old `mt-2`/`space-y-5` classes directly), `pnpm build` passes (13/13 routes), `pnpm lint` clean. Rendered output on the live dev server confirmed the new `space-y-1` and `mt-1 min-h-[22px]` classes are applied.
+- **Commits:** `64b3275` (code), plus this docs commit.
+
 ## Issues Encountered
 None beyond the deviations above.
 
