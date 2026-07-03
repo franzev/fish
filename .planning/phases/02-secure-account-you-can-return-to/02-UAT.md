@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: testing
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
-updated: 2026-07-03T15:55:00Z
+updated: 2026-07-03T08:13:30Z
 mode: mvp
 user_story: "As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me."
 ---
@@ -56,9 +56,9 @@ section: user-flow
 
 ### 7. Wrong Password Stays Calm and Non-Revealing
 expected: On /login, enter your email with a wrong password. A single field-level error appears — "That email and password don't match. Try again?" — in the soft notice tone, never alarming red, and it does not reveal whether the email exists.
-result: issue
-reported: "the whole page rerenders when login button clicked"
-severity: major
+result: pass
+source: automated
+note: "Re-run after gap-closure plan 02-07, delegated by user to Claude's Chromium session 2026-07-03 (1440x900, live stack): message renders in place in the notice tier (weight 400, info-circle icon, monochrome); heading/button/links/card rect deltas all 0.00px (was 14.8px); double-submit shows one message; signup tier-2 error treatment unaffected; correct password still lands /home."
 section: technical
 
 ### 8. Unverified Login Routes to Check-Inbox
@@ -103,8 +103,8 @@ section: coverage
 ## Summary
 
 total: 13
-passed: 10
-issues: 1
+passed: 11
+issues: 0
 pending: 1
 skipped: 0
 blocked: 1
@@ -129,7 +129,7 @@ blocked: 1
   note: "Resolved by gap-closure plan 02-06: pinned dev port to 3001 AND aligned site_url host to localhost (cookies are host-scoped — a 127.0.0.1 link left the session invisible on localhost). Fresh signup verified signed in at /home by user 2026-07-03."
 
 - truth: "Wrong password on /login shows a single in-place field-level error in the soft notice tone, without a full page reload"
-  status: failed
+  status: resolved
   reason: "User reported: the whole page rerenders when login button clicked"
   severity: major
   test: 7
@@ -143,7 +143,8 @@ blocked: 1
     - "Reserve a constant-height message slot under the field so appearance changes text, not geometry (always render the message row in Input, or swap a persistent hint line for the message on this page)"
     - "Render the wrong-password copy in the tier-1 notice tone per the UAT expectation"
     - "Fix verification: re-run UAT test 7 asserting zero movement of heading/button rects when the message appears (CDP measurement pattern from the debug session)"
-  debug_session: ".planning/debug/login-wrong-password-full-rerender.md"
+  debug_session: ".planning/debug/resolved/login-wrong-password-full-rerender.md"
+  note: "Resolved by gap-closure plan 02-07: Input now always renders a min-h-[22px] message row (reserved geometry) and /login passes the copy via the tier-1 notice prop. Fix verification performed per the CDP pattern: heading/button rect deltas 0.00px when the message appears (Chromium 1440x900, 2026-07-03)."
 
 - truth: "Submitting /forgot-password for a real seeded account delivers a recovery email to Mailpit carrying type=recovery&next=/reset-password"
   status: resolved
