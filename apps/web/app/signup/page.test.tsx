@@ -112,6 +112,33 @@ describe("SignupPage", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
+  it("the stable user_already_exists error code shows the existing-email copy even if the message wording drifts", async () => {
+    signUpMock.mockResolvedValueOnce({
+      error: { code: "user_already_exists", message: "some future wording" },
+    });
+    render(<SignupPage />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Ada" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "That email's already in use. Try logging in instead?"
+        )
+      ).toBeInTheDocument()
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
   it("an 'already registered' error (confirmations-off environments) shows the existing-email Input error copy, not a raw message", async () => {
     signUpMock.mockResolvedValueOnce({
       error: { message: "User already registered" },

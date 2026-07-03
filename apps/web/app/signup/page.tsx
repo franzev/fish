@@ -39,7 +39,12 @@ export default function SignupPage() {
 
       if (error) {
         // Confirmations-off environments surface an explicit error here.
-        if (error.message.toLowerCase().includes("already registered")) {
+        // Stable error code first (survives gotrue copy changes); message
+        // match kept as a fallback for older backends.
+        if (
+          error.code === "user_already_exists" ||
+          error.message.toLowerCase().includes("already registered")
+        ) {
           setEmailError(
             "That email's already in use. Try logging in instead?"
           );

@@ -32,7 +32,12 @@ export default function LoginPage() {
       });
 
       if (error) {
-        if (error.message.toLowerCase().includes("email not confirmed")) {
+        // Stable error code first (survives gotrue copy changes); message
+        // match kept as a fallback for older backends.
+        if (
+          error.code === "email_not_confirmed" ||
+          error.message.toLowerCase().includes("email not confirmed")
+        ) {
           router.push(`/check-inbox?email=${encodeURIComponent(email)}`);
           return;
         }
@@ -44,8 +49,10 @@ export default function LoginPage() {
 
       router.push("/home");
     } catch {
+      // Thrown means transport failure, not bad credentials — don't tell an
+      // offline user their password is wrong.
       setPasswordError(
-        "That email and password don't match. Try again?"
+        "Couldn't reach the server. Check your connection and try again."
       );
     } finally {
       setLoading(false);

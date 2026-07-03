@@ -122,4 +122,49 @@ describe("LoginPage", () => {
     expect(screen.queryByText("Invalid login credentials")).toBeNull();
     expect(pushMock).not.toHaveBeenCalledWith("/home");
   });
+
+  it("the stable email_not_confirmed error code routes to /check-inbox even if the message wording drifts", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({
+      error: { code: "email_not_confirmed", message: "some future wording" },
+    });
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith(
+        "/check-inbox?email=ada%40example.com"
+      )
+    );
+  });
+
+  it("a thrown network failure shows connection copy, never the bad-credentials copy", async () => {
+    signInWithPasswordMock.mockRejectedValueOnce(new Error("fetch failed"));
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Couldn't reach the server. Check your connection and try again."
+        )
+      ).toBeInTheDocument()
+    );
+    expect(
+      screen.queryByText("That email and password don't match. Try again?")
+    ).toBeNull();
+  });
 });
