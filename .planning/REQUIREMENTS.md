@@ -32,12 +32,12 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign up with email and password; signup always creates a client account
-- [ ] **AUTH-02**: User receives a verification email after signup and lands on a calm single-action "check your inbox" screen
+- [x] **AUTH-01**: User can sign up with email and password; signup always creates a client account
+- [x] **AUTH-02**: User receives a verification email after signup and lands on a calm single-action "check your inbox" screen
 - [ ] **AUTH-03**: User can log in with email and password
 - [ ] **AUTH-04**: User can reset their password via an email link that lands on a single-field "set new password" screen
 - [x] **AUTH-05**: User session persists across browser refresh and restart
-- [ ] **AUTH-06**: User can log out from any authenticated screen
+- [x] **AUTH-06**: User can log out from any authenticated screen
 
 ### Database Foundation
 
@@ -107,12 +107,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | KIT-04 | Phase 1 | Complete |
 | KIT-05 | Phase 1 | Complete |
 | KIT-06 | Phase 1 | Complete |
-| AUTH-01 | Phase 2 | Pending |
-| AUTH-02 | Phase 2 | Pending |
+| AUTH-01 | Phase 2 | Complete |
+| AUTH-02 | Phase 2 | Complete |
 | AUTH-03 | Phase 2 | Pending |
 | AUTH-04 | Phase 2 | Pending |
 | AUTH-05 | Phase 2 | Complete |
-| AUTH-06 | Phase 2 | Pending |
+| AUTH-06 | Phase 2 | Complete |
 | DB-01 | Phase 2 | Complete |
 | DB-02 | Phase 2 | Complete |
 | DB-03 | Phase 2 | Complete |
