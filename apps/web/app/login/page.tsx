@@ -76,7 +76,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            error={passwordError || undefined}
+            notice={passwordError || undefined}
             required
           />
           <Button type="submit" variant="primary" loading={loading}>

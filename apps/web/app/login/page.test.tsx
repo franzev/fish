@@ -123,6 +123,26 @@ describe("LoginPage", () => {
     expect(pushMock).not.toHaveBeenCalledWith("/home");
   });
 
+  it("a bad-credentials error renders in the tier-1 notice treatment, not the tier-2 error treatment", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({
+      error: { message: "Invalid login credentials" },
+    });
+    render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "wrong-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    const message = await screen.findByText(
+      "That email and password don't match. Try again?"
+    );
+    expect(message.className).not.toContain("font-semibold");
+  });
+
   it("the stable email_not_confirmed error code routes to /check-inbox even if the message wording drifts", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
       error: { code: "email_not_confirmed", message: "some future wording" },
