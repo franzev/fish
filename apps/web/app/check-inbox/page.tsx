@@ -58,7 +58,25 @@ function CheckInboxContent() {
         >
           Resend the email
         </Button>
-        {notice && <Alert tone="notice">{notice}</Alert>}
+        {/* Permanently mounted so its height never changes with `notice` —
+            this page is vertically centered (`min-h-dvh items-center
+            justify-center`), so any height delta here amplifies into the
+            WHOLE card jumping up/down, not just this row resizing (the
+            same submit-flicker fixed on /expired-link). Height comes from
+            Alert's own padding/line-height (no hardcoded pixel constant to
+            drift from its styling) via a non-breaking-space placeholder;
+            visibility + aria-hidden hide it without unmounting. Same
+            contract as Button's overlay spinner (01-03) and Input's
+            reserved message row (02-07). aria-live announces the notice
+            once it lands. */}
+        <Alert
+          tone="notice"
+          aria-live="polite"
+          aria-hidden={notice ? undefined : true}
+          className={notice ? undefined : "invisible"}
+        >
+          {notice || " "}
+        </Alert>
       </form>
     </Card>
   );

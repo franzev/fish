@@ -160,4 +160,70 @@ describe("ExpiredLinkPage", () => {
     expect(resetPasswordForEmailMock).toHaveBeenCalledWith("ada@example.com");
     expect(resendMock).not.toHaveBeenCalled();
   });
+
+  it("the notice row is mounted before any submit, hidden rather than absent (layout-stability contract)", () => {
+    const { container } = render(<ExpiredLinkPage />);
+
+    // The row exists in the DOM from first render — it must never mount/
+    // unmount, only toggle visibility, so the centered card never resizes.
+    const noticeRow = container.querySelector('[aria-live="polite"]');
+    expect(noticeRow).not.toBeNull();
+    expect(noticeRow).toHaveClass("invisible");
+    expect(noticeRow).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("showing a notice reveals the same persistent row instead of inserting a new element", async () => {
+    resendMock.mockResolvedValueOnce({ error: null });
+    const { container } = render(<ExpiredLinkPage />);
+
+    const noticeRowBefore = container.querySelector('[aria-live="polite"]');
+    expect(noticeRowBefore).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Sent again. Check your inbox.")
+      ).toBeInTheDocument()
+    );
+
+    const noticeRowAfter = container.querySelector('[aria-live="polite"]');
+    expect(noticeRowAfter).toBe(noticeRowBefore);
+    expect(noticeRowAfter).not.toHaveClass("invisible");
+    expect(noticeRowAfter).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("a previous notice stays visible through the next in-flight request (no mid-flight blink-out)", async () => {
+    // First attempt fails and shows the calm retry notice.
+    resendMock.mockResolvedValueOnce({
+      error: { code: "over_email_send_rate_limit", message: "rate limit" },
+    });
+    render(<ExpiredLinkPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+    await waitFor(() =>
+      expect(
+        screen.getByText("That didn't send — give it a minute and try again.")
+      ).toBeInTheDocument()
+    );
+
+    // Second attempt: while it is in flight the PREVIOUS notice must still
+    // be on screen (no setNotice("") blank-out), only replaced once this
+    // attempt resolves.
+    let resolveSecond!: (value: { error: null }) => void;
+    resendMock.mockImplementationOnce(
+      () => new Promise((resolve) => (resolveSecond = resolve))
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    expect(
+      screen.getByText("That didn't send — give it a minute and try again.")
+    ).toBeInTheDocument();
+
+    resolveSecond({ error: null });
+    await waitFor(() =>
+      expect(
+        screen.getByText("Sent again. Check your inbox.")
+      ).toBeInTheDocument()
+    );
+  });
 });

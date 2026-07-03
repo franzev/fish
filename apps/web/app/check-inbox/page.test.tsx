@@ -120,4 +120,36 @@ describe("CheckInboxPage", () => {
       email: "ada@example.com",
     });
   });
+
+  it("the notice row is mounted before any submit, hidden rather than absent (layout-stability contract)", () => {
+    const { container } = render(<CheckInboxPage />);
+
+    // The row exists in the DOM from first render — it must never mount/
+    // unmount, only toggle visibility, so the centered card never resizes.
+    const noticeRow = container.querySelector('[aria-live="polite"]');
+    expect(noticeRow).not.toBeNull();
+    expect(noticeRow).toHaveClass("invisible");
+    expect(noticeRow).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("showing a notice reveals the same persistent row instead of inserting a new element", async () => {
+    resendMock.mockResolvedValueOnce({ error: null });
+    const { container } = render(<CheckInboxPage />);
+
+    const noticeRowBefore = container.querySelector('[aria-live="polite"]');
+    expect(noticeRowBefore).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Sent again. Check your inbox.")
+      ).toBeInTheDocument()
+    );
+
+    const noticeRowAfter = container.querySelector('[aria-live="polite"]');
+    expect(noticeRowAfter).toBe(noticeRowBefore);
+    expect(noticeRowAfter).not.toHaveClass("invisible");
+    expect(noticeRowAfter).not.toHaveAttribute("aria-hidden");
+  });
 });

@@ -28,7 +28,11 @@ function ExpiredLinkContent() {
       setNotice("Add your email above, then resend.");
       return;
     }
-    setNotice("");
+    // Do NOT clear the notice here (no `setNotice("")`) — the notice row is
+    // now permanently mounted (layout-stability contract, see below), so
+    // blanking it mid-flight would hide-then-show the row and cause the
+    // exact card jump this fix removes. The previous notice simply stays
+    // visible until this attempt resolves and replaces it.
     setLoading(true);
     try {
       const supabase = createClient();
@@ -68,7 +72,24 @@ function ExpiredLinkContent() {
         <Button type="submit" variant="primary" loading={loading}>
           Resend the email
         </Button>
-        {notice && <Alert tone="notice">{notice}</Alert>}
+        {/* Permanently mounted so its height never changes with `notice` —
+            this page is vertically centered (`min-h-dvh items-center
+            justify-center`), so any height delta here amplifies into the
+            WHOLE card jumping up/down, not just this row resizing (the
+            reported submit-flicker). Height comes from Alert's own
+            padding/line-height (no hardcoded pixel constant to drift from
+            its styling) via a non-breaking-space placeholder; visibility +
+            aria-hidden hide it without unmounting. Same contract as
+            Button's overlay spinner (01-03) and Input's reserved message
+            row (02-07). aria-live announces the notice once it lands. */}
+        <Alert
+          tone="notice"
+          aria-live="polite"
+          aria-hidden={notice ? undefined : true}
+          className={notice ? undefined : "invisible"}
+        >
+          {notice || " "}
+        </Alert>
       </form>
     </Card>
   );
