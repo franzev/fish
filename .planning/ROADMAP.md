@@ -52,7 +52,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   4. Role is stored and enforced server-side — an authenticated user cannot escalate themselves to coach — and RLS on every table lets a client read only their own data while a coach reads only their own assigned clients.
 **Plans**: 5 plans (4 waves)
 - [x] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy at apps/web root), proxy.ts session refresh, local [auth] config (keys verified vs generated schema), authRedirects.home
-- [ ] 02-02-PLAN.md — DB schema in 5 ordered migrations (profiles → trigger → coach_clients+role-integrity → is_coach_of helper+policies → role guard; helper created after the table it references), RLS via SECURITY DEFINER helper (caller-role-checked), safe-field UPDATE policy so the guard is exercised, schema push + types split into database.generated.ts
+- [x] 02-02-PLAN.md — DB schema in 5 ordered migrations (profiles → trigger → coach_clients+role-integrity → is_coach_of helper+policies → role guard; helper created after the table it references), RLS via SECURITY DEFINER helper (caller-role-checked), safe-field UPDATE policy so the guard is exercised, schema push + types split into database.generated.ts
 - [ ] 02-03-PLAN.md — Idempotent (pagination-safe) TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, scripted anon-session RLS/escalation verification (verify-rls.ts), D-14 deploy checklist
 - [ ] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home (redirects signed-out visitors to /login) + logout, type-aware expired-link screen, Suspense-wrapped search-param screens, FISH-voice confirmation email
 - [ ] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery via template-hardcoded next=/reset-password (Mailpit URL verified) → set-new-password → /home, FISH-voice recovery email
@@ -75,7 +75,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
-| 2. Secure account you can return to | 1/5 | In Progress|  |
+| 2. Secure account you can return to | 2/5 | In Progress|  |
 | 3. Role-aware home | 0/? | Not started | - |
 
 ## Coverage
