@@ -105,6 +105,18 @@ describe("Button", () => {
     rerender(<Button disabled>Go</Button>);
     expect(getByRole("button").className).not.toContain("pointer-events-none");
   });
+
+  it("attaches no onClick handler when the consumer passes none, even while loading (RSC safety)", () => {
+    // Button is used from Server Components with no onClick (e.g. the /
+    // and /kit demo pages). Always attaching a wrapped handler — even to
+    // guard a click that has no consumer callback to guard — would put a
+    // function prop on the rendered element and break RSC serialization
+    // ("Event handlers cannot be passed to Client Component props").
+    const { getByRole, rerender } = render(<Button>Go</Button>);
+    expect(getByRole("button").onclick).toBeNull();
+    rerender(<Button loading>Go</Button>);
+    expect(getByRole("button").onclick).toBeNull();
+  });
 });
 
 /* Layout stability: no Button state change may alter its rendered size.

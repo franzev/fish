@@ -44,6 +44,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // instead. Neither state relies on `pointer-events-none` any more —
     // that class swallows the element's OWN cursor, which is exactly what
     // stopped cursor-progress/cursor-not-allowed from ever rendering.
+    //
+    // The guard only matters when there is a consumer onClick to guard —
+    // with none, the handler is a no-op and must not be attached at all.
+    // Button renders inside Server Components with no onClick (e.g. the
+    // / and /kit demo pages, including `<Button loading>` there), and
+    // attaching any function prop in that case breaks RSC serialization
+    // ("Event handlers cannot be passed to Client Component props") even
+    // though Button itself is a client component.
     function handleClick(event: MouseEvent<HTMLButtonElement>) {
       if (loading) {
         event.preventDefault();
@@ -56,7 +64,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         aria-busy={loading || undefined}
-        onClick={handleClick}
+        onClick={onClick ? handleClick : undefined}
         className={cn(
           // Layout stability: no state change may alter the rendered size.
           // relative anchors the loading overlay; a constant (transparent)
