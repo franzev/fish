@@ -21,11 +21,10 @@ describe("CheckInboxPage", () => {
     searchParamsValue = new URLSearchParams({ email: "ada@example.com" });
   });
 
-  it("contains useSearchParams, a Suspense wrapper, and an Alert with tone=notice (source gate)", () => {
+  it("contains useSearchParams and a Suspense wrapper (source gate)", () => {
     const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     expect(source).toContain("useSearchParams");
     expect(source).toContain("Suspense");
-    expect(source).toContain('tone="notice"');
   });
 
   it("renders the 'Check your inbox' heading", () => {
@@ -58,9 +57,9 @@ describe("CheckInboxPage", () => {
     expect(primaryButtons[0]).toHaveTextContent("Resend the email");
   });
 
-  it("after a successful resend shows an Alert tone=notice, never navigating away", async () => {
+  it("after a successful resend shows a success-tone Alert, never navigating away", async () => {
     resendMock.mockResolvedValueOnce({ error: null });
-    render(<CheckInboxPage />);
+    const { container } = render(<CheckInboxPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
@@ -75,13 +74,16 @@ describe("CheckInboxPage", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Check your inbox")).toBeInTheDocument();
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox?.className).toContain("border-success");
+    expect(alertBox?.className).toContain("animate-fade-in");
   });
 
-  it("a failed resend (e.g. rate limit) shows a calm notice instead of false success", async () => {
+  it("a failed resend (e.g. rate limit) shows a calm warning-tone notice instead of false success", async () => {
     resendMock.mockResolvedValueOnce({
       error: { code: "over_email_send_rate_limit", message: "rate limit" },
     });
-    render(<CheckInboxPage />);
+    const { container } = render(<CheckInboxPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
@@ -91,6 +93,8 @@ describe("CheckInboxPage", () => {
       ).toBeInTheDocument()
     );
     expect(screen.queryByText("Sent again. Check your inbox.")).toBeNull();
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox?.className).toContain("border-warning");
   });
 
   it("with no ?email= param the resend button is disabled and the copy stays generic", () => {
@@ -121,23 +125,28 @@ describe("CheckInboxPage", () => {
     });
   });
 
-  it("the notice row is mounted before any submit, hidden rather than absent (layout-stability contract)", () => {
+  it("the live region is mounted before any submit, with no alert inside until there is something to say (overlay contract)", () => {
     const { container } = render(<CheckInboxPage />);
 
-    // The row exists in the DOM from first render — it must never mount/
-    // unmount, only toggle visibility, so the centered card never resizes.
-    const noticeRow = container.querySelector('[aria-live="polite"]');
-    expect(noticeRow).not.toBeNull();
-    expect(noticeRow).toHaveClass("invisible");
-    expect(noticeRow).toHaveAttribute("aria-hidden", "true");
+    // The aria-live region exists from first render (so announcements are
+    // never missed), but the Alert itself is NOT mounted until a notice
+    // exists — the overlay is out of document flow, so the card never
+    // resizes whether or not an alert is showing.
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    expect(liveRegion?.querySelector("div")).toBeNull();
   });
 
-  it("showing a notice reveals the same persistent row instead of inserting a new element", async () => {
+  it("the card wrapper stays relative and the notice overlay is positioned out of flow above it, and fades in", async () => {
     resendMock.mockResolvedValueOnce({ error: null });
     const { container } = render(<CheckInboxPage />);
 
-    const noticeRowBefore = container.querySelector('[aria-live="polite"]');
-    expect(noticeRowBefore).not.toBeNull();
+    const card = container.querySelector(".relative");
+    expect(card).not.toBeNull();
+
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    expect(liveRegion?.className).toContain("absolute");
+    expect(liveRegion?.className).toContain("bottom-full");
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
@@ -147,9 +156,7 @@ describe("CheckInboxPage", () => {
       ).toBeInTheDocument()
     );
 
-    const noticeRowAfter = container.querySelector('[aria-live="polite"]');
-    expect(noticeRowAfter).toBe(noticeRowBefore);
-    expect(noticeRowAfter).not.toHaveClass("invisible");
-    expect(noticeRowAfter).not.toHaveAttribute("aria-hidden");
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox?.className).toContain("animate-fade-in");
   });
 });

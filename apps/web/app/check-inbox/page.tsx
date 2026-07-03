@@ -15,6 +15,7 @@ function CheckInboxContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const [notice, setNotice] = useState("");
+  const [resultTone, setResultTone] = useState<"warning" | "success">("success");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -22,19 +23,20 @@ function CheckInboxContent() {
     // Belt and braces — the button is disabled without an email, so never
     // call the API with "".
     if (!email) return;
-    setNotice("");
     setLoading(true);
     try {
       const supabase = createClient();
       // supabase-js returns failures as { error } (rate limits included) —
       // never promise "sent" when nothing was sent.
       const { error } = await supabase.auth.resend({ type: "signup", email });
+      setResultTone(error ? "warning" : "success");
       setNotice(
         error
           ? "That didn't send — give it a minute and try again."
           : "Sent again. Check your inbox."
       );
     } catch {
+      setResultTone("warning");
       setNotice("That didn't send — give it a minute and try again.");
     } finally {
       setLoading(false);
@@ -42,7 +44,11 @@ function CheckInboxContent() {
   }
 
   return (
-    <Card className="w-full max-w-[440px]">
+    // relative so the notice overlay below can anchor to THIS card's edge
+    // without affecting its own box — the card stays exactly where flex
+    // centering puts it in every state (D-08: floating overlay, not an
+    // in-flow row).
+    <Card className="relative w-full max-w-[440px]">
       <h2 className="text-xl">Check your inbox</h2>
       <p className="mt-3 text-body">
         {email
@@ -58,26 +64,27 @@ function CheckInboxContent() {
         >
           Resend the email
         </Button>
-        {/* Permanently mounted so its height never changes with `notice` —
-            this page is vertically centered (`min-h-dvh items-center
-            justify-center`), so any height delta here amplifies into the
-            WHOLE card jumping up/down, not just this row resizing (the
-            same submit-flicker fixed on /expired-link). Height comes from
-            Alert's own padding/line-height (no hardcoded pixel constant to
-            drift from its styling) via a non-breaking-space placeholder;
-            visibility + aria-hidden hide it without unmounting. Same
-            contract as Button's overlay spinner (01-03) and Input's
-            reserved message row (02-07). aria-live announces the notice
-            once it lands. */}
-        <Alert
-          tone="notice"
-          aria-live="polite"
-          aria-hidden={notice ? undefined : true}
-          className={notice ? undefined : "invisible"}
-        >
-          {notice || " "}
-        </Alert>
       </form>
+      {/* Always-mounted live region so aria-live announces the notice the
+          moment it lands; the Alert itself only mounts once there is
+          something to say. Positioned OUT of document flow (absolute,
+          anchored above the card's top edge) so appearing/disappearing
+          never changes the card's own box — the centered card never
+          moves (D-08, supersedes the reserved-row approach from the
+          previous fix). */}
+      <div
+        aria-live="polite"
+        className="pointer-events-none absolute inset-x-0 bottom-full mb-4"
+      >
+        {notice && (
+          <Alert
+            tone={resultTone}
+            className="pointer-events-auto animate-fade-in"
+          >
+            {notice}
+          </Alert>
+        )}
+      </div>
     </Card>
   );
 }

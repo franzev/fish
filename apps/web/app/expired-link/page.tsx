@@ -11,12 +11,15 @@ import { FormEvent, Suspense, useState } from "react";
 /* Shared by verify AND reset expired/used links (D-06). Reads ?email= and
    ?type= via useSearchParams(), so this must sit under a page-level
    Suspense boundary or `next build` fails. This is a routing state, never
-   a failure — Alert stays tone="notice", never "error". */
+   a failure — the empty-email guard stays tone="notice", never "error". */
 function ExpiredLinkContent() {
   const searchParams = useSearchParams();
   const type = searchParams.get("type") === "recovery" ? "recovery" : "signup";
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [notice, setNotice] = useState("");
+  const [resultTone, setResultTone] = useState<"notice" | "warning" | "success">(
+    "notice"
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -25,14 +28,13 @@ function ExpiredLinkContent() {
     // so jsdom/programmatic submits (and any bypass) still show the calm
     // ask instead of firing the request with an empty address.
     if (!email) {
+      setResultTone("notice");
       setNotice("Add your email above, then resend.");
       return;
     }
-    // Do NOT clear the notice here (no `setNotice("")`) — the notice row is
-    // now permanently mounted (layout-stability contract, see below), so
-    // blanking it mid-flight would hide-then-show the row and cause the
-    // exact card jump this fix removes. The previous notice simply stays
-    // visible until this attempt resolves and replaces it.
+    // Do NOT clear the notice here (no `setNotice("")`) — a previous notice
+    // stays on screen until this attempt resolves and replaces it, so the
+    // overlay never blinks out and back in mid-flight.
     setLoading(true);
     try {
       const supabase = createClient();
@@ -42,12 +44,14 @@ function ExpiredLinkContent() {
         type === "recovery"
           ? await supabase.auth.resetPasswordForEmail(email)
           : await supabase.auth.resend({ type: "signup", email });
+      setResultTone(error ? "warning" : "success");
       setNotice(
         error
           ? "That didn't send — give it a minute and try again."
           : "Sent again. Check your inbox."
       );
     } catch {
+      setResultTone("warning");
       setNotice("That didn't send — give it a minute and try again.");
     } finally {
       setLoading(false);
@@ -55,7 +59,11 @@ function ExpiredLinkContent() {
   }
 
   return (
-    <Card className="w-full max-w-[440px]">
+    // relative so the notice overlay below can anchor to THIS card's edge
+    // without affecting its own box — the card stays exactly where flex
+    // centering puts it in every state (D-08: floating overlay, not an
+    // in-flow row).
+    <Card className="relative w-full max-w-[440px]">
       <h2 className="text-xl">That link has expired</h2>
       <p className="mt-3 text-body">
         Links only work once, and this one&apos;s had its turn. Send
@@ -72,25 +80,27 @@ function ExpiredLinkContent() {
         <Button type="submit" variant="primary" loading={loading}>
           Resend the email
         </Button>
-        {/* Permanently mounted so its height never changes with `notice` —
-            this page is vertically centered (`min-h-dvh items-center
-            justify-center`), so any height delta here amplifies into the
-            WHOLE card jumping up/down, not just this row resizing (the
-            reported submit-flicker). Height comes from Alert's own
-            padding/line-height (no hardcoded pixel constant to drift from
-            its styling) via a non-breaking-space placeholder; visibility +
-            aria-hidden hide it without unmounting. Same contract as
-            Button's overlay spinner (01-03) and Input's reserved message
-            row (02-07). aria-live announces the notice once it lands. */}
-        <Alert
-          tone="notice"
-          aria-live="polite"
-          aria-hidden={notice ? undefined : true}
-          className={notice ? undefined : "invisible"}
-        >
-          {notice || " "}
-        </Alert>
       </form>
+      {/* Always-mounted live region so aria-live announces the notice the
+          moment it lands; the Alert itself only mounts once there is
+          something to say. Positioned OUT of document flow (absolute,
+          anchored above the card's top edge) so appearing/disappearing
+          never changes the card's own box — the centered card never
+          moves (D-08, supersedes the reserved-row approach from the
+          previous fix). */}
+      <div
+        aria-live="polite"
+        className="pointer-events-none absolute inset-x-0 bottom-full mb-4"
+      >
+        {notice && (
+          <Alert
+            tone={resultTone}
+            className="pointer-events-auto animate-fade-in"
+          >
+            {notice}
+          </Alert>
+        )}
+      </div>
     </Card>
   );
 }

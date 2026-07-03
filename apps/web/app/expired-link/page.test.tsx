@@ -88,11 +88,11 @@ describe("ExpiredLinkPage", () => {
     expect(resendMock).not.toHaveBeenCalled();
   });
 
-  it("a failed resend (e.g. rate limit) shows a calm notice instead of false success", async () => {
+  it("a failed resend (e.g. rate limit) shows a calm warning-tone notice instead of false success", async () => {
     resendMock.mockResolvedValueOnce({
       error: { code: "over_email_send_rate_limit", message: "rate limit" },
     });
-    render(<ExpiredLinkPage />);
+    const { container } = render(<ExpiredLinkPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
@@ -102,6 +102,25 @@ describe("ExpiredLinkPage", () => {
       ).toBeInTheDocument()
     );
     expect(screen.queryByText("Sent again. Check your inbox.")).toBeNull();
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox).not.toBeNull();
+    expect(alertBox?.className).toContain("border-warning");
+  });
+
+  it("a successful resend shows a success-tone notice", async () => {
+    resendMock.mockResolvedValueOnce({ error: null });
+    const { container } = render(<ExpiredLinkPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Sent again. Check your inbox.")
+      ).toBeInTheDocument()
+    );
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox).not.toBeNull();
+    expect(alertBox?.className).toContain("border-success");
   });
 
   it("an empty email never fires the request and asks for the email instead", () => {
@@ -123,6 +142,10 @@ describe("ExpiredLinkPage", () => {
     expect(
       screen.getByText("Add your email above, then resend.")
     ).toBeInTheDocument();
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox?.className).toContain("border-border-strong");
+    expect(alertBox?.className).not.toContain("border-warning");
+    expect(alertBox?.className).not.toContain("border-success");
   });
 
   it("pressing Enter in the email field submits the resend (keyboard submit, not just click)", async () => {
@@ -161,23 +184,28 @@ describe("ExpiredLinkPage", () => {
     expect(resendMock).not.toHaveBeenCalled();
   });
 
-  it("the notice row is mounted before any submit, hidden rather than absent (layout-stability contract)", () => {
+  it("the live region is mounted before any submit, with no alert inside until there is something to say (overlay contract)", () => {
     const { container } = render(<ExpiredLinkPage />);
 
-    // The row exists in the DOM from first render — it must never mount/
-    // unmount, only toggle visibility, so the centered card never resizes.
-    const noticeRow = container.querySelector('[aria-live="polite"]');
-    expect(noticeRow).not.toBeNull();
-    expect(noticeRow).toHaveClass("invisible");
-    expect(noticeRow).toHaveAttribute("aria-hidden", "true");
+    // The aria-live region exists from first render (so announcements are
+    // never missed), but the Alert itself is NOT mounted until a notice
+    // exists — the overlay is out of document flow, so the card never
+    // resizes whether or not an alert is showing.
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    expect(liveRegion?.querySelector("div")).toBeNull();
   });
 
-  it("showing a notice reveals the same persistent row instead of inserting a new element", async () => {
+  it("the card wrapper stays relative and the notice overlay is positioned out of flow above it, and fades in", async () => {
     resendMock.mockResolvedValueOnce({ error: null });
     const { container } = render(<ExpiredLinkPage />);
 
-    const noticeRowBefore = container.querySelector('[aria-live="polite"]');
-    expect(noticeRowBefore).not.toBeNull();
+    const card = container.querySelector(".relative");
+    expect(card).not.toBeNull();
+
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    expect(liveRegion?.className).toContain("absolute");
+    expect(liveRegion?.className).toContain("bottom-full");
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
@@ -187,10 +215,8 @@ describe("ExpiredLinkPage", () => {
       ).toBeInTheDocument()
     );
 
-    const noticeRowAfter = container.querySelector('[aria-live="polite"]');
-    expect(noticeRowAfter).toBe(noticeRowBefore);
-    expect(noticeRowAfter).not.toHaveClass("invisible");
-    expect(noticeRowAfter).not.toHaveAttribute("aria-hidden");
+    const alertBox = container.querySelector('[aria-live="polite"] > div');
+    expect(alertBox?.className).toContain("animate-fade-in");
   });
 
   it("a previous notice stays visible through the next in-flight request (no mid-flight blink-out)", async () => {
