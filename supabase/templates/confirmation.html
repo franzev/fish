@@ -3,7 +3,11 @@
      single-column layout, one clear action link, expiry stated as fact
      not threat. Points at /auth/confirm with token_hash — the explicit
      server-verifiable flow, not the implicit-flow default template
-     variable (Pitfall 6 — fragment tokens are unreadable server-side). -->
+     variable (Pitfall 6 — fragment tokens are unreadable server-side).
+     Pure monochrome: hex values mirror the dark-theme token ladder in
+     globals.css (email HTML can't use CSS tokens) — zero chroma anywhere;
+     the action button is near-white on near-black, mirroring dark-theme
+     primary. -->
 <html lang="en">
   <body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
@@ -12,7 +16,7 @@
           <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="max-width:440px;width:100%;">
             <tr>
               <td style="padding-bottom:24px;">
-                <p style="margin:0;font-size:14px;letter-spacing:0.1em;text-transform:uppercase;color:#a3e635;">FISH</p>
+                <p style="margin:0;font-size:14px;letter-spacing:0.1em;text-transform:uppercase;color:#a1a1a1;">FISH</p>
               </td>
             </tr>
             <tr>
@@ -23,7 +27,7 @@
                 </p>
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="border-radius:12px;background-color:#a3e635;">
+                    <td style="border-radius:12px;background-color:#fafafa;">
                       <a
                         href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
                         style="display:inline-block;padding:16px 24px;font-size:17px;font-weight:600;color:#0a0a0a;text-decoration:none;"
