@@ -10,6 +10,23 @@ describe("Input", () => {
     );
   });
 
+  it("always renders the message row, even with no hint/notice/error (layout-stability contract)", () => {
+    const { container } = render(<Input label="Email" />);
+    // The reserved row is a sibling of the field, present whether or not a
+    // message is shown — its mount/unmount never toggles.
+    const field = container.querySelector("input");
+    const reservedRow = field?.nextElementSibling;
+    expect(reservedRow).not.toBeNull();
+    expect(reservedRow?.textContent).toBe("");
+  });
+
+  it("the message row reserves a constant min-height regardless of message presence", () => {
+    const { container } = render(<Input label="Email" />);
+    const field = container.querySelector("input");
+    const reservedRow = field?.nextElementSibling as HTMLElement;
+    expect(reservedRow.className).toMatch(/min-h-\[/);
+  });
+
   it("notice tier: field carries border-border-strong, message is regular weight with an info icon", () => {
     const { getByLabelText, getByText, container } = render(
       <Input

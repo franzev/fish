@@ -41,21 +41,27 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           {...props}
         />
-        {hint && !notice && !error && (
-          <p className="mt-2 text-[14px] text-muted">{hint}</p>
-        )}
-        {!error && notice && (
-          <p className="mt-2 flex items-center gap-1.5 text-[14px] text-notice">
-            <IconInfoCircle size={20} stroke={1.75} aria-hidden="true" className="shrink-0" />
-            {notice}
-          </p>
-        )}
-        {error && (
-          <p className="mt-2 flex items-center gap-1.5 text-[14px] font-semibold text-error">
-            <IconAlertCircle size={20} stroke={2} aria-hidden="true" className="shrink-0" />
-            {error}
-          </p>
-        )}
+        {/* Reserved so showing/hiding a message changes text, not geometry —
+            Input's analogue of Button's overlay spinner. Always mounted at a
+            constant min-height so hint/notice/error never resize the layout
+            around this field. */}
+        <div className="mt-2 min-h-[22px]">
+          {hint && !notice && !error && (
+            <p className="text-[14px] text-muted">{hint}</p>
+          )}
+          {!error && notice && (
+            <p className="flex items-center gap-1.5 text-[14px] text-notice">
+              <IconInfoCircle size={20} stroke={1.75} aria-hidden="true" className="shrink-0" />
+              {notice}
+            </p>
+          )}
+          {error && (
+            <p className="flex items-center gap-1.5 text-[14px] font-semibold text-error">
+              <IconAlertCircle size={20} stroke={2} aria-hidden="true" className="shrink-0" />
+              {error}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
