@@ -69,7 +69,7 @@ function ExpiredLinkContent() {
         Links only work once, and this one&apos;s had its turn. Send
         yourself a fresh one.
       </p>
-      <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+      <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
         <Input
           label="Email"
           type="email"

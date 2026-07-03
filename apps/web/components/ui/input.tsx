@@ -44,8 +44,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {/* Reserved so showing/hiding a message changes text, not geometry —
             Input's analogue of Button's overlay spinner. Always mounted at a
             constant min-height so hint/notice/error never resize the layout
-            around this field. */}
-        <div className="mt-2 min-h-[22px]">
+            around this field. min-h-[22px] is the floor for the tallest
+            message (20px icon + 14px text at default line-height, flex
+            items-center, ≈21px content) — do not shrink below that or the
+            row will grow when a message appears. mt-1 (not mt-2) avoids
+            double-counting with the form's own space-y-1 gap below. */}
+        <div className="mt-1 min-h-[22px]">
           {hint && !notice && !error && (
             <p className="text-[14px] text-muted">{hint}</p>
           )}

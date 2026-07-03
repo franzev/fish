@@ -55,7 +55,7 @@ function CheckInboxContent() {
           ? `We sent a link to ${email}. Open it on this device to continue.`
           : "We sent you a link. Open it on this device to continue."}
       </p>
-      <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+      <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
         <Button
           type="submit"
           variant="primary"

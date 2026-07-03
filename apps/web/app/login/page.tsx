@@ -63,7 +63,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
       <Card className="w-full max-w-[440px]">
         <h2 className="text-xl">Log in</h2>
-        <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+        <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
           <Input
             label="Email"
             type="email"
