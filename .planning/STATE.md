@@ -2,35 +2,35 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 02 complete (5/5) — ready to discuss Phase 3
-last_updated: 2026-07-03T02:59:02.047Z
+status: executing
+stopped_at: Phase 02 plan 06 complete — UAT test 3 blocker resolved (localhost host alignment); UAT tests 4-13 pending
+last_updated: "2026-07-03T13:55:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 9
-  completed_plans: 9
-  percent: 33
+  completed_phases: 2
+  total_plans: 10
+  completed_plans: 10
+  percent: 67
 ---
 
 # Project State: FISH — Monochrome Foundations
 
-**Last updated:** 2026-07-02
+**Last updated:** 2026-07-03
 
 ## Project Reference
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Current milestone:** Monochrome Foundations (design system + auth foundation)
-- **Current focus:** Phase 3 — role aware home
+- **Current focus:** Phase 02 — secure-account-you-can-return-to (gap-closure plan 02-06 complete; UAT resuming at test 4)
 
 ## Current Position
 
-Phase: 02 (secure-account-you-can-return-to) — EXECUTING
-Plan: 1 of 5
+Phase: 02 (secure-account-you-can-return-to) — gap-closure plan 02-06 complete
+Plan: 6 of 6
 
-- **Phase:** 3
-- **Plan:** Not started
-- **Status:** Ready to plan
+- **Phase:** 02
+- **Plan:** 06 complete
+- **Status:** UAT test 3 blocker resolved; UAT tests 4-13 pending before phase 02 can be verified complete
 - **Progress:** [█████████-] 10/11 must-haves verified
 
 ## Roadmap Snapshot
@@ -74,6 +74,7 @@ Plan: 1 of 5
 - 01-02: Input's disabled field reuses `disabled:opacity-50`, matching Button's existing disabled treatment, for a consistent calm/dim disabled language across the kit.
 - 01-03: Theme overrides must be stylesheet `color-scheme` rules (`data-kit-theme` attribute on html), never inline `style.colorScheme` — Lightning CSS downlevels `light-dark()` into a prefers-color-scheme variable polyfill that only build-time-visible `color-scheme` declarations can flip. Verify theme work against the *served* CSS, not the authored CSS.
 - 01-03: Layout-stability contract — no control changes size on state change: loading overlays an absolutely-centered spinner over the still-mounted `opacity-0` label, Button variants share a constant border width, and active states signal with color only (never a font-weight flip).
+- 02-06: `supabase/config.toml` `site_url`/`additional_redirect_urls` must be `http://localhost:3001`, not `http://127.0.0.1:3001` — Supabase session cookies are host-scoped, and Next.js's post-verify redirect lands the browser on `localhost` regardless of the incoming request host, so a `127.0.0.1` link plants a cookie the browser never sees again. Pin the dev port explicitly (`next dev -p 3001`) AND match the host the browser actually navigates on.
 
 ### Sequencing constraints (from research)
 
@@ -106,11 +107,11 @@ Plan: 1 of 5
 
 ## Session Continuity
 
-- **Last session:** 2026-07-02T22:05:44.775Z
-- **Stopped at:** Phase 2 UI-SPEC approved
-- **Resume file:** .planning/phases/02-secure-account-you-can-return-to/02-UI-SPEC.md
-- **Next action:** `/gsd:verify-work 1` to verify the phase, then `/gsd:plan-phase 2`.
-- **Files:** `.planning/phases/01-monochrome-design-system-you-can-see/01-03-SUMMARY.md`, `.planning/ROADMAP.md`, `.planning/REQUIREMENTS.md`.
+- **Last session:** 2026-07-03T13:55:00.000Z
+- **Stopped at:** Phase 02 plan 06 (gap closure) complete — UAT test 3 blocker resolved
+- **Resume file:** .planning/phases/02-secure-account-you-can-return-to/02-UAT.md
+- **Next action:** Resume UAT at test 4 (Stay Signed In Across a Browser Restart) through test 13 (coverage), then verify phase 02 complete.
+- **Files:** `.planning/phases/02-secure-account-you-can-return-to/02-06-SUMMARY.md`, `.planning/phases/02-secure-account-you-can-return-to/02-UAT.md`, `.planning/debug/resolved/verify-email-link-500.md`, `.planning/ROADMAP.md`.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation.*

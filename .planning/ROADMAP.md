@@ -56,7 +56,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 - [x] 02-03-PLAN.md — Idempotent (pagination-safe) TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, scripted anon-session RLS/escalation verification (verify-rls.ts), D-14 deploy checklist
 - [x] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home (redirects signed-out visitors to /login) + logout, type-aware expired-link screen, Suspense-wrapped search-param screens, FISH-voice confirmation email
 - [x] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery via template-hardcoded next=/reset-password (Mailpit URL verified) → set-new-password → /home, FISH-voice recovery email
-- [ ] 02-06-PLAN.md — Gap closure (UAT test 3 blocker): pin the FISH web dev port (next dev -p 3001) and align supabase site_url + additional_redirect_urls to :3001 so the {{ .SiteURL }} email link hits FISH, not a foreign app on :3000; stack restart + fresh-signup re-verify
+- [x] 02-06-PLAN.md — Gap closure (UAT test 3 blocker): pin the FISH web dev port (next dev -p 3001) and align supabase site_url + additional_redirect_urls to :3001 so the {{ .SiteURL }} email link hits FISH, not a foreign app on :3000; stack restart + fresh-signup re-verify
 
 ### Phase 3: Role-aware home
 **Goal**: After logging in, a person lands inside a calm app shell on the home that matches their role — a client on the client home, a coach on the coach home listing only their assigned clients — with signed-out users always redirected to login and empty states that guide rather than alarm.
@@ -76,7 +76,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
-| 2. Secure account you can return to | 5/5 | Complete   | 2026-07-03 |
+| 2. Secure account you can return to | 6/6 | Complete   | 2026-07-03 |
 | 3. Role-aware home | 0/? | Not started | - |
 
 ## Coverage

@@ -3,7 +3,7 @@ status: diagnosed
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
-updated: 2026-07-03T03:35:00Z
+updated: 2026-07-03T13:55:00Z
 mode: mvp
 user_story: "As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me."
 ---
@@ -11,7 +11,7 @@ user_story: "As a new client, I want to sign up, verify my email, log in, stay l
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-[testing halted — user-flow step 3 failed; MVP mode: fix the flow before re-running. Tests 4-13 remain pending.]
+[test 3 blocker resolved via gap-closure plan 02-06 — resuming user-flow walk-through at test 4]
 
 ## Tests
 
@@ -29,9 +29,8 @@ section: user-flow
 
 ### 3. Verify by Email
 expected: Open Mailpit at http://127.0.0.1:54324. A FISH-voice, pure-monochrome verification email is there (no lime, no color). Click its action link. You end up signed in at /home, which greets you calmly with a single Log out action.
-result: issue
-reported: "internal server error upon clicking the link"
-severity: blocker
+result: pass
+note: "fresh signup on localhost:3001 landed signed in at /home after gap-closure plan 02-06; verified by user 2026-07-03"
 section: user-flow
 
 ### 4. Stay Signed In Across a Browser Restart
@@ -91,8 +90,8 @@ section: coverage
 ## Summary
 
 total: 13
-passed: 2
-issues: 1
+passed: 3
+issues: 0
 pending: 10
 skipped: 0
 blocked: 0
@@ -100,7 +99,7 @@ blocked: 0
 ## Gaps
 
 - truth: "Clicking the verification email link signs the user in and lands them at /home"
-  status: failed
+  status: resolved
   reason: "User reported: internal server error upon clicking the link"
   severity: blocker
   test: 3
@@ -113,5 +112,5 @@ blocked: 0
   missing:
     - "Deterministic agreement between the FISH dev port and site_url: pin the dev port explicitly in the dev script (no silent Next port fallback) and point site_url + additional_redirect_urls at that port"
     - "Supabase stack restart after the config change (config.toml is read at stack start)"
-  debug_session: ".planning/debug/verify-email-link-500.md"
-  note: "Diagnosis consumed the pending token and verified the test account — re-run test 3 with a FRESH signup; the old link will now correctly land on /expired-link."
+  debug_session: ".planning/debug/resolved/verify-email-link-500.md"
+  note: "Resolved by gap-closure plan 02-06: pinned dev port to 3001 AND aligned site_url host to localhost (cookies are host-scoped — a 127.0.0.1 link left the session invisible on localhost). Fresh signup verified signed in at /home by user 2026-07-03."
