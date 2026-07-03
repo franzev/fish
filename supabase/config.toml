@@ -9,6 +9,9 @@ minimum_password_length = 8
 [auth.email]
 # Verification required before sign-in (AUTH-02).
 enable_confirmations = true
+# Both email templates state "expires in 24 hours" as fact — pin the OTP
+# expiry to match (default is 3600s, which would make the copy wrong by 24x).
+otp_expiry = 86400
 
 # FISH-voice templates authored in plans 04/05; paths registered now so a
 # single `supabase start`/`db reset` picks them up.

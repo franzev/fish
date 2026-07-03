@@ -62,6 +62,11 @@ is done.
       actually shows, not what a tutorial claims the key is called.
 - [ ] Confirm email confirmations are required on signup (the hosted equivalent of the local
       `enable_confirmations = true` under `[auth.email]`).
+- [ ] Set the hosted email OTP expiry to 86400 seconds (24 hours), matching the local
+      `otp_expiry = 86400` under `[auth.email]`. Both email templates state "expires in
+      24 hours" as fact — if the hosted project keeps the 1-hour default, that copy is wrong.
+      Note: the hosted security advisor flags expiries above 1 hour; if that trade-off is
+      rejected later, shorten the expiry AND update the copy in both templates together.
 
 ## 7. Email sending: built-in sender now, custom SMTP later
 
