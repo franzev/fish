@@ -12,7 +12,17 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/home"; // D-08: land signed-in at /home
+  // D-08: land signed-in at /home. Only same-origin relative paths are
+  // honored — `new URL(next, base)` would let an absolute ("https://evil"),
+  // protocol-relative ("//evil"), or backslash ("/\evil") value override the
+  // base and turn a legitimate confirmation link into an open redirect.
+  const rawNext = searchParams.get("next") ?? "/home";
+  const next =
+    rawNext.startsWith("/") &&
+    !rawNext.startsWith("//") &&
+    !rawNext.includes("\\")
+      ? rawNext
+      : "/home";
 
   if (token_hash && type) {
     const supabase = await createClient();
