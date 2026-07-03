@@ -14,15 +14,27 @@ import { Suspense, useState } from "react";
 function CheckInboxContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
-  const [resent, setResent] = useState(false);
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleResend() {
+    // Belt and braces — the button is disabled without an email, so never
+    // call the API with "".
+    if (!email) return;
+    setNotice("");
     setLoading(true);
     try {
       const supabase = createClient();
-      await supabase.auth.resend({ type: "signup", email });
-      setResent(true);
+      // supabase-js returns failures as { error } (rate limits included) —
+      // never promise "sent" when nothing was sent.
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      setNotice(
+        error
+          ? "That didn't send — give it a minute and try again."
+          : "Sent again. Check your inbox."
+      );
+    } catch {
+      setNotice("That didn't send — give it a minute and try again.");
     } finally {
       setLoading(false);
     }
@@ -32,20 +44,21 @@ function CheckInboxContent() {
     <Card className="w-full max-w-[440px]">
       <h2 className="text-xl">Check your inbox</h2>
       <p className="mt-3 text-body">
-        We sent a link to {email}. Open it on this device to continue.
+        {email
+          ? `We sent a link to ${email}. Open it on this device to continue.`
+          : "We sent you a link. Open it on this device to continue."}
       </p>
       <div className="mt-6 space-y-5">
         <Button
           type="button"
           variant="primary"
           loading={loading}
+          disabled={!email}
           onClick={handleResend}
         >
           Resend the email
         </Button>
-        {resent && (
-          <Alert tone="notice">Sent again. Check your inbox.</Alert>
-        )}
+        {notice && <Alert tone="notice">{notice}</Alert>}
       </div>
     </Card>
   );

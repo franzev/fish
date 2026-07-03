@@ -16,19 +16,33 @@ function ExpiredLinkContent() {
   const searchParams = useSearchParams();
   const type = searchParams.get("type") === "recovery" ? "recovery" : "signup";
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
-  const [resent, setResent] = useState(false);
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleResend() {
+    // The Input's `required` can't gate a type="button" click — guard here
+    // so an empty email never fires the request or fakes a success.
+    if (!email) {
+      setNotice("Add your email above, then resend.");
+      return;
+    }
+    setNotice("");
     setLoading(true);
     try {
       const supabase = createClient();
-      if (type === "recovery") {
-        await supabase.auth.resetPasswordForEmail(email);
-      } else {
-        await supabase.auth.resend({ type: "signup", email });
-      }
-      setResent(true);
+      // supabase-js returns failures as { error } (rate limits included) —
+      // never promise "sent" when nothing was sent.
+      const { error } =
+        type === "recovery"
+          ? await supabase.auth.resetPasswordForEmail(email)
+          : await supabase.auth.resend({ type: "signup", email });
+      setNotice(
+        error
+          ? "That didn't send — give it a minute and try again."
+          : "Sent again. Check your inbox."
+      );
+    } catch {
+      setNotice("That didn't send — give it a minute and try again.");
     } finally {
       setLoading(false);
     }
@@ -57,9 +71,7 @@ function ExpiredLinkContent() {
         >
           Resend the email
         </Button>
-        {resent && (
-          <Alert tone="notice">Sent again. Check your inbox.</Alert>
-        )}
+        {notice && <Alert tone="notice">{notice}</Alert>}
       </div>
     </Card>
   );

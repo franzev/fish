@@ -76,4 +76,33 @@ describe("CheckInboxPage", () => {
     );
     expect(screen.getByText("Check your inbox")).toBeInTheDocument();
   });
+
+  it("a failed resend (e.g. rate limit) shows a calm notice instead of false success", async () => {
+    resendMock.mockResolvedValueOnce({
+      error: { code: "over_email_send_rate_limit", message: "rate limit" },
+    });
+    render(<CheckInboxPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("That didn't send — give it a minute and try again.")
+      ).toBeInTheDocument()
+    );
+    expect(screen.queryByText("Sent again. Check your inbox.")).toBeNull();
+  });
+
+  it("with no ?email= param the resend button is disabled and the copy stays generic", () => {
+    searchParamsValue = new URLSearchParams();
+    render(<CheckInboxPage />);
+
+    expect(
+      screen.getByText("We sent you a link. Open it on this device to continue.")
+    ).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "Resend the email" });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(resendMock).not.toHaveBeenCalled();
+  });
 });

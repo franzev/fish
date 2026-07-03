@@ -87,4 +87,33 @@ describe("ExpiredLinkPage", () => {
     expect(resetPasswordForEmailMock).toHaveBeenCalledWith("ada@example.com");
     expect(resendMock).not.toHaveBeenCalled();
   });
+
+  it("a failed resend (e.g. rate limit) shows a calm notice instead of false success", async () => {
+    resendMock.mockResolvedValueOnce({
+      error: { code: "over_email_send_rate_limit", message: "rate limit" },
+    });
+    render(<ExpiredLinkPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("That didn't send — give it a minute and try again.")
+      ).toBeInTheDocument()
+    );
+    expect(screen.queryByText("Sent again. Check your inbox.")).toBeNull();
+  });
+
+  it("an empty email never fires the request and asks for the email instead", () => {
+    searchParamsValue = new URLSearchParams();
+    render(<ExpiredLinkPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+
+    expect(resendMock).not.toHaveBeenCalled();
+    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Add your email above, then resend.")
+    ).toBeInTheDocument();
+  });
 });
