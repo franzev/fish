@@ -1,4 +1,22 @@
 project_id = "fish"
 
+[auth]
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+# D-16: 8-char minimum, no complexity rules (password_requirements stays default).
+minimum_password_length = 8
+
+[auth.email]
+# Verification required before sign-in (AUTH-02).
+enable_confirmations = true
+
+# FISH-voice templates authored in plans 04/05; paths registered now so a
+# single `supabase start`/`db reset` picks them up.
+[auth.email.template.confirmation]
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+content_path = "./supabase/templates/recovery.html"
+
 [functions.send-message]
 verify_jwt = true

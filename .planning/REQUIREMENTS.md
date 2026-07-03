@@ -36,7 +36,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **AUTH-02**: User receives a verification email after signup and lands on a calm single-action "check your inbox" screen
 - [ ] **AUTH-03**: User can log in with email and password
 - [ ] **AUTH-04**: User can reset their password via an email link that lands on a single-field "set new password" screen
-- [ ] **AUTH-05**: User session persists across browser refresh and restart
+- [x] **AUTH-05**: User session persists across browser refresh and restart
 - [ ] **AUTH-06**: User can log out from any authenticated screen
 
 ### Database Foundation
@@ -111,7 +111,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-02 | Phase 2 | Pending |
 | AUTH-03 | Phase 2 | Pending |
 | AUTH-04 | Phase 2 | Pending |
-| AUTH-05 | Phase 2 | Pending |
+| AUTH-05 | Phase 2 | Complete |
 | AUTH-06 | Phase 2 | Pending |
 | DB-01 | Phase 2 | Pending |
 | DB-02 | Phase 2 | Pending |

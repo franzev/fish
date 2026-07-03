@@ -1,0 +1,15 @@
+<!doctype html>
+<!-- Placeholder registered in plan 02-01 so config.toml validates; plan 05 owns
+     the full FISH-voice pass. Already uses the token-hash link (never
+     {{ .ConfirmationURL }} — fragment tokens are unreadable server-side). -->
+<html lang="en">
+  <body>
+    <p>Set a new password for your account.</p>
+    <p>
+      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery"
+        >Set a new password</a
+      >
+    </p>
+    <p>This link works once and expires in 24 hours.</p>
+  </body>
+</html>
