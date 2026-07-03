@@ -50,13 +50,14 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   2. A person can log in with email and password, stays logged in across a browser refresh and restart, and can log out from an authenticated screen; a "forgot password" email link lands them on a single-field "set new password" screen.
   3. Signing up reliably creates exactly one profile row (a failing trigger never silently blocks the signup), and a seed script creates a coach account and assigns clients to it.
   4. Role is stored and enforced server-side — an authenticated user cannot escalate themselves to coach — and RLS on every table lets a client read only their own data while a coach reads only their own assigned clients.
-**Plans**: 6 plans (5 waves — 02-06 is a gap-closure plan)
+**Plans**: 7 plans (5 waves — 02-06 and 02-07 are gap-closure plans)
 - [x] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy at apps/web root), proxy.ts session refresh, local [auth] config (keys verified vs generated schema), authRedirects.home
 - [x] 02-02-PLAN.md — DB schema in 5 ordered migrations (profiles → trigger → coach_clients+role-integrity → is_coach_of helper+policies → role guard; helper created after the table it references), RLS via SECURITY DEFINER helper (caller-role-checked), safe-field UPDATE policy so the guard is exercised, schema push + types split into database.generated.ts
 - [x] 02-03-PLAN.md — Idempotent (pagination-safe) TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, scripted anon-session RLS/escalation verification (verify-rls.ts), D-14 deploy checklist
 - [x] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home (redirects signed-out visitors to /login) + logout, type-aware expired-link screen, Suspense-wrapped search-param screens, FISH-voice confirmation email
 - [x] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery via template-hardcoded next=/reset-password (Mailpit URL verified) → set-new-password → /home, FISH-voice recovery email
 - [x] 02-06-PLAN.md — Gap closure (UAT test 3 blocker): pin the FISH web dev port (next dev -p 3001) and align supabase site_url + additional_redirect_urls to :3001 so the {{ .SiteURL }} email link hits FISH, not a foreign app on :3000; stack restart + fresh-signup re-verify
+- [ ] 02-07-PLAN.md — Gap closure (UAT test 7): reserve constant message-row height in the shared Input so a wrong-password message changes text not geometry (restores the phase-01 layout-stability contract on the flex-centered /login card), and wire the wrong-password copy to the tier-1 soft notice tone instead of the heavy tier-2 error treatment
 
 ### Phase 3: Role-aware home
 **Goal**: After logging in, a person lands inside a calm app shell on the home that matches their role — a client on the client home, a coach on the coach home listing only their assigned clients — with signed-out users always redirected to login and empty states that guide rather than alarm.
