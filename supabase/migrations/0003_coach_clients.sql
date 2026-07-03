@@ -11,6 +11,12 @@ create table public.coach_clients (
 
 alter table public.coach_clients enable row level security;
 
+-- Table-level grants (Postgres privilege layer, evaluated BEFORE row level security) --
+-- see 0001_profiles.sql for why these are required. Authenticated users only ever read
+-- (writes are service-role only, per this file's own top comment).
+grant select on public.coach_clients to authenticated;
+grant select, insert, update, delete on public.coach_clients to service_role;
+
 -- Role-integrity enforcement (review MEDIUM): a malformed row (wrong-role coach_id/client_id)
 -- must never be able to exist, since the private RLS helper added in 0004 trusts
 -- coach_clients membership.
