@@ -9,10 +9,15 @@
     "build": "pnpm -r --if-present build",
     "build:web": "pnpm --filter @fish/web build",
     "lint": "pnpm -r --if-present lint",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "supabase:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "seed": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/seed.ts",
+    "verify:rls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-rls.ts"
   },
   "devDependencies": {
     "next": "16.2.9",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "@supabase/supabase-js": "2.110.0"
   }
 }
