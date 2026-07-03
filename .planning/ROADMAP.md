@@ -18,7 +18,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 ## Phases
 
 - [x] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (3/3 plans executed; verification 2026-07-02: 1 blocking gap — primary-button focus ring; gap-closure plan 01-04 created) (completed 2026-07-02)
-- [x] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS (executed 2026-07-03; UAT 2026-07-03: 1 blocking gap — verification email link 500 from a port/site_url mismatch, not a code bug; gap-closure plan 02-06 created)
+- [ ] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS (executed 2026-07-03; UAT 2026-07-03: earlier gaps closed by 02-06/02-07; gap-closure plan 02-08 created for UAT tests 10/11 Enter-submit + Button cursor feedback)
 - [ ] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients
 
 ## Phase Details
@@ -58,7 +58,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   3. Signing up reliably creates exactly one profile row (a failing trigger never silently blocks the signup), and a seed script creates a coach account and assigns clients to it.
   4. Role is stored and enforced server-side — an authenticated user cannot escalate themselves to coach — and RLS on every table lets a client read only their own data while a coach reads only their own assigned clients.
 
-**Plans**: 7/7 plans complete
+**Plans**: 7 complete + 1 gap-closure pending (02-08)
 
 - [x] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy at apps/web root), proxy.ts session refresh, local [auth] config (keys verified vs generated schema), authRedirects.home
 - [x] 02-02-PLAN.md — DB schema in 5 ordered migrations (profiles → trigger → coach_clients+role-integrity → is_coach_of helper+policies → role guard; helper created after the table it references), RLS via SECURITY DEFINER helper (caller-role-checked), safe-field UPDATE policy so the guard is exercised, schema push + types split into database.generated.ts
@@ -67,6 +67,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 - [x] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery via template-hardcoded next=/reset-password (Mailpit URL verified) → set-new-password → /home, FISH-voice recovery email
 - [x] 02-06-PLAN.md — Gap closure (UAT test 3 blocker): pin the FISH web dev port (next dev -p 3001) and align supabase site_url + additional_redirect_urls to :3001 so the {{ .SiteURL }} email link hits FISH, not a foreign app on :3000; stack restart + fresh-signup re-verify
 - [x] 02-07-PLAN.md — Gap closure (UAT test 7): reserve constant message-row height in the shared Input so a wrong-password message changes text not geometry (restores the phase-01 layout-stability contract on the flex-centered /login card), and wire the wrong-password copy to the tier-1 soft notice tone instead of the heavy tier-2 error treatment
+- [ ] 02-08-PLAN.md — Gap closure (UAT tests 10/11 + cursor feedback): put the /expired-link and /check-inbox resend on a real `<form onSubmit>` + `type="submit"` so Enter submits (+ Enter regression test); give Button honest cursor-pointer/progress/not-allowed feedback by dropping pointer-events-none in favor of the native disabled attribute + a loading click-guard; retest test 10 (/reset-password Enter submit) on a hydrated page — no /reset-password code change
 
 ### Phase 3: Role-aware home
 
@@ -89,7 +90,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
-| 2. Secure account you can return to | 7/7 | Complete   | 2026-07-03 |
+| 2. Secure account you can return to | 7/8 | Gap closure (02-08 pending) | - |
 | 3. Role-aware home | 0/? | Not started | - |
 
 ## Coverage
