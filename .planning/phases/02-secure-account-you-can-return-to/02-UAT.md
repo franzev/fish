@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
-updated: 2026-07-03T12:00:15Z
+updated: 2026-07-03T12:12:19Z
 mode: mvp
 user_story: "As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me."
 ---
@@ -164,13 +164,44 @@ blocked: 0
   reason: "User reported: when I press enter it, form should submit"
   severity: major
   test: 10
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "NOT a steady-state code defect. Live reproduction (real Chromium against the running dev stack on :3001) proved the hydrated page submits on Enter identically to the button click, end-to-end. The report matches the pre-hydration window: before React attaches onSubmit, Enter triggers the browser's NATIVE implicit submission — a GET to /reset-password? that silently reloads and wipes the field ('nothing happened'). In next dev the recovery-link redirect is the FIRST visit to the route, so lazy route compilation stretches the unhydrated window to human scale; after the silent reload the route is warm, hydration is instant, and the button works — matching 'only the button submits'. Form markup is correct (<form onSubmit> + type=\"submit\" since first commit); no name attribute on the field, so the native GET leaks nothing. jsdom cannot exercise implicit submission, so no unit test can guard this."
+  artifacts:
+    - path: "apps/web/app/reset-password/page.tsx"
+      issue: "NOT defective — form semantics correct; Enter-submit verified working end-to-end when hydrated; only exposure is the universal Next.js pre-hydration window (benign: no name attr, nothing leaks)"
+  missing:
+    - "No code change to /reset-password — retest test 10 on a settled/hydrated page (production builds hydrate near-instantly)"
+    - "Optional: real-browser (Playwright) e2e regression asserting Enter submits on /reset-password — not testable in jsdom/vitest"
+    - "Land test 11's /expired-link form fix, the one page where Enter genuinely never works and which kept re-triggering this report"
+  debug_session: ".planning/debug/enter-submit-reset-password.md"
 
 - truth: "Pressing Enter in the /expired-link resend form submits it (keyboard submit works, not just the button)"
   status: failed
   reason: "User reported: enter submit still not working in /expired-link page"
   severity: major
   test: 11
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "/expired-link has no <form> element at all: the email Input and resend Button are wrapped in a plain <div> and the button is type=\"button\" wired to onClick={handleResend}. Implicit form submission (Enter in a text field) is a <form> behavior — with no form and no type=\"submit\" button, Enter is a structural no-op. Only auth screen deviating from the sibling pattern (login/signup/forgot-password/reset-password all use <form onSubmit> + type=\"submit\"). NOT a shared root cause with test 10. Tests only exercise fireEvent.click, so the defect shipped undetected."
+  artifacts:
+    - path: "apps/web/app/expired-link/page.tsx"
+      issue: "Missing <form>; button is type=\"button\" + onClick instead of type=\"submit\" inside a form with onSubmit (lines 58–73)"
+    - path: "apps/web/app/expired-link/page.test.tsx"
+      issue: "No keyboard-submit test — submission exercised only via fireEvent.click"
+  missing:
+    - "Wrap Input + Button in <form className=\"mt-6 space-y-5\" onSubmit={handleSubmit}>, make the Button type=\"submit\", convert handleResend to handleSubmit(event: FormEvent) with event.preventDefault()"
+    - "Regression test that submits via Enter in the email field"
+    - "Optionally normalize /check-inbox to the same form pattern (same no-form shape, defect doesn't manifest there)"
+  debug_session: ".planning/debug/enter-submit-expired-link.md"
+
+- truth: "Buttons signal interactivity via the cursor: cursor-pointer normally, cursor-progress while loading, cursor-not-allowed when disabled"
+  status: failed
+  reason: "User reported: buttons should have a cursor-pointer, cursor-progress for loading, cursor-not-allowed for disabled"
+  severity: cosmetic
+  test: null  # general UAT feedback, not tied to a numbered test
+  root_cause: "Pre-diagnosed by orchestrator (no debug agent needed): Button (apps/web/components/ui/button.tsx) sets no cursor utilities, and Tailwind v4 preflight defaults <button> to cursor:default, so no pointer feedback ever shows. Additionally, disabled uses `disabled:pointer-events-none` and loading adds `pointer-events-none` — pointer-events:none suppresses the element's own cursor, so cursor-progress/cursor-not-allowed cannot take effect while those classes remain."
+  artifacts:
+    - path: "apps/web/components/ui/button.tsx"
+      issue: "No cursor classes; `pointer-events-none` on disabled/loading states blocks any cursor styling from applying"
+  missing:
+    - "Add cursor-pointer to the Button base classes"
+    - "Show cursor-progress while loading and cursor-not-allowed when disabled — requires dropping pointer-events-none in favor of the disabled attribute + guarding the loading state (e.g. ignore clicks while loading) so the cursor is actually visible over the control"
+    - "Keep the accessibility floor: disabled/loading must still be non-activatable via keyboard and click"
+  debug_session: ""
