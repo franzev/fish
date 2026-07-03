@@ -1,9 +1,9 @@
 ---
-status: partial
+status: diagnosed
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
-updated: 2026-07-03T14:40:00Z
+updated: 2026-07-03T15:55:00Z
 mode: mvp
 user_story: "As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me."
 ---
@@ -11,7 +11,11 @@ user_story: "As a new client, I want to sign up, verify my email, log in, stay l
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-[testing paused — 1 blocked item outstanding (test 11, unblocks with test 10 fix)]
+number: 10
+name: Recovery Link Lands on Set-New-Password (RETEST — diagnosis found no defect)
+expected: |
+  Open Mailpit (http://127.0.0.1:54324) — a "Reset your password" email for client1@fish.dev is already there from the diagnosis reproduction. Its link carries type=recovery&next=/reset-password. Clicking it lands you signed in on /reset-password — a single password field with an "At least 8 characters." hint. Set a new password; you land on /home. Log out and log back in with the NEW password successfully.
+awaiting: user response
 
 ## Tests
 
@@ -69,9 +73,8 @@ section: technical
 
 ### 10. Recovery Link Lands on Set-New-Password (post-restart re-check)
 expected: From the forgot-password request for a real account, open the Mailpit email and inspect the raw link: it must carry `type=recovery&next=/reset-password` (this is the re-check plan 02-05 requires after the stack restart). Clicking it lands you signed in on /reset-password — a single password field with an "At least 8 characters." hint. Set a new password; you land on /home. Log out and log back in with the NEW password successfully.
-result: issue
-reported: "no email received"
-severity: major
+result: [pending]
+note: "First attempt reported 'no email received' — diagnosis proved the submitted address matched no account (anti-enumeration 200) and the pipeline is healthy end-to-end. Retest with verbatim client1@fish.dev; a valid recovery email is already waiting in Mailpit."
 section: technical
 
 ### 11. Consumed Link Routes to a Calm Expired-Link Screen
@@ -101,8 +104,8 @@ section: coverage
 
 total: 13
 passed: 10
-issues: 2
-pending: 0
+issues: 1
+pending: 1
 skipped: 0
 blocked: 1
 
@@ -130,13 +133,28 @@ blocked: 1
   reason: "User reported: the whole page rerenders when login button clicked"
   severity: major
   test: 7
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "No reload/navigation occurs — CDP reproduction confirmed the error copy renders in place with zero frameNavigated/load events. The perceived 'whole page rerenders' is a whole-page layout shift: /login vertically centers its Card (flex min-h-dvh items-center justify-center) and Input reserves no space for its message line, so setting passwordError grows the card ~30px and flexbox re-centers it — heading/email jump up 14.8px while button/links jump down 14.8px in the same frame at 1440x900. Secondary: the copy is wired to Input's heavy tier-2 `error` prop (semibold, 1px->2px border flip, alert icon) instead of the tier-1 soft `notice` tone the test expects (color itself is compliant monochrome, not red)."
+  artifacts:
+    - path: "apps/web/app/login/page.tsx"
+      issue: "line 63 vertically centers the card so any card growth moves everything; line 79 passes the copy via the tier-2 `error` prop instead of the tier-1 `notice` prop"
+    - path: "apps/web/components/ui/input.tsx"
+      issue: "hint/notice/error message <p> is conditionally rendered with no reserved space — showing a message changes the component's height (violates the phase-01 layout-stability contract Button honors)"
+  missing:
+    - "Reserve a constant-height message slot under the field so appearance changes text, not geometry (always render the message row in Input, or swap a persistent hint line for the message on this page)"
+    - "Render the wrong-password copy in the tier-1 notice tone per the UAT expectation"
+    - "Fix verification: re-run UAT test 7 asserting zero movement of heading/button rects when the message appears (CDP measurement pattern from the debug session)"
+  debug_session: ".planning/debug/login-wrong-password-full-rerender.md"
 
 - truth: "Submitting /forgot-password for a real seeded account delivers a recovery email to Mailpit carrying type=recovery&next=/reset-password"
-  status: failed
+  status: resolved
   reason: "User reported: no email received"
   severity: major
   test: 10
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "NOT a code/config/infrastructure defect. The three /recover requests made during UAT tests 9/10 all bear GoTrue's 'unknown email' signature (fast 200, no user_recovery_requested audit event, recovery_sent_at NULL for every user) — the address actually submitted matched no account (typo/truncation; HTML email validation and GoTrue both silently accept TLD-less strings like 'client1@fish'). Live reproduction with verbatim client1@fish.dev delivered the recovery email to Mailpit instantly with the exact expected type=recovery&next=/reset-password link. Rate limits, case sensitivity, empty-submit, template, and redirectTo allowlist all eliminated experimentally. Compounding factor by design (D-07 anti-enumeration): the form discards resetPasswordForEmail's result and always shows success, so there was no signal that nothing matched."
+  artifacts:
+    - path: "apps/web/app/forgot-password/page.tsx"
+      issue: "NOT defective — discards the result and unconditionally shows success (intentional anti-enumeration, D-07)"
+  missing:
+    - "No code change — retest test 10 submitting the seeded address verbatim (copy-paste client1@fish.dev)"
+  debug_session: ".planning/debug/recovery-email-not-delivered.md"
+  note: "Recovery emails for client1@fish.dev and client2@fish.dev are already in Mailpit from the investigation's live reproduction — tests 10 and 11 can resume immediately."
