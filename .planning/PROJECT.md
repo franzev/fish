@@ -57,10 +57,10 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 
 - Brownfield: `.planning/codebase/` maps the current state. Key findings: no Supabase client integrated anywhere, no `supabase/migrations/` (database doesn't exist), no auth layer, Edge Function is a pass-through stub, no tests.
 - Web stack: Next.js 16.2.9, React 19.2.7, Tailwind CSS v4.3.1 (CSS-first `@theme` — **never** create `tailwind.config.js`; keep `tailwindcss` and `@tailwindcss/postcss` on the same version).
-- Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — in pure monochrome, notices distinguish by weight/structure, not hue).
+- Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
 - `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
-- **Current state (2026-07-03):** Phase 2 complete — full email/password auth loop (signup → verify → login → logout, password reset, session persistence) on Supabase SSR, backed by a hardened `profiles` + `coach_clients` schema with server-enforced roles and recursion-safe RLS. 120 passing tests; code review found and fixed 2 criticals (open redirect, dead duplicate-email branch) + 6 warnings; verifier passed 10/10 must-haves live. The monorepo scaffold is now committed (was untracked at Phase 1 close). Phase 1 delivered the monochrome dual-theme tokens and hardened UI kit the auth screens consume. Note: `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — a follow-up docs pass is flagged.
+- **Current state (2026-07-03):** Phase 2 complete and verified (19/19 must-haves) — full email/password auth loop (signup → verify → login → logout, password reset, session persistence) on Supabase SSR, backed by a hardened `profiles` + `coach_clients` schema with server-enforced roles and recursion-safe RLS. Three gap-closure plans (02-06 port/site_url, 02-07 login message stability, 02-08 Enter-submit + cursors) closed all UAT gaps: 13/13 UAT tests passed, 152 passing automated tests. During 02-08 UAT the user evolved the design system: alerts now float above the card as a fading overlay (never reflowing the centered card) and carry calm semantic tone colors (soft coral error / amber warning / sage green success — contrast-test gated); input/form spacing was rebalanced (reserved message row kept, 30px rhythm). Note: `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — a follow-up docs pass is flagged.
 
 ## Constraints
 
@@ -83,6 +83,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 | Signup always creates clients | Simplest safe default; role escalation is a manual act | — Pending |
 | Tabler Icons as the only icon set | One consistent stroke style; no mixed icon sources | ✓ Good — enforced by an icon-source test since Phase 1 |
 | Lexend (body) + Fraunces (display) | Lexend is designed for reading fluency — right for the ADHD audience; Fraunces provides warm heading contrast | ✓ Good — loaded and demonstrated on `/kit` in Phase 1 |
+| Alerts get calm semantic tone colors (coral/amber/green) and float above the card as a fading overlay | User decision at 02-08 UAT: honest feedback colors beat monochrome-only for alerts; overlay keeps the centered card from ever moving | ✓ Good — tokens are low-chroma, contrast-test gated; structural UI stays monochrome |
 
 ## Evolution
 
