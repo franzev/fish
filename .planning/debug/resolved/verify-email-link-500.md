@@ -1,8 +1,8 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "UAT test 3 (Verify by Email): internal server error upon clicking the verification email link"
 created: 2026-07-03T00:00:00Z
-updated: 2026-07-03T05:15:00Z
+updated: 2026-07-03T13:55:00Z
 ---
 
 ## Current Focus
@@ -66,3 +66,13 @@ root_cause: Port/site_url mismatch, not a code bug. supabase/config.toml sets si
 fix: (not applied — goal is find_root_cause_only) Align the port FISH serves on with site_url: either free port 3000 (stop the Timberyard dev server) and run FISH on 3000, or change site_url + additional_redirect_urls in supabase/config.toml to the port FISH actually uses (requires a supabase restart to take effect) — and make the choice deterministic (e.g., pin the dev port in the dev script) so an occupied port can't silently divert auth emails again.
 verification: n/a (diagnosis only). Headless reproduction: link on :3000 -> 500 (foreign app); same path on :3001 -> 307 /home + session cookie.
 files_changed: []
+
+## Resolution Update (gap-closure plan 02-06)
+
+The port-only fix (pinning `apps/web/package.json` dev script to `next dev -p 3001` and `supabase/config.toml` site_url to `http://127.0.0.1:3001`) was necessary but NOT sufficient. First human re-verification still failed: session cookies are host-scoped, and Next.js's post-verify redirect lands the browser on `localhost:3001` (its default dev origin) regardless of the `127.0.0.1` host in the incoming request. The `127.0.0.1`-scoped cookie set by `/auth/confirm` was therefore invisible on `localhost`, where all normal browsing in this environment happens — the user landed unauthenticated on `/login` even though `/auth/confirm` itself correctly 307'd to `/home`.
+
+The fix required BOTH corrections together:
+1. Pin the dev port deterministically (`next dev -p 3001`) — removes Next's silent port-fallback nondeterminism.
+2. Align `site_url` + `additional_redirect_urls` to the exact HOST the browser session lives on, `http://localhost:3001`, not `http://127.0.0.1:3001` — cookie host-scoping means port alignment alone is insufficient.
+
+Verified via a full click-through (not just a curl of `/auth/confirm`): fresh signup on `http://localhost:3001/signup`, Mailpit email link inspected and clicked, landed signed in at `/home` with a working session. See `.planning/phases/02-secure-account-you-can-return-to/02-06-SUMMARY.md` for the full evidence chain and commits (`9cca5b9`, `31bcf8b`).
