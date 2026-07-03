@@ -18,7 +18,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 ## Phases
 
 - [x] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (3/3 plans executed; verification 2026-07-02: 1 blocking gap — primary-button focus ring; gap-closure plan 01-04 created) (completed 2026-07-02)
-- [x] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS (completed 2026-07-03)
+- [x] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS (executed 2026-07-03; UAT 2026-07-03: 1 blocking gap — verification email link 500 from a port/site_url mismatch, not a code bug; gap-closure plan 02-06 created)
 - [ ] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients
 
 ## Phase Details
@@ -50,12 +50,13 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   2. A person can log in with email and password, stays logged in across a browser refresh and restart, and can log out from an authenticated screen; a "forgot password" email link lands them on a single-field "set new password" screen.
   3. Signing up reliably creates exactly one profile row (a failing trigger never silently blocks the signup), and a seed script creates a coach account and assigns clients to it.
   4. Role is stored and enforced server-side — an authenticated user cannot escalate themselves to coach — and RLS on every table lets a client read only their own data while a coach reads only their own assigned clients.
-**Plans**: 5 plans (4 waves)
+**Plans**: 6 plans (5 waves — 02-06 is a gap-closure plan)
 - [x] 02-01-PLAN.md — Supabase plumbing: local CLI/Docker prereq + pinned packages, three-client SSR factories (browser/server/proxy at apps/web root), proxy.ts session refresh, local [auth] config (keys verified vs generated schema), authRedirects.home
 - [x] 02-02-PLAN.md — DB schema in 5 ordered migrations (profiles → trigger → coach_clients+role-integrity → is_coach_of helper+policies → role guard; helper created after the table it references), RLS via SECURITY DEFINER helper (caller-role-checked), safe-field UPDATE policy so the guard is exercised, schema push + types split into database.generated.ts
 - [x] 02-03-PLAN.md — Idempotent (pagination-safe) TS admin seed (coach + 3 assigned clients), pnpm workflow scripts, scripted anon-session RLS/escalation verification (verify-rls.ts), D-14 deploy checklist
 - [x] 02-04-PLAN.md — Signup loop: signup → check-inbox → /auth/confirm (verifyOtp) → /home (redirects signed-out visitors to /login) + logout, type-aware expired-link screen, Suspense-wrapped search-param screens, FISH-voice confirmation email
 - [x] 02-05-PLAN.md — Return/recover loop: login (+ unverified→check-inbox), non-enumerating forgot-password, recovery via template-hardcoded next=/reset-password (Mailpit URL verified) → set-new-password → /home, FISH-voice recovery email
+- [ ] 02-06-PLAN.md — Gap closure (UAT test 3 blocker): pin the FISH web dev port (next dev -p 3001) and align supabase site_url + additional_redirect_urls to :3001 so the {{ .SiteURL }} email link hits FISH, not a foreign app on :3000; stack restart + fresh-signup re-verify
 
 ### Phase 3: Role-aware home
 **Goal**: After logging in, a person lands inside a calm app shell on the home that matches their role — a client on the client home, a coach on the coach home listing only their assigned clients — with signed-out users always redirected to login and empty states that guide rather than alarm.
