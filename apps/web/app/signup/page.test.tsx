@@ -49,7 +49,12 @@ describe("SignupPage", () => {
   });
 
   it("submitting calls the browser client's auth.signUp", async () => {
-    signUpMock.mockResolvedValueOnce({ error: null });
+    // Real confirmations-on shape for a NEW user: user present with a
+    // populated identities array.
+    signUpMock.mockResolvedValueOnce({
+      data: { user: { identities: [{ id: "identity-1" }] } },
+      error: null,
+    });
     render(<SignupPage />);
 
     fireEvent.change(screen.getByLabelText("Name"), {
@@ -76,7 +81,38 @@ describe("SignupPage", () => {
     );
   });
 
-  it("an 'already registered' error shows the existing-email Input error copy, not a raw message", async () => {
+  it("an existing confirmed email (confirmations-on: fake user, empty identities, no error) shows the existing-email copy and never routes to /check-inbox", async () => {
+    // With enable_confirmations = true, Supabase anti-enumeration returns
+    // error: null plus an obfuscated user whose identities array is empty —
+    // and sends no email. This is the branch production actually takes.
+    signUpMock.mockResolvedValueOnce({
+      data: { user: { identities: [] } },
+      error: null,
+    });
+    render(<SignupPage />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Ada" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "That email's already in use. Try logging in instead?"
+        )
+      ).toBeInTheDocument()
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("an 'already registered' error (confirmations-off environments) shows the existing-email Input error copy, not a raw message", async () => {
     signUpMock.mockResolvedValueOnce({
       error: { message: "User already registered" },
     });

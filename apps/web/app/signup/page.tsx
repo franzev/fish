@@ -31,13 +31,14 @@ export default function SignupPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { display_name: name } },
       });
 
       if (error) {
+        // Confirmations-off environments surface an explicit error here.
         if (error.message.toLowerCase().includes("already registered")) {
           setEmailError(
             "That email's already in use. Try logging in instead?"
@@ -47,6 +48,15 @@ export default function SignupPage() {
             "Something needs your attention before you can continue. Try again in a moment."
           );
         }
+        return;
+      }
+
+      // Confirmations-on (production config): an existing confirmed email
+      // returns error: null with an obfuscated fake user whose identities
+      // array is empty — and sends no email. Surface the existing-account
+      // copy instead of routing to /check-inbox to wait for nothing.
+      if (data?.user && data.user.identities?.length === 0) {
+        setEmailError("That email's already in use. Try logging in instead?");
         return;
       }
 
