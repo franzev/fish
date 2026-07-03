@@ -31,14 +31,14 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ UI kit hardened: Button/Input/Card/Progress states (disabled, loading, error), visible two-tone focus ring (regression-tripwired), reduced motion — Validated in Phase 1
 - ✓ UI kit expanded for upcoming screens: Alert (notice/error/success), theme toggle; Tabler-only icon guard — Validated in Phase 1
 - ✓ UI kit demo page (`/kit`) showing every component in every state, both themes — the contract for future screens — Validated in Phase 1
+- ✓ Email/password auth loop: sign up → verify → log in → log out, password reset, session persists across refresh and restart (token_hash/verifyOtp; getUser server-side) — Validated in Phase 2: Secure account you can return to
+- ✓ Client/coach roles enforced server-side; signup always creates clients, role self-escalation rejected by DB guard — Validated in Phase 2
+- ✓ Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients` schema, recursion-safe RLS via SECURITY DEFINER helper, seed + scripted anon-session RLS verification — Validated in Phase 2
 
 ### Active
 
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for this milestone; THEM-02 is v2)
 - [ ] App shell and layout: nav, page structure, empty states — calm, one-action-per-screen chrome
-- [ ] Email/password auth: sign up, log in, log out, email verification, password reset, session persists across refresh
-- [ ] Client/coach roles wired to `packages/core` contracts; signup always creates clients
-- [ ] Database foundation: Supabase migrations (profiles, coach-client relationship), RLS policies enforcing coach/client boundaries
 - [ ] Protected routing: middleware redirects — signed-out → login, client → client home, coach → coach home
 - [ ] Role-aware landing screens (near-empty calm placeholders are fine)
 - [ ] Coach home shows the coach's assigned clients (assignments seeded manually)
@@ -60,7 +60,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — in pure monochrome, notices distinguish by weight/structure, not hue).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
 - `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
-- **Current state (2026-07-02):** Phase 1 complete — monochrome dual-theme token system, hardened UI kit (Button, Input, Card, Progress, Alert), `/kit` demo page, 71 passing tests (WCAG contrast, focus-ring tripwire, icon-source guard). Known debt: monorepo scaffold (`package.json`, `pnpm-workspace.yaml`, `packages/`, parts of `apps/web`) is still untracked in git — commit it before Phase 2 builds on it.
+- **Current state (2026-07-03):** Phase 2 complete — full email/password auth loop (signup → verify → login → logout, password reset, session persistence) on Supabase SSR, backed by a hardened `profiles` + `coach_clients` schema with server-enforced roles and recursion-safe RLS. 120 passing tests; code review found and fixed 2 criticals (open redirect, dead duplicate-email branch) + 6 warnings; verifier passed 10/10 must-haves live. The monorepo scaffold is now committed (was untracked at Phase 1 close). Phase 1 delivered the monochrome dual-theme tokens and hardened UI kit the auth screens consume. Note: `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — a follow-up docs pass is flagged.
 
 ## Constraints
 
@@ -102,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-02 after Phase 1 completion*
+*Last updated: 2026-07-03 after Phase 2 completion*
