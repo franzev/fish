@@ -1,15 +1,51 @@
 <!doctype html>
-<!-- Placeholder registered in plan 02-01 so config.toml validates; plan 05 owns
-     the full FISH-voice pass. Already uses the token-hash link (never
-     {{ .ConfirmationURL }} — fragment tokens are unreadable server-side). -->
+<!-- FISH-voice password-reset email (D-15): calm sentence-case copy, plain
+     single-column layout, one clear action link, expiry stated as fact
+     not threat. Points at /auth/confirm with token_hash and a HARDCODED
+     next=/reset-password (review HIGH — the destination is controlled by
+     this template's next, not by a redirectTo query string passed from
+     the forgot-password screen). Never the implicit-flow default template
+     variable (Pitfall 6 — fragment tokens are unreadable server-side).
+     Pure monochrome: hex values mirror the dark-theme token ladder in
+     globals.css (email HTML can't use CSS tokens) — zero chroma anywhere;
+     the action button is near-white on near-black, mirroring dark-theme
+     primary. Structure mirrors confirmation.html exactly. -->
 <html lang="en">
-  <body>
-    <p>Set a new password for your account.</p>
-    <p>
-      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery"
-        >Set a new password</a
-      >
-    </p>
-    <p>This link works once and expires in 24 hours.</p>
+  <body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+      <tr>
+        <td align="center" style="padding:48px 20px;">
+          <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="max-width:440px;width:100%;">
+            <tr>
+              <td style="padding-bottom:24px;">
+                <p style="margin:0;font-size:14px;letter-spacing:0.1em;text-transform:uppercase;color:#a1a1a1;">FISH</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#171717;border:1px solid #2a2a2a;border-radius:16px;padding:32px;">
+                <h1 style="margin:0 0 12px;font-size:20px;font-weight:600;color:#fafafa;">Reset your password</h1>
+                <p style="margin:0 0 24px;font-size:17px;line-height:1.55;color:#a1a1a1;">
+                  Set a new password for your account.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="border-radius:12px;background-color:#fafafa;">
+                      <a
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password"
+                        style="display:inline-block;padding:16px 24px;font-size:17px;font-weight:600;color:#0a0a0a;text-decoration:none;"
+                        >Set a new password</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:24px 0 0;font-size:14px;line-height:1.4;color:#6b6b6b;">
+                  This link works once and expires in 24 hours.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
