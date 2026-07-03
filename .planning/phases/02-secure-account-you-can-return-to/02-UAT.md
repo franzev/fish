@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
-updated: 2026-07-03T12:12:19Z
+updated: 2026-07-03T21:29:39Z
 mode: mvp
 user_story: "As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me."
 ---
@@ -69,18 +69,14 @@ section: technical
 
 ### 10. Recovery Link Lands on Set-New-Password (post-restart re-check)
 expected: From the forgot-password request for a real account, open the Mailpit email and inspect the raw link: it must carry `type=recovery&next=/reset-password` (this is the re-check plan 02-05 requires after the stack restart). Clicking it lands you signed in on /reset-password — a single password field with an "At least 8 characters." hint. Set a new password; you land on /home. Log out and log back in with the NEW password successfully.
-result: issue
-reported: "when I press enter it, form should submit"
-severity: major
-note: "Retest reached the reset form (recovery email delivery confirmed working), but pressing Enter in the password field does not submit the form. Prior 'no email received' report was diagnosed as a mistyped address — pipeline healthy."
+result: pass
+note: "Enter-submit gap resolved by gap-closure plan 02-08 (root cause: pre-hydration timing window, no code change needed). Retested on a settled/hydrated page at the 02-08 Task 3 checkpoint: pressing Enter in the password field submits, lands on /home. Approved by user 2026-07-03."
 section: technical
 
 ### 11. Consumed Link Routes to a Calm Expired-Link Screen
 expected: Click the same (already used) email link again — either the signup or recovery one. You land on /expired-link, which explains calmly, knows which type of link it was, pre-fills your email, and offers a working resend — no raw error, no dead end.
-result: issue
-reported: "enter submit still not working in /expired-link page"
-severity: major
-note: "Page itself loads and routes correctly (user reached /expired-link); the defect is keyboard submit — pressing Enter in the resend form does not submit, same symptom as test 10's reset form."
+result: pass
+note: "Enter-submit gap resolved by gap-closure plan 02-08 (commit 90cc955): /expired-link now uses a real <form onSubmit> + type=\"submit\" Button. Retested at the 02-08 Task 3 checkpoint: pressing Enter in the pre-filled email field submits the resend. Approved by user 2026-07-03."
 section: technical
 
 ### 12. RLS and Role Escalation Are Enforced
@@ -102,11 +98,13 @@ section: coverage
 ## Summary
 
 total: 13
-passed: 11
-issues: 2
+passed: 13
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
+
+note: "Tests 10 and 11 (Enter-submit gaps) and the general cursor-feedback UAT feedback item were resolved and retested during gap-closure plan 02-08's Task 3 checkpoint (approved by user 2026-07-03). All gaps in the Gaps section below are now status: resolved. Phase 02 UAT is complete with zero open issues."
 
 ## Gaps
 
@@ -160,7 +158,7 @@ blocked: 0
   note: "Recovery emails for client1@fish.dev and client2@fish.dev are already in Mailpit from the investigation's live reproduction — tests 10 and 11 can resume immediately."
 
 - truth: "Pressing Enter in the /reset-password password field submits the form (keyboard submit works, not just the button)"
-  status: failed
+  status: resolved
   reason: "User reported: when I press enter it, form should submit"
   severity: major
   test: 10
@@ -172,10 +170,11 @@ blocked: 0
     - "No code change to /reset-password — retest test 10 on a settled/hydrated page (production builds hydrate near-instantly)"
     - "Optional: real-browser (Playwright) e2e regression asserting Enter submits on /reset-password — not testable in jsdom/vitest"
     - "Land test 11's /expired-link form fix, the one page where Enter genuinely never works and which kept re-triggering this report"
-  debug_session: ".planning/debug/enter-submit-reset-password.md"
+  debug_session: ".planning/debug/resolved/enter-submit-reset-password.md"
+  note: "Resolved by gap-closure plan 02-08's Task 3 checkpoint: user retested on a settled/hydrated page and confirmed Enter submits /reset-password end-to-end, landing on /home. No code change to /reset-password, per the diagnosis. Approved 2026-07-03."
 
 - truth: "Pressing Enter in the /expired-link resend form submits it (keyboard submit works, not just the button)"
-  status: failed
+  status: resolved
   reason: "User reported: enter submit still not working in /expired-link page"
   severity: major
   test: 11
@@ -189,10 +188,11 @@ blocked: 0
     - "Wrap Input + Button in <form className=\"mt-6 space-y-5\" onSubmit={handleSubmit}>, make the Button type=\"submit\", convert handleResend to handleSubmit(event: FormEvent) with event.preventDefault()"
     - "Regression test that submits via Enter in the email field"
     - "Optionally normalize /check-inbox to the same form pattern (same no-form shape, defect doesn't manifest there)"
-  debug_session: ".planning/debug/enter-submit-expired-link.md"
+  debug_session: ".planning/debug/resolved/enter-submit-expired-link.md"
+  note: "Resolved by gap-closure plan 02-08 (commit 90cc955): /expired-link now wraps Input + Button in <form onSubmit={handleSubmit}> with a type=\"submit\" Button; /check-inbox normalized to the same pattern. New Enter/submit regression tests added to both page.test.tsx files (152/152 suite green). User confirmed Enter submits /expired-link at the Task 3 checkpoint. Approved 2026-07-03."
 
 - truth: "Buttons signal interactivity via the cursor: cursor-pointer normally, cursor-progress while loading, cursor-not-allowed when disabled"
-  status: failed
+  status: resolved
   reason: "User reported: buttons should have a cursor-pointer, cursor-progress for loading, cursor-not-allowed for disabled"
   severity: cosmetic
   test: null  # general UAT feedback, not tied to a numbered test
@@ -205,3 +205,4 @@ blocked: 0
     - "Show cursor-progress while loading and cursor-not-allowed when disabled — requires dropping pointer-events-none in favor of the disabled attribute + guarding the loading state (e.g. ignore clicks while loading) so the cursor is actually visible over the control"
     - "Keep the accessibility floor: disabled/loading must still be non-activatable via keyboard and click"
   debug_session: ""
+  note: "Resolved by gap-closure plan 02-08 Task 1 (commit 1094384, refined by 50ad46f): Button now sets cursor-pointer (base), cursor-progress (loading), and disabled:cursor-not-allowed, with pointer-events-none removed entirely. Non-activation preserved via the native disabled attribute (disabled state) and an explicit click-guard (loading state). User confirmed pointer/progress/not-allowed cursors and no size change at the Task 3 checkpoint. Approved 2026-07-03."

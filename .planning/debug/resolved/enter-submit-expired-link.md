@@ -1,8 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Pressing Enter in the /expired-link resend form does not submit it. UAT test 11 (Phase 02) — routing to /expired-link worked, but keyboard submit of the resend form does not work; only clicking the button submits."
 created: 2026-07-03T16:00:00.000Z
-updated: 2026-07-03T16:10:00.000Z
+updated: 2026-07-03T21:29:39.000Z
+resolution_summary: "Fixed by gap-closure plan 02-08 (commit 90cc955): /expired-link now wraps the email Input + resend Button in <form onSubmit={handleSubmit}> with a type=\"submit\" Button, matching the sibling auth pages. Enter/submit regression test added. User confirmed Enter submits at the 02-08 Task 3 checkpoint, approved 2026-07-03."
 ---
 
 ## Current Focus

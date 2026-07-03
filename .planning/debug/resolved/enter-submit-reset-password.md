@@ -1,8 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Pressing Enter in the /reset-password password field does not submit the form. UAT test 10 (Phase 02)."
 created: 2026-07-03T00:00:00Z
-updated: 2026-07-03T00:00:00Z
+updated: 2026-07-03T21:29:39.000Z
+resolution_summary: "No code change to /reset-password — diagnosis proved the hydrated page already submits correctly on Enter (pre-hydration timing window was the root cause). Retested on a settled/hydrated page during gap-closure plan 02-08's Task 3 checkpoint: user confirmed Enter submits and lands on /home. Approved 2026-07-03."
 ---
 
 ## Current Focus
