@@ -41,7 +41,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 **UI hint**: yes
 
 ### Phase 2: Secure account you can return to
-**Goal**: A person can create a client account, verify it by email, log in, stay logged in across a browser restart, and log out — with a profile row reliably created on signup, roles stored and enforced server-side, and RLS keeping every user inside their own data.
+**Goal**: As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me.
 **Mode:** mvp
 **Depends on**: Phase 1 (auth screens consume the hardened Input/Button states and calm error styling)
 **Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, DB-01, DB-02, DB-03, DB-04
