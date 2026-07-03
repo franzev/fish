@@ -41,10 +41,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Database Foundation
 
-- [ ] **DB-01**: A profile row is created automatically and reliably on signup (hardened trigger — a failing trigger must not silently block signups)
-- [ ] **DB-02**: A coach-client relationship table exists with a seed script that creates a coach account and assigns clients to it
-- [ ] **DB-03**: RLS is enabled on every table: a client can only read their own data; a coach can only read their own assigned clients
-- [ ] **DB-04**: Role is stored and enforced server-side; an authenticated user cannot escalate themselves to coach (coach role is seed/manual-only)
+- [x] **DB-01**: A profile row is created automatically and reliably on signup (hardened trigger — a failing trigger must not silently block signups)
+- [x] **DB-02**: A coach-client relationship table exists with a seed script that creates a coach account and assigns clients to it
+- [x] **DB-03**: RLS is enabled on every table: a client can only read their own data; a coach can only read their own assigned clients
+- [x] **DB-04**: Role is stored and enforced server-side; an authenticated user cannot escalate themselves to coach (coach role is seed/manual-only)
 
 ### Routing & Roles
 
@@ -113,10 +113,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-04 | Phase 2 | Pending |
 | AUTH-05 | Phase 2 | Complete |
 | AUTH-06 | Phase 2 | Pending |
-| DB-01 | Phase 2 | Pending |
-| DB-02 | Phase 2 | Pending |
-| DB-03 | Phase 2 | Pending |
-| DB-04 | Phase 2 | Pending |
+| DB-01 | Phase 2 | Complete |
+| DB-02 | Phase 2 | Complete |
+| DB-03 | Phase 2 | Complete |
+| DB-04 | Phase 2 | Complete |
 | SHEL-01 | Phase 3 | Pending |
 | SHEL-02 | Phase 3 | Pending |
 | ROUT-01 | Phase 3 | Pending |
