@@ -29,13 +29,31 @@ export default function ResetPasswordPage() {
       });
 
       if (updateError) {
-        setError("Needs to be at least 8 characters.");
+        // Branch on stable error codes, not copy — each failure gets
+        // guidance that can actually succeed on retry.
+        if (updateError.code === "same_password") {
+          setError("That's the same password as before. Pick a new one.");
+        } else if (
+          updateError.name === "AuthSessionMissingError" ||
+          updateError.code === "session_not_found"
+        ) {
+          // Opened directly or the recovery session lapsed — hand off to
+          // the resend flow instead of blaming the password.
+          router.push("/expired-link?type=recovery");
+        } else if (
+          updateError.code === "weak_password" ||
+          updateError.code === "validation_failed"
+        ) {
+          setError("Needs to be at least 8 characters.");
+        } else {
+          setError("That didn't save. Give it a moment and try again.");
+        }
         return;
       }
 
       router.push("/home");
     } catch {
-      setError("Needs to be at least 8 characters.");
+      setError("Couldn't reach the server. Check your connection and try again.");
     } finally {
       setLoading(false);
     }

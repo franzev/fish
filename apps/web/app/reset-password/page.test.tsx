@@ -60,4 +60,61 @@ describe("ResetPasswordPage", () => {
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/home"));
   });
+
+  it("a same_password error explains the real problem, not password length", async () => {
+    updateUserMock.mockResolvedValueOnce({
+      error: { code: "same_password", message: "New password should be different from the old password." },
+    });
+    render(<ResetPasswordPage />);
+
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "new-password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Set new password" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("That's the same password as before. Pick a new one.")
+      ).toBeInTheDocument()
+    );
+    expect(
+      screen.queryByText("Needs to be at least 8 characters.")
+    ).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("a missing recovery session routes to /expired-link so the resend flow takes over", async () => {
+    updateUserMock.mockResolvedValueOnce({
+      error: { name: "AuthSessionMissingError", message: "Auth session missing!" },
+    });
+    render(<ResetPasswordPage />);
+
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "new-password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Set new password" }));
+
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/expired-link?type=recovery")
+    );
+  });
+
+  it("a weak_password error keeps the length guidance", async () => {
+    updateUserMock.mockResolvedValueOnce({
+      error: { code: "weak_password", message: "Password should be at least 8 characters." },
+    });
+    render(<ResetPasswordPage />);
+
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "short" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Set new password" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByText("Needs to be at least 8 characters.").length
+      ).toBeGreaterThan(0)
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });
