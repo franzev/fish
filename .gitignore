@@ -1,6 +1,13 @@
 .DS_Store
 .next/
 *.tsbuildinfo
+
+# Local env secrets (keep .env.example tracked)
+.env*.local
+
+# Supabase CLI runtime state
+supabase/.branches/
+supabase/.temp/
 node_modules/
 dist/
 build/
