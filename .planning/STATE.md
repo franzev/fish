@@ -2,10 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-status: executing
-stopped_at: Phase 02 plan 08 complete + UAT approved — all UAT gaps resolved (Enter-submit forms + Button cursor feedback); phase 02 complete
-last_updated: "2026-07-03T21:29:39.000Z"
+current_phase: 3
+current_phase_name: Role-aware home
+status: planning
+stopped_at: Phase 02 plan 08 complete + UAT approved — all UAT gaps resolved (Enter-submit forms + Button cursor feedback)
+last_updated: "2026-07-03T14:00:48.579Z"
 progress:
   total_phases: 3
   completed_phases: 2
@@ -29,9 +30,9 @@ progress:
 Phase: 02 (secure-account-you-can-return-to) — COMPLETE
 Plan: 8 of 8
 
-- **Phase:** 02
-- **Plan:** 08 complete
-- **Status:** Phase 02 complete — all UAT gaps resolved; ready for phase 02 final verification / phase 03 planning
+- **Phase:** 3 — Role-aware home
+- **Plan:** Not started
+- **Status:** Ready to plan
 - **Progress:** [██████████] 12/12 plans complete
 
 ## Roadmap Snapshot

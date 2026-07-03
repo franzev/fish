@@ -90,7 +90,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
-| 2. Secure account you can return to | 8/8 | Complete   | 2026-07-03 |
+| 2. Secure account you can return to | 8/8 | Complete    | 2026-07-03 |
 | 3. Role-aware home | 0/? | Not started | - |
 
 ## Coverage
