@@ -105,4 +105,19 @@ describe("CheckInboxPage", () => {
     fireEvent.click(button);
     expect(resendMock).not.toHaveBeenCalled();
   });
+
+  it("submitting the form (not just clicking) calls the signup resend once", async () => {
+    resendMock.mockResolvedValueOnce({ error: null });
+    const { container } = render(<CheckInboxPage />);
+
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+    fireEvent.submit(form!);
+
+    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
+    expect(resendMock).toHaveBeenCalledWith({
+      type: "signup",
+      email: "ada@example.com",
+    });
+  });
 });

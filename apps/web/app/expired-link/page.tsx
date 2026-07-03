@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 
 /* Shared by verify AND reset expired/used links (D-06). Reads ?email= and
    ?type= via useSearchParams(), so this must sit under a page-level
@@ -19,9 +19,11 @@ function ExpiredLinkContent() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleResend() {
-    // The Input's `required` can't gate a type="button" click — guard here
-    // so an empty email never fires the request or fakes a success.
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    // The Input's `required` gates real-DOM submission, but the guard stays
+    // so jsdom/programmatic submits (and any bypass) still show the calm
+    // ask instead of firing the request with an empty address.
     if (!email) {
       setNotice("Add your email above, then resend.");
       return;
@@ -55,7 +57,7 @@ function ExpiredLinkContent() {
         Links only work once, and this one&apos;s had its turn. Send
         yourself a fresh one.
       </p>
-      <div className="mt-6 space-y-5">
+      <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
         <Input
           label="Email"
           type="email"
@@ -63,16 +65,11 @@ function ExpiredLinkContent() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Button
-          type="button"
-          variant="primary"
-          loading={loading}
-          onClick={handleResend}
-        >
+        <Button type="submit" variant="primary" loading={loading}>
           Resend the email
         </Button>
         {notice && <Alert tone="notice">{notice}</Alert>}
-      </div>
+      </form>
     </Card>
   );
 }

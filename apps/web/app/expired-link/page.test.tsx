@@ -106,14 +106,58 @@ describe("ExpiredLinkPage", () => {
 
   it("an empty email never fires the request and asks for the email instead", () => {
     searchParamsValue = new URLSearchParams();
-    render(<ExpiredLinkPage />);
+    const { container } = render(<ExpiredLinkPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
+    // The Input's `required` now gates a real click via native constraint
+    // validation (requestSubmit() calls reportValidity() and aborts before
+    // onSubmit runs) — that's the browser doing its job. The app-level
+    // guard inside handleSubmit is defense-in-depth for a submit that
+    // bypasses native validation (programmatic dispatch), so we exercise
+    // it the same way: fireEvent.submit() dispatches the submit event
+    // directly, without going through requestSubmit()'s validation step.
+    const form = container.querySelector("form");
+    fireEvent.submit(form!);
 
     expect(resendMock).not.toHaveBeenCalled();
     expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
     expect(
       screen.getByText("Add your email above, then resend.")
     ).toBeInTheDocument();
+  });
+
+  it("pressing Enter in the email field submits the resend (keyboard submit, not just click)", async () => {
+    resendMock.mockResolvedValueOnce({ error: null });
+    const { container } = render(<ExpiredLinkPage />);
+
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+    // Implicit form submission via Enter fires the form's submit event —
+    // jsdom does not natively derive that from a keydown, so we submit the
+    // form directly, matching what pressing Enter in a text field triggers.
+    fireEvent.submit(form!);
+
+    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
+    expect(resendMock).toHaveBeenCalledWith({
+      type: "signup",
+      email: "ada@example.com",
+    });
+  });
+
+  it("pressing Enter with type=recovery submits via the recovery resend method", async () => {
+    searchParamsValue = new URLSearchParams({
+      email: "ada@example.com",
+      type: "recovery",
+    });
+    resetPasswordForEmailMock.mockResolvedValueOnce({ error: null });
+    const { container } = render(<ExpiredLinkPage />);
+
+    const form = container.querySelector("form");
+    fireEvent.submit(form!);
+
+    await waitFor(() =>
+      expect(resetPasswordForEmailMock).toHaveBeenCalledTimes(1)
+    );
+    expect(resetPasswordForEmailMock).toHaveBeenCalledWith("ada@example.com");
+    expect(resendMock).not.toHaveBeenCalled();
   });
 });
