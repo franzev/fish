@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
   IconAlertCircle,
+  IconAlertTriangle,
   IconCircleCheck,
   IconInfoCircle,
 } from "@tabler/icons-react";
@@ -22,12 +23,14 @@ const tokenSwatches = [
   { name: "primary", className: "bg-primary" },
   { name: "on-primary", className: "bg-on-primary" },
   { name: "notice", className: "bg-notice" },
+  { name: "warning", className: "bg-warning" },
   { name: "error", className: "bg-error" },
   { name: "success", className: "bg-success" },
 ];
 
 const iconSamples = [
   { name: "IconInfoCircle (notice)", Icon: IconInfoCircle },
+  { name: "IconAlertTriangle (warning)", Icon: IconAlertTriangle },
   { name: "IconAlertCircle (error)", Icon: IconAlertCircle },
   { name: "IconCircleCheck (success)", Icon: IconCircleCheck },
 ];
@@ -189,6 +192,9 @@ export default function KitPage() {
         <div className="space-y-3">
           <Alert tone="notice">
             That doesn&apos;t look like an email yet. Check the spelling?
+          </Alert>
+          <Alert tone="warning">
+            That didn&apos;t send — give it a minute and try again.
           </Alert>
           <Alert tone="error">
             Something needs your attention before you can continue.
