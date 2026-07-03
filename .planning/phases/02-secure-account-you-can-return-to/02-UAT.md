@@ -1,9 +1,9 @@
 ---
-status: testing
+status: complete
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
-updated: 2026-07-03T08:13:30Z
+updated: 2026-07-03T12:00:15Z
 mode: mvp
 user_story: "As a new client, I want to sign up, verify my email, log in, stay logged in across a browser restart, and log out, so that I can always return to an account where my data belongs only to me."
 ---
@@ -11,11 +11,7 @@ user_story: "As a new client, I want to sign up, verify my email, log in, stay l
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-number: 10
-name: Recovery Link Lands on Set-New-Password (RETEST — diagnosis found no defect)
-expected: |
-  Open Mailpit (http://127.0.0.1:54324) — a "Reset your password" email for client1@fish.dev is already there from the diagnosis reproduction. Its link carries type=recovery&next=/reset-password. Clicking it lands you signed in on /reset-password — a single password field with an "At least 8 characters." hint. Set a new password; you land on /home. Log out and log back in with the NEW password successfully.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -73,15 +69,18 @@ section: technical
 
 ### 10. Recovery Link Lands on Set-New-Password (post-restart re-check)
 expected: From the forgot-password request for a real account, open the Mailpit email and inspect the raw link: it must carry `type=recovery&next=/reset-password` (this is the re-check plan 02-05 requires after the stack restart). Clicking it lands you signed in on /reset-password — a single password field with an "At least 8 characters." hint. Set a new password; you land on /home. Log out and log back in with the NEW password successfully.
-result: [pending]
-note: "First attempt reported 'no email received' — diagnosis proved the submitted address matched no account (anti-enumeration 200) and the pipeline is healthy end-to-end. Retest with verbatim client1@fish.dev; a valid recovery email is already waiting in Mailpit."
+result: issue
+reported: "when I press enter it, form should submit"
+severity: major
+note: "Retest reached the reset form (recovery email delivery confirmed working), but pressing Enter in the password field does not submit the form. Prior 'no email received' report was diagnosed as a mistyped address — pipeline healthy."
 section: technical
 
 ### 11. Consumed Link Routes to a Calm Expired-Link Screen
 expected: Click the same (already used) email link again — either the signup or recovery one. You land on /expired-link, which explains calmly, knows which type of link it was, pre-fills your email, and offers a working resend — no raw error, no dead end.
-result: blocked
-blocked_by: other
-reason: "I cant test this since I cant receive recovery link (blocked by test 10 issue — no recovery email delivered)"
+result: issue
+reported: "enter submit still not working in /expired-link page"
+severity: major
+note: "Page itself loads and routes correctly (user reached /expired-link); the defect is keyboard submit — pressing Enter in the resend form does not submit, same symptom as test 10's reset form."
 section: technical
 
 ### 12. RLS and Role Escalation Are Enforced
@@ -104,10 +103,10 @@ section: coverage
 
 total: 13
 passed: 11
-issues: 0
-pending: 1
+issues: 2
+pending: 0
 skipped: 0
-blocked: 1
+blocked: 0
 
 ## Gaps
 
@@ -159,3 +158,19 @@ blocked: 1
     - "No code change — retest test 10 submitting the seeded address verbatim (copy-paste client1@fish.dev)"
   debug_session: ".planning/debug/recovery-email-not-delivered.md"
   note: "Recovery emails for client1@fish.dev and client2@fish.dev are already in Mailpit from the investigation's live reproduction — tests 10 and 11 can resume immediately."
+
+- truth: "Pressing Enter in the /reset-password password field submits the form (keyboard submit works, not just the button)"
+  status: failed
+  reason: "User reported: when I press enter it, form should submit"
+  severity: major
+  test: 10
+  artifacts: []  # Filled by diagnosis
+  missing: []    # Filled by diagnosis
+
+- truth: "Pressing Enter in the /expired-link resend form submits it (keyboard submit works, not just the button)"
+  status: failed
+  reason: "User reported: enter submit still not working in /expired-link page"
+  severity: major
+  test: 11
+  artifacts: []  # Filled by diagnosis
+  missing: []    # Filled by diagnosis
