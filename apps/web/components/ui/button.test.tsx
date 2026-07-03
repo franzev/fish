@@ -1,5 +1,5 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { Button } from "./button";
 
 describe("Button", () => {
@@ -38,20 +38,28 @@ describe("Button", () => {
     expect(button.className).toContain("text-muted");
   });
 
-  it("disabled state disables the button and carries the dim/no-pointer classes", () => {
+  it("disabled state disables the button and carries the dim/blocked-cursor classes", () => {
     const { getByRole } = render(<Button disabled>Get started</Button>);
     const button = getByRole("button");
     expect(button).toBeDisabled();
     expect(button.className).toContain("disabled:opacity-50");
-    expect(button.className).toContain("disabled:pointer-events-none");
+    expect(button.className).toContain("disabled:cursor-not-allowed");
   });
 
-  it("loading state sets aria-busy, blocks pointer events, and shows a busy indicator", () => {
-    const { getByRole } = render(<Button loading>Saving</Button>);
+  it("loading state sets aria-busy and shows a busy indicator, with the click guarded", () => {
+    const onClick = vi.fn();
+    const { getByRole } = render(
+      <Button loading onClick={onClick}>
+        Saving
+      </Button>
+    );
     const button = getByRole("button");
     expect(button).toHaveAttribute("aria-busy", "true");
-    expect(button.className).toContain("pointer-events-none");
     expect(button.querySelector(".animate-spin")).not.toBeNull();
+    // Non-activation now comes from a click-guard (not pointer-events-none),
+    // so a busy button must not fire its onClick when clicked.
+    fireEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
   });
 
   it("does not mark a non-loading button as busy", () => {
@@ -59,6 +67,43 @@ describe("Button", () => {
     const button = getByRole("button");
     expect(button).not.toHaveAttribute("aria-busy");
     expect(button.querySelector(".animate-spin")).toBeNull();
+  });
+
+  it("shows cursor-pointer on a default interactive button", () => {
+    const { getByRole } = render(<Button>Get started</Button>);
+    expect(getByRole("button").className).toContain("cursor-pointer");
+  });
+
+  it("shows cursor-progress while loading", () => {
+    const { getByRole } = render(<Button loading>Saving</Button>);
+    expect(getByRole("button").className).toContain("cursor-progress");
+  });
+
+  it("shows disabled:cursor-not-allowed when disabled, and stays disabled", () => {
+    const { getByRole } = render(<Button disabled>Get started</Button>);
+    const button = getByRole("button");
+    expect(button.className).toContain("disabled:cursor-not-allowed");
+    expect(button).toBeDisabled();
+  });
+
+  it("does not fire onClick when a loading button is clicked (loading click-guard)", () => {
+    const spy = vi.fn();
+    const { getByRole } = render(
+      <Button loading onClick={spy}>
+        Saving
+      </Button>
+    );
+    fireEvent.click(getByRole("button"));
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("does not carry pointer-events-none in any state (cursor must be visible)", () => {
+    const { getByRole, rerender } = render(<Button>Go</Button>);
+    expect(getByRole("button").className).not.toContain("pointer-events-none");
+    rerender(<Button loading>Go</Button>);
+    expect(getByRole("button").className).not.toContain("pointer-events-none");
+    rerender(<Button disabled>Go</Button>);
+    expect(getByRole("button").className).not.toContain("pointer-events-none");
   });
 });
 

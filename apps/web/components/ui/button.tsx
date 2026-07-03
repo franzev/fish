@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ButtonHTMLAttributes, forwardRef } from "react";
+import { ButtonHTMLAttributes, forwardRef, MouseEvent } from "react";
 
 type Variant = "primary" | "secondary" | "ghost";
 
@@ -7,7 +7,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   /** Full-width is the default — most ND screens have one big action. */
   fullWidth?: boolean;
-  /** Busy state: dims, blocks pointer events, and shows a quiet spinner. */
+  /** Busy state: dims, guards its own click, and shows a quiet spinner. */
   loading?: boolean;
 }
 
@@ -31,25 +31,42 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       fullWidth = true,
       loading = false,
+      onClick,
       children,
       ...props
     },
     ref
   ) => {
+    // Non-activation, WHY: the native `disabled` attribute (passed through
+    // via ...props) already blocks click AND keyboard for the disabled
+    // state, so it needs no JS guard. Loading isn't `disabled` (that would
+    // also suppress focus/cursor), so it gets its own click-guard here
+    // instead. Neither state relies on `pointer-events-none` any more —
+    // that class swallows the element's OWN cursor, which is exactly what
+    // stopped cursor-progress/cursor-not-allowed from ever rendering.
+    function handleClick(event: MouseEvent<HTMLButtonElement>) {
+      if (loading) {
+        event.preventDefault();
+        return;
+      }
+      onClick?.(event);
+    }
+
     return (
       <button
         ref={ref}
         aria-busy={loading || undefined}
+        onClick={handleClick}
         className={cn(
           // Layout stability: no state change may alter the rendered size.
           // relative anchors the loading overlay; a constant (transparent)
           // border keeps the box model identical across all variants.
           "relative inline-flex items-center justify-center rounded-control px-6",
           "min-h-[var(--size-control)] text-[17px] transition-colors",
-          "border border-transparent",
-          "disabled:opacity-50 disabled:pointer-events-none",
+          "border border-transparent cursor-pointer",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
           fullWidth && "w-full",
-          loading && "opacity-70 pointer-events-none",
+          loading && "opacity-70 cursor-progress",
           variants[variant],
           className
         )}
