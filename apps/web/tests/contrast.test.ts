@@ -9,7 +9,10 @@
  * Any `--color-*` change in globals.css is re-verified here automatically:
  *   - text pairs must meet WCAG 2.1 AA 4.5:1
  *   - UI-component pairs (borders) must meet 3:1
- *   - every token must be pure monochrome (oklch chroma = 0 — TOKN-01)
+ *   - every STRUCTURAL token must be pure monochrome (oklch chroma = 0 — TOKN-01)
+ *   - the three semantic feedback tones (error/warning/success, D-08) are the
+ *     one deliberate exception: calm, desaturated hues instead of monochrome,
+ *     still gated at the same 4.5:1 / 3:1 thresholds below.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -56,8 +59,13 @@ const expectedTokenNames = [
   "primary-press",
   "notice",
   "error",
+  "warning",
   "success",
 ] as const;
+
+/** D-08: these three semantic feedback tones are the deliberate exception to
+ *  pure monochrome — calm, desaturated hues, still WCAG-gated below. */
+const hueTones = ["error", "warning", "success"] as const;
 
 type Theme = keyof TokenPair;
 const themes: Theme[] = ["light", "dark"];
@@ -85,11 +93,22 @@ describe("monochrome token ladder (globals.css @theme)", () => {
     expect(unparsed, "color tokens missing light-dark()").toEqual([]);
   });
 
-  it("keeps every token pure monochrome — oklch chroma is 0 in both themes (TOKN-01)", () => {
+  it("keeps every structural token pure monochrome — oklch chroma is 0 in both themes (TOKN-01)", () => {
     for (const [name, pair] of Object.entries(tokens)) {
+      if ((hueTones as readonly string[]).includes(name)) continue;
       for (const theme of themes) {
         const chroma = new Color(pair[theme]).coords[1];
         expect(chroma, `--color-${name} (${theme}) chroma`).toBe(0);
+      }
+    }
+  });
+
+  it("keeps the semantic feedback tones calm and desaturated, never neon/pure-hue (D-08)", () => {
+    for (const name of hueTones) {
+      for (const theme of themes) {
+        const chroma = new Color(tokens[name][theme]).coords[1];
+        expect(chroma, `--color-${name} (${theme}) chroma`).toBeGreaterThan(0);
+        expect(chroma, `--color-${name} (${theme}) chroma too saturated`).toBeLessThanOrEqual(0.15);
       }
     }
   });
@@ -106,6 +125,7 @@ const textPairs: Array<[fg: string, bg: string]> = [
   ["muted", "bg"],
   ["notice", "surface"],
   ["error", "surface"],
+  ["warning", "surface"],
   ["success", "surface"],
   // WR-04: rendered-but-previously-unasserted pairings (closes the gap noted
   // in 01-VERIFICATION.md — these already pass on disk, this guards them).
@@ -114,12 +134,17 @@ const textPairs: Array<[fg: string, bg: string]> = [
   ["foreground", "surface-2"], // elevated-card / alt-row heading text
   ["notice", "bg"], // feedback text rendered directly on the page canvas
   ["error", "bg"], // feedback text rendered directly on the page canvas
+  ["warning", "bg"], // feedback text rendered directly on the page canvas
+  ["success", "bg"], // feedback text rendered directly on the page canvas
 ];
 
 /** UI-component pairs: WCAG 2.1 AA non-text contrast — ratio >= 3.0. */
 const uiPairs: Array<[fg: string, bg: string]> = [
   ["border", "surface"],
   ["border-strong", "surface"],
+  ["error", "surface"], // Alert/Input error border
+  ["warning", "surface"], // Alert warning border
+  ["success", "surface"], // Alert success border
 ];
 
 describe.each(themes)("WCAG AA contrast — %s theme", (theme) => {

@@ -17,10 +17,13 @@
 
   Dual theme: every color token is a light-dark(light, dark) pair
   resolved natively by the CSS engine (color-scheme is set on html
-  in the base layer — zero JS, no flash of the wrong theme). All
-  values are oklch with chroma 0. Contrast on every pairing is
-  asserted by tests/contrast.test.ts (WCAG AA), which parses this
-  file — change a value here and the test re-verifies it.
+  in the base layer — zero JS, no flash of the wrong theme). Every
+  token is oklch. Structural tokens keep chroma 0 (pure monochrome);
+  the three semantic feedback tones (error/warning/success, D-08) are
+  the one deliberate exception — calm, desaturated hues, never pure
+  primaries. Contrast on every pairing is asserted by
+  tests/contrast.test.ts (WCAG AA), which parses this file — change a
+  value here and the test re-verifies it.
 */
 
 @theme {
@@ -40,10 +43,19 @@
   --color-body: light-dark(oklch(0.32 0 0), oklch(0.88 0 0));          /* body copy */
   --color-muted: light-dark(oklch(0.50 0 0), oklch(0.68 0 0));         /* captions, placeholders, hints */
 
-  /* Feedback — calm, not alarming. Tiers differ by weight and structure, never hue. */
-  --color-notice: light-dark(oklch(0.40 0 0), oklch(0.80 0 0));        /* tier 1 — regular weight */
-  --color-error: light-dark(oklch(0.20 0 0), oklch(0.95 0 0));         /* tier 2 — semibold + heavier border, still monochrome */
-  --color-success: light-dark(oklch(0.40 0 0), oklch(0.80 0 0));       /* same value as notice — differs by icon shape only */
+  /* Feedback — calm, not alarming.
+     `notice` stays monochrome (structural weight only, no hue — the neutral
+     informational tier). `error`/`warning`/`success` are a deliberate D-08
+     exception to "hierarchy before color": page-level result tones now carry
+     a calm, desaturated hue each so a floating overlay alert (Alert, 02-08)
+     reads at a glance without leaning on weight/icon alone. Chroma is kept
+     low (0.11-0.14) and explicitly NOT pure red/green/amber — nothing neon,
+     nothing alarming, tuned so tests/contrast.test.ts still clears 4.5:1
+     text / 3:1 UI on every surface. */
+  --color-notice: light-dark(oklch(0.40 0 0), oklch(0.80 0 0));        /* tier 1 — regular weight, still monochrome */
+  --color-error: light-dark(oklch(0.45 0.14 20), oklch(0.78 0.11 20));    /* soft rose/coral — not pure red */
+  --color-warning: light-dark(oklch(0.42 0.12 80), oklch(0.78 0.12 80));  /* soft amber */
+  --color-success: light-dark(oklch(0.40 0.11 150), oklch(0.75 0.12 150)); /* soft green */
 
   /* ---- Type ---- */
   --font-sans: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
@@ -109,11 +121,28 @@
     box-shadow: 0 0 0 4px light-dark(oklch(1 0 0), oklch(0.15 0 0));
     border-radius: 6px;
   }
-  /* Respect reduced motion. */
+  /* Respect reduced motion. Covers the animate-fade-in utility below too —
+     one rule, no per-animation opt-out to forget (D-08). */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
       transition-duration: 0.001ms !important;
     }
   }
+}
+
+/* Calm entrance for the floating notice overlay (D-08) — opacity only, no
+   motion/transform, so it stays gentle even before prefers-reduced-motion
+   clamps the duration above. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility animate-fade-in {
+  animation: fade-in 200ms ease-out;
 }
