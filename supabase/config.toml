@@ -1,8 +1,8 @@
 project_id = "fish"
 
 [auth]
-site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["http://127.0.0.1:3000"]
+site_url = "http://127.0.0.1:3001"
+additional_redirect_urls = ["http://127.0.0.1:3001"]
 # D-16: 8-char minimum, no complexity rules (password_requirements stays default).
 minimum_password_length = 8
 
