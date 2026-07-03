@@ -1,5 +1,5 @@
 ---
-status: partial
+status: diagnosed
 phase: 02-secure-account-you-can-return-to
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md
 started: 2026-07-03T03:12:53Z
@@ -104,7 +104,14 @@ blocked: 0
   reason: "User reported: internal server error upon clicking the link"
   severity: blocker
   test: 3
-  root_cause: ""     # Filled by diagnosis
-  artifacts: []      # Filled by diagnosis
-  missing: []        # Filled by diagnosis
-  debug_session: ""  # Filled by diagnosis
+  root_cause: "Port/site_url mismatch, not a code bug: supabase/config.toml pins site_url=http://127.0.0.1:3000 so email links point at :3000, but port 3000 is held by an unrelated project (Timberyard, Next 15) while the FISH dev server actually listens on :3001. The link hits the wrong app, which 500s. The identical request against :3001 verifies the email and lands at /home with a session cookie — FISH's /auth/confirm handler, proxy, and env keys are all healthy."
+  artifacts:
+    - path: "supabase/config.toml"
+      issue: "site_url and additional_redirect_urls pin http://127.0.0.1:3000, a port FISH does not serve in this environment"
+    - path: "apps/web/app/auth/confirm/route.ts"
+      issue: "NOT at fault — verified working end-to-end on port 3001"
+  missing:
+    - "Deterministic agreement between the FISH dev port and site_url: pin the dev port explicitly in the dev script (no silent Next port fallback) and point site_url + additional_redirect_urls at that port"
+    - "Supabase stack restart after the config change (config.toml is read at stack start)"
+  debug_session: ".planning/debug/verify-email-link-500.md"
+  note: "Diagnosis consumed the pending token and verified the test account — re-run test 3 with a FRESH signup; the old link will now correctly land on /expired-link."
