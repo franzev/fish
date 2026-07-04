@@ -94,7 +94,7 @@
   .avatar.lg { width: 72px; height: 72px; font-size: var(--text-lg); }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
 
-  .iconbtn { width: var(--tap); height: var(--tap); min-width: 44px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease, color .15s ease; }
+  .iconbtn { width: var(--tap); height: var(--tap); min-width: var(--tap); flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease, color .15s ease; }
   .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   svg.i.sm { width: 19px; height: 19px; }
@@ -478,11 +478,11 @@
           <div class="feed" style="padding:var(--s4)">
             <div class="row"><div class="bubble coach">Morning, Sofia. Ready? Today: <span class="em">ordering at a restaurant</span>.</div></div>
             <div class="row me"><div class="bubble me">Yes! Practiced the phrases 🙂</div></div>
-            <div class="row"><div class="bubble coach"><div class="voice"><button class="iconbtn sm" style="width:34px;height:34px;background:var(--surface-2)"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:16px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:14px"></i></div><span class="dur">0:12</span></div></div></div>
+            <div class="row"><div class="bubble coach"><div class="voice"><button class="iconbtn sm" aria-label="Play voice message" style="background:var(--surface-2)"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:16px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:14px"></i></div><span class="dur">0:12</span></div></div></div>
             <div class="practice" style="padding:var(--s4)"><div class="tag">This week</div><h3 style="font-size:var(--text-base)">Ordering at a restaurant</h3><div class="progress"><span style="width:60%"></span></div></div>
           </div>
           <div class="composer">
-            <button class="iconbtn sm" style="width:40px;height:40px"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button>
+            <button class="iconbtn sm" aria-label="Record a voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button>
             <input class="field" type="text" readonly aria-label="Message" placeholder="Message…">
             <button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button>
           </div>
