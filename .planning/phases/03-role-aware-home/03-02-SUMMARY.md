@@ -140,3 +140,7 @@ None.
 ---
 *Phase: 03-role-aware-home*
 *Completed: 2026-07-04*
+
+## Self-Check: PASSED
+
+All 3 claimed files verified present on disk (`apps/web/app/(authenticated)/home/page.tsx`, `apps/web/app/(authenticated)/home/page.test.tsx`, `.planning/phases/03-role-aware-home/03-02-SUMMARY.md`); both deletions confirmed (`apps/web/app/home/page.tsx`, `apps/web/app/home/page.test.tsx` no longer exist); both commit hashes (`42d0fbe`, `04daad6`) verified present in git log.
