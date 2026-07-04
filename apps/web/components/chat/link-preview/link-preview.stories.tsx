@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { LinkPreview } from "./link-preview";
-import { linkPreview } from "./story-data";
+import { linkPreview } from "../story-data";
 
 const meta = {
   title: "Chat/LinkPreview",

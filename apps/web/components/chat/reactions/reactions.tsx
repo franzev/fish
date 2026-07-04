@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
-import type { Reaction } from "./types";
+import type { Reaction } from "../types";
 
 interface ReactionsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"> {
   reactions?: Reaction[];

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Attachments } from "./attachments";
-import { attachments } from "./story-data";
+import { attachments } from "../story-data";
 
 const meta = {
   title: "Chat/Attachments",

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { IconCheck, IconChecks, IconClock } from "@tabler/icons-react";
 import { HTMLAttributes } from "react";
-import type { MessageStatus as MessageStatusValue } from "./types";
+import type { MessageStatus as MessageStatusValue } from "../types";
 
 interface MessageStatusProps extends HTMLAttributes<HTMLSpanElement> {
   status: MessageStatusValue;

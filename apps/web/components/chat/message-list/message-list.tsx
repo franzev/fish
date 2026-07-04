@@ -2,10 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
-import { Message } from "./message";
-import { Skeleton } from "./skeleton";
-import { UnreadDivider } from "./unread-divider";
-import type { ChatMessageView } from "./types";
+import { Message } from "../message";
+import { Skeleton } from "../skeleton";
+import { UnreadDivider } from "../unread-divider";
+import type { ChatMessageView } from "../types";
 
 interface MessageListProps extends HTMLAttributes<HTMLDivElement> {
   messages: ChatMessageView[];

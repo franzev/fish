@@ -3,9 +3,9 @@
 import { cn } from "@/lib/utils";
 import { IconDots, IconInfoCircle, IconPhone } from "@tabler/icons-react";
 import { HTMLAttributes } from "react";
-import { Avatar } from "./avatar";
-import { PresenceIndicator } from "./presence-indicator";
-import type { ChatParticipantView } from "./types";
+import { Avatar } from "../avatar";
+import { PresenceIndicator } from "../presence-indicator";
+import type { ChatParticipantView } from "../types";
 
 interface ChatHeaderProps extends HTMLAttributes<HTMLDivElement> {
   participant: ChatParticipantView;
