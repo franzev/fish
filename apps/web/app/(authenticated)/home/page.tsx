@@ -2,6 +2,7 @@ import { EmptyState } from "@/components/home/empty-state";
 import { authRedirects } from "@/lib/auth/redirects";
 import { getClientHomeData } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { IconSparkles } from "@tabler/icons-react";
 
 /* Server Component (NOT "use client") — the (authenticated) layout already
@@ -32,6 +33,13 @@ export default async function ClientHomePage() {
           <p>We&apos;re getting things ready for you.</p>
         )}
       </EmptyState>
+      {/* D-05: a quiet link, not a primary button -- the minimal /profile
+          route this phase, ahead of the full bottom-nav shell. */}
+      <p className="mt-6 text-center text-[14px] text-muted">
+        <Link href="/profile" className="text-body underline">
+          Your profile
+        </Link>
+      </p>
     </>
   );
 }

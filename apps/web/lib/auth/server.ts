@@ -1,12 +1,24 @@
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
-import type {
-  ClientProfileRow,
-  CoachClientListItem,
-  SupabaseServices,
-} from "@/lib/services";
+import type { CoachClientListItem, SupabaseServices } from "@/lib/services";
 import { isUserRole, type UserRole } from "@fish/core/roles";
 import { ServiceError } from "@/lib/services";
 import { authRedirects } from "./redirects";
+
+export type ThemePref = "light" | "dark" | null;
+export type TextSizePref = "default" | "large" | "larger" | null;
+
+// The DB column is a CHECK-constrained `text`, not a Postgres enum, so the
+// generated Row type is `string | null`. Narrow at this one server-side
+// boundary rather than threading `string | null` through every client
+// component that expects the literal union (defense-in-depth mirrors the
+// zod schema's own narrowing job, just for reads instead of writes).
+function toThemePref(value: string | null): ThemePref {
+  return value === "light" || value === "dark" ? value : null;
+}
+
+function toTextSizePref(value: string | null): TextSizePref {
+  return value === "large" || value === "larger" ? value : "default";
+}
 
 export interface CurrentProfile {
   userId: string;
@@ -32,9 +44,9 @@ export interface ProfileData {
   locale: string | null;
   timezone: string | null;
   level: string | null;
-  themePref: ClientProfileRow["theme_pref"];
-  textSizePref: ClientProfileRow["text_size_pref"];
-  reducedMotionPref: ClientProfileRow["reduced_motion_pref"];
+  themePref: ThemePref;
+  textSizePref: TextSizePref;
+  reducedMotionPref: boolean | null;
   consented: boolean;
   consentedAt: string | null;
   consentVersion: string | null;
@@ -174,8 +186,8 @@ export async function getProfileData(): Promise<ProfileData | null> {
     locale: clientProfile?.locale ?? null,
     timezone: clientProfile?.timezone ?? null,
     level: clientProfile?.level ?? null,
-    themePref: clientProfile?.theme_pref ?? null,
-    textSizePref: clientProfile?.text_size_pref ?? null,
+    themePref: toThemePref(clientProfile?.theme_pref ?? null),
+    textSizePref: toTextSizePref(clientProfile?.text_size_pref ?? null),
     reducedMotionPref: clientProfile?.reduced_motion_pref ?? null,
     consented: clientProfile?.consented ?? false,
     consentedAt: clientProfile?.consented_at ?? null,

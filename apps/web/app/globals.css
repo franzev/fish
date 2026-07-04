@@ -96,6 +96,35 @@
   html[data-kit-theme="dark"] {
     color-scheme: dark;
   }
+  /* Product-facing preference overrides (PROF-03/D-14). Distinct attribute
+     names from data-kit-theme above -- that one stays /kit-only dev preview
+     (RESEARCH correction: there is no existing persisted theme mechanism to
+     extend). Same Lightning CSS constraint applies: stylesheet rules only,
+     JS flips the data-* attribute exclusively (Pitfall 5). */
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  /* Three text-size steps (D-13): scales the root so every rem-based token
+     scales with it. Default/unset = 100% = the existing 17px body base. */
+  html[data-text-size="large"] {
+    font-size: 112.5%;
+  }
+  html[data-text-size="larger"] {
+    font-size: 125%;
+  }
+  /* Explicit reduced-motion override, composing with (not replacing) the
+     prefers-reduced-motion media query below -- an explicit opt-in works
+     even when the OS hasn't set the system-level flag (D-14). */
+  html[data-reduced-motion="true"] *,
+  html[data-reduced-motion="true"] *::before,
+  html[data-reduced-motion="true"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
   body {
     background-color: var(--color-bg);
     color: var(--color-body);
