@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --filter @fish/web dev",
     "dev:web": "pnpm --filter @fish/web dev",
+    "android:preview": "node scripts/android-preview.mjs",
     "build": "pnpm -r --if-present build",
     "build:web": "pnpm --filter @fish/web build",
     "lint": "pnpm -r --if-present lint",
