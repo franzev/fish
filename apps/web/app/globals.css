@@ -146,3 +146,54 @@
 @utility animate-fade-in {
   animation: fade-in 200ms ease-out;
 }
+
+/* Chat: new-message entrance. Small opacity + translate settle so incoming
+   bubbles feel calm, never a bounce/attention-grab. Reduced-motion clamp is
+   the existing global rule above — no per-animation guard needed here. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-message-in {
+  animation: message-in 200ms ease-out;
+}
+
+/* Chat: typing indicator dots. One shared keyframe; callers stagger the
+   three dots with per-dot inline animation-delay (see TypingIndicator). */
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@utility animate-typing {
+  animation: typing-bounce 1200ms ease-in-out infinite;
+}
+
+/* Chat: reaction pill pop when a reaction is added. Brief, no bounce. */
+@keyframes reaction-pop {
+  from {
+    transform: scale(0.85);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@utility animate-reaction-pop {
+  animation: reaction-pop 180ms ease-out;
+}
