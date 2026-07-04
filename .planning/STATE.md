@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 Phase: — (milestone v1.0 complete and archived)
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-04 — v1.0 archived (roadmap, requirements, audit, phases → .planning/milestones/), PROJECT.md evolved, retrospective written, tagged v1.0
+Last activity: 2026-07-04 — Completed quick task 260704-inu: Build modern chat interface component library for web (24-component token-only chat kit under apps/web/components/chat/ + dev-only /kit/chat showcase)
 
 ## Archived Milestones
 
@@ -73,6 +73,7 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260704-dn2 | Implement native Android static Compose UI preview for current web auth screens, no auth wiring yet | 2026-07-04 | 2e21c80 | [260704-dn2-go-with-option-1-implement-native-androi](./quick/260704-dn2-go-with-option-1-implement-native-androi/) |
+| 260704-inu | Build modern chat interface component library for web | 2026-07-04 | 59cc6fb | [260704-inu-build-modern-chat-interface-component-li](./quick/260704-inu-build-modern-chat-interface-component-li/) |
 
 ## Session Continuity
 
