@@ -6,9 +6,7 @@ export interface FishAuthClaims {
 }
 
 export const authRedirects = {
-  signedOut: "/",
-  // Interim authenticated landing this phase; Phase 3 owns role-based redirects.
-  home: "/home",
-  clientHome: "/chat",
+  signedOut: "/login",
+  clientHome: "/home",
   coachHome: "/coach",
 } as const;

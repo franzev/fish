@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { authRedirects } from "@fish/supabase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -47,7 +48,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/home");
+      router.push(authRedirects.clientHome);
     } catch {
       // Thrown means transport failure, not bad credentials — don't tell an
       // offline user their password is wrong.
