@@ -1,10 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { Avatar } from "./avatar";
+import { Bubble } from "./bubble";
+import { ChatInput } from "./chat-input";
+import { EmptyState } from "./empty-state";
+import { Message } from "./message";
 import { MessageActions } from "./message-actions";
+import { MessageList } from "./message-list";
 import { MessageStatus } from "./message-status";
 import { Reactions } from "./reactions";
 import { TypingIndicator } from "./typing-indicator";
+import type { ChatMessageView } from "./types";
 
 describe("Avatar", () => {
   it("renders an image with alt text when given a valid src", () => {
@@ -109,5 +115,94 @@ describe("MessageActions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
     expect(onDelete).toHaveBeenCalledTimes(1);
     expect(onCopy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Bubble", () => {
+  it("renders distinct token classes for mine vs received", () => {
+    const { rerender, getByText } = render(<Bubble mine>Hi there</Bubble>);
+    expect(getByText("Hi there").className).toContain("bg-primary");
+    expect(getByText("Hi there").className).toContain("text-on-primary");
+
+    rerender(<Bubble mine={false}>Hi there</Bubble>);
+    expect(getByText("Hi there").className).toContain("bg-surface");
+    expect(getByText("Hi there").className).toContain("border-border");
+  });
+});
+
+const baseMessage: ChatMessageView = {
+  id: "m1",
+  author: { id: "u1", name: "Alex Rivera" },
+  body: "Hello!",
+  sentAt: new Date("2026-01-01T10:00:00Z"),
+  mine: false,
+};
+
+describe("Message", () => {
+  it("aligns a received message to the start", () => {
+    const { container } = render(<Message message={baseMessage} />);
+    expect(container.firstChild).toHaveClass("flex-row");
+  });
+
+  it("aligns a sent (mine) message to the end", () => {
+    const { container } = render(<Message message={{ ...baseMessage, mine: true }} />);
+    expect(container.firstChild).toHaveClass("flex-row-reverse");
+  });
+});
+
+describe("ChatInput", () => {
+  it("disables send when the field is empty", () => {
+    render(<ChatInput />);
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+  });
+
+  it("enables send once text is present, and exactly one primary button exists", () => {
+    render(<ChatInput />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Message" }), {
+      target: { value: "Hello" },
+    });
+    const send = screen.getByRole("button", { name: "Send message" });
+    expect(send).not.toBeDisabled();
+    expect(send.className).toContain("bg-primary");
+
+    // Exactly one primary-styled button in the composed input row.
+    const primaryButtons = screen
+      .getAllByRole("button")
+      .filter((button) => button.className.includes("bg-primary"));
+    expect(primaryButtons).toHaveLength(1);
+  });
+
+  it("submits on Enter and inserts a newline on Shift+Enter", () => {
+    const onSend = vi.fn();
+    render(<ChatInput onSend={onSend} />);
+    const textarea = screen.getByRole("textbox", { name: "Message" });
+    fireEvent.change(textarea, { target: { value: "Hello" } });
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: true });
+    expect(onSend).not.toHaveBeenCalled();
+    fireEvent.keyDown(textarea, { key: "Enter" });
+    expect(onSend).toHaveBeenCalledWith("Hello");
+  });
+});
+
+describe("MessageList", () => {
+  it("exposes role=log with an aria-label", () => {
+    render(<MessageList messages={[baseMessage]} />);
+    expect(screen.getByRole("log", { name: "Conversation messages" })).toBeInTheDocument();
+  });
+
+  it("renders the unread divider immediately before the first unread message", () => {
+    const messages: ChatMessageView[] = [
+      baseMessage,
+      { ...baseMessage, id: "m2", body: "Second" },
+    ];
+    render(<MessageList messages={messages} firstUnreadId="m2" />);
+    expect(screen.getByRole("separator", { name: "Unread messages" })).toBeInTheDocument();
+  });
+});
+
+describe("EmptyState", () => {
+  it("renders calm, non-scolding copy", () => {
+    render(<EmptyState />);
+    expect(screen.getByText("No messages yet")).toBeInTheDocument();
   });
 });
