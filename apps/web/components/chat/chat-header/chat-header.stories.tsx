@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ChatHeader } from "./chat-header";
-import { client, coach } from "./story-data";
+import { client, coach } from "../story-data";
 
 const meta = {
   title: "Chat/ChatHeader",

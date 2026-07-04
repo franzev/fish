@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { IconFile, IconPlayerPlay } from "@tabler/icons-react";
 import { HTMLAttributes } from "react";
-import type { Attachment } from "./types";
+import type { Attachment } from "../types";
 
 interface AttachmentsProps extends HTMLAttributes<HTMLDivElement> {
   attachments?: Attachment[];

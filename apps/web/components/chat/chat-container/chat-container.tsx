@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
-import { ChatHeader } from "./chat-header";
-import { ChatInput } from "./chat-input";
-import { EmptyState } from "./empty-state";
-import { MessageList } from "./message-list";
-import type { ChatMessageView, ChatParticipantView } from "./types";
+import { ChatHeader } from "../chat-header";
+import { ChatInput } from "../chat-input";
+import { EmptyState } from "../empty-state";
+import { MessageList } from "../message-list";
+import type { ChatMessageView, ChatParticipantView } from "../types";
 
 interface ChatContainerProps extends HTMLAttributes<HTMLDivElement> {
   participant: ChatParticipantView;

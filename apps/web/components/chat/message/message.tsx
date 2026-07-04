@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
-import { Attachments } from "./attachments";
-import { Avatar } from "./avatar";
-import { Bubble } from "./bubble";
-import { MessageMeta } from "./message-meta";
-import { MessageStatus } from "./message-status";
-import { QuotedMessage } from "./quoted-message";
-import { Reactions } from "./reactions";
-import type { ChatMessageView } from "./types";
+import { Attachments } from "../attachments";
+import { Avatar } from "../avatar";
+import { Bubble } from "../bubble";
+import { MessageMeta } from "../message-meta";
+import { MessageStatus } from "../message-status";
+import { QuotedMessage } from "../quoted-message";
+import { Reactions } from "../reactions";
+import type { ChatMessageView } from "../types";
 
 interface MessageProps extends HTMLAttributes<HTMLDivElement> {
   message: ChatMessageView;

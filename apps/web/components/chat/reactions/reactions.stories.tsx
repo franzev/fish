@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Reactions } from "./reactions";
-import { reactions } from "./story-data";
+import { reactions } from "../story-data";
 
 const meta = {
   title: "Chat/Reactions",

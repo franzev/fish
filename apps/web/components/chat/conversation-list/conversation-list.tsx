@@ -3,9 +3,9 @@
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { HTMLAttributes, useMemo, useState } from "react";
-import { Avatar } from "./avatar";
-import { NotificationBadge } from "./notification-badge";
-import type { ChatParticipantView } from "./types";
+import { Avatar } from "../avatar";
+import { NotificationBadge } from "../notification-badge";
+import type { ChatParticipantView } from "../types";
 
 export interface ConversationSummary {
   id: string;
