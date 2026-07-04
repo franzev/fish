@@ -2,7 +2,7 @@
 sketch: 003
 name: profile
 question: "How much does a client see about themselves without it becoming a scoreboard?"
-winner: null
+winner: A
 tags: [profile, identity, settings, calm]
 ---
 
@@ -21,9 +21,16 @@ open .planning/sketches/003-profile/index.html
 
 Tap **Appearance** (or the toolbar) to flip light / dark.
 
+## Decision
+
+**Winner: A · Essentials** (user-confirmed 2026-07-04). Because Progress owns its own tab, the
+profile stays a calm, low-stakes "you + your coach + preferences" surface — no stats, no
+scoreboard. B was rejected (duplicates the Progress tab and edges toward a score); C's warmer
+coach card remains available to graft on if desired.
+
 ## Variants
 
-- **A · Essentials** — you, your coach, your settings. No stats (progress lives in the Progress
+- **A · Essentials ★ (selected)** — you, your coach, your settings. No stats (progress lives in the Progress
   tab), so the profile stays a low-stakes, choice-free surface. Calmest.
 - **B · Reflection** — adds a reward-only "what you've worked on" block: completed topic chips
   (never a score), current focus, "practicing since March." Warm, but risks duplicating the
