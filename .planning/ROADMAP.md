@@ -85,7 +85,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 **Plans**: 4 plans
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Routing + shell spine (Wave 1): 0006 migration (is_client_of RLS helper+policy, email column + handle_new_user extension + backfill), [BLOCKING] schema apply/reseed/regen types, authRedirects rewire + root pure-redirect + login wiring, (authenticated) guard layout + AppShell + shared EmptyState
+- [x] 03-01-PLAN.md — Routing + shell spine (Wave 1): 0006 migration (is_client_of RLS helper+policy, email column + handle_new_user extension + backfill), [BLOCKING] schema apply/reseed/regen types, authRedirects rewire + root pure-redirect + login wiring, (authenticated) guard layout + AppShell + shared EmptyState
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -101,7 +101,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
 | 2. Secure account you can return to | 8/8 | Complete    | 2026-07-03 |
-| 3. Role-aware home | 0/4 | Planned | - |
+| 3. Role-aware home | 1/4 | In Progress|  |
 
 ## Coverage
 

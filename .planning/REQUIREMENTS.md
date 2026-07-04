@@ -27,8 +27,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### App Shell
 
-- [ ] **SHEL-01**: An app shell (navigation + page layout) wraps authenticated screens with at most one primary action visible per screen
-- [ ] **SHEL-02**: Client home before assignment and coach home with zero clients show calm, guiding empty states — never alarming "no data" language
+- [x] **SHEL-01**: An app shell (navigation + page layout) wraps authenticated screens with at most one primary action visible per screen
+- [x] **SHEL-02**: Client home before assignment and coach home with zero clients show calm, guiding empty states — never alarming "no data" language
 
 ### Authentication
 
@@ -48,9 +48,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Routing & Roles
 
-- [ ] **ROUT-01**: Signed-out users are redirected to login from any protected route
-- [ ] **ROUT-02**: A client lands on the client home after login
-- [ ] **ROUT-03**: A coach lands on the coach home after login
+- [x] **ROUT-01**: Signed-out users are redirected to login from any protected route
+- [x] **ROUT-02**: A client lands on the client home after login
+- [x] **ROUT-03**: A coach lands on the coach home after login
 - [ ] **ROUT-04**: Coach home lists that coach's assigned (seeded) clients — and only theirs
 
 ## v2 Requirements
@@ -117,11 +117,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-02 | Phase 2 | Complete |
 | DB-03 | Phase 2 | Complete |
 | DB-04 | Phase 2 | Complete |
-| SHEL-01 | Phase 3 | Pending |
-| SHEL-02 | Phase 3 | Pending |
-| ROUT-01 | Phase 3 | Pending |
-| ROUT-02 | Phase 3 | Pending |
-| ROUT-03 | Phase 3 | Pending |
+| SHEL-01 | Phase 3 | Complete |
+| SHEL-02 | Phase 3 | Complete |
+| ROUT-01 | Phase 3 | Complete |
+| ROUT-02 | Phase 3 | Complete |
+| ROUT-03 | Phase 3 | Complete |
 | ROUT-04 | Phase 3 | Pending |
 
 **Coverage:**
