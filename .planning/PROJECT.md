@@ -2,7 +2,30 @@
 
 ## What This Is
 
-FISH is a ChatHub that teaches English to neurodivergent professionals, many with ADHD. Coaches assign everything; clients are never given menus or choices — the product's whole job is to remove choices, not add them. This milestone builds the monochrome design system and the auth foundation everything else stands on.
+FISH is a ChatHub that teaches English to neurodivergent professionals, many with ADHD. Coaches assign everything; clients are never given menus or choices — the product's whole job is to remove choices, not add them. v1.0 (shipped 2026-07-04) delivered the monochrome design system and the auth foundation everything else stands on: a dual-theme token ladder and UI kit, a complete email/password auth loop on an RLS-protected schema, and role-aware routing into calm client/coach homes.
+
+## Current State
+
+**Shipped:** v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
+
+What works today:
+- Monochrome design system: `light-dark()` oklch token ladder, WCAG-AA contrast-tested, five kit components (Button, Input, Card, Progress, Alert), `/kit` demo page as the visual contract in both themes.
+- Full auth loop: signup (always client) → verification email → login → persistent session → logout → password recovery; all screens Enter-submittable, calm non-enumerating copy.
+- Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients`, recursion-safe RLS (`is_coach_of`/`is_client_of`), server-enforced roles, idempotent seed + `pnpm verify:rls` (8/8 live assertions).
+- Role-aware routing: default-deny `(authenticated)` guard, pure-redirect root, wrong-door guards, `redirectIfSignedIn` on auth pages, AppShell with zero primary actions, calm empty states.
+- Quality floor: 173/173 tests, clean build/typecheck/lint, focus-ring regression tripwire, chroma/contrast gates.
+
+Known tech debt (non-blocking, from the v1.0 audit): Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind version pinning via caret ranges; stale dev seed password for client1 (environment drift). Full list: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
+
+## Next Milestone Goals
+
+Per the AGENTS.md build order (auth+roles ✓, shared UI kit ✓), the next foundations are:
+1. **Client profiles** — build order #2
+2. **Onboarding assessment** as a data-driven form (questions from DB, not hard-coded) — build order #3
+3. **Tracker engine** (renders from config, no templates yet) — build order #4
+4. **1-on-1 chat** (coach ↔ client; the Edge Function stub becomes real) — build order #5
+
+Scope and requirements to be defined via `/gsd-new-milestone`. Also flagged: an AGENTS.md docs pass (its design-token section still describes the pre-monochrome lime accent).
 
 ## Core Value
 
@@ -26,22 +49,29 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ Design tokens via Tailwind v4 `@theme` in `apps/web/app/globals.css` — existing
 - ✓ Shared type contracts: roles + chat limits in `packages/core`, auth/database types in `packages/supabase` — existing
 - ✓ Supabase Edge Function stub for send-message (validation only, no persistence) — existing
-- ✓ Pure monochrome token set — black/white/greys only via `light-dark()`, WCAG-contrast-tested — Validated in Phase 1: Monochrome design system you can see
-- ✓ Light and dark monochrome themes from day one — both schemes resolve from one token ladder, no first-paint flash — Validated in Phase 1
-- ✓ UI kit hardened: Button/Input/Card/Progress states (disabled, loading, error), visible two-tone focus ring (regression-tripwired), reduced motion — Validated in Phase 1
-- ✓ UI kit expanded for upcoming screens: Alert (notice/error/success), theme toggle; Tabler-only icon guard — Validated in Phase 1
-- ✓ UI kit demo page (`/kit`) showing every component in every state, both themes — the contract for future screens — Validated in Phase 1
-- ✓ Email/password auth loop: sign up → verify → log in → log out, password reset, session persists across refresh and restart (token_hash/verifyOtp; getUser server-side) — Validated in Phase 2: Secure account you can return to
-- ✓ Client/coach roles enforced server-side; signup always creates clients, role self-escalation rejected by DB guard — Validated in Phase 2
-- ✓ Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients` schema, recursion-safe RLS via SECURITY DEFINER helper, seed + scripted anon-session RLS verification — Validated in Phase 2
-- ✓ App shell and layout: calm authenticated chrome (logo, display name, ghost logout — zero primary actions in the shell) — Validated in Phase 3: Role-aware home
-- ✓ Protected routing: signed-out → login; client → /home, coach → /coach wrong-door guards; signed-in users silently redirected off /login and /signup (server-side, no form flash) — Validated in Phase 3
-- ✓ Role-aware landing screens: client home greets by first name and names the real assigned coach; calm assigned-state empty state — Validated in Phase 3
-- ✓ Coach home lists the coach's assigned clients (seeded), alphabetical with quiet emails, rows inert — Validated in Phase 3
+- ✓ Pure monochrome token set — black/white/greys only via `light-dark()`, WCAG-contrast-tested — v1.0 (Phase 1)
+- ✓ Light and dark monochrome themes from day one — both schemes resolve from one token ladder, no first-paint flash — v1.0 (Phase 1)
+- ✓ UI kit hardened: Button/Input/Card/Progress states (disabled, loading, error), visible two-tone focus ring (regression-tripwired), reduced motion — v1.0 (Phase 1)
+- ✓ UI kit expanded for upcoming screens: Alert (notice/error/success), theme toggle; Tabler-only icon guard — v1.0 (Phase 1)
+- ✓ UI kit demo page (`/kit`) showing every component in every state, both themes — the contract for future screens — v1.0 (Phase 1)
+- ✓ Email/password auth loop: sign up → verify → log in → log out, password reset, session persists across refresh and restart (token_hash/verifyOtp; getUser server-side) — v1.0 (Phase 2)
+- ✓ Client/coach roles enforced server-side; signup always creates clients, role self-escalation rejected by DB guard — v1.0 (Phase 2)
+- ✓ Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients` schema, recursion-safe RLS via SECURITY DEFINER helper, seed + scripted anon-session RLS verification — v1.0 (Phase 2)
+- ✓ App shell and layout: calm authenticated chrome (logo, display name, ghost logout — zero primary actions in the shell) — v1.0 (Phase 3)
+- ✓ Protected routing: signed-out → login; client → /home, coach → /coach wrong-door guards; signed-in users silently redirected off /login and /signup (server-side, no form flash) — v1.0 (Phase 3)
+- ✓ Role-aware landing screens: client home greets by first name and names the real assigned coach; calm assigned-state empty state — v1.0 (Phase 3)
+- ✓ Coach home lists the coach's assigned clients (seeded), alphabetical with quiet emails, rows inert — v1.0 (Phase 3)
 
 ### Active
 
-- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for this milestone; THEM-02 is v2)
+Candidates for the next milestone (scope to be defined via `/gsd-new-milestone`):
+
+- [ ] Client profiles (build order #2)
+- [ ] Onboarding assessment as a data-driven form — questions read from the DB, not hard-coded (build order #3)
+- [ ] Tracker engine — renders a tracker from config, no specific templates yet (build order #4)
+- [ ] 1-on-1 coach↔client chat — the send-message Edge Function stub becomes real (build order #5)
+- [ ] AGENTS.md docs pass — design-token section still describes the pre-monochrome lime accent
+- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for v1.0; THEM-02 trigger: native builds actually begin)
 
 ### Out of Scope
 
@@ -60,7 +90,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
 - `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
-- **Current state (2026-07-04):** Milestone "Monochrome Foundations" is functionally complete — all 3 phases done. Phase 3 shipped the authenticated app shell, protected role-aware routing (client → /home, coach → /coach, wrong-door guards, signed-in auth-page redirects via shared `redirectIfSignedIn` server guard), the client home (first-name greeting + real coach name), and the coach home (assigned clients, alphabetical, inert rows). Phase 3 UAT: 3/3 passed in a live browser with zero console errors; `pnpm verify:rls` at 8/8. Note: `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — a follow-up docs pass is flagged.
+- **Current state (2026-07-04):** v1.0 Monochrome Foundations shipped and archived (see `## Current State` above). ~5.0k LOC product code (TS/TSX/SQL/CSS), 173 tests, local Supabase stack (CLI + Docker, Mailpit for email). Planning artifacts archived under `.planning/milestones/`. `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — docs pass flagged in Active. An Android static Compose preview of the auth screens exists as a quick-task spike (uncommitted working-tree changes under `apps/android/`); native work otherwise waits.
 
 ## Constraints
 
@@ -78,9 +108,9 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 |----------|-----------|---------|
 | Pure monochrome first, no color tokens | If the UI works in monochrome, the hierarchy is right; color is a later deliberate layer | ✓ Good — Phase 1 shipped the full kit in monochrome, contrast-tested |
 | Light + dark themes from day one | Tokens must support both schemes; retrofitting a second theme is costlier | ✓ Good — one `light-dark()` ladder drives both themes, verified in Phase 1 |
-| Coach accounts are seed-only | Open "I'm a coach" pickers let anyone claim coach powers | — Pending |
-| Assignment is seed-only this milestone | Schema + RLS + coach view make the relationship real; UI deferred to shrink scope | — Pending |
-| Signup always creates clients | Simplest safe default; role escalation is a manual act | — Pending |
+| Coach accounts are seed-only | Open "I'm a coach" pickers let anyone claim coach powers | ✓ Good — v1.0 shipped with seed-only coach creation; COAC-01/02 triggers defined for when volume demands in-app flows |
+| Assignment is seed-only this milestone | Schema + RLS + coach view make the relationship real; UI deferred to shrink scope | ✓ Good — coach home reads the seeded relationship through RLS alone; no assignment UI was missed in UAT |
+| Signup always creates clients | Simplest safe default; role escalation is a manual act | ✓ Good — enforced by hardcoded trigger + DB self-escalation guard, proven live (verify-rls 8/8) |
 | Tabler Icons as the only icon set | One consistent stroke style; no mixed icon sources | ✓ Good — enforced by an icon-source test since Phase 1 |
 | Lexend (body) + Fraunces (display) | Lexend is designed for reading fluency — right for the ADHD audience; Fraunces provides warm heading contrast | ✓ Good — loaded and demonstrated on `/kit` in Phase 1 |
 | Alerts get calm semantic tone colors (coral/amber/green) and float above the card as a fading overlay | User decision at 02-08 UAT: honest feedback colors beat monochrome-only for alerts; overlay keeps the centered card from ever moving | ✓ Good — tokens are low-chroma, contrast-test gated; structural UI stays monochrome |
@@ -106,4 +136,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-04 after Phase 3 completion*
+*Last updated: 2026-07-04 after v1.0 milestone*
