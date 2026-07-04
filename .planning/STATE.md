@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 Phase: — (milestone v1.0 complete and archived)
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-04 — Completed quick task 260704-k50: Create Storybook stories for each existing UI component
+Last activity: 2026-07-04 — Completed quick task 260704-keb: Organized chat components into per-component folders (matching ui/), pure move + import-path refactor, 22 folders
 
 ## Archived Milestones
 
@@ -75,6 +75,7 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 | 260704-dn2 | Implement native Android static Compose UI preview for current web auth screens, no auth wiring yet | 2026-07-04 | 2e21c80 | [260704-dn2-go-with-option-1-implement-native-androi](./quick/260704-dn2-go-with-option-1-implement-native-androi/) |
 | 260704-inu | Build modern chat interface component library for web | 2026-07-04 | 59cc6fb | [260704-inu-build-modern-chat-interface-component-li](./quick/260704-inu-build-modern-chat-interface-component-li/) |
 | 260704-k50 | Create Storybook stories for each existing UI component | 2026-07-04 | c9d2df0 | [260704-k50-create-storybook-stories-for-each-existi](./quick/260704-k50-create-storybook-stories-for-each-existi/) |
+| 260704-keb | Organize chat components into per-component folders (match ui/ structure) | 2026-07-04 | e094f79 | [260704-keb-organize-chat-components-into-per-compon](./quick/260704-keb-organize-chat-components-into-per-compon/) |
 
 ## Session Continuity
 
