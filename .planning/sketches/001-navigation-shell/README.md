@@ -47,7 +47,7 @@ Three changes from user direction, each with the recommendation behind it:
   (which would read as a grade). Runner-up: "Practice". *Caveat:* coach-first/code-second —
   don't SHIP this tab until a coach validates the tracking technique; keep 3 tabs and surface
   the tracker on Home until then. Four tabs is the ceiling; a fifth would erode calm.
-- **Bottom-nav labels** — live toggle (full / active-only / icons-only), default **full**.
+- **Bottom-nav labels** — live toggle (full / active-only / icons-only); **decision: full labels** (user-confirmed 2026-07-04, over the initial icons-only request).
   *Recommendation:* keep labels; do NOT go icons-only. The project's own
   `docs/ui-ux-agent-guidelines.md` decides it: "Use labels with icons unless the icon is truly
   universal" (l.644); icon-only nav and "assume an icon is universal" are listed as don'ts
