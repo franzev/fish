@@ -83,8 +83,12 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
   4. A client home before assignment and a coach home with zero clients both show calm, guiding empty states — never alarming "no data" language.
 
 **Plans**: 4 plans
+**Wave 1**
 
 - [ ] 03-01-PLAN.md — Routing + shell spine (Wave 1): 0006 migration (is_client_of RLS helper+policy, email column + handle_new_user extension + backfill), [BLOCKING] schema apply/reseed/regen types, authRedirects rewire + root pure-redirect + login wiring, (authenticated) guard layout + AppShell + shared EmptyState
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 03-02-PLAN.md — Client home slice (Wave 2): promote /home into the (authenticated) group — first-name greeting, unassigned/assigned EmptyState (names the coach via is_client_of), coach→/coach wrong-door guard
 - [ ] 03-03-PLAN.md — Coach home slice (Wave 2): /coach page + ClientList (alphabetical, inert name+email rows), own-clients read via RLS-scoped coach_clients join, zero-clients empty state, client→/home wrong-door guard, verify-rls checkClientReadsCoachName assertion
 - [ ] 03-04-PLAN.md — Signed-out-only redirects (Wave 2): redirectIfSignedIn() server guard closing D-05, login/signup forms extracted into client *-form.tsx behind server shells so a signed-in visitor is forwarded to their role home
