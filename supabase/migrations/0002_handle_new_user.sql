@@ -12,11 +12,12 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, role, display_name)
+  insert into public.profiles (id, role, display_name, email)
   values (
     new.id,
     'client', -- AUTH-01/D-04/DB-04: signup ALWAYS creates a client, never trust metadata for role
-    coalesce(new.raw_user_meta_data ->> 'display_name', '')
+    coalesce(new.raw_user_meta_data ->> 'display_name', ''),
+    new.email -- added in 0006_client_reads_coach_name.sql; kept here so a fresh db reset matches the live function
   )
   on conflict (id) do nothing;
   return new;
