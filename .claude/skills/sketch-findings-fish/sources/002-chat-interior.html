@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISH · Sketch 002 — Chat Interior</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--body); font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading); padding: 96px 0 120px; transition: background .25s ease, color .25s ease; }
+  h1,h2,h3 { font-family: var(--font-display); color: var(--ink); margin: 0; font-weight: 500; letter-spacing: -0.01em; }
+
+  /* variant chrome */
+  #variant-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; gap: var(--s2); align-items: center; padding: var(--s3) var(--s5); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
+  #variant-nav .brand { font-family: var(--font-display); color: var(--ink); font-weight: 600; font-size: var(--text-md); margin-right: var(--s4); letter-spacing: -0.02em; }
+  #variant-nav .brand small { font-family: var(--font-body); color: var(--muted); font-weight: 400; font-size: var(--text-xs); }
+  .variant-tab { font-family: var(--font-body); font-size: var(--text-sm); color: var(--body); background: transparent; border: 1px solid transparent; border-radius: var(--r-pill); padding: 10px 16px; cursor: pointer; transition: all .15s ease; white-space: nowrap; }
+  .variant-tab:hover { background: var(--surface-2); color: var(--ink); }
+  .variant-tab.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+
+  .intro { max-width: 980px; margin: 0 auto var(--s10); padding: 0 var(--s6); text-align: center; }
+  .intro .kicker { font-size: var(--text-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .intro h1 { font-size: var(--text-2xl); margin: var(--s3) 0 var(--s4); }
+  .intro p { max-width: 640px; margin: 0 auto; color: var(--body); }
+
+  .variant { display: none; } .variant.active { display: block; animation: fade .3s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .vcaption { max-width: 980px; margin: 0 auto var(--s6); padding: 0 var(--s6); text-align: center; }
+  .vcaption h2 { font-size: var(--text-lg); margin-bottom: var(--s2); }
+  .vcaption p { margin: 0 auto; max-width: 640px; color: var(--body); font-size: var(--text-sm); }
+  .stage { display: flex; gap: var(--s12); justify-content: center; align-items: flex-start; flex-wrap: wrap; padding: 0 var(--s6); max-width: 1120px; margin: 0 auto; }
+  .framewrap { display: flex; flex-direction: column; align-items: center; gap: var(--s3); }
+  .framewrap .flabel { font-size: var(--text-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+  /* devices */
+  .web { width: 600px; max-width: 90vw; border-radius: var(--r-lg); overflow: hidden; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+  .web-bar { display: flex; align-items: center; gap: var(--s3); padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+  .web-dots { display: flex; gap: 6px; } .web-dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--border-strong); display: block; }
+  .web-addr { flex: 1; font-size: var(--text-xs); color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 6px 12px; text-align: center; }
+  .web .screen { height: 560px; overflow: hidden; position: relative; background: var(--bg); }
+  .android { width: 300px; border-radius: 38px; padding: 10px; background: light-dark(#111, #000); box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+  .android .screen { border-radius: 30px; overflow: hidden; background: var(--bg); height: 620px; position: relative; display: flex; flex-direction: column; }
+  .sysbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px 6px; font-size: var(--text-xs); color: var(--ink); font-weight: 500; flex: 0 0 auto; }
+  .sysbar .glyphs { display: flex; gap: 5px; opacity: .8; }
+  .gesture { height: 22px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .gesture::after { content: ""; width: 108px; height: 5px; border-radius: 999px; background: var(--border-strong); }
+
+  /* app primitives */
+  .app { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .appbar { display: flex; align-items: center; gap: var(--s3); padding: var(--s4) var(--s5); border-bottom: 1px solid var(--border); background: var(--surface); flex: 0 0 auto; }
+  .appbar .title { font-family: var(--font-display); color: var(--ink); font-weight: 500; font-size: var(--text-md); }
+  .appbar .sub { font-size: var(--text-xs); color: var(--muted); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
+  .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--presence); border: 2px solid var(--surface); }
+  .iconbtn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; }
+  .iconbtn:hover { background: var(--surface-2); color: var(--ink); } .iconbtn.sm { width: 40px; height: 40px; }
+  svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
+
+  .feed { flex: 1 1 auto; overflow-y: auto; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); background: var(--bg); }
+  .feed::-webkit-scrollbar { width: 8px; } .feed::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+  .daystamp { text-align: center; font-size: var(--text-xs); color: var(--muted); margin: var(--s2) 0; }
+  .row { display: flex; gap: var(--s3); align-items: flex-end; } .row.me { flex-direction: row-reverse; }
+  .miniav { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: 11px; flex: 0 0 auto; }
+  .bubble { max-width: 78%; padding: 12px 16px; border-radius: var(--r-lg); font-size: var(--text-base); line-height: 1.5; }
+  .bubble.coach { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
+  .bubble.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 6px; }
+  .bubble .em { font-family: var(--font-display); font-style: italic; }
+  .status { align-self: flex-end; font-size: var(--text-xs); color: var(--muted); margin: 2px 6px 0 0; }
+  .react-wrap { display: flex; margin-top: -6px; } .react-wrap.me { justify-content: flex-end; margin-right: 8px; } .react-wrap.coach { margin-left: 42px; }
+  .react { display: inline-flex; gap: 4px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; font-size: var(--text-xs); color: var(--body); box-shadow: var(--shadow-sm); }
+
+  .typing { display: inline-flex; gap: 4px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); border-bottom-left-radius: 6px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.4s infinite both; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,60%,100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+  .voice { display: flex; align-items: center; gap: var(--s3); min-width: 190px; }
+  .voice .play { width: 38px; height: 38px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; color: var(--ink); }
+  .voice .wave { display: flex; align-items: center; gap: 3px; height: 26px; flex: 1; } .voice .wave i { width: 3px; border-radius: 2px; background: currentColor; opacity: .5; }
+  .voice .dur { font-size: var(--text-xs); opacity: .7; }
+
+  .practice { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s4) var(--s5); box-shadow: var(--shadow-sm); align-self: stretch; }
+  .practice .tag { font-size: var(--text-xs); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .practice h3 { font-size: var(--text-md); margin: var(--s2) 0 var(--s3); }
+  .progress { height: 10px; border-radius: 999px; background: var(--surface-3); overflow: hidden; } .progress > span { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+  .practice .steps { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--muted); margin-top: var(--s2); }
+
+  .composer { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
+  .composer .field { flex: 1; min-height: 44px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
+  .send { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; } .send:active { transform: scale(.92); }
+
+  /* ---- correction styles (the variable being tested) ---- */
+  /* A: suggestion card */
+  .correction { align-self: flex-start; max-width: 82%; margin-left: 42px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); border-top-left-radius: 6px; padding: var(--s4); box-shadow: var(--shadow-sm); }
+  .correction .clabel { font-size: var(--text-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--notice); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .correction .said { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s2); }
+  .correction .said s { text-decoration-color: var(--faint); }
+  .correction .try { font-size: var(--text-md); color: var(--ink); margin-top: 4px; }
+  .correction .try b { font-weight: 600; border-bottom: 2px solid var(--notice); }
+  .correction .why { font-size: var(--text-sm); color: var(--body); margin-top: var(--s3); }
+  /* B: inline annotation */
+  .anno u { text-decoration: none; border-bottom: 2px dashed var(--notice); cursor: help; padding-bottom: 1px; }
+  .note-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; font-size: var(--text-xs); color: var(--notice); cursor: pointer; }
+  .popover { margin: var(--s2) 0 0 42px; align-self: flex-start; max-width: 78%; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s3) var(--s4); font-size: var(--text-sm); color: var(--body); }
+  .popover b { color: var(--ink); border-bottom: 2px solid var(--notice); }
+  /* C: quoted reply */
+  .bubble .quote { border-left: 3px solid var(--border-strong); padding: 2px 0 2px 10px; margin-bottom: 8px; color: var(--muted); font-size: var(--text-sm); }
+  .bubble.coach .fix b { border-bottom: 2px solid var(--notice); font-weight: 600; }
+
+  #tools { position: fixed; bottom: 14px; right: 14px; z-index: 60; display: flex; gap: 8px; align-items: center; background: rgba(20,20,19,.82); color: #fff; padding: 8px 10px; border-radius: 12px; font-size: 12px; font-family: system-ui; opacity: .5; transition: opacity .2s; }
+  #tools:hover { opacity: 1; }
+  #tools button { background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; } #tools button:hover { background: rgba(255,255,255,.24); }
+</style>
+</head>
+<body>
+
+<nav id="variant-nav">
+  <span class="brand">FISH <small>· sketch 002 · chat</small></span>
+  <button class="variant-tab" onclick="showVariant('a', this)">A · Suggestion card</button>
+  <button class="variant-tab" onclick="showVariant('b', this)">B · Inline note</button>
+  <button class="variant-tab active" onclick="showVariant('c', this)">C · Quoted reply ★</button>
+</nav>
+
+<div class="intro">
+  <div class="kicker">Design question</div>
+  <h1>How does gentle correction appear without ever scolding?</h1>
+  <p>The heart of English coaching. Three ways the coach can fix a phrase — all calm, encouraging, in the soft <em>notice</em> tone, never alarming red. Everything else (voice notes, inline practice, seen-state, a reaction) stays consistent so only the correction changes. Toggle light / dark, bottom-right.</p>
+</div>
+
+<!-- ============ VARIANT A: Suggestion card ============ -->
+<section class="variant" id="variant-a">
+  <div class="vcaption"><h2>A · Suggestion card — “you said → try”</h2><p>A distinct soft card under the message names the fix explicitly and says why, warmly. Most teacherly and unambiguous; adds one block to the stream.</p></div>
+  <div class="stage">
+    <div class="framewrap"><div class="flabel">Web</div>
+      <div class="web"><div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/messages</div></div>
+        <div class="screen"><div class="app">
+          <div class="appbar"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">JC<span class="pres"></span></div><div><div class="title">James Carter</div><div class="sub">Your coach · online</div></div></div>
+          <div class="feed">
+            <div class="daystamp">Today</div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach">Let’s practice ordering. You’re at the restaurant — what do you say to the waiter?</div></div>
+            <div class="row me"><div class="bubble me">I would like see the menu, please.</div></div>
+            <div class="correction">
+              <div class="clabel"><svg class="i sm" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--notice)"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8z"/></svg> Gentle suggestion</div>
+              <div class="said">You said: <s>I would like see the menu</s></div>
+              <div class="try">Try: I would like <b>to</b> see the menu</div>
+              <div class="why">Just a little “to” before <i>see</i> — you’re so close. Want to say it back?</div>
+            </div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="voice"><button class="play"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:20px"></i></div><span class="dur">0:08</span></div></div></div>
+            <div class="row me"><div class="bubble me">Thank you! I would like to see the menu, please.</div></div>
+            <div class="react-wrap me"><span class="react">👏 James</span></div>
+            <div class="status">Seen</div>
+            <div class="practice"><div class="tag">This week · assigned</div><h3>Ordering at a restaurant</h3><div class="progress"><span style="width:80%"></span></div><div class="steps"><span>4 of 5 practiced</span><span>Almost there</span></div></div>
+          </div>
+          <div class="composer"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><div class="field">Write a message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+        </div></div>
+      </div>
+    </div>
+    <div class="framewrap"><div class="flabel">Android</div>
+      <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
+        <div class="app">
+          <div class="appbar" style="padding:12px 16px"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div><div><div class="title" style="font-size:var(--text-base)">James Carter</div><div class="sub">online</div></div></div>
+          <div class="feed" style="padding:var(--s4)">
+            <div class="row me"><div class="bubble me">I would like see the menu, please.</div></div>
+            <div class="correction" style="margin-left:0;max-width:92%"><div class="clabel">Gentle suggestion</div><div class="said">You said: <s>would like see</s></div><div class="try">Try: would like <b>to</b> see</div><div class="why">A little “to” before <i>see</i> — so close.</div></div>
+            <div class="row me"><div class="bubble me">Thank you! I would like to see the menu.</div></div>
+            <div class="react-wrap me"><span class="react">👏</span></div>
+            <div class="status">Seen</div>
+          </div>
+          <div class="composer"><div class="field">Message…</div><button class="send" style="width:44px;height:44px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+        </div>
+        <div class="gesture"></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VARIANT B: Inline note ============ -->
+<section class="variant" id="variant-b">
+  <div class="vcaption"><h2>B · Inline note — softly underlined, fix on tap</h2><p>The stream stays clean: the phrase is gently underlined and a small note reveals the fix when the client is ready. Least intrusive; correction is opt-in, never in your face.</p></div>
+  <div class="stage">
+    <div class="framewrap"><div class="flabel">Web</div>
+      <div class="web"><div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/messages</div></div>
+        <div class="screen"><div class="app">
+          <div class="appbar"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">JC<span class="pres"></span></div><div><div class="title">James Carter</div><div class="sub">Your coach · online</div></div></div>
+          <div class="feed">
+            <div class="daystamp">Today</div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach">Let’s practice ordering. What do you say to the waiter?</div></div>
+            <div class="row me"><div class="bubble me anno">I would like <u onclick="togglePop('pa')">see</u> the menu, please.</div></div>
+            <div class="note-chip" onclick="togglePop('pa')"><svg class="i sm" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--notice)"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg> 1 gentle note from James — tap to see</div>
+            <div class="popover" id="pa">Try <b>to see</b> — a tiny word before the verb. You’re so close. 🙂</div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="voice"><button class="play"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:20px"></i></div><span class="dur">0:08</span></div></div></div>
+            <div class="row me"><div class="bubble me">Thank you! I would like to see the menu, please.</div></div>
+            <div class="react-wrap me"><span class="react">👏 James</span></div>
+            <div class="status">Seen</div>
+            <div class="practice"><div class="tag">This week · assigned</div><h3>Ordering at a restaurant</h3><div class="progress"><span style="width:80%"></span></div><div class="steps"><span>4 of 5 practiced</span><span>Almost there</span></div></div>
+          </div>
+          <div class="composer"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><div class="field">Write a message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+        </div></div>
+      </div>
+    </div>
+    <div class="framewrap"><div class="flabel">Android</div>
+      <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
+        <div class="app">
+          <div class="appbar" style="padding:12px 16px"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div><div><div class="title" style="font-size:var(--text-base)">James Carter</div><div class="sub">online</div></div></div>
+          <div class="feed" style="padding:var(--s4)">
+            <div class="row"><div class="bubble coach">What do you say to the waiter?</div></div>
+            <div class="row me"><div class="bubble me anno">I would like <u onclick="togglePop('pb')">see</u> the menu, please.</div></div>
+            <div class="note-chip" onclick="togglePop('pb')">1 gentle note — tap</div>
+            <div class="popover" id="pb" style="margin-left:0;max-width:92%">Try <b>to see</b> — a tiny word before the verb. So close. 🙂</div>
+            <div class="row me"><div class="bubble me">Thank you! I would like to see the menu.</div></div>
+            <div class="react-wrap me"><span class="react">👏</span></div>
+            <div class="status">Seen</div>
+          </div>
+          <div class="composer"><div class="field">Message…</div><button class="send" style="width:44px;height:44px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+        </div>
+        <div class="gesture"></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VARIANT C: Quoted reply ============ -->
+<section class="variant active" id="variant-c">
+  <div class="vcaption"><h2>C · Quoted reply — coach quotes and fixes, Messenger-style</h2><p>The coach replies to the exact phrase with the improved version, the way people already quote-reply in chat. Familiar, warm, and consistent with the D navigation direction.</p></div>
+  <div class="stage">
+    <div class="framewrap"><div class="flabel">Web</div>
+      <div class="web"><div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/messages</div></div>
+        <div class="screen"><div class="app">
+          <div class="appbar"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">JC<span class="pres"></span></div><div><div class="title">James Carter</div><div class="sub">Your coach · online</div></div></div>
+          <div class="feed">
+            <div class="daystamp">Today</div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach">Let’s practice ordering. What do you say to the waiter?</div></div>
+            <div class="row me"><div class="bubble me">I would like see the menu, please.</div></div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="quote">I would like see the menu, please.</div><div class="fix">Almost! “I would like <b>to</b> see the menu, please.” That little “to” makes it perfect. 🙂</div></div></div>
+            <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="voice"><button class="play"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:20px"></i></div><span class="dur">0:08</span></div></div></div>
+            <div class="row me"><div class="bubble me">Thank you! I would like to see the menu, please.</div></div>
+            <div class="react-wrap me"><span class="react">👏 James</span></div>
+            <div class="status">Seen</div>
+            <div class="practice"><div class="tag">This week · assigned</div><h3>Ordering at a restaurant</h3><div class="progress"><span style="width:80%"></span></div><div class="steps"><span>4 of 5 practiced</span><span>Almost there</span></div></div>
+          </div>
+          <div class="composer"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><div class="field">Write a message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+        </div></div>
+      </div>
+    </div>
+    <div class="framewrap"><div class="flabel">Android</div>
+      <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
+        <div class="app">
+          <div class="appbar" style="padding:12px 16px"><button class="iconbtn sm"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div><div><div class="title" style="font-size:var(--text-base)">James Carter</div><div class="sub">online</div></div></div>
+          <div class="feed" style="padding:var(--s4)">
+            <div class="row me"><div class="bubble me">I would like see the menu, please.</div></div>
+            <div class="row"><div class="bubble coach"><div class="quote">I would like see the menu…</div><div class="fix">Almost! “I would like <b>to</b> see the menu.” That “to” makes it perfect. 🙂</div></div></div>
+            <div class="row me"><div class="bubble me">Thank you! I would like to see the menu.</div></div>
+            <div class="react-wrap me"><span class="react">👏</span></div>
+            <div class="status">Seen</div>
+          </div>
+          <div class="composer"><div class="field">Message…</div><button class="send" style="width:44px;height:44px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+        </div>
+        <div class="gesture"></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<div id="tools"><span id="mode-label">◐ Light</span><button onclick="toggleTheme()">Toggle theme</button></div>
+
+<script>
+  function showVariant(id, el){
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function togglePop(id){ var p = document.getElementById(id); p.style.display = (p.style.display === 'none') ? 'block' : 'none'; }
+  var dark = false;
+  function toggleTheme(){ dark = !dark; document.documentElement.style.colorScheme = dark ? 'dark' : 'light'; document.getElementById('mode-label').textContent = dark ? '☾ Dark' : '◐ Light'; }
+</script>
+</body>
+</html>

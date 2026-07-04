@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISH · Sketch 003 — Profile</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--body); font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading); padding: 96px 0 120px; transition: background .25s ease, color .25s ease; }
+  h1,h2,h3 { font-family: var(--font-display); color: var(--ink); margin: 0; font-weight: 500; letter-spacing: -0.01em; }
+
+  /* variant chrome */
+  #variant-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; gap: var(--s2); align-items: center; padding: var(--s3) var(--s5); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
+  #variant-nav .brand { font-family: var(--font-display); color: var(--ink); font-weight: 600; font-size: var(--text-md); margin-right: var(--s4); letter-spacing: -0.02em; }
+  #variant-nav .brand small { font-family: var(--font-body); color: var(--muted); font-weight: 400; font-size: var(--text-xs); }
+  .variant-tab { font-family: var(--font-body); font-size: var(--text-sm); color: var(--body); background: transparent; border: 1px solid transparent; border-radius: var(--r-pill); padding: 10px 16px; cursor: pointer; transition: all .15s ease; white-space: nowrap; }
+  .variant-tab:hover { background: var(--surface-2); color: var(--ink); }
+  .variant-tab.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+
+  .intro { max-width: 980px; margin: 0 auto var(--s10); padding: 0 var(--s6); text-align: center; }
+  .intro .kicker { font-size: var(--text-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .intro h1 { font-size: var(--text-2xl); margin: var(--s3) 0 var(--s4); }
+  .intro p { max-width: 640px; margin: 0 auto; color: var(--body); }
+
+  .variant { display: none; } .variant.active { display: block; animation: fade .3s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .vcaption { max-width: 980px; margin: 0 auto var(--s6); padding: 0 var(--s6); text-align: center; }
+  .vcaption h2 { font-size: var(--text-lg); margin-bottom: var(--s2); }
+  .vcaption p { margin: 0 auto; max-width: 640px; color: var(--body); font-size: var(--text-sm); }
+  .stage { display: flex; gap: var(--s12); justify-content: center; align-items: flex-start; flex-wrap: wrap; padding: 0 var(--s6); max-width: 1120px; margin: 0 auto; }
+  .framewrap { display: flex; flex-direction: column; align-items: center; gap: var(--s3); }
+  .framewrap .flabel { font-size: var(--text-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+  /* devices */
+  .web { width: 600px; max-width: 90vw; border-radius: var(--r-lg); overflow: hidden; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); }
+  .web-bar { display: flex; align-items: center; gap: var(--s3); padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+  .web-dots { display: flex; gap: 6px; } .web-dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--border-strong); display: block; }
+  .web-addr { flex: 1; font-size: var(--text-xs); color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 6px 12px; text-align: center; }
+  .web .screen { height: 580px; overflow: hidden; position: relative; background: var(--bg); }
+  .android { width: 300px; border-radius: 38px; padding: 10px; background: light-dark(#111, #000); box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+  .android .screen { border-radius: 30px; overflow: hidden; background: var(--bg); height: 620px; position: relative; display: flex; flex-direction: column; }
+  .sysbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px 6px; font-size: var(--text-xs); color: var(--ink); font-weight: 500; flex: 0 0 auto; }
+  .sysbar .glyphs { display: flex; gap: 5px; opacity: .8; }
+  .gesture { height: 22px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .gesture::after { content: ""; width: 108px; height: 5px; border-radius: 999px; background: var(--border-strong); }
+
+  /* shell */
+  .app { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .withrail { display: flex; height: 100%; }
+  .rail { width: 84px; flex: 0 0 auto; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; align-items: center; padding: var(--s5) 0; gap: var(--s2); }
+  .brandmark { display: grid; place-items: center; overflow: hidden; border-radius: 26%; border: 2px solid var(--ink); background: var(--surface); flex: 0 0 auto; margin-bottom: var(--s4); }
+  .brandmark img { width: 100%; height: 100%; display: block; }
+  .rail-item { width: 60px; height: 60px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); cursor: pointer; transition: all .15s ease; }
+  .rail-item span { display: block; font-size: var(--text-xs); text-align: center; }
+  .rail-item:hover { background: var(--surface-2); color: var(--ink); }
+  .rail-item.active { background: var(--surface-3); color: var(--ink); }
+  .rail-item.active span { font-weight: 500; }
+  .rail .spacer { flex: 1; }
+  .content { flex: 1; overflow-y: auto; }
+  .content::-webkit-scrollbar { width: 8px; } .content::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+
+  .botnav { flex: 0 0 auto; display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); }
+  .botnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--tap); color: var(--muted); padding: 4px 0; font-size: var(--text-xs); }
+  .botnav-item .pill { padding: 4px 18px; border-radius: 999px; }
+  .botnav-item.active { color: var(--ink); }
+  .botnav-item.active .pill { background: var(--surface-3); }
+  .botnav-item.active .navlbl { font-weight: 500; }
+
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
+  .avatar.lg { width: 84px; height: 84px; font-size: var(--text-xl); font-family: var(--font-display); }
+  .avatar .pres { position: absolute; right: 0; bottom: 0; width: 13px; height: 13px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
+  svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
+  .btn { font-family: var(--font-body); font-size: var(--text-base); min-height: var(--tap); padding: 0 var(--s6); border-radius: var(--r-md); cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); transition: all .15s ease; }
+  .btn.ghost { background: transparent; color: var(--body); border-color: var(--border-strong); width: 100%; }
+  .btn.ghost:hover { background: var(--surface-2); color: var(--ink); }
+
+  /* profile primitives */
+  .phero { display: flex; flex-direction: column; align-items: center; gap: var(--s2); padding: var(--s8) 0 var(--s5); text-align: center; }
+  .pname { font-family: var(--font-display); color: var(--ink); font-size: var(--text-xl); font-weight: 500; }
+  .psub { font-size: var(--text-sm); color: var(--muted); }
+  .psection { padding: var(--s5) var(--s6) var(--s2); font-size: var(--text-xs); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .plist { padding: 0 var(--s4); }
+  .profrow { display: flex; align-items: center; gap: var(--s4); padding: var(--s4); min-height: var(--tap); border-radius: var(--r-md); color: var(--body); cursor: pointer; transition: background .15s ease; }
+  .profrow:hover { background: var(--surface-2); }
+  .profrow .lbl { flex: 1; color: var(--ink); }
+  .profrow .val { color: var(--muted); font-size: var(--text-sm); }
+  .pcoach { display: flex; align-items: center; gap: var(--s4); margin: 0 var(--s6); padding: var(--s4) var(--s5); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+  .pcoach .cn { flex: 1; }
+  .pcoach .cn .n { color: var(--ink); font-weight: 500; }
+  .pcoach .cn .r { font-size: var(--text-xs); color: var(--muted); }
+  .coachcard { margin: var(--s4) var(--s6) 0; padding: var(--s6); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); box-shadow: var(--shadow-md); display: flex; flex-direction: column; align-items: center; gap: var(--s2); text-align: center; }
+  .coachcard .n { font-family: var(--font-display); color: var(--ink); font-size: var(--text-lg); font-weight: 500; margin-top: var(--s2); }
+  .coachcard .r { font-size: var(--text-sm); color: var(--muted); }
+  .coachcard .since { font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--s3); }
+  .coachcard .btn { width: 100%; }
+  .identity { display: flex; align-items: center; gap: var(--s4); margin: var(--s5) var(--s6) 0; padding: var(--s4); }
+  .identity .n { color: var(--ink); font-weight: 500; }
+  .identity .s { font-size: var(--text-sm); color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s2); padding: 0 var(--s6); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); font-size: var(--text-sm); color: var(--ink); }
+  .chip svg { stroke: var(--ink); }
+  .focusline { margin: var(--s3) var(--s6) 0; padding: var(--s4) var(--s5); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); font-size: var(--text-sm); color: var(--body); }
+  .focusline b { color: var(--ink); font-weight: 500; }
+
+  #tools { position: fixed; bottom: 14px; right: 14px; z-index: 60; display: flex; gap: 8px; align-items: center; background: rgba(20,20,19,.82); color: #fff; padding: 8px 10px; border-radius: 12px; font-size: 12px; font-family: system-ui; opacity: .5; transition: opacity .2s; }
+  #tools:hover { opacity: 1; }
+  #tools button { background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; } #tools button:hover { background: rgba(255,255,255,.24); }
+</style>
+</head>
+<body>
+
+<nav id="variant-nav">
+  <span class="brand">FISH <small>· sketch 003 · profile</small></span>
+  <button class="variant-tab active" onclick="showVariant('a', this)">A · Essentials ★</button>
+  <button class="variant-tab" onclick="showVariant('b', this)">B · Reflection</button>
+  <button class="variant-tab" onclick="showVariant('c', this)">C · Relationship</button>
+</nav>
+
+<div class="intro">
+  <div class="kicker">Design question</div>
+  <h1>How much does a client see about themselves — without a scoreboard?</h1>
+  <p>Progress already has its own tab, so the profile need not repeat it. Three framings of the client's own screen — identity-only, a reward-only reflection, or the coaching relationship out front. All monochrome, calm, reward-never-score. Tap <b>Appearance</b> to flip light / dark.</p>
+</div>
+
+<!-- ============ VARIANT A: Essentials ============ -->
+<section class="variant active" id="variant-a">
+  <div class="vcaption"><h2>A · Essentials — you, your coach, your settings</h2><p>The calmest read: who you are, who your coach is, and your preferences. No stats — progress lives in the Progress tab, so the profile stays a low-stakes, choice-free surface.</p></div>
+  <div class="stage">
+    <div class="framewrap"><div class="flabel">Web</div>
+      <div class="web"><div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/profile</div></div>
+        <div class="screen"><div class="withrail">
+          <div class="rail">
+            <div class="brandmark" style="width:40px;height:40px"><img src="../logo.svg" alt="FISH"></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg><span>Home</span></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg><span>Progress</span></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg><span>Messages</span></div>
+            <div class="rail-item active"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></div>
+            <div class="spacer"></div>
+          </div>
+          <div class="content">
+            <div class="phero"><div class="avatar lg">SR</div><div class="pname">Sofia Reyes</div><div class="psub">Learning English</div></div>
+            <div class="pcoach"><div class="avatar">JC<span class="pres"></span></div><div class="cn"><div class="n">James Carter</div><div class="r">Your English coach</div></div><svg class="i sm" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="psection">Settings</div>
+            <div class="plist">
+              <div class="profrow" onclick="toggleTheme()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Appearance</span><span class="val" id="appval-a">Light</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="lbl">Notifications</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><span class="lbl">Language</span><span class="val">English</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4 1.8c0 1.5-2 2-2 3.2M12 17h.01"/></svg><span class="lbl">Help &amp; guide</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg><span class="lbl">Sign out</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="framewrap"><div class="flabel">Android</div>
+      <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
+        <div class="app">
+          <div class="content">
+            <div class="phero"><div class="avatar lg">SR</div><div class="pname">Sofia Reyes</div><div class="psub">Learning English</div></div>
+            <div class="pcoach"><div class="avatar">JC<span class="pres"></span></div><div class="cn"><div class="n">James Carter</div><div class="r">Your English coach</div></div><svg class="i sm" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="psection">Settings</div>
+            <div class="plist">
+              <div class="profrow" onclick="toggleTheme()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Appearance</span><span class="val" id="appval-a2">Light</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="lbl">Notifications</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg><span class="lbl">Sign out</span></div>
+            </div>
+          </div>
+          <div class="botnav">
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg></div><span class="navlbl">Home</span></div>
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg></div><span class="navlbl">Progress</span></div>
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg></div><span class="navlbl">Messages</span></div>
+            <div class="botnav-item active"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><span class="navlbl">Profile</span></div>
+          </div>
+        </div>
+        <div class="gesture"></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VARIANT B: Reflection ============ -->
+<section class="variant" id="variant-b">
+  <div class="vcaption"><h2>B · Reflection — a warm, reward-only look back</h2><p>Adds a gentle “your progress” block: topics you’ve completed (never a score), what you’re working on, and how long you’ve been at it. Celebrates returning. Risk: it can start to duplicate the Progress tab and edge toward a scoreboard.</p></div>
+  <div class="stage">
+    <div class="framewrap"><div class="flabel">Web</div>
+      <div class="web"><div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/profile</div></div>
+        <div class="screen"><div class="withrail">
+          <div class="rail">
+            <div class="brandmark" style="width:40px;height:40px"><img src="../logo.svg" alt="FISH"></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg><span>Home</span></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg><span>Progress</span></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg><span>Messages</span></div>
+            <div class="rail-item active"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></div>
+            <div class="spacer"></div>
+          </div>
+          <div class="content">
+            <div class="phero"><div class="avatar lg">SR</div><div class="pname">Sofia Reyes</div><div class="psub">Learning English · practicing since March</div></div>
+            <div class="psection">What you’ve worked on</div>
+            <div class="chips">
+              <span class="chip"><svg class="i sm" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg> Introductions</span>
+              <span class="chip"><svg class="i sm" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg> Small talk</span>
+            </div>
+            <div class="focusline">Working on <b>Ordering at a restaurant</b> — a little more to go this week.</div>
+            <div class="pcoach" style="margin-top:var(--s5)"><div class="avatar">JC<span class="pres"></span></div><div class="cn"><div class="n">James Carter</div><div class="r">Your English coach</div></div><svg class="i sm" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="psection">Settings</div>
+            <div class="plist">
+              <div class="profrow" onclick="toggleTheme()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Appearance</span><span class="val">Light</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="lbl">Notifications</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg><span class="lbl">Sign out</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="framewrap"><div class="flabel">Android</div>
+      <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
+        <div class="app">
+          <div class="content">
+            <div class="phero"><div class="avatar lg">SR</div><div class="pname">Sofia Reyes</div><div class="psub">Since March</div></div>
+            <div class="psection">What you’ve worked on</div>
+            <div class="chips">
+              <span class="chip"><svg class="i sm" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg> Introductions</span>
+              <span class="chip"><svg class="i sm" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg> Small talk</span>
+            </div>
+            <div class="focusline">Working on <b>Ordering at a restaurant</b>.</div>
+            <div class="pcoach" style="margin-top:var(--s5)"><div class="avatar">JC<span class="pres"></span></div><div class="cn"><div class="n">James Carter</div><div class="r">Your coach</div></div><svg class="i sm" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+          <div class="botnav">
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg></div><span class="navlbl">Home</span></div>
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg></div><span class="navlbl">Progress</span></div>
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg></div><span class="navlbl">Messages</span></div>
+            <div class="botnav-item active"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><span class="navlbl">Profile</span></div>
+          </div>
+        </div>
+        <div class="gesture"></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VARIANT C: Relationship ============ -->
+<section class="variant" id="variant-c">
+  <div class="vcaption"><h2>C · Relationship — the coaching bond out front</h2><p>Leads with the coach: who they are, how long you’ve worked together, one quiet way to reach them. Identity through the relationship (assigned, never chosen), then settings. Warmest and most personal.</p></div>
+  <div class="stage">
+    <div class="framewrap"><div class="flabel">Web</div>
+      <div class="web"><div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/profile</div></div>
+        <div class="screen"><div class="withrail">
+          <div class="rail">
+            <div class="brandmark" style="width:40px;height:40px"><img src="../logo.svg" alt="FISH"></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg><span>Home</span></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg><span>Progress</span></div>
+            <div class="rail-item"><svg class="i" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg><span>Messages</span></div>
+            <div class="rail-item active"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></div>
+            <div class="spacer"></div>
+          </div>
+          <div class="content">
+            <div class="psection" style="padding-top:var(--s6)">Your coach</div>
+            <div class="coachcard">
+              <div class="avatar lg">JC<span class="pres"></span></div>
+              <div class="n">James Carter</div>
+              <div class="r">Your English coach</div>
+              <div class="since">Together since March</div>
+              <button class="btn ghost"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg> Message James</button>
+            </div>
+            <div class="identity"><div class="avatar">SR</div><div><div class="n">Sofia Reyes</div><div class="s">Learning English</div></div></div>
+            <div class="psection">Settings</div>
+            <div class="plist">
+              <div class="profrow" onclick="toggleTheme()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Appearance</span><span class="val">Light</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="lbl">Notifications</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><span class="lbl">Language</span><span class="val">English</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg><span class="lbl">Sign out</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="framewrap"><div class="flabel">Android</div>
+      <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
+        <div class="app">
+          <div class="content">
+            <div class="coachcard" style="margin-top:var(--s5)">
+              <div class="avatar lg">JC<span class="pres"></span></div>
+              <div class="n">James Carter</div>
+              <div class="r">Your English coach</div>
+              <div class="since">Together since March</div>
+              <button class="btn ghost"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg> Message James</button>
+            </div>
+            <div class="identity"><div class="avatar">SR</div><div><div class="n">Sofia Reyes</div><div class="s">Learning English</div></div></div>
+            <div class="psection">Settings</div>
+            <div class="plist">
+              <div class="profrow" onclick="toggleTheme()"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lbl">Appearance</span><span class="val">Light</span></div>
+              <div class="profrow"><svg class="i" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg><span class="lbl">Sign out</span></div>
+            </div>
+          </div>
+          <div class="botnav">
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg></div><span class="navlbl">Home</span></div>
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg></div><span class="navlbl">Progress</span></div>
+            <div class="botnav-item"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg></div><span class="navlbl">Messages</span></div>
+            <div class="botnav-item active"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><span class="navlbl">Profile</span></div>
+          </div>
+        </div>
+        <div class="gesture"></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<div id="tools"><span id="mode-label">◐ Light</span><button onclick="toggleTheme()">Toggle theme</button></div>
+
+<script>
+  function showVariant(id, el){
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  var dark = false;
+  function toggleTheme(){
+    dark = !dark;
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    document.getElementById('mode-label').textContent = dark ? '☾ Dark' : '◐ Light';
+    document.querySelectorAll('.val, #appval-a, #appval-a2').forEach(function(v){ if (v.textContent === 'Light' || v.textContent === 'Dark') v.textContent = dark ? 'Dark' : 'Light'; });
+  }
+</script>
+</body>
+</html>

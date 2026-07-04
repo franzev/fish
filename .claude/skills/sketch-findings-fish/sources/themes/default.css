@@ -1,0 +1,77 @@
+/* FISH sketch theme — monochrome, soft & spacious, dual light/dark.
+   Mirrors the shipped design system's spirit: pure greys, Lexend body /
+   Fraunces display, generous radii + whitespace, calm.
+   Light/dark resolves from one ladder via CSS light-dark(); toggle sets
+   color-scheme on :root. Structural UI stays chroma-0; a couple of very
+   low-chroma tone accents exist for status only (used sparingly). */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Lexend:wght@300;400;500;600&display=swap');
+
+:root {
+  color-scheme: light;
+
+  /* ---- Monochrome ladder (light value, dark value) ---- */
+  --bg:            light-dark(#f6f6f3, #0c0c0b);
+  --surface:       light-dark(#ffffff, #161615);
+  --surface-2:     light-dark(#efefec, #1f1f1d);
+  --surface-3:     light-dark(#e7e7e3, #262624);
+  --border:        light-dark(#e6e6e1, #2a2a27);
+  --border-strong: light-dark(#d6d6d0, #3a3a36);
+
+  --ink:           light-dark(#1b1b19, #f4f4f0);  /* headings / foreground */
+  --body:          light-dark(#4f4f49, #c7c7c0);  /* body copy */
+  --muted:         light-dark(#6b6b64, #83837b);  /* quiet / meta — light darkened to clear 4.5:1 AA */
+  --faint:         light-dark(#b7b7ae, #4d4d47);  /* dividers-as-text, hints */
+
+  /* The single action on a screen: high-contrast ink */
+  --primary:       light-dark(#1b1b19, #f4f4f0);
+  --on-primary:    light-dark(#ffffff, #0c0c0b);
+  --ring:          light-dark(#1b1b19, #f4f4f0);
+
+  /* Very low-chroma tone accents — status dots / gentle notices only */
+  --presence:      light-dark(#5c7d5f, #9dbf9a);  /* online */
+  --notice:        light-dark(#8a6f3d, #d8bd86);  /* soft amber */
+
+  /* ---- Type ---- */
+  --font-body: 'Lexend', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.9375rem;
+  --text-3xl: 2.5rem;
+  --leading: 1.6;
+
+  /* ---- Spacing (spacious) ---- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px;
+  --s12: 48px; --s16: 64px; --s20: 80px;
+
+  /* ---- Shape (soft, large radii) ---- */
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
+  --tap: 56px;               /* min tap target */
+
+  /* ---- Elevation (soft, diffuse, calm) ---- */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 6px 20px rgba(0,0,0,.06);
+  --shadow-lg: 0 18px 48px rgba(0,0,0,.10);
+}
+
+/* Visible keyboard focus on real controls (uses the --ring token, previously unused). */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion globally (parity with the shipped globals.css). */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
