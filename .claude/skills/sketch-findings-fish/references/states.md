@@ -16,7 +16,7 @@ soft `--notice` tone for problems (never red); one calm message; no added choice
 
 One gentle line that explains and reassures the coach will act — **no buttons demanding a choice, no
 dead ends**:
-- **New client (Messages):** "James will start the conversation soon."
+- **New client (Messages):** heading "Your coach will say hello soon" + "James will start the conversation when you're both ready. Nothing to do yet."
 - **No task today (Home):** "Nothing to practice yet today. James will add your next step when you're ready."
 - **Caught up (Progress):** "You're all caught up. Lovely work." (a gentle terminal milestone).
 

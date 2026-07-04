@@ -28,7 +28,8 @@
   --on-primary:    light-dark(#ffffff, #0c0c0b);
   --ring:          light-dark(#1b1b19, #f4f4f0);
 
-  /* Very low-chroma tone accents — status dots / gentle notices only */
+  /* Soft amber alert tone (carried from v1.0) — the ONE chromatic accent besides the teal logo.
+     Reserve strictly for alert/notice states (offline banner, failed message, gentle-correction underline); never a general decorative accent. */
   --notice:        light-dark(#7a6234, #d8bd86);  /* soft amber (light darkened for AA on notice text) */
 
   /* ---- Type ---- */

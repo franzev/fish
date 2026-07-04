@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FISH · Sketch 003 — Profile</title>
-<link rel="stylesheet" href="../themes/default.css">
+<link rel="stylesheet" href="themes/default.css">
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--body); font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading); padding: 96px 0 120px; transition: background .25s ease, color .25s ease; }
@@ -324,7 +324,7 @@
     document.querySelectorAll('.val, #appval-a, #appval-a2').forEach(function(v){ if (v.textContent === 'Light' || v.textContent === 'Dark') v.textContent = dark ? 'Dark' : 'Light'; });
   }
   // Keyboard access: make clickable non-button controls focusable + role-tagged (real build uses <button>/<a>)
-  document.querySelectorAll('.rail-item,.profrow,.pcoach').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
+  document.querySelectorAll('.rail-item,.botnav-item,.profrow,.pcoach').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>
