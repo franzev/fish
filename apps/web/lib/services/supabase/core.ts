@@ -21,7 +21,7 @@ import type { User } from "@supabase/supabase-js";
 
 type SupabaseResponse<T> = {
   data: T | null;
-  error: { message?: string; code?: string; status?: number } | null;
+  error: { message?: string; code?: string; name?: string; status?: number } | null;
 };
 
 async function safely<T>(
@@ -71,6 +71,111 @@ class SupabaseAuthServiceImpl implements SupabaseAuthService {
             code: "auth",
             fallbackMessage: "Could not refresh the session.",
             operation: "auth.refreshSessionClaims",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
+    });
+  }
+
+  async signInWithPassword(input: {
+    email: string;
+    password: string;
+  }): Promise<ServiceResult<void>> {
+    return safely("auth.signInWithPassword", async () => {
+      const { error } = await this.client.auth.signInWithPassword(input);
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "auth",
+            fallbackMessage: "Could not sign in.",
+            operation: "auth.signInWithPassword",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
+    });
+  }
+
+  async signUpWithPassword(input: {
+    email: string;
+    password: string;
+    displayName: string;
+  }): Promise<ServiceResult<{ userId: string | null; identityCount: number | null }>> {
+    return safely("auth.signUpWithPassword", async () => {
+      const { data, error } = await this.client.auth.signUp({
+        email: input.email,
+        password: input.password,
+        options: { data: { display_name: input.displayName } },
+      });
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "auth",
+            fallbackMessage: "Could not create the account.",
+            operation: "auth.signUpWithPassword",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({
+        userId: data.user?.id ?? null,
+        identityCount: data.user?.identities?.length ?? null,
+      });
+    });
+  }
+
+  async resendSignupEmail(email: string): Promise<ServiceResult<void>> {
+    return safely("auth.resendSignupEmail", async () => {
+      const { error } = await this.client.auth.resend({ type: "signup", email });
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "auth",
+            fallbackMessage: "Could not resend the signup email.",
+            operation: "auth.resendSignupEmail",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
+    });
+  }
+
+  async requestPasswordReset(email: string): Promise<ServiceResult<void>> {
+    return safely("auth.requestPasswordReset", async () => {
+      const { error } = await this.client.auth.resetPasswordForEmail(email);
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "auth",
+            fallbackMessage: "Could not request a password reset.",
+            operation: "auth.requestPasswordReset",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
+    });
+  }
+
+  async updatePassword(password: string): Promise<ServiceResult<void>> {
+    return safely("auth.updatePassword", async () => {
+      const { error } = await this.client.auth.updateUser({ password });
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "auth",
+            fallbackMessage: "Could not update the password.",
+            operation: "auth.updatePassword",
             recoverable: true,
           })
         );

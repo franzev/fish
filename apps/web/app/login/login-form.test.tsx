@@ -8,11 +8,13 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const signInWithPasswordMock = vi.fn();
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: { signInWithPassword: signInWithPasswordMock },
-  }),
+const { signInWithPasswordMock } = vi.hoisted(() => ({
+  signInWithPasswordMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/browser", () => ({
+  getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
+    error.details?.supabaseCode,
+  signInWithPassword: signInWithPasswordMock,
 }));
 
 import { LoginForm } from "./login-form";
@@ -26,6 +28,7 @@ describe("LoginForm", () => {
     const source = readFileSync(resolve(__dirname, "./login-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
+    expect(source).toContain("fullWidth={true}");
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
@@ -56,7 +59,7 @@ describe("LoginForm", () => {
   });
 
   it("a successful sign-in redirects to /home", async () => {
-    signInWithPasswordMock.mockResolvedValueOnce({ error: null });
+    signInWithPasswordMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -78,7 +81,8 @@ describe("LoginForm", () => {
 
   it("an 'Email not confirmed' error redirects to /check-inbox with the email param", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
-      error: { message: "Email not confirmed" },
+      ok: false,
+      error: { code: "auth", message: "Email not confirmed", details: {} },
     });
     render(<LoginForm />);
 
@@ -102,7 +106,8 @@ describe("LoginForm", () => {
 
   it("a bad-credentials error shows the field-level copy, never revealing which field", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
-      error: { message: "Invalid login credentials" },
+      ok: false,
+      error: { code: "auth", message: "Invalid login credentials", details: {} },
     });
     render(<LoginForm />);
 
@@ -125,7 +130,8 @@ describe("LoginForm", () => {
 
   it("a bad-credentials error renders in the tier-1 notice treatment, not the tier-2 error treatment", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
-      error: { message: "Invalid login credentials" },
+      ok: false,
+      error: { code: "auth", message: "Invalid login credentials", details: {} },
     });
     render(<LoginForm />);
 
@@ -145,7 +151,12 @@ describe("LoginForm", () => {
 
   it("the stable email_not_confirmed error code routes to /check-inbox even if the message wording drifts", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({
-      error: { code: "email_not_confirmed", message: "some future wording" },
+      ok: false,
+      error: {
+        code: "auth",
+        message: "some future wording",
+        details: { supabaseCode: "email_not_confirmed" },
+      },
     });
     render(<LoginForm />);
 
@@ -166,6 +177,33 @@ describe("LoginForm", () => {
 
   it("a thrown network failure shows connection copy, never the bad-credentials copy", async () => {
     signInWithPasswordMock.mockRejectedValueOnce(new Error("fetch failed"));
+    render(<LoginForm />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Couldn't reach the server. Check your connection and try again."
+        )
+      ).toBeInTheDocument()
+    );
+    expect(
+      screen.queryByText("That email and password don't match. Try again?")
+    ).toBeNull();
+  });
+
+  it("a service-level transport failure shows connection copy, never bad-credentials copy", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "network", message: "fetch failed", details: {} },
+    });
     render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {

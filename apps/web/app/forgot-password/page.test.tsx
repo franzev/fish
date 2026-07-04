@@ -3,11 +3,11 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const resetPasswordForEmailMock = vi.fn();
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: { resetPasswordForEmail: resetPasswordForEmailMock },
-  }),
+const { requestPasswordResetMock } = vi.hoisted(() => ({
+  requestPasswordResetMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/browser", () => ({
+  requestPasswordReset: requestPasswordResetMock,
 }));
 
 import ForgotPasswordPage from "./page";
@@ -21,6 +21,7 @@ describe("ForgotPasswordPage", () => {
     const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
+    expect(source).toContain("fullWidth={true}");
   });
 
   it("does not smuggle next=/reset-password through a redirectTo query string", () => {
@@ -44,7 +45,7 @@ describe("ForgotPasswordPage", () => {
   });
 
   it("calls resetPasswordForEmail with the email and no redirectTo option", async () => {
-    resetPasswordForEmailMock.mockResolvedValueOnce({ error: null });
+    requestPasswordResetMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<ForgotPasswordPage />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -53,14 +54,12 @@ describe("ForgotPasswordPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
     await waitFor(() =>
-      expect(resetPasswordForEmailMock).toHaveBeenCalledWith(
-        "ada@example.com"
-      )
+      expect(requestPasswordResetMock).toHaveBeenCalledWith("ada@example.com")
     );
   });
 
   it("shows the identical success copy after submit for any email (D-07, no enumeration)", async () => {
-    resetPasswordForEmailMock.mockResolvedValueOnce({ error: null });
+    requestPasswordResetMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<ForgotPasswordPage />);
 
     fireEvent.change(screen.getByLabelText("Email"), {

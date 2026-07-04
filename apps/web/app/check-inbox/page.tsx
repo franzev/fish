@@ -3,7 +3,7 @@
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/client";
+import { resendSignupEmail } from "@/lib/auth/browser";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 
@@ -25,15 +25,12 @@ function CheckInboxContent() {
     if (!email) return;
     setLoading(true);
     try {
-      const supabase = createClient();
-      // supabase-js returns failures as { error } (rate limits included) —
-      // never promise "sent" when nothing was sent.
-      const { error } = await supabase.auth.resend({ type: "signup", email });
-      setResultTone(error ? "warning" : "success");
+      const result = await resendSignupEmail(email);
+      setResultTone(result.ok ? "success" : "warning");
       setNotice(
-        error
-          ? "That didn't send — give it a minute and try again."
-          : "Sent again. Check your inbox."
+        result.ok
+          ? "Sent again. Check your inbox."
+          : "That didn't send — give it a minute and try again."
       );
     } catch {
       setResultTone("warning");
@@ -59,6 +56,7 @@ function CheckInboxContent() {
         <Button
           type="submit"
           variant="primary"
+          fullWidth={true}
           loading={loading}
           disabled={!email}
         >

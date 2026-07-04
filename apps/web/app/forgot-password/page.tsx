@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
+import { requestPasswordReset } from "@/lib/auth/browser";
 import { FormEvent, useState } from "react";
 
 /* Single-field reset-request form. D-07: the same success copy renders
@@ -24,8 +24,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      await supabase.auth.resetPasswordForEmail(email);
+      await requestPasswordReset(email);
     } finally {
       setLoading(false);
       setSubmitted(true);
@@ -56,7 +55,12 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <Button type="submit" variant="primary" loading={loading}>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth={true}
+                loading={loading}
+              >
                 Send reset link
               </Button>
             </form>

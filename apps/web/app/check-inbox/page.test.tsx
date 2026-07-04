@@ -8,9 +8,11 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParamsValue,
 }));
 
-const resendMock = vi.fn();
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { resend: resendMock } }),
+const { resendSignupEmailMock } = vi.hoisted(() => ({
+  resendSignupEmailMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/browser", () => ({
+  resendSignupEmail: resendSignupEmailMock,
 }));
 
 import CheckInboxPage from "./page";
@@ -45,6 +47,7 @@ describe("CheckInboxPage", () => {
     const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
+    expect(source).toContain("fullWidth={true}");
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
@@ -58,16 +61,13 @@ describe("CheckInboxPage", () => {
   });
 
   it("after a successful resend shows a success-tone Alert, never navigating away", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<CheckInboxPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
-    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
-    expect(resendMock).toHaveBeenCalledWith({
-      type: "signup",
-      email: "ada@example.com",
-    });
+    await waitFor(() => expect(resendSignupEmailMock).toHaveBeenCalledTimes(1));
+    expect(resendSignupEmailMock).toHaveBeenCalledWith("ada@example.com");
     await waitFor(() =>
       expect(
         screen.getByText("Sent again. Check your inbox.")
@@ -80,8 +80,9 @@ describe("CheckInboxPage", () => {
   });
 
   it("a failed resend (e.g. rate limit) shows a calm warning-tone notice instead of false success", async () => {
-    resendMock.mockResolvedValueOnce({
-      error: { code: "over_email_send_rate_limit", message: "rate limit" },
+    resendSignupEmailMock.mockResolvedValueOnce({
+      ok: false,
+      error: { message: "rate limit", details: {} },
     });
     const { container } = render(<CheckInboxPage />);
 
@@ -107,22 +108,19 @@ describe("CheckInboxPage", () => {
     const button = screen.getByRole("button", { name: "Resend the email" });
     expect(button).toBeDisabled();
     fireEvent.click(button);
-    expect(resendMock).not.toHaveBeenCalled();
+    expect(resendSignupEmailMock).not.toHaveBeenCalled();
   });
 
   it("submitting the form (not just clicking) calls the signup resend once", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<CheckInboxPage />);
 
     const form = container.querySelector("form");
     expect(form).not.toBeNull();
     fireEvent.submit(form!);
 
-    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
-    expect(resendMock).toHaveBeenCalledWith({
-      type: "signup",
-      email: "ada@example.com",
-    });
+    await waitFor(() => expect(resendSignupEmailMock).toHaveBeenCalledTimes(1));
+    expect(resendSignupEmailMock).toHaveBeenCalledWith("ada@example.com");
   });
 
   it("the live region is mounted before any submit, with no alert inside until there is something to say (overlay contract)", () => {
@@ -138,7 +136,7 @@ describe("CheckInboxPage", () => {
   });
 
   it("the card wrapper stays relative and the notice overlay is positioned out of flow above it, and fades in", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<CheckInboxPage />);
 
     const card = container.querySelector(".relative");

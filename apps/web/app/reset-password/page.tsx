@@ -3,7 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
+import {
+  getAuthErrorCode,
+  getAuthErrorName,
+  updatePassword,
+} from "@/lib/auth/browser";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -23,26 +27,32 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-      });
+      const result = await updatePassword(password);
 
-      if (updateError) {
+      if (!result.ok) {
+        if (result.error.code !== "auth") {
+          setError(
+            "Couldn't reach the server. Check your connection and try again."
+          );
+          return;
+        }
+
+        const errorCode = getAuthErrorCode(result.error);
+        const errorName = getAuthErrorName(result.error);
         // Branch on stable error codes, not copy — each failure gets
         // guidance that can actually succeed on retry.
-        if (updateError.code === "same_password") {
+        if (errorCode === "same_password") {
           setError("That's the same password as before. Pick a new one.");
         } else if (
-          updateError.name === "AuthSessionMissingError" ||
-          updateError.code === "session_not_found"
+          errorName === "AuthSessionMissingError" ||
+          errorCode === "session_not_found"
         ) {
           // Opened directly or the recovery session lapsed — hand off to
           // the resend flow instead of blaming the password.
           router.push("/expired-link?type=recovery");
         } else if (
-          updateError.code === "weak_password" ||
-          updateError.code === "validation_failed"
+          errorCode === "weak_password" ||
+          errorCode === "validation_failed"
         ) {
           setError("Needs to be at least 8 characters.");
         } else {
@@ -74,7 +84,12 @@ export default function ResetPasswordPage() {
             minLength={8}
             required
           />
-          <Button type="submit" variant="primary" loading={loading}>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth={true}
+            loading={loading}
+          >
             Set new password
           </Button>
         </form>

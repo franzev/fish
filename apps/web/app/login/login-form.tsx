@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
-import { authRedirects } from "@fish/supabase/auth";
+import { getAuthErrorCode, signInWithPassword } from "@/lib/auth/browser";
+import { authRedirects } from "@/lib/auth/redirects";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -26,18 +26,24 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const result = await signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
+      if (!result.ok) {
+        if (result.error.code !== "auth") {
+          setPasswordError(
+            "Couldn't reach the server. Check your connection and try again."
+          );
+          return;
+        }
+
         // Stable error code first (survives gotrue copy changes); message
         // match kept as a fallback for older backends.
         if (
-          error.code === "email_not_confirmed" ||
-          error.message.toLowerCase().includes("email not confirmed")
+          getAuthErrorCode(result.error) === "email_not_confirmed" ||
+          result.error.message.toLowerCase().includes("email not confirmed")
         ) {
           router.push(`/check-inbox?email=${encodeURIComponent(email)}`);
           return;
@@ -80,7 +86,12 @@ export function LoginForm() {
             notice={passwordError || undefined}
             required
           />
-          <Button type="submit" variant="primary" loading={loading}>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth={true}
+            loading={loading}
+          >
             Log in
           </Button>
         </form>

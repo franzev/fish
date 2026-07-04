@@ -4,7 +4,10 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
+import {
+  requestPasswordReset,
+  resendSignupEmail,
+} from "@/lib/auth/browser";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 
@@ -37,18 +40,15 @@ function ExpiredLinkContent() {
     // overlay never blinks out and back in mid-flight.
     setLoading(true);
     try {
-      const supabase = createClient();
-      // supabase-js returns failures as { error } (rate limits included) —
-      // never promise "sent" when nothing was sent.
-      const { error } =
+      const result =
         type === "recovery"
-          ? await supabase.auth.resetPasswordForEmail(email)
-          : await supabase.auth.resend({ type: "signup", email });
-      setResultTone(error ? "warning" : "success");
+          ? await requestPasswordReset(email)
+          : await resendSignupEmail(email);
+      setResultTone(result.ok ? "success" : "warning");
       setNotice(
-        error
-          ? "That didn't send — give it a minute and try again."
-          : "Sent again. Check your inbox."
+        result.ok
+          ? "Sent again. Check your inbox."
+          : "That didn't send — give it a minute and try again."
       );
     } catch {
       setResultTone("warning");
@@ -77,7 +77,12 @@ function ExpiredLinkContent() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Button type="submit" variant="primary" loading={loading}>
+        <Button
+          type="submit"
+          variant="primary"
+          fullWidth={true}
+          loading={loading}
+        >
           Resend the email
         </Button>
       </form>

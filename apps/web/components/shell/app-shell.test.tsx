@@ -3,8 +3,8 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { signOut: vi.fn() } }),
+vi.mock("@/lib/auth/browser", () => ({
+  signOut: vi.fn(async () => ({ ok: true, data: undefined })),
 }));
 
 vi.mock("next/navigation", () => ({

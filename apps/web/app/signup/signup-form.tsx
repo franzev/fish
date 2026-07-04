@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
+import { getAuthErrorCode, signUpWithPassword } from "@/lib/auth/browser";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -30,20 +30,19 @@ export function SignupForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({
+      const result = await signUpWithPassword({
         email,
         password,
-        options: { data: { display_name: name } },
+        displayName: name,
       });
 
-      if (error) {
+      if (!result.ok) {
         // Confirmations-off environments surface an explicit error here.
         // Stable error code first (survives gotrue copy changes); message
         // match kept as a fallback for older backends.
         if (
-          error.code === "user_already_exists" ||
-          error.message.toLowerCase().includes("already registered")
+          getAuthErrorCode(result.error) === "user_already_exists" ||
+          result.error.message.toLowerCase().includes("already registered")
         ) {
           setEmailError(
             "That email's already in use. Try logging in instead?"
@@ -60,7 +59,7 @@ export function SignupForm() {
       // returns error: null with an obfuscated fake user whose identities
       // array is empty — and sends no email. Surface the existing-account
       // copy instead of routing to /check-inbox to wait for nothing.
-      if (data?.user && data.user.identities?.length === 0) {
+      if (result.data.identityCount === 0) {
         setEmailError("That email's already in use. Try logging in instead?");
         return;
       }
@@ -104,7 +103,12 @@ export function SignupForm() {
             required
           />
           {formError && <Alert tone="error">{formError}</Alert>}
-          <Button type="submit" variant="primary" loading={loading}>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth={true}
+            loading={loading}
+          >
             Create account
           </Button>
         </form>

@@ -8,9 +8,15 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const updateUserMock = vi.fn();
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { updateUser: updateUserMock } }),
+const { updatePasswordMock } = vi.hoisted(() => ({
+  updatePasswordMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/browser", () => ({
+  getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
+    error.details?.supabaseCode,
+  getAuthErrorName: (error: { details?: { supabaseName?: string } }) =>
+    error.details?.supabaseName,
+  updatePassword: updatePasswordMock,
 }));
 
 import ResetPasswordPage from "./page";
@@ -24,6 +30,7 @@ describe("ResetPasswordPage", () => {
     const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
+    expect(source).toContain("fullWidth={true}");
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
@@ -43,7 +50,7 @@ describe("ResetPasswordPage", () => {
   });
 
   it("calls updateUser on submit and redirects to /home", async () => {
-    updateUserMock.mockResolvedValueOnce({ error: null });
+    updatePasswordMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<ResetPasswordPage />);
 
     fireEvent.change(screen.getByLabelText("Password"), {
@@ -54,16 +61,19 @@ describe("ResetPasswordPage", () => {
     );
 
     await waitFor(() =>
-      expect(updateUserMock).toHaveBeenCalledWith({
-        password: "new-password123",
-      })
+      expect(updatePasswordMock).toHaveBeenCalledWith("new-password123")
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/home"));
   });
 
   it("a same_password error explains the real problem, not password length", async () => {
-    updateUserMock.mockResolvedValueOnce({
-      error: { code: "same_password", message: "New password should be different from the old password." },
+    updatePasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: "auth",
+        message: "New password should be different from the old password.",
+        details: { supabaseCode: "same_password" },
+      },
     });
     render(<ResetPasswordPage />);
 
@@ -84,8 +94,13 @@ describe("ResetPasswordPage", () => {
   });
 
   it("a missing recovery session routes to /expired-link so the resend flow takes over", async () => {
-    updateUserMock.mockResolvedValueOnce({
-      error: { name: "AuthSessionMissingError", message: "Auth session missing!" },
+    updatePasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: "auth",
+        message: "Auth session missing!",
+        details: { supabaseName: "AuthSessionMissingError" },
+      },
     });
     render(<ResetPasswordPage />);
 
@@ -100,8 +115,13 @@ describe("ResetPasswordPage", () => {
   });
 
   it("a weak_password error keeps the length guidance", async () => {
-    updateUserMock.mockResolvedValueOnce({
-      error: { code: "weak_password", message: "Password should be at least 8 characters." },
+    updatePasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: "auth",
+        message: "Password should be at least 8 characters.",
+        details: { supabaseCode: "weak_password" },
+      },
     });
     render(<ResetPasswordPage />);
 
@@ -114,6 +134,28 @@ describe("ResetPasswordPage", () => {
       expect(
         screen.getAllByText("Needs to be at least 8 characters.").length
       ).toBeGreaterThan(0)
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("a service-level transport failure shows connection copy", async () => {
+    updatePasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "network", message: "fetch failed", details: {} },
+    });
+    render(<ResetPasswordPage />);
+
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "new-password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Set new password" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Couldn't reach the server. Check your connection and try again."
+        )
+      ).toBeInTheDocument()
     );
     expect(pushMock).not.toHaveBeenCalled();
   });

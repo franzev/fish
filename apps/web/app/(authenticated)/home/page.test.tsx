@@ -14,37 +14,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-const getUserMock = vi.fn();
-
-// Keyed-by-table mock: .from(table).select().eq().single() and .maybeSingle()
-// both resolve from configurable per-table queues so each test can script the
-// profiles read (role/display_name, then the coach's own display_name) and
-// the coach_clients read independently.
-const singleQueues: Record<string, unknown[]> = {};
-const maybeSingleQueues: Record<string, unknown[]> = {};
-
-function queueSingle(table: string, value: unknown) {
-  singleQueues[table] = singleQueues[table] ?? [];
-  singleQueues[table].push(value);
-}
-
-function queueMaybeSingle(table: string, value: unknown) {
-  maybeSingleQueues[table] = maybeSingleQueues[table] ?? [];
-  maybeSingleQueues[table].push(value);
-}
-
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: { getUser: getUserMock },
-    from: (table: string) => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => (singleQueues[table] ?? []).shift(),
-          maybeSingle: async () => (maybeSingleQueues[table] ?? []).shift(),
-        }),
-      }),
-    }),
-  }),
+const { getClientHomeDataMock } = vi.hoisted(() => ({
+  getClientHomeDataMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/server", () => ({
+  getClientHomeData: getClientHomeDataMock,
 }));
 
 import ClientHomePage from "./page";
@@ -52,16 +26,14 @@ import ClientHomePage from "./page";
 describe("ClientHomePage", () => {
   afterEach(() => {
     redirectMock.mockClear();
-    getUserMock.mockClear();
-    for (const key of Object.keys(singleQueues)) delete singleQueues[key];
-    for (const key of Object.keys(maybeSingleQueues))
-      delete maybeSingleQueues[key];
+    getClientHomeDataMock.mockReset();
   });
 
   it("silently forwards a coach to /coach (D-03 wrong door)", async () => {
-    getUserMock.mockResolvedValueOnce({ data: { user: { id: "coach-1" } } });
-    queueSingle("profiles", {
-      data: { role: "coach", display_name: "Coach Dana" },
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "coach",
+      firstName: "Dana",
+      coachName: null,
     });
 
     await expect(ClientHomePage()).rejects.toThrow("NEXT_REDIRECT");
@@ -69,11 +41,11 @@ describe("ClientHomePage", () => {
   });
 
   it("renders the unassigned empty state and greeting when no coach is assigned (SHEL-02)", async () => {
-    getUserMock.mockResolvedValueOnce({ data: { user: { id: "client-1" } } });
-    queueSingle("profiles", {
-      data: { role: "client", display_name: "Alex Rivera" },
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "client",
+      firstName: "Alex",
+      coachName: null,
     });
-    queueMaybeSingle("coach_clients", { data: null });
 
     const Page = await ClientHomePage();
     render(Page);
@@ -86,12 +58,11 @@ describe("ClientHomePage", () => {
   });
 
   it("renders the assigned empty state naming the coach (D-16)", async () => {
-    getUserMock.mockResolvedValueOnce({ data: { user: { id: "client-1" } } });
-    queueSingle("profiles", {
-      data: { role: "client", display_name: "Alex Rivera" },
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "client",
+      firstName: "Alex",
+      coachName: "Coach Dana",
     });
-    queueMaybeSingle("coach_clients", { data: { coach_id: "coach-1" } });
-    queueSingle("profiles", { data: { display_name: "Coach Dana" } });
 
     const Page = await ClientHomePage();
     render(Page);

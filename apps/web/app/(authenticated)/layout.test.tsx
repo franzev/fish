@@ -12,17 +12,15 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-const getUserMock = vi.fn();
-const singleMock = vi.fn();
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: { getUser: getUserMock },
-    from: () => ({ select: () => ({ eq: () => ({ single: singleMock }) }) }),
-  }),
+const { getAuthenticatedShellProfileMock } = vi.hoisted(() => ({
+  getAuthenticatedShellProfileMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/server", () => ({
+  getAuthenticatedShellProfile: getAuthenticatedShellProfileMock,
 }));
 
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { signOut: vi.fn() } }),
+vi.mock("@/lib/auth/browser", () => ({
+  signOut: vi.fn(async () => ({ ok: true, data: undefined })),
 }));
 
 import AuthenticatedLayout from "./layout";
@@ -30,12 +28,11 @@ import AuthenticatedLayout from "./layout";
 describe("AuthenticatedLayout", () => {
   afterEach(() => {
     redirectMock.mockClear();
-    getUserMock.mockReset();
-    singleMock.mockReset();
+    getAuthenticatedShellProfileMock.mockReset();
   });
 
   it("calls redirect('/login') when getUser() returns no user (D-06 default-deny)", async () => {
-    getUserMock.mockResolvedValueOnce({ data: { user: null } });
+    getAuthenticatedShellProfileMock.mockResolvedValueOnce(null);
 
     await expect(AuthenticatedLayout({ children: <div /> })).rejects.toThrow(
       "NEXT_REDIRECT"
@@ -44,10 +41,7 @@ describe("AuthenticatedLayout", () => {
   });
 
   it("calls redirect('/login') when getUser() returns a user but no profile row exists", async () => {
-    getUserMock.mockResolvedValueOnce({
-      data: { user: { id: "user-1", email: "ada@example.com" } },
-    });
-    singleMock.mockResolvedValueOnce({ data: null });
+    getAuthenticatedShellProfileMock.mockResolvedValueOnce(null);
 
     await expect(AuthenticatedLayout({ children: <div /> })).rejects.toThrow(
       "NEXT_REDIRECT"
@@ -56,11 +50,10 @@ describe("AuthenticatedLayout", () => {
   });
 
   it("resolves role + renders AppShell with the display name, no redirect, for a valid profile", async () => {
-    getUserMock.mockResolvedValueOnce({
-      data: { user: { id: "user-1", email: "ada@example.com" } },
-    });
-    singleMock.mockResolvedValueOnce({
-      data: { role: "client", display_name: "Alex Rivera" },
+    getAuthenticatedShellProfileMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "client",
+      displayName: "Alex Rivera",
     });
 
     const Layout = await AuthenticatedLayout({ children: <div>Content</div> });

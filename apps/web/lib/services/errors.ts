@@ -99,7 +99,10 @@ export function normalizeServiceError(
 }
 
 export function mapSupabaseError(
-  error: { message?: string; code?: string; status?: number } | null | undefined,
+  error:
+    | { message?: string; code?: string; name?: string; status?: number }
+    | null
+    | undefined,
   input: Omit<ServiceErrorInput, "message" | "details" | "cause"> & {
     fallbackMessage: string;
   }
@@ -111,6 +114,7 @@ export function mapSupabaseError(
     recoverable: input.recoverable,
     details: {
       ...(error?.code ? { supabaseCode: error.code } : {}),
+      ...(error?.name ? { supabaseName: error.name } : {}),
       ...(error?.status ? { status: error.status } : {}),
     },
     cause: error,

@@ -8,15 +8,13 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParamsValue,
 }));
 
-const resendMock = vi.fn();
-const resetPasswordForEmailMock = vi.fn();
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      resend: resendMock,
-      resetPasswordForEmail: resetPasswordForEmailMock,
-    },
-  }),
+const { requestPasswordResetMock, resendSignupEmailMock } = vi.hoisted(() => ({
+  requestPasswordResetMock: vi.fn(),
+  resendSignupEmailMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/browser", () => ({
+  requestPasswordReset: requestPasswordResetMock,
+  resendSignupEmail: resendSignupEmailMock,
 }));
 
 import ExpiredLinkPage from "./page";
@@ -42,6 +40,7 @@ describe("ExpiredLinkPage", () => {
     const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
+    expect(source).toContain("fullWidth={true}");
 
     render(<ExpiredLinkPage />);
     const buttons = screen.getAllByRole("button");
@@ -58,17 +57,14 @@ describe("ExpiredLinkPage", () => {
   });
 
   it("default (no type param) calls the signup resend method", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<ExpiredLinkPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
-    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
-    expect(resendMock).toHaveBeenCalledWith({
-      type: "signup",
-      email: "ada@example.com",
-    });
-    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(resendSignupEmailMock).toHaveBeenCalledTimes(1));
+    expect(resendSignupEmailMock).toHaveBeenCalledWith("ada@example.com");
+    expect(requestPasswordResetMock).not.toHaveBeenCalled();
   });
 
   it("type=recovery selects the recovery resend method", async () => {
@@ -76,21 +72,22 @@ describe("ExpiredLinkPage", () => {
       email: "ada@example.com",
       type: "recovery",
     });
-    resetPasswordForEmailMock.mockResolvedValueOnce({ error: null });
+    requestPasswordResetMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<ExpiredLinkPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
 
     await waitFor(() =>
-      expect(resetPasswordForEmailMock).toHaveBeenCalledTimes(1)
+      expect(requestPasswordResetMock).toHaveBeenCalledTimes(1)
     );
-    expect(resetPasswordForEmailMock).toHaveBeenCalledWith("ada@example.com");
-    expect(resendMock).not.toHaveBeenCalled();
+    expect(requestPasswordResetMock).toHaveBeenCalledWith("ada@example.com");
+    expect(resendSignupEmailMock).not.toHaveBeenCalled();
   });
 
   it("a failed resend (e.g. rate limit) shows a calm warning-tone notice instead of false success", async () => {
-    resendMock.mockResolvedValueOnce({
-      error: { code: "over_email_send_rate_limit", message: "rate limit" },
+    resendSignupEmailMock.mockResolvedValueOnce({
+      ok: false,
+      error: { message: "rate limit", details: {} },
     });
     const { container } = render(<ExpiredLinkPage />);
 
@@ -108,7 +105,7 @@ describe("ExpiredLinkPage", () => {
   });
 
   it("a successful resend shows a success-tone notice", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<ExpiredLinkPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
@@ -137,8 +134,8 @@ describe("ExpiredLinkPage", () => {
     const form = container.querySelector("form");
     fireEvent.submit(form!);
 
-    expect(resendMock).not.toHaveBeenCalled();
-    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
+    expect(resendSignupEmailMock).not.toHaveBeenCalled();
+    expect(requestPasswordResetMock).not.toHaveBeenCalled();
     expect(
       screen.getByText("Add your email above, then resend.")
     ).toBeInTheDocument();
@@ -149,7 +146,7 @@ describe("ExpiredLinkPage", () => {
   });
 
   it("pressing Enter in the email field submits the resend (keyboard submit, not just click)", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<ExpiredLinkPage />);
 
     const form = container.querySelector("form");
@@ -159,11 +156,8 @@ describe("ExpiredLinkPage", () => {
     // form directly, matching what pressing Enter in a text field triggers.
     fireEvent.submit(form!);
 
-    await waitFor(() => expect(resendMock).toHaveBeenCalledTimes(1));
-    expect(resendMock).toHaveBeenCalledWith({
-      type: "signup",
-      email: "ada@example.com",
-    });
+    await waitFor(() => expect(resendSignupEmailMock).toHaveBeenCalledTimes(1));
+    expect(resendSignupEmailMock).toHaveBeenCalledWith("ada@example.com");
   });
 
   it("pressing Enter with type=recovery submits via the recovery resend method", async () => {
@@ -171,17 +165,17 @@ describe("ExpiredLinkPage", () => {
       email: "ada@example.com",
       type: "recovery",
     });
-    resetPasswordForEmailMock.mockResolvedValueOnce({ error: null });
+    requestPasswordResetMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<ExpiredLinkPage />);
 
     const form = container.querySelector("form");
     fireEvent.submit(form!);
 
     await waitFor(() =>
-      expect(resetPasswordForEmailMock).toHaveBeenCalledTimes(1)
+      expect(requestPasswordResetMock).toHaveBeenCalledTimes(1)
     );
-    expect(resetPasswordForEmailMock).toHaveBeenCalledWith("ada@example.com");
-    expect(resendMock).not.toHaveBeenCalled();
+    expect(requestPasswordResetMock).toHaveBeenCalledWith("ada@example.com");
+    expect(resendSignupEmailMock).not.toHaveBeenCalled();
   });
 
   it("the live region is mounted before any submit, with no alert inside until there is something to say (overlay contract)", () => {
@@ -197,7 +191,7 @@ describe("ExpiredLinkPage", () => {
   });
 
   it("the card wrapper stays relative and the notice overlay is positioned out of flow above it, and fades in", async () => {
-    resendMock.mockResolvedValueOnce({ error: null });
+    resendSignupEmailMock.mockResolvedValueOnce({ ok: true, data: undefined });
     const { container } = render(<ExpiredLinkPage />);
 
     const card = container.querySelector(".relative");
@@ -221,8 +215,9 @@ describe("ExpiredLinkPage", () => {
 
   it("a previous notice stays visible through the next in-flight request (no mid-flight blink-out)", async () => {
     // First attempt fails and shows the calm retry notice.
-    resendMock.mockResolvedValueOnce({
-      error: { code: "over_email_send_rate_limit", message: "rate limit" },
+    resendSignupEmailMock.mockResolvedValueOnce({
+      ok: false,
+      error: { message: "rate limit", details: {} },
     });
     render(<ExpiredLinkPage />);
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
@@ -235,8 +230,8 @@ describe("ExpiredLinkPage", () => {
     // Second attempt: while it is in flight the PREVIOUS notice must still
     // be on screen (no setNotice("") blank-out), only replaced once this
     // attempt resolves.
-    let resolveSecond!: (value: { error: null }) => void;
-    resendMock.mockImplementationOnce(
+    let resolveSecond!: (value: { ok: true; data: undefined }) => void;
+    resendSignupEmailMock.mockImplementationOnce(
       () => new Promise((resolve) => (resolveSecond = resolve))
     );
     fireEvent.click(screen.getByRole("button", { name: "Resend the email" }));
@@ -245,7 +240,7 @@ describe("ExpiredLinkPage", () => {
       screen.getByText("That didn't send — give it a minute and try again.")
     ).toBeInTheDocument();
 
-    resolveSecond({ error: null });
+    resolveSecond({ ok: true, data: undefined });
     await waitFor(() =>
       expect(
         screen.getByText("Sent again. Check your inbox.")

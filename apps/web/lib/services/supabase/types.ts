@@ -26,6 +26,18 @@ export interface SupabaseAuthService {
   readonly client: AppSupabaseClient;
   getCurrentUser(): Promise<ServiceResult<User | null>>;
   refreshSessionClaims(): Promise<ServiceResult<void>>;
+  signInWithPassword(input: {
+    email: string;
+    password: string;
+  }): Promise<ServiceResult<void>>;
+  signUpWithPassword(input: {
+    email: string;
+    password: string;
+    displayName: string;
+  }): Promise<ServiceResult<{ userId: string | null; identityCount: number | null }>>;
+  resendSignupEmail(email: string): Promise<ServiceResult<void>>;
+  requestPasswordReset(email: string): Promise<ServiceResult<void>>;
+  updatePassword(password: string): Promise<ServiceResult<void>>;
   signOut(): Promise<ServiceResult<void>>;
 }
 

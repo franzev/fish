@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/shell/app-shell";
-import { createClient } from "@/lib/supabase/server";
+import { authRedirects } from "@/lib/auth/redirects";
+import { getAuthenticatedShellProfile } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
 /* D-06 default-deny: every route inside this (authenticated) group requires
@@ -18,25 +19,12 @@ export default async function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, display_name")
-    .eq("id", user.id)
-    .single();
+  const profile = await getAuthenticatedShellProfile();
 
   if (!profile) {
     // Defensive: a session with no profile row should never happen.
-    redirect("/login");
+    redirect(authRedirects.signedOut);
   }
 
-  return <AppShell displayName={profile.display_name}>{children}</AppShell>;
+  return <AppShell displayName={profile.displayName}>{children}</AppShell>;
 }

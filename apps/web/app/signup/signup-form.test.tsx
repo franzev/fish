@@ -8,9 +8,13 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const signUpMock = vi.fn();
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ auth: { signUp: signUpMock } }),
+const { signUpWithPasswordMock } = vi.hoisted(() => ({
+  signUpWithPasswordMock: vi.fn(),
+}));
+vi.mock("@/lib/auth/browser", () => ({
+  getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
+    error.details?.supabaseCode,
+  signUpWithPassword: signUpWithPasswordMock,
 }));
 
 import { SignupForm } from "./signup-form";
@@ -24,6 +28,7 @@ describe("SignupForm", () => {
     const source = readFileSync(resolve(__dirname, "./signup-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
+    expect(source).toContain("fullWidth={true}");
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
@@ -51,9 +56,9 @@ describe("SignupForm", () => {
   it("submitting calls the browser client's auth.signUp", async () => {
     // Real confirmations-on shape for a NEW user: user present with a
     // populated identities array.
-    signUpMock.mockResolvedValueOnce({
-      data: { user: { identities: [{ id: "identity-1" }] } },
-      error: null,
+    signUpWithPasswordMock.mockResolvedValueOnce({
+      ok: true,
+      data: { userId: "user-1", identityCount: 1 },
     });
     render(<SignupForm />);
 
@@ -68,11 +73,11 @@ describe("SignupForm", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
-    await waitFor(() => expect(signUpMock).toHaveBeenCalledTimes(1));
-    expect(signUpMock).toHaveBeenCalledWith({
+    await waitFor(() => expect(signUpWithPasswordMock).toHaveBeenCalledTimes(1));
+    expect(signUpWithPasswordMock).toHaveBeenCalledWith({
       email: "ada@example.com",
       password: "password123",
-      options: { data: { display_name: "Ada" } },
+      displayName: "Ada",
     });
     await waitFor(() =>
       expect(pushMock).toHaveBeenCalledWith(
@@ -85,9 +90,9 @@ describe("SignupForm", () => {
     // With enable_confirmations = true, Supabase anti-enumeration returns
     // error: null plus an obfuscated user whose identities array is empty —
     // and sends no email. This is the branch production actually takes.
-    signUpMock.mockResolvedValueOnce({
-      data: { user: { identities: [] } },
-      error: null,
+    signUpWithPasswordMock.mockResolvedValueOnce({
+      ok: true,
+      data: { userId: "user-1", identityCount: 0 },
     });
     render(<SignupForm />);
 
@@ -113,8 +118,12 @@ describe("SignupForm", () => {
   });
 
   it("the stable user_already_exists error code shows the existing-email copy even if the message wording drifts", async () => {
-    signUpMock.mockResolvedValueOnce({
-      error: { code: "user_already_exists", message: "some future wording" },
+    signUpWithPasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        message: "some future wording",
+        details: { supabaseCode: "user_already_exists" },
+      },
     });
     render(<SignupForm />);
 
@@ -140,8 +149,9 @@ describe("SignupForm", () => {
   });
 
   it("an 'already registered' error (confirmations-off environments) shows the existing-email Input error copy, not a raw message", async () => {
-    signUpMock.mockResolvedValueOnce({
-      error: { message: "User already registered" },
+    signUpWithPasswordMock.mockResolvedValueOnce({
+      ok: false,
+      error: { message: "User already registered", details: {} },
     });
     render(<SignupForm />);
 
