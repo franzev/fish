@@ -18,11 +18,9 @@ const preview: Preview = {
   decorators: [
     (Story) => (
       <div
-        className={`${lexend.variable} ${fraunces.variable} min-h-screen bg-bg p-6 text-body`}
+        className={`${lexend.variable} ${fraunces.variable} p-6 bg-bg`}
       >
-        <div className="mx-auto w-full max-w-md">
-          <Story />
-        </div>
+        <Story />
       </div>
     ),
   ],

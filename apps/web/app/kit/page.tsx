@@ -1,8 +1,9 @@
 import { KitThemeToggle } from "@/components/kit/theme-toggle";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, Progress } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   IconAlertCircle,

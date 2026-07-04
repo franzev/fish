@@ -1,8 +1,25 @@
 import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Button } from "./button";
+import { Button, buttonVariants } from "./button";
 
 describe("Button", () => {
+  it("exposes reusable CVA variants for the maintained button styles", () => {
+    expect(buttonVariants()).toContain("bg-primary");
+    expect(buttonVariants()).not.toContain("w-full");
+    expect(buttonVariants({ variant: "secondary" })).toContain("bg-surface");
+    expect(buttonVariants({ variant: "ghost", fullWidth: false })).not.toContain(
+      "w-full"
+    );
+  });
+
+  it("defaults to content width unless fullWidth is requested", () => {
+    const { getByRole, rerender } = render(<Button>Get started</Button>);
+    expect(getByRole("button").className).not.toContain("w-full");
+
+    rerender(<Button fullWidth={true}>Get started</Button>);
+    expect(getByRole("button").className).toContain("w-full");
+  });
+
   it("primary variant applies the inverted-block tokens", () => {
     const { getByRole } = render(<Button>Get started</Button>);
     const button = getByRole("button", { name: "Get started" });

@@ -7,7 +7,7 @@ const meta = {
   tags: ["autodocs"],
   args: {
     children: "Continue",
-    fullWidth: true,
+    fullWidth: false,
     loading: false,
     variant: "primary",
   },

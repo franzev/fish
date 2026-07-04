@@ -1,3 +1,4 @@
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import {
   IconAlertCircle,
@@ -7,7 +8,44 @@ import {
 } from "@tabler/icons-react";
 import { HTMLAttributes } from "react";
 
-type AlertTone = "notice" | "warning" | "error" | "success";
+export const alertVariants = cva(
+  "flex items-start gap-2 rounded-control border bg-surface p-4 shadow-[var(--shadow-card)]",
+  {
+    variants: {
+      tone: {
+        // Neutral/informational tier — stays monochrome (structural weight only).
+        notice: "border-border-strong",
+        warning: "border-warning border-2",
+        error: "border-error border-2",
+        success: "border-success border-2",
+      },
+    },
+  }
+);
+
+export const alertIconVariants = cva("mt-0.5 shrink-0", {
+  variants: {
+    tone: {
+      notice: "text-body",
+      warning: "text-warning",
+      error: "text-error",
+      success: "text-success",
+    },
+  },
+});
+
+export const alertMessageVariants = cva("text-[15px] text-body", {
+  variants: {
+    tone: {
+      notice: "font-normal",
+      warning: "font-semibold",
+      error: "font-semibold",
+      success: "font-normal",
+    },
+  },
+});
+
+type AlertTone = NonNullable<VariantProps<typeof alertVariants>["tone"]>;
 
 interface AlertProps extends HTMLAttributes<HTMLDivElement> {
   tone: AlertTone;
@@ -15,40 +53,11 @@ interface AlertProps extends HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
 }
 
-const toneConfig: Record<
-  AlertTone,
-  {
-    Icon: typeof IconInfoCircle;
-    className: string;
-    iconClassName: string;
-    messageClassName: string;
-  }
-> = {
-  // Neutral/informational tier — stays monochrome (structural weight only).
-  notice: {
-    Icon: IconInfoCircle,
-    className: "border-border-strong",
-    iconClassName: "text-body",
-    messageClassName: "font-normal",
-  },
-  warning: {
-    Icon: IconAlertTriangle,
-    className: "border-warning border-2",
-    iconClassName: "text-warning",
-    messageClassName: "font-semibold",
-  },
-  error: {
-    Icon: IconAlertCircle,
-    className: "border-error border-2",
-    iconClassName: "text-error",
-    messageClassName: "font-semibold",
-  },
-  success: {
-    Icon: IconCircleCheck,
-    className: "border-success border-2",
-    iconClassName: "text-success",
-    messageClassName: "font-normal",
-  },
+const toneIcons: Record<AlertTone, typeof IconInfoCircle> = {
+  notice: IconInfoCircle,
+  warning: IconAlertTriangle,
+  error: IconAlertCircle,
+  success: IconCircleCheck,
 };
 
 /** A block-level tone message. `notice` is the neutral informational tier
@@ -58,13 +67,11 @@ const toneConfig: Record<
  *  floating result overlay reads at a glance, never a saturated color
  *  slab. Colors come from @theme tokens only (never raw hex here). */
 export function Alert({ tone, children, className, ...props }: AlertProps) {
-  const { Icon, className: toneClassName, iconClassName, messageClassName } =
-    toneConfig[tone];
+  const Icon = toneIcons[tone];
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-control border bg-surface p-4 shadow-[var(--shadow-card)]",
-        toneClassName,
+        alertVariants({ tone }),
         className
       )}
       {...props}
@@ -73,11 +80,9 @@ export function Alert({ tone, children, className, ...props }: AlertProps) {
         size={20}
         stroke={tone === "notice" ? 1.75 : 2}
         aria-hidden="true"
-        className={cn("mt-0.5 shrink-0", iconClassName)}
+        className={cn(alertIconVariants({ tone }))}
       />
-      <p className={cn("text-[15px] text-body", messageClassName)}>
-        {children}
-      </p>
+      <p className={cn(alertMessageVariants({ tone }))}>{children}</p>
     </div>
   );
 }

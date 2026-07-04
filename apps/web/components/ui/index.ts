@@ -1,5 +1,5 @@
-export { Alert } from "./alert";
-export { Button } from "./button";
-export { Card } from "./card";
-export { Input } from "./input";
-export { Progress } from "./progress";
+export * from "./alert";
+export * from "./button";
+export * from "./card";
+export * from "./input";
+export * from "./progress";

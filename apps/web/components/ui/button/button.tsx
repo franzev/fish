@@ -1,35 +1,63 @@
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { ButtonHTMLAttributes, forwardRef, MouseEvent } from "react";
 
-type Variant = "primary" | "secondary" | "ghost";
+export const buttonVariants = cva(
+  [
+    // Layout stability: no state change may alter the rendered size.
+    // relative anchors the loading overlay; a constant (transparent)
+    // border keeps the box model identical across all variants.
+    "relative inline-flex items-center justify-center rounded-control px-6",
+    "min-h-[var(--size-control)] text-[17px] transition-colors",
+    "border border-transparent cursor-pointer",
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+  ],
+  {
+    variants: {
+      variant: {
+        // The ONE action on a screen. Use at most one primary per view.
+        primary:
+          "bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
+        // A quieter alternative action when genuinely needed. Border width lives
+        // in the base classes (constant across variants); only the color differs.
+        secondary:
+          "bg-surface text-foreground border-border hover:bg-surface-2",
+        // Low-emphasis text actions ("Back", "Need help?").
+        ghost: "bg-transparent text-muted hover:text-body",
+      },
+      fullWidth: {
+        true: "w-full",
+        false: null,
+      },
+      loading: {
+        true: "opacity-70 cursor-progress",
+        false: null,
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+      fullWidth: false,
+      loading: false,
+    },
+  }
+);
+
+type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  /** Full-width is the default — most ND screens have one big action. */
+  variant?: NonNullable<ButtonVariantProps["variant"]>;
+  /** Opt into full-width when a focused flow needs one big action. */
   fullWidth?: boolean;
   /** Busy state: dims, guards its own click, and shows a quiet spinner. */
   loading?: boolean;
 }
-
-const variants: Record<Variant, string> = {
-  // The ONE action on a screen. Use at most one primary per view.
-  primary:
-    "bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
-  // A quieter alternative action when genuinely needed. Border width lives
-  // in the base classes (constant across variants); only the color differs.
-  secondary:
-    "bg-surface text-foreground border-border hover:bg-surface-2",
-  // Low-emphasis text actions ("Back", "Need help?").
-  ghost:
-    "bg-transparent text-muted hover:text-body",
-};
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
       variant = "primary",
-      fullWidth = true,
+      fullWidth = false,
       loading = false,
       onClick,
       children,
@@ -66,16 +94,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={loading || undefined}
         onClick={onClick ? handleClick : undefined}
         className={cn(
-          // Layout stability: no state change may alter the rendered size.
-          // relative anchors the loading overlay; a constant (transparent)
-          // border keeps the box model identical across all variants.
-          "relative inline-flex items-center justify-center rounded-control px-6",
-          "min-h-[var(--size-control)] text-[17px] transition-colors",
-          "border border-transparent cursor-pointer",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          fullWidth && "w-full",
-          loading && "opacity-70 cursor-progress",
-          variants[variant],
+          buttonVariants({ variant, fullWidth, loading }),
           className
         )}
         {...props}

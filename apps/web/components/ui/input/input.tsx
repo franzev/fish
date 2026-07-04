@@ -1,6 +1,29 @@
+import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { IconAlertCircle, IconInfoCircle } from "@tabler/icons-react";
 import { InputHTMLAttributes, forwardRef, useId } from "react";
+
+export const inputVariants = cva(
+  [
+    "w-full rounded-control bg-surface px-4",
+    "min-h-[var(--size-control)] text-[17px] text-foreground",
+    "border border-border placeholder:text-muted",
+    "transition-colors focus:border-primary",
+    "disabled:opacity-50",
+  ],
+  {
+    variants: {
+      feedback: {
+        default: null,
+        notice: "border-border-strong",
+        error: "border-error border-2",
+      },
+    },
+    defaultVariants: {
+      feedback: "default",
+    },
+  }
+);
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Plain-language label, always shown above the field. */
@@ -17,6 +40,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, hint, notice, error, id, disabled, ...props }, ref) => {
     const autoId = useId();
     const inputId = id ?? autoId;
+    const feedback = error ? "error" : notice ? "notice" : "default";
     return (
       <div className="w-full">
         <label
@@ -30,13 +54,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           disabled={disabled}
           className={cn(
-            "w-full rounded-control bg-surface px-4",
-            "min-h-[var(--size-control)] text-[17px] text-foreground",
-            "border border-border placeholder:text-muted",
-            "transition-colors focus:border-primary",
-            "disabled:opacity-50",
-            notice && !error && "border-border-strong",
-            error && "border-error border-2",
+            inputVariants({ feedback }),
             className
           )}
           {...props}

@@ -1,8 +1,15 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Alert } from "./alert";
+import { Alert, alertMessageVariants, alertVariants } from "./alert";
 
 describe("Alert", () => {
+  it("exposes reusable CVA variants for the maintained alert tone styles", () => {
+    expect(alertVariants({ tone: "notice" })).toContain("border-border-strong");
+    expect(alertVariants({ tone: "warning" })).toContain("border-warning");
+    expect(alertVariants({ tone: "error" })).toContain("border-error");
+    expect(alertMessageVariants({ tone: "error" })).toContain("font-semibold");
+  });
+
   it("notice tone: border-border-strong, regular-weight message, info icon", () => {
     const { getByText, container } = render(
       <Alert tone="notice">That doesn&apos;t look like an email yet. Check the spelling?</Alert>

@@ -1,8 +1,16 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Input } from "./input";
+import { Input, inputVariants } from "./input";
 
 describe("Input", () => {
+  it("exposes reusable CVA feedback variants for the maintained field styles", () => {
+    expect(inputVariants()).toContain("border-border");
+    expect(inputVariants({ feedback: "notice" })).toContain(
+      "border-border-strong"
+    );
+    expect(inputVariants({ feedback: "error" })).toContain("border-error");
+  });
+
   it("meets the 56px tap-target floor via the size-control token (KIT-04)", () => {
     const { getByLabelText } = render(<Input label="Email" />);
     expect(getByLabelText("Email").className).toContain(
