@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: The Coaching Loop
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-07-04T16:21:26.611Z"
+stopped_at: Completed 04-02-PLAN.md (client profile UI)
+last_updated: "2026-07-04T16:39:45.670Z"
 last_activity: 2026-07-04
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 ## Current Position
 
 Phase: 04 (client-profiles) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-04
 
-Progress: [███░░░░░░░] 33%
+Progress: [███████░░░] 67%
 
 ## Milestone v1.1 Phases
 
@@ -69,6 +69,8 @@ Milestone-scoped decision log archived with v1.0 (see PROJECT.md Key Decisions f
 - Dev origin must match the browser exactly: `localhost:3001` (host-scoped cookies), pinned via `next dev -p 3001` + supabase `site_url`.
 - [Phase 04]: Followed RESEARCH Pattern 1 DDL verbatim for the level freeze — column-scoped GRANT UPDATE (level never named) + independent BEFORE-UPDATE trigger mirroring 0005's shape
 - [Phase 04]: Auto-provision client_profiles via a separate AFTER INSERT ON profiles trigger — RESEARCH Pattern 3 Option B — keeps the hardened handle_new_user (0002) untouched
+- [Phase 04-02]: The repo's first Server Action (updateProfileAction) uses useActionState + uncontrolled defaultValue; re-verifies getUser() inside the action per T-04-05 — Server Actions are directly POST-reachable; the calling page's own wrong-door guard is not sufficient auth verification
+- [Phase 04-02]: Product-facing a11y prefs (theme/text-size/reduced-motion) use NEW html[data-*] attribute names distinct from the dev-only data-kit-theme, sharing only the Lightning CSS mechanism — Prevents a real client session and an open /kit dev-preview tab from ever colliding on the same attribute
 
 ### v1.1 roadmap decisions (2026-07-04)
 
@@ -107,10 +109,10 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 ## Session Continuity
 
-**Last session:** 2026-07-04T16:16:05.648Z
+**Last session:** 2026-07-04T16:39:45.667Z
 
 - **Last activity:** 2026-07-04
-- **Stopped at:** Phase 4 context gathered
+- **Stopped at:** Completed 04-02-PLAN.md (client profile UI)
 - **Resume file:** None
 - **Next action:** `/gsd:plan-phase 4` — plan Client Profiles (the safe/protected write-safety discipline the whole milestone reuses)
 
