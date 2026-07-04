@@ -27,4 +27,4 @@ product feels like one thing.
 | 004 | coach-conversation | How does a coach give a gentle correction and assign practice, without it feeling like grading? | **D · Synthesis** — tap message → menu (fix/praise/assign) → inline compose | coach, authoring, correction |
 | 005 | client-states | How does the app stay calm when empty, loading, or failing? | **Catalog** — calm message lifecycle, empty & loading/offline states (the states reference) | states, empty, error, chat |
 | 006 | onboarding | What are a new client's first five minutes — welcome + data-driven assessment? | **B · Conversational** — the data-driven assessment is a warm in-chat conversation | onboarding, assessment, first-run |
-| 007 | responsive-web | Does "native per platform" hold as the web resizes (wide two-pane / narrow bottom-bar)? | _planned_ | responsive, web, breakpoints |
+| 007 | responsive-web | Does "native per platform" hold as the web resizes (wide two-pane / narrow bottom-bar)? | **System** — desktop two-pane → tablet single → mobile bottom-nav, via container queries | responsive, web, breakpoints |
