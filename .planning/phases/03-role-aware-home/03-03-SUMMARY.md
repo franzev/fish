@@ -170,3 +170,7 @@ None — the local Supabase stack was already running, reset, and seeded from Pl
 ---
 *Phase: 03-role-aware-home*
 *Completed: 2026-07-04*
+
+## Self-Check: PASSED
+
+All 5 claimed files verified present on disk (`apps/web/components/coach/client-list.tsx`, `apps/web/components/coach/client-list.test.tsx`, `apps/web/app/(authenticated)/coach/page.tsx`, `apps/web/app/(authenticated)/coach/page.test.tsx`, `scripts/verify-rls.ts`); all 4 commit hashes (`f350988`, `8795441`, `09e6200`, `d8477d4`) verified present in git log.
