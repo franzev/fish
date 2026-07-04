@@ -221,3 +221,24 @@ None - no external service configuration required. This plan is 100% local; the 
 ---
 *Phase: 04-client-profiles*
 *Completed: 2026-07-04*
+
+## Self-Check: PASSED
+
+- FOUND: apps/web/lib/validation/profile.ts
+- FOUND: apps/web/lib/validation/profile.test.ts
+- FOUND: apps/web/lib/prefs/apply-prefs.ts
+- FOUND: apps/web/app/(authenticated)/profile/page.tsx
+- FOUND: apps/web/app/(authenticated)/profile/edit/page.tsx
+- FOUND: apps/web/app/(authenticated)/profile/edit/actions.ts
+- FOUND: apps/web/app/(authenticated)/profile/edit/actions.test.ts
+- FOUND: apps/web/app/(authenticated)/profile/edit/edit-profile-form.tsx
+- FOUND: apps/web/components/profile/coach-card.tsx
+- FOUND: apps/web/components/profile/settings-row.tsx
+- FOUND: apps/web/components/profile/a11y-prefs.tsx
+- FOUND: apps/web/components/profile/a11y-prefs.test.tsx
+- FOUND: apps/web/components/profile/consent-row.tsx
+- FOUND: 0d2f61a (Task 1 commit)
+- FOUND: 447e756 (Task 2 commit)
+- FOUND: 46b824c (Task 3 RED commit)
+- FOUND: f678892 (Task 3 GREEN commit)
+- FOUND: b8bcab6 (SUMMARY commit)
