@@ -54,11 +54,23 @@ export function ConversationList({
         <div className="flex flex-col gap-1">
           {filtered.map((conversation) => {
             const isActive = conversation.id === activeConversationId;
+            // A button's aria-label REPLACES the accessible name from its
+            // children, so the snippet/timestamp/unread badge inside would be
+            // silent for screen readers. Compose them all into one label.
+            const unread = conversation.unreadCount ?? 0;
+            const rowLabel = [
+              `Conversation with ${conversation.participant.name}`,
+              unread > 0 ? `${unread} unread` : null,
+              conversation.lastMessage,
+              conversation.lastMessageAt,
+            ]
+              .filter(Boolean)
+              .join(", ");
             return (
               <button
                 key={conversation.id}
                 type="button"
-                aria-label={`Conversation with ${conversation.participant.name}`}
+                aria-label={rowLabel}
                 aria-current={isActive || undefined}
                 onClick={() => onSelect?.(conversation.id)}
                 className={cn(

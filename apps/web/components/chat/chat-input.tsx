@@ -37,7 +37,10 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     }
 
     function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-      if (event.key === "Enter" && !event.shiftKey) {
+      // Ignore the Enter that confirms an IME candidate (CJK input) — otherwise
+      // composing a word sends the half-finished message. Enter only submits
+      // once composition is done.
+      if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
         event.preventDefault();
         handleSend();
       }

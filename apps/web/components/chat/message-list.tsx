@@ -34,6 +34,10 @@ export function MessageList({
     <div
       role="log"
       aria-label="Conversation messages"
+      // tabIndex makes the scroll region reachable and scrollable by keyboard —
+      // a scrollable container with focusable children is not auto-focusable in
+      // Chromium, so without this the history can't be scrolled without a mouse.
+      tabIndex={0}
       className={cn("flex-1 overflow-y-auto px-4 py-3", className)}
       {...props}
     >

@@ -14,7 +14,11 @@ export function NotificationBadge({ count, className, ...props }: NotificationBa
   const display = count > 99 ? "99+" : String(count);
 
   return (
+    // role="img" gives this a proper accessible name from aria-label — a bare
+    // <span> has the generic role, which does not reliably expose aria-label, so
+    // screen readers would announce the capped "99+" instead of the real count.
     <span
+      role="img"
       aria-label={`${count} unread ${count === 1 ? "message" : "messages"}`}
       className={cn(
         "inline-flex min-w-[20px] items-center justify-center rounded-pill bg-primary px-1.5 py-0.5 text-[12px] font-semibold text-on-primary",

@@ -32,8 +32,11 @@ function initialsFrom(name: string): string {
  *  `src` (or an image `onError`) falls through to initials, and no name at
  *  all falls through to a plain glyph — the chain never crashes. */
 export function Avatar({ src, name, size = "md", className, ...props }: AvatarProps) {
-  const [imgFailed, setImgFailed] = useState(false);
-  const showImage = Boolean(src) && !imgFailed;
+  // Track the src that failed, not a boolean — so a later change to a new,
+  // valid src (e.g. switching conversations reuses this instance) shows the
+  // new image instead of staying stuck on the previous load error.
+  const [failedSrc, setFailedSrc] = useState<string | undefined>();
+  const showImage = Boolean(src) && src !== failedSrc;
   const initials = name ? initialsFrom(name) : "";
 
   return (
@@ -51,7 +54,7 @@ export function Avatar({ src, name, size = "md", className, ...props }: AvatarPr
           src={src}
           alt={name ? `${name}'s avatar` : "User avatar"}
           className="size-full object-cover"
-          onError={() => setImgFailed(true)}
+          onError={() => setFailedSrc(src)}
         />
       ) : initials ? (
         <span aria-hidden="true">{initials}</span>
