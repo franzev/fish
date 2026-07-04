@@ -15,21 +15,21 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-import LoginPage from "./page";
+import { LoginForm } from "./login-form";
 
-describe("LoginPage", () => {
+describe("LoginForm", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
+    const source = readFileSync(resolve(__dirname, "./login-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     const buttons = screen.getAllByRole("button");
     const primaryButtons = buttons.filter((b) =>
       b.className.includes("bg-primary")
@@ -39,13 +39,13 @@ describe("LoginPage", () => {
   });
 
   it("renders two Inputs (email, password)", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
   it("renders two sibling links and zero competing buttons", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
     expect(
       screen.getByRole("link", { name: "Create account" })
     ).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe("LoginPage", () => {
 
   it("a successful sign-in redirects to /home", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({ error: null });
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -80,7 +80,7 @@ describe("LoginPage", () => {
     signInWithPasswordMock.mockResolvedValueOnce({
       error: { message: "Email not confirmed" },
     });
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -104,7 +104,7 @@ describe("LoginPage", () => {
     signInWithPasswordMock.mockResolvedValueOnce({
       error: { message: "Invalid login credentials" },
     });
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -127,7 +127,7 @@ describe("LoginPage", () => {
     signInWithPasswordMock.mockResolvedValueOnce({
       error: { message: "Invalid login credentials" },
     });
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -147,7 +147,7 @@ describe("LoginPage", () => {
     signInWithPasswordMock.mockResolvedValueOnce({
       error: { code: "email_not_confirmed", message: "some future wording" },
     });
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -166,7 +166,7 @@ describe("LoginPage", () => {
 
   it("a thrown network failure shows connection copy, never the bad-credentials copy", async () => {
     signInWithPasswordMock.mockRejectedValueOnce(new Error("fetch failed"));
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },

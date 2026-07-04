@@ -13,21 +13,21 @@ vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({ auth: { signUp: signUpMock } }),
 }));
 
-import SignupPage from "./page";
+import { SignupForm } from "./signup-form";
 
-describe("SignupPage", () => {
+describe("SignupForm", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
+    const source = readFileSync(resolve(__dirname, "./signup-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
-    render(<SignupPage />);
+    render(<SignupForm />);
     const buttons = screen.getAllByRole("button");
     const primaryButtons = buttons.filter((b) =>
       b.className.includes("bg-primary")
@@ -37,14 +37,14 @@ describe("SignupPage", () => {
   });
 
   it("renders three Inputs (name, email, password)", () => {
-    render(<SignupPage />);
+    render(<SignupForm />);
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
   it("shows the password hint 'At least 8 characters.'", () => {
-    render(<SignupPage />);
+    render(<SignupForm />);
     expect(screen.getByText("At least 8 characters.")).toBeInTheDocument();
   });
 
@@ -55,7 +55,7 @@ describe("SignupPage", () => {
       data: { user: { identities: [{ id: "identity-1" }] } },
       error: null,
     });
-    render(<SignupPage />);
+    render(<SignupForm />);
 
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Ada" },
@@ -89,7 +89,7 @@ describe("SignupPage", () => {
       data: { user: { identities: [] } },
       error: null,
     });
-    render(<SignupPage />);
+    render(<SignupForm />);
 
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Ada" },
@@ -116,7 +116,7 @@ describe("SignupPage", () => {
     signUpMock.mockResolvedValueOnce({
       error: { code: "user_already_exists", message: "some future wording" },
     });
-    render(<SignupPage />);
+    render(<SignupForm />);
 
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Ada" },
@@ -143,7 +143,7 @@ describe("SignupPage", () => {
     signUpMock.mockResolvedValueOnce({
       error: { message: "User already registered" },
     });
-    render(<SignupPage />);
+    render(<SignupForm />);
 
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Ada" },
