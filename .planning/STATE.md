@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: The Coaching Loop
 status: planning
-last_updated: "2026-07-04T14:06:45.720Z"
+last_updated: "2026-07-04T22:45:00.000Z"
 last_activity: 2026-07-04
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -23,14 +23,30 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements
-- **Current focus:** Planning next milestone (`/gsd-new-milestone`) — candidates: client profiles, onboarding assessment, tracker engine, 1-on-1 chat (AGENTS.md build order)
+- **Current focus:** v1.1 The Coaching Loop — roadmap created (Phases 4-8); next: `/gsd:plan-phase 4` (Client Profiles)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 4 — Client Profiles (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-04 — Milestone v1.1 started
+Status: Roadmap approved; ready to plan Phase 4
+Last activity: 2026-07-04 — v1.1 roadmap created (5 phases, 30/30 requirements mapped)
+
+Progress: `[····················]` 0/5 phases · 0% (v1.1)
+
+## Milestone v1.1 Phases
+
+Dependency chain: profiles → onboarding → tracker → chat-schema → chat-route. Granularity: coarse. Chat split (7/8) is pitfall-driven (isolates the top data-leak + idempotency + integrity surface), not padding.
+
+| Phase | Name | Depends on | Requirements | Status |
+|-------|------|------------|--------------|--------|
+| 4 | Client Profiles | v1.0 | PROF-01..06 | Not started |
+| 5 | Data-Driven Onboarding (build shared renderer) | Phase 4 | ONBD-01..07 | Not started |
+| 6 | Tracker Engine (reuse renderer) | Phase 5, Phase 4 | TRAK-01..06 | Not started |
+| 7 | Chat Schema (realtime-ready, no subscriptions/UI) | v1.0 (parallelizable) | CHAT-01, CHAT-04, CHAT-06 | Not started |
+| 8 | Real Chat Route + send-message Edge Function | Phase 7, Phase 5, Phase 6 | CHAT-02/03/05/07, XC-04 | Not started |
+
+Cross-cutting XC-01 (RLS + verify:rls gate) / XC-02 (zod + pg_jsonschema) / XC-03 (ND design line + sketch-findings-fish) are woven into every phase's success criteria they touch.
 
 ## Archived Milestones
 
@@ -51,6 +67,15 @@ Milestone-scoped decision log archived with v1.0 (see PROJECT.md Key Decisions f
 - Theme work must be verified against served/compiled CSS (Lightning CSS `light-dark()` polyfill), never authored CSS alone.
 - Dev origin must match the browser exactly: `localhost:3001` (host-scoped cookies), pinned via `next dev -p 3001` + supabase `site_url`.
 
+### v1.1 roadmap decisions (2026-07-04)
+
+- **Phase numbering continues (4-8), not reset** — v1.0 ended at Phase 3.
+- **Onboarding (5) precedes Tracker (6)** to build ONE shared config-driven renderer/validator the tracker reuses; any ordering that duplicates the renderer is waste (research, load-bearing).
+- **Chat split into schema (7) + route/Edge (8)** — isolates the top data-leak + idempotency + integrity pitfalls; Phase 8 gets the largest planning/test budget. Chat depends only on the shipped pair, so Phase 7 may run in parallel with 5/6 if capacity allows.
+- **XC-01/02/03 are cross-cutting** (woven into every touched phase's success criteria); **XC-04 (E2E of the three cross-role flows) anchors to Phase 8**.
+- **Scope boundaries held:** persistent chat send/read only (realtime deferred, schema realtime-ready); human chat only (no AI); assignment seed-only (`assign-tracker` Edge Function seed-invocable, no assignment UI); consent = fields only; onboarding linear-first (branching is Future/ONBD-B01).
+- **One net-new runtime dep this milestone: `zod` v4** (apps/web + Edge Function, never `packages/core`); `pg_jsonschema` CHECK as the un-bypassable config backstop.
+
 ### Known tech debt (from v1.0 audit — non-blocking)
 
 See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured list (Input a11y attributes, two hardcoded `/home` redirects vs authRedirects, icon-guard regex breadth, tailwind caret-range pinning, stale dev seed password for client1).
@@ -60,7 +85,8 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 - [ ] AGENTS.md docs pass — design-token section still describes the pre-monochrome lime accent (tracked in PROJECT.md Active)
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs — D-14 deploy checklist exists, execute at first deploy
-- [ ] Future Edge Function signatures (assign-client, send-message) — design when chat/assignment milestone is scoped
+- [ ] `assign-tracker` + real `send-message` Edge Function signatures — design during Phase 6 / Phase 8 planning
+- [ ] Research flags for planning: Phase 7/8 (Chat) is highest-complexity — consider `/gsd:plan-phase --research-phase` (real Edge Function: JWT verify + membership + zod + idempotency + in-memory rate limit + `useOptimistic` reconciliation edge case, React issue #31967). Phase 4 (Profiles) and Phase 6 (Tracker) use standard/reuse patterns — skip research-phase.
 
 ### Blockers
 
@@ -78,10 +104,10 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 ## Session Continuity
 
-- **Last activity:** 2026-07-04 — quick task 260704-kfb completed
-- **Stopped at:** Milestone v1.0 complete — archived and tagged
+- **Last activity:** 2026-07-04 — v1.1 roadmap created (Phases 4-8)
+- **Stopped at:** Roadmap written; 30/30 requirements mapped; awaiting phase planning
 - **Resume file:** None
-- **Next action:** `/gsd-new-milestone` — questioning → research → requirements → roadmap for the next foundations (client profiles, onboarding assessment, tracker engine, 1-on-1 chat)
+- **Next action:** `/gsd:plan-phase 4` — plan Client Profiles (the safe/protected write-safety discipline the whole milestone reuses)
 
 ---
-*State initialized: 2026-07-02 at roadmap creation.*
+*State initialized: 2026-07-02 at roadmap creation. v1.1 roadmap added: 2026-07-04.*

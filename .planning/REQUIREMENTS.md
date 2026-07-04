@@ -98,46 +98,48 @@ Explicitly excluded from v1.1. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phase covers which requirement. Populated by the roadmapper. Suggested mapping from research (profiles → onboarding → tracker → chat-schema → chat-route); the roadmapper is the authority.
+Which phase covers which requirement. Populated by the roadmapper (authority). Phase numbering continues from v1.0 (which ended at Phase 3); v1.1 spans Phases 4-8. Dependency chain: profiles (4) → onboarding (5) → tracker (6) → chat-schema (7) → chat-route (8). XC-01/02/03 are milestone-wide guarantees woven into every phase's success criteria; XC-04 (E2E of the three cross-role flows) anchors to Phase 8.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROF-01 | (roadmap) | Pending |
-| PROF-02 | (roadmap) | Pending |
-| PROF-03 | (roadmap) | Pending |
-| PROF-04 | (roadmap) | Pending |
-| PROF-05 | (roadmap) | Pending |
-| PROF-06 | (roadmap) | Pending |
-| ONBD-01 | (roadmap) | Pending |
-| ONBD-02 | (roadmap) | Pending |
-| ONBD-03 | (roadmap) | Pending |
-| ONBD-04 | (roadmap) | Pending |
-| ONBD-05 | (roadmap) | Pending |
-| ONBD-06 | (roadmap) | Pending |
-| ONBD-07 | (roadmap) | Pending |
-| TRAK-01 | (roadmap) | Pending |
-| TRAK-02 | (roadmap) | Pending |
-| TRAK-03 | (roadmap) | Pending |
-| TRAK-04 | (roadmap) | Pending |
-| TRAK-05 | (roadmap) | Pending |
-| TRAK-06 | (roadmap) | Pending |
-| CHAT-01 | (roadmap) | Pending |
-| CHAT-02 | (roadmap) | Pending |
-| CHAT-03 | (roadmap) | Pending |
-| CHAT-04 | (roadmap) | Pending |
-| CHAT-05 | (roadmap) | Pending |
-| CHAT-06 | (roadmap) | Pending |
-| CHAT-07 | (roadmap) | Pending |
+| PROF-01 | Phase 4 — Client Profiles | Pending |
+| PROF-02 | Phase 4 — Client Profiles | Pending |
+| PROF-03 | Phase 4 — Client Profiles | Pending |
+| PROF-04 | Phase 4 — Client Profiles | Pending |
+| PROF-05 | Phase 4 — Client Profiles | Pending |
+| PROF-06 | Phase 4 — Client Profiles | Pending |
+| ONBD-01 | Phase 5 — Data-Driven Onboarding | Pending |
+| ONBD-02 | Phase 5 — Data-Driven Onboarding | Pending |
+| ONBD-03 | Phase 5 — Data-Driven Onboarding | Pending |
+| ONBD-04 | Phase 5 — Data-Driven Onboarding | Pending |
+| ONBD-05 | Phase 5 — Data-Driven Onboarding | Pending |
+| ONBD-06 | Phase 5 — Data-Driven Onboarding | Pending |
+| ONBD-07 | Phase 5 — Data-Driven Onboarding | Pending |
+| TRAK-01 | Phase 6 — Tracker Engine | Pending |
+| TRAK-02 | Phase 6 — Tracker Engine | Pending |
+| TRAK-03 | Phase 6 — Tracker Engine | Pending |
+| TRAK-04 | Phase 6 — Tracker Engine | Pending |
+| TRAK-05 | Phase 6 — Tracker Engine | Pending |
+| TRAK-06 | Phase 6 — Tracker Engine | Pending |
+| CHAT-01 | Phase 7 — Chat Schema | Pending |
+| CHAT-02 | Phase 8 — Real Chat Route + send-message Edge Function | Pending |
+| CHAT-03 | Phase 8 — Real Chat Route + send-message Edge Function | Pending |
+| CHAT-04 | Phase 7 — Chat Schema | Pending |
+| CHAT-05 | Phase 8 — Real Chat Route + send-message Edge Function | Pending |
+| CHAT-06 | Phase 7 — Chat Schema | Pending |
+| CHAT-07 | Phase 8 — Real Chat Route + send-message Edge Function | Pending |
 | XC-01 | All phases (cross-cutting) | Pending |
 | XC-02 | All phases (cross-cutting) | Pending |
 | XC-03 | All phases (cross-cutting) | Pending |
-| XC-04 | (roadmap) | Pending |
+| XC-04 | Phase 8 — Real Chat Route + send-message Edge Function | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total (26 functional + 4 cross-cutting)
-- Mapped to phases: 0 (roadmapper to populate)
-- Unmapped: 30 ⚠️ (expected until roadmap is created)
+- Mapped to phases: 30 (PROF×6 → P4 · ONBD×7 → P5 · TRAK×6 → P6 · CHAT-01/04/06 → P7 · CHAT-02/03/05/07 → P8 · XC-04 → P8 · XC-01/02/03 cross-cutting across all phases)
+- Unmapped: 0 ✓
+
+**Cross-cutting weave (XC-01/02/03):** every schema phase (4-7) carries a `pnpm verify:rls` success criterion with self / assigned-coach / unassigned-denial / cross-client-denial (+ field-protection / idempotency where applicable) assertions (XC-01); config-bearing phases (5, 6) and the Edge-Function phase (8) carry a zod + `pg_jsonschema` validation criterion (XC-02); every client-facing phase (4, 5, 6, 8) carries a design-line + `sketch-findings-fish`-loaded criterion (XC-03).
 
 ---
 *Requirements defined: 2026-07-04*
-*Last updated: 2026-07-04 after initial definition*
+*Last updated: 2026-07-04 after roadmap creation — 30/30 mapped to Phases 4-8*
