@@ -61,11 +61,11 @@
   .rlist { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface); }
   .rlist .lh { padding: var(--s4) var(--s5) var(--s3); } .rlist .lh h2 { font-size: var(--text-lg); }
   .conv { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); min-height: 64px; cursor: pointer; }
-  .conv:hover { background: var(--surface-2); } .conv.active { background: var(--surface-3); }
+  .conv:hover { background: var(--surface-2); } .conv.active { background: var(--surface-3); } .conv.active .cn { font-weight: 600; }
   .conv .cm { flex: 1; min-width: 0; }
   .conv .cn { color: var(--ink); font-weight: 500; font-size: var(--text-sm); display: flex; justify-content: space-between; gap: var(--s2); }
   .conv .cn .t { font-size: var(--text-xs); color: var(--muted); font-weight: 400; }
-  .conv .cp { font-size: var(--text-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv .cp { font-size: var(--text-xs); color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv .badge { background: var(--primary); color: var(--on-primary); font-size: 11px; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; padding: 0 6px; }
   .avatar.sys { background: var(--primary); color: var(--on-primary); font-family: var(--font-display); font-weight: 600; }
 
@@ -83,7 +83,7 @@
   .bubble .em { font-family: var(--font-display); font-style: italic; }
   .composer { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
   .composer .field { flex: 1; min-height: 48px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); }
-  .send { width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; flex: 0 0 auto; }
+  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; flex: 0 0 auto; }
 
   .rbotnav { display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); flex: 0 0 auto; }
   .rbn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--tap); color: var(--muted); font-size: var(--text-xs); }

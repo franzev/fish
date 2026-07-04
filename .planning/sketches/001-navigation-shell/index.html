@@ -38,8 +38,6 @@
   }
   .variant-tab:hover { background: var(--surface-2); color: var(--ink); }
   .variant-tab.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
-  .variant-tab .star { opacity: .0; }
-  .variant-tab.win .star { opacity: 1; }
 
   /* ---------- Intro ---------- */
   .intro { max-width: 980px; margin: 0 auto var(--s10); padding: 0 var(--s6); text-align: center; }
@@ -130,7 +128,7 @@
 
   .composer { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
   .composer .field { flex: 1; min-height: 48px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
-  .send { width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; }
+  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; }
   .send:active { transform: scale(.92); }
 
   .btn { font-family: var(--font-body); font-size: var(--text-base); min-height: var(--tap); padding: 0 var(--s6); border-radius: var(--r-md); cursor: pointer; border: 1px solid transparent; transition: all .15s ease; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); width: 100%; }
@@ -182,11 +180,12 @@
   .convlist { flex: 1; overflow: hidden; }
   .conv { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); cursor: pointer; transition: background .15s ease; min-height: 68px; }
   .conv:hover { background: var(--surface-2); }
-  .conv.active { background: var(--surface-2); }
+  .conv.active { background: var(--surface-3); }
+  .conv.active .cname { font-weight: 600; }
   .conv .cmeta { flex: 1; min-width: 0; }
   .conv .cname { color: var(--ink); font-weight: 500; display: flex; justify-content: space-between; gap: var(--s2); align-items:center; }
   .conv .cname .t { font-size: var(--text-xs); color: var(--muted); font-weight: 400; flex: 0 0 auto; }
-  .conv .cprev { font-size: var(--text-sm); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv .cprev { font-size: var(--text-sm); color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv.unread .cprev { color: var(--body); }
   .conv .badge { background: var(--primary); color: var(--on-primary); font-size: 11px; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; padding: 0 6px; flex: 0 0 auto; }
   .avatar.system { background: var(--primary); color: var(--on-primary); font-family: var(--font-display); font-weight: 600; }
@@ -198,7 +197,7 @@
   .prof-hero .pname { font-family: var(--font-display); color: var(--ink); font-size: var(--text-xl); font-weight: 500; }
   .prof-hero .psub { font-size: var(--text-sm); color: var(--muted); }
   .proflist { width: 100%; max-width: 380px; display:flex; flex-direction:column; gap: 2px; }
-  .profrow { display: flex; align-items: center; gap: var(--s3); padding: var(--s4); border-radius: var(--r-md); color: var(--body); cursor: pointer; transition: background .15s ease; min-height: 52px; }
+  .profrow { display: flex; align-items: center; gap: var(--s3); padding: var(--s4); border-radius: var(--r-md); color: var(--body); cursor: pointer; transition: background .15s ease; min-height: var(--tap); }
   .profrow:hover { background: var(--surface-2); }
   .profrow .lbl { flex: 1; color: var(--ink); }
   .profrow.danger .lbl { color: var(--body); }
@@ -236,7 +235,7 @@
 
 <nav id="variant-nav">
   <span class="brand">FISH <small>· sketch 001 · navigation</small></span>
-  <button class="variant-tab win active" onclick="showVariant('d', this)">D · Synthesis <span class="star">★</span></button>
+  <button class="variant-tab active" onclick="showVariant('d', this)">D · Synthesis ★</button>
   <button class="variant-tab" onclick="showVariant('a', this)">A · Conversation-first</button>
   <button class="variant-tab" onclick="showVariant('b', this)">B · Three-tab</button>
   <button class="variant-tab" onclick="showVariant('c', this)">C · Calm hub</button>
@@ -324,7 +323,7 @@
                   <div class="row me"><div class="bubble me">Yes! I practiced the phrases 🙂</div></div>
                   <div class="row"><div class="avatar sm" style="width:32px;height:32px;font-size:12px">JC</div><div class="bubble coach">Lovely. Try this one aloud: “Could I see the menu, please?”</div></div>
                 </div>
-                <div class="composer"><div class="field">Write a message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+                <div class="composer"><div class="field">Write a message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
               </div>
             </div>
           </div>
@@ -358,7 +357,7 @@
                 <div class="tag" style="font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">This week</div>
                 <h3 style="font-size:var(--text-md);margin:var(--s2) 0 var(--s4)">Ordering at a restaurant</h3>
                 <div class="progress"><span style="width:60%"></span></div>
-                <div class="steps" style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div>
+                <div class="steps" style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div>
               </div>
               <button class="btn primary" onclick="navTo('and','messages')"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg> Message James</button>
             </div>
@@ -390,7 +389,7 @@
               <div class="row me"><div class="bubble me">Yes! Practiced the phrases 🙂</div></div>
               <div class="row"><div class="bubble coach">Try aloud: “Could I see the menu, please?”</div></div>
             </div>
-            <div class="composer"><div class="field">Message…</div><button class="send" style="width:48px;height:48px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+            <div class="composer"><div class="field">Message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
           </div>
 
           <div class="tabscreen" id="and-progress">
@@ -399,7 +398,7 @@
               <div class="journey">
                 <div class="milestone done"><div class="track"><div class="dot">✓</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Introductions</div><div class="m-sub">Complete</div></div></div>
                 <div class="milestone done"><div class="track"><div class="dot">✓</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Small talk</div><div class="m-sub">Complete</div></div></div>
-                <div class="milestone now"><div class="track"><div class="dot">●</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Ordering at a restaurant</div><div class="m-sub" style="margin-bottom:var(--s2)">This week</div><div class="practice" style="padding:var(--s3)"><div class="progress"><span style="width:60%"></span></div><div class="steps" style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div></div></div></div>
+                <div class="milestone now"><div class="track"><div class="dot">●</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Ordering at a restaurant</div><div class="m-sub" style="margin-bottom:var(--s2)">This week</div><div class="practice" style="padding:var(--s3)"><div class="progress"><span style="width:60%"></span></div><div class="steps" style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div></div></div></div>
                 <div class="milestone"><div class="track"><div class="dot"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm);color:var(--muted)">At the pharmacy</div><div class="m-sub">Up next</div></div></div>
               </div>
             </div>
@@ -488,7 +487,7 @@
           <div class="composer">
             <button class="iconbtn sm" style="width:40px;height:40px"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button>
             <div class="field">Message…</div>
-            <button class="send" style="width:48px;height:48px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button>
+            <button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button>
           </div>
         </div>
         <div class="gesture"></div>
@@ -526,7 +525,7 @@
               <div class="row me"><div class="bubble me">Yes! I practiced the phrases 🙂</div></div>
               <div class="row"><div class="avatar sm" style="width:32px;height:32px;font-size:12px">JC</div><div class="bubble coach">Lovely. Try this one aloud: “Could I see the menu, please?”</div></div>
             </div>
-            <div class="composer"><div class="field">Write a message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+            <div class="composer"><div class="field">Write a message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
           </div>
         </div></div>
       </div>
@@ -543,7 +542,7 @@
             <div class="row me"><div class="bubble me">Yes! Practiced the phrases 🙂</div></div>
             <div class="row"><div class="bubble coach">Try aloud: “Could I see the menu, please?”</div></div>
           </div>
-          <div class="composer"><div class="field">Message…</div><button class="send" style="width:48px;height:48px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+          <div class="composer"><div class="field">Message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
           <div class="botnav">
             <div class="botnav-item active" onclick="pickBot(this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg></div>Chat</div>
             <div class="botnav-item" onclick="pickBot(this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 12h4l2 6 4-14 2 8h4"/></svg></div>Practice</div>
@@ -599,10 +598,10 @@
               <div class="tag" style="font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">This week</div>
               <h3 style="font-size:var(--text-md);margin:var(--s2) 0 var(--s4)">Ordering at a restaurant</h3>
               <div class="progress"><span style="width:60%"></span></div>
-              <div class="steps" style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div>
+              <div class="steps" style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div>
             </div>
             <button class="btn primary" onclick="press(this)"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg> Message James</button>
-            <div class="quiet coachline" style="padding:var(--s3)"><div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div><div style="flex:1"><div style="color:var(--ink);font-size:var(--text-sm)">James Carter</div><div style="font-size:11px;color:var(--muted)">Your coach</div></div><svg class="i sm" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+            <div class="quiet coachline" style="padding:var(--s3)"><div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div><div style="flex:1"><div style="color:var(--ink);font-size:var(--text-sm)">James Carter</div><div style="font-size:var(--text-xs);color:var(--muted)">Your coach</div></div><svg class="i sm" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
           </div>
         </div>
         <div class="gesture"></div>
