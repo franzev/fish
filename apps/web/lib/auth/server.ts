@@ -37,6 +37,23 @@ export interface CoachHomeData {
   clients: CoachClientListItem[];
 }
 
+export interface CoachClientDetail {
+  /* Identity + goal/role-context + level ONLY (D-10) -- a11y prefs and
+     consent are the client's personal settings, never selected into this
+     coach-facing DTO. */
+  displayName: string;
+  goal: string;
+  level: string | null;
+}
+
+export interface CoachClientDetailData {
+  role: UserRole;
+  // null means "not assigned or doesn't exist" (T-04-02) -- the page
+  // renders the SAME calm not-found state for both, never a session
+  // redirect, since role/session are already known to be valid here.
+  client: CoachClientDetail | null;
+}
+
 export interface ProfileData {
   role: UserRole;
   displayName: string;
@@ -212,5 +229,56 @@ export async function getCoachHomeData(): Promise<CoachHomeData | null> {
   return {
     role: profile.role,
     clients: clientsResult.data,
+  };
+}
+
+/* Coach-only read of one assigned client (PROF-06/D-10/D-11). RLS
+   (private.is_coach_of, reused verbatim from 0004/0007) is the sole
+   authz boundary here -- no app-code id/coach_id filter substitutes for it.
+   A null return means "not assigned or doesn't exist" and the caller (the
+   page) renders the SAME calm not-found state for both cases -- there is
+   no distinguishable error, so a coach cannot enumerate client UUIDs
+   (T-04-02). */
+export async function getCoachClientDetailData(
+  clientId: string
+): Promise<CoachClientDetailData | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  const clientProfileResult =
+    await services.database.clientProfiles.findByIdForCoach(clientId);
+  if (!clientProfileResult.ok) {
+    throw clientProfileResult.error;
+  }
+
+  if (!clientProfileResult.data) {
+    return { role: profile.role, client: null };
+  }
+
+  // The client's display name lives on `profiles`, not `client_profiles`
+  // (D-01). The 0004 "coach reads assigned clients" policy already grants
+  // this read for an assigned coach; a genuinely unassigned coach's
+  // client_profiles read above already returned null and we never reach
+  // here, so this call is always for a client the coach may see.
+  const nameResult = await services.database.profiles.findDisplayNameById(clientId);
+  if (!nameResult.ok) {
+    throw nameResult.error;
+  }
+
+  if (!nameResult.data) {
+    return { role: profile.role, client: null };
+  }
+
+  return {
+    role: profile.role,
+    client: {
+      displayName: nameResult.data.display_name,
+      goal: clientProfileResult.data.goal ?? "",
+      level: clientProfileResult.data.level ?? null,
+    },
   };
 }
