@@ -18,6 +18,9 @@ if (!supabaseUrl || !publishableKey) {
 // Same fixed dev credentials seeded by scripts/seed.ts (D-10). Run `pnpm seed` first.
 const coach = { email: "coach@fish.dev", password: "fish-coach-dev" };
 const client1 = { email: "client1@fish.dev", password: "fish-client-dev" };
+// 04-01 Task 3: the unassigned second coach and client2 negative-path fixtures (D-15).
+const coach2Unassigned = { email: "coach2@fish.dev", password: "fish-coach-dev" };
+const client2 = { email: "client2@fish.dev", password: "fish-client-dev" };
 
 let failures = 0;
 
@@ -173,11 +176,190 @@ async function checkClientReadsCoachName(): Promise<void> {
   }
 }
 
+// --- 04-01 Task 3: six client_profiles assertions (D-15, PROF-01/02/04/05/06). Every
+// assertion signs in via signInAs() (real PostgREST, anon/publishable key) -- NEVER
+// SET ROLE, which produces a false pass from a table-owning connection (RESEARCH
+// Pitfall 1). ---
+
+async function checkClientProfileSelfRead(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("PROF-01 client_profiles self-read: resolve own user id", false, userError?.message);
+    return;
+  }
+  const ownId = userData.user.id;
+
+  const { data, error } = await supabase.from("client_profiles").select("*").eq("id", ownId);
+  checkNoRecursion("PROF-01 client_profiles self-read", error);
+  if (error) {
+    report("PROF-01 client_profiles self-read: select succeeds", false, error.message);
+    return;
+  }
+  const rows = data ?? [];
+  report(
+    "PROF-01 client_profiles self-read: exactly one own row",
+    rows.length === 1,
+    `got ${rows.length} rows`,
+  );
+}
+
+async function checkClientProfileSafeUpdateSucceeds(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("PROF-02/04 client_profiles safe-update: resolve own user id", false, userError?.message);
+    return;
+  }
+  const ownId = userData.user.id;
+
+  const { error } = await supabase
+    .from("client_profiles")
+    .update({
+      goal: "Speak confidently in team meetings",
+      consented: true,
+      consented_at: new Date().toISOString(),
+      consent_version: "v1",
+    })
+    .eq("id", ownId);
+  checkNoRecursion("PROF-02/04 client_profiles safe-update", error);
+  report("PROF-02/04 client_profiles safe-update (goal + consent fields) succeeds", !error, error?.message);
+}
+
+async function checkLevelFreezeRejected(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("PROF-05 level freeze: resolve own user id", false, userError?.message);
+    return;
+  }
+  const ownId = userData.user.id;
+
+  const { error } = await supabase.from("client_profiles").update({ level: "C2" }).eq("id", ownId);
+  checkNoRecursion("PROF-05 level freeze attempt", error);
+  // Either the grant layer (42501) or the trigger layer (P0001) is a pass -- do not
+  // assert the specific code (RESEARCH Pattern 1: both are independently correct).
+  report(
+    "PROF-05 level freeze: client's level update is rejected at the database",
+    !!error,
+    error ? error.message : "update succeeded (should have failed)",
+  );
+}
+
+async function checkCoachReadsAssignedClientProfile(): Promise<void> {
+  const supabase = await signInAs(coach.email, coach.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("PROF-06 coach reads assigned client_profile: resolve own user id", false, userError?.message);
+    return;
+  }
+
+  // Resolve an assigned client's id the way a coach legitimately can -- the
+  // "coach reads own assignments" policy on coach_clients (0004) permits this read.
+  const { data: assignment, error: assignmentError } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("coach_id", userData.user.id)
+    .limit(1)
+    .single();
+  checkNoRecursion("PROF-06 coach reads assigned client_profile: resolve assigned client id", assignmentError);
+  if (assignmentError || !assignment) {
+    report("PROF-06 coach reads assigned client_profile: resolve an assigned client id", false, assignmentError?.message);
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("client_profiles")
+    .select("*")
+    .eq("id", assignment.client_id);
+  checkNoRecursion("PROF-06 coach reads assigned client_profile", error);
+  if (error) {
+    report("PROF-06 coach reads assigned client_profile: select succeeds", false, error.message);
+    return;
+  }
+  const rows = data ?? [];
+  report(
+    "PROF-06 coach reads assigned client_profile: exactly one row",
+    rows.length === 1,
+    `got ${rows.length} rows`,
+  );
+}
+
+async function checkUnassignedCoachDenied(): Promise<void> {
+  const supabase = await signInAs(coach2Unassigned.email, coach2Unassigned.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("PROF-06 unassigned coach denied: resolve own user id", false, userError?.message);
+    return;
+  }
+
+  // Resolve client1's own id the only legitimate way available: sign in as client1
+  // (a separate, throwaway session) and read its own auth.getUser() id. This keeps
+  // the assertion self-contained without a service-role lookup.
+  const client1Session = await signInAs(client1.email, client1.password);
+  const { data: client1UserData, error: client1UserError } = await client1Session.auth.getUser();
+  if (client1UserError || !client1UserData.user) {
+    report("PROF-06 unassigned coach denied: resolve client1 id", false, client1UserError?.message);
+    return;
+  }
+  const client1Id = client1UserData.user.id;
+
+  const { data, error } = await supabase.from("client_profiles").select("*").eq("id", client1Id);
+  checkNoRecursion("PROF-06 unassigned coach denied", error);
+  if (error) {
+    report("PROF-06 unassigned coach denied: select does not error", false, error.message);
+    return;
+  }
+  const rows = data ?? [];
+  // Default-deny returns zero rows, NOT an error -- no enumeration side channel.
+  report(
+    "PROF-06 unassigned coach denied: zero rows returned (no error, no leak)",
+    rows.length === 0,
+    `got ${rows.length} rows`,
+  );
+}
+
+async function checkCrossClientDenied(): Promise<void> {
+  const supabase = await signInAs(client2.email, client2.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("PROF-05/06 cross-client denied: resolve own user id", false, userError?.message);
+    return;
+  }
+
+  const client1Session = await signInAs(client1.email, client1.password);
+  const { data: client1UserData, error: client1UserError } = await client1Session.auth.getUser();
+  if (client1UserError || !client1UserData.user) {
+    report("PROF-05/06 cross-client denied: resolve client1 id", false, client1UserError?.message);
+    return;
+  }
+  const client1Id = client1UserData.user.id;
+
+  const { data, error } = await supabase.from("client_profiles").select("*").eq("id", client1Id);
+  checkNoRecursion("PROF-05/06 cross-client denied", error);
+  if (error) {
+    report("PROF-05/06 cross-client denied: select does not error", false, error.message);
+    return;
+  }
+  const rows = data ?? [];
+  report(
+    "PROF-05/06 cross-client denied: zero rows returned for another client's row",
+    rows.length === 0,
+    `got ${rows.length} rows`,
+  );
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
   await checkEscalationRejected();
   await checkClientReadsCoachName();
+  await checkClientProfileSelfRead();
+  await checkClientProfileSafeUpdateSucceeds();
+  await checkLevelFreezeRejected();
+  await checkCoachReadsAssignedClientProfile();
+  await checkUnassignedCoachDenied();
+  await checkCrossClientDenied();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);
