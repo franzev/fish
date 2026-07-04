@@ -2,7 +2,7 @@
 sketch: 002
 name: chat-interior
 question: "How does gentle correction appear in a calm coaching conversation without ever scolding?"
-winner: null
+winner: C
 tags: [chat, conversation, correction, voice, calm]
 ---
 
@@ -26,8 +26,17 @@ open .planning/sketches/002-chat-interior/index.html
 Switch styles with the tabs. In **B**, tap the underlined word / note chip to reveal the fix.
 Toggle light / dark bottom-right.
 
+## Decision
+
+**Winner: C · Quoted reply** (user-confirmed 2026-07-04). The coach quotes the client's phrase
+and replies with the fix in the notice tone — the gentlest framing that still teaches clearly,
+using a pattern people already know, consistent with the Messenger direction locked in sketch 001.
+A (suggestion card) stays available when a fix needs to be maximally explicit; B (inline note) was
+judged too easy to miss for learners who need the feedback.
+
 ## Variants
 
+- **C · Quoted reply ★ (selected)** — the coach quotes the phrase and replies with the fix, Messenger-style.
 - **A · Suggestion card** — a soft "gentle suggestion" card under the message: *you said → try*,
   plus an encouraging why. Most explicit and teacherly; adds a block to the stream.
 - **B · Inline note** — the phrase is softly underlined; a small note reveals the fix on tap.

@@ -116,9 +116,9 @@
 
 <nav id="variant-nav">
   <span class="brand">FISH <small>· sketch 002 · chat</small></span>
-  <button class="variant-tab active" onclick="showVariant('a', this)">A · Suggestion card</button>
+  <button class="variant-tab" onclick="showVariant('a', this)">A · Suggestion card</button>
   <button class="variant-tab" onclick="showVariant('b', this)">B · Inline note</button>
-  <button class="variant-tab" onclick="showVariant('c', this)">C · Quoted reply</button>
+  <button class="variant-tab active" onclick="showVariant('c', this)">C · Quoted reply ★</button>
 </nav>
 
 <div class="intro">
@@ -128,7 +128,7 @@
 </div>
 
 <!-- ============ VARIANT A: Suggestion card ============ -->
-<section class="variant active" id="variant-a">
+<section class="variant" id="variant-a">
   <div class="vcaption"><h2>A · Suggestion card — “you said → try”</h2><p>A distinct soft card under the message names the fix explicitly and says why, warmly. Most teacherly and unambiguous; adds one block to the stream.</p></div>
   <div class="stage">
     <div class="framewrap"><div class="flabel">Web</div>
@@ -220,7 +220,7 @@
 </section>
 
 <!-- ============ VARIANT C: Quoted reply ============ -->
-<section class="variant" id="variant-c">
+<section class="variant active" id="variant-c">
   <div class="vcaption"><h2>C · Quoted reply — coach quotes and fixes, Messenger-style</h2><p>The coach replies to the exact phrase with the improved version, the way people already quote-reply in chat. Familiar, warm, and consistent with the D navigation direction.</p></div>
   <div class="stage">
     <div class="framewrap"><div class="flabel">Web</div>

@@ -22,5 +22,5 @@ product feels like one thing.
 | # | Name | Design Question | Winner | Tags |
 |---|------|----------------|--------|------|
 | 001 | navigation-shell | For a choice-minimal app, what is the client's navigation model? | **D · Synthesis** — bottom nav (Home/Progress/Messages/Profile), Messenger-style list→thread, real logo mark, labeled nav | navigation, shell, layout, cross-platform, calm |
-| 002 | chat-interior | How does gentle correction appear without ever scolding? | _tbd — A suggestion card / B inline note / C quoted reply_ | chat, conversation, correction |
+| 002 | chat-interior | How does gentle correction appear without ever scolding? | **C · Quoted reply** — coach quotes the phrase and replies with the fix, Messenger-style | chat, conversation, correction |
 | 003 | profile | How much does a client see about themselves without a scoreboard? | **A · Essentials** — identity + coach + settings, no stats (Progress owns metrics) | profile, identity, settings |
