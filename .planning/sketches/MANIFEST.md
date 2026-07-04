@@ -21,6 +21,6 @@ product feels like one thing.
 
 | # | Name | Design Question | Winner | Tags |
 |---|------|----------------|--------|------|
-| 001 | navigation-shell | For a choice-minimal app, what is the client's navigation model? | **D · Synthesis** — bottom nav (Home/Messages/Profile), Messenger-style list→thread | navigation, shell, layout, cross-platform, calm |
+| 001 | navigation-shell | For a choice-minimal app, what is the client's navigation model? | **D · Synthesis** — bottom nav (Home/Progress/Messages/Profile), Messenger-style list→thread, real logo mark, labeled nav | navigation, shell, layout, cross-platform, calm |
 | 002 | chat | _(planned)_ What does a calm 1-on-1 coaching conversation feel like? | — | chat, conversation |
 | 003 | profile | _(planned)_ How much does a client see about themselves without a scoreboard? | — | profile, progress |

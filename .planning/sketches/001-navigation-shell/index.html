@@ -201,6 +201,27 @@
   .profrow .lbl { flex: 1; color: var(--ink); }
   .profrow.danger .lbl { color: var(--body); }
 
+  /* logo brand mark (swapped in for the placeholder "F") */
+  .brandmark { display: grid; place-items: center; overflow: hidden; border-radius: 26%; border: 2px solid var(--ink); background: var(--surface); flex: 0 0 auto; }
+  .brandmark img { width: 100%; height: 100%; display: block; }
+
+  /* bottom-nav label modes (mobile) — default FULL labels per docs/ui-ux-agent-guidelines.md */
+  .botnav.labels-off .navlbl { display: none; }
+  .botnav.labels-active .botnav-item:not(.active) .navlbl { display: none; }
+
+  /* Progress tab — calm milestone journey (never a scoreboard) */
+  .journey { display: flex; flex-direction: column; }
+  .milestone { display: flex; gap: var(--s4); align-items: stretch; }
+  .milestone .track { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+  .milestone .dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-strong); display: grid; place-items: center; color: var(--muted); background: var(--surface); font-size: 13px; flex: 0 0 auto; }
+  .milestone.done .dot { background: var(--ink); border-color: var(--ink); color: var(--on-primary); }
+  .milestone.now .dot { border-color: var(--ink); color: var(--ink); }
+  .milestone .line { width: 2px; flex: 1; background: var(--border); min-height: 16px; margin: 4px 0; }
+  .milestone .m-body { padding-bottom: var(--s5); flex: 1; }
+  .milestone:last-child .m-body { padding-bottom: 0; }
+  .milestone .m-title { color: var(--ink); }
+  .milestone .m-sub { font-size: var(--text-xs); color: var(--muted); margin-top: 2px; }
+
   /* ---------- Sketch toolbar ---------- */
   #tools { position: fixed; bottom: 14px; right: 14px; z-index: 60; display:flex; gap: 8px; align-items:center;
     background: rgba(20,20,19,.82); color:#fff; padding: 8px 10px; border-radius: 12px; font-size: 12px; font-family: system-ui; opacity:.5; transition: opacity .2s; }
@@ -228,7 +249,7 @@
 <!-- ============ VARIANT D: Synthesis — bottom nav + messenger + hub ============ -->
 <section class="variant active" id="variant-d">
   <div class="vcaption">
-    <h2>D · Synthesis — bottom nav · Home · Messages · Profile</h2>
+    <h2>D · Synthesis — bottom nav · Home · Progress · Messages · Profile</h2>
     <p>Your direction: a familiar Messenger / WhatsApp shell. Three fixed destinations; Messages is a conversation <em>list</em> that opens into a thread. Web uses the desktop two-pane (list + open thread) with a left rail; Android uses a Material bottom nav. Home is the calm dashboard; Profile is the client. <b>Tap the nav — and the coach row — it’s live.</b></p>
   </div>
   <div class="stage">
@@ -239,8 +260,9 @@
         <div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/messages</div></div>
         <div class="screen"><div class="withrail" id="d-web">
           <div class="rail">
-            <div class="logo">F</div>
+            <div class="brandmark" style="width:40px;height:40px;margin-bottom:var(--s4)"><img src="../logo.svg" alt="FISH"></div>
             <div class="rail-item wrap" data-tab="home" onclick="navTo('web','home',this)"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg><span>Home</span></div>
+            <div class="rail-item wrap" data-tab="progress" onclick="navTo('web','progress',this)"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg><span>Progress</span></div>
             <div class="rail-item wrap active" data-tab="messages" onclick="navTo('web','messages',this)"><svg class="i" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg><span>Messages</span></div>
             <div class="rail-item wrap" data-tab="profile" onclick="navTo('web','profile',this)"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></div>
             <div class="spacer"></div>
@@ -262,6 +284,20 @@
             </div>
           </div>
 
+          <div class="tabscreen" id="web-progress">
+            <div style="flex:1;overflow-y:auto;padding:var(--s6)">
+              <div style="max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s5)">
+                <div><h2 style="font-size:var(--text-xl)">Your journey</h2><div style="color:var(--muted);font-size:var(--text-sm)">James adds each step as you’re ready — one at a time.</div></div>
+                <div class="journey">
+                  <div class="milestone done"><div class="track"><div class="dot">✓</div><div class="line"></div></div><div class="m-body"><div class="m-title">Introductions</div><div class="m-sub">Complete</div></div></div>
+                  <div class="milestone done"><div class="track"><div class="dot">✓</div><div class="line"></div></div><div class="m-body"><div class="m-title">Small talk</div><div class="m-sub">Complete</div></div></div>
+                  <div class="milestone now"><div class="track"><div class="dot">●</div><div class="line"></div></div><div class="m-body"><div class="m-title">Ordering at a restaurant</div><div class="m-sub" style="margin-bottom:var(--s3)">This week · in progress</div><div class="practice" style="padding:var(--s4)"><div class="progress"><span style="width:60%"></span></div><div class="steps" style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--muted);margin-top:var(--s2)"><span>3 of 5 practiced</span><span>7 days practiced 🌿</span></div></div></div></div>
+                  <div class="milestone"><div class="track"><div class="dot"></div></div><div class="m-body"><div class="m-title" style="color:var(--muted)">At the pharmacy</div><div class="m-sub">Up next</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="tabscreen on" id="web-messages">
             <div class="twopane">
               <div class="list">
@@ -273,7 +309,7 @@
                     <div class="badge">2</div>
                   </div>
                   <div class="conv">
-                    <div class="avatar system">F</div>
+                    <div class="brandmark" style="width:40px;height:40px"><img src="../logo.svg" alt="FISH"></div>
                     <div class="cmeta"><div class="cname">FISH <span class="t">Mon</span></div><div class="cprev">Welcome! Here’s how coaching works.</div></div>
                   </div>
                 </div>
@@ -335,7 +371,7 @@
                 <div class="badge">2</div>
               </div>
               <div class="conv" onclick="openThread('and')">
-                <div class="avatar system">F</div>
+                <div class="brandmark" style="width:40px;height:40px"><img src="../logo.svg" alt="FISH"></div>
                 <div class="cmeta"><div class="cname" style="font-size:var(--text-sm)">FISH <span class="t">Mon</span></div><div class="cprev">Welcome! Here’s how coaching works.</div></div>
               </div>
             </div>
@@ -355,6 +391,18 @@
             <div class="composer"><div class="field">Message…</div><button class="send" style="width:44px;height:44px"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
           </div>
 
+          <div class="tabscreen" id="and-progress">
+            <div class="listhead"><h2 style="font-size:var(--text-lg)">Your journey</h2></div>
+            <div style="flex:1;overflow-y:auto;padding:0 var(--s5) var(--s5)">
+              <div class="journey">
+                <div class="milestone done"><div class="track"><div class="dot">✓</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Introductions</div><div class="m-sub">Complete</div></div></div>
+                <div class="milestone done"><div class="track"><div class="dot">✓</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Small talk</div><div class="m-sub">Complete</div></div></div>
+                <div class="milestone now"><div class="track"><div class="dot">●</div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Ordering at a restaurant</div><div class="m-sub" style="margin-bottom:var(--s2)">This week</div><div class="practice" style="padding:var(--s3)"><div class="progress"><span style="width:60%"></span></div><div class="steps" style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:var(--s2)"><span>3 of 5</span><span>7 days 🌿</span></div></div></div></div>
+                <div class="milestone"><div class="track"><div class="dot"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm);color:var(--muted)">At the pharmacy</div><div class="m-sub">Up next</div></div></div>
+              </div>
+            </div>
+          </div>
+
           <div class="tabscreen" id="and-profile">
             <div class="profwrap" style="padding:var(--s5)">
               <div class="prof-hero"><div class="avatar lg">SR</div><div class="pname" style="font-size:var(--text-lg)">Sofia Reyes</div><div class="psub">with James Carter</div></div>
@@ -366,10 +414,11 @@
             </div>
           </div>
 
-          <div class="botnav">
-            <div class="botnav-item" data-tab="home" onclick="navTo('and','home',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg></div>Home</div>
-            <div class="botnav-item active" data-tab="messages" onclick="navTo('and','messages',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg></div>Messages</div>
-            <div class="botnav-item" data-tab="profile" onclick="navTo('and','profile',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>Profile</div>
+          <div class="botnav labels-full">
+            <div class="botnav-item" data-tab="home" onclick="navTo('and','home',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg></div><span class="navlbl">Home</span></div>
+            <div class="botnav-item" data-tab="progress" onclick="navTo('and','progress',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M11 19h5a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h5"/></svg></div><span class="navlbl">Progress</span></div>
+            <div class="botnav-item active" data-tab="messages" onclick="navTo('and','messages',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg></div><span class="navlbl">Messages</span></div>
+            <div class="botnav-item" data-tab="profile" onclick="navTo('and','profile',this)"><div class="pill"><svg class="i sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><span class="navlbl">Profile</span></div>
           </div>
         </div>
         <div class="gesture"></div>
@@ -460,7 +509,7 @@
         <div class="web-bar"><div class="web-dots"><i></i><i></i><i></i></div><div class="web-addr">fishhub.space/chat</div></div>
         <div class="screen"><div class="withrail">
           <div class="rail">
-            <div class="logo">F</div>
+            <div class="brandmark" style="width:40px;height:40px;margin-bottom:var(--s4)"><img src="../logo.svg" alt="FISH"></div>
             <div class="rail-item wrap active" onclick="pick(this)"><svg class="i" viewBox="0 0 24 24"><path d="M8 9h8M8 13h5"/><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 4z"/></svg><span>Chat</span></div>
             <div class="rail-item wrap" onclick="pick(this)"><svg class="i" viewBox="0 0 24 24"><path d="M4 12h4l2 6 4-14 2 8h4"/></svg><span>Practice</span></div>
             <div class="rail-item wrap" onclick="pick(this)"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></div>
@@ -565,6 +614,7 @@
 </div></div>
 
 <div id="tools">
+  <button onclick="cycleLabels()"><span id="lbl-mode">Labels: full</span></button>
   <span id="mode-label">◐ Light</span>
   <button onclick="toggleTheme()">Toggle theme</button>
 </div>
@@ -599,6 +649,17 @@
     root.querySelectorAll('.tabscreen').forEach(s => s.classList.remove('on'));
     document.getElementById(scope + '-thread').classList.add('on');
     var bn = root.querySelector('.botnav'); if (bn) bn.style.display = 'none'; // native full-screen thread
+  }
+  // Bottom-nav label treatment (mobile): full -> active-only -> icons-only
+  var labelModes = ['labels-full', 'labels-active', 'labels-off'];
+  var labelNames = { 'labels-full': 'Labels: full', 'labels-active': 'Labels: active only', 'labels-off': 'Labels: off (icons)' };
+  var labelIdx = 0;
+  function cycleLabels(){
+    var bn = document.querySelector('#d-and .botnav');
+    bn.classList.remove(labelModes[labelIdx]);
+    labelIdx = (labelIdx + 1) % labelModes.length;
+    bn.classList.add(labelModes[labelIdx]);
+    document.getElementById('lbl-mode').textContent = labelNames[labelModes[labelIdx]];
   }
 </script>
 </body>
