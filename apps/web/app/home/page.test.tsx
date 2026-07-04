@@ -27,7 +27,7 @@ vi.mock("@/lib/supabase/client", () => ({
 import HomePage from "./page";
 
 describe("HomePage", () => {
-  it("renders the heading, body, and exactly one primary Button when a user is present", async () => {
+  it("renders the heading, body, and the ghost logout Button when a user is present", async () => {
     getUserMock.mockResolvedValueOnce({
       data: { user: { id: "user-1", email: "ada@example.com" } },
     });
@@ -42,12 +42,18 @@ describe("HomePage", () => {
       )
     ).toBeInTheDocument();
 
+    // D-09: the logout action is now a ghost (secondary) button, not primary.
     const buttons = screen.getAllByRole("button");
-    const primaryButtons = buttons.filter((b) =>
-      b.className.includes("bg-primary")
+    const ghostButtons = buttons.filter(
+      (b) =>
+        b.className.includes("text-muted") ||
+        b.className.includes("bg-transparent")
     );
-    expect(primaryButtons).toHaveLength(1);
-    expect(primaryButtons[0]).toHaveTextContent("Log out");
+    expect(ghostButtons).toHaveLength(1);
+    expect(ghostButtons[0]).toHaveTextContent("Log out");
+    expect(buttons.some((b) => b.className.includes("bg-primary"))).toBe(
+      false
+    );
   });
 
   it("calls redirect('/login') when getUser() returns no user", async () => {
@@ -57,7 +63,7 @@ describe("HomePage", () => {
     expect(redirectMock).toHaveBeenCalledWith("/login");
   });
 
-  it("the page + its one client island together contain exactly one variant=\"primary\" usage (grep gate)", () => {
+  it("the page + its one client island together contain ZERO variant=\"primary\" usage (grep gate, D-09)", () => {
     const pageSource = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const logoutButtonSource = readFileSync(
       resolve(__dirname, "../../components/auth/logout-button.tsx"),
@@ -67,6 +73,6 @@ describe("HomePage", () => {
       (pageSource.match(/variant="primary"/g) ?? []).length +
       (logoutButtonSource.match(/variant="primary"/g) ?? []).length
     );
-    expect(matches).toBe(1);
+    expect(matches).toBe(0);
   });
 });
