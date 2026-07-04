@@ -254,3 +254,7 @@ None - no external service configuration required. (Task 2's `supabase db reset`
 ---
 *Phase: 03-role-aware-home*
 *Completed: 2026-07-04*
+
+## Self-Check: PASSED
+
+All 16 claimed files verified present on disk; all 4 commit hashes (ce6a4e9, d3c8735, a6dec52, d5fecc5) verified present in git log.
