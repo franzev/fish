@@ -9,7 +9,16 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const androidDir = join(root, "apps", "android");
 const apkPath = join(androidDir, "app", "build", "outputs", "apk", "debug", "app-debug.apk");
 const javaHome = process.env.JAVA_HOME || "/Applications/Android Studio.app/Contents/jbr/Contents/Home";
-const startPort = Number(process.env.ANDROID_PREVIEW_PORT || 8765);
+const startPort = parsePort(process.env.ANDROID_PREVIEW_PORT || "8765");
+
+function parsePort(value) {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    console.error(`Invalid ANDROID_PREVIEW_PORT: ${value}`);
+    process.exit(1);
+  }
+  return port;
+}
 
 function runBuild() {
   if (!existsSync(javaHome)) {
@@ -29,15 +38,16 @@ function runBuild() {
   }
 }
 
-function lanIp() {
+function lanIps() {
+  const addresses = [];
   for (const entries of Object.values(networkInterfaces())) {
     for (const entry of entries ?? []) {
       if (entry.family === "IPv4" && !entry.internal) {
-        return entry.address;
+        addresses.push(entry.address);
       }
     }
   }
-  return "localhost";
+  return addresses.length > 0 ? addresses : ["localhost"];
 }
 
 function localHostName() {
@@ -57,8 +67,8 @@ function page({ apkUrl, fileSize }) {
     body { margin: 0; min-height: 100svh; display: grid; place-items: center; background: Canvas; color: CanvasText; }
     main { width: min(440px, calc(100vw - 40px)); }
     a { display: flex; min-height: 56px; align-items: center; justify-content: center; border-radius: 12px; background: CanvasText; color: Canvas; text-decoration: none; font-weight: 700; }
-    p { color: color-mix(in oklab, CanvasText 72%, Canvas); line-height: 1.45; }
-    small { color: color-mix(in oklab, CanvasText 56%, Canvas); }
+    p { opacity: .78; line-height: 1.45; }
+    small { opacity: .65; }
   </style>
 </head>
 <body>
@@ -93,29 +103,44 @@ if (!existsSync(apkPath)) {
   process.exit(1);
 }
 
-const sizeMb = `${(statSync(apkPath).size / 1024 / 1024).toFixed(1)} MB`;
-const hostIp = lanIp();
+const apkSize = statSync(apkPath).size;
+const sizeMb = `${(apkSize / 1024 / 1024).toFixed(1)} MB`;
+const hostIps = lanIps();
 const bonjour = localHostName();
 
 const { port } = await listenOnFreePort((request, response) => {
-  if (request.url === "/app-debug.apk") {
+  const { pathname } = new URL(request.url ?? "/", "http://localhost");
+  if (pathname === "/app-debug.apk") {
     response.writeHead(200, {
       "content-type": "application/vnd.android.package-archive",
       "content-disposition": 'attachment; filename="app-debug.apk"',
+      "content-length": apkSize,
+      "cache-control": "no-store",
     });
+    if (request.method === "HEAD") return response.end();
     createReadStream(apkPath).pipe(response);
     return;
   }
 
+  if (pathname !== "/") {
+    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Not found");
+    return;
+  }
+
   const apkUrl = `http://${request.headers.host}/app-debug.apk`;
-  response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+  response.writeHead(200, {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+  });
   response.end(page({ apkUrl, fileSize: sizeMb }));
 }, startPort);
 
-const ipUrl = `http://${hostIp}:${port}/`;
 const localUrl = bonjour ? `http://${bonjour}.local:${port}/` : "";
+const ipUrls = hostIps.map((host) => `http://${host}:${port}/`);
 
 console.log("\nAndroid preview is ready.");
 if (localUrl) console.log(`Try this on your phone first: ${localUrl}`);
-console.log(`Fallback LAN URL: ${ipUrl}`);
+console.log("Fallback URLs:");
+for (const url of ipUrls) console.log(`  ${url}`);
 console.log("\nKeep this terminal running while you install the APK.");
