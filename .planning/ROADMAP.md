@@ -101,7 +101,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
 | 2. Secure account you can return to | 8/8 | Complete    | 2026-07-03 |
-| 3. Role-aware home | 4/4 | Complete   | 2026-07-04 |
+| 3. Role-aware home | 4/4 | Complete    | 2026-07-04 |
 
 ## Coverage
 

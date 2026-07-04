@@ -1,22 +1,26 @@
 ---
 phase: 03-role-aware-home
 verified: 2026-07-04T04:18:56Z
-status: human_needed
+status: passed
 score: 11/11 must-haves verified (programmatic); 1 end-to-end UAT item pending human execution
 has_blocking_gaps: false
 overrides_applied: 1
 overrides:
+
   - must_have: "scripts/verify-rls.ts: do not change the existing three assertions (03-03-PLAN.md Task 3 instruction)"
     reason: "Migration 0006 (03-01) intentionally widened is_client_of's read surface so a client legitimately sees 2 profiles rows (own + assigned coach) instead of 1. The plan's own two acceptance criteria ('do not change existing assertions' AND 'verify:rls exits 0') were mutually impossible post-0006. This was flagged as a known planning defect in 03-01-SUMMARY.md, the live behavior was independently confirmed at the 03-01 Task 2 human-verify checkpoint (approved), and 03-03 explicitly documents the deviation as approved. Independently re-verified live in this session: pnpm verify:rls exits 0, 8/8 PASS."
     accepted_by: "orchestrator (per 03-01-SUMMARY.md 'Known planning defect' section + 03-03-SUMMARY.md 'Approved Deviation' section)"
     accepted_at: "2026-07-04T03:41:57Z"
 human_verification:
+
   - test: "While logged in as client1@fish.dev, navigate to /login → confirm silent redirect to /home; navigate to /signup → confirm silent redirect to /home. While logged in as coach@fish.dev, navigate to /login → confirm silent redirect to /coach. Signed out, confirm /login and /signup still show the unchanged forms."
     expected: "Every case above resolves silently with no form flash, no error, no visible transition glitch — matching 03-04-PLAN.md's <verification> Manual section."
     why_human: "Requires an actual authenticated browser session navigating between routes and observing render timing/flash; the underlying redirect logic is unit-tested (redirect-if-signed-in.test.ts, 3/3 passing) but the end-to-end click-through has not been executed by a human per 03-04-SUMMARY.md's explicit human_judgment:true flag."
+
   - test: "Log in as client1@fish.dev in a browser → confirm landing on /home inside the shell with greeting 'Welcome back, Alex' and copy naming 'Coach Dana'. Log in as coach@fish.dev → hitting /home in the browser silently forwards to /coach."
     expected: "Client sees the assigned-state empty state naming their real coach; a coach hitting the client URL is invisibly forwarded, never seeing an error or flash."
     why_human: "03-02-PLAN.md's <verification> Manual section defers this exact check to phase-level UAT; it has not been executed in a running browser session (dev server was not started during this verification per environment constraints)."
+
   - test: "Log in as coach@fish.dev in a browser → confirm /coach lists Alex Rivera, Priya Nair, Sam Okafor alphabetically with their emails, no other coach's clients, and rows show no hover/cursor affordance. Log in as client1@fish.dev → hitting /coach silently forwards to /home."
     expected: "Exactly the three seeded clients render in alphabetical order with quiet emails; the list feels inert (no visual tap affordance); a client hitting the coach URL is invisibly forwarded."
     why_human: "03-03-PLAN.md's <verification> Manual section defers this exact check to phase-level UAT; visual/tactile 'inert' feel and real browser navigation cannot be fully proven by grep/unit tests alone."

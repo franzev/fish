@@ -34,14 +34,14 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ Email/password auth loop: sign up → verify → log in → log out, password reset, session persists across refresh and restart (token_hash/verifyOtp; getUser server-side) — Validated in Phase 2: Secure account you can return to
 - ✓ Client/coach roles enforced server-side; signup always creates clients, role self-escalation rejected by DB guard — Validated in Phase 2
 - ✓ Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients` schema, recursion-safe RLS via SECURITY DEFINER helper, seed + scripted anon-session RLS verification — Validated in Phase 2
+- ✓ App shell and layout: calm authenticated chrome (logo, display name, ghost logout — zero primary actions in the shell) — Validated in Phase 3: Role-aware home
+- ✓ Protected routing: signed-out → login; client → /home, coach → /coach wrong-door guards; signed-in users silently redirected off /login and /signup (server-side, no form flash) — Validated in Phase 3
+- ✓ Role-aware landing screens: client home greets by first name and names the real assigned coach; calm assigned-state empty state — Validated in Phase 3
+- ✓ Coach home lists the coach's assigned clients (seeded), alphabetical with quiet emails, rows inert — Validated in Phase 3
 
 ### Active
 
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for this milestone; THEM-02 is v2)
-- [ ] App shell and layout: nav, page structure, empty states — calm, one-action-per-screen chrome
-- [ ] Protected routing: middleware redirects — signed-out → login, client → client home, coach → coach home
-- [ ] Role-aware landing screens (near-empty calm placeholders are fine)
-- [ ] Coach home shows the coach's assigned clients (assignments seeded manually)
 
 ### Out of Scope
 
@@ -60,7 +60,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
 - `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
-- **Current state (2026-07-03):** Phase 2 complete and verified (19/19 must-haves) — full email/password auth loop (signup → verify → login → logout, password reset, session persistence) on Supabase SSR, backed by a hardened `profiles` + `coach_clients` schema with server-enforced roles and recursion-safe RLS. Three gap-closure plans (02-06 port/site_url, 02-07 login message stability, 02-08 Enter-submit + cursors) closed all UAT gaps: 13/13 UAT tests passed, 152 passing automated tests. During 02-08 UAT the user evolved the design system: alerts now float above the card as a fading overlay (never reflowing the centered card) and carry calm semantic tone colors (soft coral error / amber warning / sage green success — contrast-test gated); input/form spacing was rebalanced (reserved message row kept, 30px rhythm). Note: `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — a follow-up docs pass is flagged.
+- **Current state (2026-07-04):** Milestone "Monochrome Foundations" is functionally complete — all 3 phases done. Phase 3 shipped the authenticated app shell, protected role-aware routing (client → /home, coach → /coach, wrong-door guards, signed-in auth-page redirects via shared `redirectIfSignedIn` server guard), the client home (first-name greeting + real coach name), and the coach home (assigned clients, alphabetical, inert rows). Phase 3 UAT: 3/3 passed in a live browser with zero console errors; `pnpm verify:rls` at 8/8. Note: `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — a follow-up docs pass is flagged.
 
 ## Constraints
 
@@ -84,6 +84,9 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 | Tabler Icons as the only icon set | One consistent stroke style; no mixed icon sources | ✓ Good — enforced by an icon-source test since Phase 1 |
 | Lexend (body) + Fraunces (display) | Lexend is designed for reading fluency — right for the ADHD audience; Fraunces provides warm heading contrast | ✓ Good — loaded and demonstrated on `/kit` in Phase 1 |
 | Alerts get calm semantic tone colors (coral/amber/green) and float above the card as a fading overlay | User decision at 02-08 UAT: honest feedback colors beat monochrome-only for alerts; overlay keeps the centered card from ever moving | ✓ Good — tokens are low-chroma, contrast-test gated; structural UI stays monochrome |
+| Authenticated shell carries zero primary actions (Logout is ghost) | The shell must never compete with page content — widens the "at most one primary per view" rule | ✓ Good — Phase 3 shell ships with no primary button |
+| Each protected page re-checks role server-side (getUser + profiles.role) | Server Components re-execute per navigation; the shared layout can't know which leaf route it wraps | ✓ Good — wrong-door guards verified live in Phase 3 UAT |
+| RLS is the sole authorization boundary for reads (no manual id filtering) | Direct Supabase reads under RLS per AGENTS.md; policies (`is_coach_of`/`is_client_of`) carry the whole burden | ✓ Good — `pnpm verify:rls` passes 8/8 live assertions |
 
 ## Evolution
 
@@ -103,4 +106,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-03 after Phase 2 completion*
+*Last updated: 2026-07-04 after Phase 3 completion*
