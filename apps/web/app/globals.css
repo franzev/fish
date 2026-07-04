@@ -122,10 +122,16 @@
     border-radius: 6px;
   }
   /* Respect reduced motion. Covers the animate-fade-in utility below too —
-     one rule, no per-animation opt-out to forget (D-08). */
+     one rule, no per-animation opt-out to forget (D-08). iteration-count:1 is
+     required alongside the duration clamp: an infinite animation (typing dots,
+     skeleton pulse) with a near-zero duration keeps looping and samples the
+     keyframes at an arbitrary phase every frame — i.e. it flickers rather than
+     holding still. Clamping iterations to a single pass is what actually stops
+     motion for the kit's looping animations. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;
     }
   }

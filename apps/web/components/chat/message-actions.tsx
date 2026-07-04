@@ -34,7 +34,7 @@ export function MessageActions({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-control border border-border bg-surface p-0.5 shadow-[var(--shadow-card)]",
+        "inline-flex items-center gap-1 rounded-control border border-border bg-surface p-1 shadow-[var(--shadow-card)]",
         className
       )}
       {...props}
@@ -43,41 +43,41 @@ export function MessageActions({
         type="button"
         aria-label="Reply"
         onClick={onReply}
-        className="inline-flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+        className="inline-flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
       >
-        <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
+        <IconMessageReply size={20} stroke={1.75} aria-hidden="true" />
       </button>
       <button
         type="button"
         aria-label="Forward"
         onClick={onForward}
-        className="inline-flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+        className="inline-flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
       >
-        <IconArrowForward size={18} stroke={1.75} aria-hidden="true" />
+        <IconArrowForward size={20} stroke={1.75} aria-hidden="true" />
       </button>
       <button
         type="button"
         aria-label="Copy"
         onClick={onCopy}
-        className="inline-flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+        className="inline-flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
       >
-        <IconCopy size={18} stroke={1.75} aria-hidden="true" />
+        <IconCopy size={20} stroke={1.75} aria-hidden="true" />
       </button>
       <button
         type="button"
         aria-label="Edit"
         onClick={onEdit}
-        className="inline-flex size-8 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+        className="inline-flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
       >
-        <IconPencil size={18} stroke={1.75} aria-hidden="true" />
+        <IconPencil size={20} stroke={1.75} aria-hidden="true" />
       </button>
       <button
         type="button"
         aria-label="Delete"
         onClick={onDelete}
-        className="inline-flex size-8 items-center justify-center rounded-control text-notice transition-colors hover:bg-surface-2"
+        className="inline-flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-notice transition-colors hover:bg-surface-2"
       >
-        <IconTrash size={18} stroke={1.75} aria-hidden="true" />
+        <IconTrash size={20} stroke={1.75} aria-hidden="true" />
       </button>
     </div>
   );

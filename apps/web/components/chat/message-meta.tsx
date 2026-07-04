@@ -21,7 +21,13 @@ export function MessageMeta({ authorName, sentAt, className, ...props }: Message
       {...props}
     >
       <span className="font-medium text-body">{authorName}</span>
-      <time dateTime={typeof sentAt === "string" ? sentAt : sentAt.toISOString()}>
+      {/* Time text is locale/timezone-dependent, so server-prerendered and
+          client-hydrated output can differ. Suppress the hydration warning on
+          this leaf — the machine-readable dateTime attribute stays stable. */}
+      <time
+        dateTime={typeof sentAt === "string" ? sentAt : sentAt.toISOString()}
+        suppressHydrationWarning
+      >
         {formatTime(sentAt)}
       </time>
     </div>

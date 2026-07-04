@@ -35,7 +35,7 @@ export function VoicePlayer({
         aria-label={playing ? "Pause voice message" : "Play voice message"}
         aria-pressed={playing}
         onClick={() => setPlaying((v) => !v)}
-        className="flex size-10 shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary"
+        className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary"
       >
         {playing ? (
           <IconPlayerPause size={18} stroke={1.75} aria-hidden="true" />

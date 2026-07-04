@@ -27,7 +27,7 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
           aria-pressed={reaction.byMe}
           onClick={() => onToggle?.(reaction.emoji)}
           className={cn(
-            "animate-reaction-pop inline-flex items-center gap-1 rounded-pill border px-2 py-1 text-[13px] transition-colors",
+            "animate-reaction-pop inline-flex min-h-[var(--size-control)] items-center gap-1 rounded-pill border px-4 text-[13px] transition-colors",
             reaction.byMe
               ? "border-border-strong bg-surface-2 text-foreground"
               : "border-border bg-surface text-body hover:bg-surface-2"
