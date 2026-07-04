@@ -31,7 +31,7 @@ Web rail active = distinct fill (`--surface-3`) **+ bold label**, never equal to
 
 ## Brand mark
 
-Use the real logo (`sources/logo.svg` — teal fish badge, brand teal `#1b7ba5`) inside a `.brandmark` (rounded-square, `2px solid var(--ink)` border). It is the **one sanctioned color** in an otherwise monochrome UI. Never render a placeholder letter. (Note: `apps/web/app/icon.svg` is currently mint `#75D5CA` — reconcile app icon vs logo before shipping.)
+Use the real logo (`sources/logo.svg` — teal fish badge, brand teal `#1b7ba5`) inside a `.brandmark` (rounded-square, `2px solid var(--ink)` border). It is the **one sanctioned color** in an otherwise monochrome UI. Never render a placeholder letter. (Note: `apps/web/app/icon.svg` currently mixes mint `#75D5CA` and brand teal `#1b7ba5` — finish reconciling the app icon with `logo.svg`'s teal before shipping.)
 
 ## Key CSS patterns (see source)
 

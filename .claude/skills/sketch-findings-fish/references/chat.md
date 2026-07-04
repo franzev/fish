@@ -23,7 +23,7 @@ explicit; the struck-through "you said" edges toward marking a mistake). **B · 
 
 - **Messages tab = a list, then a thread.** Rows: avatar + **monochrome ink presence dot** (never a green/color dot) + name + time + preview (ellipsis) + unread badge. Include a pinned **FISH** system thread. For coaches, this same list holds many clients.
 - **Thread:** coach/me bubbles (coach = `--surface` + border; me = `--primary`), day dividers, **voice note** (waveform + play + duration — pronunciation matters), a positive **reaction** as reward.
-- **Composer:** message field (≥48px) + `--primary` send (≥52px) + voice. One primary affordance (send).
+- **Composer:** message field and `--primary` send are both **≥56px** (`--tap`) + voice; one primary affordance (send). In the build the field is a real labelled `<textarea>`/`<input>` inside a `<form>` — never a static div.
 - Inline **assigned-practice card** can appear in the stream (bar + one calm phrase, never a fraction/score).
 
 ## Build-time states to design (deferred from the sketch)

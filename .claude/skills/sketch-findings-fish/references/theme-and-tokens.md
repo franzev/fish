@@ -23,7 +23,7 @@ Structural UI is **chroma-0**. The **only** sanctioned colors: the **teal brand 
 
 ## Accessibility floor (baked into the theme)
 
-- Light `--muted` darkened to **#6b6b64** to clear **4.5:1 AA** — it carries previews/labels/status the non-native audience relies on. Don't put essential text on anything lighter.
+- `--muted` tuned to **#5e5e57** (light) / **#98988f** (dark) to clear **4.5:1 AA** even on the `surface-3` active-row tint (measured 5.2–5.3:1) — it carries previews/labels/status the non-native audience relies on. Source of truth is `sources/themes/default.css`; don't put essential text on anything lighter.
 - `:focus-visible` → 3px `--ring` outline + offset on every real control.
 - `@media (prefers-reduced-motion: reduce)` disables the animations.
 - Active/selected states must be distinguishable by **shape or weight**, not color alone.

@@ -65,6 +65,10 @@
   outline-offset: 2px;
 }
 
+/* Sketch composer inputs inherit the type family and show the muted hint at full strength. */
+input { font: inherit; }
+input::placeholder { color: var(--muted); opacity: 1; }
+
 /* Respect reduced-motion globally (parity with the shipped globals.css). */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
