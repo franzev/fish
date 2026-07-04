@@ -131,3 +131,7 @@ None - no external service configuration required.
 ---
 *Phase: 03-role-aware-home*
 *Completed: 2026-07-04*
+
+## Self-Check: PASSED
+
+All created/modified files confirmed present on disk; all task commit hashes (3918e9e, 36079a5, 6243ecd, 3417902) confirmed present in git history.

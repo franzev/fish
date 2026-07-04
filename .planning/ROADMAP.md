@@ -19,7 +19,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 - [x] **Phase 1: Monochrome design system you can see** - Dual-theme monochrome tokens and a hardened UI kit, provable on a demo page in both light and dark (3/3 plans executed; verification 2026-07-02: 1 blocking gap — primary-button focus ring; gap-closure plan 01-04 created) (completed 2026-07-02)
 - [x] **Phase 2: Secure account you can return to** - Full linear email/password auth loop backed by a hardened profiles + coach-client schema with server-enforced roles and RLS (executed 2026-07-03; UAT 2026-07-03: earlier gaps closed by 02-06/02-07; gap-closure plan 02-08 created for UAT tests 10/11 Enter-submit + Button cursor feedback) (completed 2026-07-03)
-- [ ] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients
+- [x] **Phase 3: Role-aware home** - App shell, protected routing, and calm role-specific landings — clients land on client home, coaches see only their assigned clients (completed 2026-07-04)
 
 ## Phase Details
 
@@ -91,7 +91,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 
 - [x] 03-02-PLAN.md — Client home slice (Wave 2): promote /home into the (authenticated) group — first-name greeting, unassigned/assigned EmptyState (names the coach via is_client_of), coach→/coach wrong-door guard
 - [x] 03-03-PLAN.md — Coach home slice (Wave 2): /coach page + ClientList (alphabetical, inert name+email rows), own-clients read via RLS-scoped coach_clients join, zero-clients empty state, client→/home wrong-door guard, verify-rls checkClientReadsCoachName assertion
-- [ ] 03-04-PLAN.md — Signed-out-only redirects (Wave 2): redirectIfSignedIn() server guard closing D-05, login/signup forms extracted into client *-form.tsx behind server shells so a signed-in visitor is forwarded to their role home
+- [x] 03-04-PLAN.md — Signed-out-only redirects (Wave 2): redirectIfSignedIn() server guard closing D-05, login/signup forms extracted into client *-form.tsx behind server shells so a signed-in visitor is forwarded to their role home
 
 **UI hint**: yes
 
@@ -101,7 +101,7 @@ Sequencing honors research: tokens have zero upstream dependency and come first;
 |-------|----------------|--------|-----------|
 | 1. Monochrome design system you can see | 4/4 | Complete   | 2026-07-02 |
 | 2. Secure account you can return to | 8/8 | Complete    | 2026-07-03 |
-| 3. Role-aware home | 3/4 | In Progress|  |
+| 3. Role-aware home | 4/4 | Complete   | 2026-07-04 |
 
 ## Coverage
 

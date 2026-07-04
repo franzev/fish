@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-07-04T04:05:39.446Z"
+status: verifying
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-07-04T04:12:42.459Z"
 last_activity: 2026-07-04
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 16
-  completed_plans: 15
-  percent: 67
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State: FISH — Monochrome Foundations
@@ -31,8 +31,8 @@ Plan: 4 of 4
 
 - **Phase:** 3 — Role-aware home
 - **Plan:** 4 of 4
-- **Status:** Ready to execute
-- **Progress:** [█████████░] 94%
+- **Status:** Phase complete — ready for verification
+- **Progress:** [██████████] 100%
 
 ## Roadmap Snapshot
 
@@ -59,6 +59,7 @@ Plan: 4 of 4
 | Phase 03 P01 | 42min | 4 tasks | 15 files |
 | Phase 03 P02 | 8min | 1 tasks | 4 files |
 | Phase 03 P03 | 15min | 3 tasks | 5 files |
+| Phase 03 P04 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Plan: 4 of 4
 - 03-03: `checkClientBoundary()` updated to the post-0006 two-row invariant (own + assigned coach) per approved deviation at 03-01's Task 2 checkpoint — restores `pnpm verify:rls` to exit 0 (8/8 assertions pass live).
 - 03-03: Coach home queries `coach_clients` embedded-joined to `profiles` (`profiles:client_id(...)`) rather than profiles-minus-self, resolving RESEARCH.md Open Question 3 and avoiding the self-row edge case.
 - 03-03: `ClientList` sorts a shallow copy of the `clients` prop via `localeCompare`, never mutating the incoming prop (D-15).
+- 03-04: `redirectIfSignedIn()` reads only `profiles.role` (not `display_name`) — the guard only needs to pick a destination, unlike the home pages which also render the name.
+- 03-04: Existing `login/page.test.tsx` and `signup/page.test.tsx` behavioral coverage was renamed and re-pointed at the extracted `LoginForm`/`SignupForm` components (`login-form.test.tsx`/`signup-form.test.tsx`) rather than replaced with a new minimal smoke test, since the form logic moved verbatim and the existing suite gives strictly more coverage.
 
 ### Sequencing constraints (from research)
 
@@ -136,8 +139,8 @@ Plan: 4 of 4
 ## Session Continuity
 
 - **Last activity:** 2026-07-04
-- **Last session:** 2026-07-04T04:05:39.439Z
-- **Stopped at:** Completed 03-03-PLAN.md
+- **Last session:** 2026-07-04T04:12:42.454Z
+- **Stopped at:** Completed 03-04-PLAN.md
 - **Resume file:** None
 - **Next action:** Phase 02 verification (confirm phase-level success criteria against the now-fully-resolved UAT), then plan phase 03 (role-aware home).
 - **Files:** `.planning/phases/02-secure-account-you-can-return-to/02-08-SUMMARY.md`, `.planning/phases/02-secure-account-you-can-return-to/02-UAT.md`, `.planning/debug/resolved/enter-submit-expired-link.md`, `.planning/debug/resolved/enter-submit-reset-password.md`, `.planning/ROADMAP.md`.
