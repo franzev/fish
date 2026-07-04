@@ -2,9 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: The Coaching Loop
+current_phase: 4
 status: planning
-last_updated: "2026-07-04T22:45:00.000Z"
+stopped_at: Phase 4 context gathered
+last_updated: "2026-07-04T15:23:43.980Z"
 last_activity: 2026-07-04
+last_activity_desc: v1.1 roadmap created (Phases 4-8)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -104,9 +107,11 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 ## Session Continuity
 
+**Last session:** 2026-07-04T15:23:43.971Z
+
 - **Last activity:** 2026-07-04 — v1.1 roadmap created (Phases 4-8)
-- **Stopped at:** Roadmap written; 30/30 requirements mapped; awaiting phase planning
-- **Resume file:** None
+- **Stopped at:** Phase 4 context gathered
+- **Resume file:** .planning/phases/04-client-profiles/04-CONTEXT.md
 - **Next action:** `/gsd:plan-phase 4` — plan Client Profiles (the safe/protected write-safety discipline the whole milestone reuses)
 
 ---
