@@ -1,13 +1,12 @@
-import { createBrowserClient } from "@supabase/ssr";
+import { createBrowserSupabaseClient } from "@/lib/services/supabase/browser";
 
 /**
- * Supabase client for Client Components (browser only).
- * Untyped until plan 02 regenerates database.types.ts from the real schema;
- * the Database generic will then be imported from @fish/supabase.
+ * Compatibility adapter for existing Client Components.
+ *
+ * New code should prefer `createBrowserSupabaseServices()` when it wants the
+ * service/repository interfaces; this helper intentionally keeps returning the
+ * raw typed client because current forms call Supabase auth methods directly.
  */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
+  return createBrowserSupabaseClient();
 }
