@@ -52,6 +52,23 @@ async function checkClientBoundary(): Promise<void> {
     return;
   }
   const ownId = userData.user.id;
+
+  // Post-0006 invariant: the is_client_of policy legitimately widens a
+  // client's profiles read to include their assigned coach's row, so the
+  // client now sees exactly 2 rows (own + assigned coach), not 1. Resolve
+  // the assigned coach id the same legitimate way a client can (the 0003
+  // "client reads own coach assignment" policy permits this read).
+  const { data: assignment, error: assignmentError } = await supabase
+    .from("coach_clients")
+    .select("coach_id")
+    .eq("client_id", ownId)
+    .single();
+  if (assignmentError || !assignment) {
+    report("DB-03 client boundary: resolve assigned coach id", false, assignmentError?.message);
+    return;
+  }
+  const coachId = assignment.coach_id;
+
   const { data, error } = await supabase.from("profiles").select("*");
   checkNoRecursion("DB-03 client boundary", error);
   if (error) {
@@ -59,11 +76,16 @@ async function checkClientBoundary(): Promise<void> {
     return;
   }
   const rows = data ?? [];
-  const onlyOwnRow = rows.length === 1;
-  report("DB-03 client boundary: sees exactly one row (own)", onlyOwnRow, `got ${rows.length} rows`);
-  // Identity-based leak check: profiles has no email column and display
-  // names are seed-mutable, so any row whose id is not our own is a leak.
-  const leaked = rows.some((row) => (row as { id?: string }).id !== ownId);
+  const exactlyOwnAndCoach = rows.length === 2;
+  report(
+    "DB-03 client boundary: sees exactly two rows (own + assigned coach)",
+    exactlyOwnAndCoach,
+    `got ${rows.length} rows`,
+  );
+  // Identity-based leak check: any row whose id is neither our own nor our
+  // assigned coach's is a leak (cross-client visibility or a foreign coach).
+  const allowedIds = new Set([ownId, coachId]);
+  const leaked = rows.some((row) => !allowedIds.has((row as { id?: string }).id ?? ""));
   report("DB-03 client boundary: no other accounts visible", !leaked, leaked ? "row(s) with a foreign id returned" : undefined);
 }
 
@@ -105,10 +127,57 @@ async function checkEscalationRejected(): Promise<void> {
   report("DB-04 safe-field update (display_name) succeeds", !safeUpdateError, safeUpdateError?.message);
 }
 
+async function checkClientReadsCoachName(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("D-16 client reads coach name: resolve own user id", false, userError?.message);
+    return;
+  }
+  const ownId = userData.user.id;
+
+  // Resolve the assigned coach id the way a client legitimately can — the
+  // 0003 "client reads own coach assignment" policy permits this read.
+  const { data: assignment, error: assignmentError } = await supabase
+    .from("coach_clients")
+    .select("coach_id")
+    .eq("client_id", ownId)
+    .single();
+  checkNoRecursion("D-16 client reads coach name: resolve coach id", assignmentError);
+  if (assignmentError || !assignment) {
+    report("D-16 client reads coach name: resolve assigned coach id", false, assignmentError?.message);
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", assignment.coach_id);
+  checkNoRecursion("D-16 client reads coach name", error);
+  if (error) {
+    report("D-16 client reads coach name: select succeeds", false, error.message);
+    return;
+  }
+  const rows = data ?? [];
+  // The count-of-1 IS the scoping proof: the is_client_of policy does not
+  // leak any other coach's row alongside the assigned one.
+  const exactlyOne = rows.length === 1;
+  report(
+    "D-16 client reads coach name: returns exactly the assigned coach's row",
+    exactlyOne,
+    `got ${rows.length} rows`,
+  );
+  if (exactlyOne) {
+    const displayName = (rows[0] as { display_name?: string }).display_name ?? "";
+    report("D-16 client reads coach name: display_name is non-empty", displayName.length > 0);
+  }
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
   await checkEscalationRejected();
+  await checkClientReadsCoachName();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);
