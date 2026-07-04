@@ -35,7 +35,7 @@ Use the real logo (`sources/logo.svg` — teal fish badge, brand teal `#1b7ba5`)
 
 ## Key CSS patterns (see source)
 
-- `.withrail` = rail + `.tabscreen`s (show/hide via `.on`); `.botnav.labels-full|labels-active|labels-off`.
+- `.withrail` = rail + `.tabscreen`s (show/hide via `.on`); `.botnav.labels-full|labels-active` (icon-only `labels-off` was removed — see the rejected-pattern note above).
 - `.brandmark { border-radius: 26%; border: 2px solid var(--ink); overflow: hidden }`.
 - `.botnav-item { min-height: var(--tap) }`; active pill `.botnav-item.active .pill { background: var(--surface-3) }`.
 

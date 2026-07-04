@@ -17,6 +17,7 @@
   --surface-3:     light-dark(#e7e7e3, #262624);
   --border:        light-dark(#e6e6e1, #2a2a27);
   --border-strong: light-dark(#d6d6d0, #3a3a36);
+  --control-border: light-dark(#828279, #818179);  /* edge for tappable controls — clears 3:1 non-text contrast (WCAG 1.4.11) on bg/surface/surface-3 */
 
   --ink:           light-dark(#1b1b19, #f4f4f0);  /* headings / foreground */
   --body:          light-dark(#4f4f49, #c7c7c0);  /* body copy */

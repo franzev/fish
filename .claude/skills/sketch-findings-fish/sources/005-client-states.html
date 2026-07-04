@@ -28,7 +28,7 @@
   .vcaption p { margin: 0 auto; max-width: 640px; color: var(--body); font-size: var(--text-sm); }
 
   .cycler { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; margin: 0 auto var(--s6); }
-  .cybtn { font-size: var(--text-sm); color: var(--body); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-pill); padding: 9px 16px; min-height: 44px; cursor: pointer; transition: all .15s ease; }
+  .cybtn { font-size: var(--text-sm); color: var(--body); background: var(--surface); border: 1px solid var(--control-border); border-radius: var(--r-pill); padding: 9px 16px; min-height: 44px; cursor: pointer; transition: all .15s ease; }
   .cybtn:hover { background: var(--surface-2); color: var(--ink); }
   .cybtn.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 
@@ -58,7 +58,7 @@
 
   .feed { flex: 1 1 auto; overflow: hidden; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); background: var(--bg); }
   .row { display: flex; gap: var(--s3); align-items: flex-end; } .row.me { flex-direction: row-reverse; }
-  .miniav { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: 11px; flex: 0 0 auto; }
+  .miniav { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: var(--text-xs); flex: 0 0 auto; }
   .bubble { max-width: 78%; padding: 11px 15px; border-radius: var(--r-lg); font-size: var(--text-base); line-height: 1.5; }
   .bubble.coach { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
   .bubble.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 6px; }

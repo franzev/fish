@@ -53,19 +53,20 @@
   .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
   .iconbtn { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; }
-  .iconbtn:hover { background: var(--surface-2); color: var(--ink); } .iconbtn.sm { width: 56px; height: 56px; }
+  .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
 
   .feed { flex: 1 1 auto; overflow-y: auto; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); background: var(--bg); }
   .feed::-webkit-scrollbar { width: 8px; } .feed::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
   .daystamp { text-align: center; font-size: var(--text-xs); color: var(--muted); margin: var(--s2) 0; }
   .row { display: flex; gap: var(--s3); align-items: flex-end; } .row.me { flex-direction: row-reverse; }
-  .miniav { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: 11px; flex: 0 0 auto; }
+  .miniav { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: var(--text-xs); flex: 0 0 auto; }
   .bubble { max-width: 78%; padding: 12px 16px; border-radius: var(--r-lg); font-size: var(--text-base); line-height: 1.5; }
   .bubble.coach { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
   .bubble.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 6px; }
   .bubble .em { font-family: var(--font-display); font-style: italic; }
-  .status { align-self: flex-end; font-size: var(--text-xs); color: var(--muted); margin: 2px 6px 0 0; }
+  .status { align-self: flex-end; display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); color: var(--muted); margin: 2px 6px 0 0; }
+  .status svg { width: 15px; height: 15px; stroke: var(--muted); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .react-wrap { display: flex; margin-top: -6px; } .react-wrap.me { justify-content: flex-end; margin-right: 8px; } .react-wrap.coach { margin-left: 42px; }
   .react { display: inline-flex; gap: 4px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; font-size: var(--text-xs); color: var(--body); box-shadow: var(--shadow-sm); }
 
@@ -148,7 +149,7 @@
             <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="voice"><button class="play" aria-label="Play voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:20px"></i></div><span class="dur">0:08</span></div></div></div>
             <div class="row me"><div class="bubble me">Thank you! I would like to see the menu, please.</div></div>
             <div class="react-wrap me"><span class="react"><svg class="i sm" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M7 11v9M11 20h5.4a2 2 0 0 0 2-1.6l1-6A1.6 1.6 0 0 0 16 10h-4l.8-3.6a1.6 1.6 0 0 0-3-.9L7 11"/></svg> James</span></div>
-            <div class="status">Seen</div>
+            <div class="status"><svg viewBox="0 0 24 24"><path d="M2 12l5 5L16 8"/><path d="M11 14l1.5 1.5L22 6"/></svg>Seen</div>
             <div class="practice"><div class="tag">This week · assigned</div><h3>Ordering at a restaurant</h3><div class="progress"><span style="width:80%"></span></div><div class="steps"><span>A little more this week</span></div></div>
           </div>
           <div class="composer"><button class="iconbtn sm" aria-label="Record a voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><input class="field" type="text" readonly aria-label="Write a message" placeholder="Write a message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
@@ -164,7 +165,7 @@
             <div class="correction" style="margin-left:0;max-width:92%"><div class="clabel">Gentle suggestion</div><div class="said">You said: <s>would like see</s></div><div class="try">Try: would like <b>to</b> see</div><div class="why">A little “to” before <i>see</i> — so close.</div></div>
             <div class="row me"><div class="bubble me">Thank you! I would like to see the menu.</div></div>
             <div class="react-wrap me"><span class="react"><svg class="i sm" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M7 11v9M11 20h5.4a2 2 0 0 0 2-1.6l1-6A1.6 1.6 0 0 0 16 10h-4l.8-3.6a1.6 1.6 0 0 0-3-.9L7 11"/></svg></span></div>
-            <div class="status">Seen</div>
+            <div class="status"><svg viewBox="0 0 24 24"><path d="M2 12l5 5L16 8"/><path d="M11 14l1.5 1.5L22 6"/></svg>Seen</div>
           </div>
           <div class="composer"><input class="field" type="text" readonly aria-label="Message" placeholder="Message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
         </div>
@@ -191,7 +192,7 @@
             <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="voice"><button class="play" aria-label="Play voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:20px"></i></div><span class="dur">0:08</span></div></div></div>
             <div class="row me"><div class="bubble me">Thank you! I would like to see the menu, please.</div></div>
             <div class="react-wrap me"><span class="react"><svg class="i sm" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M7 11v9M11 20h5.4a2 2 0 0 0 2-1.6l1-6A1.6 1.6 0 0 0 16 10h-4l.8-3.6a1.6 1.6 0 0 0-3-.9L7 11"/></svg> James</span></div>
-            <div class="status">Seen</div>
+            <div class="status"><svg viewBox="0 0 24 24"><path d="M2 12l5 5L16 8"/><path d="M11 14l1.5 1.5L22 6"/></svg>Seen</div>
             <div class="practice"><div class="tag">This week · assigned</div><h3>Ordering at a restaurant</h3><div class="progress"><span style="width:80%"></span></div><div class="steps"><span>A little more this week</span></div></div>
           </div>
           <div class="composer"><button class="iconbtn sm" aria-label="Record a voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><input class="field" type="text" readonly aria-label="Write a message" placeholder="Write a message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
@@ -209,7 +210,7 @@
             <div class="popover" id="pb" style="margin-left:0;max-width:92%">Try <b>to see</b> — a tiny word before the verb. So close. 🙂</div>
             <div class="row me"><div class="bubble me">Thank you! I would like to see the menu.</div></div>
             <div class="react-wrap me"><span class="react"><svg class="i sm" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M7 11v9M11 20h5.4a2 2 0 0 0 2-1.6l1-6A1.6 1.6 0 0 0 16 10h-4l.8-3.6a1.6 1.6 0 0 0-3-.9L7 11"/></svg></span></div>
-            <div class="status">Seen</div>
+            <div class="status"><svg viewBox="0 0 24 24"><path d="M2 12l5 5L16 8"/><path d="M11 14l1.5 1.5L22 6"/></svg>Seen</div>
           </div>
           <div class="composer"><input class="field" type="text" readonly aria-label="Message" placeholder="Message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
         </div>
@@ -235,7 +236,7 @@
             <div class="row"><div class="miniav">JC</div><div class="bubble coach"><div class="voice"><button class="play" aria-label="Play voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg></button><div class="wave"><i style="height:8px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:12px"></i><i style="height:19px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:11px"></i><i style="height:20px"></i></div><span class="dur">0:08</span></div></div></div>
             <div class="row me"><div class="bubble me">Thank you! I would like to see the menu, please.</div></div>
             <div class="react-wrap me"><span class="react"><svg class="i sm" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M7 11v9M11 20h5.4a2 2 0 0 0 2-1.6l1-6A1.6 1.6 0 0 0 16 10h-4l.8-3.6a1.6 1.6 0 0 0-3-.9L7 11"/></svg> James</span></div>
-            <div class="status">Seen</div>
+            <div class="status"><svg viewBox="0 0 24 24"><path d="M2 12l5 5L16 8"/><path d="M11 14l1.5 1.5L22 6"/></svg>Seen</div>
             <div class="practice"><div class="tag">This week · assigned</div><h3>Ordering at a restaurant</h3><div class="progress"><span style="width:80%"></span></div><div class="steps"><span>A little more this week</span></div></div>
           </div>
           <div class="composer"><button class="iconbtn sm" aria-label="Record a voice message"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><input class="field" type="text" readonly aria-label="Write a message" placeholder="Write a message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
@@ -251,7 +252,7 @@
             <div class="row"><div class="bubble coach"><div class="quote">I would like see the menu…</div><div class="fix">Almost! “I would like <b>to</b> see the menu.” That “to” makes it perfect. 🙂</div></div></div>
             <div class="row me"><div class="bubble me">Thank you! I would like to see the menu.</div></div>
             <div class="react-wrap me"><span class="react"><svg class="i sm" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="M7 11v9M11 20h5.4a2 2 0 0 0 2-1.6l1-6A1.6 1.6 0 0 0 16 10h-4l.8-3.6a1.6 1.6 0 0 0-3-.9L7 11"/></svg></span></div>
-            <div class="status">Seen</div>
+            <div class="status"><svg viewBox="0 0 24 24"><path d="M2 12l5 5L16 8"/><path d="M11 14l1.5 1.5L22 6"/></svg>Seen</div>
           </div>
           <div class="composer"><input class="field" type="text" readonly aria-label="Message" placeholder="Message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
         </div>

@@ -75,7 +75,7 @@
   .feed::-webkit-scrollbar { width: 8px; } .feed::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
   .daystamp { text-align: center; font-size: var(--text-xs); color: var(--muted); }
   .row { display: flex; gap: var(--s3); align-items: flex-end; } .row.me { flex-direction: row-reverse; }
-  .miniav { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: 11px; flex: 0 0 auto; }
+  .miniav { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-size: var(--text-xs); flex: 0 0 auto; }
   .bubble { max-width: 78%; padding: 12px 16px; border-radius: var(--r-lg); font-size: var(--text-base); line-height: 1.5; position: relative; }
   .bubble.client { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
   .bubble.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 6px; }
@@ -92,13 +92,13 @@
   .composefix { padding: var(--s4) var(--s5); border-top: 1px solid var(--border); background: var(--surface-2); }
   .composefix .cflabel { font-size: var(--text-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--notice); font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
   .composefix .cfquote { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s2); border-left: 3px solid var(--border-strong); padding-left: 10px; }
-  .composefix .cffield { margin-top: var(--s3); min-height: var(--tap); display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); color: var(--ink); }
+  .composefix .cffield { margin-top: var(--s3); min-height: var(--tap); display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--control-border); border-radius: var(--r-md); color: var(--ink); }
   .composefix .cffield b { border-bottom: 2px solid var(--notice); }
   .composefix .cfnote { margin-top: var(--s2); font-size: var(--text-sm); color: var(--muted); padding: 0 4px; }
   .composefix .cfactions { display: flex; gap: var(--s2); margin-top: var(--s3); }
   .btn { font-family: var(--font-body); font-size: var(--text-base); min-height: var(--tap); padding: 0 var(--s5); border-radius: var(--r-md); cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); transition: all .15s ease; }
   .btn.primary { background: var(--primary); color: var(--on-primary); flex: 1; }
-  .btn.ghost { background: transparent; color: var(--body); border-color: var(--border-strong); }
+  .btn.ghost { background: transparent; color: var(--body); border-color: var(--control-border); }
   .btn.ghost:hover { background: var(--surface); color: var(--ink); }
 
   /* --- B: message actions menu --- */
@@ -110,7 +110,7 @@
 
   /* --- C: coach toolbar --- */
   .coachbar { display: flex; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); overflow-x: auto; }
-  .toolchip { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; min-height: var(--tap); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; transition: all .15s ease; }
+  .toolchip { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; min-height: var(--tap); background: var(--surface-2); border: 1px solid var(--control-border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; transition: all .15s ease; }
   .toolchip:hover { background: var(--surface-3); }
   .toolchip svg { stroke: var(--body); }
 
