@@ -54,3 +54,9 @@ Native apps are opened with their platform tools:
 ## For AI agents
 
 See [AGENTS.md](./AGENTS.md) for build commands, conventions, and the design rules every screen must follow.
+
+## Project docs
+
+- [Recent changes](./docs/recent-changes.md)
+- [UI/UX agent guidelines](./docs/ui-ux-agent-guidelines.md)
+- [Unpublished Linear follow-up draft](./docs/linear-recent-changes-tickets-draft.md)

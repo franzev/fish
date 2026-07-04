@@ -33,6 +33,9 @@ Native projects are opened with platform tools:
 ## Design rules (non-negotiable, apply to every screen)
 
 These are the reason the UI looks sparse. Do not "improve" screens by adding options.
+Before designing any UI, changing a user-facing screen, or reviewing UI components,
+read `docs/ui-ux-agent-guidelines.md` first. That guide is the consolidated
+PDF-derived UI/UX review reference for this product.
 
 1. **One primary action per screen.** At most one `Button variant="primary"` per view. Two competing choices is a bug.
 2. **Assigned, never chosen.** Users never browse a menu of plans/templates. The coach assigns; the app presents. No "pick one of N" UI for clients.
