@@ -20,7 +20,7 @@
 
   --ink:           light-dark(#1b1b19, #f4f4f0);  /* headings / foreground */
   --body:          light-dark(#4f4f49, #c7c7c0);  /* body copy */
-  --muted:         light-dark(#8d8d85, #83837b);  /* quiet / meta */
+  --muted:         light-dark(#6b6b64, #83837b);  /* quiet / meta — light darkened to clear 4.5:1 AA */
   --faint:         light-dark(#b7b7ae, #4d4d47);  /* dividers-as-text, hints */
 
   /* The single action on a screen: high-contrast ink */
@@ -58,4 +58,20 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
   --shadow-md: 0 6px 20px rgba(0,0,0,.06);
   --shadow-lg: 0 18px 48px rgba(0,0,0,.10);
+}
+
+/* Visible keyboard focus on real controls (uses the --ring token, previously unused). */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion globally (parity with the shipped globals.css). */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

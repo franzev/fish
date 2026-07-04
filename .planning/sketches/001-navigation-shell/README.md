@@ -55,6 +55,36 @@ Three changes from user direction, each with the recommendation behind it:
   labels help most, and labels double as vocabulary scaffolding. If a cleaner bar is wanted,
   **active-label-only** is the furthest defensible step; full icons-only is a distant last.
 
+## Design critique — refinement pass (2026-07-04)
+
+A 5-lens critique (craft, design-system, accessibility, cross-platform, states) produced a
+prioritized punch-list. Applied to variant D + the shared theme:
+
+- **Removed the resettable streak.** "7 days practiced 🌿" was, by construction, a streak — the
+  reset-to-zero mechanic AGENTS.md rule 5 bans as this audience's top abandonment trigger.
+  Replaced with one calm, non-decrementing phrase ("A little more to go this week").
+- **Restored pure monochrome.** The green presence dot (`--presence`) and the color 🌿 emoji were
+  two unsanctioned colors beside the teal logo. Presence is now a monochrome ink dot; the emoji
+  is gone. Teal stays reserved for the logo alone.
+- **De-graded the progress card.** The `3 of 5 practiced` fraction pinned opposite the streak read
+  as a game HUD (score vs. streak). The bar now carries progress; one gentle phrase replaces the
+  two opposed numbers. ("Progress is visual, never a grade.")
+- **Stronger active-tab.** Web rail active was identical to hover; now a distinct fill + bold label
+  (a non-color signal), legible in dark too.
+- **AA contrast.** Light `--muted` (#8d8d85, ~3:1) darkened to #6b6b64 (~4.6:1) — it carries
+  previews, nav labels, and status the non-native-English audience most relies on.
+- **56px tap floor.** Raised Android send/back, icon buttons, composer field, bottom-nav items, and
+  profile rows to the FISH minimum.
+- **Legibility + motion.** Bumped 10–11px nav labels to 12px; added `prefers-reduced-motion` and a
+  `:focus-visible` ring (both to the shared theme).
+
+**Deliberately deferred** (recorded, not lost):
+- Full `<div>`→`<button>`/`<a>` + ARIA rewrite — build-time; the real `apps/web/components` are
+  already semantic. The sketch adds the focus-ring treatment only.
+- Full empty / message-lifecycle state suite (sending/sent/seen/failed, 0-item states) — belongs
+  in the chat sketch (002), not the nav shell.
+- Long-content truncation contracts and a deeper radii/token refactor — lower-value robustness.
+
 ## Variants
 
 - **D · Synthesis ★ (selected)** — bottom-nav shell, **Home · Progress · Messages · Profile**. Messages is a
