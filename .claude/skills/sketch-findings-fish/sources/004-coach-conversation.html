@@ -67,7 +67,7 @@
   .appbar .sub { font-size: var(--text-xs); color: var(--muted); }
   .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
-  .iconbtn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; } .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
+  .iconbtn { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; } .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
 
   .thread { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -81,20 +81,18 @@
   .bubble.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 6px; }
   .bubble.client.selectable { cursor: pointer; }
   .bubble.client.selected { outline: 2px solid var(--ink); outline-offset: 2px; }
-  .bubble .quote { border-left: 3px solid rgba(255,255,255,.4); padding: 2px 0 2px 10px; margin-bottom: 8px; opacity: .8; font-size: var(--text-sm); }
-  .bubble.me .fix b { border-bottom: 2px solid var(--notice); font-weight: 600; }
   .hint { text-align: center; font-size: var(--text-xs); color: var(--muted); font-style: italic; }
 
   .composer { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--surface); }
   .composer .baserow { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); }
-  .composer .field { flex: 1; min-height: 48px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
-  .send { width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; }
+  .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
+  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; }
 
   /* --- A: inline compose-fix --- */
   .composefix { padding: var(--s4) var(--s5); border-top: 1px solid var(--border); background: var(--surface-2); }
   .composefix .cflabel { font-size: var(--text-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--notice); font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
   .composefix .cfquote { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s2); border-left: 3px solid var(--border-strong); padding-left: 10px; }
-  .composefix .cffield { margin-top: var(--s3); min-height: 48px; display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); color: var(--ink); }
+  .composefix .cffield { margin-top: var(--s3); min-height: var(--tap); display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); color: var(--ink); }
   .composefix .cffield b { border-bottom: 2px solid var(--notice); }
   .composefix .cfnote { margin-top: var(--s2); font-size: var(--text-sm); color: var(--muted); padding: 0 4px; }
   .composefix .cfactions { display: flex; gap: var(--s2); margin-top: var(--s3); }
@@ -105,14 +103,14 @@
 
   /* --- B: message actions menu --- */
   .msgmenu { align-self: flex-start; margin-left: 42px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden; width: 220px; }
-  .msgmenu .mi { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); min-height: 48px; color: var(--ink); cursor: pointer; }
+  .msgmenu .mi { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); min-height: var(--tap); color: var(--ink); cursor: pointer; }
   .msgmenu .mi:hover { background: var(--surface-2); }
   .msgmenu .mi + .mi { border-top: 1px solid var(--border); }
   .msgmenu .mi svg { stroke: var(--body); }
 
   /* --- C: coach toolbar --- */
   .coachbar { display: flex; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); overflow-x: auto; }
-  .toolchip { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; min-height: 44px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; transition: all .15s ease; }
+  .toolchip { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; min-height: var(--tap); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; transition: all .15s ease; }
   .toolchip:hover { background: var(--surface-3); }
   .toolchip svg { stroke: var(--body); }
 
@@ -164,7 +162,7 @@
               </div>
               <div class="hint">Tap Sofia’s message to correct, praise, or assign.</div>
             </div>
-            <div class="composer" id="dw-composer"><div class="baserow"><div class="field">Write to Sofia…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
+            <div class="composer" id="dw-composer"><div class="baserow"><div class="field">Write to Sofia…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
             <div class="composefix" id="dw-fix" style="display:none">
               <div class="cflabel"><span>Suggest a fix for Sofia</span><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--muted);cursor:pointer" onclick="closeAuthoring('dw')"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
               <div class="cfquote">I would like see the menu, please.</div>
@@ -179,7 +177,7 @@
     <div class="framewrap"><div class="flabel">Android · conversation</div>
       <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
         <div class="app">
-          <div class="appbar"><button class="iconbtn"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
+          <div class="appbar"><button class="iconbtn" aria-label="Back to clients"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
           <div class="feed" style="padding:var(--s4)">
             <div class="row me"><div class="bubble me">What do you say to the waiter?</div></div>
             <div class="row"><div class="bubble client selectable" id="da-msg" onclick="openMenu('da')">I would like see the menu, please.</div></div>
@@ -190,7 +188,7 @@
             </div>
             <div class="hint">Tap a message.</div>
           </div>
-          <div class="composer" id="da-composer"><div class="baserow"><div class="field">Message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
+          <div class="composer" id="da-composer"><div class="baserow"><div class="field">Message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
           <div class="composefix" id="da-fix" style="display:none;padding:var(--s3) var(--s4)">
             <div class="cflabel"><span>Suggest a fix</span><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--muted);cursor:pointer" onclick="closeAuthoring('da')"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
             <div class="cfquote">I would like see the menu…</div>
@@ -240,7 +238,7 @@
     <div class="framewrap"><div class="flabel">Android · conversation</div>
       <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
         <div class="app">
-          <div class="appbar"><button class="iconbtn"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
+          <div class="appbar"><button class="iconbtn" aria-label="Back to clients"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
           <div class="feed" style="padding:var(--s4)">
             <div class="row me"><div class="bubble me">What do you say to the waiter?</div></div>
             <div class="row"><div class="bubble client selected">I would like see the menu, please.</div></div>
@@ -286,7 +284,7 @@
               </div>
               <div class="hint">Long-press any message to correct, praise, or assign.</div>
             </div>
-            <div class="composer"><div class="baserow"><div class="field">Write to Sofia…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
+            <div class="composer"><div class="baserow"><div class="field">Write to Sofia…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
           </div>
         </div></div>
       </div>
@@ -294,7 +292,7 @@
     <div class="framewrap"><div class="flabel">Android · conversation</div>
       <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
         <div class="app">
-          <div class="appbar"><button class="iconbtn"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
+          <div class="appbar"><button class="iconbtn" aria-label="Back to clients"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
           <div class="feed" style="padding:var(--s4)">
             <div class="row me"><div class="bubble me">What do you say to the waiter?</div></div>
             <div class="row"><div class="bubble client selected">I would like see the menu, please.</div></div>
@@ -304,7 +302,7 @@
               <div class="mi"><svg class="i sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Assign practice</div>
             </div>
           </div>
-          <div class="composer"><div class="baserow"><div class="field">Message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
+          <div class="composer"><div class="baserow"><div class="field">Message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
         </div>
         <div class="gesture"></div>
       </div></div>
@@ -341,7 +339,7 @@
                 <span class="toolchip"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg> Voice</span>
                 <span class="toolchip"><svg class="i sm" viewBox="0 0 24 24"><path d="M20 9h-6l1-5a2 2 0 0 0-4-.5L8 9H4v11h13a3 3 0 0 0 3-2.5l1-6A2 2 0 0 0 20 9z"/></svg> Praise</span>
               </div>
-              <div class="baserow"><div class="field">Write to Sofia…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+              <div class="baserow"><div class="field">Write to Sofia…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
             </div>
           </div>
         </div></div>
@@ -350,7 +348,7 @@
     <div class="framewrap"><div class="flabel">Android · conversation</div>
       <div class="android"><div class="screen"><div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
         <div class="app">
-          <div class="appbar"><button class="iconbtn"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
+          <div class="appbar"><button class="iconbtn" aria-label="Back to clients"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button><div class="avatar">SR</div><div><div class="title" style="font-size:var(--text-base)">Sofia Reyes</div><div class="sub">Learning English</div></div></div>
           <div class="feed" style="padding:var(--s4)">
             <div class="row me"><div class="bubble me">What do you say to the waiter?</div></div>
             <div class="row"><div class="bubble client">I would like see the menu, please.</div></div>
@@ -361,7 +359,7 @@
               <span class="toolchip"><svg class="i sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Assign</span>
               <span class="toolchip"><svg class="i sm" viewBox="0 0 24 24"><path d="M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg> Voice</span>
             </div>
-            <div class="baserow"><div class="field">Message…</div><button class="send"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
+            <div class="baserow"><div class="field">Message…</div><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div>
           </div>
         </div>
         <div class="gesture"></div>
@@ -401,6 +399,7 @@
     document.getElementById(s+'-composer').style.display = '';
     document.getElementById(s+'-msg').classList.remove('selected');
   }
+  document.querySelectorAll('.crow,.selectable,.msgmenu .mi').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>

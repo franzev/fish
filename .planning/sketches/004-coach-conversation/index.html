@@ -85,14 +85,14 @@
 
   .composer { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--surface); }
   .composer .baserow { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); }
-  .composer .field { flex: 1; min-height: 48px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
+  .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
   .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; }
 
   /* --- A: inline compose-fix --- */
   .composefix { padding: var(--s4) var(--s5); border-top: 1px solid var(--border); background: var(--surface-2); }
   .composefix .cflabel { font-size: var(--text-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--notice); font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
   .composefix .cfquote { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s2); border-left: 3px solid var(--border-strong); padding-left: 10px; }
-  .composefix .cffield { margin-top: var(--s3); min-height: 48px; display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); color: var(--ink); }
+  .composefix .cffield { margin-top: var(--s3); min-height: var(--tap); display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); color: var(--ink); }
   .composefix .cffield b { border-bottom: 2px solid var(--notice); }
   .composefix .cfnote { margin-top: var(--s2); font-size: var(--text-sm); color: var(--muted); padding: 0 4px; }
   .composefix .cfactions { display: flex; gap: var(--s2); margin-top: var(--s3); }
@@ -103,14 +103,14 @@
 
   /* --- B: message actions menu --- */
   .msgmenu { align-self: flex-start; margin-left: 42px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden; width: 220px; }
-  .msgmenu .mi { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); min-height: 48px; color: var(--ink); cursor: pointer; }
+  .msgmenu .mi { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); min-height: var(--tap); color: var(--ink); cursor: pointer; }
   .msgmenu .mi:hover { background: var(--surface-2); }
   .msgmenu .mi + .mi { border-top: 1px solid var(--border); }
   .msgmenu .mi svg { stroke: var(--body); }
 
   /* --- C: coach toolbar --- */
   .coachbar { display: flex; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); overflow-x: auto; }
-  .toolchip { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; min-height: 44px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; transition: all .15s ease; }
+  .toolchip { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; min-height: var(--tap); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); white-space: nowrap; cursor: pointer; transition: all .15s ease; }
   .toolchip:hover { background: var(--surface-3); }
   .toolchip svg { stroke: var(--body); }
 
@@ -399,6 +399,7 @@
     document.getElementById(s+'-composer').style.display = '';
     document.getElementById(s+'-msg').classList.remove('selected');
   }
+  document.querySelectorAll('.crow,.selectable,.msgmenu .mi').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>

@@ -67,7 +67,6 @@
   .conv .cn .t { font-size: var(--text-xs); color: var(--muted); font-weight: 400; }
   .conv .cp { font-size: var(--text-xs); color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv .badge { background: var(--primary); color: var(--on-primary); font-size: 11px; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; padding: 0 6px; }
-  .avatar.sys { background: var(--primary); color: var(--on-primary); font-family: var(--font-display); font-weight: 600; }
 
   .rthread { display: none; flex: 1; min-width: 0; flex-direction: column; border-left: 1px solid var(--border); }
   .rthread .tb { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); border-bottom: 1px solid var(--border); background: var(--surface); }
@@ -82,7 +81,7 @@
   .bubble.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 6px; }
   .bubble .em { font-family: var(--font-display); font-style: italic; }
   .composer { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
-  .composer .field { flex: 1; min-height: 48px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); }
+  .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); }
   .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; flex: 0 0 auto; }
 
   .rbotnav { display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); flex: 0 0 auto; }
@@ -96,7 +95,7 @@
     .rbotnav { display: none; }
     .rlist { display: none; }
     .rthread { display: flex; }
-    .rthread .tb .bk { display: grid; }
+    .rthread .tb .bk { display: grid; place-items: center; width: 56px; height: 56px; border: none; background: transparent; color: var(--body); cursor: pointer; }
   }
   @container (min-width: 900px) {
     .rlist { display: flex; flex: 0 0 300px; border-right: 1px solid var(--border); }
@@ -168,16 +167,16 @@
     +     '<div class="rlist">'
     +       '<div class="lh"><h2>Messages</h2></div>'
     +       '<div class="conv active"><div class="avatar">JC<span class="pres"></span></div><div class="cm"><div class="cn">James Carter <span class="t">9:41</span></div><div class="cp">Try aloud: “Could I see the menu, please?”</div></div><div class="badge">2</div></div>'
-    +       '<div class="conv"><div class="avatar sys">F</div><div class="cm"><div class="cn">FISH <span class="t">Mon</span></div><div class="cp">Welcome! Here’s how coaching works.</div></div></div>'
+    +       '<div class="conv"><div class="brandmark" style="width:40px;height:40px"><img src="../logo.svg" alt="FISH"></div><div class="cm"><div class="cn">FISH <span class="t">Mon</span></div><div class="cp">Welcome! Here’s how coaching works.</div></div></div>'
     +     '</div>'
     +     '<div class="rthread">'
-    +       '<div class="tb"><div class="bk avatar" style="background:transparent;width:auto;height:auto">'+icons.back+'</div><div class="avatar">JC<span class="pres"></span></div><div><div class="title">James Carter</div><div class="sub">Your coach · online</div></div></div>'
+    +       '<div class="tb"><button class="bk" aria-label="Back to conversations">'+icons.back+'</button><div class="avatar">JC<span class="pres"></span></div><div><div class="title">James Carter</div><div class="sub">Your coach · online</div></div></div>'
     +       '<div class="rfeed">'
     +         '<div class="row"><div class="miniav">JC</div><div class="bubble coach">Ready for today’s practice? We’re doing <span class="em">ordering at a restaurant</span>.</div></div>'
     +         '<div class="row me"><div class="bubble me">Yes! I practiced the phrases.</div></div>'
     +         '<div class="row"><div class="miniav">JC</div><div class="bubble coach">Lovely. Try aloud: “Could I see the menu, please?”</div></div>'
     +       '</div>'
-    +       '<div class="composer"><div class="field">Write a message…</div><button class="send">'+icons.send+'</button></div>'
+    +       '<div class="composer"><div class="field">Write a message…</div><button class="send" aria-label="Send message">'+icons.send+'</button></div>'
     +     '</div>'
     +   '</div>'
     +   '<div class="rbotnav">'
@@ -197,6 +196,7 @@
   }
   var dark = false;
   function toggleTheme(){ dark = !dark; document.documentElement.style.colorScheme = dark ? 'dark' : 'light'; document.getElementById('mode-label').textContent = dark ? '☾ Dark' : '◐ Light'; }
+  document.querySelectorAll('.rr-item,.rbn,.conv').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>

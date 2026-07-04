@@ -20,7 +20,7 @@
 
   --ink:           light-dark(#1b1b19, #f4f4f0);  /* headings / foreground */
   --body:          light-dark(#4f4f49, #c7c7c0);  /* body copy */
-  --muted:         light-dark(#6b6b64, #83837b);  /* quiet / meta — light darkened to clear 4.5:1 AA */
+  --muted:         light-dark(#5e5e57, #98988f);  /* quiet / meta — tuned to clear 4.5:1 AA on surface-3 tint, both themes */
   --faint:         light-dark(#b7b7ae, #4d4d47);  /* dividers-as-text, hints */
 
   /* The single action on a screen: high-contrast ink */
@@ -29,8 +29,7 @@
   --ring:          light-dark(#1b1b19, #f4f4f0);
 
   /* Very low-chroma tone accents — status dots / gentle notices only */
-  --presence:      light-dark(#5c7d5f, #9dbf9a);  /* online */
-  --notice:        light-dark(#8a6f3d, #d8bd86);  /* soft amber */
+  --notice:        light-dark(#7a6234, #d8bd86);  /* soft amber (light darkened for AA on notice text) */
 
   /* ---- Type ---- */
   --font-body: 'Lexend', system-ui, -apple-system, sans-serif;

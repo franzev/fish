@@ -163,10 +163,10 @@
         <div class="screen"><div class="app">
           <div class="obar"><div class="brandmark" style="width:32px;height:32px"><img src="../logo.svg" alt="FISH"></div><div><div class="title">FISH</div><div style="font-size:var(--text-xs);color:var(--muted)">a couple of questions · 2 of 4</div></div></div>
           <div class="feed">
-            <div class="row"><div class="avatar" style="width:30px;height:30px;font-size:11px">F</div><div class="bubble sys">Hi Sofia — welcome! A couple of quick questions so James can tailor things to you.</div></div>
-            <div class="row"><div class="avatar" style="width:30px;height:30px;font-size:11px">F</div><div class="bubble sys">What brings you to English?</div></div>
+            <div class="row"><div class="brandmark" style="width:30px;height:30px"><img src="../logo.svg" alt="FISH"></div><div class="bubble sys">Hi Sofia — welcome! A couple of quick questions so James can tailor things to you.</div></div>
+            <div class="row"><div class="brandmark" style="width:30px;height:30px"><img src="../logo.svg" alt="FISH"></div><div class="bubble sys">What brings you to English?</div></div>
             <div class="row me"><div class="bubble me">My work</div></div>
-            <div class="row"><div class="avatar" style="width:30px;height:30px;font-size:11px">F</div><div class="bubble sys">Lovely. How do you feel speaking English right now?</div></div>
+            <div class="row"><div class="brandmark" style="width:30px;height:30px"><img src="../logo.svg" alt="FISH"></div><div class="bubble sys">Lovely. How do you feel speaking English right now?</div></div>
           </div>
           <div class="answers">
             <span class="achip">Just starting</span>
@@ -244,6 +244,7 @@
     var opt = e.target.closest('.opt'); if (opt){ opt.parentElement.querySelectorAll('.opt').forEach(function(o){ o.classList.remove('sel'); }); opt.classList.add('sel'); }
     var chip = e.target.closest('.qgroup .chip'); if (chip){ chip.parentElement.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('sel'); }); chip.classList.add('sel'); }
   });
+  document.querySelectorAll('.opt,.achip,.chip').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>

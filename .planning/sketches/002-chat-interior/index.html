@@ -53,7 +53,7 @@
   .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
   .iconbtn { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; }
-  .iconbtn:hover { background: var(--surface-2); color: var(--ink); } .iconbtn.sm { width: 48px; height: 48px; }
+  .iconbtn:hover { background: var(--surface-2); color: var(--ink); } .iconbtn.sm { width: 56px; height: 56px; }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
 
   .feed { flex: 1 1 auto; overflow-y: auto; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); background: var(--bg); }
@@ -75,7 +75,7 @@
   @keyframes blink { 0%,60%,100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
 
   .voice { display: flex; align-items: center; gap: var(--s3); min-width: 190px; }
-  .voice .play { width: 48px; height: 48px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; color: var(--ink); }
+  .voice .play { width: 56px; height: 56px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; color: var(--ink); }
   .voice .wave { display: flex; align-items: center; gap: 3px; height: 26px; flex: 1; } .voice .wave i { width: 3px; border-radius: 2px; background: currentColor; opacity: .5; }
   .voice .dur { font-size: var(--text-xs); opacity: .7; }
 
@@ -86,7 +86,7 @@
   .practice .steps { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--muted); margin-top: var(--s2); }
 
   .composer { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
-  .composer .field { flex: 1; min-height: 44px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
+  .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
   .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; } .send:active { transform: scale(.92); }
 
   /* ---- correction styles (the variable being tested) ---- */
@@ -274,6 +274,7 @@
   function togglePop(id){ var p = document.getElementById(id); p.style.display = (p.style.display === 'none') ? 'block' : 'none'; }
   var dark = false;
   function toggleTheme(){ dark = !dark; document.documentElement.style.colorScheme = dark ? 'dark' : 'light'; document.getElementById('mode-label').textContent = dark ? '☾ Dark' : '◐ Light'; }
+  document.querySelectorAll('.conv').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>

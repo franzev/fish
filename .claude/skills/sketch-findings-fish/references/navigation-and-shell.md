@@ -9,9 +9,9 @@ A **bottom-nav shell**, Messenger/WhatsApp-inspired. Four fixed destinations, le
 **Home · Progress · Messages · Profile**
 
 - **Home** — calm dashboard: greets by name, surfaces the ONE assigned thing today, one primary action.
-- **Progress** — milestone journey (see `profile-and-settings.md`). *Do not ship until a coach validates the tracker technique — coach-first. Until then keep 3 tabs and surface the tracker on Home.*
+- **Progress** — milestone journey (see `profile-and-progress.md`). *Do not ship until a coach validates the tracker technique — coach-first. Until then keep 3 tabs and surface the tracker on Home.*
 - **Messages** — conversation **list → thread** (not straight into one chat). See `chat.md`.
-- **Profile** — identity + settings. See `profile-and-settings.md`.
+- **Profile** — identity + settings. See `profile-and-progress.md`.
 
 Four tabs is the ceiling for this remove-choices product; a fifth erodes calm.
 

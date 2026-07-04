@@ -96,7 +96,7 @@
 
   .iconbtn { width: var(--tap); height: var(--tap); min-width: 44px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease, color .15s ease; }
   .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
-  .iconbtn.sm { width: 48px; height: 48px; }
+  .iconbtn.sm { width: 56px; height: 56px; }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   svg.i.sm { width: 19px; height: 19px; }
 
@@ -127,7 +127,7 @@
   .practice .steps { display:flex; justify-content: space-between; font-size: var(--text-xs); color: var(--muted); margin-top: var(--s2); }
 
   .composer { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
-  .composer .field { flex: 1; min-height: 48px; display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
+  .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
   .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; }
   .send:active { transform: scale(.92); }
 
@@ -188,7 +188,6 @@
   .conv .cprev { font-size: var(--text-sm); color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conv.unread .cprev { color: var(--body); }
   .conv .badge { background: var(--primary); color: var(--on-primary); font-size: 11px; min-width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; padding: 0 6px; flex: 0 0 auto; }
-  .avatar.system { background: var(--primary); color: var(--on-primary); font-family: var(--font-display); font-weight: 600; }
   .twopane { display: flex; flex: 1; min-height: 0; }
   .twopane .list { width: 244px; flex: 0 0 auto; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; }
   .twopane .thread { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -380,7 +379,7 @@
 
           <div class="tabscreen" id="and-thread">
             <div class="appbar" style="padding:12px 16px">
-              <button class="iconbtn sm" onclick="navTo('and','messages')" title="Back"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+              <button class="iconbtn sm" onclick="navTo('and','messages')" aria-label="Back"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
               <div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div>
               <div><div class="title" style="font-size:var(--text-base)">James Carter</div><div class="sub">online</div></div>
             </div>
@@ -474,7 +473,7 @@
         <div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
         <div class="app">
           <div class="appbar" style="padding:12px 16px">
-            <button class="iconbtn sm" title="Back"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <button class="iconbtn sm" aria-label="Back"><svg class="i sm" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
             <div class="avatar" style="width:34px;height:34px;font-size:12px">JC<span class="pres"></span></div>
             <div><div class="title" style="font-size:var(--text-base)">James Carter</div><div class="sub">online</div></div>
           </div>
@@ -652,8 +651,8 @@
     var bn = root.querySelector('.botnav'); if (bn) bn.style.display = 'none'; // native full-screen thread
   }
   // Bottom-nav label treatment (mobile): full -> active-only -> icons-only
-  var labelModes = ['labels-full', 'labels-active', 'labels-off'];
-  var labelNames = { 'labels-full': 'Labels: full', 'labels-active': 'Labels: active only', 'labels-off': 'Labels: off (icons)' };
+  var labelModes = ['labels-full', 'labels-active'];
+  var labelNames = { 'labels-full': 'Labels: full', 'labels-active': 'Labels: active only' };
   var labelIdx = 0;
   function cycleLabels(){
     var bn = document.querySelector('#d-and .botnav');
@@ -662,6 +661,8 @@
     bn.classList.add(labelModes[labelIdx]);
     document.getElementById('lbl-mode').textContent = labelNames[labelModes[labelIdx]];
   }
+  // Keyboard access: make clickable non-button controls focusable + role-tagged (real build uses <button>/<a>)
+  document.querySelectorAll('.rail-item,.botnav-item,.conv,.profrow,.quiet,.coachline').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
 </script>
 </body>
 </html>
