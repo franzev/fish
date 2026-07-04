@@ -40,7 +40,10 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   3. A client attempting to change a protected field (role, coach-owned English level) is rejected at the database by a field-freeze trigger / column grant, not merely by app code.
   4. A coach opens an assigned client's profile as a read-only detail view from the coach client list; an unassigned coach is denied (default-deny, no cross-client leak).
   5. `pnpm verify:rls` passes with self-read / self-safe-update / assigned-coach-read / unassigned-denial / cross-client-denial / protected-field-freeze assertions for `client_profiles`; `pnpm build` is green (XC-01). The profile and edit screens hold the design line — one primary action, 56px targets, monochrome, calm non-scolding copy, no lost work on refresh; the `sketch-findings-fish` skill is loaded before building the client UI (XC-03).
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 04-01-PLAN.md — client_profiles schema + column-grant/trigger level freeze + RLS + six verify:rls assertions + [BLOCKING] local apply (Wave 1)
+  - [ ] 04-02-PLAN.md — /profile essentials view + /profile/edit Server Action safe-edit + a11y prefs + consent (Wave 2)
+  - [ ] 04-03-PLAN.md — coach read-only /coach/clients/[id] + linked roster rows + release gates (Wave 3)
 **UI hint**: yes
 
 ### Phase 5: Data-Driven Onboarding
