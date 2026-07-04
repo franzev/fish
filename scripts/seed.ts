@@ -27,10 +27,19 @@ const coach = {
   displayName: "Coach Dana",
 };
 
+// A second coach, promoted but never assigned any clients (04-01 Task 1) — the
+// negative verify:rls fixtures need a genuine unassigned-coach relationship;
+// without this account there is no real "unassigned coach" case to test against.
+const coach2 = {
+  email: "coach2@fish.dev",
+  password: "fish-coach-dev",
+  displayName: "Coach Jordan",
+};
+
 const clients = [
-  { email: "client1@fish.dev", password: "fish-client-dev", displayName: "Alex Rivera" },
-  { email: "client2@fish.dev", password: "fish-client-dev", displayName: "Sam Okafor" },
-  { email: "client3@fish.dev", password: "fish-client-dev", displayName: "Priya Nair" },
+  { email: "client1@fish.dev", password: "fish-client-dev", displayName: "Alex Rivera", level: "A2" },
+  { email: "client2@fish.dev", password: "fish-client-dev", displayName: "Sam Okafor", level: "B1" },
+  { email: "client3@fish.dev", password: "fish-client-dev", displayName: "Priya Nair", level: "A2" },
 ];
 
 /** Pages through admin.listUsers() until it finds the given email — never assumes page 1. */
@@ -87,6 +96,20 @@ async function assignClient(coachId: string, clientId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Backfills/sets the seeded `level` on a client's client_profiles row (04-01 Task 1).
+ * The 0007 auto-provision trigger already inserts the row on signup with `level`
+ * left null; this upsert sets the seeded level (level is data, never a grade — D-10)
+ * and also backfills any pre-migration accounts that signed up before 0007 existed.
+ * Modeled on assignClient(): idempotent upsert via the service-role client.
+ */
+async function backfillClientProfile(clientId: string, level: string): Promise<void> {
+  const { error } = await supabase
+    .from("client_profiles")
+    .upsert({ id: clientId, level }, { onConflict: "id" });
+  if (error) throw error;
+}
+
 async function main(): Promise<void> {
   const coachId = await upsertUser(coach.email, coach.password, coach.displayName);
 
@@ -95,19 +118,28 @@ async function main(): Promise<void> {
   // profile.role is already 'coach'.
   await promoteToCoach(coachId);
 
+  // 04-01 Task 1: promote coach2 as well, but never call assignClient() for it —
+  // an unassigned coach fixture for checkUnassignedCoachDenied(). Every coach is
+  // promoted before any assignment (same ORDER MATTERS discipline as above).
+  const coach2Id = await upsertUser(coach2.email, coach2.password, coach2.displayName);
+  await promoteToCoach(coach2Id);
+
   const clientIds: string[] = [];
   for (const client of clients) {
     const clientId = await upsertUser(client.email, client.password, client.displayName);
     clientIds.push(clientId);
     await assignClient(coachId, clientId);
+    await backfillClientProfile(clientId, client.level);
   }
 
   console.log("\nSeed complete. Dev credentials (local only):");
   console.log(`  Coach: ${coach.email} / ${coach.password}`);
+  console.log(`  Coach (unassigned): ${coach2.email} / ${coach2.password}`);
   for (const client of clients) {
     console.log(`  Client: ${client.email} / ${client.password}`);
   }
   console.log(`\nCoach id: ${coachId}`);
+  console.log(`Coach2 id (unassigned): ${coach2Id}`);
   console.log(`Client ids: ${clientIds.join(", ")}`);
 }
 
