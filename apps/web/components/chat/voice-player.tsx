@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
 import { HTMLAttributes, useState } from "react";

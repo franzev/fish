@@ -3,14 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import { Avatar } from "./avatar";
 import { Bubble } from "./bubble";
 import { ChatInput } from "./chat-input";
+import { ConversationList, type ConversationSummary } from "./conversation-list";
 import { EmptyState } from "./empty-state";
 import { Message } from "./message";
 import { MessageActions } from "./message-actions";
 import { MessageList } from "./message-list";
 import { MessageStatus } from "./message-status";
+import { NotificationBadge } from "./notification-badge";
 import { Reactions } from "./reactions";
 import { TypingIndicator } from "./typing-indicator";
 import type { ChatMessageView } from "./types";
+import * as ChatKit from "./index";
 
 describe("Avatar", () => {
   it("renders an image with alt text when given a valid src", () => {
@@ -204,5 +207,72 @@ describe("EmptyState", () => {
   it("renders calm, non-scolding copy", () => {
     render(<EmptyState />);
     expect(screen.getByText("No messages yet")).toBeInTheDocument();
+  });
+});
+
+describe("NotificationBadge", () => {
+  it("renders nothing at count 0", () => {
+    const { container } = render(<NotificationBadge count={0} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders nothing when count is undefined", () => {
+    const { container } = render(<NotificationBadge />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("caps the visible count at 99+ but keeps the real count in the aria-label", () => {
+    render(<NotificationBadge count={128} />);
+    expect(screen.getByText("99+")).toBeInTheDocument();
+    expect(screen.getByLabelText("128 unread messages")).toBeInTheDocument();
+  });
+
+  it("renders the exact count below the cap", () => {
+    render(<NotificationBadge count={3} />);
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByLabelText("3 unread messages")).toBeInTheDocument();
+  });
+});
+
+const conversations: ConversationSummary[] = [
+  {
+    id: "c1",
+    participant: { id: "u1", name: "Priya Nandan" },
+    lastMessage: "See you next week",
+    lastMessageAt: "9:10 AM",
+    unreadCount: 2,
+  },
+  {
+    id: "c2",
+    participant: { id: "u2", name: "Sam Okafor" },
+    lastMessage: "Thanks!",
+    lastMessageAt: "Yesterday",
+  },
+];
+
+describe("ConversationList", () => {
+  it("filters rows by typed search text (case-insensitive)", () => {
+    render(<ConversationList conversations={conversations} />);
+    fireEvent.change(screen.getByLabelText("Search conversations"), {
+      target: { value: "priya" },
+    });
+    expect(screen.getByRole("button", { name: /Priya Nandan/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Sam Okafor/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the calm 'No matches' state when nothing matches", () => {
+    render(<ConversationList conversations={conversations} />);
+    fireEvent.change(screen.getByLabelText("Search conversations"), {
+      target: { value: "nobody" },
+    });
+    expect(screen.getByText("No matches")).toBeInTheDocument();
+  });
+});
+
+describe("chat barrel export", () => {
+  it("re-exports ChatContainer, ConversationList, and Bubble", () => {
+    expect(ChatKit.ChatContainer).toBeDefined();
+    expect(ChatKit.ConversationList).toBeDefined();
+    expect(ChatKit.Bubble).toBeDefined();
   });
 });

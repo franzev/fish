@@ -1,8 +1,10 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 import type { Reaction } from "./types";
 
-interface ReactionsProps extends HTMLAttributes<HTMLDivElement> {
+interface ReactionsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"> {
   reactions?: Reaction[];
   onToggle?: (emoji: string) => void;
 }

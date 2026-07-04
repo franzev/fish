@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { IconDots, IconInfoCircle, IconPhone } from "@tabler/icons-react";
 import { HTMLAttributes } from "react";
