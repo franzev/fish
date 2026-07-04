@@ -4,11 +4,13 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import space.fishhub.app.R
 
 @Immutable
 data class ColorTokens(
@@ -51,37 +53,71 @@ data class RadiusTokens(
 data class SizeTokens(
     val control: Dp = 56.dp,
     val icon: Dp = 20.dp,
+    val progress: Dp = 18.dp,
+    val helper: Dp = 22.dp,
     val content: Dp = 440.dp,
+)
+
+@Immutable
+data class StrokeTokens(
+    val hairline: Dp = 1.dp,
+    val focus: Dp = 2.dp,
+    val icon: Dp = 1.5.dp,
+    val progress: Dp = 2.dp,
+)
+
+@Immutable
+data class ElevationTokens(
+    val none: Dp = 0.dp,
+)
+
+@Immutable
+data class OpacityTokens(
+    val hidden: Float = 0f,
+    val full: Float = 1f,
+    val disabledContainer: Float = 0.5f,
+    val disabledContent: Float = 0.65f,
+    val progressTrack: Float = 0.25f,
+)
+
+private val Lexend = FontFamily(
+    Font(R.font.lexend, FontWeight.Normal),
+    Font(R.font.lexend, FontWeight.Medium),
+    Font(R.font.lexend, FontWeight.SemiBold),
+)
+
+private val Fraunces = FontFamily(
+    Font(R.font.fraunces, FontWeight.SemiBold),
 )
 
 @Immutable
 data class TypeTokens(
     val display: TextStyle = TextStyle(
-        fontFamily = FontFamily.Serif,
+        fontFamily = Fraunces,
         fontWeight = FontWeight.SemiBold,
         fontSize = 32.sp,
         lineHeight = 37.sp,
     ),
     val heading: TextStyle = TextStyle(
-        fontFamily = FontFamily.Serif,
+        fontFamily = Fraunces,
         fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp,
         lineHeight = 24.sp,
     ),
     val body: TextStyle = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+        fontFamily = Lexend,
         fontWeight = FontWeight.Normal,
         fontSize = 17.sp,
         lineHeight = 26.sp,
     ),
     val label: TextStyle = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+        fontFamily = Lexend,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
     ),
     val caption: TextStyle = TextStyle(
-        fontFamily = FontFamily.SansSerif,
+        fontFamily = Lexend,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
@@ -102,7 +138,7 @@ val lightColors = ColorTokens(
     muted = Color(0xFF636363),
     notice = Color(0xFF484848),
     error = Color(0xFF932A33),
-    warning = Color(0xFF6E4300),
+    warning = Color(0xFF6B4400),
     success = Color(0xFF005725),
 )
 
@@ -128,4 +164,7 @@ val LocalColorTokens = staticCompositionLocalOf { lightColors }
 val LocalSpacingTokens = staticCompositionLocalOf { SpacingTokens() }
 val LocalRadiusTokens = staticCompositionLocalOf { RadiusTokens() }
 val LocalSizeTokens = staticCompositionLocalOf { SizeTokens() }
+val LocalStrokeTokens = staticCompositionLocalOf { StrokeTokens() }
+val LocalElevationTokens = staticCompositionLocalOf { ElevationTokens() }
+val LocalOpacityTokens = staticCompositionLocalOf { OpacityTokens() }
 val LocalTypeTokens = staticCompositionLocalOf { TypeTokens() }

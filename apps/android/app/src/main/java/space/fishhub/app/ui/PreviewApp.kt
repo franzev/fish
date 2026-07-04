@@ -1,359 +1,437 @@
 package space.fishhub.app.ui
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
-import space.fishhub.app.designsystem.component.Alert
-import space.fishhub.app.designsystem.component.AlertTone
 import space.fishhub.app.designsystem.component.Button
 import space.fishhub.app.designsystem.component.ButtonText
-import space.fishhub.app.designsystem.component.Card
 import space.fishhub.app.designsystem.component.TextField
+import space.fishhub.app.designsystem.preview.ThemePreview
 import space.fishhub.app.designsystem.theme.LocalColorTokens
 import space.fishhub.app.designsystem.theme.LocalRadiusTokens
 import space.fishhub.app.designsystem.theme.LocalSizeTokens
+import space.fishhub.app.designsystem.theme.LocalSpacingTokens
 import space.fishhub.app.designsystem.theme.LocalTypeTokens
+import space.fishhub.app.designsystem.theme.Theme
 
-private enum class Screen(val label: String) {
-    Login("Log in"),
-    Create("Create"),
-    Inbox("Inbox"),
-    Forgot("Forgot"),
-    Password("Password"),
-    Expired("Expired"),
-    Home("Home"),
+private enum class Route {
+    Login,
+    CreateAccount,
+    CheckInbox,
+    ForgotPassword,
+    SetPassword,
+    ExpiredLink,
+    SignedIn,
 }
+
+private data class FieldSpec(
+    val label: String,
+    val value: String,
+    val onChange: (String) -> Unit,
+    val hint: String? = null,
+    val notice: String? = null,
+    val error: String? = null,
+    val keyboardType: KeyboardType = KeyboardType.Text,
+    val visualTransformation: VisualTransformation = VisualTransformation.None,
+)
+
+private data class LinkSpec(
+    val text: String,
+    val onClick: () -> Unit,
+    val prefix: String = "",
+)
+
+private data class PageSpec(
+    val title: String,
+    val body: String? = null,
+    val notice: String? = null,
+    val fields: List<FieldSpec> = emptyList(),
+    val primary: String,
+    val onPrimary: () -> Unit,
+    val links: List<LinkSpec> = emptyList(),
+)
 
 @Composable
 fun PreviewApp() {
-    val colors = LocalColorTokens.current
-    var selected by rememberSaveable { mutableStateOf(Screen.Login) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .background(colors.bg),
-    ) {
-        ScreenTabs(
-            selected = selected,
-            onSelected = { selected = it },
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 48.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            when (selected) {
-                Screen.Login -> LoginScreen()
-                Screen.Create -> CreateAccountScreen()
-                Screen.Inbox -> CheckInboxScreen()
-                Screen.Forgot -> ForgotPasswordScreen()
-                Screen.Password -> NewPasswordScreen()
-                Screen.Expired -> ExpiredLinkScreen()
-                Screen.Home -> SignedInScreen()
-            }
-        }
-    }
-}
-
-@Composable
-private fun ScreenTabs(selected: Screen, onSelected: (Screen) -> Unit) {
-    val colors = LocalColorTokens.current
-    val radius = LocalRadiusTokens.current
-    val scrollState = rememberScrollState()
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.bg)
-            .horizontalScroll(scrollState)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Screen.entries.forEach { screen ->
-            val isSelected = selected == screen
-            Text(
-                text = screen.label,
-                color = if (isSelected) colors.onPrimary else colors.body,
-                style = LocalTypeTokens.current.caption,
-                modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .border(
-                        BorderStroke(1.dp, if (isSelected) colors.primary else colors.border),
-                        RoundedCornerShape(radius.pill),
-                    )
-                    .background(
-                        if (isSelected) colors.primary else colors.surface,
-                        RoundedCornerShape(radius.pill),
-                    )
-                    .clickable { onSelected(screen) }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun AuthCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = LocalSizeTokens.current.content),
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun LoginScreen() {
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-
-    AuthCard {
-        Heading("Log in")
-        Form {
-            TextField(
-                label = "Email",
-                value = email,
-                onValueChange = { email = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            )
-            TextField(
-                label = "Password",
-                value = password,
-                onValueChange = { password = it },
-                notice = if (password == "wrong") "That email and password don't match. Try again?" else null,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            )
-            Button(onClick = {}) {
-                ButtonText("Log in")
-            }
-        }
-        FooterLink("New here? ", "Create account")
-        FooterLink("", "Forgot your password?")
-    }
-}
-
-@Composable
-private fun CreateAccountScreen() {
+    var route by rememberSaveable { mutableStateOf(Route.Login) }
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
 
-    AuthCard {
-        Heading("Create your account")
-        Form {
-            TextField(label = "Name", value = name, onValueChange = { name = it })
-            TextField(
-                label = "Email",
-                value = email,
-                onValueChange = { email = it },
-                error = if (email == "taken@example.com") "That email's already in use. Try logging in instead?" else null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            )
-            TextField(
-                label = "Password",
-                value = password,
-                onValueChange = { password = it },
-                hint = "At least 8 characters.",
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            )
-            Button(onClick = {}) {
-                ButtonText("Create account")
-            }
-        }
-        FooterLink("Already have an account? ", "Log in")
-    }
+    val page = pageForRoute(
+        route = route,
+        name = name,
+        email = email,
+        password = password,
+        confirmPassword = confirmPassword,
+        onRouteChange = { route = it },
+        onNameChange = { name = it },
+        onEmailChange = { email = it },
+        onPasswordChange = { password = it },
+        onConfirmPasswordChange = { confirmPassword = it },
+    )
+
+    AuthScreen(page)
 }
 
-@Composable
-private fun CheckInboxScreen() {
-    AuthCard {
-        Heading("Check your inbox")
-        Body("We sent a link to you@work.com. Open it on this device to continue.")
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = {}) {
-            ButtonText("Resend the email")
-        }
+private fun pageForRoute(
+    route: Route,
+    name: String,
+    email: String,
+    password: String,
+    confirmPassword: String,
+    onRouteChange: (Route) -> Unit,
+    onNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+): PageSpec {
+    val goLogin = {
+        onPasswordChange("")
+        onConfirmPasswordChange("")
+        onRouteChange(Route.Login)
     }
-}
+    val passwordField = FieldSpec(
+        label = "Password",
+        value = password,
+        onChange = onPasswordChange,
+        hint = "At least 8 characters.",
+        keyboardType = KeyboardType.Password,
+        visualTransformation = PasswordVisualTransformation(),
+    )
+    val confirmPasswordField = FieldSpec(
+        label = "Confirm password",
+        value = confirmPassword,
+        onChange = onConfirmPasswordChange,
+        keyboardType = KeyboardType.Password,
+        visualTransformation = PasswordVisualTransformation(),
+    )
 
-@Composable
-private fun ForgotPasswordScreen() {
-    var email by rememberSaveable { mutableStateOf("") }
-
-    AuthCard {
-        Heading("Reset your password")
-        Body("Enter the email on your account and we'll send you a reset link.")
-        Form {
-            TextField(
-                label = "Email",
-                value = email,
-                onValueChange = { email = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            )
-            Button(onClick = {}) {
-                ButtonText("Send reset link")
-            }
-        }
-    }
-}
-
-@Composable
-private fun NewPasswordScreen() {
-    var password by rememberSaveable { mutableStateOf("") }
-
-    AuthCard {
-        Heading("Set a new password")
-        Form {
-            TextField(
-                label = "Password",
-                value = password,
-                onValueChange = { password = it },
-                hint = "At least 8 characters.",
-                error = if (password == "samepassword") "That's the same password as before. Pick a new one." else null,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            )
-            Button(onClick = {}) {
-                ButtonText("Set new password")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ExpiredLinkScreen() {
-    var email by rememberSaveable { mutableStateOf("you@work.com") }
-
-    AuthCard {
-        Alert(
-            tone = AlertTone.Notice,
-            text = "Add your email above, then resend.",
-            modifier = Modifier.padding(bottom = 16.dp),
+    return when (route) {
+        Route.Login -> PageSpec(
+            title = "Log in",
+            fields = listOf(
+                FieldSpec("Email", email, onEmailChange, keyboardType = KeyboardType.Email),
+                passwordField.copy(
+                    hint = null,
+                    notice = if (password == "wrong") "That email and password don't match. Try again?" else null,
+                ),
+            ),
+            primary = "Log in",
+            onPrimary = { onRouteChange(Route.SignedIn) },
+            links = listOf(
+                LinkSpec("Create account", { onRouteChange(Route.CreateAccount) }, "New here? "),
+                LinkSpec("Forgot your password?", { onRouteChange(Route.ForgotPassword) }),
+            ),
         )
-        Heading("That link has expired")
-        Body("Links only work once, and this one's had its turn. Send yourself a fresh one.")
-        Form {
-            TextField(
-                label = "Email",
-                value = email,
-                onValueChange = { email = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            )
-            Button(onClick = {}) {
-                ButtonText("Resend the email")
+
+        Route.CreateAccount -> PageSpec(
+            title = "Create your account",
+            fields = listOf(
+                FieldSpec("Name", name, onNameChange),
+                FieldSpec(
+                    label = "Email",
+                    value = email,
+                    onChange = onEmailChange,
+                    error = if (email == "taken@example.com") {
+                        "That email's already in use. Try logging in instead?"
+                    } else {
+                        null
+                    },
+                    keyboardType = KeyboardType.Email,
+                ),
+                passwordField,
+                confirmPasswordField.copy(
+                    error = if (confirmPassword.isNotEmpty() && confirmPassword != password) {
+                        "Passwords don't match yet."
+                    } else {
+                        null
+                    },
+                ),
+            ),
+            primary = "Create account",
+            onPrimary = { onRouteChange(Route.CheckInbox) },
+            links = listOf(LinkSpec("Log in", { onRouteChange(Route.Login) }, "Already have an account? ")),
+        )
+
+        Route.CheckInbox -> PageSpec(
+            title = "Check your inbox",
+            body = "We sent a link to ${email.ifBlank { "you@work.com" }}. Open it on this device to continue.",
+            primary = "Resend the email",
+            onPrimary = {},
+            links = listOf(
+                LinkSpec("Back to log in", goLogin),
+                LinkSpec("Preview expired link", { onRouteChange(Route.ExpiredLink) }),
+            ),
+        )
+
+        Route.ForgotPassword -> PageSpec(
+            title = "Reset your password",
+            body = "Enter the email on your account and we'll send you a reset link.",
+            fields = listOf(FieldSpec("Email", email, onEmailChange, keyboardType = KeyboardType.Email)),
+            primary = "Send reset link",
+            onPrimary = { onRouteChange(Route.CheckInbox) },
+            links = listOf(
+                LinkSpec("Preview set password", { onRouteChange(Route.SetPassword) }),
+                LinkSpec("Back to log in", goLogin),
+            ),
+        )
+
+        Route.SetPassword -> PageSpec(
+            title = "Set a new password",
+            fields = listOf(
+                passwordField.copy(
+                    error = if (password == "samepassword") {
+                        "That's the same password as before. Pick a new one."
+                    } else {
+                        null
+                    },
+                ),
+            ),
+            primary = "Set new password",
+            onPrimary = { onRouteChange(Route.SignedIn) },
+        )
+
+        Route.ExpiredLink -> PageSpec(
+            title = "That link has expired",
+            body = "Links only work once, and this one's had its turn. Send yourself a fresh one.",
+            notice = "Add your email above, then resend.",
+            fields = listOf(FieldSpec("Email", email, onEmailChange, keyboardType = KeyboardType.Email)),
+            primary = "Resend the email",
+            onPrimary = { onRouteChange(Route.CheckInbox) },
+        )
+
+        Route.SignedIn -> PageSpec(
+            title = "You're signed in",
+            body = "This confirms your session. Nothing else lives here yet.",
+            primary = "Log out",
+            onPrimary = goLogin,
+        )
+    }
+}
+
+@Composable
+private fun AuthScreen(page: PageSpec) {
+    val colors = LocalColorTokens.current
+    val space = LocalSpacingTokens.current
+    val size = LocalSizeTokens.current
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = colors.bg,
+        contentColor = colors.body,
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding(),
+        ) {
+            val minContentHeight = (maxHeight - space.xxl - space.xxl).coerceAtLeast(size.control)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = space.lg, vertical = space.xxl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = minContentHeight),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Page(page)
+                }
+            }
+        }
+    }
+}
+
+@ThemePreview
+@Composable
+private fun AuthFlowPreview() {
+    Theme {
+        PreviewApp()
+    }
+}
+
+@ThemePreview
+@Composable
+private fun CreateAccountErrorPreview() {
+    Theme {
+        AuthScreen(
+            pageForRoute(
+                route = Route.CreateAccount,
+                name = "Franz",
+                email = "taken@example.com",
+                password = "learntoday",
+                confirmPassword = "learnlater",
+                onRouteChange = {},
+                onNameChange = {},
+                onEmailChange = {},
+                onPasswordChange = {},
+                onConfirmPasswordChange = {},
+            ),
+        )
+    }
+}
+
+@ThemePreview
+@Composable
+private fun ExpiredLinkPreview() {
+    Theme {
+        AuthScreen(
+            pageForRoute(
+                route = Route.ExpiredLink,
+                name = "",
+                email = "you@work.com",
+                password = "",
+                confirmPassword = "",
+                onRouteChange = {},
+                onNameChange = {},
+                onEmailChange = {},
+                onPasswordChange = {},
+                onConfirmPasswordChange = {},
+            ),
+        )
+    }
+}
+
+@Composable
+private fun Page(page: PageSpec) {
+    val space = LocalSpacingTokens.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = LocalSizeTokens.current.content),
+        verticalArrangement = Arrangement.spacedBy(space.lg),
+    ) {
+        if (page.notice != null) Notice(page.notice)
+        Header(page.title, page.body)
+        if (page.fields.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(space.xs)) {
+                page.fields.forEach { field ->
+                    TextField(
+                        label = field.label,
+                        value = field.value,
+                        onValueChange = field.onChange,
+                        hint = field.hint,
+                        notice = field.notice,
+                        error = field.error,
+                        keyboardOptions = KeyboardOptions(keyboardType = field.keyboardType),
+                        visualTransformation = field.visualTransformation,
+                    )
+                }
+            }
+        }
+        Button(onClick = page.onPrimary, fullWidth = true) { ButtonText(page.primary) }
+        if (page.links.isNotEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(space.sm),
+            ) {
+                page.links.forEach { link -> TextLink(link) }
             }
         }
     }
 }
 
 @Composable
-private fun SignedInScreen() {
-    AuthCard {
-        Heading("You're signed in")
-        Body("This confirms your session. Nothing else lives here yet.")
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = {}) {
-            ButtonText("Log out")
-        }
-    }
-}
-
-@Composable
-private fun Heading(text: String) {
-    Text(
-        text = text,
-        color = LocalColorTokens.current.foreground,
-        style = LocalTypeTokens.current.heading,
-    )
-}
-
-@Composable
-private fun Body(text: String) {
-    Text(
-        text = text,
-        color = LocalColorTokens.current.body,
-        style = LocalTypeTokens.current.body,
-        modifier = Modifier.padding(top = 12.dp),
-    )
-}
-
-@Composable
-private fun Form(content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier.padding(top = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        content = content,
-    )
-}
-
-@Composable
-private fun FooterLink(prefix: String, link: String) {
+private fun Header(title: String, body: String?) {
     val colors = LocalColorTokens.current
     val type = LocalTypeTokens.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(LocalSpacingTokens.current.sm)) {
+        Text(title, color = colors.foreground, style = type.display)
+        if (body != null) Text(body, color = colors.body, style = type.body)
+    }
+}
+
+@Composable
+private fun Notice(text: String) {
+    val colors = LocalColorTokens.current
+    val radius = LocalRadiusTokens.current
+    val space = LocalSpacingTokens.current
+
+    Surface(
+        color = colors.surface,
+        contentColor = colors.body,
+        shape = RoundedCornerShape(radius.control),
+    ) {
+        Text(
+            text = text,
+            color = colors.notice,
+            style = LocalTypeTokens.current.caption,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(space.md),
+        )
+    }
+}
+
+@Composable
+private fun TextLink(link: LinkSpec) {
+    val colors = LocalColorTokens.current
+    val space = LocalSpacingTokens.current
+    val interactionSource = remember { MutableInteractionSource() }
     val copy = buildAnnotatedString {
-        append(prefix)
-        withStyle(
-            SpanStyle(
-                color = colors.body,
-                textDecoration = TextDecoration.Underline,
-            ),
-        ) {
-            append(link)
+        append(link.prefix)
+        withStyle(SpanStyle(color = colors.foreground, fontWeight = FontWeight.Medium)) {
+            append(link.text)
         }
     }
 
     Text(
         text = copy,
         color = colors.muted,
-        style = type.caption,
-        textAlign = TextAlign.Center,
+        style = LocalTypeTokens.current.caption,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = if (prefix.isEmpty()) 8.dp else 20.dp),
+            .heightIn(min = LocalSizeTokens.current.control)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = link.onClick,
+            )
+            .padding(horizontal = space.md, vertical = space.md),
     )
 }

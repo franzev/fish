@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,11 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import space.fishhub.app.designsystem.preview.ThemePreview
 import space.fishhub.app.designsystem.theme.LocalColorTokens
 import space.fishhub.app.designsystem.theme.LocalRadiusTokens
 import space.fishhub.app.designsystem.theme.LocalSizeTokens
+import space.fishhub.app.designsystem.theme.LocalSpacingTokens
+import space.fishhub.app.designsystem.theme.LocalStrokeTokens
 import space.fishhub.app.designsystem.theme.LocalTypeTokens
+import space.fishhub.app.designsystem.theme.Theme
 
 @Composable
 fun TextField(
@@ -45,6 +50,8 @@ fun TextField(
     val colors = LocalColorTokens.current
     val radius = LocalRadiusTokens.current
     val size = LocalSizeTokens.current
+    val space = LocalSpacingTokens.current
+    val stroke = LocalStrokeTokens.current
     val type = LocalTypeTokens.current
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -60,19 +67,20 @@ fun TextField(
         isFocused -> colors.primary
         else -> colors.border
     }
-    val borderWidth = if (error != null) 2.dp else 1.dp
+    val borderWidth = if (error != null) stroke.focus else stroke.hairline
 
     androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
             color = colors.foreground,
             style = type.label,
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = space.sm),
         )
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { next -> onValueChange(next.replace("\n", "")) },
             enabled = enabled,
+            singleLine = true,
             textStyle = type.body.copy(color = colors.foreground),
             cursorBrush = SolidColor(colors.foreground),
             visualTransformation = visualTransformation,
@@ -90,7 +98,7 @@ fun TextField(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = size.control)
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = space.md),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     if (value.isEmpty() && placeholder.isNotEmpty()) {
@@ -107,13 +115,13 @@ fun TextField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp)
-                .heightIn(min = 22.dp),
+                .padding(top = space.xs)
+                .heightIn(min = size.helper),
             contentAlignment = Alignment.CenterStart,
         ) {
             if (message != null) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(space.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (error != null || notice != null) {
@@ -135,10 +143,14 @@ fun TextField(
 
 @Composable
 private fun MessageDot(label: String, color: androidx.compose.ui.graphics.Color) {
+    val radius = LocalRadiusTokens.current
+    val size = LocalSizeTokens.current
+    val stroke = LocalStrokeTokens.current
+
     Box(
         modifier = Modifier
-            .size(20.dp)
-            .border(BorderStroke(1.5.dp, color), RoundedCornerShape(999.dp)),
+            .size(size.icon)
+            .border(BorderStroke(stroke.icon, color), RoundedCornerShape(radius.pill)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -146,5 +158,41 @@ private fun MessageDot(label: String, color: androidx.compose.ui.graphics.Color)
             color = color,
             style = LocalTypeTokens.current.caption,
         )
+    }
+}
+
+@ThemePreview
+@Composable
+private fun TextFieldPreview() {
+    Theme {
+        val colors = LocalColorTokens.current
+        val space = LocalSpacingTokens.current
+
+        Surface(color = colors.bg, contentColor = colors.body) {
+            Column(
+                modifier = Modifier.padding(space.lg),
+                verticalArrangement = Arrangement.spacedBy(space.sm),
+            ) {
+                TextField(
+                    label = "Email",
+                    value = "you@work.com",
+                    onValueChange = {},
+                    hint = "Use the email your coach invited.",
+                )
+                TextField(
+                    label = "Password",
+                    value = "",
+                    onValueChange = {},
+                    placeholder = "Password",
+                    notice = "That email and password don't match. Try again?",
+                )
+                TextField(
+                    label = "New password",
+                    value = "samepassword",
+                    onValueChange = {},
+                    error = "That's the same password as before. Pick a new one.",
+                )
+            }
+        }
     }
 }

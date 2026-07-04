@@ -26,6 +26,9 @@ fun Theme(
         LocalSpacingTokens provides SpacingTokens(),
         LocalRadiusTokens provides radius,
         LocalSizeTokens provides SizeTokens(),
+        LocalStrokeTokens provides StrokeTokens(),
+        LocalElevationTokens provides ElevationTokens(),
+        LocalOpacityTokens provides OpacityTokens(),
         LocalTypeTokens provides type,
     ) {
         MaterialTheme(

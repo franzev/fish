@@ -1,26 +1,43 @@
 package space.fishhub.app.designsystem.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button as MaterialButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import space.fishhub.app.designsystem.preview.ThemePreview
 import space.fishhub.app.designsystem.theme.LocalColorTokens
+import space.fishhub.app.designsystem.theme.LocalElevationTokens
+import space.fishhub.app.designsystem.theme.LocalOpacityTokens
 import space.fishhub.app.designsystem.theme.LocalRadiusTokens
 import space.fishhub.app.designsystem.theme.LocalSizeTokens
+import space.fishhub.app.designsystem.theme.LocalSpacingTokens
+import space.fishhub.app.designsystem.theme.LocalStrokeTokens
+import space.fishhub.app.designsystem.theme.Theme
 
 enum class ButtonVariant {
     Primary,
@@ -35,12 +52,16 @@ fun Button(
     variant: ButtonVariant = ButtonVariant.Primary,
     enabled: Boolean = true,
     loading: Boolean = false,
-    fullWidth: Boolean = true,
+    fullWidth: Boolean = false,
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = LocalColorTokens.current
+    val elevation = LocalElevationTokens.current
+    val opacity = LocalOpacityTokens.current
     val radius = LocalRadiusTokens.current
     val size = LocalSizeTokens.current
+    val space = LocalSpacingTokens.current
+    val stroke = LocalStrokeTokens.current
     val containerColor = when (variant) {
         ButtonVariant.Primary -> colors.primary
         ButtonVariant.Secondary -> colors.surface
@@ -52,14 +73,51 @@ fun Button(
         ButtonVariant.Ghost -> colors.muted
     }
     val border = when (variant) {
-        ButtonVariant.Secondary -> BorderStroke(1.dp, colors.border)
-        else -> BorderStroke(1.dp, androidx.compose.ui.graphics.Color.Transparent)
+        ButtonVariant.Secondary -> BorderStroke(stroke.hairline, colors.border)
+        else -> BorderStroke(stroke.hairline, androidx.compose.ui.graphics.Color.Transparent)
     }
     val widthModifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier
     val semanticsModifier = if (loading) {
         Modifier.semantics { stateDescription = "Loading" }
     } else {
         Modifier
+    }
+    val contentAlpha = if (loading) opacity.hidden else opacity.full
+
+    if (variant == ButtonVariant.Ghost) {
+        val interactionSource = remember { MutableInteractionSource() }
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
+            Box(
+                modifier = modifier
+                    .then(widthModifier)
+                    .then(semanticsModifier)
+                    .heightIn(min = size.control)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = enabled && !loading,
+                        role = Role.Button,
+                        onClick = onClick,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .alpha(contentAlpha)
+                        .padding(horizontal = space.lg),
+                    content = content,
+                )
+                if (loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(size.progress),
+                        color = contentColor,
+                        strokeWidth = stroke.progress,
+                        trackColor = contentColor.copy(alpha = opacity.progressTrack),
+                    )
+                }
+            }
+        }
+        return
     }
 
     MaterialButton(
@@ -71,28 +129,31 @@ fun Button(
             .then(widthModifier)
             .then(semanticsModifier)
             .heightIn(min = size.control),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(radius.control),
+        shape = RoundedCornerShape(radius.control),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,
-            disabledContainerColor = containerColor.copy(alpha = 0.5f),
-            disabledContentColor = contentColor.copy(alpha = 0.65f),
+            disabledContainerColor = containerColor.copy(alpha = opacity.disabledContainer),
+            disabledContentColor = contentColor.copy(alpha = opacity.disabledContent),
         ),
         border = border,
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 0.dp),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = elevation.none,
+            pressedElevation = elevation.none,
+        ),
+        contentPadding = PaddingValues(horizontal = space.lg),
     ) {
         Box(contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.layout.Row(
-                modifier = Modifier.alpha(if (loading) 0f else 1f),
+            Row(
+                modifier = Modifier.alpha(contentAlpha),
                 content = content,
             )
             if (loading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(size.progress),
                     color = contentColor,
-                    strokeWidth = 2.dp,
-                    trackColor = contentColor.copy(alpha = 0.25f),
+                    strokeWidth = stroke.progress,
+                    trackColor = contentColor.copy(alpha = opacity.progressTrack),
                 )
             }
         }
@@ -105,4 +166,25 @@ fun ButtonText(text: String) {
         text = text,
         style = MaterialTheme.typography.bodyLarge,
     )
+}
+
+@ThemePreview
+@Composable
+private fun ButtonPreview() {
+    Theme {
+        val colors = LocalColorTokens.current
+        val space = LocalSpacingTokens.current
+
+        Surface(color = colors.bg, contentColor = colors.body) {
+            Column(
+                modifier = Modifier.padding(space.lg),
+                verticalArrangement = Arrangement.spacedBy(space.sm),
+            ) {
+                Button(onClick = {}) { ButtonText("Continue") }
+                Button(onClick = {}, variant = ButtonVariant.Secondary) { ButtonText("Use email instead") }
+                Button(onClick = {}, variant = ButtonVariant.Ghost) { ButtonText("Back") }
+                Button(onClick = {}, loading = true) { ButtonText("Sending") }
+            }
+        }
+    }
 }
