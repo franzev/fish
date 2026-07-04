@@ -2,17 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: The Coaching Loop
-current_phase: 4
-status: planning
+status: executing
 stopped_at: Phase 4 context gathered
-last_updated: "2026-07-04T15:23:43.980Z"
+last_updated: "2026-07-04T16:21:26.611Z"
 last_activity: 2026-07-04
-last_activity_desc: v1.1 roadmap created (Phases 4-8)
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -26,16 +24,16 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements
-- **Current focus:** v1.1 The Coaching Loop — roadmap created (Phases 4-8); next: `/gsd:plan-phase 4` (Client Profiles)
+- **Current focus:** Phase 04 — client-profiles
 
 ## Current Position
 
-Phase: 4 — Client Profiles (not started)
-Plan: —
-Status: Roadmap approved; ready to plan Phase 4
-Last activity: 2026-07-04 — v1.1 roadmap created (5 phases, 30/30 requirements mapped)
+Phase: 04 (client-profiles) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-07-04
 
-Progress: `[····················]` 0/5 phases · 0% (v1.1)
+Progress: [███░░░░░░░] 33%
 
 ## Milestone v1.1 Phases
 
@@ -69,6 +67,8 @@ Milestone-scoped decision log archived with v1.0 (see PROJECT.md Key Decisions f
 - Alert tones are the one scoped color exception (low-chroma, contrast-gated); structural UI stays chroma-0.
 - Theme work must be verified against served/compiled CSS (Lightning CSS `light-dark()` polyfill), never authored CSS alone.
 - Dev origin must match the browser exactly: `localhost:3001` (host-scoped cookies), pinned via `next dev -p 3001` + supabase `site_url`.
+- [Phase 04]: Followed RESEARCH Pattern 1 DDL verbatim for the level freeze — column-scoped GRANT UPDATE (level never named) + independent BEFORE-UPDATE trigger mirroring 0005's shape
+- [Phase 04]: Auto-provision client_profiles via a separate AFTER INSERT ON profiles trigger — RESEARCH Pattern 3 Option B — keeps the hardened handle_new_user (0002) untouched
 
 ### v1.1 roadmap decisions (2026-07-04)
 
@@ -107,11 +107,11 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 ## Session Continuity
 
-**Last session:** 2026-07-04T15:23:43.971Z
+**Last session:** 2026-07-04T16:16:05.648Z
 
-- **Last activity:** 2026-07-04 — v1.1 roadmap created (Phases 4-8)
+- **Last activity:** 2026-07-04
 - **Stopped at:** Phase 4 context gathered
-- **Resume file:** .planning/phases/04-client-profiles/04-CONTEXT.md
+- **Resume file:** None
 - **Next action:** `/gsd:plan-phase 4` — plan Client Profiles (the safe/protected write-safety discipline the whole milestone reuses)
 
 ---

@@ -13,12 +13,12 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 
 ### Client Profiles (PROF)
 
-- [ ] **PROF-01**: A client can view their own profile
+- [x] **PROF-01**: A client can view their own profile
 - [ ] **PROF-02**: A client can edit their own safe fields — display name, language goal / role context, locale, timezone (locale and timezone prefilled from the browser, never asked as a picker)
 - [ ] **PROF-03**: A client can set a minimal set of accessibility preferences (at most three: theme, text-size step, and an optional reduced-motion override) that default to the system setting — no settings buffet
-- [ ] **PROF-04**: A client records required consent, stored as fields only (boolean + timestamp + version) — no export/delete/retention tooling this milestone
-- [ ] **PROF-05**: A client cannot alter protected fields (role, coach-owned English level) — enforced at the database via a field-freeze trigger / column grants, not just app code
-- [ ] **PROF-06**: A coach can open an assigned client's profile as a read-only detail view from the coach client list; unassigned coaches are denied
+- [x] **PROF-04**: A client records required consent, stored as fields only (boolean + timestamp + version) — no export/delete/retention tooling this milestone
+- [x] **PROF-05**: A client cannot alter protected fields (role, coach-owned English level) — enforced at the database via a field-freeze trigger / column grants, not just app code
+- [x] **PROF-06**: A coach can open an assigned client's profile as a read-only detail view from the coach client list; unassigned coaches are denied
 
 ### Data-Driven Onboarding (ONBD)
 
@@ -102,12 +102,12 @@ Which phase covers which requirement. Populated by the roadmapper (authority). P
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PROF-01 | Phase 4 — Client Profiles | Pending |
+| PROF-01 | Phase 4 — Client Profiles | Complete |
 | PROF-02 | Phase 4 — Client Profiles | Pending |
 | PROF-03 | Phase 4 — Client Profiles | Pending |
-| PROF-04 | Phase 4 — Client Profiles | Pending |
-| PROF-05 | Phase 4 — Client Profiles | Pending |
-| PROF-06 | Phase 4 — Client Profiles | Pending |
+| PROF-04 | Phase 4 — Client Profiles | Complete |
+| PROF-05 | Phase 4 — Client Profiles | Complete |
+| PROF-06 | Phase 4 — Client Profiles | Complete |
 | ONBD-01 | Phase 5 — Data-Driven Onboarding | Pending |
 | ONBD-02 | Phase 5 — Data-Driven Onboarding | Pending |
 | ONBD-03 | Phase 5 — Data-Driven Onboarding | Pending |
