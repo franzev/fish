@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "UAT test 10: Submitting /forgot-password for a real seeded account (client1@fish.dev) should deliver a recovery email to Mailpit carrying type=recovery&next=/reset-password — user reported 'no email received'"
 created: 2026-07-03T15:00:00Z
 updated: 2026-07-03T15:35:00Z
