@@ -51,7 +51,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **ROUT-01**: Signed-out users are redirected to login from any protected route
 - [x] **ROUT-02**: A client lands on the client home after login
 - [x] **ROUT-03**: A coach lands on the coach home after login
-- [ ] **ROUT-04**: Coach home lists that coach's assigned (seeded) clients — and only theirs
+- [x] **ROUT-04**: Coach home lists that coach's assigned (seeded) clients — and only theirs
 
 ## v2 Requirements
 
@@ -122,7 +122,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ROUT-01 | Phase 3 | Complete |
 | ROUT-02 | Phase 3 | Complete |
 | ROUT-03 | Phase 3 | Complete |
-| ROUT-04 | Phase 3 | Pending |
+| ROUT-04 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 28 total
