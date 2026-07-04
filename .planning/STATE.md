@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-07-04T03:47:56.374Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-07-04T03:56:29.439Z"
 last_activity: 2026-07-04
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 67
 ---
 
@@ -27,12 +27,12 @@ progress:
 ## Current Position
 
 Phase: 03 (role-aware-home) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 - **Phase:** 3 — Role-aware home
-- **Plan:** 2 of 4
+- **Plan:** 3 of 4
 - **Status:** Ready to execute
-- **Progress:** [████████░░] 81%
+- **Progress:** [█████████░] 88%
 
 ## Roadmap Snapshot
 
@@ -57,6 +57,7 @@ Plan: 2 of 4
 | 02 | 07 | 2 min | 3 | 4 |
 | 02 | 08 | 47 min | 3 | 11 |
 | Phase 03 P01 | 42min | 4 tasks | 15 files |
+| Phase 03 P02 | 8min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Plan: 2 of 4
 - 03-01: `LogoutButton` flips from `variant="primary"` to `variant="ghost"` (D-09) — the authenticated shell's primary-action count is now zero, a deliberate widening of D-18's "at most one primary action" rule.
 - 03-01: `pnpm verify:rls` intentionally exits 1 at the end of this plan (2/6 `checkClientBoundary` assertions now fail) because the new `is_client_of` policy widens a client's read surface from 1 row to 2 (own + assigned coach) — approved at the Task 2 checkpoint; Plan 03-03 updates the assertions and restores exit-0.
 - 03-01: `apps/web/package.json` was missing `@fish/core`/`@fish/supabase` as workspace dependencies despite existing repo-wide imports relying on them — added as a Rule 3 blocking fix (internal workspace wiring only, no new external packages fetched).
+- 03-02: `firstName` is derived by splitting `display_name` on whitespace and taking the first token — single-word names fall through unchanged since `split(" ")[0]` on a one-word string returns the whole string.
+- 03-02: The client home page re-reads `getUser()` + `profiles.role` itself for its own wrong-door guard rather than trusting a value threaded from the shared layout — Server Components re-execute per navigation, and the per-page role check is Plan 01's stated design (the layout doesn't cleanly know which leaf route it wraps).
+- 03-02: No manual `coach_id`/`client_id` filtering beyond the direct id lookups on `coach_clients` and `profiles` — the `is_client_of` RLS policy (Plan 01) is treated as the sole authorization boundary for the coach-name read, per AGENTS.md's API rule.
 
 ### Sequencing constraints (from research)
 
@@ -128,8 +132,8 @@ Plan: 2 of 4
 ## Session Continuity
 
 - **Last activity:** 2026-07-04
-- **Last session:** 2026-07-04T03:47:56.366Z
-- **Stopped at:** Completed 03-01-PLAN.md
+- **Last session:** 2026-07-04T03:56:29.434Z
+- **Stopped at:** Completed 03-02-PLAN.md
 - **Resume file:** None
 - **Next action:** Phase 02 verification (confirm phase-level success criteria against the now-fully-resolved UAT), then plan phase 03 (role-aware home).
 - **Files:** `.planning/phases/02-secure-account-you-can-return-to/02-08-SUMMARY.md`, `.planning/phases/02-secure-account-you-can-return-to/02-UAT.md`, `.planning/debug/resolved/enter-submit-expired-link.md`, `.planning/debug/resolved/enter-submit-reset-password.md`, `.planning/ROADMAP.md`.
