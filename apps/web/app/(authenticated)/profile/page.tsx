@@ -1,6 +1,7 @@
 import { A11yPrefs } from "@/components/profile/a11y-prefs";
 import { Avatar } from "@/components/chat/avatar/avatar";
 import { CoachCard } from "@/components/profile/coach-card";
+import { ConsentRow } from "@/components/profile/consent-row";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { SettingsRow } from "@/components/profile/settings-row";
 import { Card } from "@/components/ui/card";
@@ -57,13 +58,9 @@ export default async function ProfilePage() {
           textSizePref={data.textSizePref}
           reducedMotionPref={data.reducedMotionPref}
         />
-        <SettingsRow
-          label="Your agreement"
-          control={
-            <span className="text-[14px] text-muted">
-              {data.consented ? "Accepted" : "Not yet accepted"}
-            </span>
-          }
+        <ConsentRow
+          consented={data.consented}
+          consentVersion={data.consentVersion}
         />
         <SettingsRow label="Sign out" control={<LogoutButton />} />
       </Card>
