@@ -17,15 +17,23 @@ What works today:
 
 Known tech debt (non-blocking, from the v1.0 audit): Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind version pinning via caret ranges; stale dev seed password for client1 (environment drift). Full list: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
 
-## Next Milestone Goals
+## Current Milestone: v1.1 The Coaching Loop
 
-Per the AGENTS.md build order (auth+roles ✓, shared UI kit ✓), the next foundations are:
-1. **Client profiles** — build order #2
-2. **Onboarding assessment** as a data-driven form (questions from DB, not hard-coded) — build order #3
-3. **Tracker engine** (renders from config, no templates yet) — build order #4
-4. **1-on-1 chat** (coach ↔ client; the Edge Function stub becomes real) — build order #5
+**Goal:** Turn FISH from an auth-and-role shell into a working coaching product — a coach can profile a client, run them through a data-driven onboarding, assign a config-driven tracker, and hold a real persistent 1-on-1 conversation; the client experiences all of it as calm, assigned, choice-free screens.
 
-Scope and requirements to be defined via `/gsd-new-milestone`. Also flagged: an AGENTS.md docs pass (its design-token section still describes the pre-monochrome lime accent).
+**Target features (all four remaining foundations, each with client *and* coach views):**
+- **Client profiles** (build order #2) — profile domain schema (goals, role context, level, locale/timezone, accessibility prefs, consent metadata), client read/edit flow, coach client-detail view
+- **Data-driven onboarding** (build order #3) — versioned DB question-bank (never hard-coded), response storage + resume, one-question-at-a-time renderer, coach review of answers
+- **Tracker engine** (build order #4) — config + versioning schema, assignment via seed/Edge Function (assigned-never-chosen), client renderer from config, coach entry review
+- **Real 1-on-1 chat** (build order #5) — conversation/message schema + RLS, a real `send-message` Edge Function replacing the stub (idempotent, calm errors), web chat route on live data (persistent send/read), coach reads the same thread
+
+**Scope boundaries (this milestone):**
+- Persistent chat send/read only — realtime/presence/typing deferred to the next milestone
+- Human coach↔client chat only — no AI replies or learning pipelines (AGENTS.md coach-first + build order)
+- Assignment stays seed-only — everything reads the existing seeded coach↔client relationship; no assignment UI
+- Engines, not validated content — build the onboarding renderer and config-driven tracker engine; specific questions/templates are minimal seed config, not coach-validated techniques
+
+Also flagged (carried, non-blocking): an AGENTS.md docs pass — its design-token section still describes the pre-monochrome lime accent.
 
 ## Core Value
 
@@ -64,24 +72,31 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 
 ### Active
 
-Candidates for the next milestone (scope to be defined via `/gsd-new-milestone`):
+v1.1 The Coaching Loop — scoped and committed (full requirements with REQ-IDs: `.planning/REQUIREMENTS.md`):
 
-- [ ] Client profiles (build order #2)
-- [ ] Onboarding assessment as a data-driven form — questions read from the DB, not hard-coded (build order #3)
-- [ ] Tracker engine — renders a tracker from config, no specific templates yet (build order #4)
-- [ ] 1-on-1 coach↔client chat — the send-message Edge Function stub becomes real (build order #5)
+- [ ] Client profiles — profile domain schema, client read/edit flow, coach client-detail view (build order #2)
+- [ ] Data-driven onboarding — versioned DB question-bank, response storage + resume, one-at-a-time renderer, coach review (build order #3)
+- [ ] Tracker engine — config/versioning schema, seed/Edge-Function assignment, client renderer, coach entry review (build order #4)
+- [ ] Real 1-on-1 chat — conversation/message schema + RLS, real send-message Edge Function, web chat route on live data (persistent send/read), coach thread read (build order #5)
+
+Carried (not owned by a v1.1 phase unless one adopts it):
 - [ ] AGENTS.md docs pass — design-token section still describes the pre-monochrome lime accent
-- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for v1.0; THEM-02 trigger: native builds actually begin)
+- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for now; THEM-02 trigger: native builds actually begin)
 
 ### Out of Scope
 
+Durable exclusions:
 - Color palette / brand colors — hierarchy before color; if the UI works in monochrome, the structure is right; color is a deliberate later layer
-- Coach signup UI — coach accounts are created manually (seed/dashboard) for v1; open role pickers would let anyone claim coach powers
-- Assignment UI — coach→client assignment happens via seed/dashboard this milestone; the relationship schema and coach view make it real, the UI comes later
-- 1-on-1 chat — next foundation after auth per the build order; Edge Function stub stays a stub this milestone
-- Onboarding assessment, tracker engine — later build-order items; not started until auth foundation exists
+- Coach signup UI — coach accounts are created manually (seed/dashboard); open role pickers would let anyone claim coach powers
 - Community feed, gamification, streaks — explicitly barred until foundations are done and techniques are coach-validated (AGENTS.md)
 - Native iOS/Android implementation — web-first; native clients mirror tokens later
+
+Deferred past v1.1 (in the build order, just not this milestone):
+- Realtime chat (presence, typing, read-state, live updates) — v1.1 ships persistent send/read; realtime is the next chat layer
+- AI-assisted coaching (AI replies, grammar/vocabulary/pronunciation pipelines, memory, personalization) — build the human chat foundation first; AI waits for coach-validated techniques
+- Assignment UI — coach→client assignment stays seed-only in v1.1; the relationship schema already carries chat, profiles, and trackers
+- Full privacy tooling (consent flows, export, delete, retention, audit logging) — v1.1 captures consent *fields* on the profile; the privacy milestone precedes public launch
+- Validated learning content/templates — v1.1 builds the engines with minimal seed config; specific onboarding questions and tracker templates await coach validation (coach-first rule)
 
 ## Context
 
@@ -136,4 +151,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-04 after v1.0 milestone*
+*Last updated: 2026-07-04 after starting milestone v1.1 The Coaching Loop*
