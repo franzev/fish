@@ -117,3 +117,29 @@ None of these were architectural — all were build-only correctness fixes surfa
 ## Self-Check: PASSED
 
 All files listed under `key-files.created`/`modified` exist on disk; all three task commits (1e04283, 70e58e0, 59cc6fb) are present in `git log`.
+
+## Post-merge adversarial review (orchestrator pass)
+
+After the worktree merged to `main`, the orchestrator ran a 3-dimension adversarial review (correctness / design-rules+a11y / Next.js+Tailwind integration) over the 28 changed files, each finding cross-examined by independent refuters. 19 raw findings surfaced; 2 passed full multi-vote verification before the review's verification agents hit a model rate limit, leaving the rest unverified rather than genuinely refuted. Each surviving/borderline finding was then re-checked by hand and fixed where real.
+
+**Fixed (commits 74dcd24, c244d37):**
+
+| Finding | Severity | Fix |
+|---|---|---|
+| `message-actions` — five 32px buttons violate the 56px `--size-control` tap-target floor (AGENTS.md rule 3, non-negotiable) | high (confirmed 3/3) | Raised all five to `min-h/min-w-[var(--size-control)]`, matching the `ChatHeader`/`ChatInput` pattern |
+| `globals.css` — reduced-motion clamp set only `animation-duration`, so infinite `animate-typing`/`animate-pulse` flicker instead of holding still | medium (confirmed 2/2) | Added `animation-iteration-count: 1 !important` to the media query |
+| `voice-player` play button 40px; `reactions` pills ~30px | (same tap-target class) | Raised both to the 56px floor |
+| `message-meta` — locale/timezone `toLocaleTimeString` risks a hydration mismatch on the prerendered `/kit/chat` | correctness | `suppressHydrationWarning` on the `<time>` leaf (machine-readable `dateTime` stays stable) |
+| `avatar` — image `onError` set a sticky boolean, so a later valid `src` on a reused instance never rendered | correctness | Track the *failed src* instead of a boolean |
+| `chat-input` — Enter that confirms an IME (CJK) candidate sent the half-composed message | correctness (i18n) | Guard on `event.nativeEvent.isComposing` |
+| `notification-badge` — `aria-label` on a generic `<span>` isn't reliably exposed; SR reads the capped "99+" | a11y | `role="img"` so the label is a proper accessible name stating the true count |
+| `message-list` — scrollable `role="log"` not keyboard-scrollable | a11y | `tabIndex={0}` |
+| `conversation-list` — a button's `aria-label` replaced its child text, silencing snippet/timestamp/unread for SRs | a11y | Compose unread count + snippet + time into the row label |
+
+**Deferred (documented, not fixed this pass):**
+
+- `message-list` load-older sentinel is a click-only, invisible, non-focusable 1px div. Intentional scaffolding — the plan defers the IntersectionObserver + accessible "load older" affordance to the data-integration phase that actually wires infinite scroll. Should become a real focusable control (or pure observer target) when that phase lands.
+- `avatar` `initialsFrom` slices by code unit, so an astral-plane/emoji first character splits its surrogate pair. Cosmetic; revisit if names with such leading glyphs become real input.
+- `chat.test.tsx` unread-divider test asserts the divider exists but not its *position* relative to the first unread message. Tighten to assert ordering.
+
+All fixes re-verified: 205/205 vitest, `pnpm --filter web build` clean, `/kit/chat` still prerenders static, hex/`dark:`/config guards green.
