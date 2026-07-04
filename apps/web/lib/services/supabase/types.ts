@@ -7,7 +7,9 @@ import type {
 } from "@supabase/supabase-js";
 import type { CookieOptions } from "@supabase/ssr";
 import type { ServiceResult } from "../errors";
-import type { CoachClientRow, ProfileRow } from "@fish/supabase";
+import type { ClientProfileRow, CoachClientRow, ProfileRow } from "@fish/supabase";
+
+export type { ClientProfileRow };
 
 export type AppSupabaseClient = SupabaseClient<Database>;
 
@@ -47,6 +49,35 @@ export interface ProfileRepository {
   findDisplayNameById(
     id: string
   ): Promise<ServiceResult<Pick<ProfileRow, "display_name"> | null>>;
+  updateDisplayName(id: string, displayName: string): Promise<ServiceResult<void>>;
+}
+
+/* Column-scoped, matching the 0007 GRANT UPDATE(...) list exactly (D-08).
+   `level` and `id`/timestamps are deliberately excluded from this type so no
+   caller can construct an update payload that touches the protected field --
+   defense-in-depth at the type layer, above the DB grant + trigger. */
+export type ClientProfileSafeFields = Partial<
+  Pick<
+    ClientProfileRow,
+    | "goal"
+    | "locale"
+    | "timezone"
+    | "theme_pref"
+    | "text_size_pref"
+    | "reduced_motion_pref"
+    | "consented"
+    | "consented_at"
+    | "consent_version"
+  >
+>;
+
+export interface ClientProfileRepository {
+  findById(id: string): Promise<ServiceResult<ClientProfileRow | null>>;
+  findByIdForCoach(id: string): Promise<ServiceResult<ClientProfileRow | null>>;
+  updateSafeFields(
+    id: string,
+    fields: ClientProfileSafeFields
+  ): Promise<ServiceResult<void>>;
 }
 
 export interface CoachClientListItem {
@@ -66,6 +97,7 @@ export interface SupabaseDatabaseService {
   readonly client: AppSupabaseClient;
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
+  readonly clientProfiles: ClientProfileRepository;
 }
 
 export interface SupabaseStorageService {

@@ -34,6 +34,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_profiles: {
+        Row: {
+          consent_version: string | null
+          consented: boolean
+          consented_at: string | null
+          created_at: string
+          goal: string
+          id: string
+          level: string | null
+          locale: string | null
+          reduced_motion_pref: boolean | null
+          text_size_pref: string | null
+          theme_pref: string | null
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          consent_version?: string | null
+          consented?: boolean
+          consented_at?: string | null
+          created_at?: string
+          goal?: string
+          id: string
+          level?: string | null
+          locale?: string | null
+          reduced_motion_pref?: boolean | null
+          text_size_pref?: string | null
+          theme_pref?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consent_version?: string | null
+          consented?: boolean
+          consented_at?: string | null
+          created_at?: string
+          goal?: string
+          id?: string
+          level?: string | null
+          locale?: string | null
+          reduced_motion_pref?: boolean | null
+          text_size_pref?: string | null
+          theme_pref?: string | null
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_clients: {
         Row: {
           assigned_at: string

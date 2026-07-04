@@ -7,6 +7,8 @@ import {
 } from "../errors";
 import type {
   AppSupabaseClient,
+  ClientProfileRepository,
+  ClientProfileSafeFields,
   CoachClientListItem,
   CoachClientRepository,
   ProfileRepository,
@@ -16,7 +18,7 @@ import type {
   SupabaseServices,
   SupabaseStorageService,
 } from "./types";
-import type { CoachClientRow, ProfileRow } from "@fish/supabase";
+import type { ClientProfileRow, CoachClientRow, ProfileRow } from "@fish/supabase";
 import type { User } from "@supabase/supabase-js";
 
 type SupabaseResponse<T> = {
@@ -279,6 +281,111 @@ class SupabaseProfileRepository implements ProfileRepository {
       return serviceSuccess(data);
     });
   }
+
+  async updateDisplayName(
+    id: string,
+    displayName: string
+  ): Promise<ServiceResult<void>> {
+    return safely("profiles.updateDisplayName", async () => {
+      const { error } = await this.client
+        .from("profiles")
+        .update({ display_name: displayName })
+        .eq("id", id);
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not save the display name.",
+            operation: "profiles.updateDisplayName",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
+    });
+  }
+}
+
+class SupabaseClientProfileRepository implements ClientProfileRepository {
+  constructor(private readonly client: AppSupabaseClient) {}
+
+  async findById(id: string): Promise<ServiceResult<ClientProfileRow | null>> {
+    return safely("clientProfiles.findById", async () => {
+      const { data, error } = (await this.client
+        .from("client_profiles")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle()) as SupabaseResponse<ClientProfileRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load the profile details.",
+            operation: "clientProfiles.findById",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data);
+    });
+  }
+
+  async findByIdForCoach(
+    id: string
+  ): Promise<ServiceResult<ClientProfileRow | null>> {
+    // Same query as findById -- RLS ("coach reads assigned client's
+    // client_profile", 0007) does the coach scoping; an unassigned coach's
+    // SELECT returns zero rows, not an error (default-deny, no leak, D-11).
+    return safely("clientProfiles.findByIdForCoach", async () => {
+      const { data, error } = (await this.client
+        .from("client_profiles")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle()) as SupabaseResponse<ClientProfileRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load the client's profile details.",
+            operation: "clientProfiles.findByIdForCoach",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data);
+    });
+  }
+
+  async updateSafeFields(
+    id: string,
+    fields: ClientProfileSafeFields
+  ): Promise<ServiceResult<void>> {
+    return safely("clientProfiles.updateSafeFields", async () => {
+      const { error } = await this.client
+        .from("client_profiles")
+        .update(fields)
+        .eq("id", id);
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Couldn't save just now. Your text is still here — try again?",
+            operation: "clientProfiles.updateSafeFields",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
+    });
+  }
 }
 
 type ClientJoinRow = {
@@ -359,10 +466,12 @@ class SupabaseCoachClientRepository implements CoachClientRepository {
 class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
+  readonly clientProfiles: ClientProfileRepository;
 
   constructor(readonly client: AppSupabaseClient) {
     this.profiles = new SupabaseProfileRepository(client);
     this.coachClients = new SupabaseCoachClientRepository(client);
+    this.clientProfiles = new SupabaseClientProfileRepository(client);
   }
 }
 
