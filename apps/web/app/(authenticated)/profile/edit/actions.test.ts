@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const redirectMock = vi.fn();
@@ -133,10 +135,7 @@ describe("updateProfileAction", () => {
   });
 
   it("never references level in the write payload", () => {
-    const source = require("fs").readFileSync(
-      require("path").resolve(__dirname, "./actions.ts"),
-      "utf-8"
-    );
+    const source = readFileSync(resolve(__dirname, "./actions.ts"), "utf-8");
     expect(source).not.toMatch(/level/);
   });
 });

@@ -3,12 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useSyncExternalStore } from "react";
 import {
   updateProfileAction,
   type EditProfileState,
   type EditProfileValues,
 } from "./actions";
+
+// Locale/timezone never change during a session, so the external store never
+// emits -- subscribe is a no-op that returns an empty unsubscribe.
+const subscribeNever = () => () => {};
 
 /* The repo's first useActionState form (RESEARCH Pattern 2). Uncontrolled
    defaultValue, not value/onChange: useActionState only re-renders with a
@@ -26,15 +30,21 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
   );
 
   // Locale/timezone are auto-filled from the browser, never a picker
-  // (PROF-02) -- read once on mount and carried as hidden inputs so the
-  // Server Action still receives them as FormData entries.
-  const [locale, setLocale] = useState(initial.locale);
-  const [timezone, setTimezone] = useState(initial.timezone);
-
-  useEffect(() => {
-    setLocale(navigator.language);
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }, []);
+  // (PROF-02) -- carried as hidden inputs so the Server Action still receives
+  // them as FormData entries. useSyncExternalStore is React's sanctioned way
+  // to read a browser-only value: the server snapshot uses the DB-stored value
+  // and the client snapshot reads the live browser value, with no
+  // setState-in-effect and no hydration mismatch warning.
+  const locale = useSyncExternalStore(
+    subscribeNever,
+    () => navigator.language,
+    () => initial.locale
+  );
+  const timezone = useSyncExternalStore(
+    subscribeNever,
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+    () => initial.timezone
+  );
 
   return (
     <Card className="w-full max-w-[440px]">
