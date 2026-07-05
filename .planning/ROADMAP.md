@@ -93,7 +93,20 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   4. A client sees visual progress as a milestone journey — never a grade, adherence %, or streak (the schema stores entries, not a streak integer); a coach reviews an assigned client's entries as a read-only timeline (RLS-scoped, no scoring UI).
   5. `pnpm verify:rls` passes with entry self-ownership / active-assignment gate / assigned-coach-read / unassigned-denial / cross-client-denial / self-assign-rejected assertions, tracker config is zod + `pg_jsonschema` validated so malformed config cannot persist (XC-01, XC-02); `pnpm build` green. Client screens hold the design line (one action, no lost draft, no grade/streak, monochrome, calm copy) and `sketch-findings-fish` is loaded first (XC-03).
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+**Wave 1**
+
+  - [ ] 06-01-PLAN.md — tracker schema (0009_tracker.sql: versioned config + assignment + entries tables, RLS, save_tracker_entry/get_tracker_progress, pg_jsonschema CHECK, freeze triggers, one-active-assignment index), zod validation, seed, verify:rls assertions, generated types, and [BLOCKING] local apply
+
+**Wave 2** *(blocked on Wave 1)*
+
+  - [ ] 06-02-PLAN.md — client /tracker route: TrackerRepository + Server Action + draft-preserving flow + TrackerEntryForm (reused FieldRenderer) + MilestonePath progress + assigned home entry
+
+**Wave 3** *(blocked on Waves 1-2)*
+
+  - [ ] 06-03-PLAN.md — assign-tracker Edge Function (caller-scoped membership re-check + admin write + idempotent) + live-function verify:rls proof + read-only coach tracker timeline on /coach/clients/[id] + release gates
+
 **UI hint**: yes
 
 ### Phase 7: Chat Schema
