@@ -68,7 +68,7 @@
   .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
   .iconbtn { width: var(--tap); height: var(--tap); border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; } .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
-  svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
+  svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 18px; height: 18px; }
 
   .thread { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   .feed { flex: 1 1 auto; overflow-y: auto; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); background: var(--bg); position: relative; }
@@ -400,6 +400,8 @@
     document.getElementById(s+'-msg').classList.remove('selected');
   }
   document.querySelectorAll('.crow,.selectable,.msgmenu .mi').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
+  document.querySelectorAll('.pres').forEach(function(el){ el.setAttribute('role','img'); el.setAttribute('aria-label','Online'); });
+  document.querySelectorAll('.wait').forEach(function(el){ el.setAttribute('role','img'); el.setAttribute('aria-label','Waiting for your reply'); });
 </script>
 </body>
 </html>

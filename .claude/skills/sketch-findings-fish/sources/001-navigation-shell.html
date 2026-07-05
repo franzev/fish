@@ -97,7 +97,7 @@
   .iconbtn { width: var(--tap); height: var(--tap); min-width: var(--tap); flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease, color .15s ease; }
   .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-  svg.i.sm { width: 19px; height: 19px; }
+  svg.i.sm { width: 18px; height: 18px; }
 
   .feed { flex: 1 1 auto; overflow: hidden; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s4); background: var(--bg); }
   .daystamp { text-align: center; font-size: var(--text-xs); color: var(--muted); }
@@ -127,7 +127,7 @@
 
   .composer { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
   .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
-  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; }
+  .send { width: var(--tap); height: var(--tap); border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; }
   .send:active { transform: scale(.92); }
 
   .btn { font-family: var(--font-body); font-size: var(--text-base); min-height: var(--tap); padding: 0 var(--s6); border-radius: var(--r-md); cursor: pointer; border: 1px solid transparent; transition: all .15s ease; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); width: 100%; }
@@ -210,7 +210,7 @@
   .journey { display: flex; flex-direction: column; }
   .milestone { display: flex; gap: var(--s4); align-items: stretch; }
   .milestone .track { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
-  .milestone .dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-strong); display: grid; place-items: center; color: var(--muted); background: var(--surface); font-size: 13px; flex: 0 0 auto; }
+  .milestone .dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-strong); display: grid; place-items: center; color: var(--muted); background: var(--surface); font-size: var(--text-sm); flex: 0 0 auto; }
   .milestone.done .dot { background: var(--ink); border-color: var(--ink); color: var(--on-primary); }
   .milestone.now .dot { border-color: var(--ink); color: var(--ink); }
   .milestone .line { width: 2px; flex: 1; background: var(--border); min-height: 16px; margin: 4px 0; }
@@ -286,8 +286,8 @@
               <div style="max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s5)">
                 <div><h2 style="font-size:var(--text-xl)">Your journey</h2><div style="color:var(--muted);font-size:var(--text-sm)">James adds each step as you’re ready — one at a time.</div></div>
                 <div class="journey">
-                  <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title">Introductions</div><div class="m-sub">Complete</div></div></div>
-                  <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title">Small talk</div><div class="m-sub">Complete</div></div></div>
+                  <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title">Introductions</div><div class="m-sub">Complete</div></div></div>
+                  <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title">Small talk</div><div class="m-sub">Complete</div></div></div>
                   <div class="milestone now"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor;stroke:none"><circle cx="12" cy="12" r="6"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title">Ordering at a restaurant</div><div class="m-sub" style="margin-bottom:var(--s3)">This week · in progress</div><div class="practice" style="padding:var(--s4)"><div class="progress"><span style="width:60%"></span></div><div class="steps" style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--muted);margin-top:var(--s2)"><span>A little more to go this week</span></div></div></div></div>
                   <div class="milestone"><div class="track"><div class="dot"></div></div><div class="m-body"><div class="m-title" style="color:var(--muted)">At the pharmacy</div><div class="m-sub">Up next</div></div></div>
                 </div>
@@ -393,8 +393,8 @@
             <div class="listhead"><h2 style="font-size:var(--text-lg)">Your journey</h2></div>
             <div style="flex:1;overflow-y:auto;padding:0 var(--s5) var(--s5)">
               <div class="journey">
-                <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Introductions</div><div class="m-sub">Complete</div></div></div>
-                <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Small talk</div><div class="m-sub">Complete</div></div></div>
+                <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Introductions</div><div class="m-sub">Complete</div></div></div>
+                <div class="milestone done"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="15" height="15" style="stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l5 5L20 7"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Small talk</div><div class="m-sub">Complete</div></div></div>
                 <div class="milestone now"><div class="track"><div class="dot"><svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor;stroke:none"><circle cx="12" cy="12" r="6"/></svg></div><div class="line"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm)">Ordering at a restaurant</div><div class="m-sub" style="margin-bottom:var(--s2)">This week</div><div class="practice" style="padding:var(--s3)"><div class="progress"><span style="width:60%"></span></div><div class="steps" style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--muted);margin-top:var(--s2)"><span>A little more this week</span></div></div></div></div>
                 <div class="milestone"><div class="track"><div class="dot"></div></div><div class="m-body"><div class="m-title" style="font-size:var(--text-sm);color:var(--muted)">At the pharmacy</div><div class="m-sub">Up next</div></div></div>
               </div>
@@ -661,6 +661,7 @@
   }
   // Keyboard access: make clickable non-button controls focusable + role-tagged (real build uses <button>/<a>)
   document.querySelectorAll('.rail-item,.botnav-item,.conv,.profrow,.quiet,.coachline').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
+  document.querySelectorAll('.pres').forEach(function(el){ el.setAttribute('role','img'); el.setAttribute('aria-label','Online'); });
 </script>
 </body>
 </html>

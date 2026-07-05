@@ -1,6 +1,6 @@
 # Chat & Conversation
 
-Validated in sketch 002 (winner **C · Quoted reply**). Source: `sources/002-chat-interior.html`.
+Validated in sketch 002 (winner **C · Quoted reply**). Source: `sources/002-chat-interior.html` (the thread interior + correction). The conversation-*list* anatomy below — rows, unread badge, pinned FISH thread — is validated in the nav-shell (001) and responsive (007) sketches.
 
 ## The defining decision: gentle correction
 

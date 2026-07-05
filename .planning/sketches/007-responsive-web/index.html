@@ -82,7 +82,7 @@
   .bubble .em { font-family: var(--font-display); font-style: italic; }
   .composer { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
   .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); }
-  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; flex: 0 0 auto; }
+  .send { width: var(--tap); height: var(--tap); border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; flex: 0 0 auto; }
 
   .rbotnav { display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); flex: 0 0 auto; }
   .rbn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--tap); color: var(--muted); font-size: var(--text-xs); }
@@ -197,6 +197,7 @@
   var dark = false;
   function toggleTheme(){ dark = !dark; document.documentElement.style.colorScheme = dark ? 'dark' : 'light'; document.getElementById('mode-label').textContent = dark ? '☾ Dark' : '◐ Light'; }
   document.querySelectorAll('.rr-item,.rbn,.conv').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
+  document.querySelectorAll('.pres').forEach(function(el){ el.setAttribute('role','img'); el.setAttribute('aria-label','Online'); });
 </script>
 </body>
 </html>
