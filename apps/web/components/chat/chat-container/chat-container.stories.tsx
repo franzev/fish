@@ -13,7 +13,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="h-[720px] overflow-hidden">
+      <div className="h-chat-container-demo overflow-hidden">
         <Story />
       </div>
     ),

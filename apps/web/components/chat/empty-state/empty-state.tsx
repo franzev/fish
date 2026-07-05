@@ -24,8 +24,8 @@ export function EmptyState({
       {...props}
     >
       <IconMessageCircle size={32} stroke={1.5} aria-hidden="true" className="text-muted" />
-      <p className="text-[17px] font-medium text-foreground">{title}</p>
-      <p className="text-[15px] text-muted">{description}</p>
+      <p className="text-copy font-medium text-foreground">{title}</p>
+      <p className="text-ui text-muted">{description}</p>
     </div>
   );
 }

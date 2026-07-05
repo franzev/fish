@@ -52,7 +52,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           type="button"
           aria-label="Add emoji"
           onClick={onEmoji}
-          className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+          className="flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
         >
           <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
         </button>
@@ -60,7 +60,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           type="button"
           aria-label="Attach file"
           onClick={onAttach}
-          className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+          className="flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
         >
           <IconPaperclip size={20} stroke={1.75} aria-hidden="true" />
         </button>
@@ -73,8 +73,8 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKeyDown}
           className={cn(
-            "min-h-[var(--size-control)] flex-1 resize-none rounded-control border border-border bg-surface px-4 py-3.5",
-            "text-[17px] text-foreground placeholder:text-muted",
+            "min-h-control flex-1 resize-none rounded-control border border-border bg-surface px-4 py-3.5",
+            "text-copy text-foreground placeholder:text-muted",
             "transition-colors focus:border-primary"
           )}
           {...props}

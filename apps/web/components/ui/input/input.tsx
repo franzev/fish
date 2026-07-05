@@ -6,7 +6,7 @@ import { InputHTMLAttributes, forwardRef, useId } from "react";
 export const inputVariants = cva(
   [
     "w-full rounded-control bg-surface px-4",
-    "min-h-[var(--size-control)] text-[17px] text-foreground",
+    "min-h-control text-copy text-foreground",
     "border border-border placeholder:text-muted",
     "transition-colors focus:border-primary",
     "disabled:opacity-50",
@@ -45,7 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         <label
           htmlFor={inputId}
-          className="mb-2 block text-[15px] font-medium text-foreground"
+          className="mb-2 block text-ui font-medium text-foreground"
         >
           {label}
         </label>
@@ -62,23 +62,23 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {/* Reserved so showing/hiding a message changes text, not geometry —
             Input's analogue of Button's overlay spinner. Always mounted at a
             constant min-height so hint/notice/error never resize the layout
-            around this field. min-h-[22px] is the floor for the tallest
+            around this field. min-h-field-message is the floor for the tallest
             message (20px icon + 14px text at default line-height, flex
             items-center, ≈21px content) — do not shrink below that or the
             row will grow when a message appears. mt-1 (not mt-2) avoids
             double-counting with the form's own space-y-1 gap below. */}
-        <div className="mt-1 min-h-[22px]">
+        <div className="mt-1 min-h-field-message">
           {hint && !notice && !error && (
-            <p className="text-[14px] text-muted">{hint}</p>
+            <p className="text-ui-sm text-muted">{hint}</p>
           )}
           {!error && notice && (
-            <p className="flex items-center gap-1.5 text-[14px] text-notice">
+            <p className="flex items-center gap-1.5 text-ui-sm text-notice">
               <IconInfoCircle size={20} stroke={1.75} aria-hidden="true" className="shrink-0" />
               {notice}
             </p>
           )}
           {error && (
-            <p className="flex items-center gap-1.5 text-[14px] font-semibold text-error">
+            <p className="flex items-center gap-1.5 text-ui-sm font-semibold text-error">
               <IconAlertCircle size={20} stroke={2} aria-hidden="true" className="shrink-0" />
               {error}
             </p>

@@ -36,7 +36,7 @@ export function Message({ message, grouped = false, onReactionToggle, className,
         {!grouped && <MessageMeta authorName={author.name} sentAt={sentAt} />}
         {replyTo && <QuotedMessage authorName={replyTo.authorName} snippet={replyTo.snippet} />}
         {body && <Bubble mine={mine}>{body}</Bubble>}
-        <Attachments attachments={attachments} className="mt-1.5 w-full max-w-[85%]" />
+        <Attachments attachments={attachments} className="mt-1.5 w-full max-w-message" />
         <div className={cn("mt-1 flex items-center gap-1.5", mine ? "flex-row-reverse" : "flex-row")}>
           <Reactions reactions={reactions} onToggle={onReactionToggle} />
           {mine && status && <MessageStatus status={status} />}

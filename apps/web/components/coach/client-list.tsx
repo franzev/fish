@@ -25,7 +25,7 @@ export function ClientList({ clients }: { clients: Client[] }) {
           className="flex flex-col gap-0.5 p-4"
         >
           <span className="text-foreground">{client.displayName}</span>
-          <span className="text-[14px] text-muted">{client.email}</span>
+          <span className="text-ui-sm text-muted">{client.email}</span>
         </Link>
       ))}
     </Card>

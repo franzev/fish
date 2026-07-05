@@ -803,11 +803,19 @@ Do:
 - Reuse base UI components.
 - Keep focus and contrast tests passing.
 - Keep `tailwindcss` and `@tailwindcss/postcss` versions aligned.
+- Use named token-backed utilities for visual values. Examples include
+  `text-ui-sm`, `text-copy`, `max-w-form`, `max-w-content`,
+  `min-h-control`, `min-h-field-message`, `shadow-card`, and
+  `duration-progress`.
 
 Do not:
 
 - Create `tailwind.config.js`.
 - Use raw hex values in components.
+- Use arbitrary Tailwind values for visual styling, such as `text-[14px]`,
+  `p-[18px]`, `rounded-[6px]`, `shadow-[...]`, `max-w-[440px]`, or
+  `min-h-[var(--size-control)]`. If a value is missing, add or update the
+  appropriate design token in `apps/web/app/globals.css`.
 - Hand-roll buttons/inputs where base components fit.
 - Add a separate UI pattern that duplicates an existing component.
 

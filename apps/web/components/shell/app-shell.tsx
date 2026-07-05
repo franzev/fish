@@ -31,10 +31,10 @@ export function AppShell({ displayName, preferences, children }: AppShellProps) 
       />
       <header className="flex items-center justify-between border-b border-border px-5 py-4">
         <Image src="/logo.svg" alt="FISH" width={32} height={32} />
-        <span className="text-[14px] text-muted">{displayName}</span>
+        <span className="text-ui-sm text-muted">{displayName}</span>
         <LogoutButton />
       </header>
-      <main className="mx-auto w-full max-w-[640px] flex-1 px-5 py-12">
+      <main className="mx-auto w-full max-w-content flex-1 px-5 py-12">
         {children}
       </main>
     </div>

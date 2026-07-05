@@ -1,7 +1,11 @@
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
-const DOT_DELAYS = ["0ms", "150ms", "300ms"];
+const DOT_DELAY_TOKENS = [
+  "--duration-typing-delay-none",
+  "--duration-typing-delay-short",
+  "--duration-typing-delay-long",
+];
 
 /** Three dots, staggered via the shared `animate-typing` keyframe (each dot
  *  gets its own inline animation-delay). `role="status"` + label announces
@@ -16,12 +20,12 @@ export function TypingIndicator({ className, ...props }: HTMLAttributes<HTMLDivE
       className={cn("flex items-center gap-1 rounded-pill bg-surface-2 px-3 py-2", className)}
       {...props}
     >
-      {DOT_DELAYS.map((delay) => (
+      {DOT_DELAY_TOKENS.map((delayToken) => (
         <span
-          key={delay}
+          key={delayToken}
           aria-hidden="true"
           className="size-1.5 animate-typing rounded-pill bg-muted"
-          style={{ animationDelay: delay }}
+          style={{ animationDelay: `var(${delayToken})` }}
         />
       ))}
     </div>

@@ -8,6 +8,6 @@ describe("Card", () => {
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain("rounded-card");
     expect(card.className).toContain("bg-surface");
-    expect(card.className).toContain("shadow-[var(--shadow-card)]");
+    expect(card.className).toContain("shadow-card");
   });
 });

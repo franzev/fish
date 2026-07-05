@@ -34,7 +34,7 @@ export function ChatContainer({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col bg-bg md:mx-auto md:max-w-[640px] md:rounded-card md:border md:border-border",
+        "flex h-full w-full flex-col bg-bg md:mx-auto md:max-w-content md:rounded-card md:border md:border-border",
         className
       )}
       {...props}

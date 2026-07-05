@@ -30,7 +30,7 @@ describe("Button", () => {
   it("meets the 56px tap-target floor via the size-control token (KIT-04)", () => {
     const { getByRole } = render(<Button>Get started</Button>);
     expect(getByRole("button").className).toContain(
-      "min-h-[var(--size-control)]"
+      "min-h-control"
     );
   });
 

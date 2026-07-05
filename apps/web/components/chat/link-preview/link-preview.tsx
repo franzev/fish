@@ -34,15 +34,15 @@ export function LinkPreview({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={thumbnailUrl} alt="" className="size-full object-cover" />
         ) : (
-          <span className="text-[13px] text-muted">Link preview</span>
+          <span className="text-ui-xs text-muted">Link preview</span>
         )}
         <span className="absolute flex size-12 items-center justify-center rounded-pill bg-primary text-on-primary">
           <IconPlayerPlay size={20} stroke={1.75} aria-hidden="true" />
         </span>
       </div>
       <div className="p-3">
-        <p className="line-clamp-2 text-[14px] font-medium text-foreground">{title}</p>
-        <p className="mt-1 text-[13px] text-muted">{source}</p>
+        <p className="line-clamp-2 text-ui-sm font-medium text-foreground">{title}</p>
+        <p className="mt-1 text-ui-xs text-muted">{source}</p>
       </div>
     </a>
   );

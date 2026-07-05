@@ -41,7 +41,7 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
           <img src={attachment.poster} alt="" className="max-h-64 w-full object-cover" />
         ) : (
           <div className="flex h-40 w-full items-center justify-center">
-            <span className="text-[13px] text-muted">Video preview</span>
+            <span className="text-ui-xs text-muted">Video preview</span>
           </div>
         )}
         <button
@@ -54,7 +54,7 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
           </span>
         </button>
         {attachment.duration && (
-          <span className="absolute bottom-2 right-2 rounded-pill bg-surface px-2 py-0.5 text-[12px] text-body">
+          <span className="absolute bottom-2 right-2 rounded-pill bg-surface px-2 py-0.5 text-ui-2xs text-body">
             {attachment.duration}
           </span>
         )}
@@ -73,9 +73,9 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
           <IconPlayerPlay size={18} stroke={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] text-body">{attachment.name}</p>
+          <p className="truncate text-ui-sm text-body">{attachment.name}</p>
           {attachment.duration && (
-            <p className="text-[13px] text-muted">{attachment.duration}</p>
+            <p className="text-ui-xs text-muted">{attachment.duration}</p>
           )}
         </div>
       </div>
@@ -91,8 +91,8 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
         <IconFile size={20} stroke={1.75} aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] text-body">{attachment.name}</p>
-        <p className="text-[13px] text-muted">{attachment.size}</p>
+        <p className="truncate text-ui-sm text-body">{attachment.name}</p>
+        <p className="text-ui-xs text-muted">{attachment.size}</p>
       </div>
     </a>
   );

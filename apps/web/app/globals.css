@@ -42,6 +42,8 @@
   --color-foreground: light-dark(oklch(0.15 0 0), oklch(0.97 0 0));    /* headings, highest emphasis */
   --color-body: light-dark(oklch(0.32 0 0), oklch(0.88 0 0));          /* body copy */
   --color-muted: light-dark(oklch(0.50 0 0), oklch(0.68 0 0));         /* captions, placeholders, hints */
+  --color-focus-outer: light-dark(oklch(0.15 0 0), oklch(1 0 0));      /* keyboard ring band against page */
+  --color-focus-inner: light-dark(oklch(1 0 0), oklch(0.15 0 0));      /* keyboard ring band against primary fill */
 
   /* Feedback — calm, not alarming.
      `notice` stays monochrome (structural weight only, no hue — the neutral
@@ -60,6 +62,22 @@
   /* ---- Type ---- */
   --font-sans: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --text-ui-2xs: 12px;
+  --text-ui-2xs--line-height: 1.35;
+  --text-ui-xs: 13px;
+  --text-ui-xs--line-height: 1.4;
+  --text-ui-sm: 14px;
+  --text-ui-sm--line-height: 1.45;
+  --text-ui: 15px;
+  --text-ui--line-height: 1.5;
+  --text-ui-md: 16px;
+  --text-ui-md--line-height: 1.5;
+  --text-copy: 17px;
+  --text-copy--line-height: 1.55;
+  --text-heading-sm: 20px;
+  --text-heading-sm--line-height: 1.15;
+  --text-display: 32px;
+  --text-display--line-height: 1.1;
 
   /* ---- Radius (rounded, friendly) ---- */
   --radius-card: 16px;
@@ -68,6 +86,36 @@
 
   /* ---- Tap targets (ND rule: nothing tiny or fiddly) ---- */
   --size-control: 56px;           /* min height for buttons & inputs       */
+  --spacing-control: var(--size-control);
+  --spacing-field-message: 22px;
+  --spacing-badge: 20px;
+  --spacing-chat-demo: 520px;
+  --spacing-chat-list-demo: 560px;
+  --spacing-chat-container-demo: 720px;
+  --spacing-motion-enter: 6px;
+  --spacing-motion-typing: 4px;
+
+  /* ---- Layout widths ---- */
+  --container-form: 440px;
+  --container-content: 640px;
+  --container-chat: 720px;
+  --container-chat-preview: 360px;
+  --container-message: 85%;
+
+  /* ---- Focus and motion ---- */
+  --focus-outline-width: 2px;
+  --focus-outline-offset: 2px;
+  --focus-ring-width: 4px;
+  --focus-radius: var(--radius-control);
+  --duration-reduced-motion: 0.001ms;
+  --duration-fade: 200ms;
+  --duration-message: 200ms;
+  --duration-typing: 1200ms;
+  --duration-typing-delay-none: 0ms;
+  --duration-typing-delay-short: 150ms;
+  --duration-typing-delay-long: 300ms;
+  --duration-reaction: 180ms;
+  --duration-progress: 500ms;
 
   /* ---- Elevation (D-06): a token, not a dark: branch ----
      Soft shadow in light; dark relies on the surface lightness-step
@@ -121,15 +169,15 @@
   html[data-reduced-motion="true"] *,
   html[data-reduced-motion="true"] *::before,
   html[data-reduced-motion="true"] *::after {
-    animation-duration: 0.001ms !important;
+    animation-duration: var(--duration-reduced-motion) !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    transition-duration: var(--duration-reduced-motion) !important;
   }
   body {
     background-color: var(--color-bg);
     color: var(--color-body);
     font-family: var(--font-sans);
-    font-size: 17px;            /* generous base — nothing cramped */
+    font-size: var(--text-copy); /* generous base — nothing cramped */
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
@@ -145,10 +193,10 @@
      ring stays visible against the inverted primary fill in BOTH themes
      (Pitfall 4) as well as against default surfaces. */
   :focus-visible {
-    outline: 2px solid light-dark(oklch(0.15 0 0), oklch(1 0 0));
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px light-dark(oklch(1 0 0), oklch(0.15 0 0));
-    border-radius: 6px;
+    outline: var(--focus-outline-width) solid var(--color-focus-outer);
+    outline-offset: var(--focus-outline-offset);
+    box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-inner);
+    border-radius: var(--focus-radius);
   }
   /* Respect reduced motion. Covers the animate-fade-in utility below too —
      one rule, no per-animation opt-out to forget (D-08). iteration-count:1 is
@@ -159,9 +207,9 @@
      motion for the kit's looping animations. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
-      animation-duration: 0.001ms !important;
+      animation-duration: var(--duration-reduced-motion) !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
+      transition-duration: var(--duration-reduced-motion) !important;
     }
   }
 }
@@ -179,7 +227,7 @@
 }
 
 @utility animate-fade-in {
-  animation: fade-in 200ms ease-out;
+  animation: fade-in var(--duration-fade) ease-out;
 }
 
 /* Chat: new-message entrance. Small opacity + translate settle so incoming
@@ -188,7 +236,7 @@
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(var(--spacing-motion-enter));
   }
   to {
     opacity: 1;
@@ -197,7 +245,7 @@
 }
 
 @utility animate-message-in {
-  animation: message-in 200ms ease-out;
+  animation: message-in var(--duration-message) ease-out;
 }
 
 /* Chat: typing indicator dots. One shared keyframe; callers stagger the
@@ -210,13 +258,13 @@
     opacity: 0.5;
   }
   30% {
-    transform: translateY(-4px);
+    transform: translateY(calc(var(--spacing-motion-typing) * -1));
     opacity: 1;
   }
 }
 
 @utility animate-typing {
-  animation: typing-bounce 1200ms ease-in-out infinite;
+  animation: typing-bounce var(--duration-typing) ease-in-out infinite;
 }
 
 /* Chat: reaction pill pop when a reaction is added. Brief, no bounce. */
@@ -230,5 +278,9 @@
 }
 
 @utility animate-reaction-pop {
-  animation: reaction-pop 180ms ease-out;
+  animation: reaction-pop var(--duration-reaction) ease-out;
+}
+
+@utility transition-progress {
+  transition-property: width;
 }

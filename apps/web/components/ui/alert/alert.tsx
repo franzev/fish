@@ -9,7 +9,7 @@ import {
 import { HTMLAttributes } from "react";
 
 export const alertVariants = cva(
-  "flex items-start gap-2 rounded-control border bg-surface p-4 shadow-[var(--shadow-card)]",
+  "flex items-start gap-2 rounded-control border bg-surface p-4 shadow-card",
   {
     variants: {
       tone: {
@@ -34,7 +34,7 @@ export const alertIconVariants = cva("mt-0.5 shrink-0", {
   },
 });
 
-export const alertMessageVariants = cva("text-[15px] text-body", {
+export const alertMessageVariants = cva("text-ui text-body", {
   variants: {
     tone: {
       notice: "font-normal",

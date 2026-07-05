@@ -18,7 +18,7 @@ export function PresenceIndicator({ online, className, ...props }: PresenceIndic
           online ? "bg-success" : "bg-muted"
         )}
       />
-      <span className="text-[13px] text-muted">{online ? "Online" : "Offline"}</span>
+      <span className="text-ui-xs text-muted">{online ? "Online" : "Offline"}</span>
     </span>
   );
 }

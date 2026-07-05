@@ -41,9 +41,9 @@ const iconSamples = [
    dev control — the only client island on an otherwise server page. */
 export default function KitPage() {
   return (
-    <main className="mx-auto max-w-[440px] px-5 py-12">
+    <main className="mx-auto max-w-form px-5 py-12">
       <header className="mb-10">
-        <p className="mb-2 text-[14px] uppercase tracking-widest text-muted">
+        <p className="mb-2 text-ui-sm uppercase tracking-widest text-muted">
           FISH
         </p>
         <h1 className="text-4xl">UI kit</h1>
@@ -58,16 +58,16 @@ export default function KitPage() {
 
       <section className="mb-10">
         <h2 className="mb-4 text-xl">Tokens</h2>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {tokenSwatches.map((s) => (
-            <div key={s.name} className="space-y-2">
+            <div key={s.name} className="min-w-0 space-y-2">
               <div
                 className={cn(
                   "h-12 w-full rounded-control border border-border",
                   s.className
                 )}
               />
-              <p className="text-[13px] text-muted">{s.name}</p>
+              <p className="break-words text-ui-xs text-muted">{s.name}</p>
             </div>
           ))}
         </div>
@@ -77,33 +77,33 @@ export default function KitPage() {
         <h2 className="mb-4 text-xl">Typography</h2>
         <div className="space-y-5">
           <div>
-            <p className="mb-1 text-[13px] text-muted">Display — 32px / 600 / Fraunces</p>
-            <h1 className="text-[32px]">The whole job is to remove choices</h1>
+            <p className="mb-1 text-ui-xs text-muted">Display — 32px / 600 / Fraunces</p>
+            <h1 className="text-display">The whole job is to remove choices</h1>
           </div>
           <div>
-            <p className="mb-1 text-[13px] text-muted">Heading — 20px / 600 / Fraunces</p>
-            <h2 className="text-[20px]">Every screen, one action</h2>
+            <p className="mb-1 text-ui-xs text-muted">Heading — 20px / 600 / Fraunces</p>
+            <h2 className="text-heading-sm">Every screen, one action</h2>
           </div>
           <div>
-            <p className="mb-1 text-[13px] text-muted">Body — 17px / 400 / Lexend</p>
-            <p className="text-[17px] text-body">
+            <p className="mb-1 text-ui-xs text-muted">Body — 17px / 400 / Lexend</p>
+            <p className="text-copy text-body">
               Calm, spacious copy that reads easily and never scolds.
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[13px] text-muted">Label — 14px / 400–500 / Lexend</p>
-            <p className="text-[14px] text-muted">Field labels, hints, and captions.</p>
+            <p className="mb-1 text-ui-xs text-muted">Label — 14px / 400–500 / Lexend</p>
+            <p className="text-ui-sm text-muted">Field labels, hints, and captions.</p>
           </div>
         </div>
       </section>
 
       <section className="mb-10">
         <h2 className="mb-4 text-xl">Icons</h2>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {iconSamples.map(({ name, Icon }) => (
-            <div key={name} className="space-y-2">
+            <div key={name} className="min-w-0 space-y-2">
               <Icon size={20} stroke={1.75} aria-hidden="true" className="text-foreground" />
-              <p className="text-[13px] text-muted">{name}</p>
+              <p className="break-words text-ui-xs text-muted">{name}</p>
             </div>
           ))}
         </div>
@@ -113,7 +113,7 @@ export default function KitPage() {
         <h2 className="mb-4 text-xl">Button</h2>
         <div className="space-y-5">
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Variants</p>
+            <p className="text-ui-sm text-muted">Variants</p>
             <Button>Get started</Button>
             <Button variant="secondary">I already have an account</Button>
             <Button variant="ghost" fullWidth={false}>
@@ -121,11 +121,11 @@ export default function KitPage() {
             </Button>
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Disabled</p>
+            <p className="text-ui-sm text-muted">Disabled</p>
             <Button disabled>Get started</Button>
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Loading</p>
+            <p className="text-ui-sm text-muted">Loading</p>
             <Button loading>Saving</Button>
           </div>
         </div>
@@ -135,15 +135,15 @@ export default function KitPage() {
         <h2 className="mb-4 text-xl">Input</h2>
         <div className="space-y-5">
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Default</p>
+            <p className="text-ui-sm text-muted">Default</p>
             <Input label="Email" placeholder="you@example.com" />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Disabled</p>
+            <p className="text-ui-sm text-muted">Disabled</p>
             <Input label="Email" placeholder="you@example.com" disabled />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Notice</p>
+            <p className="text-ui-sm text-muted">Notice</p>
             <Input
               label="Email"
               defaultValue="frank@examplecom"
@@ -151,7 +151,7 @@ export default function KitPage() {
             />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Error</p>
+            <p className="text-ui-sm text-muted">Error</p>
             <Input
               label="Email"
               error="Something needs your attention before you can continue."
@@ -164,13 +164,13 @@ export default function KitPage() {
         <h2 className="mb-4 text-xl">Card</h2>
         <div className="space-y-5">
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Default</p>
+            <p className="text-ui-sm text-muted">Default</p>
             <Card>
               <p className="text-body">A calm container. The basic surface everything sits on.</p>
             </Card>
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">
+            <p className="text-ui-sm text-muted">
               Elevated (soft shadow in light, surface-step in dark)
             </p>
             <Card className="bg-surface-2">
@@ -183,7 +183,7 @@ export default function KitPage() {
       <section className="mb-10">
         <h2 className="mb-4 text-xl">Progress</h2>
         <div className="space-y-3">
-          <p className="text-[14px] text-muted">Visual only — never a grade</p>
+          <p className="text-ui-sm text-muted">Visual only — never a grade</p>
           <Progress value={40} label="Step 2 of 5" />
         </div>
       </section>
@@ -204,7 +204,7 @@ export default function KitPage() {
         </div>
       </section>
 
-      <p className="text-center text-[13px] text-muted">
+      <p className="text-center text-ui-xs text-muted">
         Hierarchy before color. If it works in monochrome, it works.
       </p>
     </main>

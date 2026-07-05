@@ -14,7 +14,7 @@ describe("Input", () => {
   it("meets the 56px tap-target floor via the size-control token (KIT-04)", () => {
     const { getByLabelText } = render(<Input label="Email" />);
     expect(getByLabelText("Email").className).toContain(
-      "min-h-[var(--size-control)]"
+      "min-h-control"
     );
   });
 
@@ -32,7 +32,7 @@ describe("Input", () => {
     const { container } = render(<Input label="Email" />);
     const field = container.querySelector("input");
     const reservedRow = field?.nextElementSibling as HTMLElement;
-    expect(reservedRow.className).toMatch(/min-h-\[/);
+    expect(reservedRow.className).toContain("min-h-field-message");
   });
 
   it("notice tier: field carries border-border-strong, message is regular weight with an info icon", () => {

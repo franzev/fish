@@ -34,7 +34,7 @@ export default async function ProfilePage() {
         <Avatar name={data.displayName} size="lg" />
         <div>
           <h1 className="text-2xl">{data.displayName}</h1>
-          <p className="text-[15px] text-muted">Learning English</p>
+          <p className="text-ui text-muted">Learning English</p>
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export default async function ProfilePage() {
           control={
             <Link
               href="/profile/edit"
-              className="flex min-h-[var(--size-control)] items-center gap-1 rounded-control px-3 text-[14px] text-body underline"
+              className="flex min-h-control items-center gap-1 rounded-control px-3 text-ui-sm text-body underline"
             >
               Edit
               <IconChevronRight size={16} stroke={1.75} aria-hidden="true" />

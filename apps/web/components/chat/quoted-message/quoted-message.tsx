@@ -18,8 +18,8 @@ export function QuotedMessage({ authorName, snippet, className, ...props }: Quot
       {...props}
     >
       <div className="min-w-0">
-        <p className="text-[13px] font-medium text-body">{authorName}</p>
-        <p className="truncate text-[13px] text-muted">{snippet}</p>
+        <p className="text-ui-xs font-medium text-body">{authorName}</p>
+        <p className="truncate text-ui-xs text-muted">{snippet}</p>
       </div>
     </div>
   );

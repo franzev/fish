@@ -63,7 +63,7 @@ function ExpiredLinkContent() {
     // without affecting its own box — the card stays exactly where flex
     // centering puts it in every state (D-08: floating overlay, not an
     // in-flow row).
-    <Card className="relative w-full max-w-[440px]">
+    <Card className="relative w-full max-w-form">
       <h2 className="text-xl">That link has expired</h2>
       <p className="mt-3 text-body">
         Links only work once, and this one&apos;s had its turn. Send
@@ -115,7 +115,7 @@ export default function ExpiredLinkPage() {
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
       <Suspense
         fallback={
-          <Card className="w-full max-w-[440px]">
+          <Card className="w-full max-w-form">
             <h2 className="text-xl">That link has expired</h2>
           </Card>
         }

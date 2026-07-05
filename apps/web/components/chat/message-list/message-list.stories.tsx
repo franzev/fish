@@ -12,7 +12,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="h-[560px] rounded-card border border-border bg-bg">
+      <div className="h-chat-list-demo rounded-card border border-border bg-bg">
         <Story />
       </div>
     ),

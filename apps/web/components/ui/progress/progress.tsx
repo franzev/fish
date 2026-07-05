@@ -12,7 +12,7 @@ export function Progress({ value, label, className, ...props }: ProgressProps) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <div className={cn("w-full", className)} {...props}>
-      {label && <p className="mb-2 text-[14px] text-muted">{label}</p>}
+      {label && <p className="mb-2 text-ui-sm text-muted">{label}</p>}
       <div
         className="h-3 w-full overflow-hidden rounded-pill bg-surface-2"
         role="progressbar"
@@ -21,7 +21,7 @@ export function Progress({ value, label, className, ...props }: ProgressProps) {
         aria-valuemax={100}
       >
         <div
-          className="h-full rounded-pill bg-primary transition-[width] duration-500"
+          className="h-full rounded-pill bg-primary transition-progress duration-progress"
           style={{ width: `${clamped}%` }}
         />
       </div>

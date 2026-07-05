@@ -54,22 +54,26 @@ if (!focusVisibleMatch) {
 }
 const focusVisibleBlock = focusVisibleMatch[1];
 
-/** The outer band: `outline: <width> solid light-dark(A, B)`. */
+/** The outer band: `outline: <width> solid var(--color-...)`. */
 function parseOutline(block: string): TokenPair {
   const match = block.match(
-    /outline\s*:\s*[^;]*?light-dark\(\s*(oklch\([^)]*\))\s*,\s*(oklch\([^)]*\))\s*\)/
+    /outline\s*:\s*[^;]*?var\(--color-([a-z0-9-]+)\)/
   );
-  if (!match) throw new Error("outline light-dark() pair not found");
-  return { light: match[1], dark: match[2] };
+  if (!match) throw new Error("outline color token not found");
+  const token = tokens[match[1]];
+  if (!token) throw new Error(`--color-${match[1]} token not found`);
+  return token;
 }
 
-/** The inner band: `box-shadow: ... light-dark(C, D)`. */
+/** The inner band: `box-shadow: ... var(--color-...)`. */
 function parseBoxShadow(block: string): TokenPair {
   const match = block.match(
-    /box-shadow\s*:\s*[^;]*?light-dark\(\s*(oklch\([^)]*\))\s*,\s*(oklch\([^)]*\))\s*\)/
+    /box-shadow\s*:\s*[^;]*?var\(--color-([a-z0-9-]+)\)/
   );
-  if (!match) throw new Error("box-shadow light-dark() pair not found");
-  return { light: match[1], dark: match[2] };
+  if (!match) throw new Error("box-shadow color token not found");
+  const token = tokens[match[1]];
+  if (!token) throw new Error(`--color-${match[1]} token not found`);
+  return token;
 }
 
 const outline = parseOutline(focusVisibleBlock);

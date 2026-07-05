@@ -18,7 +18,7 @@ export function CoachCard({ coachName }: CoachCardProps) {
         <span className="truncate text-foreground">
           {coachName ?? "Your coach"}
         </span>
-        <span className="text-[14px] text-muted">Your English coach</span>
+        <span className="text-ui-sm text-muted">Your English coach</span>
       </div>
       <IconChevronRight
         size={20}

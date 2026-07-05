@@ -18,7 +18,7 @@ export const Bubble = forwardRef<HTMLDivElement, BubbleProps>(
       <div
         ref={ref}
         className={cn(
-          "animate-message-in inline-block max-w-[85%] rounded-card px-4 py-2.5 text-[15px] break-words",
+          "animate-message-in inline-block max-w-message rounded-card px-4 py-2.5 text-ui break-words",
           mine
             ? "rounded-br-control bg-primary text-on-primary"
             : "rounded-bl-control border border-border bg-surface text-body",

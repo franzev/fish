@@ -29,7 +29,7 @@ export function ConsentRow({ consented, consentVersion }: ConsentRowProps) {
     return (
       <SettingsRow
         label="Your agreement"
-        control={<span className="text-[14px] text-muted">Accepted</span>}
+        control={<span className="text-ui-sm text-muted">Accepted</span>}
       />
     );
   }

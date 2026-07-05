@@ -64,7 +64,7 @@ function SegmentedControl<T>({
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={cn(
-            "min-h-[var(--size-control)] rounded-pill border px-3 text-[14px] transition-colors",
+            "min-h-control rounded-pill border px-3 text-ui-sm transition-colors",
             value === opt.value
               ? "border-border-strong bg-surface-2 text-foreground"
               : "border-border bg-surface text-muted hover:text-body"

@@ -35,7 +35,7 @@ export function ChatHeader({
     >
       <Avatar name={participant.name} src={participant.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[16px] font-medium text-foreground">{participant.name}</p>
+        <p className="truncate text-ui-md font-medium text-foreground">{participant.name}</p>
         <PresenceIndicator online={participant.online} />
       </div>
       <div className="flex items-center gap-1">
@@ -43,7 +43,7 @@ export function ChatHeader({
           type="button"
           aria-label="Call"
           onClick={onCall}
-          className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+          className="flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
         >
           <IconPhone size={20} stroke={1.75} aria-hidden="true" />
         </button>
@@ -51,7 +51,7 @@ export function ChatHeader({
           type="button"
           aria-label="Conversation info"
           onClick={onInfo}
-          className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+          className="flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
         >
           <IconInfoCircle size={20} stroke={1.75} aria-hidden="true" />
         </button>
@@ -59,7 +59,7 @@ export function ChatHeader({
           type="button"
           aria-label="More options"
           onClick={onMenu}
-          className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
+          className="flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body"
         >
           <IconDots size={20} stroke={1.75} aria-hidden="true" />
         </button>

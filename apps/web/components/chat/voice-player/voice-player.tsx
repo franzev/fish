@@ -35,7 +35,7 @@ export function VoicePlayer({
         aria-label={playing ? "Pause voice message" : "Play voice message"}
         aria-pressed={playing}
         onClick={() => setPlaying((v) => !v)}
-        className="flex min-h-[var(--size-control)] min-w-[var(--size-control)] shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary"
+        className="flex min-h-control min-w-control shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary"
       >
         {playing ? (
           <IconPlayerPause size={18} stroke={1.75} aria-hidden="true" />
@@ -55,7 +55,7 @@ export function VoicePlayer({
           <div className="h-full rounded-pill bg-muted" style={{ width: `${clamped}%` }} />
         </div>
       </div>
-      <span className="shrink-0 text-[13px] text-muted">{duration}</span>
+      <span className="shrink-0 text-ui-xs text-muted">{duration}</span>
     </div>
   );
 }

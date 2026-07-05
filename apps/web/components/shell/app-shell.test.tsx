@@ -28,14 +28,14 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
   });
 
-  it("renders one centered content column with max-w-[640px] and mx-auto (D-10)", () => {
+  it("renders one centered content column with max-w-content and mx-auto (D-10)", () => {
     const { container } = render(
       <AppShell displayName="Alex Rivera">Content</AppShell>
     );
 
     const mains = container.querySelectorAll("main");
     expect(mains).toHaveLength(1);
-    expect(mains[0].className).toContain("max-w-[640px]");
+    expect(mains[0].className).toContain("max-w-content");
     expect(mains[0].className).toContain("mx-auto");
   });
 

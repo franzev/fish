@@ -76,7 +76,7 @@ export function SignupForm() {
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
-      <Card className="w-full max-w-[440px]">
+      <Card className="w-full max-w-form">
         <h2 className="text-xl">Create your account</h2>
         <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
           <Input
@@ -112,7 +112,7 @@ export function SignupForm() {
             Create account
           </Button>
         </form>
-        <p className="mt-5 text-center text-[14px] text-muted">
+        <p className="mt-5 text-center text-ui-sm text-muted">
           Already have an account?{" "}
           <Link href="/login" className="text-body underline">
             Log in

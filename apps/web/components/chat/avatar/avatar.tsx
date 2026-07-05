@@ -13,9 +13,9 @@ interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const sizeClasses: Record<AvatarSize, string> = {
-  sm: "size-8 text-[13px]",
-  md: "size-10 text-[15px]",
-  lg: "size-14 text-[17px]",
+  sm: "size-8 text-ui-xs",
+  md: "size-10 text-ui",
+  lg: "size-14 text-copy",
 };
 
 /** Derive up to two uppercase initials from a display name. Never throws —

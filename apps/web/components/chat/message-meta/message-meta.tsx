@@ -17,7 +17,7 @@ function formatTime(sentAt: Date | string): string {
 export function MessageMeta({ authorName, sentAt, className, ...props }: MessageMetaProps) {
   return (
     <div
-      className={cn("mb-1 flex items-baseline gap-2 text-[13px] text-muted", className)}
+      className={cn("mb-1 flex items-baseline gap-2 text-ui-xs text-muted", className)}
       {...props}
     >
       <span className="font-medium text-body">{authorName}</span>

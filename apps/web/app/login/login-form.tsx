@@ -68,7 +68,7 @@ export function LoginForm() {
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
-      <Card className="w-full max-w-[440px]">
+      <Card className="w-full max-w-form">
         <h2 className="text-xl">Log in</h2>
         <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
           <Input
@@ -95,10 +95,10 @@ export function LoginForm() {
             Log in
           </Button>
         </form>
-        <p className="mt-5 text-center text-[14px] text-muted">
+        <p className="mt-5 text-center text-ui-sm text-muted">
           New here? <Link href="/signup" className="text-body underline">Create account</Link>
         </p>
-        <p className="mt-2 text-center text-[14px] text-muted">
+        <p className="mt-2 text-center text-ui-sm text-muted">
           <Link href="/forgot-password" className="text-body underline">
             Forgot your password?
           </Link>

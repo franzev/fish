@@ -8,7 +8,7 @@ export const buttonVariants = cva(
     // relative anchors the loading overlay; a constant (transparent)
     // border keeps the box model identical across all variants.
     "relative inline-flex items-center justify-center rounded-control px-6",
-    "min-h-[var(--size-control)] text-[17px] transition-colors",
+    "min-h-control text-copy transition-colors",
     "border border-transparent cursor-pointer",
     "disabled:opacity-50 disabled:cursor-not-allowed",
   ],

@@ -41,8 +41,8 @@ describe("A11yPrefs", () => {
   it("keeps segmented preference buttons at the 56px FISH control target", () => {
     const source = readFileSync(resolve(__dirname, "./a11y-prefs.tsx"), "utf-8");
 
-    expect(source).toContain("min-h-[var(--size-control)]");
-    expect(source).not.toContain("min-h-[36px]");
+    expect(source).toContain("min-h-control");
+    expect(source).not.toMatch(/min-h-\[[^\]]+\]/);
   });
 
   it("defaults theme and reduced-motion to the system option when the prop is null", () => {

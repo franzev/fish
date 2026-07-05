@@ -49,7 +49,7 @@ export function ConversationList({
         onChange={(event) => setQuery(event.target.value)}
       />
       {filtered.length === 0 ? (
-        <p className="px-1 py-6 text-center text-[15px] text-muted">No matches</p>
+        <p className="px-1 py-6 text-center text-ui text-muted">No matches</p>
       ) : (
         <div className="flex flex-col gap-1">
           {filtered.map((conversation) => {
@@ -74,7 +74,7 @@ export function ConversationList({
                 aria-current={isActive || undefined}
                 onClick={() => onSelect?.(conversation.id)}
                 className={cn(
-                  "flex min-h-[var(--size-control)] w-full items-center gap-3 rounded-control border px-3 py-2 text-left transition-colors",
+                  "flex min-h-control w-full items-center gap-3 rounded-control border px-3 py-2 text-left transition-colors",
                   isActive
                     ? "border-border-strong bg-surface-2"
                     : "border-transparent hover:bg-surface-2"
@@ -86,13 +86,13 @@ export function ConversationList({
                   size="md"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium text-foreground">
+                  <p className="truncate text-ui font-medium text-foreground">
                     {conversation.participant.name}
                   </p>
-                  <p className="truncate text-[13px] text-muted">{conversation.lastMessage}</p>
+                  <p className="truncate text-ui-xs text-muted">{conversation.lastMessage}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[12px] text-muted">{conversation.lastMessageAt}</span>
+                  <span className="text-ui-2xs text-muted">{conversation.lastMessageAt}</span>
                   <NotificationBadge count={conversation.unreadCount} />
                 </div>
               </button>

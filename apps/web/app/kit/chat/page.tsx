@@ -29,9 +29,9 @@ import { coach, conversations, mockMessages } from "./mock-data";
    stateful leaves are their own client islands further down. */
 export default function ChatKitPage() {
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <main className="mx-auto max-w-chat px-5 py-12">
       <header className="mb-10">
-        <p className="mb-2 text-[14px] uppercase tracking-widest text-muted">FISH</p>
+        <p className="mb-2 text-ui-sm uppercase tracking-widest text-muted">FISH</p>
         <h1 className="text-4xl">Chat kit</h1>
         <p className="mt-3 text-body">
           Every chat component and state, rendered with mock data. Dev-only —
@@ -46,7 +46,7 @@ export default function ChatKitPage() {
         <h2 className="mb-4 text-xl">Primitives</h2>
         <div className="space-y-6">
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Avatar — image / initials / placeholder</p>
+            <p className="text-ui-sm text-muted">Avatar — image / initials / placeholder</p>
             <div className="flex items-center gap-3">
               <Avatar name="Priya Nandan" src="https://placehold.co/64x64" size="lg" />
               <Avatar name="Jordan Blake" size="lg" />
@@ -54,14 +54,14 @@ export default function ChatKitPage() {
             </div>
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Presence</p>
+            <p className="text-ui-sm text-muted">Presence</p>
             <div className="flex items-center gap-4">
               <PresenceIndicator online />
               <PresenceIndicator online={false} />
             </div>
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Message status — sending / sent / delivered / read</p>
+            <p className="text-ui-sm text-muted">Message status — sending / sent / delivered / read</p>
             <div className="flex items-center gap-4">
               <MessageStatus status="sending" />
               <MessageStatus status="sent" />
@@ -70,11 +70,11 @@ export default function ChatKitPage() {
             </div>
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Typing indicator</p>
+            <p className="text-ui-sm text-muted">Typing indicator</p>
             <TypingIndicator />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Reactions</p>
+            <p className="text-ui-sm text-muted">Reactions</p>
             <Reactions
               reactions={[
                 { emoji: "👍", count: 3, byMe: true },
@@ -83,23 +83,23 @@ export default function ChatKitPage() {
             />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Quoted message</p>
+            <p className="text-ui-sm text-muted">Quoted message</p>
             <QuotedMessage
               authorName="Jordan Blake"
               snippet="Here's the recording you asked for from this morning's practice session."
             />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Message actions</p>
+            <p className="text-ui-sm text-muted">Message actions</p>
             <MessageActions />
           </div>
           <div className="space-y-3">
-            <p className="text-[14px] text-muted">Notification badge — count / capped / hidden at 0</p>
+            <p className="text-ui-sm text-muted">Notification badge — count / capped / hidden at 0</p>
             <div className="flex items-center gap-4">
               <NotificationBadge count={3} />
               <NotificationBadge count={128} />
               <NotificationBadge count={0} />
-              <span className="text-[13px] text-muted">(nothing renders above for 0)</span>
+              <span className="text-ui-xs text-muted">(nothing renders above for 0)</span>
             </div>
           </div>
         </div>
@@ -144,14 +144,14 @@ export default function ChatKitPage() {
 
       <section className="mb-10">
         <h2 className="mb-4 text-xl">Full container</h2>
-        <div className="h-[520px] overflow-hidden rounded-card border border-border">
+        <div className="h-chat-demo overflow-hidden rounded-card border border-border">
           <ChatContainer participant={coach} messages={mockMessages} firstUnreadId="m6" />
         </div>
       </section>
 
       <section className="mb-10">
         <h2 className="mb-4 text-xl">Sidebar list</h2>
-        <div className="max-w-[360px] rounded-card border border-border p-3">
+        <div className="max-w-chat-preview rounded-card border border-border p-3">
           <ConversationList conversations={conversations} activeConversationId="c1" />
         </div>
       </section>
@@ -160,29 +160,29 @@ export default function ChatKitPage() {
         <h2 className="mb-4 text-xl">States</h2>
         <div className="space-y-6">
           <div className="space-y-2">
-            <p className="text-[14px] text-muted">Empty</p>
+            <p className="text-ui-sm text-muted">Empty</p>
             <div className="flex h-48 flex-col rounded-card border border-border">
               <EmptyState />
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-[14px] text-muted">Skeleton (loading)</p>
+            <p className="text-ui-sm text-muted">Skeleton (loading)</p>
             <div className="rounded-card border border-border">
               <Skeleton />
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-[14px] text-muted">Typing</p>
+            <p className="text-ui-sm text-muted">Typing</p>
             <TypingIndicator />
           </div>
           <div className="space-y-2">
-            <p className="text-[14px] text-muted">Unread divider</p>
+            <p className="text-ui-sm text-muted">Unread divider</p>
             <UnreadDivider />
           </div>
         </div>
       </section>
 
-      <p className="text-center text-[13px] text-muted">
+      <p className="text-center text-ui-xs text-muted">
         Hierarchy before color. If it works in monochrome, it works.
       </p>
     </main>

@@ -45,7 +45,7 @@ function CheckInboxContent() {
     // without affecting its own box — the card stays exactly where flex
     // centering puts it in every state (D-08: floating overlay, not an
     // in-flow row).
-    <Card className="relative w-full max-w-[440px]">
+    <Card className="relative w-full max-w-form">
       <h2 className="text-xl">Check your inbox</h2>
       <p className="mt-3 text-body">
         {email
@@ -92,7 +92,7 @@ export default function CheckInboxPage() {
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
       <Suspense
         fallback={
-          <Card className="w-full max-w-[440px]">
+          <Card className="w-full max-w-form">
             <h2 className="text-xl">Check your inbox</h2>
           </Card>
         }

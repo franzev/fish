@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
-      <Card className="w-full max-w-[440px]">
+      <Card className="w-full max-w-form">
         <h2 className="text-xl">Reset your password</h2>
         {submitted ? (
           <div className="mt-6">

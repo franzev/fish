@@ -22,7 +22,7 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        "flex min-h-[var(--size-control)] items-center justify-between gap-4 p-4",
+        "flex min-h-control items-center justify-between gap-4 p-4",
         className
       )}
       {...props}

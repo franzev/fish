@@ -21,7 +21,7 @@ export function NotificationBadge({ count, className, ...props }: NotificationBa
       role="img"
       aria-label={`${count} unread ${count === 1 ? "message" : "messages"}`}
       className={cn(
-        "inline-flex min-w-[20px] items-center justify-center rounded-pill bg-primary px-1.5 py-0.5 text-[12px] font-semibold text-on-primary",
+        "inline-flex min-w-badge items-center justify-center rounded-pill bg-primary px-1.5 py-0.5 text-ui-2xs font-semibold text-on-primary",
         className
       )}
       {...props}

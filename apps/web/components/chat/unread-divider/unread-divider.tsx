@@ -12,7 +12,7 @@ export function UnreadDivider({ className, ...props }: HTMLAttributes<HTMLDivEle
       {...props}
     >
       <span className="h-px flex-1 bg-border-strong" />
-      <span className="text-[13px] font-medium text-muted">New</span>
+      <span className="text-ui-xs font-medium text-muted">New</span>
       <span className="h-px flex-1 bg-border-strong" />
     </div>
   );
