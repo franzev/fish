@@ -108,6 +108,7 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 | 260704-keb | Organize chat components into per-component folders (match ui/ structure) | 2026-07-04 | e094f79 | [260704-keb-organize-chat-components-into-per-compon](./quick/260704-keb-organize-chat-components-into-per-compon/) |
 | 260704-kfb | Design and implement production-ready service abstraction architecture | 2026-07-04 | 3c1ec95 | [260704-kfb-design-and-implement-a-production-ready-](./quick/260704-kfb-design-and-implement-a-production-ready-/) |
 | 260705-amu | Bootstrap the iOS project and configure foundational UI infrastructure | 2026-07-04 | 8c60efe | [260705-amu-bootstrap-the-ios-project-and-configure-](./quick/260705-amu-bootstrap-the-ios-project-and-configure-/) |
+| 260705-gby | Implement authentication improvements across web, iOS, and Android | 2026-07-05 | f494ca9 | [260705-gby-implement-authentication-improvements-ac](./quick/260705-gby-implement-authentication-improvements-ac/) |
 
 ## Session Continuity
 
