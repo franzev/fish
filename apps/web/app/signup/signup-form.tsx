@@ -9,6 +9,7 @@ import {
   signInWithGoogle,
   signUpWithPassword,
 } from "@/lib/auth/browser";
+import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -166,7 +167,10 @@ export function SignupForm() {
             loading={googleLoading}
             onClick={handleGoogleSignIn}
           >
-            Sign up with Google
+            <span className="inline-flex items-center gap-2">
+              <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
+              Sign up with Google
+            </span>
           </Button>
         </form>
         <p className="mt-5 text-center text-ui-sm text-muted">

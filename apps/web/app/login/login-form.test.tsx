@@ -56,6 +56,10 @@ describe("LoginForm", () => {
     });
     expect(googleButton.className).toContain("bg-surface");
     expect(googleButton.className).not.toContain("bg-primary");
+    expect(googleButton.querySelector("svg")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
   });
 
   it("renders two sibling links and two total buttons", () => {

@@ -10,6 +10,7 @@ import {
   signInWithPassword,
 } from "@/lib/auth/browser";
 import { authRedirects } from "@/lib/auth/redirects";
+import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -130,7 +131,10 @@ export function LoginForm() {
             loading={googleLoading}
             onClick={handleGoogleSignIn}
           >
-            Continue with Google
+            <span className="inline-flex items-center gap-2">
+              <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
+              Continue with Google
+            </span>
           </Button>
           {formError && <Alert tone="error">{formError}</Alert>}
         </form>

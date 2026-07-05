@@ -132,6 +132,10 @@ describe("SignupForm", () => {
     const googleButton = screen.getByRole("button", { name: "Sign up with Google" });
     expect(googleButton.className).toContain("bg-surface");
     expect(googleButton.className).not.toContain("bg-primary");
+    expect(googleButton.querySelector("svg")).toHaveAttribute(
+      "aria-hidden",
+      "true"
+    );
   });
 
   it("an existing confirmed email (confirmations-on: fake user, empty identities, no error) shows the existing-email copy and never routes to /check-inbox", async () => {
