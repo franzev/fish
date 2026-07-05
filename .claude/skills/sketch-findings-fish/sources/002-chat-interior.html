@@ -52,7 +52,7 @@
   .appbar .sub { font-size: var(--text-xs); color: var(--muted); }
   .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
-  .iconbtn { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; }
+  .iconbtn { width: var(--tap); height: var(--tap); border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; }
   .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
 
@@ -88,7 +88,7 @@
 
   .composer { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); border-top: 1px solid var(--border); background: var(--surface); }
   .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
-  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; } .send:active { transform: scale(.92); }
+  .send { width: var(--tap); height: var(--tap); border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; transition: transform .12s ease; } .send:active { transform: scale(.92); }
 
   /* ---- correction styles (the variable being tested) ---- */
   /* A: suggestion card */

@@ -31,7 +31,7 @@ Web rail active = distinct fill (`--surface-3`) **+ bold label**, never equal to
 
 ## Brand mark
 
-Use the real logo (`sources/logo.svg` — teal fish badge, brand teal `#1b7ba5`) inside a `.brandmark` (rounded-square, `2px solid var(--ink)` border). It is the **one sanctioned color** in an otherwise monochrome UI. Never render a placeholder letter. (Note: `apps/web/app/icon.svg` currently mixes mint `#75D5CA` and brand teal `#1b7ba5` — finish reconciling the app icon with `logo.svg`'s teal before shipping.)
+Use the real logo (`sources/logo.svg` — teal fish badge, brand teal `#1b7ba5`) inside a `.brandmark` (rounded-square, `2px solid var(--ink)` border). It is the **one sanctioned color** in an otherwise monochrome UI. Never render a placeholder letter. (Note: `apps/web/app/icon.svg` currently renders in mint `#75D5CA` with off-white, **not** `logo.svg`'s brand teal `#1b7ba5` — reconcile the app icon to the teal logo before shipping.)
 
 ## Key CSS patterns (see source)
 
@@ -43,3 +43,4 @@ Use the real logo (`sources/logo.svg` — teal fish badge, brand teal `#1b7ba5`)
 
 - ❌ Icon-only bottom nav. ❌ More than 4 tabs. ❌ Active tab that matches hover / is color-only.
 - ❌ Shipping Progress before coach validation. ❌ A chart-line icon for Progress (reads as a grade — use a milestone *path*).
+- ❌ `<div onclick>` for interactive elements. **Build requirement:** every nav destination is a real `<a>`/`Link`, every row / menu-item / option / chip a real `<button>` with a visible label or `aria-label`, plus `aria-current` on the active tab. The sketches make divs focusable via a throwaway `role="button"`+`tabindex` script — that is a mockup artifact, **not** a pattern to port. The `:focus-visible` ring + native Enter/Space then work for free.

@@ -54,7 +54,7 @@
   .rail-item { width: 60px; height: 60px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); cursor: pointer; transition: all .15s ease; }
   .rail-item span { display: block; font-size: var(--text-xs); text-align: center; }
   .rail-item:hover { background: var(--surface-2); color: var(--ink); }
-  .rail-item.active { background: var(--surface-3); color: var(--ink); }
+  .rail-item.active { background: var(--surface-3); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
   .rail-item.active span { font-weight: 500; }
   .rail .spacer { flex: 1; }
   .content { flex: 1; overflow-y: auto; }
@@ -63,7 +63,7 @@
   .botnav { flex: 0 0 auto; display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); }
   .botnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--tap); color: var(--muted); padding: 4px 0; font-size: var(--text-xs); }
   .botnav-item .pill { padding: 4px 18px; border-radius: 999px; }
-  .botnav-item.active { color: var(--ink); }
+  .botnav-item.active { color: var(--ink); box-shadow: inset 0 2px 0 var(--ink); }
   .botnav-item.active .pill { background: var(--surface-3); }
   .botnav-item.active .navlbl { font-weight: 500; }
 

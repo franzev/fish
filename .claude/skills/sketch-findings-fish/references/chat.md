@@ -29,7 +29,7 @@ explicit; the struck-through "you said" edges toward marking a mistake). **B · 
 ## Build-time states to design (deferred from the sketch)
 
 The sketch shows the happy path. A real build MUST add:
-- **Message lifecycle:** sending → sent → seen, plus a calm **failed** state ("That didn't send. Give it a minute and try again." — never harsh).
+- **Message lifecycle:** sending → sent → seen, plus a calm **failed** state ("Not sent — tap to try again." — never harsh; the retry is a real focusable `<button>`, per sketch 005).
 - **Empty states** (single calm message, no added choices): Messages-empty (heading "Your coach will say hello soon" + "James will start the conversation when you're both ready. Nothing to do yet."), no-assignment on Home, caught-up Progress. (See `states.md` / sketch 005 for the validated copy.)
 - **Long-content truncation** for names/previews/titles.
 

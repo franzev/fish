@@ -54,7 +54,7 @@
   .rlist { flex: 1; overflow: hidden; }
   .crow { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); min-height: var(--tap); cursor: pointer; transition: background .15s ease; }
   .crow:hover { background: var(--surface-2); }
-  .crow.active { background: var(--surface-3); }
+  .crow.active { background: var(--surface-3); box-shadow: inset 3px 0 0 var(--ink); }
   .crow .cmeta { flex: 1; min-width: 0; }
   .crow .cname { color: var(--ink); font-weight: 500; font-size: var(--text-sm); display: flex; justify-content: space-between; gap: var(--s2); }
   .crow .cname .t { font-size: var(--text-xs); color: var(--muted); font-weight: 400; }
@@ -67,7 +67,7 @@
   .appbar .sub { font-size: var(--text-xs); color: var(--muted); }
   .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-3); color: var(--ink); display: grid; place-items: center; font-weight: 500; font-size: var(--text-sm); flex: 0 0 auto; position: relative; }
   .avatar .pres { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 2px solid var(--surface); }
-  .iconbtn { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; } .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
+  .iconbtn { width: var(--tap); height: var(--tap); border-radius: 50%; display: grid; place-items: center; background: transparent; border: none; color: var(--body); cursor: pointer; transition: background .15s ease; } .iconbtn:hover { background: var(--surface-2); color: var(--ink); }
   svg.i { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; } svg.i.sm { width: 19px; height: 19px; }
 
   .thread { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -86,14 +86,14 @@
   .composer { flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--surface); }
   .composer .baserow { display: flex; align-items: center; gap: var(--s2); padding: var(--s3) var(--s4); }
   .composer .field { flex: 1; min-height: var(--tap); display: flex; align-items: center; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill); color: var(--muted); font-size: var(--text-base); }
-  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; }
+  .send { width: var(--tap); height: var(--tap); border-radius: 50%; background: var(--primary); color: var(--on-primary); border: none; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; }
 
   /* --- A: inline compose-fix --- */
   .composefix { padding: var(--s4) var(--s5); border-top: 1px solid var(--border); background: var(--surface-2); }
   .composefix .cflabel { font-size: var(--text-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--notice); font-weight: 500; display: flex; align-items: center; justify-content: space-between; }
   .composefix .cfquote { font-size: var(--text-sm); color: var(--muted); margin-top: var(--s2); border-left: 3px solid var(--border-strong); padding-left: 10px; }
   .composefix .cffield { margin-top: var(--s3); min-height: var(--tap); display: flex; align-items: center; padding: 10px 14px; background: var(--surface); border: 1px solid var(--control-border); border-radius: var(--r-md); color: var(--ink); }
-  .composefix .cffield b { border-bottom: 2px solid var(--notice); }
+  .composefix .cffield b { border-bottom: 2px solid var(--notice); font-weight: 600; }
   .composefix .cfnote { margin-top: var(--s2); font-size: var(--text-sm); color: var(--muted); padding: 0 4px; }
   .composefix .cfactions { display: flex; gap: var(--s2); margin-top: var(--s3); }
   .btn { font-family: var(--font-body); font-size: var(--text-base); min-height: var(--tap); padding: 0 var(--s5); border-radius: var(--r-md); cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); transition: all .15s ease; }

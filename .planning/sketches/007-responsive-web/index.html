@@ -54,14 +54,14 @@
   .rrail { display: none; width: 84px; flex: 0 0 auto; border-right: 1px solid var(--border); background: var(--surface); flex-direction: column; align-items: center; padding: var(--s5) 0; gap: var(--s2); }
   .rrail .rr-item { width: 60px; height: 60px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); }
   .rrail .rr-item span { font-size: var(--text-xs); }
-  .rrail .rr-item.active { background: var(--surface-3); color: var(--ink); } .rrail .rr-item.active span { font-weight: 500; }
+  .rrail .rr-item.active { background: var(--surface-3); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); } .rrail .rr-item.active span { font-weight: 500; }
   .rrail .sp { flex: 1; }
 
   .rmain { flex: 1 1 auto; display: flex; min-height: 0; min-width: 0; }
   .rlist { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface); }
   .rlist .lh { padding: var(--s4) var(--s5) var(--s3); } .rlist .lh h2 { font-size: var(--text-lg); }
   .conv { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); min-height: 64px; cursor: pointer; }
-  .conv:hover { background: var(--surface-2); } .conv.active { background: var(--surface-3); } .conv.active .cn { font-weight: 600; }
+  .conv:hover { background: var(--surface-2); } .conv.active { background: var(--surface-3); box-shadow: inset 3px 0 0 var(--ink); } .conv.active .cn { font-weight: 600; }
   .conv .cm { flex: 1; min-width: 0; }
   .conv .cn { color: var(--ink); font-weight: 500; font-size: var(--text-sm); display: flex; justify-content: space-between; gap: var(--s2); }
   .conv .cn .t { font-size: var(--text-xs); color: var(--muted); font-weight: 400; }
@@ -86,7 +86,7 @@
 
   .rbotnav { display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); flex: 0 0 auto; }
   .rbn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--tap); color: var(--muted); font-size: var(--text-xs); }
-  .rbn .pill { padding: 4px 18px; border-radius: 999px; } .rbn.active { color: var(--ink); } .rbn.active .pill { background: var(--surface-3); } .rbn.active span { font-weight: 500; }
+  .rbn .pill { padding: 4px 18px; border-radius: 999px; } .rbn.active { color: var(--ink); box-shadow: inset 0 2px 0 var(--ink); } .rbn.active .pill { background: var(--surface-3); } .rbn.active span { font-weight: 500; }
 
   /* container breakpoints — the whole point of this sketch */
   @container (min-width: 600px) {

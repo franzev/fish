@@ -11,7 +11,7 @@ gentle diffuse shadows, unhurried. Dual **light/dark** from one ladder via CSS `
 
 ## Tokens (monochrome ladder)
 
-- Surfaces: `--bg --surface --surface-2 --surface-3`; lines: `--border --border-strong`.
+- Surfaces: `--bg --surface --surface-2 --surface-3`; lines: `--border --border-strong` · **`--control-border`** = the accessible (3:1 non-text contrast, WCAG 1.4.11) edge for tappable controls (chips, options, ghost buttons, compose field).
 - Text: `--ink` (headings/foreground) · `--body` · `--muted` (quiet) · `--faint`.
 - Action: `--primary` (high-contrast ink) / `--on-primary`; `--ring` (focus).
 - **Type:** `--font-body` = Lexend (chosen for reading fluency — the ADHD/non-native audience), `--font-display` = Fraunces. Scale `--text-xs`(12px) … `--text-3xl`. **Never go below 12px** (10–11px labels were bumped up).

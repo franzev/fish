@@ -80,6 +80,7 @@
   .answers { display: flex; flex-wrap: wrap; gap: var(--s2); padding: var(--s3) var(--s5); border-top: 1px solid var(--border); background: var(--surface); flex: 0 0 auto; }
   .achip { display: inline-flex; align-items: center; min-height: var(--tap); padding: 10px 18px; border: 1px solid var(--control-border); border-radius: var(--r-pill); color: var(--ink); font-size: var(--text-sm); cursor: pointer; transition: all .15s ease; }
   .achip:hover { background: var(--surface-2); }
+  .achip.sel { border-color: var(--ink); background: var(--surface-2); }
 
   /* C: scroll form */
   .formhead { padding: var(--s5) var(--s6) var(--s3); }
@@ -243,8 +244,10 @@
   document.addEventListener('click', function(e){
     var opt = e.target.closest('.opt'); if (opt){ opt.parentElement.querySelectorAll('.opt').forEach(function(o){ o.classList.remove('sel'); }); opt.classList.add('sel'); }
     var chip = e.target.closest('.qgroup .chip'); if (chip){ chip.parentElement.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('sel'); }); chip.classList.add('sel'); }
+    var achip = e.target.closest('.achip'); if (achip){ achip.parentElement.querySelectorAll('.achip').forEach(function(c){ c.classList.remove('sel'); c.setAttribute('aria-pressed','false'); }); achip.classList.add('sel'); achip.setAttribute('aria-pressed','true'); }
   });
   document.querySelectorAll('.opt,.achip,.chip').forEach(function(el){ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); });
+  document.querySelectorAll('.achip').forEach(function(c){ c.setAttribute('aria-pressed','false'); });
 </script>
 </body>
 </html>

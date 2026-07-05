@@ -144,7 +144,7 @@
   .rail-item span { display:block; font-size: var(--text-xs); text-align:center; }
   .rail-item.wrap { display:flex; flex-direction: column; align-items:center; justify-content:center; }
   .rail-item:hover { background: var(--surface-2); color: var(--ink); }
-  .rail-item.active { background: var(--surface-3); color: var(--ink); }
+  .rail-item.active { background: var(--surface-3); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
   .rail-item.active span { font-weight: 500; }
   .rail .spacer { flex: 1; }
 
@@ -152,7 +152,7 @@
   .botnav { flex: 0 0 auto; display: flex; justify-content: space-around; padding: 8px 8px 4px; background: var(--surface); border-top: 1px solid var(--border); }
   .botnav-item { flex:1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--tap); color: var(--muted); cursor: pointer; padding: 4px 0; font-size: var(--text-xs); transition: color .15s ease; }
   .botnav-item .pill { padding: 4px 18px; border-radius: 999px; transition: background .18s ease; }
-  .botnav-item.active { color: var(--ink); }
+  .botnav-item.active { color: var(--ink); box-shadow: inset 0 2px 0 var(--ink); }
   .botnav-item.active .navlbl { font-weight: 500; }
   .botnav-item.active .pill { background: var(--surface-3); }
 
@@ -179,7 +179,7 @@
   .convlist { flex: 1; overflow: hidden; }
   .conv { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); cursor: pointer; transition: background .15s ease; min-height: 68px; }
   .conv:hover { background: var(--surface-2); }
-  .conv.active { background: var(--surface-3); }
+  .conv.active { background: var(--surface-3); box-shadow: inset 3px 0 0 var(--ink); }
   .conv.active .cname { font-weight: 600; }
   .conv .cmeta { flex: 1; min-width: 0; }
   .conv .cname { color: var(--ink); font-weight: 500; display: flex; justify-content: space-between; gap: var(--s2); align-items:center; }
@@ -348,7 +348,7 @@
         <div class="app" id="d-and">
           <div class="tabscreen" id="and-home">
             <div class="hub">
-              <div style="display:flex;align-items:center"><div class="logo" style="font-family:var(--font-display);font-weight:600;color:var(--ink);font-size:var(--text-md)">FISH</div><div class="spacer" style="flex:1"></div><div class="avatar" style="width:36px;height:36px;font-size:12px">SR</div></div>
+              <div style="display:flex;align-items:center"><div class="brandmark" style="width:34px;height:34px"><img src="logo.svg" alt="FISH"></div><div class="spacer" style="flex:1"></div><div class="avatar" style="width:36px;height:36px;font-size:12px">SR</div></div>
               <div><div class="greet" style="font-size:var(--text-lg)">Good morning,<br><span class="name">Sofia</span></div><div class="lead">One thing today. No rush.</div></div>
               <div class="one" style="padding:var(--s5)">
                 <div class="tag" style="font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">This week</div>
@@ -589,7 +589,7 @@
         <div class="sysbar"><span>9:41</span><div class="glyphs"><span>▂▄▆</span><span>▮</span></div></div>
         <div class="app">
           <div class="hub">
-            <div style="display:flex;align-items:center"><div class="logo" style="font-family:var(--font-display);font-weight:600;color:var(--ink);font-size:var(--text-md)">FISH</div><div class="spacer" style="flex:1"></div><div class="avatar" style="width:36px;height:36px;font-size:12px">SR</div></div>
+            <div style="display:flex;align-items:center"><div class="brandmark" style="width:34px;height:34px"><img src="logo.svg" alt="FISH"></div><div class="spacer" style="flex:1"></div><div class="avatar" style="width:36px;height:36px;font-size:12px">SR</div></div>
             <div><div class="greet" style="font-size:var(--text-lg)">Good morning,<br><span class="name">Sofia</span></div><div class="lead">One thing today. No rush.</div></div>
             <div class="one" style="padding:var(--s5)">
               <div class="tag" style="font-size:var(--text-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">This week</div>
