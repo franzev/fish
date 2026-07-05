@@ -527,17 +527,17 @@ Source: Supabase JS `select()` / `maybeSingle()` docs and existing repository pa
 | A3 | Snapshotting question metadata into answers is worth the denormalization | Data Model | Low; storage overhead is small, but planner could rely on immutable joins instead. |
 | A4 | Optional debounced text autosave is acceptable if explicit Save is still present | Autosave | Low; UI-SPEC requires explicit primary for text, not a specific debounce cadence. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should save/finalize commands be SQL RPC or Supabase Edge Functions?**  
+1. **RESOLVED: Save/finalize commands use SQL RPC command functions called by Server Actions.**  
    - What we know: D-15 permits Server Actions or Supabase RPC/Edge Functions; transaction semantics are cleaner in DB. `[VERIFIED: 05-CONTEXT.md]`  
-   - What's unclear: Whether the team prefers SQL command functions for Phase 5 or reserves Edge Functions for later command surfaces.  
-   - Recommendation: Use SQL command functions called by Server Actions for Phase 5; reserve Edge Functions for Phase 6/8 commands with external logic.
+   - Decision: Phase 5 uses `public.save_onboarding_answer(p_question_id uuid, p_answer jsonb)` and `public.finalize_onboarding_attempt()` called from authenticated Next.js Server Actions. Edge Functions remain reserved for later command surfaces with external logic.
+   - Plan coverage: `05-01-PLAN.md` creates the SQL command functions; `05-03-PLAN.md` wires `saveOnboardingAnswerAction` and `finalizeOnboardingAttemptAction`.
 
-2. **Should coach review live inline on `/coach/clients/[id]` or as a child route?**  
+2. **RESOLVED: Coach review lives inline on `/coach/clients/[id]`.**  
    - What we know: D-16/D-17 require read-only review from assigned-client context. `[VERIFIED: 05-CONTEXT.md]`  
-   - What's unclear: Page density after adding profile + onboarding.  
-   - Recommendation: Inline section is thinnest; split only if the page becomes too dense.
+   - Decision: Phase 5 adds an inline read-only onboarding review section to the assigned-client detail route. It does not create a child browse route, gallery, or review picker.
+   - Plan coverage: `05-04-PLAN.md` builds `CoachOnboardingReview` and integrates it below the existing profile detail card.
 
 ## Environment Availability
 
