@@ -137,5 +137,19 @@ No blocking or minor gaps. All 6 must-have observable truths are VERIFIED agains
 
 ---
 
+## Post-Verification Hardening (adversarial review)
+
+After the goal-backward verification passed (6/6), a 4-dimension adversarial review of the Phase 4 diff was run (DB freeze/RLS, Server Action, verify:rls soundness, coach-view leak), each finding refuted by 3 independent skeptics before surviving. Three dimensions returned no confirmed defects; one confirmed defect (3/3 skeptics) was found and fixed:
+
+- **HIGH — `getCoachClientDetailData` did not guard a non-UUID route id.** `.eq("id", clientId)` against a `uuid` column throws Postgres `22P02` for a malformed id (e.g. `/coach/clients/foo`, `/coach/clients/1`), which — with no error boundary in the tree — surfaced a distinguishable Next.js 500 instead of the calm not-found, breaking the uniform-not-found / no-enumeration contract (T-04-02, D-11). Missed by the automated gates because `verify:rls` only exercises real UUIDs and the coach page test mocks the data accessor wholesale.
+- **Fix:** `378269b` — a UUID-format guard in `getCoachClientDetailData` returns the identical `{ role, client: null }` not-found for any non-UUID id (no DB round-trip), plus `apps/web/lib/auth/server.test.ts` (3 regression cases: malformed id, numeric/injection-shaped ids, valid-UUID-null). All gates re-run green (`build` 17 routes, `verify:rls` 14/14, `lint`, `typecheck`, **248 tests**).
+
+## Live Verification Attempt (browser)
+
+A live browser pass was attempted via a fresh preview server on `localhost:3001`. The `/login` page rendered correctly and the calm, non-red error-notice copy was confirmed live (an XC-03 data point). Full pixel verification of the authenticated screens was blocked by a **preview-only** `.env.local` `NEXT_PUBLIC_SUPABASE_URL` client-config condition that makes the app's Supabase client unreachable for **all** authenticated routes (home/coach/profile alike) — not a Phase 4 defect. Independently confirmed from the browser that `client1@fish.dev`'s credentials + the local auth endpoint work (token grant → 200) and that Node-side `verify:rls` signs in and passes. The three visual design-line items therefore remain a recommended human eyeball; every underlying property was confirmed at the code/CSS level.
+
+---
+
 *Verified: 2026-07-05T00:00:00Z*
 *Verifier: Claude (gsd-verifier)*
+*Hardened: 2026-07-05 (adversarial review + fix 378269b)*
