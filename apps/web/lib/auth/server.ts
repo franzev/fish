@@ -41,6 +41,7 @@ export interface ClientHomeData {
   role: UserRole;
   firstName: string;
   coachName: string | null;
+  onboarding: ClientOnboardingData | null;
 }
 
 export interface CoachHomeData {
@@ -200,10 +201,21 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
     coachName = coachResult.data?.display_name ?? null;
   }
 
+  let onboarding: ClientOnboardingData | null = null;
+  if (profile.role === "client") {
+    const onboardingResult =
+      await services.database.onboarding.getClientAttemptState();
+    if (!onboardingResult.ok) {
+      throw onboardingResult.error;
+    }
+    onboarding = onboardingResult.data;
+  }
+
   return {
     role: profile.role,
     firstName: profile.displayName.split(" ")[0] ?? "",
     coachName,
+    onboarding,
   };
 }
 

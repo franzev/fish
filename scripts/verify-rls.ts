@@ -397,6 +397,23 @@ async function checkOnboardingActiveVersionRead(): Promise<void> {
   }
 }
 
+async function resetOnboardingVerificationState(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const clientId = await getOwnUserId("ONBD setup", supabase);
+  if (!clientId) return;
+
+  const { error } = await admin
+    .from("onboarding_attempts")
+    .delete()
+    .eq("client_id", clientId);
+
+  report(
+    "ONBD setup: clears prior verification attempt",
+    !error,
+    error?.message,
+  );
+}
+
 async function checkOnboardingSelfSaveAnswer(): Promise<void> {
   const supabase = await signInAs(client1.email, client1.password);
   const questions = await getActiveOnboardingQuestions("ONBD-03 self-save", supabase);
@@ -637,6 +654,7 @@ async function main(): Promise<void> {
   await checkCoachReadsAssignedClientProfile();
   await checkUnassignedCoachDenied();
   await checkCrossClientDenied();
+  await resetOnboardingVerificationState();
   await checkOnboardingActiveVersionRead();
   await checkOnboardingSelfSaveAnswer();
   await checkOnboardingResumePosition();

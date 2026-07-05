@@ -34,6 +34,7 @@ describe("ClientHomePage", () => {
       role: "coach",
       firstName: "Dana",
       coachName: null,
+      onboarding: null,
     });
 
     await expect(ClientHomePage()).rejects.toThrow("NEXT_REDIRECT");
@@ -45,6 +46,7 @@ describe("ClientHomePage", () => {
       role: "client",
       firstName: "Alex",
       coachName: null,
+      onboarding: null,
     });
 
     const Page = await ClientHomePage();
@@ -62,6 +64,7 @@ describe("ClientHomePage", () => {
       role: "client",
       firstName: "Alex",
       coachName: "Coach Dana",
+      onboarding: null,
     });
 
     const Page = await ClientHomePage();
@@ -73,9 +76,66 @@ describe("ClientHomePage", () => {
     ).toBeInTheDocument();
   });
 
-  it("carries zero variant=\"primary\" usage (grep gate, SHEL-01/D-18)", () => {
+  it("renders one assigned onboarding start action when assessment is ready", async () => {
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "client",
+      firstName: "Alex",
+      coachName: "Coach Dana",
+      onboarding: {
+        versionId: "version-1",
+        status: "not_started",
+        attemptId: null,
+        currentQuestionId: "q-1",
+        questions: [],
+        answers: [],
+        savedAnswers: {},
+      },
+    });
+
+    const Page = await ClientHomePage();
+    const { container } = render(Page);
+
+    const action = screen.getByRole("link", { name: "Start onboarding" });
+    expect(action).toHaveAttribute("href", "/onboarding");
+    expect(
+      screen.getByText("Your coach Coach Dana has one setup step for you.")
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".bg-primary")).toHaveLength(1);
+    expect(screen.queryByText(/choose an assessment|pick a plan|gallery/i)).toBeNull();
+  });
+
+  it("renders one assigned onboarding resume action after progress is saved", async () => {
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "client",
+      firstName: "Alex",
+      coachName: "Coach Dana",
+      onboarding: {
+        versionId: "version-1",
+        status: "in_progress",
+        attemptId: "attempt-1",
+        currentQuestionId: "q-2",
+        questions: [],
+        answers: [],
+        savedAnswers: {
+          "q-1": { type: "single_select", optionId: "meetings" },
+        },
+      },
+    });
+
+    const Page = await ClientHomePage();
+    const { container } = render(Page);
+
+    expect(
+      screen.getByRole("link", { name: "Continue onboarding" })
+    ).toHaveAttribute("href", "/onboarding");
+    expect(container.querySelectorAll(".bg-primary")).toHaveLength(1);
+  });
+
+  it("keeps the source to at most one primary action", () => {
     const pageSource = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const matches = (pageSource.match(/variant="primary"/g) ?? []).length;
-    expect(matches).toBe(0);
+    expect(matches).toBeLessThanOrEqual(1);
+    expect(pageSource).toContain('href="/onboarding"');
+    expect(pageSource).not.toMatch(/assessments\.map|templates\.map|plans\.map/i);
   });
 });
