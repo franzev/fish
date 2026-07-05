@@ -232,6 +232,13 @@ export async function getCoachHomeData(): Promise<CoachHomeData | null> {
   };
 }
 
+/* Postgres `uuid` columns reject a non-UUID id with error 22P02 (a THROW, not
+   zero rows). Guarding the id here keeps the not-found contract uniform: a
+   malformed id renders the SAME calm not-found as an unknown/unassigned one,
+   so a coach cannot distinguish "invalid" from "not yours" (T-04-02). */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /* Coach-only read of one assigned client (PROF-06/D-10/D-11). RLS
    (private.is_coach_of, reused verbatim from 0004/0007) is the sole
    authz boundary here -- no app-code id/coach_id filter substitutes for it.
@@ -247,6 +254,12 @@ export async function getCoachClientDetailData(
 
   if (!profile) {
     return null;
+  }
+
+  // A malformed id never matches an existing uuid row; short-circuit to the
+  // same calm not-found instead of letting Postgres 22P02 surface as a 500.
+  if (!UUID_RE.test(clientId)) {
+    return { role: profile.role, client: null };
   }
 
   const clientProfileResult =
