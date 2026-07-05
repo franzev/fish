@@ -48,9 +48,30 @@ describe("ClientList", () => {
     expect(clients).toEqual(original);
   });
 
-  it("contains no cursor-pointer or hover: classes anywhere in its source (D-14, inert)", () => {
+  it("renders rows as links to each coach client detail route (PROF-06)", () => {
+    render(
+      <ClientList
+        clients={[
+          { id: "3", displayName: "Sam Okafor", email: "sam@fish.dev" },
+          { id: "1", displayName: "Alex Rivera", email: "alex@fish.dev" },
+          { id: "2", displayName: "Priya Nair", email: "priya@fish.dev" },
+        ]}
+      />
+    );
+
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(3);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/coach/clients/1",
+      "/coach/clients/2",
+      "/coach/clients/3",
+    ]);
+  });
+
+  it("contains no cursor-pointer or hover: classes anywhere in its source (calm linked rows)", () => {
     const source = readFileSync(resolve(__dirname, "./client-list.tsx"), "utf-8");
     expect(source).not.toMatch(/cursor-pointer|hover:/);
+    expect(source).not.toMatch(/not tappable yet/i);
   });
 
   it("renders a single Card with divide-y dividers, not one Card per row (D-12)", () => {

@@ -107,12 +107,8 @@ export function A11yPrefs({
     applyReducedMotion(reducedMotion);
   }, [reducedMotion]);
 
-  function persist(next: Partial<UpdatePrefsInput>) {
-    void updatePrefsAction({
-      themePref: next.themePref ?? theme,
-      textSizePref: next.textSizePref ?? textSize,
-      reducedMotionPref: next.reducedMotionPref ?? reducedMotion,
-    });
+  function persist(next: UpdatePrefsInput) {
+    void updatePrefsAction(next);
   }
 
   return (
@@ -126,7 +122,11 @@ export function A11yPrefs({
             value={theme}
             onChange={(next) => {
               setTheme(next);
-              persist({ themePref: next });
+              persist({
+                themePref: next,
+                textSizePref: textSize,
+                reducedMotionPref: reducedMotion,
+              });
             }}
           />
         }
@@ -140,7 +140,11 @@ export function A11yPrefs({
             value={textSize}
             onChange={(next) => {
               setTextSize(next);
-              persist({ textSizePref: next });
+              persist({
+                themePref: theme,
+                textSizePref: next,
+                reducedMotionPref: reducedMotion,
+              });
             }}
           />
         }
@@ -154,7 +158,11 @@ export function A11yPrefs({
             value={reducedMotion}
             onChange={(next) => {
               setReducedMotion(next);
-              persist({ reducedMotionPref: next });
+              persist({
+                themePref: theme,
+                textSizePref: textSize,
+                reducedMotionPref: next,
+              });
             }}
           />
         }

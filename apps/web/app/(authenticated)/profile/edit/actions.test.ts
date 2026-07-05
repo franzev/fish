@@ -26,7 +26,12 @@ vi.mock("@/lib/services/supabase/server", () => ({
   }),
 }));
 
-import { updateProfileAction, type EditProfileState } from "./actions";
+import {
+  acceptConsentAction,
+  updatePrefsAction,
+  updateProfileAction,
+  type EditProfileState,
+} from "./actions";
 
 function formDataFrom(values: Record<string, string>): FormData {
   const formData = new FormData();
@@ -137,5 +142,88 @@ describe("updateProfileAction", () => {
   it("never references level in the write payload", () => {
     const source = readFileSync(resolve(__dirname, "./actions.ts"), "utf-8");
     expect(source).not.toMatch(/level/);
+  });
+});
+
+describe("acceptConsentAction", () => {
+  afterEach(() => {
+    getCurrentUserMock.mockReset();
+    updateSafeFieldsMock.mockReset();
+  });
+
+  it("records consent fields through the safe client profile write path (PROF-04)", async () => {
+    getCurrentUserMock.mockResolvedValueOnce({
+      ok: true,
+      data: { id: "client-1" },
+    });
+    updateSafeFieldsMock.mockResolvedValueOnce({ ok: true, data: undefined });
+
+    await acceptConsentAction("2026-07");
+
+    expect(updateSafeFieldsMock).toHaveBeenCalledWith(
+      "client-1",
+      expect.objectContaining({
+        consented: true,
+        consent_version: "2026-07",
+        consented_at: expect.any(String),
+      })
+    );
+    const [, fields] = updateSafeFieldsMock.mock.calls[0];
+    expect(Number.isNaN(Date.parse(fields.consented_at))).toBe(false);
+  });
+
+  it("does not write consent when the user is not signed in", async () => {
+    getCurrentUserMock.mockResolvedValueOnce({ ok: true, data: null });
+
+    await acceptConsentAction("2026-07");
+
+    expect(updateSafeFieldsMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("updatePrefsAction", () => {
+  afterEach(() => {
+    getCurrentUserMock.mockReset();
+    updateSafeFieldsMock.mockReset();
+  });
+
+  it("persists the three accessibility preference fields through the safe path (PROF-03)", async () => {
+    getCurrentUserMock.mockResolvedValueOnce({
+      ok: true,
+      data: { id: "client-1" },
+    });
+    updateSafeFieldsMock.mockResolvedValueOnce({ ok: true, data: undefined });
+
+    await updatePrefsAction({
+      themePref: "dark",
+      textSizePref: "larger",
+      reducedMotionPref: true,
+    });
+
+    expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
+      theme_pref: "dark",
+      text_size_pref: "larger",
+      reduced_motion_pref: true,
+    });
+  });
+
+  it("can persist system defaults as null without falling back to stale values", async () => {
+    getCurrentUserMock.mockResolvedValueOnce({
+      ok: true,
+      data: { id: "client-1" },
+    });
+    updateSafeFieldsMock.mockResolvedValueOnce({ ok: true, data: undefined });
+
+    await updatePrefsAction({
+      themePref: null,
+      textSizePref: "default",
+      reducedMotionPref: null,
+    });
+
+    expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
+      theme_pref: null,
+      text_size_pref: "default",
+      reduced_motion_pref: null,
+    });
   });
 });

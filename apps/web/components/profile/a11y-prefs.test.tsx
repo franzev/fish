@@ -1,13 +1,23 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+const { updatePrefsActionMock } = vi.hoisted(() => ({
+  updatePrefsActionMock: vi.fn(async () => undefined),
+}));
 vi.mock("@/app/(authenticated)/profile/edit/actions", () => ({
-  updatePrefsAction: vi.fn(async () => undefined),
+  updatePrefsAction: updatePrefsActionMock,
 }));
 
 import { A11yPrefs } from "./a11y-prefs";
 
 describe("A11yPrefs", () => {
+  afterEach(() => {
+    updatePrefsActionMock.mockClear();
+    delete document.documentElement.dataset.theme;
+    delete document.documentElement.dataset.textSize;
+    delete document.documentElement.dataset.reducedMotion;
+  });
+
   it("renders exactly three preference controls (PROF-03 cap)", () => {
     render(
       <A11yPrefs
@@ -59,5 +69,79 @@ describe("A11yPrefs", () => {
     expect(
       within(textSizeGroup).getByRole("button", { name: "Default" })
     ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("applies and persists a selected preference immediately (PROF-03)", async () => {
+    render(
+      <A11yPrefs
+        themePref={null}
+        textSizePref={null}
+        reducedMotionPref={null}
+      />
+    );
+
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Appearance" })).getByRole(
+        "button",
+        { name: "Light" }
+      )
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("light");
+    });
+    expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
+      themePref: "light",
+      textSizePref: "default",
+      reducedMotionPref: null,
+    });
+  });
+
+  it("can clear stored preferences back to system/null (PROF-03)", async () => {
+    render(
+      <A11yPrefs
+        themePref="dark"
+        textSizePref="large"
+        reducedMotionPref={true}
+      />
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      expect(document.documentElement.dataset.textSize).toBe("large");
+      expect(document.documentElement.dataset.reducedMotion).toBe("true");
+    });
+
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Appearance" })).getByRole(
+        "button",
+        { name: "System" }
+      )
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBeUndefined();
+    });
+    expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
+      themePref: null,
+      textSizePref: "large",
+      reducedMotionPref: true,
+    });
+
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Reduced motion" })).getByRole(
+        "button",
+        { name: "System" }
+      )
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.reducedMotion).toBeUndefined();
+    });
+    expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
+      themePref: null,
+      textSizePref: "large",
+      reducedMotionPref: null,
+    });
   });
 });
