@@ -72,7 +72,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-  - [ ] 05-03-PLAN.md — client onboarding Server Actions, `/onboarding`, autosave, and resume route wiring (Wave 2)
+  - [x] 05-03-PLAN.md — client onboarding Server Actions, `/onboarding`, autosave, and resume route wiring (Wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -134,7 +134,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 | 2. Secure account you can return to | v1.0 | 8/8 | Complete | 2026-07-03 |
 | 3. Role-aware home | v1.0 | 4/4 | Complete | 2026-07-04 |
 | 4. Client Profiles | v1.1 | 3/3 | Complete    | 2026-07-05 |
-| 5. Data-Driven Onboarding | v1.1 | 2/4 | In Progress | - |
+| 5. Data-Driven Onboarding | v1.1 | 3/4 | In Progress | - |
 | 6. Tracker Engine | v1.1 | 0/? | Not started | - |
 | 7. Chat Schema | v1.1 | 0/? | Not started | - |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 0/? | Not started | - |
