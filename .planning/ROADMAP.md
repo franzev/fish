@@ -23,7 +23,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 ### v1.1 The Coaching Loop (Phases 4-8)
 
 - [x] **Phase 4: Client Profiles** - A client owns their profile and safe-edits it; the coach reads it; protected fields are DB-frozen (completed 2026-07-04)
-- [ ] **Phase 5: Data-Driven Onboarding** - A client answers a DB-driven, one-question-at-a-time assessment that autosaves and resumes; builds the shared config renderer
+- [x] **Phase 5: Data-Driven Onboarding** - A client answers a DB-driven, one-question-at-a-time assessment that autosaves and resumes; builds the shared config renderer
 - [ ] **Phase 6: Tracker Engine** - A client is assigned exactly one config-driven tracker and logs entries; the coach reviews them (reuses the Phase 5 renderer)
 - [ ] **Phase 7: Chat Schema** - Conversation/message/read-state tables land RLS-verified, idempotent, immutable, and realtime-ready (no subscriptions, no UI)
 - [ ] **Phase 8: Real Chat Route + send-message Edge Function** - A client and coach hold a real persisted 1-on-1 conversation through the live route and real Edge Function; E2E covers the three cross-role flows
@@ -76,7 +76,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-  - [ ] 05-04-PLAN.md — inline coach read-only onboarding review and final release gates (Wave 3)
+  - [x] 05-04-PLAN.md — inline coach read-only onboarding review and final release gates (Wave 3)
 
 **UI hint**: yes
 
@@ -134,7 +134,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 | 2. Secure account you can return to | v1.0 | 8/8 | Complete | 2026-07-03 |
 | 3. Role-aware home | v1.0 | 4/4 | Complete | 2026-07-04 |
 | 4. Client Profiles | v1.1 | 3/3 | Complete    | 2026-07-05 |
-| 5. Data-Driven Onboarding | v1.1 | 3/4 | In Progress | - |
+| 5. Data-Driven Onboarding | v1.1 | 4/4 | Complete | 2026-07-05 |
 | 6. Tracker Engine | v1.1 | 0/? | Not started | - |
 | 7. Chat Schema | v1.1 | 0/? | Not started | - |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 0/? | Not started | - |
