@@ -1,6 +1,6 @@
 # Chat & Conversation
 
-Validated in sketch 002 (winner **C · Quoted reply**). Source: `sources/002-chat-interior.html` (the thread interior + correction). The conversation-*list* anatomy below — rows, unread badge, pinned FISH thread — is validated in the nav-shell (001) and responsive (007) sketches.
+Validated in sketch 002 (winner **C · Quoted reply**). Source: `sources/002-chat-interior.html` (the thread interior + correction). The conversation-*list* anatomy below — rows, unread badge, a FISH system thread — is validated in the nav-shell (001) and responsive (007) sketches.
 
 ## The defining decision: gentle correction
 
@@ -21,7 +21,7 @@ explicit; the struck-through "you said" edges toward marking a mistake). **B · 
 
 ## Conversation surface
 
-- **Messages tab = a list, then a thread.** Rows: avatar + **monochrome ink presence dot** (never a green/color dot) + name + time + preview (ellipsis) + unread badge. Include a pinned **FISH** system thread. For coaches, this same list holds many clients.
+- **Messages tab = a list, then a thread.** Rows: avatar + **monochrome ink presence dot** (never a green/color dot) + name + time + preview (ellipsis) + unread badge. Include a **FISH** system thread (the sketches validate its *presence* as an ordinary row; whether it pins to the top is undecided and deferred to the build). For coaches, this same list holds many clients.
 - **Thread:** coach/me bubbles (coach = `--surface` + border; me = `--primary`), day dividers, **voice note** (waveform + play + duration — pronunciation matters), a positive **reaction** as reward.
 - **Composer:** message field and `--primary` send are both **≥56px** (`--tap`) + voice; one primary affordance (send). In the build the field is a real labelled `<textarea>`/`<input>` inside a `<form>` — never a static div.
 - Inline **assigned-practice card** can appear in the stream (bar + one calm phrase, never a fraction/score).

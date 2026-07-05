@@ -18,14 +18,15 @@ One gentle line that explains and reassures the coach will act — **no buttons 
 dead ends**:
 - **New client (Messages):** heading "Your coach will say hello soon" + "James will start the conversation when you're both ready. Nothing to do yet."
 - **No task today (Home):** "Nothing to practice yet today. James will add your next step when you're ready."
-- **Caught up (Progress):** "You're all caught up. Lovely work." (a gentle terminal milestone).
+- **Caught up (Progress):** "You're all caught up" + "Lovely work this week. Your next step will appear here when James adds it." (a gentle terminal milestone — keep the second clause so the state still promises the coach will act, never a bare dead end).
 
 ## Loading & connection
 
 - **Loading** — a soft **skeleton** of what's coming (not a blank screen or a spinner-of-doom); the
   pulse respects `prefers-reduced-motion` (via the theme).
 - **Offline** — a calm `--notice`-tone banner: "You're offline. Messages will send when you're back."
-  with the content dimmed. Never an alarming red failure.
+  De-emphasise **only the composer** (it can't send yet); keep the **message transcript at full opacity**
+  so past coach instructions stay AA-legible for an audience that re-reads. Never an alarming red failure.
 - **Reconnecting** — a quiet "Reconnecting…" in muted tone.
 
 ## Anti-patterns

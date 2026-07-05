@@ -94,6 +94,7 @@
   /* offline banner */
   .banner { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s5); background: color-mix(in srgb, var(--notice) 16%, var(--surface)); color: var(--ink); font-size: var(--text-sm); flex: 0 0 auto; }
   .banner svg { width: 18px; height: 18px; stroke: var(--notice); fill: none; stroke-width: 1.75; stroke-linecap: round; }
+  /* De-emphasis for the composer only — never the message transcript. Past coach instructions stay at full opacity so an audience that re-reads keeps AA-legible history while offline (the banner + dimmed composer carry the "can't send yet" signal). */
   .dim { opacity: .5; }
 
   .state { display: none; height: 100%; flex-direction: column; } .state.on { display: flex; }
@@ -209,9 +210,9 @@
               <div class="skelrow"><div class="skelc"></div><div class="skell"><i style="width:52%"></i><i></i></div></div>
             </div></div>
           <div class="state" data-st="offline"><div class="banner"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M9 17h.01"/><path d="M12 20h.01M5 12.5a10 10 0 0 1 4-2.4M2 8.8a15 15 0 0 1 4-2.4"/></svg> You’re offline. Messages will send when you’re back.</div>
-            <div class="appbar dim"><div class="avatar">JC</div><div><div class="title">James Carter</div><div class="sub">last seen recently</div></div></div>
-            <div class="feed dim"><div class="row"><div class="miniav">JC</div><div class="bubble coach">Try that one aloud once more.</div></div><div class="row me"><div class="bubble me">Okay!</div></div></div>
-            <div class="composer"><input class="field" type="text" readonly aria-label="Write a message" placeholder="Write a message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
+            <div class="appbar"><div class="avatar">JC</div><div><div class="title">James Carter</div><div class="sub">last seen recently</div></div></div>
+            <div class="feed"><div class="row"><div class="miniav">JC</div><div class="bubble coach">Try that one aloud once more.</div></div><div class="row me"><div class="bubble me">Okay!</div></div></div>
+            <div class="composer dim"><input class="field" type="text" readonly aria-label="Write a message" placeholder="Write a message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
           <div class="state" data-st="recon"><div class="banner" style="background:var(--surface-2);color:var(--muted)"><svg viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg> Reconnecting…</div>
             <div class="appbar"><div class="avatar">JC<span class="pres"></span></div><div><div class="title">James Carter</div><div class="sub">online</div></div></div>
             <div class="feed"><div class="row"><div class="miniav">JC</div><div class="bubble coach">Try that one aloud once more.</div></div><div class="row me"><div class="bubble me">Okay!</div></div></div>
@@ -225,8 +226,8 @@
           <div class="state on" data-st="loading"><div class="appbar" style="padding:10px 14px"><div class="title" style="font-size:var(--text-base)">Messages</div></div>
             <div class="feed pulse" style="gap:0;padding:var(--s2) 0"><div class="skelrow"><div class="skelc"></div><div class="skell"><i style="width:60%"></i><i></i></div></div><div class="skelrow"><div class="skelc"></div><div class="skell"><i style="width:45%"></i><i></i></div></div></div></div>
           <div class="state" data-st="offline"><div class="banner"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M9 17h.01"/><path d="M12 20h.01M5 12.5a10 10 0 0 1 4-2.4"/></svg> Offline — will send later.</div>
-            <div class="feed dim" style="padding:var(--s4)"><div class="row"><div class="bubble coach">Try that aloud once more.</div></div><div class="row me"><div class="bubble me">Okay!</div></div></div>
-            <div class="composer"><input class="field" type="text" readonly aria-label="Message" placeholder="Message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
+            <div class="feed" style="padding:var(--s4)"><div class="row"><div class="bubble coach">Try that aloud once more.</div></div><div class="row me"><div class="bubble me">Okay!</div></div></div>
+            <div class="composer dim"><input class="field" type="text" readonly aria-label="Message" placeholder="Message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
           <div class="state" data-st="recon"><div class="banner" style="background:var(--surface-2);color:var(--muted)"><svg viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg> Reconnecting…</div>
             <div class="feed" style="padding:var(--s4)"><div class="row"><div class="bubble coach">Try that aloud once more.</div></div><div class="row me"><div class="bubble me">Okay!</div></div></div>
             <div class="composer"><input class="field" type="text" readonly aria-label="Message" placeholder="Message…"><button class="send" aria-label="Send message"><svg class="i sm" viewBox="0 0 24 24" style="stroke:var(--on-primary)"><path d="M10 14l11-11"/><path d="M21 3l-6.5 18a.5.5 0 0 1-1 0L10 14l-7-3.5a.5.5 0 0 1 0-1z"/></svg></button></div></div>
