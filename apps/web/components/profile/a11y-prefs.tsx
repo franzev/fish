@@ -41,7 +41,7 @@ const reducedMotionOptions: Array<{ value: ReducedMotionPref; label: string }> =
   { value: false, label: "Off" },
 ];
 
-/** Segmented control shared by all three prefs -- max 56px-tall pill buttons,
+/** Segmented control shared by all three prefs -- 56px-tall pill buttons,
  *  active state signaled by color/border only (no size/weight change, so
  *  clicking never resizes the row -- layout-stability contract). */
 function SegmentedControl<T>({
@@ -64,7 +64,7 @@ function SegmentedControl<T>({
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={cn(
-            "min-h-[36px] rounded-pill border px-3 text-[14px] transition-colors",
+            "min-h-[var(--size-control)] rounded-pill border px-3 text-[14px] transition-colors",
             value === opt.value
               ? "border-border-strong bg-surface-2 text-foreground"
               : "border-border bg-surface text-muted hover:text-body"

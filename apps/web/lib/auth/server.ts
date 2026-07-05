@@ -26,6 +26,12 @@ export interface CurrentProfile {
   displayName: string;
 }
 
+export interface AuthenticatedShellProfile extends CurrentProfile {
+  themePref: ThemePref;
+  textSizePref: TextSizePref;
+  reducedMotionPref: boolean | null;
+}
+
 export interface ClientHomeData {
   role: UserRole;
   firstName: string;
@@ -122,8 +128,36 @@ export async function getRootRedirectPath(): Promise<string> {
     : authRedirects.clientHome;
 }
 
-export async function getAuthenticatedShellProfile(): Promise<CurrentProfile | null> {
-  return getCurrentProfile(await createServerSupabaseServices());
+export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShellProfile | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  if (profile.role !== "client") {
+    return {
+      ...profile,
+      themePref: null,
+      textSizePref: "default",
+      reducedMotionPref: null,
+    };
+  }
+
+  const clientProfileResult = await services.database.clientProfiles.findById(
+    profile.userId
+  );
+  if (!clientProfileResult.ok) {
+    throw clientProfileResult.error;
+  }
+
+  return {
+    ...profile,
+    themePref: toThemePref(clientProfileResult.data?.theme_pref ?? null),
+    textSizePref: toTextSizePref(clientProfileResult.data?.text_size_pref ?? null),
+    reducedMotionPref: clientProfileResult.data?.reduced_motion_pref ?? null,
+  };
 }
 
 export async function getClientHomeData(): Promise<ClientHomeData | null> {

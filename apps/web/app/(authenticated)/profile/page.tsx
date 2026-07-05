@@ -46,7 +46,7 @@ export default async function ProfilePage() {
           control={
             <Link
               href="/profile/edit"
-              className="flex min-h-[36px] items-center gap-1 text-[14px] text-body underline"
+              className="flex min-h-[var(--size-control)] items-center gap-1 rounded-control px-3 text-[14px] text-body underline"
             >
               Edit
               <IconChevronRight size={16} stroke={1.75} aria-hidden="true" />

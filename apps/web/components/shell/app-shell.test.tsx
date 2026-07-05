@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/browser", () => ({
   signOut: vi.fn(async () => ({ ok: true, data: undefined })),
@@ -14,6 +14,12 @@ vi.mock("next/navigation", () => ({
 import { AppShell } from "./app-shell";
 
 describe("AppShell", () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.theme;
+    delete document.documentElement.dataset.textSize;
+    delete document.documentElement.dataset.reducedMotion;
+  });
+
   it("renders the muted display name (D-09) and the logout button", () => {
     render(<AppShell displayName="Alex Rivera">Content</AppShell>);
 
@@ -31,6 +37,27 @@ describe("AppShell", () => {
     expect(mains).toHaveLength(1);
     expect(mains[0].className).toContain("max-w-[640px]");
     expect(mains[0].className).toContain("mx-auto");
+  });
+
+  it("hydrates persisted client preferences at the shell level", async () => {
+    render(
+      <AppShell
+        displayName="Alex Rivera"
+        preferences={{
+          themePref: "dark",
+          textSizePref: "larger",
+          reducedMotionPref: true,
+        }}
+      >
+        Content
+      </AppShell>
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      expect(document.documentElement.dataset.textSize).toBe("larger");
+      expect(document.documentElement.dataset.reducedMotion).toBe("true");
+    });
   });
 
   it("D-09/SHEL-01: zero variant=\"primary\" across app-shell.tsx + logout-button.tsx, and variant=\"ghost\" is present", () => {

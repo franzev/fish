@@ -26,5 +26,16 @@ export default async function AuthenticatedLayout({
     redirect(authRedirects.signedOut);
   }
 
-  return <AppShell displayName={profile.displayName}>{children}</AppShell>;
+  return (
+    <AppShell
+      displayName={profile.displayName}
+      preferences={{
+        themePref: profile.themePref,
+        textSizePref: profile.textSizePref,
+        reducedMotionPref: profile.reducedMotionPref,
+      }}
+    >
+      {children}
+    </AppShell>
+  );
 }

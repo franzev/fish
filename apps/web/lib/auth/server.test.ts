@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // clientProfiles.findByIdForCoach() and profiles.findDisplayNameById().
 const getCurrentUserMock = vi.fn();
 const findProfileByIdMock = vi.fn();
+const findClientProfileByIdMock = vi.fn();
 const findByIdForCoachMock = vi.fn();
 const findDisplayNameByIdMock = vi.fn();
 
@@ -16,12 +17,15 @@ vi.mock("@/lib/services/supabase/server", () => ({
         findById: findProfileByIdMock,
         findDisplayNameById: findDisplayNameByIdMock,
       },
-      clientProfiles: { findByIdForCoach: findByIdForCoachMock },
+      clientProfiles: {
+        findById: findClientProfileByIdMock,
+        findByIdForCoach: findByIdForCoachMock,
+      },
     },
   }),
 }));
 
-import { getCoachClientDetailData } from "./server";
+import { getAuthenticatedShellProfile, getCoachClientDetailData } from "./server";
 
 function signedInAsCoach() {
   getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "coach-1" } });
@@ -39,6 +43,7 @@ describe("getCoachClientDetailData — uniform calm not-found (T-04-02)", () => 
   afterEach(() => {
     getCurrentUserMock.mockReset();
     findProfileByIdMock.mockReset();
+    findClientProfileByIdMock.mockReset();
     findByIdForCoachMock.mockReset();
     findDisplayNameByIdMock.mockReset();
   });
@@ -75,5 +80,57 @@ describe("getCoachClientDetailData — uniform calm not-found (T-04-02)", () => 
     // A null client-profile row means unassigned/unknown — the display-name
     // read must NOT happen (it would only run for a visible, assigned client).
     expect(findDisplayNameByIdMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("getAuthenticatedShellProfile — persisted preference hydration", () => {
+  afterEach(() => {
+    getCurrentUserMock.mockReset();
+    findProfileByIdMock.mockReset();
+    findClientProfileByIdMock.mockReset();
+  });
+
+  it("returns persisted client preferences for the authenticated shell", async () => {
+    getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "client-1" } });
+    findProfileByIdMock.mockResolvedValue({
+      ok: true,
+      data: { role: "client", display_name: "Alex Rivera" },
+    });
+    findClientProfileByIdMock.mockResolvedValue({
+      ok: true,
+      data: {
+        theme_pref: "dark",
+        text_size_pref: "larger",
+        reduced_motion_pref: true,
+      },
+    });
+
+    await expect(getAuthenticatedShellProfile()).resolves.toEqual({
+      userId: "client-1",
+      role: "client",
+      displayName: "Alex Rivera",
+      themePref: "dark",
+      textSizePref: "larger",
+      reducedMotionPref: true,
+    });
+    expect(findClientProfileByIdMock).toHaveBeenCalledWith("client-1");
+  });
+
+  it("does not look for client preference rows for coaches", async () => {
+    getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "coach-1" } });
+    findProfileByIdMock.mockResolvedValue({
+      ok: true,
+      data: { role: "coach", display_name: "Jamie Coach" },
+    });
+
+    await expect(getAuthenticatedShellProfile()).resolves.toMatchObject({
+      userId: "coach-1",
+      role: "coach",
+      displayName: "Jamie Coach",
+      themePref: null,
+      textSizePref: "default",
+      reducedMotionPref: null,
+    });
+    expect(findClientProfileByIdMock).not.toHaveBeenCalled();
   });
 });

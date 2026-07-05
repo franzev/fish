@@ -19,13 +19,24 @@ const requiredEnvKeys = [
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
 ] as const;
 
+/* Client bundles cannot read the dynamic `process.env` object at runtime.
+   Keep each public key as a direct property access so Next can inline the
+   values into browser code during build. */
+function bundledPublicEnv(): EnvSource {
+  return {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  };
+}
+
 /**
  * Validate lazily at service construction time. Import-time validation would
  * make tests, Storybook, and `next build` depend on the developer's shell env
  * even when no Supabase client is being created.
  */
 export function validatePublicEnv(
-  source: EnvSource = process.env
+  source: EnvSource = bundledPublicEnv()
 ): ServiceResult<AppPublicEnv> {
   const missing = requiredEnvKeys.filter((key) => !source[key]?.trim());
   if (missing.length > 0) {
@@ -60,7 +71,7 @@ export function validatePublicEnv(
   return serviceSuccess({ supabaseUrl, supabasePublishableKey });
 }
 
-export function getPublicEnv(source: EnvSource = process.env): AppPublicEnv {
+export function getPublicEnv(source: EnvSource = bundledPublicEnv()): AppPublicEnv {
   const result = validatePublicEnv(source);
   if (!result.ok) {
     throw result.error;

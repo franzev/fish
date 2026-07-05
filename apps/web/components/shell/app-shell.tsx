@@ -1,8 +1,17 @@
 import { LogoutButton } from "@/components/auth/logout-button";
+import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
 import Image from "next/image";
+
+type ThemePref = "light" | "dark" | null;
+type TextSizePref = "default" | "large" | "larger" | null;
 
 interface AppShellProps {
   displayName: string;
+  preferences?: {
+    themePref?: ThemePref;
+    textSizePref?: TextSizePref;
+    reducedMotionPref?: boolean | null;
+  };
   children: React.ReactNode;
 }
 
@@ -12,9 +21,14 @@ interface AppShellProps {
    primary-variant button (D-09) — each page owns its own Fraunces heading
    in the content column. LogoutButton is ghost (secondary); the screen's
    primary-action count is ZERO (D-18: "at most one" includes zero). */
-export function AppShell({ displayName, children }: AppShellProps) {
+export function AppShell({ displayName, preferences, children }: AppShellProps) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <PreferenceHydrator
+        themePref={preferences?.themePref}
+        textSizePref={preferences?.textSizePref}
+        reducedMotionPref={preferences?.reducedMotionPref}
+      />
       <header className="flex items-center justify-between border-b border-border px-5 py-4">
         <Image src="/logo.svg" alt="FISH" width={32} height={32} />
         <span className="text-[14px] text-muted">{displayName}</span>

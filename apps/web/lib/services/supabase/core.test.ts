@@ -82,4 +82,23 @@ describe("Supabase service registry", () => {
       expect(result.error.details).toEqual({ supabaseCode: "42501" });
     }
   });
+
+  it("treats a missing auth session as a signed-out user, not a service failure", async () => {
+    const client = {
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: null },
+          error: {
+            name: "AuthSessionMissingError",
+            message: "Auth session missing!",
+            status: 400,
+          },
+        })),
+      },
+    } as unknown as AppSupabaseClient;
+
+    await expect(
+      createSupabaseServices(client).auth.getCurrentUser()
+    ).resolves.toEqual({ ok: true, data: null });
+  });
 });

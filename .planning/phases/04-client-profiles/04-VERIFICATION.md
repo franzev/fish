@@ -1,29 +1,31 @@
 ---
 phase: 04-client-profiles
-verified: 2026-07-05T00:00:00Z
-status: human_needed
-score: 6/6 must-haves verified
+verified: 2026-07-05T02:18:48Z
+status: passed
+score: 9/9 must-haves verified (6 original truths + 3 browser UAT checks)
 has_blocking_gaps: false
 overrides_applied: 0
-human_verification:
-  - test: "Walk /profile and /profile/edit in a running dev server, in both light and dark themes"
-    expected: "Profile view holds sketch 003 winner A (essentials only, zero primary buttons); edit screen has exactly one Save primary; failed-save notice renders in calm never-red tone; 56px row heights hold; both themes render correctly"
-    why_human: "No automated visual/design-line test exists in this repo (XC-03); SUMMARY 04-02 explicitly flags this human_judgment: true"
-  - test: "Toggle each of the three a11y prefs (theme, text-size, reduced-motion) in a running browser and confirm instant apply"
-    expected: "Each pref applies instantly against the SERVED/compiled CSS (Lightning CSS light-dark() polyfill), not just authored CSS; values persist and rehydrate after reload"
-    why_human: "Compiled CSS behavior cannot be verified by static grep — requires a live browser session per the repo's own durable convention (STATE.md)"
-  - test: "Walk /coach/clients/[id] in a running dev server, in both themes"
-    expected: "Read-only detail (no primary button), level rendered as a quiet data label (never a grade/percentage), a11y prefs and consent absent, calm not-found tone, roster rows keyboard-focusable"
-    why_human: "No automated design-line/a11y assertion exists; SUMMARY 04-03 explicitly flags this human_judgment: true (D4)"
+human_verification: []
+browser_uat:
+  uat_file: 04-UAT.md
+  passed: 3
+  issues: 0
+  screenshots:
+    - uat-artifacts/profile-light.png
+    - uat-artifacts/profile-dark.png
+    - uat-artifacts/profile-edit-dark.png
+    - uat-artifacts/coach-detail-light.png
+    - uat-artifacts/coach-detail-dark.png
+  gaps_remaining: []
 ---
 
 # Phase 4: Client Profiles Verification Report
 
 **Phase Goal:** A client can view and safe-edit their own profile, a coach can read an assigned client's profile read-only, and protected fields cannot be self-escalated — establishing the safe/protected write-safety discipline the whole milestone reuses. Release gates (ROADMAP SC #5): `pnpm build` green and `pnpm verify:rls` green with self-read / self-safe-update / assigned-coach-read / unassigned-denial / cross-client-denial / protected-field-freeze assertions for `client_profiles`.
 
-**Verified:** 2026-07-05T00:00:00Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-07-05T02:18:48Z
+**Status:** passed
+**Re-verification:** Yes — browser UAT closed the three prior human-needed items
 
 ## Goal Achievement
 
@@ -84,7 +86,7 @@ No hollow props or static-empty-return patterns found in any Level-4-checked art
 | `pnpm build` produces the expected new routes | `pnpm build` | 17 routes incl. `/profile`, `/profile/edit`, `/coach/clients/[id]` (all `ƒ` dynamic) | PASS |
 | `pnpm lint` clean | `pnpm lint` | 0 errors | PASS |
 | `pnpm typecheck` clean across all 3 workspace projects | `pnpm typecheck` | 0 errors | PASS |
-| Full web test suite | `pnpm --filter @fish/web test -- --run` | 245/245 tests pass (35 files) | PASS |
+| Full web test suite | `pnpm --filter @fish/web test -- --run` | 268/268 tests pass (39 files) | PASS |
 | Zero primary buttons on `/profile` | `grep -c 'variant="primary"' profile/page.tsx` | 0 | PASS |
 | Exactly one primary button on `/profile/edit` | `grep -c 'variant="primary"' edit-profile-form.tsx` | 1 | PASS |
 | Zero primary buttons on coach detail | `grep -c 'variant="primary"' coach/clients/[id]/page.tsx` | 0 | PASS |
@@ -113,27 +115,22 @@ None. Scanned all 19 phase-modified files for `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/
 
 ### Human Verification Required
 
-#### 1. Visual design-line review of `/profile` and `/profile/edit` (XC-03)
+None. The three prior human-needed checks were executed in a live browser with
+Playwright + system Chrome against `http://localhost:3001` after `pnpm build`.
+`04-UAT.md` is complete with `total: 3, passed: 3, issues: 0, pending: 0,
+skipped: 0, blocked: 0`.
 
-**Test:** Walk both routes in a running dev server, in both light and dark themes.
-**Expected:** `/profile` holds sketch 003 winner A (essentials only, zero primary buttons, 56px rows); `/profile/edit` has exactly one Save primary action; a failed save shows a calm never-red notice; both themes render correctly with no layout shift.
-**Why human:** No automated visual/design-line test exists in this repo. SUMMARY 04-02 explicitly flags this `human_judgment: true` and states it is outstanding.
+Browser UAT evidence:
 
-#### 2. Instant-apply a11y preferences against served CSS
-
-**Test:** Toggle theme, text-size, and reduced-motion in a running browser session.
-**Expected:** Each preference applies instantly against the compiled/served CSS (Lightning CSS `light-dark()` polyfill), not just the authored stylesheet; values persist to the DB and rehydrate correctly on reload/another session.
-**Why human:** Compiled CSS behavior cannot be confirmed via static grep of source files; the repo's own durable convention requires a live-browser check for this class of change.
-
-#### 3. Visual design-line review of `/coach/clients/[id]` (XC-03)
-
-**Test:** Walk the coach detail route and the linked roster in a running dev server, in both themes.
-**Expected:** Read-only detail with no primary button; level rendered as a quiet data label (never a grade/percentage); a11y prefs and consent absent from the coach's view; calm not-found tone for denied/missing clients; roster rows are visibly keyboard-focusable.
-**Why human:** No automated design-line/a11y assertion exists for this view. SUMMARY 04-03 explicitly flags this `human_judgment: true` (item D4) as the one remaining sign-off item.
+| Check | Evidence |
+|-------|----------|
+| `/profile` + `/profile/edit` visual/design line | `/profile` rendered in light and dark, primary count 0, row heights 96-97px, all controls 56px; `/profile/edit` inherited persisted dark/larger/reduced-motion prefs, had exactly one primary action (`Save`), controls 56px, no red/error class in baseline render. Screenshots: `uat-artifacts/profile-light.png`, `uat-artifacts/profile-dark.png`, `uat-artifacts/profile-edit-dark.png`. |
+| A11y prefs served-CSS behavior | Browser toggles set `html[data-theme="dark"]`, `html[data-text-size="larger"]`, and `html[data-reduced-motion="true"]` immediately; root font size changed to 20px; color scheme changed to dark; transition and animation durations clamped to `1e-06s`; reload rehydrated all three persisted prefs from `client_profiles`. |
+| Coach detail + roster visual/design line | Coach login rendered three `/coach/clients/[id]` links at 82-83px height; assigned detail rendered in light and dark with primary count 0, plain `Level`/`A2`, no appearance/text-size/reduced-motion/agreement/consent text leak; malformed id rendered calm notice copy with no red/error class. Screenshots: `uat-artifacts/coach-detail-light.png`, `uat-artifacts/coach-detail-dark.png`. |
 
 ### Gaps Summary
 
-No blocking or minor gaps. All 6 must-have observable truths are VERIFIED against live code and a live re-run of the DB-layer proof (`pnpm verify:rls`, 14/14), not merely SUMMARY claims. All required artifacts exist, are substantive, and are wired correctly with no orphaned or hollow paths. Requirements PROF-01 through PROF-06 are all satisfied with concrete evidence. The only open items are the three XC-03/design-line visual checks that both plan SUMMARYs themselves correctly flagged as `human_judgment: true` — these route to human verification per the decision tree (status cannot be `passed` while human-verification items are open), not because any check failed.
+No gaps. All 6 original must-have observable truths are VERIFIED against live code and a live re-run of the DB-layer proof (`pnpm verify:rls`, 14/14), not merely SUMMARY claims. The 3 previously human-needed browser UAT checks are now complete and passing. All required artifacts exist, are substantive, and are wired correctly with no orphaned or hollow paths. Requirements PROF-01 through PROF-06 are all satisfied with concrete evidence, and `04-UAT.md` records 3/3 passing checks with screenshots.
 
 ---
 
@@ -144,12 +141,42 @@ After the goal-backward verification passed (6/6), a 4-dimension adversarial rev
 - **HIGH — `getCoachClientDetailData` did not guard a non-UUID route id.** `.eq("id", clientId)` against a `uuid` column throws Postgres `22P02` for a malformed id (e.g. `/coach/clients/foo`, `/coach/clients/1`), which — with no error boundary in the tree — surfaced a distinguishable Next.js 500 instead of the calm not-found, breaking the uniform-not-found / no-enumeration contract (T-04-02, D-11). Missed by the automated gates because `verify:rls` only exercises real UUIDs and the coach page test mocks the data accessor wholesale.
 - **Fix:** `378269b` — a UUID-format guard in `getCoachClientDetailData` returns the identical `{ role, client: null }` not-found for any non-UUID id (no DB round-trip), plus `apps/web/lib/auth/server.test.ts` (3 regression cases: malformed id, numeric/injection-shaped ids, valid-UUID-null). All gates re-run green (`build` 17 routes, `verify:rls` 14/14, `lint`, `typecheck`, **248 tests**).
 
-## Live Verification Attempt (browser)
+## Live Browser UAT Completed
 
-A live browser pass was attempted via a fresh preview server on `localhost:3001`. The `/login` page rendered correctly and the calm, non-red error-notice copy was confirmed live (an XC-03 data point). Full pixel verification of the authenticated screens was blocked by a **preview-only** `.env.local` `NEXT_PUBLIC_SUPABASE_URL` client-config condition that makes the app's Supabase client unreachable for **all** authenticated routes (home/coach/profile alike) — not a Phase 4 defect. Independently confirmed from the browser that `client1@fish.dev`'s credentials + the local auth endpoint work (token grant → 200) and that Node-side `verify:rls` signs in and passes. The three visual design-line items therefore remain a recommended human eyeball; every underlying property was confirmed at the code/CSS level.
+A fresh production build was served with `next start -p 3001` and exercised via
+Playwright + system Chrome. The first live pass exposed three verification
+blockers, all fixed before closing UAT:
+
+- Browser Supabase clients could throw before auth requests because the public
+  env helper defaulted to the dynamic `process.env` object; this is now a lazy,
+  statically-inlineable pair of direct `process.env.NEXT_PUBLIC_*` reads, with a
+  source regression test.
+- `AuthSessionMissingError` from `auth.getUser()` is now treated as a signed-out
+  user (`{ ok: true, data: null }`), letting authenticated layouts redirect to
+  `/login` instead of surfacing a production RSC error page.
+- Persisted a11y prefs now hydrate at the authenticated shell level, not only
+  inside `/profile`, so `/profile/edit` and future authenticated screens inherit
+  theme/text-size/reduced-motion correctly. Profile preference controls and the
+  edit-profile navigation target were raised to the required 56px FISH control
+  size.
+
+Final live UAT assertions passed:
+
+- `/profile` light + dark: primary count 0; row heights 96-97px; every visible
+  control 56px; screenshots saved.
+- A11y prefs: `data-theme="dark"`, `data-text-size="larger"`, and
+  `data-reduced-motion="true"` applied immediately, persisted through reload,
+  and rehydrated on `/profile/edit`; reduced motion clamped transition and
+  animation durations to `1e-06s`.
+- `/profile/edit`: dark/larger/reduced-motion inherited; exactly one primary
+  action (`Save`); controls 56px.
+- `/coach`: three roster links to `/coach/clients/[id]`, 82-83px high.
+- `/coach/clients/[id]`: primary count 0 in light and dark; plain `Level`/`A2`;
+  no prefs or consent leak; malformed id shows calm not-found notice, no
+  red/error class.
 
 ---
 
-*Verified: 2026-07-05T00:00:00Z*
+*Verified: 2026-07-05T02:18:48Z*
 *Verifier: Claude (gsd-verifier)*
-*Hardened: 2026-07-05 (adversarial review + fix 378269b)*
+*Hardened: 2026-07-05 (adversarial review + fix 378269b; browser UAT fixes + commit 4004c6b)*

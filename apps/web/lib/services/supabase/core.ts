@@ -26,6 +26,17 @@ type SupabaseResponse<T> = {
   error: { message?: string; code?: string; name?: string; status?: number } | null;
 };
 
+function isAuthSessionMissingError(error: {
+  message?: string;
+  name?: string;
+  status?: number;
+}): boolean {
+  return (
+    error.name === "AuthSessionMissingError" ||
+    error.message?.toLowerCase().includes("auth session missing") === true
+  );
+}
+
 async function safely<T>(
   operation: string,
   run: () => Promise<ServiceResult<T>>
@@ -50,6 +61,10 @@ class SupabaseAuthServiceImpl implements SupabaseAuthService {
     return safely("auth.getCurrentUser", async () => {
       const { data, error } = await this.client.auth.getUser();
       if (error) {
+        if (isAuthSessionMissingError(error)) {
+          return serviceSuccess(null);
+        }
+
         return serviceFailure(
           mapSupabaseError(error, {
             code: "auth",

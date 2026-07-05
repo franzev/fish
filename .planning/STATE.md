@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: The Coaching Loop
 status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-07-05T02:19:32.494Z"
-last_activity: 2026-07-04
+last_updated: "2026-07-05T02:23:20.895Z"
+last_activity: 2026-07-05
 progress:
   total_phases: 5
   completed_phases: 1
@@ -16,7 +16,7 @@ progress:
 
 # Project State: FISH
 
-**Last updated:** 2026-07-04
+**Last updated:** 2026-07-05
 
 ## Project Reference
 
@@ -24,16 +24,16 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements
-- **Current focus:** Phase 04 — client-profiles
+- **Current focus:** Phase 05 — data-driven-onboarding
 
 ## Current Position
 
-Phase: 04 (client-profiles) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-07-04 - Completed quick task 260705-amu: Bootstrap the iOS project and configure foundational UI infrastructure
+Phase: 05 (data-driven-onboarding) — READY TO PLAN
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-05 - Phase 04 browser UAT completed 3/3, verification passed, security gate clean; Phase 04 marked complete
 
-Progress: [███████░░░] 67%
+Progress: [██░░░░░░░░] 20%
 
 ## Milestone v1.1 Phases
 
@@ -41,8 +41,8 @@ Dependency chain: profiles → onboarding → tracker → chat-schema → chat-r
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 4 | Client Profiles | v1.0 | PROF-01..06 | Not started |
-| 5 | Data-Driven Onboarding (build shared renderer) | Phase 4 | ONBD-01..07 | Not started |
+| 4 | Client Profiles | v1.0 | PROF-01..06 | Complete |
+| 5 | Data-Driven Onboarding (build shared renderer) | Phase 4 | ONBD-01..07 | Ready to plan |
 | 6 | Tracker Engine (reuse renderer) | Phase 5, Phase 4 | TRAK-01..06 | Not started |
 | 7 | Chat Schema (realtime-ready, no subscriptions/UI) | v1.0 (parallelizable) | CHAT-01, CHAT-04, CHAT-06 | Not started |
 | 8 | Real Chat Route + send-message Edge Function | Phase 7, Phase 5, Phase 6 | CHAT-02/03/05/07, XC-04 | Not started |
@@ -71,6 +71,7 @@ Milestone-scoped decision log archived with v1.0 (see PROJECT.md Key Decisions f
 - [Phase 04]: Auto-provision client_profiles via a separate AFTER INSERT ON profiles trigger — RESEARCH Pattern 3 Option B — keeps the hardened handle_new_user (0002) untouched
 - [Phase 04-02]: The repo's first Server Action (updateProfileAction) uses useActionState + uncontrolled defaultValue; re-verifies getUser() inside the action per T-04-05 — Server Actions are directly POST-reachable; the calling page's own wrong-door guard is not sufficient auth verification
 - [Phase 04-02]: Product-facing a11y prefs (theme/text-size/reduced-motion) use NEW html[data-*] attribute names distinct from the dev-only data-kit-theme, sharing only the Lightning CSS mechanism — Prevents a real client session and an open /kit dev-preview tab from ever colliding on the same attribute
+- [Phase 04-UAT]: Persisted a11y prefs hydrate at the authenticated shell level (not only inside `/profile`) so every authenticated route inherits theme/text-size/reduced-motion; browser Supabase clients require direct `process.env.NEXT_PUBLIC_*` property reads so Next can inline public env values; `AuthSessionMissingError` maps to signed-out/null so route guards redirect instead of rendering production RSC errors.
 
 ### v1.1 roadmap decisions (2026-07-04)
 
@@ -112,10 +113,10 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 **Last session:** 2026-07-05T02:19:32.489Z
 
-- **Last activity:** 2026-07-04
+- **Last activity:** 2026-07-05
 - **Stopped at:** Phase 5 UI-SPEC approved
 - **Resume file:** .planning/phases/05-data-driven-onboarding/05-UI-SPEC.md
-- **Next action:** `/gsd:plan-phase 4` — plan Client Profiles (the safe/protected write-safety discipline the whole milestone reuses)
+- **Next action:** `/gsd:plan-phase 5` — plan Data-Driven Onboarding (shared config renderer/validator)
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 roadmap added: 2026-07-04.*
