@@ -5,14 +5,14 @@ struct MessageRow: View {
     var grouped = false
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: FISHSpacing.sm) {
+        HStack(alignment: .bottom, spacing: Spacing.sm) {
             if message.mine {
-                Spacer(minLength: FISHSpacing.xl)
+                Spacer(minLength: Spacing.xl)
             } else {
                 avatarSlot
             }
 
-            VStack(alignment: message.mine ? .trailing : .leading, spacing: FISHSpacing.xs) {
+            VStack(alignment: message.mine ? .trailing : .leading, spacing: Spacing.xs) {
                 if !grouped {
                     metaRow
                 }
@@ -21,8 +21,8 @@ struct MessageRow: View {
 
                 if message.mine, let status = message.status {
                     Text(status.rawValue)
-                        .font(FISHType.caption)
-                        .foregroundStyle(FISHColors.muted)
+                        .font(Typography.caption)
+                        .foregroundStyle(Palette.muted)
                 }
             }
             .frame(maxWidth: 320, alignment: message.mine ? .trailing : .leading)
@@ -30,7 +30,7 @@ struct MessageRow: View {
             if message.mine {
                 avatarSlot
             } else {
-                Spacer(minLength: FISHSpacing.xl)
+                Spacer(minLength: Spacing.xl)
             }
         }
     }
@@ -47,24 +47,24 @@ struct MessageRow: View {
     }
 
     private var metaRow: some View {
-        HStack(spacing: FISHSpacing.sm) {
+        HStack(spacing: Spacing.sm) {
             Text(message.mine ? message.author.role : message.author.name)
-                .font(FISHType.label)
-                .foregroundStyle(FISHColors.foreground)
+                .font(Typography.label)
+                .foregroundStyle(Palette.foreground)
             Text(message.sentAt)
-                .font(FISHType.caption)
-                .foregroundStyle(FISHColors.muted)
+                .font(Typography.caption)
+                .foregroundStyle(Palette.muted)
         }
     }
 }
 
 #Preview("Message rows") {
-    FISHTheme {
-        VStack(spacing: FISHSpacing.sm) {
+    Theme {
+        VStack(spacing: Spacing.sm) {
             ForEach(ChatPreviewData.messages) { message in
                 MessageRow(message: message)
             }
         }
-        .padding(FISHSpacing.md)
+        .padding(Spacing.md)
     }
 }

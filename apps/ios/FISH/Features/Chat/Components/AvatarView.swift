@@ -19,11 +19,11 @@ enum AvatarSize {
     var font: Font {
         switch self {
         case .small:
-            FISHType.caption
+            Typography.caption
         case .medium:
-            FISHType.label
+            Typography.label
         case .large:
-            FISHType.bodyMedium
+            Typography.bodyMedium
         }
     }
 }
@@ -35,16 +35,16 @@ struct AvatarView: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(FISHColors.surface2)
+                .fill(Palette.surface2)
 
             if initials.isEmpty {
                 Image(systemName: "person")
-                    .font(FISHType.label)
-                    .foregroundStyle(FISHColors.muted)
+                    .font(Typography.label)
+                    .foregroundStyle(Palette.muted)
             } else {
                 Text(initials)
                     .font(size.font)
-                    .foregroundStyle(FISHColors.body)
+                    .foregroundStyle(Palette.body)
             }
         }
         .frame(width: size.value, height: size.value)
@@ -63,12 +63,12 @@ struct AvatarView: View {
 }
 
 #Preview("Avatar") {
-    FISHTheme {
-        HStack(spacing: FISHSpacing.md) {
+    Theme {
+        HStack(spacing: Spacing.md) {
             AvatarView(name: "Maya Chen", size: .small)
             AvatarView(name: "Alex Rivera")
             AvatarView(name: "", size: .large)
         }
-        .padding(FISHSpacing.lg)
+        .padding(Spacing.lg)
     }
 }

@@ -1,5 +1,5 @@
 //
-//  FISHApp.swift
+//  AppEntry.swift
 //  FISH
 //
 //  Created by Franz Evangelista on 7/5/26.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct FISHApp: App {
+struct AppEntry: App {
     init() {
         FontRegistry.registerAll()
     }

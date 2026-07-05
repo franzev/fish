@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct FISHProgress: View {
+struct ProgressBar: View {
     let value: Double
 
     var body: some View {
@@ -8,24 +8,24 @@ struct FISHProgress: View {
             let clamped = min(max(value, 0), 1)
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(FISHColors.surface2)
+                    .fill(Palette.surface2)
                 Capsule()
-                    .fill(FISHColors.primary)
+                    .fill(Palette.primary)
                     .frame(width: proxy.size.width * clamped)
             }
         }
-        .frame(height: FISHSizes.progress)
+        .frame(height: Sizes.progress)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Progress")
     }
 }
 
 #Preview("Progress") {
-    FISHTheme {
-        VStack(spacing: FISHSpacing.md) {
-            FISHProgress(value: 0.35)
-            FISHProgress(value: 0.7)
+    Theme {
+        VStack(spacing: Spacing.md) {
+            ProgressBar(value: 0.35)
+            ProgressBar(value: 0.7)
         }
-        .padding(FISHSpacing.lg)
+        .padding(Spacing.lg)
     }
 }

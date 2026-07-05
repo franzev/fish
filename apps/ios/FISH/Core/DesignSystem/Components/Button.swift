@@ -1,13 +1,13 @@
 import SwiftUI
 
-enum FISHButtonVariant {
+enum ButtonVariant {
     case primary
     case secondary
     case ghost
 }
 
-struct FISHButton<Label: View>: View {
-    private let variant: FISHButtonVariant
+struct Button<Label: View>: View {
+    private let variant: ButtonVariant
     private let fullWidth: Bool
     private let loading: Bool
     private let action: () -> Void
@@ -15,7 +15,7 @@ struct FISHButton<Label: View>: View {
     @Environment(\.isEnabled) private var isEnabled
 
     init(
-        variant: FISHButtonVariant = .primary,
+        variant: ButtonVariant = .primary,
         fullWidth: Bool = false,
         loading: Bool = false,
         action: @escaping () -> Void,
@@ -29,13 +29,13 @@ struct FISHButton<Label: View>: View {
     }
 
     var body: some View {
-        Button {
+        SwiftUI.Button {
             guard !loading else { return }
             action()
         } label: {
             ZStack {
                 label
-                    .opacity(loading ? FISHOpacity.hidden : FISHOpacity.full)
+                    .opacity(loading ? Opacity.hidden : Opacity.full)
 
                 if loading {
                     ProgressView()
@@ -44,12 +44,12 @@ struct FISHButton<Label: View>: View {
                         .controlSize(.small)
                 }
             }
-            .font(FISHType.bodyMedium)
-            .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: FISHSizes.control)
-            .padding(.horizontal, FISHSpacing.lg)
+            .font(Typography.bodyMedium)
+            .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: Sizes.control)
+            .padding(.horizontal, Spacing.lg)
         }
         .buttonStyle(
-            FISHButtonStyle(
+            ActionButtonStyle(
                 variant: variant,
                 foregroundColor: foregroundColor,
                 backgroundColor: backgroundColor,
@@ -63,20 +63,20 @@ struct FISHButton<Label: View>: View {
     private var foregroundColor: Color {
         switch variant {
         case .primary:
-            FISHColors.onPrimary
+            Palette.onPrimary
         case .secondary:
-            FISHColors.foreground
+            Palette.foreground
         case .ghost:
-            FISHColors.muted
+            Palette.muted
         }
     }
 
     private var backgroundColor: Color {
         switch variant {
         case .primary:
-            FISHColors.primary
+            Palette.primary
         case .secondary:
-            FISHColors.surface
+            Palette.surface
         case .ghost:
             Color.clear
         }
@@ -85,15 +85,15 @@ struct FISHButton<Label: View>: View {
     private var borderColor: Color {
         switch variant {
         case .secondary:
-            FISHColors.border
+            Palette.border
         case .primary, .ghost:
             Color.clear
         }
     }
 }
 
-private struct FISHButtonStyle: ButtonStyle {
-    let variant: FISHButtonVariant
+private struct ActionButtonStyle: ButtonStyle {
+    let variant: ButtonVariant
     let foregroundColor: Color
     let backgroundColor: Color
     let borderColor: Color
@@ -103,34 +103,34 @@ private struct FISHButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(foregroundColor)
             .background(
-                RoundedRectangle(cornerRadius: FISHRadius.control, style: .continuous)
-                    .fill(configuration.isPressed && variant == .primary ? FISHColors.primaryPress : backgroundColor)
+                RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                    .fill(configuration.isPressed && variant == .primary ? Palette.primaryPress : backgroundColor)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: FISHRadius.control, style: .continuous)
-                    .stroke(borderColor, lineWidth: FISHStroke.hairline)
+                RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                    .stroke(borderColor, lineWidth: Stroke.hairline)
             )
-            .opacity(isEnabled ? FISHOpacity.full : FISHOpacity.disabledContent)
-            .contentShape(RoundedRectangle(cornerRadius: FISHRadius.control, style: .continuous))
+            .opacity(isEnabled ? Opacity.full : Opacity.disabledContent)
+            .contentShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 }
 
 #Preview("Buttons") {
-    FISHTheme {
-        VStack(spacing: FISHSpacing.sm) {
-            FISHButton(fullWidth: true, action: {}) {
+    Theme {
+        VStack(spacing: Spacing.sm) {
+            Button(fullWidth: true, action: {}) {
                 Text("Continue")
             }
-            FISHButton(variant: .secondary, fullWidth: true, action: {}) {
+            Button(variant: .secondary, fullWidth: true, action: {}) {
                 Text("Use email instead")
             }
-            FISHButton(variant: .ghost, action: {}) {
+            Button(variant: .ghost, action: {}) {
                 Text("Back")
             }
-            FISHButton(loading: true, action: {}) {
+            Button(loading: true, action: {}) {
                 Text("Sending")
             }
         }
-        .padding(FISHSpacing.lg)
+        .padding(Spacing.lg)
     }
 }

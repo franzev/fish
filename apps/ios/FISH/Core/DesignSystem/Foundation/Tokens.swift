@@ -11,7 +11,7 @@ private extension UIColor {
 }
 
 private extension Color {
-    static func fishToken(light: UInt32, dark: UInt32) -> Color {
+    static func token(light: UInt32, dark: UInt32) -> Color {
         Color(
             UIColor { traits in
                 UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
@@ -20,28 +20,28 @@ private extension Color {
     }
 }
 
-enum FISHColors {
-    static let bg = Color.fishToken(light: 0xf8f8f8, dark: 0x0b0b0b)
-    static let surface = Color.fishToken(light: 0xffffff, dark: 0x161616)
-    static let surface2 = Color.fishToken(light: 0xebebeb, dark: 0x242424)
-    static let border = Color.fishToken(light: 0x8c8c8c, dark: 0x717171)
-    static let borderStrong = Color.fishToken(light: 0x717171, dark: 0x8f8f8f)
+enum Palette {
+    static let bg = Color.token(light: 0xf8f8f8, dark: 0x0b0b0b)
+    static let surface = Color.token(light: 0xffffff, dark: 0x161616)
+    static let surface2 = Color.token(light: 0xebebeb, dark: 0x242424)
+    static let border = Color.token(light: 0x8c8c8c, dark: 0x717171)
+    static let borderStrong = Color.token(light: 0x717171, dark: 0x8f8f8f)
 
-    static let primary = Color.fishToken(light: 0x0b0b0b, dark: 0xf8f8f8)
-    static let primaryPress = Color.fishToken(light: 0x222222, dark: 0xdedede)
-    static let onPrimary = Color.fishToken(light: 0xf8f8f8, dark: 0x0b0b0b)
+    static let primary = Color.token(light: 0x0b0b0b, dark: 0xf8f8f8)
+    static let primaryPress = Color.token(light: 0x222222, dark: 0xdedede)
+    static let onPrimary = Color.token(light: 0xf8f8f8, dark: 0x0b0b0b)
 
-    static let foreground = Color.fishToken(light: 0x0b0b0b, dark: 0xf5f5f5)
-    static let body = Color.fishToken(light: 0x333333, dark: 0xd7d7d7)
-    static let muted = Color.fishToken(light: 0x636363, dark: 0x989898)
+    static let foreground = Color.token(light: 0x0b0b0b, dark: 0xf5f5f5)
+    static let body = Color.token(light: 0x333333, dark: 0xd7d7d7)
+    static let muted = Color.token(light: 0x636363, dark: 0x989898)
 
-    static let notice = Color.fishToken(light: 0x484848, dark: 0xbebebe)
-    static let error = Color.fishToken(light: 0x932a33, dark: 0xf69a9a)
-    static let warning = Color.fishToken(light: 0x6b4400, dark: 0xe0ae57)
-    static let success = Color.fishToken(light: 0x005725, dark: 0x73c385)
+    static let notice = Color.token(light: 0x484848, dark: 0xbebebe)
+    static let error = Color.token(light: 0x932a33, dark: 0xf69a9a)
+    static let warning = Color.token(light: 0x6b4400, dark: 0xe0ae57)
+    static let success = Color.token(light: 0x005725, dark: 0x73c385)
 }
 
-enum FISHSpacing {
+enum Spacing {
     static let xs: CGFloat = 4
     static let sm: CGFloat = 8
     static let md: CGFloat = 16
@@ -51,13 +51,13 @@ enum FISHSpacing {
     static let page: CGFloat = 64
 }
 
-enum FISHRadius {
+enum Radius {
     static let control: CGFloat = 12
     static let card: CGFloat = 16
     static let pill: CGFloat = 999
 }
 
-enum FISHSizes {
+enum Sizes {
     static let control: CGFloat = 56
     static let icon: CGFloat = 20
     static let progress: CGFloat = 18
@@ -65,14 +65,14 @@ enum FISHSizes {
     static let content: CGFloat = 440
 }
 
-enum FISHStroke {
+enum Stroke {
     static let hairline: CGFloat = 1
     static let focus: CGFloat = 2
     static let icon: CGFloat = 1.5
     static let progress: CGFloat = 2
 }
 
-enum FISHShadow {
+enum Shadow {
     static let cardRadius: CGFloat = 16
     static let cardY: CGFloat = 4
     static let cardOpacity: Double = 0.08
@@ -82,7 +82,7 @@ enum FISHShadow {
     }
 }
 
-enum FISHOpacity {
+enum Opacity {
     static let hidden: Double = 0
     static let full: Double = 1
     static let disabledContainer: Double = 0.5
@@ -90,7 +90,7 @@ enum FISHOpacity {
     static let progressTrack: Double = 0.25
 }
 
-enum FISHType {
+enum Typography {
     static let display = Font.custom("Fraunces-SemiBold", size: 32, relativeTo: .largeTitle)
     static let heading = Font.custom("Fraunces-SemiBold", size: 20, relativeTo: .title3)
     static let body = Font.custom("Lexend-Regular", size: 17, relativeTo: .body)

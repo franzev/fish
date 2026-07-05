@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ChatLoadingStateView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: FISHSpacing.md) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             loadingRow(width: 180)
             loadingRow(width: 240, mine: true)
             loadingRow(width: 150)
@@ -12,33 +12,33 @@ struct ChatLoadingStateView: View {
     }
 
     private func loadingRow(width: CGFloat, mine: Bool = false) -> some View {
-        HStack(spacing: FISHSpacing.sm) {
+        HStack(spacing: Spacing.sm) {
             if mine {
-                Spacer(minLength: FISHSpacing.xl)
+                Spacer(minLength: Spacing.xl)
             } else {
                 Circle()
-                    .fill(FISHColors.surface2)
+                    .fill(Palette.surface2)
                     .frame(width: AvatarSize.small.value, height: AvatarSize.small.value)
             }
 
-            RoundedRectangle(cornerRadius: FISHRadius.card, style: .continuous)
-                .fill(FISHColors.surface2)
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .fill(Palette.surface2)
                 .frame(width: width, height: 40)
 
             if mine {
                 Circle()
-                    .fill(FISHColors.surface2)
+                    .fill(Palette.surface2)
                     .frame(width: AvatarSize.small.value, height: AvatarSize.small.value)
             } else {
-                Spacer(minLength: FISHSpacing.xl)
+                Spacer(minLength: Spacing.xl)
             }
         }
     }
 }
 
 #Preview("Loading") {
-    FISHTheme {
+    Theme {
         ChatLoadingStateView()
-            .padding(FISHSpacing.lg)
+            .padding(Spacing.lg)
     }
 }

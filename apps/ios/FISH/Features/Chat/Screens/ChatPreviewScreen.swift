@@ -9,7 +9,7 @@ struct ChatPreviewScreen: View {
             header
 
             ScrollView {
-                LazyVStack(spacing: FISHSpacing.sm) {
+                LazyVStack(spacing: Spacing.sm) {
                     ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
                         MessageRow(
                             message: message,
@@ -17,45 +17,45 @@ struct ChatPreviewScreen: View {
                         )
                     }
 
-                    HStack(alignment: .bottom, spacing: FISHSpacing.sm) {
+                    HStack(alignment: .bottom, spacing: Spacing.sm) {
                         AvatarView(name: ChatPreviewData.coach.name, size: .small)
                         TypingIndicatorView()
-                        Spacer(minLength: FISHSpacing.xl)
+                        Spacer(minLength: Spacing.xl)
                     }
-                    .padding(.top, FISHSpacing.xs)
+                    .padding(.top, Spacing.xs)
                 }
-                .padding(FISHSpacing.md)
+                .padding(Spacing.md)
             }
-            .background(FISHColors.bg)
+            .background(Palette.bg)
 
             ChatInputBar(draft: $draft, onSend: appendMessage)
         }
-        .background(FISHColors.bg)
+        .background(Palette.bg)
     }
 
     private var header: some View {
-        HStack(spacing: FISHSpacing.md) {
+        HStack(spacing: Spacing.md) {
             AvatarView(name: ChatPreviewData.coach.name)
 
-            VStack(alignment: .leading, spacing: FISHSpacing.xs) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(ChatPreviewData.coach.name)
-                    .font(FISHType.heading)
-                    .foregroundStyle(FISHColors.foreground)
+                    .font(Typography.heading)
+                    .foregroundStyle(Palette.foreground)
                 Text("Assigned coach conversation")
-                    .font(FISHType.caption)
-                    .foregroundStyle(FISHColors.muted)
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.muted)
             }
 
             Spacer()
         }
-        .padding(.horizontal, FISHSpacing.md)
-        .padding(.vertical, FISHSpacing.sm)
-        .frame(minHeight: FISHSizes.control + FISHSpacing.md)
-        .background(FISHColors.surface)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm)
+        .frame(minHeight: Sizes.control + Spacing.md)
+        .background(Palette.surface)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(FISHColors.border)
-                .frame(height: FISHStroke.hairline)
+                .fill(Palette.border)
+                .frame(height: Stroke.hairline)
         }
     }
 
@@ -80,21 +80,21 @@ struct ChatPreviewScreen: View {
 }
 
 #Preview("Chat - light") {
-    FISHTheme {
+    Theme {
         ChatPreviewScreen()
     }
     .preferredColorScheme(.light)
 }
 
 #Preview("Chat - dark") {
-    FISHTheme {
+    Theme {
         ChatPreviewScreen()
     }
     .preferredColorScheme(.dark)
 }
 
 #Preview("Chat - larger text") {
-    FISHTheme {
+    Theme {
         ChatPreviewScreen()
     }
     .environment(\.dynamicTypeSize, .accessibility2)

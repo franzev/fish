@@ -6,42 +6,42 @@ struct ChatInputBar: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: FISHSpacing.sm) {
+        HStack(alignment: .bottom, spacing: Spacing.sm) {
             iconButton(systemName: "face.smiling", label: "Add emoji")
             iconButton(systemName: "paperclip", label: "Attach file")
 
             TextField("Message", text: $draft, axis: .vertical)
-                .font(FISHType.body)
-                .foregroundStyle(FISHColors.foreground)
+                .font(Typography.body)
+                .foregroundStyle(Palette.foreground)
                 .lineLimit(1...4)
                 .focused($isFocused)
-                .frame(minHeight: FISHSizes.control)
-                .padding(.horizontal, FISHSpacing.md)
-                .background(FISHColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: FISHRadius.control, style: .continuous))
+                .frame(minHeight: Sizes.control)
+                .padding(.horizontal, Spacing.md)
+                .background(Palette.surface)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: FISHRadius.control, style: .continuous)
-                        .stroke(isFocused ? FISHColors.primary : FISHColors.border, lineWidth: FISHStroke.hairline)
+                    RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                        .stroke(isFocused ? Palette.primary : Palette.border, lineWidth: Stroke.hairline)
                 )
                 .accessibilityLabel("Message")
 
-            FISHButton(
+            Button(
                 fullWidth: false,
                 action: send
             ) {
                 Image(systemName: "paperplane.fill")
-                    .font(FISHType.label)
-                    .frame(width: FISHSizes.icon, height: FISHSizes.icon)
+                    .font(Typography.label)
+                    .frame(width: Sizes.icon, height: Sizes.icon)
             }
             .disabled(!canSend)
             .accessibilityLabel("Send message")
         }
-        .padding(FISHSpacing.md)
-        .background(FISHColors.surface)
+        .padding(Spacing.md)
+        .background(Palette.surface)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(FISHColors.border)
-                .frame(height: FISHStroke.hairline)
+                .fill(Palette.border)
+                .frame(height: Stroke.hairline)
         }
     }
 
@@ -57,13 +57,13 @@ struct ChatInputBar: View {
     }
 
     private func iconButton(systemName: String, label: String) -> some View {
-        Button(action: {}) {
+        SwiftUI.Button(action: {}) {
             Image(systemName: systemName)
-                .font(FISHType.label)
-                .foregroundStyle(FISHColors.muted)
-                .frame(width: FISHSizes.control, height: FISHSizes.control)
+                .font(Typography.label)
+                .foregroundStyle(Palette.muted)
+                .frame(width: Sizes.control, height: Sizes.control)
                 .background(Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: FISHRadius.control, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -73,7 +73,7 @@ struct ChatInputBar: View {
 #Preview("Input bar") {
     @Previewable @State var draft = "Could I say it this way?"
 
-    FISHTheme {
+    Theme {
         ChatInputBar(draft: $draft, onSend: { _ in })
     }
 }
