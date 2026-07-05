@@ -51,6 +51,7 @@ export interface SupabaseAuthService {
     password: string;
     displayName: string;
   }): Promise<ServiceResult<{ userId: string | null; identityCount: number | null }>>;
+  signInWithGoogle(redirectTo: string): Promise<ServiceResult<void>>;
   resendSignupEmail(email: string): Promise<ServiceResult<void>>;
   requestPasswordReset(email: string): Promise<ServiceResult<void>>;
   updatePassword(password: string): Promise<ServiceResult<void>>;

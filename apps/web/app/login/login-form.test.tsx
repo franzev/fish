@@ -8,12 +8,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const { signInWithPasswordMock } = vi.hoisted(() => ({
+const { signInWithGoogleMock, signInWithPasswordMock } = vi.hoisted(() => ({
+  signInWithGoogleMock: vi.fn(),
   signInWithPasswordMock: vi.fn(),
 }));
 vi.mock("@/lib/auth/browser", () => ({
   getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
     error.details?.supabaseCode,
+  signInWithGoogle: signInWithGoogleMock,
   signInWithPassword: signInWithPasswordMock,
 }));
 
@@ -47,7 +49,16 @@ describe("LoginForm", () => {
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
-  it("renders two sibling links and zero competing buttons", () => {
+  it("renders the Google action as secondary, keeping one primary button", () => {
+    render(<LoginForm />);
+    const googleButton = screen.getByRole("button", {
+      name: "Continue with Google",
+    });
+    expect(googleButton.className).toContain("bg-surface");
+    expect(googleButton.className).not.toContain("bg-primary");
+  });
+
+  it("renders two sibling links and two total buttons", () => {
     render(<LoginForm />);
     expect(
       screen.getByRole("link", { name: "Create account" })
@@ -55,7 +66,35 @@ describe("LoginForm", () => {
     expect(
       screen.getByRole("link", { name: "Forgot your password?" })
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getAllByRole("button")).toHaveLength(2);
+  });
+
+  it("starts Google sign-in from the secondary action", async () => {
+    signInWithGoogleMock.mockResolvedValueOnce({ ok: true, data: undefined });
+    render(<LoginForm />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() => expect(signInWithGoogleMock).toHaveBeenCalledTimes(1));
+    expect(signInWithPasswordMock).not.toHaveBeenCalled();
+  });
+
+  it("a failed Google sign-in start shows calm form-level copy", async () => {
+    signInWithGoogleMock.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "auth", message: "provider unavailable", details: {} },
+    });
+    render(<LoginForm />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Couldn't start Google sign-in. Check your connection and try again."
+        )
+      ).toBeInTheDocument()
+    );
   });
 
   it("a successful sign-in redirects to /home", async () => {

@@ -2,7 +2,7 @@ project_id = "fish"
 
 [auth]
 site_url = "http://localhost:3001"
-additional_redirect_urls = ["http://localhost:3001"]
+additional_redirect_urls = ["http://localhost:3001", "http://localhost:3001/auth/callback", "fish://auth/callback"]
 # D-16: 8-char minimum, no complexity rules (password_requirements stays default).
 minimum_password_length = 8
 
@@ -20,6 +20,12 @@ content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
 content_path = "./supabase/templates/recovery.html"
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 
 [functions.send-message]
 verify_jwt = true

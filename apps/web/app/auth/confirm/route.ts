@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * Token-hash email verification/reset handler (RESEARCH.md Pattern 2).
- * Distinct from OAuth's /auth/callback — this project uses no OAuth.
+ * Distinct from OAuth's /auth/callback, which exchanges provider auth codes.
  * Both signup verification (type=email) and password reset
  * (type=recovery) route through this single handler (D-02).
  */

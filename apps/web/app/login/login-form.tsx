@@ -1,9 +1,14 @@
 "use client";
 
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAuthErrorCode, signInWithPassword } from "@/lib/auth/browser";
+import {
+  getAuthErrorCode,
+  signInWithGoogle,
+  signInWithPassword,
+} from "@/lib/auth/browser";
 import { authRedirects } from "@/lib/auth/redirects";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,11 +23,14 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPasswordError("");
+    setFormError("");
     setLoading(true);
 
     try {
@@ -66,6 +74,27 @@ export function LoginForm() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setPasswordError("");
+    setFormError("");
+    setGoogleLoading(true);
+
+    try {
+      const result = await signInWithGoogle();
+      if (!result.ok) {
+        setFormError(
+          "Couldn't start Google sign-in. Check your connection and try again."
+        );
+      }
+    } catch {
+      setFormError(
+        "Couldn't start Google sign-in. Check your connection and try again."
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
       <Card className="w-full max-w-form">
@@ -94,6 +123,16 @@ export function LoginForm() {
           >
             Log in
           </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth={true}
+            loading={googleLoading}
+            onClick={handleGoogleSignIn}
+          >
+            Continue with Google
+          </Button>
+          {formError && <Alert tone="error">{formError}</Alert>}
         </form>
         <p className="mt-5 text-center text-ui-sm text-muted">
           New here? <Link href="/signup" className="text-body underline">Create account</Link>

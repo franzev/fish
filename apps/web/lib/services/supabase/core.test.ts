@@ -101,4 +101,69 @@ describe("Supabase service registry", () => {
       createSupabaseServices(client).auth.getCurrentUser()
     ).resolves.toEqual({ ok: true, data: null });
   });
+
+  it("treats a missing refresh token during session refresh as signed out", async () => {
+    const client = {
+      auth: {
+        getClaims: vi.fn(async () => ({
+          data: null,
+          error: {
+            name: "AuthApiError",
+            message: "Invalid Refresh Token: Refresh Token Not Found",
+            code: "refresh_token_not_found",
+            status: 400,
+          },
+        })),
+      },
+    } as unknown as AppSupabaseClient;
+
+    await expect(
+      createSupabaseServices(client).auth.refreshSessionClaims()
+    ).resolves.toEqual({ ok: true, data: undefined });
+  });
+
+  it("starts Google OAuth with the provided callback URL", async () => {
+    const signInWithOAuth = vi.fn(async () => ({
+      data: { provider: "google", url: "https://accounts.google.com" },
+      error: null,
+    }));
+    const client = {
+      auth: { signInWithOAuth },
+    } as unknown as AppSupabaseClient;
+
+    await expect(
+      createSupabaseServices(client).auth.signInWithGoogle(
+        "http://localhost:3001/auth/callback"
+      )
+    ).resolves.toEqual({ ok: true, data: undefined });
+
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: { redirectTo: "http://localhost:3001/auth/callback" },
+    });
+  });
+
+  it("maps Google OAuth start failures into auth service failures", async () => {
+    const client = {
+      auth: {
+        signInWithOAuth: vi.fn(async () => ({
+          data: { provider: "google", url: null },
+          error: { message: "provider unavailable", code: "provider_disabled" },
+        })),
+      },
+    } as unknown as AppSupabaseClient;
+
+    const result = await createSupabaseServices(client).auth.signInWithGoogle(
+      "http://localhost:3001/auth/callback"
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("auth");
+      expect(result.error.operation).toBe("auth.signInWithGoogle");
+      expect(result.error.details).toEqual({
+        supabaseCode: "provider_disabled",
+      });
+    }
+  });
 });

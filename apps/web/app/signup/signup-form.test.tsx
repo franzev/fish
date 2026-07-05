@@ -8,12 +8,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const { signUpWithPasswordMock } = vi.hoisted(() => ({
+const { signInWithGoogleMock, signUpWithPasswordMock } = vi.hoisted(() => ({
+  signInWithGoogleMock: vi.fn(),
   signUpWithPasswordMock: vi.fn(),
 }));
 vi.mock("@/lib/auth/browser", () => ({
   getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
     error.details?.supabaseCode,
+  signInWithGoogle: signInWithGoogleMock,
   signUpWithPassword: signUpWithPasswordMock,
 }));
 
@@ -41,11 +43,12 @@ describe("SignupForm", () => {
     expect(primaryButtons[0]).toHaveTextContent("Create account");
   });
 
-  it("renders three Inputs (name, email, password)", () => {
+  it("renders four Inputs (name, email, password, confirm password)", () => {
     render(<SignupForm />);
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
+    expect(screen.getByLabelText("Confirm password")).toBeInTheDocument();
   });
 
   it("shows the password hint 'At least 8 characters.'", () => {
@@ -71,6 +74,9 @@ describe("SignupForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
+      target: { value: "password123" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     await waitFor(() => expect(signUpWithPasswordMock).toHaveBeenCalledTimes(1));
@@ -84,6 +90,48 @@ describe("SignupForm", () => {
         "/check-inbox?email=ada%40example.com"
       )
     );
+  });
+
+  it("blocks account creation when confirm password does not match", async () => {
+    render(<SignupForm />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Ada" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
+      target: { value: "password456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByText("Passwords don't match yet.")
+    ).toBeInTheDocument();
+    expect(signUpWithPasswordMock).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("starts Google sign-up from the secondary action", async () => {
+    signInWithGoogleMock.mockResolvedValueOnce({ ok: true, data: undefined });
+    render(<SignupForm />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign up with Google" }));
+
+    await waitFor(() => expect(signInWithGoogleMock).toHaveBeenCalledTimes(1));
+    expect(signUpWithPasswordMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the Google action as secondary, keeping one primary button", () => {
+    render(<SignupForm />);
+
+    const googleButton = screen.getByRole("button", { name: "Sign up with Google" });
+    expect(googleButton.className).toContain("bg-surface");
+    expect(googleButton.className).not.toContain("bg-primary");
   });
 
   it("an existing confirmed email (confirmations-on: fake user, empty identities, no error) shows the existing-email copy and never routes to /check-inbox", async () => {
@@ -103,6 +151,9 @@ describe("SignupForm", () => {
       target: { value: "ada@example.com" },
     });
     fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
       target: { value: "password123" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
@@ -136,6 +187,9 @@ describe("SignupForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
+      target: { value: "password123" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     await waitFor(() =>
@@ -162,6 +216,9 @@ describe("SignupForm", () => {
       target: { value: "ada@example.com" },
     });
     fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm password"), {
       target: { value: "password123" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));

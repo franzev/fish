@@ -30,6 +30,12 @@ export async function signUpWithPassword(input: {
   return browserAuth().signUpWithPassword(input);
 }
 
+export async function signInWithGoogle(): Promise<ServiceResult<void>> {
+  return browserAuth().signInWithGoogle(
+    `${window.location.origin}/auth/callback`
+  );
+}
+
 export async function resendSignupEmail(email: string): Promise<ServiceResult<void>> {
   return browserAuth().resendSignupEmail(email);
 }

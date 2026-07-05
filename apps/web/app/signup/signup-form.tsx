@@ -4,7 +4,11 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAuthErrorCode, signUpWithPassword } from "@/lib/auth/browser";
+import {
+  getAuthErrorCode,
+  signInWithGoogle,
+  signUpWithPassword,
+} from "@/lib/auth/browser";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -19,14 +23,24 @@ export function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setEmailError("");
+    setConfirmPasswordError("");
     setFormError("");
+
+    if (password !== confirmPassword) {
+      setConfirmPasswordError("Passwords don't match yet.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -74,6 +88,28 @@ export function SignupForm() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setEmailError("");
+    setConfirmPasswordError("");
+    setFormError("");
+    setGoogleLoading(true);
+
+    try {
+      const result = await signInWithGoogle();
+      if (!result.ok) {
+        setFormError(
+          "Couldn't start Google sign-in. Check your connection and try again."
+        );
+      }
+    } catch {
+      setFormError(
+        "Couldn't start Google sign-in. Check your connection and try again."
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 py-12">
       <Card className="w-full max-w-form">
@@ -102,6 +138,18 @@ export function SignupForm() {
             minLength={8}
             required
           />
+          <Input
+            label="Confirm password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              setConfirmPasswordError("");
+            }}
+            error={confirmPasswordError || undefined}
+            minLength={8}
+            required
+          />
           {formError && <Alert tone="error">{formError}</Alert>}
           <Button
             type="submit"
@@ -110,6 +158,15 @@ export function SignupForm() {
             loading={loading}
           >
             Create account
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth={true}
+            loading={googleLoading}
+            onClick={handleGoogleSignIn}
+          >
+            Sign up with Google
           </Button>
         </form>
         <p className="mt-5 text-center text-ui-sm text-muted">

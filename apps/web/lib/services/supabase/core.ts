@@ -47,12 +47,33 @@ type SupabaseResponse<T> = {
 
 function isAuthSessionMissingError(error: {
   message?: string;
+  code?: string;
   name?: string;
   status?: number;
 }): boolean {
   return (
     error.name === "AuthSessionMissingError" ||
     error.message?.toLowerCase().includes("auth session missing") === true
+  );
+}
+
+function isSignedOutAuthError(error: {
+  message?: string;
+  code?: string;
+  name?: string;
+  status?: number;
+}): boolean {
+  const message = error.message?.toLowerCase() ?? "";
+
+  return (
+    isAuthSessionMissingError(error) ||
+    error.code === "refresh_token_not_found" ||
+    error.code === "refresh_token_already_used" ||
+    error.code === "session_not_found" ||
+    error.code === "session_expired" ||
+    (message.includes("invalid refresh token") &&
+      (message.includes("refresh token not found") ||
+        message.includes("already used")))
   );
 }
 
@@ -102,6 +123,10 @@ class SupabaseAuthServiceImpl implements SupabaseAuthService {
     return safely("auth.refreshSessionClaims", async () => {
       const { error } = await this.client.auth.getClaims();
       if (error) {
+        if (isSignedOutAuthError(error)) {
+          return serviceSuccess(undefined);
+        }
+
         return serviceFailure(
           mapSupabaseError(error, {
             code: "auth",
@@ -164,6 +189,28 @@ class SupabaseAuthServiceImpl implements SupabaseAuthService {
         userId: data.user?.id ?? null,
         identityCount: data.user?.identities?.length ?? null,
       });
+    });
+  }
+
+  async signInWithGoogle(redirectTo: string): Promise<ServiceResult<void>> {
+    return safely("auth.signInWithGoogle", async () => {
+      const { error } = await this.client.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "auth",
+            fallbackMessage: "Could not start Google sign-in.",
+            operation: "auth.signInWithGoogle",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(undefined);
     });
   }
 

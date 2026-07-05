@@ -19,15 +19,16 @@ is done.
       web origin (for example `https://app.example.com`). Every `{{ .SiteURL }}` placeholder
       in the email templates resolves from this value — if it still points at localhost, every
       verification and reset link in production email will be broken.
-- [ ] Add the deployed origin's `/auth/confirm` path to the redirect allow-list so the
-      token-hash links in both emails are permitted destinations. If preview deployments get
-      their own origins, each origin that should accept auth links needs an allow-list entry.
+- [ ] Add the deployed origin's `/auth/confirm` and `/auth/callback` paths, plus the Android
+      deep link `fish://auth/callback`, to the redirect allow-list so email token links and
+      Google OAuth callbacks are permitted destinations. If preview deployments get their own
+      origins, each origin that should accept auth links needs an allow-list entry.
 
 ## 3. Push migrations to the hosted database
 
-- [ ] Run `supabase db push` against the linked project. This applies the five Phase 2
-      migrations (profiles, handle_new_user trigger, coach_clients, RLS helpers and grants,
-      role guard) to the hosted Postgres in order.
+- [ ] Run `supabase db push` against the linked project. This applies the current migrations
+      (profiles, handle_new_user trigger, coach_clients, RLS helpers and grants, role guard,
+      email backfill, and client-read-assigned-coach policy) to the hosted Postgres in order.
 - [ ] Spot-check in the hosted SQL editor that `public.profiles` and `public.coach_clients`
       exist and that RLS shows as enabled on both.
 
@@ -37,9 +38,10 @@ is done.
       hosted project's Auth email template settings. Hosted projects do not read the local
       `config.toml` template paths — the HTML must be pasted or uploaded in the dashboard.
 - [ ] Confirm the confirmation template's action link points at
-      `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/home` —
+      `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email` —
       never the default `{{ .ConfirmationURL }}`, whose tokens land in the URL fragment and
-      are invisible to the server-side handler.
+      are invisible to the server-side handler. The server-side handler defaults successful
+      email confirmations to `/home` when no `next` query parameter is present.
 - [ ] Confirm the recovery template's action link points at
       `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`.
 - [ ] Keep the templates' plain single-column layout and calm sentence-case FISH voice; the
@@ -52,6 +54,8 @@ is done.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` — the hosted service-role key, set only in the server-side
       environment. It must never carry a `NEXT_PUBLIC_` prefix, never be committed, and never
       be exposed to the browser; it bypasses RLS entirely.
+- [ ] Android: set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `apps/android/local.properties`
+      or Gradle properties so Google sign-in can open the hosted Supabase OAuth URL.
 
 ## 6. Confirm the hosted auth config matches local
 
@@ -67,6 +71,10 @@ is done.
       24 hours" as fact — if the hosted project keeps the 1-hour default, that copy is wrong.
       Note: the hosted security advisor flags expiries above 1 hour; if that trade-off is
       rejected later, shorten the expiry AND update the copy in both templates together.
+- [ ] Enable Google as a hosted Auth provider using the Google OAuth client ID and secret.
+      The Google OAuth app's authorized redirect URI should be the hosted Supabase auth
+      callback shown by the dashboard (local development uses
+      `http://127.0.0.1:54321/auth/v1/callback`).
 
 ## 7. Email sending: built-in sender now, custom SMTP later
 
