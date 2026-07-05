@@ -99,7 +99,7 @@ async function assignClient(coachId: string, clientId: string): Promise<void> {
 /**
  * Backfills/sets the seeded `level` on a client's client_profiles row (04-01 Task 1).
  * The 0007 auto-provision trigger already inserts the row on signup with `level`
- * left null; this upsert sets the seeded level (level is data, never a grade — D-10)
+ * left null; this upsert sets the seeded level (level is coach-owned reference data — D-10)
  * and also backfills any pre-migration accounts that signed up before 0007 existed.
  * Modeled on assignClient(): idempotent upsert via the service-role client.
  */
@@ -108,6 +108,151 @@ async function backfillClientProfile(clientId: string, level: string): Promise<v
     .from("client_profiles")
     .upsert({ id: clientId, level }, { onConflict: "id" });
   if (error) throw error;
+}
+
+type OnboardingQuestionSeed = {
+  questionKey: string;
+  questionOrder: number;
+  prompt: string;
+  answerType: "single_select" | "multi_select" | "scale" | "short_text" | "long_text" | "boolean";
+  config: Record<string, unknown>;
+};
+
+const onboardingQuestions: OnboardingQuestionSeed[] = [
+  {
+    questionKey: "language_goal",
+    questionOrder: 1,
+    prompt: "What would you like your English to help with at work?",
+    answerType: "single_select",
+    config: {
+      type: "single_select",
+      label: "Choose the closest fit",
+      options: [
+        { id: "meetings", label: "Speaking in meetings" },
+        { id: "writing", label: "Writing clearly" },
+        { id: "small_talk", label: "Everyday work conversations" },
+      ],
+    },
+  },
+  {
+    questionKey: "work_context",
+    questionOrder: 2,
+    prompt: "What kind of work conversations come up most often?",
+    answerType: "short_text",
+    config: {
+      type: "short_text",
+      label: "Work context",
+      maxLength: 160,
+      placeholder: "Team updates, customer calls, design reviews...",
+    },
+  },
+  {
+    questionKey: "confidence_check",
+    questionOrder: 3,
+    prompt: "How does speaking English at work feel lately?",
+    answerType: "scale",
+    config: {
+      type: "scale",
+      label: "Current feeling",
+      options: [
+        { id: "needs_support", label: "Needs support" },
+        { id: "depends_on_day", label: "Depends on the day" },
+        { id: "mostly_okay", label: "Mostly okay" },
+      ],
+    },
+  },
+  {
+    questionKey: "weekly_availability",
+    questionOrder: 4,
+    prompt: "Do you usually have a little time each week for practice?",
+    answerType: "boolean",
+    config: {
+      type: "boolean",
+      label: "Weekly practice time",
+      options: [
+        { id: "yes", label: "Yes" },
+        { id: "not_right_now", label: "Not right now" },
+      ],
+    },
+  },
+  {
+    questionKey: "support_preferences",
+    questionOrder: 5,
+    prompt: "What support would feel useful from your coach?",
+    answerType: "multi_select",
+    config: {
+      type: "multi_select",
+      label: "Support preferences",
+      minSelections: 1,
+      maxSelections: 3,
+      options: [
+        { id: "examples", label: "Clear examples" },
+        { id: "practice", label: "Guided practice" },
+        { id: "gentle_reminders", label: "Gentle reminders" },
+        { id: "slower_pace", label: "A slower pace" },
+      ],
+    },
+  },
+  {
+    questionKey: "communication_preference",
+    questionOrder: 6,
+    prompt: "Anything you want your coach to know before you start?",
+    answerType: "long_text",
+    config: {
+      type: "long_text",
+      label: "Anything helpful",
+      maxLength: 1000,
+      placeholder: "You can share context, preferences, or leave this simple.",
+    },
+  },
+];
+
+async function seedOnboardingAssessment(): Promise<void> {
+  const { data: assessment, error: assessmentError } = await supabase
+    .from("onboarding_assessments")
+    .upsert(
+      {
+        slug: "initial-client-context",
+        title: "Initial client context",
+      },
+      { onConflict: "slug" },
+    )
+    .select("id")
+    .single();
+  if (assessmentError || !assessment) throw assessmentError;
+
+  const { data: version, error: versionError } = await supabase
+    .from("onboarding_assessment_versions")
+    .upsert(
+      {
+        assessment_id: assessment.id,
+        version: 1,
+        status: "published",
+        is_active: true,
+        published_at: new Date().toISOString(),
+      },
+      { onConflict: "assessment_id,version" },
+    )
+    .select("id")
+    .single();
+  if (versionError || !version) throw versionError;
+
+  for (const question of onboardingQuestions) {
+    const { error } = await supabase
+      .from("onboarding_questions")
+      .upsert(
+        {
+          version_id: version.id,
+          question_key: question.questionKey,
+          question_order: question.questionOrder,
+          prompt: question.prompt,
+          answer_type: question.answerType,
+          config: question.config,
+        },
+        { onConflict: "version_id,question_key" },
+      );
+    if (error) throw error;
+  }
 }
 
 async function main(): Promise<void> {
@@ -131,6 +276,8 @@ async function main(): Promise<void> {
     await assignClient(coachId, clientId);
     await backfillClientProfile(clientId, client.level);
   }
+
+  await seedOnboardingAssessment();
 
   console.log("\nSeed complete. Dev credentials (local only):");
   console.log(`  Coach: ${coach.email} / ${coach.password}`);

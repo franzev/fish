@@ -12,6 +12,12 @@ export type Database = GeneratedDatabase;
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type CoachClientRow = Database["public"]["Tables"]["coach_clients"]["Row"];
 export type ClientProfileRow = Database["public"]["Tables"]["client_profiles"]["Row"];
+export type OnboardingAssessmentRow = Database["public"]["Tables"]["onboarding_assessments"]["Row"];
+export type OnboardingAssessmentVersionRow =
+  Database["public"]["Tables"]["onboarding_assessment_versions"]["Row"];
+export type OnboardingQuestionRow = Database["public"]["Tables"]["onboarding_questions"]["Row"];
+export type OnboardingAttemptRow = Database["public"]["Tables"]["onboarding_attempts"]["Row"];
+export type OnboardingAnswerRow = Database["public"]["Tables"]["onboarding_answers"]["Row"];
 
 // NOT YET MIGRATED -- chat is a future phase; these are hand-written contracts, not live
 // DB tables. Keep them out of `Database` so nothing treats conversations/messages as real

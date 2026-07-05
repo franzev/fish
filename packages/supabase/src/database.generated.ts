@@ -123,6 +123,237 @@ export type Database = {
           },
         ]
       }
+      onboarding_answers: {
+        Row: {
+          answer: Json
+          answer_type: string
+          assessment_version_id: string
+          attempt_id: string
+          created_at: string
+          id: string
+          question_config: Json
+          question_id: string
+          question_key: string
+          question_order: number
+          question_prompt: string
+          updated_at: string
+        }
+        Insert: {
+          answer: Json
+          answer_type: string
+          assessment_version_id: string
+          attempt_id: string
+          created_at?: string
+          id?: string
+          question_config: Json
+          question_id: string
+          question_key: string
+          question_order: number
+          question_prompt: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: Json
+          answer_type?: string
+          assessment_version_id?: string
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          question_config?: Json
+          question_id?: string
+          question_key?: string
+          question_order?: number
+          question_prompt?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_answers_assessment_version_id_fkey"
+            columns: ["assessment_version_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_assessment_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_assessment_versions: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          published_at: string | null
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          published_at?: string | null
+          status: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          published_at?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_assessment_versions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_assessments: {
+        Row: {
+          created_at: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_attempts: {
+        Row: {
+          client_id: string
+          current_question_id: string | null
+          id: string
+          started_at: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          client_id: string
+          current_question_id?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          client_id?: string
+          current_question_id?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_attempts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_attempts_current_question_id_fkey"
+            columns: ["current_question_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_attempts_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_assessment_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_questions: {
+        Row: {
+          answer_type: string
+          config: Json
+          created_at: string
+          id: string
+          prompt: string
+          question_key: string
+          question_order: number
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          answer_type: string
+          config: Json
+          created_at?: string
+          id?: string
+          prompt: string
+          question_key: string
+          question_order: number
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          answer_type?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          prompt?: string
+          question_key?: string
+          question_order?: number
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_questions_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_assessment_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -155,7 +386,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      finalize_onboarding_attempt: {
+        Args: never
+        Returns: {
+          attempt_id: string
+          status: string
+          submitted_at: string
+        }[]
+      }
+      save_onboarding_answer: {
+        Args: { p_answer: Json; p_question_id: string }
+        Returns: {
+          answer_id: string
+          attempt_id: string
+          current_question_id: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
