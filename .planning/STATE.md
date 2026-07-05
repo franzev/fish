@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: The Coaching Loop
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-07-05T02:10:23.508Z"
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: "2026-07-05T02:19:32.494Z"
 last_activity: 2026-07-04
 progress:
   total_phases: 5
@@ -110,11 +110,11 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 ## Session Continuity
 
-**Last session:** 2026-07-05T02:10:23.503Z
+**Last session:** 2026-07-05T02:19:32.489Z
 
 - **Last activity:** 2026-07-04
-- **Stopped at:** Phase 5 context gathered
-- **Resume file:** .planning/phases/05-data-driven-onboarding/05-CONTEXT.md
+- **Stopped at:** Phase 5 UI-SPEC approved
+- **Resume file:** .planning/phases/05-data-driven-onboarding/05-UI-SPEC.md
 - **Next action:** `/gsd:plan-phase 4` — plan Client Profiles (the safe/protected write-safety discipline the whole milestone reuses)
 
 ---
