@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,14 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
-import space.fishhub.app.designsystem.preview.ThemePreview
 import space.fishhub.app.designsystem.theme.LocalColorTokens
 import space.fishhub.app.designsystem.theme.LocalRadiusTokens
 import space.fishhub.app.designsystem.theme.LocalSizeTokens
 import space.fishhub.app.designsystem.theme.LocalSpacingTokens
 import space.fishhub.app.designsystem.theme.LocalStrokeTokens
 import space.fishhub.app.designsystem.theme.LocalTypeTokens
-import space.fishhub.app.designsystem.theme.Theme
 
 @Composable
 fun TextField(
@@ -69,7 +66,7 @@ fun TextField(
     }
     val borderWidth = if (error != null) stroke.focus else stroke.hairline
 
-    androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
             color = colors.foreground,
@@ -158,41 +155,5 @@ private fun MessageDot(label: String, color: androidx.compose.ui.graphics.Color)
             color = color,
             style = LocalTypeTokens.current.caption,
         )
-    }
-}
-
-@ThemePreview
-@Composable
-private fun TextFieldPreview() {
-    Theme {
-        val colors = LocalColorTokens.current
-        val space = LocalSpacingTokens.current
-
-        Surface(color = colors.bg, contentColor = colors.body) {
-            Column(
-                modifier = Modifier.padding(space.lg),
-                verticalArrangement = Arrangement.spacedBy(space.sm),
-            ) {
-                TextField(
-                    label = "Email",
-                    value = "you@work.com",
-                    onValueChange = {},
-                    hint = "Use the email your coach invited.",
-                )
-                TextField(
-                    label = "Password",
-                    value = "",
-                    onValueChange = {},
-                    placeholder = "Password",
-                    notice = "That email and password don't match. Try again?",
-                )
-                TextField(
-                    label = "New password",
-                    value = "samepassword",
-                    onValueChange = {},
-                    error = "That's the same password as before. Pick a new one.",
-                )
-            }
-        }
     }
 }

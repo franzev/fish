@@ -3,9 +3,7 @@ package space.fishhub.app.designsystem.component
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -19,7 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -29,7 +26,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
-import space.fishhub.app.designsystem.preview.ThemePreview
 import space.fishhub.app.designsystem.theme.LocalColorTokens
 import space.fishhub.app.designsystem.theme.LocalElevationTokens
 import space.fishhub.app.designsystem.theme.LocalOpacityTokens
@@ -37,7 +33,6 @@ import space.fishhub.app.designsystem.theme.LocalRadiusTokens
 import space.fishhub.app.designsystem.theme.LocalSizeTokens
 import space.fishhub.app.designsystem.theme.LocalSpacingTokens
 import space.fishhub.app.designsystem.theme.LocalStrokeTokens
-import space.fishhub.app.designsystem.theme.Theme
 
 enum class ButtonVariant {
     Primary,
@@ -166,25 +161,4 @@ fun ButtonText(text: String) {
         text = text,
         style = MaterialTheme.typography.bodyLarge,
     )
-}
-
-@ThemePreview
-@Composable
-private fun ButtonPreview() {
-    Theme {
-        val colors = LocalColorTokens.current
-        val space = LocalSpacingTokens.current
-
-        Surface(color = colors.bg, contentColor = colors.body) {
-            Column(
-                modifier = Modifier.padding(space.lg),
-                verticalArrangement = Arrangement.spacedBy(space.sm),
-            ) {
-                Button(onClick = {}) { ButtonText("Continue") }
-                Button(onClick = {}, variant = ButtonVariant.Secondary) { ButtonText("Use email instead") }
-                Button(onClick = {}, variant = ButtonVariant.Ghost) { ButtonText("Back") }
-                Button(onClick = {}, loading = true) { ButtonText("Sending") }
-            }
-        }
-    }
 }
