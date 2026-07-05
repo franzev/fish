@@ -6,7 +6,7 @@ import type {
   OnboardingAttemptStatus,
   OnboardingQuestion,
 } from "@fish/core";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Bubble, EmptyState, Skeleton } from "@/components/chat";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -39,11 +39,7 @@ export function OnboardingConversation({
   onFinalize,
 }: OnboardingConversationProps) {
   const [draftAnswers, setDraftAnswers] =
-    useState<Record<string, FieldAnswer>>(savedAnswers);
-
-  useEffect(() => {
-    setDraftAnswers(savedAnswers);
-  }, [savedAnswers]);
+    useState<Record<string, FieldAnswer>>({});
 
   const totalQuestions = questions.length;
   const allSaved =

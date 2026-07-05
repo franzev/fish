@@ -1,7 +1,11 @@
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
+import { CoachOnboardingReview } from "@/components/onboarding/coach-onboarding-review";
 import { authRedirects } from "@/lib/auth/redirects";
-import { getCoachClientDetailData } from "@/lib/auth/server";
+import {
+  getCoachClientDetailData,
+  getCoachClientOnboardingReviewData,
+} from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
 /* Server Component (NOT "use client") -- mirrors coach/page.tsx's wrong-door
@@ -10,7 +14,7 @@ import { redirect } from "next/navigation";
 
    Read-only (PROF-06/D-10/D-11): identity + goal/role-context + level ONLY.
    A11y prefs and consent are the client's personal settings, never shown to
-   a coach. Level is a quiet data label, never a grade/score/percentage. No
+   a coach. Level is a quiet data label. No
    primary button anywhere on this view -- there is nothing to edit here.
 
    Deny behavior (T-04-02): `data.client` is null for BOTH "no such client"
@@ -41,6 +45,16 @@ export default async function CoachClientDetailPage({
     );
   }
 
+  const onboardingData = await getCoachClientOnboardingReviewData(id);
+
+  if (!onboardingData) {
+    redirect(authRedirects.signedOut);
+  }
+
+  if (onboardingData.role === "client") {
+    redirect(authRedirects.clientHome);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl">{data.client.displayName}</h1>
@@ -56,6 +70,7 @@ export default async function CoachClientDetailPage({
           <p className="text-foreground">{data.client.level ?? "Not set yet"}</p>
         </div>
       </Card>
+      <CoachOnboardingReview review={onboardingData.review} />
     </div>
   );
 }
