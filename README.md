@@ -26,7 +26,8 @@ pnpm install
 pnpm dev
 ```
 
-Open http://localhost:3000. The web home page is a live preview of the design system.
+Open http://localhost:3001. The root route redirects by auth state; the design
+system preview is at http://localhost:3001/kit.
 
 ## Commands
 
@@ -57,6 +58,7 @@ See [AGENTS.md](./AGENTS.md) for build commands, conventions, and the design rul
 
 ## Project docs
 
+- [Architecture](./docs/ARCHITECTURE.md)
 - [Recent changes](./docs/recent-changes.md)
 - [UI/UX agent guidelines](./docs/ui-ux-agent-guidelines.md)
 - [Unpublished Linear follow-up draft](./docs/linear-recent-changes-tickets-draft.md)
