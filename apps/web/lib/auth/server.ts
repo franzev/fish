@@ -1,5 +1,10 @@
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
-import type { CoachClientListItem, SupabaseServices } from "@/lib/services";
+import type {
+  ClientOnboardingData,
+  CoachClientListItem,
+  CoachOnboardingReviewData,
+  SupabaseServices,
+} from "@/lib/services";
 import { isUserRole, type UserRole } from "@fish/core/roles";
 import { ServiceError } from "@/lib/services";
 import { authRedirects } from "./redirects";
@@ -58,6 +63,16 @@ export interface CoachClientDetailData {
   // renders the SAME calm not-found state for both, never a session
   // redirect, since role/session are already known to be valid here.
   client: CoachClientDetail | null;
+}
+
+export interface ClientOnboardingPageData {
+  role: UserRole;
+  onboarding: ClientOnboardingData | null;
+}
+
+export interface CoachClientOnboardingReviewPageData {
+  role: UserRole;
+  review: CoachOnboardingReviewData | null;
 }
 
 export interface ProfileData {
@@ -327,5 +342,54 @@ export async function getCoachClientDetailData(
       goal: clientProfileResult.data.goal ?? "",
       level: clientProfileResult.data.level ?? null,
     },
+  };
+}
+
+export async function getClientOnboardingData(): Promise<ClientOnboardingPageData | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  if (profile.role !== "client") {
+    return { role: profile.role, onboarding: null };
+  }
+
+  const onboardingResult =
+    await services.database.onboarding.getClientAttemptState();
+  if (!onboardingResult.ok) {
+    throw onboardingResult.error;
+  }
+
+  return {
+    role: profile.role,
+    onboarding: onboardingResult.data,
+  };
+}
+
+export async function getCoachClientOnboardingReviewData(
+  clientId: string
+): Promise<CoachClientOnboardingReviewPageData | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  if (profile.role !== "coach" || !UUID_RE.test(clientId)) {
+    return { role: profile.role, review: null };
+  }
+
+  const reviewResult = await services.database.onboarding.getCoachReview(clientId);
+  if (!reviewResult.ok) {
+    throw reviewResult.error;
+  }
+
+  return {
+    role: profile.role,
+    review: reviewResult.data,
   };
 }

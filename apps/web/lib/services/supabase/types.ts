@@ -7,7 +7,21 @@ import type {
 } from "@supabase/supabase-js";
 import type { CookieOptions } from "@supabase/ssr";
 import type { ServiceResult } from "../errors";
-import type { ClientProfileRow, CoachClientRow, ProfileRow } from "@fish/supabase";
+import type {
+  ClientProfileRow,
+  CoachClientRow,
+  OnboardingAnswerRow,
+  OnboardingAttemptRow,
+  OnboardingQuestionRow,
+  ProfileRow,
+} from "@fish/supabase";
+import type {
+  FieldAnswer,
+  FieldConfig,
+  OnboardingAttemptStatus,
+  OnboardingQuestion,
+  OnboardingReviewAnswer,
+} from "@fish/core";
 
 export type { ClientProfileRow };
 
@@ -93,11 +107,91 @@ export interface CoachClientRepository {
   listAssignedClients(): Promise<ServiceResult<CoachClientListItem[]>>;
 }
 
+export interface ClientOnboardingQuestion extends OnboardingQuestion {
+  versionId: string;
+  answerType: FieldConfig["type"];
+}
+
+export interface ClientOnboardingAnswer {
+  id: string;
+  questionId: string;
+  questionKey: string;
+  questionOrder: number;
+  questionPrompt: string;
+  config: FieldConfig;
+  answer: FieldAnswer;
+  updatedAt: string;
+}
+
+export interface ClientOnboardingData {
+  versionId: string;
+  status: OnboardingAttemptStatus | "not_started";
+  attemptId: string | null;
+  currentQuestionId: string | null;
+  questions: ClientOnboardingQuestion[];
+  answers: ClientOnboardingAnswer[];
+  savedAnswers: Record<string, FieldAnswer>;
+}
+
+export interface OnboardingQuestionForValidation {
+  id: string;
+  prompt: string;
+  answerType: FieldConfig["type"];
+  config: FieldConfig;
+  versionId: string;
+}
+
+export interface SaveOnboardingAnswerInput {
+  questionId: string;
+  answer: FieldAnswer;
+}
+
+export interface OnboardingSaveResult {
+  attemptId: string;
+  status: OnboardingAttemptStatus;
+  currentQuestionId: string | null;
+}
+
+export interface OnboardingFinalizeResult {
+  attemptId: string;
+  status: "submitted";
+  submittedAt: string;
+}
+
+export interface CoachOnboardingReviewData {
+  attemptId: string;
+  status: OnboardingAttemptStatus;
+  submittedAt: string | null;
+  answers: OnboardingReviewAnswer[];
+}
+
+export interface OnboardingRepository {
+  getActiveAssessmentForClient(): Promise<ServiceResult<ClientOnboardingData | null>>;
+  getClientAttemptState(): Promise<ServiceResult<ClientOnboardingData | null>>;
+  getQuestionForAnswerValidation(
+    questionId: string
+  ): Promise<ServiceResult<OnboardingQuestionForValidation | null>>;
+  saveAnswer(
+    input: SaveOnboardingAnswerInput
+  ): Promise<ServiceResult<OnboardingSaveResult>>;
+  finalizeAttempt(): Promise<ServiceResult<OnboardingFinalizeResult>>;
+  getCoachReview(
+    clientId: string
+  ): Promise<ServiceResult<CoachOnboardingReviewData | null>>;
+}
+
+export type OnboardingSourceRows = {
+  question: OnboardingQuestionRow;
+  attempt: OnboardingAttemptRow;
+  answer: OnboardingAnswerRow;
+};
+
 export interface SupabaseDatabaseService {
   readonly client: AppSupabaseClient;
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
+  readonly onboarding: OnboardingRepository;
 }
 
 export interface SupabaseStorageService {

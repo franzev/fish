@@ -9,8 +9,17 @@ import type {
   AppSupabaseClient,
   ClientProfileRepository,
   ClientProfileSafeFields,
+  ClientOnboardingAnswer,
+  ClientOnboardingData,
+  ClientOnboardingQuestion,
   CoachClientListItem,
+  CoachOnboardingReviewData,
   CoachClientRepository,
+  OnboardingFinalizeResult,
+  OnboardingQuestionForValidation,
+  OnboardingRepository,
+  OnboardingSaveResult,
+  SaveOnboardingAnswerInput,
   ProfileRepository,
   SupabaseAuthService,
   SupabaseDatabaseService,
@@ -18,7 +27,17 @@ import type {
   SupabaseServices,
   SupabaseStorageService,
 } from "./types";
-import type { ClientProfileRow, CoachClientRow, ProfileRow } from "@fish/supabase";
+import type {
+  ClientProfileRow,
+  CoachClientRow,
+  Json,
+  OnboardingAnswerRow,
+  OnboardingAssessmentVersionRow,
+  OnboardingAttemptRow,
+  OnboardingQuestionRow,
+  ProfileRow,
+} from "@fish/supabase";
+import type { FieldAnswer, FieldConfig, OnboardingReviewAnswer } from "@fish/core";
 import type { User } from "@supabase/supabase-js";
 
 type SupabaseResponse<T> = {
@@ -478,15 +497,383 @@ class SupabaseCoachClientRepository implements CoachClientRepository {
   }
 }
 
+type ActiveAssessment = {
+  version: OnboardingAssessmentVersionRow;
+  questions: OnboardingQuestionRow[];
+};
+
+type SaveAnswerRpcRow = {
+  answer_id: string;
+  attempt_id: string;
+  current_question_id: string | null;
+  status: string;
+};
+
+type FinalizeAttemptRpcRow = {
+  attempt_id: string;
+  status: string;
+  submitted_at: string;
+};
+
+class SupabaseOnboardingRepository implements OnboardingRepository {
+  constructor(private readonly client: AppSupabaseClient) {}
+
+  async getActiveAssessmentForClient(): Promise<ServiceResult<ClientOnboardingData | null>> {
+    const activeResult = await this.loadActiveAssessment();
+    if (!activeResult.ok) return activeResult;
+    if (!activeResult.data) return serviceSuccess(null);
+
+    return serviceSuccess(toClientOnboardingData(activeResult.data, null, []));
+  }
+
+  async getClientAttemptState(): Promise<ServiceResult<ClientOnboardingData | null>> {
+    const activeResult = await this.loadActiveAssessment();
+    if (!activeResult.ok) return activeResult;
+    if (!activeResult.data) return serviceSuccess(null);
+
+    const attemptResult = await this.loadAttempt(activeResult.data.version.id);
+    if (!attemptResult.ok) return attemptResult;
+
+    const answersResult = attemptResult.data
+      ? await this.loadAnswers(attemptResult.data.id)
+      : serviceSuccess<OnboardingAnswerRow[]>([]);
+    if (!answersResult.ok) return answersResult;
+
+    return serviceSuccess(
+      toClientOnboardingData(
+        activeResult.data,
+        attemptResult.data,
+        answersResult.data
+      )
+    );
+  }
+
+  async getQuestionForAnswerValidation(
+    questionId: string
+  ): Promise<ServiceResult<OnboardingQuestionForValidation | null>> {
+    return safely("onboarding.getQuestionForAnswerValidation", async () => {
+      const { data, error } = (await this.client
+        .from("onboarding_questions")
+        .select("*")
+        .eq("id", questionId)
+        .maybeSingle()) as SupabaseResponse<OnboardingQuestionRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load this question.",
+            operation: "onboarding.getQuestionForAnswerValidation",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!data) return serviceSuccess(null);
+
+      return serviceSuccess({
+        id: data.id,
+        prompt: data.prompt,
+        answerType: data.answer_type as FieldConfig["type"],
+        config: data.config as unknown as FieldConfig,
+        versionId: data.version_id,
+      });
+    });
+  }
+
+  async saveAnswer(
+    input: SaveOnboardingAnswerInput
+  ): Promise<ServiceResult<OnboardingSaveResult>> {
+    return safely("onboarding.saveAnswer", async () => {
+      const { data, error } = (await this.client.rpc("save_onboarding_answer", {
+        p_question_id: input.questionId,
+        p_answer: input.answer as unknown as Json,
+      })) as { data: SaveAnswerRpcRow[] | null; error: SupabaseResponse<unknown>["error"] };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "That did not save yet. Keep this open and try again.",
+            operation: "onboarding.saveAnswer",
+            recoverable: true,
+          })
+        );
+      }
+
+      const row = data?.[0];
+      if (!row) {
+        return serviceFailure(
+          normalizeServiceError(new Error("Missing save result."), {
+            code: "database",
+            message: "That did not save yet. Keep this open and try again.",
+            operation: "onboarding.saveAnswer",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({
+        attemptId: row.attempt_id,
+        status: row.status as OnboardingSaveResult["status"],
+        currentQuestionId: row.current_question_id,
+      });
+    });
+  }
+
+  async finalizeAttempt(): Promise<ServiceResult<OnboardingFinalizeResult>> {
+    return safely("onboarding.finalizeAttempt", async () => {
+      const { data, error } = (await this.client.rpc(
+        "finalize_onboarding_attempt"
+      )) as {
+        data: FinalizeAttemptRpcRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "That did not save yet. Keep this open and try again.",
+            operation: "onboarding.finalizeAttempt",
+            recoverable: true,
+          })
+        );
+      }
+
+      const row = data?.[0];
+      if (!row) {
+        return serviceFailure(
+          normalizeServiceError(new Error("Missing finalize result."), {
+            code: "database",
+            message: "That did not save yet. Keep this open and try again.",
+            operation: "onboarding.finalizeAttempt",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({
+        attemptId: row.attempt_id,
+        status: "submitted",
+        submittedAt: row.submitted_at,
+      });
+    });
+  }
+
+  async getCoachReview(
+    clientId: string
+  ): Promise<ServiceResult<CoachOnboardingReviewData | null>> {
+    return safely("onboarding.getCoachReview", async () => {
+      const { data: attempt, error } = (await this.client
+        .from("onboarding_attempts")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()) as SupabaseResponse<OnboardingAttemptRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load onboarding answers.",
+            operation: "onboarding.getCoachReview",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!attempt) return serviceSuccess(null);
+
+      const answersResult = await this.loadAnswers(attempt.id);
+      if (!answersResult.ok) return answersResult;
+
+      return serviceSuccess({
+        attemptId: attempt.id,
+        status: attempt.status as CoachOnboardingReviewData["status"],
+        submittedAt: attempt.submitted_at,
+        answers: answersResult.data.map(toReviewAnswer),
+      });
+    });
+  }
+
+  private async loadActiveAssessment(): Promise<ServiceResult<ActiveAssessment | null>> {
+    return safely("onboarding.loadActiveAssessment", async () => {
+      const { data: version, error: versionError } = (await this.client
+        .from("onboarding_assessment_versions")
+        .select("*")
+        .eq("status", "published")
+        .eq("is_active", true)
+        .maybeSingle()) as SupabaseResponse<OnboardingAssessmentVersionRow>;
+
+      if (versionError) {
+        return serviceFailure(
+          mapSupabaseError(versionError, {
+            code: "database",
+            fallbackMessage: "Could not load onboarding.",
+            operation: "onboarding.loadActiveAssessment",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!version) return serviceSuccess(null);
+
+      const { data: questions, error: questionsError } = (await this.client
+        .from("onboarding_questions")
+        .select("*")
+        .eq("version_id", version.id)
+        .order("question_order", { ascending: true })) as {
+        data: OnboardingQuestionRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (questionsError) {
+        return serviceFailure(
+          mapSupabaseError(questionsError, {
+            code: "database",
+            fallbackMessage: "Could not load onboarding questions.",
+            operation: "onboarding.loadActiveAssessment.questions",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({ version, questions: questions ?? [] });
+    });
+  }
+
+  private async loadAttempt(
+    versionId: string
+  ): Promise<ServiceResult<OnboardingAttemptRow | null>> {
+    return safely("onboarding.loadAttempt", async () => {
+      const { data, error } = (await this.client
+        .from("onboarding_attempts")
+        .select("*")
+        .eq("version_id", versionId)
+        .maybeSingle()) as SupabaseResponse<OnboardingAttemptRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load your saved onboarding answers.",
+            operation: "onboarding.loadAttempt",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data);
+    });
+  }
+
+  private async loadAnswers(
+    attemptId: string
+  ): Promise<ServiceResult<OnboardingAnswerRow[]>> {
+    return safely("onboarding.loadAnswers", async () => {
+      const { data, error } = (await this.client
+        .from("onboarding_answers")
+        .select("*")
+        .eq("attempt_id", attemptId)
+        .order("question_order", { ascending: true })) as {
+        data: OnboardingAnswerRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load your saved onboarding answers.",
+            operation: "onboarding.loadAnswers",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data ?? []);
+    });
+  }
+}
+
+function toClientOnboardingData(
+  active: ActiveAssessment,
+  attempt: OnboardingAttemptRow | null,
+  answers: OnboardingAnswerRow[]
+): ClientOnboardingData {
+  const questions = active.questions.map(toClientQuestion);
+  const savedAnswers = Object.fromEntries(
+    answers.map((answer) => [
+      answer.question_id,
+      answer.answer as unknown as FieldAnswer,
+    ])
+  );
+
+  return {
+    versionId: active.version.id,
+    status: attempt
+      ? (attempt.status as ClientOnboardingData["status"])
+      : "not_started",
+    attemptId: attempt?.id ?? null,
+    currentQuestionId:
+      attempt?.current_question_id ?? questions[0]?.id ?? null,
+    questions,
+    answers: answers.map(toClientAnswer),
+    savedAnswers,
+  };
+}
+
+function toClientQuestion(row: OnboardingQuestionRow): ClientOnboardingQuestion {
+  return {
+    id: row.id,
+    versionId: row.version_id,
+    questionKey: row.question_key,
+    questionOrder: row.question_order,
+    prompt: row.prompt,
+    answerType: row.answer_type as FieldConfig["type"],
+    config: row.config as unknown as FieldConfig,
+  };
+}
+
+function toClientAnswer(row: OnboardingAnswerRow): ClientOnboardingAnswer {
+  return {
+    id: row.id,
+    questionId: row.question_id,
+    questionKey: row.question_key,
+    questionOrder: row.question_order,
+    questionPrompt: row.question_prompt,
+    config: row.question_config as unknown as FieldConfig,
+    answer: row.answer as unknown as FieldAnswer,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toReviewAnswer(row: OnboardingAnswerRow): OnboardingReviewAnswer {
+  return {
+    id: row.id,
+    questionId: row.question_id,
+    questionKey: row.question_key,
+    questionOrder: row.question_order,
+    questionPrompt: row.question_prompt,
+    config: row.question_config as unknown as FieldConfig,
+    answer: row.answer as unknown as FieldAnswer,
+    answeredAt: row.updated_at,
+  };
+}
+
 class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
+  readonly onboarding: OnboardingRepository;
 
   constructor(readonly client: AppSupabaseClient) {
     this.profiles = new SupabaseProfileRepository(client);
     this.coachClients = new SupabaseCoachClientRepository(client);
     this.clientProfiles = new SupabaseClientProfileRepository(client);
+    this.onboarding = new SupabaseOnboardingRepository(client);
   }
 }
 
