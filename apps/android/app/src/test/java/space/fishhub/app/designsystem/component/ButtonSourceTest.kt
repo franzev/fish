@@ -26,15 +26,13 @@ class ButtonSourceTest {
     }
 
     private fun readProjectFile(vararg paths: String): String {
-        val root = File(System.getProperty("user.dir"))
+        val root = File(requireNotNull(System.getProperty("user.dir")))
         val file = paths
             .map { File(root, it) }
             .firstOrNull { it.exists() }
 
-        requireNotNull(file) {
+        return requireNotNull(file) {
             "Could not find any of: ${paths.joinToString()}"
-        }
-
-        return file.readText()
+        }.readText()
     }
 }
