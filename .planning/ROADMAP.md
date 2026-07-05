@@ -65,11 +65,19 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   5. `pnpm verify:rls` passes with self response-ownership / assigned-coach-read / unassigned-denial / cross-client-denial assertions for the response tables, and the question-bank config is zod-validated in the app with a `pg_jsonschema` CHECK backstop so malformed config cannot persist (XC-01, XC-02); `pnpm build` green. Every client screen holds the design line (one action, no lost work on refresh, monochrome, calm copy) and the `sketch-findings-fish` skill is loaded first (XC-03).
 
 **Plans**: 4 plans
+**Wave 1**
 
   - [ ] 05-01-PLAN.md — schema, RLS, seed, generated types, and live onboarding verification (Wave 1)
   - [ ] 05-02-PLAN.md — shared field contracts, validation, renderer, and onboarding conversation components (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
   - [ ] 05-03-PLAN.md — client onboarding Server Actions, `/onboarding`, autosave, and resume route wiring (Wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
   - [ ] 05-04-PLAN.md — inline coach read-only onboarding review and final release gates (Wave 3)
+
 **UI hint**: yes
 
 ### Phase 6: Tracker Engine
