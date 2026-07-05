@@ -84,7 +84,7 @@ create table public.onboarding_attempts (
   started_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   submitted_at timestamptz,
-  unique (client_id, version_id),
+  constraint onboarding_attempt_unique_client_version unique (client_id, version_id),
   constraint onboarding_submitted_has_timestamp check (status <> 'submitted' or submitted_at is not null)
 );
 
@@ -103,7 +103,7 @@ create table public.onboarding_answers (
   answer jsonb not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (attempt_id, question_id)
+  constraint onboarding_answers_attempt_question_key unique (attempt_id, question_id)
 );
 
 alter table public.onboarding_assessments enable row level security;
@@ -236,7 +236,7 @@ begin
 
   insert into public.onboarding_attempts (client_id, version_id, current_question_id)
   values (v_client_id, v_question.version_id, p_question_id)
-  on conflict (client_id, version_id) do update
+  on conflict on constraint onboarding_attempt_unique_client_version do update
     set updated_at = now()
   returning * into v_attempt;
 
@@ -274,7 +274,7 @@ begin
     v_question.config,
     p_answer
   )
-  on conflict (attempt_id, question_id) do update
+  on conflict on constraint onboarding_answers_attempt_question_key do update
     set answer = excluded.answer,
         assessment_version_id = excluded.assessment_version_id,
         question_key = excluded.question_key,
@@ -325,12 +325,12 @@ begin
     raise exception 'onboarding attempt not found';
   end if;
 
-  update public.onboarding_attempts
+  update public.onboarding_attempts as oa
   set status = 'submitted',
-      submitted_at = coalesce(submitted_at, now()),
+      submitted_at = coalesce(oa.submitted_at, now()),
       current_question_id = null,
       updated_at = now()
-  where id = v_attempt.id
+  where oa.id = v_attempt.id
   returning * into v_attempt;
 
   return query select v_attempt.id, v_attempt.status, v_attempt.submitted_at;
