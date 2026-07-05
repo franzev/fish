@@ -64,7 +64,12 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   4. An onboarding assessment is versioned and becomes immutable once answered (freeze-used-version trigger); each response pins to the exact version the client saw. A coach reviews an assigned client's submitted answers read-only (RLS-scoped, calm empty/partial states).
   5. `pnpm verify:rls` passes with self response-ownership / assigned-coach-read / unassigned-denial / cross-client-denial assertions for the response tables, and the question-bank config is zod-validated in the app with a `pg_jsonschema` CHECK backstop so malformed config cannot persist (XC-01, XC-02); `pnpm build` green. Every client screen holds the design line (one action, no lost work on refresh, monochrome, calm copy) and the `sketch-findings-fish` skill is loaded first (XC-03).
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+  - [ ] 05-01-PLAN.md — schema, RLS, seed, generated types, and live onboarding verification (Wave 1)
+  - [ ] 05-02-PLAN.md — shared field contracts, validation, renderer, and onboarding conversation components (Wave 1)
+  - [ ] 05-03-PLAN.md — client onboarding Server Actions, `/onboarding`, autosave, and resume route wiring (Wave 2)
+  - [ ] 05-04-PLAN.md — inline coach read-only onboarding review and final release gates (Wave 3)
 **UI hint**: yes
 
 ### Phase 6: Tracker Engine
@@ -121,7 +126,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 | 2. Secure account you can return to | v1.0 | 8/8 | Complete | 2026-07-03 |
 | 3. Role-aware home | v1.0 | 4/4 | Complete | 2026-07-04 |
 | 4. Client Profiles | v1.1 | 3/3 | Complete    | 2026-07-05 |
-| 5. Data-Driven Onboarding | v1.1 | 0/? | Not started | - |
+| 5. Data-Driven Onboarding | v1.1 | 0/4 | Not started | - |
 | 6. Tracker Engine | v1.1 | 0/? | Not started | - |
 | 7. Chat Schema | v1.1 | 0/? | Not started | - |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 0/? | Not started | - |
