@@ -18,8 +18,8 @@ class ButtonSourceTest {
     @Test
     fun previewScreensRequestFullWidthPrimaryActionExplicitly() {
         val source = readProjectFile(
-            "app/src/main/java/space/fishhub/app/ui/PreviewApp.kt",
-            "src/main/java/space/fishhub/app/ui/PreviewApp.kt",
+            "app/src/main/java/space/fishhub/app/feature/auth/AuthScreen.kt",
+            "src/main/java/space/fishhub/app/feature/auth/AuthScreen.kt",
         )
 
         assertTrue(source.contains("Button(onClick = page.onPrimary, fullWidth = true)"))
