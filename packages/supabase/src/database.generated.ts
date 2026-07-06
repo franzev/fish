@@ -381,6 +381,481 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          client_id: string
+          coach_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          coach_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          coach_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reads: {
+        Row: {
+          conversation_id: string
+          id: string
+          last_read_message_id: string | null
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          last_read_message_id?: string | null
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          last_read_message_id?: string | null
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_last_read_message_id_fkey"
+            columns: ["last_read_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          body?: string
+          client_request_id?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_assignments: {
+        Row: {
+          assigned_at: string
+          client_id: string
+          coach_id: string
+          ended_at: string | null
+          id: string
+          status: string
+          version_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          client_id: string
+          coach_id: string
+          ended_at?: string | null
+          id?: string
+          status?: string
+          version_id: string
+        }
+        Update: {
+          assigned_at?: string
+          client_id?: string
+          coach_id?: string
+          ended_at?: string | null
+          id?: string
+          status?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_assignments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_assignments_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_config_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_config_versions: {
+        Row: {
+          cadence: string
+          created_at: string
+          id: string
+          is_active: boolean
+          published_at: string | null
+          status: string
+          tracker_config_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          published_at?: string | null
+          status: string
+          tracker_config_id: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          published_at?: string | null
+          status?: string
+          tracker_config_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_config_versions_tracker_config_id_fkey"
+            columns: ["tracker_config_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_configs: {
+        Row: {
+          created_at: string
+          id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tracker_entries: {
+        Row: {
+          answer: Json
+          answer_type: string
+          assignment_id: string
+          created_at: string
+          entry_date: string
+          field_config: Json
+          field_id: string
+          field_key: string
+          field_order: number
+          field_prompt: string
+          id: string
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          answer: Json
+          answer_type: string
+          assignment_id: string
+          created_at?: string
+          entry_date: string
+          field_config: Json
+          field_id: string
+          field_key: string
+          field_order: number
+          field_prompt: string
+          id?: string
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          answer?: Json
+          answer_type?: string
+          assignment_id?: string
+          created_at?: string
+          entry_date?: string
+          field_config?: Json
+          field_id?: string
+          field_key?: string
+          field_order?: number
+          field_prompt?: string
+          id?: string
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_entries_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_entries_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_entries_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_config_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_entry_drafts: {
+        Row: {
+          answer: Json
+          answer_type: string
+          assignment_id: string
+          created_at: string
+          entry_date: string
+          field_config: Json
+          field_id: string
+          field_key: string
+          field_order: number
+          field_prompt: string
+          id: string
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          answer: Json
+          answer_type: string
+          assignment_id: string
+          created_at?: string
+          entry_date: string
+          field_config: Json
+          field_id: string
+          field_key: string
+          field_order: number
+          field_prompt: string
+          id?: string
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          answer?: Json
+          answer_type?: string
+          assignment_id?: string
+          created_at?: string
+          entry_date?: string
+          field_config?: Json
+          field_id?: string
+          field_key?: string
+          field_order?: number
+          field_prompt?: string
+          id?: string
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_entry_drafts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_entry_drafts_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracker_entry_drafts_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_config_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_fields: {
+        Row: {
+          answer_type: string
+          config: Json
+          created_at: string
+          field_key: string
+          field_order: number
+          id: string
+          prompt: string
+          updated_at: string
+          version_id: string
+        }
+        Insert: {
+          answer_type: string
+          config: Json
+          created_at?: string
+          field_key: string
+          field_order: number
+          id?: string
+          prompt: string
+          updated_at?: string
+          version_id: string
+        }
+        Update: {
+          answer_type?: string
+          config?: Json
+          created_at?: string
+          field_key?: string
+          field_order?: number
+          id?: string
+          prompt?: string
+          updated_at?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_fields_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_config_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracker_milestones: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          current_step_progress: number
+          id: string
+          label: string
+          milestone_order: number
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          current_step_progress?: number
+          id?: string
+          label: string
+          milestone_order: number
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          current_step_progress?: number
+          id?: string
+          label?: string
+          milestone_order?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracker_milestones_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "tracker_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -394,6 +869,28 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      get_coach_tracker_progress: {
+        Args: { p_client_id: string }
+        Returns: {
+          current_step_progress: number
+          entries_count: number
+          label: string
+          milestone_id: string
+          milestone_order: number
+          state: string
+        }[]
+      }
+      get_tracker_progress: {
+        Args: never
+        Returns: {
+          current_step_progress: number
+          entries_count: number
+          label: string
+          milestone_id: string
+          milestone_order: number
+          state: string
+        }[]
+      }
       save_onboarding_answer: {
         Args: { p_answer: Json; p_question_id: string }
         Returns: {
@@ -402,6 +899,40 @@ export type Database = {
           current_question_id: string
           status: string
         }[]
+      }
+      save_tracker_draft: {
+        Args: { p_answer: Json; p_field_id: string }
+        Returns: {
+          assignment_id: string
+          draft_id: string
+          entry_date: string
+          status: string
+        }[]
+      }
+      save_tracker_entry: {
+        Args: { p_answer: Json; p_field_id: string }
+        Returns: {
+          assignment_id: string
+          entry_date: string
+          entry_id: string
+          status: string
+        }[]
+      }
+      send_chat_message: {
+        Args: {
+          p_body: string
+          p_client_request_id: string
+          p_conversation_id: string
+        }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          sender_role: string
+        }
       }
     }
     Enums: {
@@ -538,4 +1069,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

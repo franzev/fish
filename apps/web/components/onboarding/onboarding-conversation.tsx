@@ -15,6 +15,7 @@ import {
   AutosaveStatus,
   type AutosaveStatusKind,
 } from "./autosave-status";
+import { formatAnswer } from "./format-answer";
 import { OnboardingQuestionBubble } from "./onboarding-question-bubble";
 
 interface OnboardingConversationProps {
@@ -188,30 +189,5 @@ function savesOnChange(config: FieldConfig): boolean {
     config.type === "single_select" ||
     config.type === "scale" ||
     config.type === "boolean"
-  );
-}
-
-function formatAnswer(config: FieldConfig, answer: FieldAnswer): string {
-  switch (answer.type) {
-    case "single_select":
-      return findOptionLabel(config, answer.optionId);
-    case "multi_select":
-      return answer.optionIds.map((id) => findOptionLabel(config, id)).join(", ");
-    case "scale":
-      return findOptionLabel(config, answer.value);
-    case "short_text":
-    case "long_text":
-      return answer.value;
-    case "boolean": {
-      if (config.type !== "boolean") return answer.value ? "Yes" : "Not right now";
-      return answer.value ? config.options[0].label : config.options[1].label;
-    }
-  }
-}
-
-function findOptionLabel(config: FieldConfig, optionId: string): string {
-  if (!("options" in config)) return optionId;
-  return (
-    config.options.find((option) => option.id === optionId)?.label ?? optionId
   );
 }

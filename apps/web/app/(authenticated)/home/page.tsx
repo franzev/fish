@@ -24,8 +24,12 @@ export default async function ClientHomePage() {
     redirect(authRedirects.coachHome);
   }
 
+  const openOnboarding =
+    data.onboarding && data.onboarding.status !== "submitted"
+      ? data.onboarding
+      : null;
   const onboardingLabel =
-    data.onboarding?.status === "not_started"
+    openOnboarding?.status === "not_started"
       ? "Start onboarding"
       : "Continue onboarding";
 
@@ -33,7 +37,7 @@ export default async function ClientHomePage() {
     <>
       <h1 className="mb-6 text-3xl">Welcome back, {data.firstName}</h1>
       <EmptyState Icon={IconSparkles}>
-        {data.onboarding ? (
+        {openOnboarding ? (
           <div className="flex flex-col items-center gap-4">
             <p>
               {data.coachName
@@ -45,6 +49,17 @@ export default async function ClientHomePage() {
               className={buttonVariants({ fullWidth: true })}
             >
               {onboardingLabel}
+            </Link>
+          </div>
+        ) : data.tracker ? (
+          <div className="flex flex-col items-center gap-4">
+            <p>
+              {data.coachName
+                ? `Your coach ${data.coachName} has a check-in ready for you.`
+                : "Your check-in is ready."}
+            </p>
+            <Link href="/tracker" className={buttonVariants({ fullWidth: true })}>
+              Open tracker
             </Link>
           </div>
         ) : data.coachName ? (

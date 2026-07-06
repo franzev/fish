@@ -58,6 +58,12 @@ async function findUserIdByEmail(email: string): Promise<string | null> {
 
 /** Creates a pre-verified user via the real auth API, or returns the existing id (idempotent). */
 async function upsertUser(email: string, password: string, displayName: string): Promise<string> {
+  const existingId = await findUserIdByEmail(email);
+  if (existingId) {
+    console.log(`Already exists: ${email}`);
+    return existingId;
+  }
+
   const { data, error } = await supabase.auth.admin.createUser({
     email,
     password,
@@ -71,12 +77,12 @@ async function upsertUser(email: string, password: string, displayName: string):
   }
 
   if (error.message.includes("already been registered")) {
-    const existingId = await findUserIdByEmail(email);
-    if (!existingId) {
+    const raceExistingId = await findUserIdByEmail(email);
+    if (!raceExistingId) {
       throw new Error(`${email} reported as already registered but could not be found via listUsers()`);
     }
     console.log(`Already exists: ${email}`);
-    return existingId;
+    return raceExistingId;
   }
 
   throw error;
@@ -207,51 +213,323 @@ const onboardingQuestions: OnboardingQuestionSeed[] = [
   },
 ];
 
+type TrackerFieldSeed = {
+  fieldKey: string;
+  fieldOrder: number;
+  prompt: string;
+  answerType: "single_select" | "multi_select" | "scale" | "short_text" | "long_text" | "boolean";
+  config: Record<string, unknown>;
+};
+
+const trackerFields: TrackerFieldSeed[] = [
+  {
+    fieldKey: "practice_moment",
+    fieldOrder: 1,
+    prompt: "Did you have a moment for English today?",
+    answerType: "boolean",
+    config: {
+      type: "boolean",
+      label: "Practice moment",
+      options: [
+        { id: "yes", label: "Yes" },
+        { id: "not_today", label: "Not today" },
+      ],
+    },
+  },
+  {
+    fieldKey: "practice_focus",
+    fieldOrder: 2,
+    prompt: "What did you work with today?",
+    answerType: "single_select",
+    config: {
+      type: "single_select",
+      label: "Practice focus",
+      options: [
+        { id: "speaking", label: "Speaking" },
+        { id: "writing", label: "Writing" },
+        { id: "listening", label: "Listening" },
+      ],
+    },
+  },
+  {
+    fieldKey: "support_that_helped",
+    fieldOrder: 3,
+    prompt: "What support felt useful?",
+    answerType: "multi_select",
+    config: {
+      type: "multi_select",
+      label: "Useful support",
+      minSelections: 0,
+      maxSelections: 2,
+      options: [
+        { id: "example", label: "A clear example" },
+        { id: "repeat", label: "Repeating a phrase" },
+        { id: "quiet_time", label: "Quiet time" },
+      ],
+    },
+  },
+  {
+    fieldKey: "practice_feel",
+    fieldOrder: 4,
+    prompt: "How did practice feel today?",
+    answerType: "scale",
+    config: {
+      type: "scale",
+      label: "Practice feel",
+      options: [
+        { id: "heavy", label: "Heavy" },
+        { id: "steady", label: "Steady" },
+        { id: "lighter", label: "Lighter" },
+      ],
+    },
+  },
+  {
+    fieldKey: "phrase_to_keep",
+    fieldOrder: 5,
+    prompt: "Is there one phrase you want to keep?",
+    answerType: "short_text",
+    config: {
+      type: "short_text",
+      label: "Phrase to keep",
+      maxLength: 160,
+      placeholder: "A phrase, word, or sentence",
+    },
+  },
+  {
+    fieldKey: "reflection",
+    fieldOrder: 6,
+    prompt: "Anything you want your coach to know?",
+    answerType: "long_text",
+    config: {
+      type: "long_text",
+      label: "Reflection",
+      maxLength: 1000,
+      placeholder: "A thought, question, or context for your coach",
+    },
+  },
+];
+
 async function seedOnboardingAssessment(): Promise<void> {
-  const { data: assessment, error: assessmentError } = await supabase
+  const { data: existingAssessment, error: existingAssessmentError } = await supabase
     .from("onboarding_assessments")
-    .upsert(
-      {
+    .select("id")
+    .eq("slug", "initial-client-context")
+    .maybeSingle();
+  if (existingAssessmentError) throw existingAssessmentError;
+
+  let assessment = existingAssessment;
+  if (!assessment) {
+    const { data, error } = await supabase
+      .from("onboarding_assessments")
+      .insert({
         slug: "initial-client-context",
         title: "Initial client context",
-      },
-      { onConflict: "slug" },
-    )
-    .select("id")
-    .single();
-  if (assessmentError || !assessment) throw assessmentError;
+      })
+      .select("id")
+      .single();
+    if (error || !data) throw error ?? new Error("Could not create onboarding assessment seed.");
+    assessment = data;
+  }
 
-  const { data: version, error: versionError } = await supabase
+  const { data: existingVersion, error: existingVersionError } = await supabase
     .from("onboarding_assessment_versions")
-    .upsert(
-      {
+    .select("id")
+    .eq("assessment_id", assessment.id)
+    .eq("version", 1)
+    .maybeSingle();
+  if (existingVersionError) throw existingVersionError;
+
+  let version = existingVersion;
+  if (!version) {
+    const { data, error } = await supabase
+      .from("onboarding_assessment_versions")
+      .insert({
         assessment_id: assessment.id,
         version: 1,
         status: "published",
         is_active: true,
         published_at: new Date().toISOString(),
-      },
-      { onConflict: "assessment_id,version" },
-    )
+      })
+      .select("id")
+      .single();
+    if (error || !data) throw error ?? new Error("Could not create onboarding assessment version seed.");
+    version = data;
+  }
+
+  for (const question of onboardingQuestions) {
+    const { data: existingQuestion, error: existingQuestionError } = await supabase
+      .from("onboarding_questions")
+      .select("id")
+      .eq("version_id", version.id)
+      .eq("question_key", question.questionKey)
+      .maybeSingle();
+    if (existingQuestionError) throw existingQuestionError;
+    if (existingQuestion) continue;
+
+    const { error } = await supabase
+      .from("onboarding_questions")
+      .insert({
+        version_id: version.id,
+        question_key: question.questionKey,
+        question_order: question.questionOrder,
+        prompt: question.prompt,
+        answer_type: question.answerType,
+        config: question.config,
+      });
+    if (error) throw error;
+  }
+}
+
+async function getOrCreateTrackerConfigId(): Promise<string> {
+  const { data: existing, error: existingError } = await supabase
+    .from("tracker_configs")
+    .select("id")
+    .eq("slug", "daily-check-in")
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) return existing.id as string;
+
+  const { data: tracker, error: trackerError } = await supabase
+    .from("tracker_configs")
+    .insert({
+      slug: "daily-check-in",
+      title: "Daily check-in",
+    })
+    .select("id")
+    .single();
+  if (trackerError || !tracker) throw trackerError;
+
+  return tracker.id as string;
+}
+
+async function getOrCreateTrackerVersionId(trackerId: string): Promise<string> {
+  const { data: existing, error: existingError } = await supabase
+    .from("tracker_config_versions")
+    .select("id")
+    .eq("tracker_config_id", trackerId)
+    .eq("version", 1)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) return existing.id as string;
+
+  const { data: version, error: versionError } = await supabase
+    .from("tracker_config_versions")
+    .insert({
+      tracker_config_id: trackerId,
+      version: 1,
+      cadence: "daily",
+      status: "published",
+      is_active: true,
+      published_at: new Date().toISOString(),
+    })
     .select("id")
     .single();
   if (versionError || !version) throw versionError;
 
-  for (const question of onboardingQuestions) {
+  return version.id as string;
+}
+
+async function seedTrackerConfig(): Promise<string> {
+  const trackerId = await getOrCreateTrackerConfigId();
+  const versionId = await getOrCreateTrackerVersionId(trackerId);
+
+  for (const field of trackerFields) {
+    const { data: existing, error: existingError } = await supabase
+      .from("tracker_fields")
+      .select("id")
+      .eq("version_id", versionId)
+      .eq("field_key", field.fieldKey)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) continue;
+
     const { error } = await supabase
-      .from("onboarding_questions")
+      .from("tracker_fields")
+      .insert({
+        version_id: versionId,
+        field_key: field.fieldKey,
+        field_order: field.fieldOrder,
+        prompt: field.prompt,
+        answer_type: field.answerType,
+        config: field.config,
+      });
+    if (error) throw error;
+  }
+
+  return versionId;
+}
+
+async function assignTrackerToClient(
+  coachId: string,
+  clientId: string,
+  versionId: string,
+): Promise<void> {
+  const { data: existing, error: existingError } = await supabase
+    .from("tracker_assignments")
+    .select("id, coach_id, version_id")
+    .eq("client_id", clientId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (existingError) throw existingError;
+
+  if (existing?.coach_id === coachId && existing.version_id === versionId) {
+    return;
+  }
+
+  if (existing) {
+    const { error: endError } = await supabase
+      .from("tracker_assignments")
+      .update({ status: "ended", ended_at: new Date().toISOString() })
+      .eq("id", existing.id);
+    if (endError) throw endError;
+  }
+
+  const { error } = await supabase.from("tracker_assignments").insert({
+    client_id: clientId,
+    coach_id: coachId,
+    version_id: versionId,
+  });
+  if (error) throw error;
+}
+
+async function seedChatConversations(): Promise<void> {
+  const { data: assignments, error: assignmentError } = await supabase
+    .from("coach_clients")
+    .select("coach_id, client_id");
+  if (assignmentError) throw assignmentError;
+
+  for (const assignment of assignments ?? []) {
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
       .upsert(
         {
-          version_id: version.id,
-          question_key: question.questionKey,
-          question_order: question.questionOrder,
-          prompt: question.prompt,
-          answer_type: question.answerType,
-          config: question.config,
+          client_id: assignment.client_id,
+          coach_id: assignment.coach_id,
         },
-        { onConflict: "version_id,question_key" },
+        { onConflict: "client_id,coach_id" },
+      )
+      .select("id, client_id, coach_id")
+      .single();
+    if (conversationError || !conversation) throw conversationError;
+
+    const { error: readStateError } = await supabase
+      .from("message_reads")
+      .upsert(
+        [
+          {
+            conversation_id: conversation.id,
+            user_id: conversation.client_id,
+            last_read_message_id: null,
+          },
+          {
+            conversation_id: conversation.id,
+            user_id: conversation.coach_id,
+            last_read_message_id: null,
+          },
+        ],
+        { onConflict: "conversation_id,user_id" },
       );
-    if (error) throw error;
+    if (readStateError) throw readStateError;
   }
 }
 
@@ -278,6 +556,11 @@ async function main(): Promise<void> {
   }
 
   await seedOnboardingAssessment();
+  const trackerVersionId = await seedTrackerConfig();
+  const firstClientId = clientIds[0];
+  if (!firstClientId) throw new Error("Seed needs at least one client.");
+  await assignTrackerToClient(coachId, firstClientId, trackerVersionId);
+  await seedChatConversations();
 
   console.log("\nSeed complete. Dev credentials (local only):");
   console.log(`  Coach: ${coach.email} / ${coach.password}`);

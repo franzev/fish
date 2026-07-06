@@ -19,6 +19,15 @@ export type OnboardingQuestionRow = Database["public"]["Tables"]["onboarding_que
 export type OnboardingAttemptRow = Database["public"]["Tables"]["onboarding_attempts"]["Row"];
 export type OnboardingAnswerRow = Database["public"]["Tables"]["onboarding_answers"]["Row"];
 
+export type TrackerConfigRow = Database["public"]["Tables"]["tracker_configs"]["Row"];
+export type TrackerConfigVersionRow =
+  Database["public"]["Tables"]["tracker_config_versions"]["Row"];
+export type TrackerFieldRow = Database["public"]["Tables"]["tracker_fields"]["Row"];
+export type TrackerMilestoneRow = Database["public"]["Tables"]["tracker_milestones"]["Row"];
+export type TrackerAssignmentRow = Database["public"]["Tables"]["tracker_assignments"]["Row"];
+export type TrackerEntryRow = Database["public"]["Tables"]["tracker_entries"]["Row"];
+export type TrackerEntryDraftRow = Database["public"]["Tables"]["tracker_entry_drafts"]["Row"];
+
 // NOT YET MIGRATED -- chat is a future phase; these are hand-written contracts, not live
 // DB tables. Keep them out of `Database` so nothing treats conversations/messages as real
 // tables that `supabase gen types` would ever produce.

@@ -9,10 +9,15 @@ import type {
   AppSupabaseClient,
   ClientProfileRepository,
   ClientProfileSafeFields,
+  ClientTrackerAnswer,
+  ClientTrackerData,
+  ClientTrackerField,
   ClientOnboardingAnswer,
   ClientOnboardingData,
   ClientOnboardingQuestion,
   CoachClientListItem,
+  CoachTrackerEntryField,
+  CoachTrackerReviewData,
   CoachOnboardingReviewData,
   CoachClientRepository,
   OnboardingFinalizeResult,
@@ -26,6 +31,13 @@ import type {
   SupabaseRealtimeService,
   SupabaseServices,
   SupabaseStorageService,
+  SaveTrackerEntryInput,
+  TrackerDraftResult,
+  TrackerFieldForValidation,
+  TrackerProgress,
+  TrackerProgressStep,
+  TrackerRepository,
+  TrackerSaveResult,
 } from "./types";
 import type {
   ClientProfileRow,
@@ -36,6 +48,11 @@ import type {
   OnboardingAttemptRow,
   OnboardingQuestionRow,
   ProfileRow,
+  TrackerAssignmentRow,
+  TrackerConfigVersionRow,
+  TrackerEntryDraftRow,
+  TrackerEntryRow,
+  TrackerFieldRow,
 } from "@fish/supabase";
 import type { FieldAnswer, FieldConfig, OnboardingReviewAnswer } from "@fish/core";
 import type { User } from "@supabase/supabase-js";
@@ -910,17 +927,492 @@ function toReviewAnswer(row: OnboardingAnswerRow): OnboardingReviewAnswer {
   };
 }
 
+type TrackerAssignmentJoinRow = TrackerAssignmentRow & {
+  tracker_config_versions:
+    | (TrackerConfigVersionRow & {
+        tracker_configs: { title: string } | Array<{ title: string }> | null;
+      })
+    | Array<
+        TrackerConfigVersionRow & {
+          tracker_configs: { title: string } | Array<{ title: string }> | null;
+        }
+      >
+    | null;
+  profiles: { display_name: string } | Array<{ display_name: string }> | null;
+};
+
+type TrackerRpcRow = {
+  assignment_id: string;
+  entry_id?: string;
+  draft_id?: string;
+  entry_date: string;
+  status: string;
+};
+
+type TrackerProgressRpcRow = {
+  entries_count: number | string;
+  milestone_id: string;
+  milestone_order: number | string;
+  label: string;
+  state: string;
+  current_step_progress: number | string | null;
+};
+
+class SupabaseTrackerRepository implements TrackerRepository {
+  constructor(private readonly client: AppSupabaseClient) {}
+
+  async getActiveAssignmentForClient(): Promise<ServiceResult<ClientTrackerData | null>> {
+    const assignmentResult = await this.loadActiveAssignment();
+    if (!assignmentResult.ok) return assignmentResult;
+    if (!assignmentResult.data) return serviceSuccess(null);
+
+    const assignment = assignmentResult.data;
+    const version = normalizeSingle(assignment.tracker_config_versions);
+    if (!version) return serviceSuccess(null);
+
+    const fieldsResult = await this.loadFields(version.id);
+    if (!fieldsResult.ok) return fieldsResult;
+
+    const entriesResult = await this.loadEntries(assignment.id);
+    if (!entriesResult.ok) return entriesResult;
+
+    const draftsResult = await this.loadDrafts(assignment.id);
+    if (!draftsResult.ok) return draftsResult;
+
+    const progressResult = await this.getProgress();
+    if (!progressResult.ok) return progressResult;
+
+    return serviceSuccess(
+      toClientTrackerData(
+        assignment,
+        version,
+        fieldsResult.data,
+        entriesResult.data,
+        draftsResult.data,
+        progressResult.data
+      )
+    );
+  }
+
+  async getFieldForAnswerValidation(
+    fieldId: string
+  ): Promise<ServiceResult<TrackerFieldForValidation | null>> {
+    return safely("tracker.getFieldForAnswerValidation", async () => {
+      const { data, error } = (await this.client
+        .from("tracker_fields")
+        .select("*")
+        .eq("id", fieldId)
+        .maybeSingle()) as SupabaseResponse<TrackerFieldRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load this tracker field.",
+            operation: "tracker.getFieldForAnswerValidation",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!data) return serviceSuccess(null);
+
+      return serviceSuccess({
+        id: data.id,
+        prompt: data.prompt,
+        answerType: data.answer_type as FieldConfig["type"],
+        config: data.config as unknown as FieldConfig,
+        versionId: data.version_id,
+      });
+    });
+  }
+
+  async saveEntry(
+    input: SaveTrackerEntryInput
+  ): Promise<ServiceResult<TrackerSaveResult>> {
+    return safely<TrackerSaveResult>("tracker.save_tracker_entry", async () => {
+      const { data, error } = (await this.client.rpc("save_tracker_entry", {
+        p_field_id: input.fieldId,
+        p_answer: input.answer as unknown as Json,
+      })) as { data: TrackerRpcRow[] | null; error: SupabaseResponse<unknown>["error"] };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "That did not save yet. Keep this open and try again.",
+            operation: "tracker.save_tracker_entry",
+            recoverable: true,
+          })
+        );
+      }
+
+      const row = data?.[0];
+      if (!row?.entry_id) {
+        return serviceFailure(
+          normalizeServiceError(new Error("Missing tracker save result."), {
+            code: "database",
+            message: "That did not save yet. Keep this open and try again.",
+            operation: "tracker.save_tracker_entry",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({
+        assignmentId: row.assignment_id,
+        entryId: row.entry_id,
+        entryDate: row.entry_date,
+        status: "active",
+      });
+    });
+  }
+
+  async saveDraft(
+    input: SaveTrackerEntryInput
+  ): Promise<ServiceResult<TrackerDraftResult>> {
+    return safely<TrackerDraftResult>("tracker.save_tracker_draft", async () => {
+      const { data, error } = (await this.client.rpc("save_tracker_draft", {
+        p_field_id: input.fieldId,
+        p_answer: input.answer as unknown as Json,
+      })) as { data: TrackerRpcRow[] | null; error: SupabaseResponse<unknown>["error"] };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "That draft did not save yet. Keep this open and try again.",
+            operation: "tracker.save_tracker_draft",
+            recoverable: true,
+          })
+        );
+      }
+
+      const row = data?.[0];
+      if (!row?.draft_id) {
+        return serviceFailure(
+          normalizeServiceError(new Error("Missing tracker draft result."), {
+            code: "database",
+            message: "That draft did not save yet. Keep this open and try again.",
+            operation: "tracker.save_tracker_draft",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({
+        assignmentId: row.assignment_id,
+        draftId: row.draft_id,
+        entryDate: row.entry_date,
+        status: "draft",
+      });
+    });
+  }
+
+  async getProgress(): Promise<ServiceResult<TrackerProgress>> {
+    return safely("tracker.getProgress", async () => {
+      const { data, error } = (await this.client.rpc("get_tracker_progress")) as {
+        data: TrackerProgressRpcRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load tracker progress.",
+            operation: "tracker.getProgress",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(toTrackerProgress(data ?? []));
+    });
+  }
+
+  private async loadDrafts(assignmentId: string): Promise<ServiceResult<TrackerEntryDraftRow[]>> {
+    return safely("tracker.loadDrafts", async () => {
+      const { data, error } = (await this.client
+        .from("tracker_entry_drafts")
+        .select("*")
+        .eq("assignment_id", assignmentId)
+        .order("field_order", { ascending: true })) as {
+        data: TrackerEntryDraftRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load your draft tracker answers.",
+            operation: "tracker.loadDrafts",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data ?? []);
+    });
+  }
+
+  async getCoachReview(
+    clientId: string
+  ): Promise<ServiceResult<CoachTrackerReviewData | null>> {
+    return safely("tracker.getCoachReview", async () => {
+      const { data: assignment, error } = (await this.client
+        .from("tracker_assignments")
+        .select("*")
+        .eq("client_id", clientId)
+        .eq("status", "active")
+        .maybeSingle()) as SupabaseResponse<TrackerAssignmentRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load tracker entries.",
+            operation: "tracker.getCoachReview",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!assignment) return serviceSuccess(null);
+
+      const entriesResult = await this.loadEntries(assignment.id);
+      if (!entriesResult.ok) return entriesResult;
+
+      return serviceSuccess({
+        assignmentId: assignment.id,
+        status: entriesResult.data.length > 0 ? "saved" : "empty",
+        entries: groupCoachTrackerEntries(entriesResult.data),
+      });
+    });
+  }
+
+  private async loadActiveAssignment(): Promise<ServiceResult<TrackerAssignmentJoinRow | null>> {
+    return safely("tracker.loadActiveAssignment", async () => {
+      const { data, error } = (await this.client
+        .from("tracker_assignments")
+        .select(
+          "*, tracker_config_versions:version_id(*, tracker_configs:tracker_config_id(title)), profiles:coach_id(display_name)"
+        )
+        .eq("status", "active")
+        .maybeSingle()) as SupabaseResponse<TrackerAssignmentJoinRow>;
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load your tracker.",
+            operation: "tracker.loadActiveAssignment",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data);
+    });
+  }
+
+  private async loadFields(versionId: string): Promise<ServiceResult<TrackerFieldRow[]>> {
+    return safely("tracker.loadFields", async () => {
+      const { data, error } = (await this.client
+        .from("tracker_fields")
+        .select("*")
+        .eq("version_id", versionId)
+        .order("field_order", { ascending: true })) as {
+        data: TrackerFieldRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load tracker fields.",
+            operation: "tracker.loadFields",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data ?? []);
+    });
+  }
+
+  private async loadEntries(assignmentId: string): Promise<ServiceResult<TrackerEntryRow[]>> {
+    return safely("tracker.loadEntries", async () => {
+      const { data, error } = (await this.client
+        .from("tracker_entries")
+        .select("*")
+        .eq("assignment_id", assignmentId)
+        .order("entry_date", { ascending: false })
+        .order("field_order", { ascending: true })) as {
+        data: TrackerEntryRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load tracker entries.",
+            operation: "tracker.loadEntries",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data ?? []);
+    });
+  }
+
+}
+
+function normalizeSingle<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function toClientTrackerData(
+  assignment: TrackerAssignmentJoinRow,
+  version: TrackerConfigVersionRow & {
+    tracker_configs: { title: string } | Array<{ title: string }> | null;
+  },
+  fields: TrackerFieldRow[],
+  entries: TrackerEntryRow[],
+  drafts: TrackerEntryDraftRow[],
+  progress: TrackerProgress
+): ClientTrackerData {
+  const tracker = normalizeSingle(version.tracker_configs);
+  const coach = normalizeSingle(assignment.profiles);
+  const savedAnswers = toAnswerRecord(entries);
+  const draftAnswers = toAnswerRecord(drafts);
+
+  return {
+    assignmentId: assignment.id,
+    versionId: version.id,
+    trackerName: tracker?.title ?? "Your tracker",
+    cadence: version.cadence,
+    coachDisplayName: coach?.display_name ?? null,
+    fields: fields.map(toClientTrackerField),
+    entries: entries.map(toClientTrackerAnswer),
+    savedAnswers,
+    draftAnswers,
+    progress,
+  };
+}
+
+function toClientTrackerField(row: TrackerFieldRow): ClientTrackerField {
+  return {
+    id: row.id,
+    versionId: row.version_id,
+    fieldKey: row.field_key,
+    fieldOrder: row.field_order,
+    prompt: row.prompt,
+    answerType: row.answer_type as FieldConfig["type"],
+    config: row.config as unknown as FieldConfig,
+  };
+}
+
+function toClientTrackerAnswer(row: TrackerEntryRow): ClientTrackerAnswer {
+  return {
+    id: row.id,
+    fieldId: row.field_id,
+    fieldKey: row.field_key,
+    fieldOrder: row.field_order,
+    fieldPrompt: row.field_prompt,
+    config: row.field_config as unknown as FieldConfig,
+    answer: row.answer as unknown as FieldAnswer,
+    entryDate: row.entry_date,
+    updatedAt: row.updated_at,
+    source: "saved",
+  };
+}
+
+function toTrackerProgress(rows: TrackerProgressRpcRow[]): TrackerProgress {
+  const entriesCount = rows[0] ? Number(rows[0].entries_count) : 0;
+
+  return {
+    entriesCount: Number.isFinite(entriesCount) ? entriesCount : 0,
+    steps: rows.map(toTrackerProgressStep),
+  };
+}
+
+function toAnswerRecord(
+  rows: Array<TrackerEntryDraftRow | TrackerEntryRow>
+): Record<string, FieldAnswer> {
+  const answers: Record<string, FieldAnswer> = {};
+
+  for (const row of rows) {
+    answers[row.field_id] ??= row.answer as unknown as FieldAnswer;
+  }
+
+  return answers;
+}
+
+function toTrackerProgressStep(row: TrackerProgressRpcRow): TrackerProgressStep {
+  const state =
+    row.state === "done" || row.state === "now" || row.state === "up_next"
+      ? row.state
+      : "up_next";
+
+  return {
+    id: row.milestone_id,
+    label: row.label,
+    state,
+    currentStepProgress: toBoundedProgress(row.current_step_progress),
+  };
+}
+
+function toBoundedProgress(value: number | string | null): number {
+  const progress = Number(value ?? 0);
+  if (!Number.isFinite(progress)) return 0;
+  return Math.min(100, Math.max(0, progress));
+}
+
+function groupCoachTrackerEntries(
+  rows: TrackerEntryRow[]
+): CoachTrackerReviewData["entries"] {
+  const groups = new Map<string, CoachTrackerEntryField[]>();
+
+  for (const row of rows) {
+    const fields = groups.get(row.entry_date) ?? [];
+    fields.push({
+      id: row.id,
+      fieldId: row.field_id,
+      fieldKey: row.field_key,
+      fieldOrder: row.field_order,
+      fieldPrompt: row.field_prompt,
+      config: row.field_config as unknown as FieldConfig,
+      answer: row.answer as unknown as FieldAnswer,
+      updatedAt: row.updated_at,
+    });
+    groups.set(row.entry_date, fields);
+  }
+
+  return [...groups.entries()].map(([entryDate, fields]) => ({
+    entryDate,
+    fields: fields.sort((left, right) => left.fieldOrder - right.fieldOrder),
+  }));
+}
+
 class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
   readonly onboarding: OnboardingRepository;
+  readonly tracker: TrackerRepository;
 
   constructor(readonly client: AppSupabaseClient) {
     this.profiles = new SupabaseProfileRepository(client);
     this.coachClients = new SupabaseCoachClientRepository(client);
     this.clientProfiles = new SupabaseClientProfileRepository(client);
     this.onboarding = new SupabaseOnboardingRepository(client);
+    this.tracker = new SupabaseTrackerRepository(client);
   }
 }
 

@@ -14,6 +14,7 @@ import type {
   OnboardingAttemptRow,
   OnboardingQuestionRow,
   ProfileRow,
+  TrackerConfigVersionRow,
 } from "@fish/supabase";
 import type {
   FieldAnswer,
@@ -187,12 +188,125 @@ export type OnboardingSourceRows = {
   answer: OnboardingAnswerRow;
 };
 
+export type TrackerCadence = TrackerConfigVersionRow["cadence"];
+
+export interface ClientTrackerField {
+  id: string;
+  versionId: string;
+  fieldKey: string;
+  fieldOrder: number;
+  prompt: string;
+  answerType: FieldConfig["type"];
+  config: FieldConfig;
+}
+
+export interface ClientTrackerAnswer {
+  id: string;
+  fieldId: string;
+  fieldKey: string;
+  fieldOrder: number;
+  fieldPrompt: string;
+  config: FieldConfig;
+  answer: FieldAnswer;
+  entryDate: string;
+  updatedAt: string;
+  source: "draft" | "saved";
+}
+
+export type TrackerMilestoneState = "done" | "now" | "up_next";
+
+export interface TrackerProgressStep {
+  id: string;
+  label: string;
+  state: TrackerMilestoneState;
+  currentStepProgress: number;
+}
+
+export interface TrackerProgress {
+  entriesCount: number;
+  steps: TrackerProgressStep[];
+}
+
+export interface ClientTrackerData {
+  assignmentId: string;
+  versionId: string;
+  trackerName: string;
+  cadence: TrackerCadence;
+  coachDisplayName: string | null;
+  fields: ClientTrackerField[];
+  entries: ClientTrackerAnswer[];
+  savedAnswers: Record<string, FieldAnswer>;
+  draftAnswers: Record<string, FieldAnswer>;
+  progress: TrackerProgress;
+}
+
+export interface TrackerFieldForValidation {
+  id: string;
+  prompt: string;
+  answerType: FieldConfig["type"];
+  config: FieldConfig;
+  versionId: string;
+}
+
+export interface SaveTrackerEntryInput {
+  fieldId: string;
+  answer: FieldAnswer;
+}
+
+export interface TrackerSaveResult {
+  assignmentId: string;
+  entryId: string;
+  entryDate: string;
+  status: "active";
+}
+
+export interface TrackerDraftResult {
+  assignmentId: string;
+  draftId: string;
+  entryDate: string;
+  status: "draft";
+}
+
+export interface CoachTrackerEntryField {
+  id: string;
+  fieldId: string;
+  fieldKey: string;
+  fieldOrder: number;
+  fieldPrompt: string;
+  config: FieldConfig;
+  answer: FieldAnswer;
+  updatedAt: string;
+}
+
+export interface CoachTrackerEntryGroup {
+  entryDate: string;
+  fields: CoachTrackerEntryField[];
+}
+
+export interface CoachTrackerReviewData {
+  assignmentId: string | null;
+  status: "empty" | "saved";
+  entries: CoachTrackerEntryGroup[];
+}
+
+export interface TrackerRepository {
+  getActiveAssignmentForClient(): Promise<ServiceResult<ClientTrackerData | null>>;
+  getFieldForAnswerValidation(
+    fieldId: string
+  ): Promise<ServiceResult<TrackerFieldForValidation | null>>;
+  saveDraft(input: SaveTrackerEntryInput): Promise<ServiceResult<TrackerDraftResult>>;
+  saveEntry(input: SaveTrackerEntryInput): Promise<ServiceResult<TrackerSaveResult>>;
+  getProgress(): Promise<ServiceResult<TrackerProgress>>;
+  getCoachReview(clientId: string): Promise<ServiceResult<CoachTrackerReviewData | null>>;
+}
+
 export interface SupabaseDatabaseService {
   readonly client: AppSupabaseClient;
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
   readonly onboarding: OnboardingRepository;
+  readonly tracker: TrackerRepository;
 }
 
 export interface SupabaseStorageService {

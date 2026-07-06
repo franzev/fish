@@ -29,3 +29,6 @@ redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 
 [functions.send-message]
 verify_jwt = true
+
+[functions.assign-tracker]
+verify_jwt = true

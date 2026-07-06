@@ -1,8 +1,10 @@
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
 import type {
   ClientOnboardingData,
+  ClientTrackerData,
   CoachClientListItem,
   CoachOnboardingReviewData,
+  CoachTrackerReviewData,
   SupabaseServices,
 } from "@/lib/services";
 import { isUserRole, type UserRole } from "@fish/core/roles";
@@ -42,6 +44,7 @@ export interface ClientHomeData {
   firstName: string;
   coachName: string | null;
   onboarding: ClientOnboardingData | null;
+  tracker: ClientTrackerData | null;
 }
 
 export interface CoachHomeData {
@@ -74,6 +77,16 @@ export interface ClientOnboardingPageData {
 export interface CoachClientOnboardingReviewPageData {
   role: UserRole;
   review: CoachOnboardingReviewData | null;
+}
+
+export interface ClientTrackerPageData {
+  role: UserRole;
+  tracker: ClientTrackerData | null;
+}
+
+export interface CoachClientTrackerReviewPageData {
+  role: UserRole;
+  review: CoachTrackerReviewData | null;
 }
 
 export interface ProfileData {
@@ -202,6 +215,7 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
   }
 
   let onboarding: ClientOnboardingData | null = null;
+  let tracker: ClientTrackerData | null = null;
   if (profile.role === "client") {
     const onboardingResult =
       await services.database.onboarding.getClientAttemptState();
@@ -209,6 +223,13 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
       throw onboardingResult.error;
     }
     onboarding = onboardingResult.data;
+
+    const trackerResult =
+      await services.database.tracker.getActiveAssignmentForClient();
+    if (!trackerResult.ok) {
+      throw trackerResult.error;
+    }
+    tracker = trackerResult.data;
   }
 
   return {
@@ -216,6 +237,7 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
     firstName: profile.displayName.split(" ")[0] ?? "",
     coachName,
     onboarding,
+    tracker,
   };
 }
 
@@ -381,6 +403,30 @@ export async function getClientOnboardingData(): Promise<ClientOnboardingPageDat
   };
 }
 
+export async function getClientTrackerData(): Promise<ClientTrackerPageData | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  if (profile.role !== "client") {
+    return { role: profile.role, tracker: null };
+  }
+
+  const trackerResult =
+    await services.database.tracker.getActiveAssignmentForClient();
+  if (!trackerResult.ok) {
+    throw trackerResult.error;
+  }
+
+  return {
+    role: profile.role,
+    tracker: trackerResult.data,
+  };
+}
+
 export async function getCoachClientOnboardingReviewData(
   clientId: string
 ): Promise<CoachClientOnboardingReviewPageData | null> {
@@ -396,6 +442,31 @@ export async function getCoachClientOnboardingReviewData(
   }
 
   const reviewResult = await services.database.onboarding.getCoachReview(clientId);
+  if (!reviewResult.ok) {
+    throw reviewResult.error;
+  }
+
+  return {
+    role: profile.role,
+    review: reviewResult.data,
+  };
+}
+
+export async function getCoachClientTrackerReviewData(
+  clientId: string
+): Promise<CoachClientTrackerReviewPageData | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  if (profile.role !== "coach" || !UUID_RE.test(clientId)) {
+    return { role: profile.role, review: null };
+  }
+
+  const reviewResult = await services.database.tracker.getCoachReview(clientId);
   if (!reviewResult.ok) {
     throw reviewResult.error;
   }

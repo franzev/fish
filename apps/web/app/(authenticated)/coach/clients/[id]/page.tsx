@@ -1,10 +1,12 @@
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { CoachOnboardingReview } from "@/components/onboarding/coach-onboarding-review";
+import { CoachTrackerReview } from "@/components/tracker";
 import { authRedirects } from "@/lib/auth/redirects";
 import {
   getCoachClientDetailData,
   getCoachClientOnboardingReviewData,
+  getCoachClientTrackerReviewData,
 } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
@@ -55,6 +57,16 @@ export default async function CoachClientDetailPage({
     redirect(authRedirects.clientHome);
   }
 
+  const trackerData = await getCoachClientTrackerReviewData(id);
+
+  if (!trackerData) {
+    redirect(authRedirects.signedOut);
+  }
+
+  if (trackerData.role === "client") {
+    redirect(authRedirects.clientHome);
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl">{data.client.displayName}</h1>
@@ -71,6 +83,7 @@ export default async function CoachClientDetailPage({
         </div>
       </Card>
       <CoachOnboardingReview review={onboardingData.review} />
+      <CoachTrackerReview review={trackerData.review} />
     </div>
   );
 }

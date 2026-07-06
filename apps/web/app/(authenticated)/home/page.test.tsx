@@ -35,6 +35,7 @@ describe("ClientHomePage", () => {
       firstName: "Dana",
       coachName: null,
       onboarding: null,
+      tracker: null,
     });
 
     await expect(ClientHomePage()).rejects.toThrow("NEXT_REDIRECT");
@@ -47,6 +48,7 @@ describe("ClientHomePage", () => {
       firstName: "Alex",
       coachName: null,
       onboarding: null,
+      tracker: null,
     });
 
     const Page = await ClientHomePage();
@@ -65,6 +67,7 @@ describe("ClientHomePage", () => {
       firstName: "Alex",
       coachName: "Coach Dana",
       onboarding: null,
+      tracker: null,
     });
 
     const Page = await ClientHomePage();
@@ -90,6 +93,7 @@ describe("ClientHomePage", () => {
         answers: [],
         savedAnswers: {},
       },
+      tracker: null,
     });
 
     const Page = await ClientHomePage();
@@ -120,6 +124,7 @@ describe("ClientHomePage", () => {
           "q-1": { type: "single_select", optionId: "meetings" },
         },
       },
+      tracker: null,
     });
 
     const Page = await ClientHomePage();
@@ -128,6 +133,45 @@ describe("ClientHomePage", () => {
     expect(
       screen.getByRole("link", { name: "Continue onboarding" })
     ).toHaveAttribute("href", "/onboarding");
+    expect(container.querySelectorAll(".bg-primary")).toHaveLength(1);
+  });
+
+  it("renders the assigned tracker as the single primary action when onboarding is done", async () => {
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "client",
+      firstName: "Alex",
+      coachName: "Coach Dana",
+      onboarding: {
+        versionId: "version-1",
+        status: "submitted",
+        attemptId: "attempt-1",
+        currentQuestionId: null,
+        questions: [],
+        answers: [],
+        savedAnswers: {},
+      },
+      tracker: {
+        assignmentId: "assignment-1",
+        versionId: "version-1",
+        trackerName: "Daily check-in",
+        cadence: "daily",
+        coachDisplayName: "Coach Dana",
+        fields: [],
+        entries: [],
+        savedAnswers: {},
+        draftAnswers: {},
+        progress: { entriesCount: 0, steps: [] },
+      },
+    });
+
+    const Page = await ClientHomePage();
+    const { container } = render(Page);
+
+    expect(screen.getByRole("link", { name: "Open tracker" })).toHaveAttribute(
+      "href",
+      "/tracker"
+    );
+    expect(screen.queryByRole("link", { name: /onboarding/i })).toBeNull();
     expect(container.querySelectorAll(".bg-primary")).toHaveLength(1);
   });
 

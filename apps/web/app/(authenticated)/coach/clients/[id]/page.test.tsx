@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const redirectMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -17,22 +17,33 @@ vi.mock("next/navigation", () => ({
 const {
   getCoachClientDetailDataMock,
   getCoachClientOnboardingReviewDataMock,
+  getCoachClientTrackerReviewDataMock,
 } = vi.hoisted(() => ({
   getCoachClientDetailDataMock: vi.fn(),
   getCoachClientOnboardingReviewDataMock: vi.fn(),
+  getCoachClientTrackerReviewDataMock: vi.fn(),
 }));
 vi.mock("@/lib/auth/server", () => ({
   getCoachClientDetailData: getCoachClientDetailDataMock,
   getCoachClientOnboardingReviewData: getCoachClientOnboardingReviewDataMock,
+  getCoachClientTrackerReviewData: getCoachClientTrackerReviewDataMock,
 }));
 
 import CoachClientDetailPage from "./page";
 
 describe("CoachClientDetailPage", () => {
+  beforeEach(() => {
+    getCoachClientTrackerReviewDataMock.mockResolvedValue({
+      role: "coach",
+      review: null,
+    });
+  });
+
   afterEach(() => {
     redirectMock.mockClear();
     getCoachClientDetailDataMock.mockReset();
     getCoachClientOnboardingReviewDataMock.mockReset();
+    getCoachClientTrackerReviewDataMock.mockReset();
   });
 
   it("redirects to signed-out when there is no session", async () => {
@@ -101,6 +112,7 @@ describe("CoachClientDetailPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("B1")).toBeInTheDocument();
     expect(screen.getByText("No onboarding answers yet")).toBeInTheDocument();
+    expect(screen.getByText("No tracker entries yet")).toBeInTheDocument();
     // Plain label, not a percentage/grade string.
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
     expect(screen.queryByText(/grade/i)).not.toBeInTheDocument();
@@ -256,7 +268,9 @@ describe("CoachClientDetailPage", () => {
     const pageSource = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     expect(pageSource).toMatch(/getCoachClientDetailData/);
     expect(pageSource).toMatch(/getCoachClientOnboardingReviewData/);
+    expect(pageSource).toMatch(/getCoachClientTrackerReviewData/);
     expect(pageSource).toMatch(/CoachOnboardingReview/);
+    expect(pageSource).toMatch(/CoachTrackerReview/);
     expect(pageSource).toMatch(/Alert tone="notice"/);
     expect(pageSource).not.toMatch(/\.eq\("coach_id"/);
     expect(pageSource).not.toMatch(/\.eq\("id"/);

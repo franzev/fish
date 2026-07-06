@@ -24,7 +24,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 
 - [x] **Phase 4: Client Profiles** - A client owns their profile and safe-edits it; the coach reads it; protected fields are DB-frozen (completed 2026-07-04)
 - [x] **Phase 5: Data-Driven Onboarding** - A client answers a DB-driven, one-question-at-a-time assessment that autosaves and resumes; builds the shared config renderer
-- [ ] **Phase 6: Tracker Engine** - A client is assigned exactly one config-driven tracker and logs entries; the coach reviews them (reuses the Phase 5 renderer)
+- [x] **Phase 6: Tracker Engine** - A client is assigned exactly one config-driven tracker and logs entries; the coach reviews them (reuses the Phase 5 renderer) (completed 2026-07-06)
 - [ ] **Phase 7: Chat Schema** - Conversation/message/read-state tables land RLS-verified, idempotent, immutable, and realtime-ready (no subscriptions, no UI)
 - [ ] **Phase 8: Real Chat Route + send-message Edge Function** - A client and coach hold a real persisted 1-on-1 conversation through the live route and real Edge Function; E2E covers the three cross-role flows
 
@@ -93,19 +93,19 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   4. A client sees visual progress as a milestone journey — never a grade, adherence %, or streak (the schema stores entries, not a streak integer); a coach reviews an assigned client's entries as a read-only timeline (RLS-scoped, no scoring UI).
   5. `pnpm verify:rls` passes with entry self-ownership / active-assignment gate / assigned-coach-read / unassigned-denial / cross-client-denial / self-assign-rejected assertions, tracker config is zod + `pg_jsonschema` validated so malformed config cannot persist (XC-01, XC-02); `pnpm build` green. Client screens hold the design line (one action, no lost draft, no grade/streak, monochrome, calm copy) and `sketch-findings-fish` is loaded first (XC-03).
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans complete
 
 **Wave 1**
 
-  - [ ] 06-01-PLAN.md — tracker schema (0009_tracker.sql: versioned config + assignment + entries tables, RLS, save_tracker_entry/get_tracker_progress, pg_jsonschema CHECK, freeze triggers, one-active-assignment index), zod validation, seed, verify:rls assertions, generated types, and [BLOCKING] local apply
+  - [x] 06-01-SUMMARY.md — tracker schema, private drafts, assignment-owned milestones, RLS, save/draft/progress RPCs, zod + DB validation, seed, verify:rls assertions, generated types, and local apply
 
 **Wave 2** *(blocked on Wave 1)*
 
-  - [ ] 06-02-PLAN.md — client /tracker route: TrackerRepository + Server Action + draft-preserving flow + TrackerEntryForm (reused FieldRenderer) + MilestonePath progress + assigned home entry
+  - [x] 06-02-SUMMARY.md — client /tracker route: TrackerRepository + Server Actions + private draft flow + TrackerEntryFlow (reused FieldRenderer) + MilestoneProgress + assigned home entry
 
 **Wave 3** *(blocked on Waves 1-2)*
 
-  - [ ] 06-03-PLAN.md — assign-tracker Edge Function (caller-scoped membership re-check + admin write + idempotent) + live-function verify:rls proof + read-only coach tracker timeline on /coach/clients/[id] + release gates
+  - [x] 06-03-SUMMARY.md — assign-tracker Edge Function (caller-scoped membership re-check + admin write + idempotent) + read-only coach tracker timeline on /coach/clients/[id] + release gates
 
 **UI hint**: yes
 
@@ -148,7 +148,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 | 3. Role-aware home | v1.0 | 4/4 | Complete | 2026-07-04 |
 | 4. Client Profiles | v1.1 | 3/3 | Complete    | 2026-07-05 |
 | 5. Data-Driven Onboarding | v1.1 | 4/4 | Complete | 2026-07-05 |
-| 6. Tracker Engine | v1.1 | 0/? | Not started | - |
+| 6. Tracker Engine | v1.1 | 3/3 | Complete | 2026-07-06 |
 | 7. Chat Schema | v1.1 | 0/? | Not started | - |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 0/? | Not started | - |
 

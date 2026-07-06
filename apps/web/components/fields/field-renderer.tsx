@@ -18,6 +18,7 @@ export interface FieldRendererProps {
   validationMessage?: string | null;
   disabled?: boolean;
   submitLabel?: string;
+  showSubmit?: boolean;
   onChange: (answer: FieldAnswer) => void;
   onSubmit?: (answer: FieldAnswer) => void;
 }
@@ -28,6 +29,7 @@ export function FieldRenderer({
   validationMessage,
   disabled = false,
   submitLabel = "Save answer",
+  showSubmit = true,
   onChange,
   onSubmit,
 }: FieldRendererProps) {
@@ -78,9 +80,11 @@ export function FieldRenderer({
           {validationMessage && (
             <p className="text-ui-sm text-notice">{validationMessage}</p>
           )}
-          <Button type="submit" fullWidth disabled={disabled}>
-            {submitLabel}
-          </Button>
+          {showSubmit && (
+            <Button type="submit" fullWidth disabled={disabled}>
+              {submitLabel}
+            </Button>
+          )}
         </form>
       );
     }
@@ -111,6 +115,7 @@ export function FieldRenderer({
           disabled={disabled}
           validationMessage={validationMessage}
           submitLabel={submitLabel}
+          showSubmit={showSubmit}
           onChange={onChange}
           onSubmit={onSubmit}
         />
@@ -127,6 +132,7 @@ export function FieldRenderer({
           disabled={disabled}
           validationMessage={validationMessage}
           submitLabel={submitLabel}
+          showSubmit={showSubmit}
           onChange={onChange}
           onSubmit={onSubmit}
         />
@@ -180,6 +186,7 @@ function TextFieldForm({
   disabled,
   validationMessage,
   submitLabel,
+  showSubmit,
   onChange,
   onSubmit,
 }: {
@@ -188,6 +195,7 @@ function TextFieldForm({
   disabled: boolean;
   validationMessage?: string | null;
   submitLabel: string;
+  showSubmit: boolean;
   onChange: (answer: FieldAnswer) => void;
   onSubmit?: (answer: FieldAnswer) => void;
 }) {
@@ -227,9 +235,11 @@ function TextFieldForm({
           }
         />
       )}
-      <Button type="submit" fullWidth disabled={disabled}>
-        {submitLabel}
-      </Button>
+      {showSubmit && (
+        <Button type="submit" fullWidth disabled={disabled}>
+          {submitLabel}
+        </Button>
+      )}
     </form>
   );
 }
