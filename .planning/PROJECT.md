@@ -69,6 +69,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ Protected routing: signed-out → login; client → /home, coach → /coach wrong-door guards; signed-in users silently redirected off /login and /signup (server-side, no form flash) — v1.0 (Phase 3)
 - ✓ Role-aware landing screens: client home greets by first name and names the real assigned coach; calm assigned-state empty state — v1.0 (Phase 3)
 - ✓ Coach home lists the coach's assigned clients (seeded), alphabetical with quiet emails, rows inert — v1.0 (Phase 3)
+- ✓ Chat data boundary: one assigned coach-client conversation, member-scoped RLS reads, RPC-only idempotent sends, immutable messages, read-state ownership, seeded conversations, and generated Supabase chat row aliases — v1.1 (Phase 7)
 
 ### Active
 
@@ -77,7 +78,7 @@ v1.1 The Coaching Loop — scoped and committed (full requirements with REQ-IDs:
 - [ ] Client profiles — profile domain schema, client read/edit flow, coach client-detail view (build order #2)
 - [ ] Data-driven onboarding — versioned DB question-bank, response storage + resume, one-at-a-time renderer, coach review (build order #3)
 - [ ] Tracker engine — config/versioning schema, seed/Edge-Function assignment, client renderer, coach entry review (build order #4)
-- [ ] Real 1-on-1 chat — conversation/message schema + RLS, real send-message Edge Function, web chat route on live data (persistent send/read), coach thread read (build order #5)
+- [ ] Real 1-on-1 chat route — real send-message Edge Function, web chat route on live data, optimistic send lifecycle, draft preservation, calm invalid-message guidance, and coach/client thread read (build order #5; Phase 7 schema is validated)
 
 Carried (not owned by a v1.1 phase unless one adopts it):
 - [ ] AGENTS.md docs pass — design-token section still describes the pre-monochrome lime accent
@@ -151,4 +152,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-04 after starting milestone v1.1 The Coaching Loop*
+*Last updated: 2026-07-05 after completing Phase 7 chat schema*

@@ -25,8 +25,8 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 - [x] **Phase 4: Client Profiles** - A client owns their profile and safe-edits it; the coach reads it; protected fields are DB-frozen (completed 2026-07-04)
 - [x] **Phase 5: Data-Driven Onboarding** - A client answers a DB-driven, one-question-at-a-time assessment that autosaves and resumes; builds the shared config renderer
 - [x] **Phase 6: Tracker Engine** - A client is assigned exactly one config-driven tracker and logs entries; the coach reviews them (reuses the Phase 5 renderer) (completed 2026-07-06)
-- [ ] **Phase 7: Chat Schema** - Conversation/message/read-state tables land RLS-verified, idempotent, immutable, and realtime-ready (no subscriptions, no UI)
-- [ ] **Phase 8: Real Chat Route + send-message Edge Function** - A client and coach hold a real persisted 1-on-1 conversation through the live route and real Edge Function; E2E covers the three cross-role flows
+- [x] **Phase 7: Chat Schema** - Conversation/message/read-state tables landed RLS-verified, idempotent, immutable, and realtime-ready (no subscriptions, no UI) (completed 2026-07-05)
+- [x] **Phase 8: Real Chat Route + send-message Edge Function** - A client and coach hold a real persisted 1-on-1 conversation through the live route and real Edge Function; E2E covers the three cross-role flows (completed 2026-07-06)
 
 ## Phase Details
 
@@ -121,7 +121,9 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   3. A duplicate `clientRequestId` cannot create a duplicate message: a partial unique index on `(conversation_id, client_request_id)` enforces idempotency at the database, and the schema carries the `(conversation_id, created_at, id)` composite index so ordering is stable and realtime-ready (CHAT-04) — subscriptions, presence, and typing stay OUT.
   4. `pnpm verify:rls` passes with member-read (client & coach) / outsider-denial / cross-client-denial / immutability (update rejected) / duplicate-`clientRequestId`-idempotent assertions for the chat tables (XC-01); the legacy hand-written `LegacyChatContracts` block is removed and `*Row` aliases are added; `pnpm build` green.
 
-**Plans**: TBD
+**Plans**: 1/1 plan complete
+
+  - [x] 07-01-PLAN.md — chat schema, membership RLS, idempotent `send_chat_message`, seeded conversations, generated types, live RLS verifier, validation/UAT/security closeout
 
 ### Phase 8: Real Chat Route + send-message Edge Function
 
@@ -136,7 +138,10 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
   4. Empty, whitespace-only, and oversized (>4000 char) messages are rejected with calm, non-scolding guidance (soft notice tone, never red).
   5. The three cross-role, multi-step flows — onboarding save→resume, client-send→coach-read, tracker-assign→client-render — are covered by tightly-scoped, dev-only Playwright end-to-end tests (XC-04); `pnpm verify:rls` and `pnpm build` are green (XC-01), and the chat route holds the design line — one primary action (Send), no lost draft, no layout shift, calm copy, monochrome — with `sketch-findings-fish` loaded first (XC-03).
 
-**Plans**: TBD
+**Plans**: 1/1 plan complete
+
+  - [x] 08-01-SUMMARY.md — real `/chat` route, `send-message` Edge Function, optimistic send lifecycle, draft-preserving failure state, validation, RLS/security, and Playwright cross-role E2E
+
 **UI hint**: yes
 
 ## Progress
@@ -149,8 +154,8 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 | 4. Client Profiles | v1.1 | 3/3 | Complete    | 2026-07-05 |
 | 5. Data-Driven Onboarding | v1.1 | 4/4 | Complete | 2026-07-05 |
 | 6. Tracker Engine | v1.1 | 3/3 | Complete | 2026-07-06 |
-| 7. Chat Schema | v1.1 | 0/? | Not started | - |
-| 8. Real Chat Route + send-message Edge Function | v1.1 | 0/? | Not started | - |
+| 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
+| 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 The Coaching Loop added: 2026-07-04*

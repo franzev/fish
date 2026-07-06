@@ -3,20 +3,20 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: The Coaching Loop
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-07-05T06:41:20.172Z"
-last_activity: 2026-07-05
+stopped_at: Phase 8 chat route complete and verified; Phase 6 metadata remains active
+last_updated: "2026-07-06T07:43:12+08:00"
+last_activity: 2026-07-06
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 10
-  completed_plans: 7
-  percent: 40
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 9
+  percent: 80
 ---
 
 # Project State: FISH
 
-**Last updated:** 2026-07-05
+**Last updated:** 2026-07-06
 
 ## Project Reference
 
@@ -24,16 +24,16 @@ See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements
-- **Current focus:** Phase 05 — data-driven-onboarding
+- **Current focus:** Phase 06 — tracker-engine metadata reconciliation
 
 ## Current Position
 
-Phase: 05 (data-driven-onboarding) — COMPLETE
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-07-05 -- Phase 05 completed; Phase 06 ready to plan
+Phase: 06 (tracker-engine) — ACTIVE
+Plan: 0 of 3
+Status: Phase 8 completed and verified; Phase 6 remains the only roadmap phase not marked complete
+Last activity: 2026-07-06 -- Phase 08 chat route, RLS/security, and cross-role E2E completed
 
-Progress: [████░░░░░░] 40%
+Progress: [████████░░] 80%
 
 ## Milestone v1.1 Phases
 
@@ -42,10 +42,10 @@ Dependency chain: profiles → onboarding → tracker → chat-schema → chat-r
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
 | 4 | Client Profiles | v1.0 | PROF-01..06 | Complete |
-| 5 | Data-Driven Onboarding (build shared renderer) | Phase 4 | ONBD-01..07 | Ready to plan |
-| 6 | Tracker Engine (reuse renderer) | Phase 5, Phase 4 | TRAK-01..06 | Not started |
-| 7 | Chat Schema (realtime-ready, no subscriptions/UI) | v1.0 (parallelizable) | CHAT-01, CHAT-04, CHAT-06 | Not started |
-| 8 | Real Chat Route + send-message Edge Function | Phase 7, Phase 5, Phase 6 | CHAT-02/03/05/07, XC-04 | Not started |
+| 5 | Data-Driven Onboarding (build shared renderer) | Phase 4 | ONBD-01..07 | Complete |
+| 6 | Tracker Engine (reuse renderer) | Phase 5, Phase 4 | TRAK-01..06 | Active |
+| 7 | Chat Schema (realtime-ready, no subscriptions/UI) | v1.0 (parallelizable) | CHAT-01, CHAT-04, CHAT-06 | Complete |
+| 8 | Real Chat Route + send-message Edge Function | Phase 7, Phase 5, Phase 6 | CHAT-02/03/05/07, XC-04 | Complete |
 
 Cross-cutting XC-01 (RLS + verify:rls gate) / XC-02 (zod + pg_jsonschema) / XC-03 (ND design line + sketch-findings-fish) are woven into every phase's success criteria they touch.
 
@@ -81,6 +81,7 @@ Milestone-scoped decision log archived with v1.0 (see PROJECT.md Key Decisions f
 - **XC-01/02/03 are cross-cutting** (woven into every touched phase's success criteria); **XC-04 (E2E of the three cross-role flows) anchors to Phase 8**.
 - **Scope boundaries held:** persistent chat send/read only (realtime deferred, schema realtime-ready); human chat only (no AI); assignment seed-only (`assign-tracker` Edge Function seed-invocable, no assignment UI); consent = fields only; onboarding linear-first (branching is Future/ONBD-B01).
 - **One net-new runtime dep this milestone: `zod` v4** (apps/web + Edge Function, never `packages/core`); `pg_jsonschema` CHECK as the un-bypassable config backstop.
+- **Phase 07 completed as a parallel schema slice** — `send_chat_message` is the database-owned chat write boundary, conversations are one per assigned coach-client pair, messages are immutable to authenticated users, and Phase 8 should call the RPC rather than inserting into `messages`.
 
 ### Known tech debt (from v1.0 audit — non-blocking)
 
@@ -92,7 +93,7 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs — D-14 deploy checklist exists, execute at first deploy
 - [ ] `assign-tracker` + real `send-message` Edge Function signatures — design during Phase 6 / Phase 8 planning
-- [ ] Research flags for planning: Phase 7/8 (Chat) is highest-complexity — consider `/gsd:plan-phase --research-phase` (real Edge Function: JWT verify + membership + zod + idempotency + in-memory rate limit + `useOptimistic` reconciliation edge case, React issue #31967). Phase 4 (Profiles) and Phase 6 (Tracker) use standard/reuse patterns — skip research-phase.
+- [ ] Research flags for planning: Phase 8 (real chat route + Edge Function) remains highest-complexity — consider `/gsd:plan-phase --research-phase` (real Edge Function: JWT verify + membership + zod + idempotency + in-memory rate limit + `useOptimistic` reconciliation edge case, React issue #31967). Phase 6 (Tracker) uses standard/reuse patterns — skip research-phase.
 
 ### Blockers
 
@@ -112,12 +113,12 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 
 ## Session Continuity
 
-**Last session:** 2026-07-05T06:34:28.027Z
+**Last session:** 2026-07-06T07:43:12+08:00
 
-- **Last activity:** 2026-07-05
-- **Stopped at:** Phase 6 context gathered
+- **Last activity:** 2026-07-06
+- **Stopped at:** Phase 8 chat route complete and verified; Phase 6 remains active in roadmap metadata
 - **Resume file:** .planning/phases/06-tracker-engine/06-CONTEXT.md
-- **Next action:** Plan Phase 6 — Tracker Engine
+- **Next action:** Reconcile or complete Phase 6 tracker-engine metadata, then consider v1.1 milestone audit
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 roadmap added: 2026-07-04.*
