@@ -17,7 +17,7 @@ Out of scope: 1-on-1 chat (Edge Function stays a stub — the `/chat` URL itself
 
 ### Route map & redirects
 - **D-01:** Client home lives at `/home` (the existing Phase 2 route, promoted from neutral placeholder to the real client home); coach home lives at `/coach`. `authRedirects.clientHome` in `packages/supabase/src/auth.ts` is updated from `/chat` to `/home` — no URL promises a capability that doesn't exist yet.
-- **D-02:** `/` (root) becomes a pure redirect and never renders content: signed-out → `/login`, signed-in → role home. The stale pre-monochrome showcase currently at `/` is removed (this also clears the flagged accent-pink/accent-yellow dead references).
+- **D-02:** `/` (root) becomes a pure redirect and never renders content: signed-out → `/login`, signed-in → role home. The stale pre-monochrome showcase currently at `/` is removed (this also clears the flagged old-hue-token-a/old-hue-token-b dead references).
 - **D-03:** Role mismatch is a silent redirect — a client visiting `/coach` (or a coach visiting the client `/home`) lands on their own role home with no message. The wrong URL simply behaves as if it were the right one.
 - **D-04:** Post-login destination is always the role home. No `?next=` return-to-URL this milestone — with only two destinations, deep-link return adds open-redirect surface for near-zero benefit.
 - **D-05:** A signed-in person visiting `/login` or `/signup` (or other signed-out-only screens) is silently redirected to their role home.
@@ -59,7 +59,7 @@ Out of scope: 1-on-1 chat (Edge Function stays a stub — the `/chat` URL itself
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Product & requirements
-- `AGENTS.md` — Non-negotiable design rules (one primary action, 56px targets, copy never scolds, assigned-never-chosen), stack lock, API boundary. Note: its token section still describes the pre-monochrome lime accent; the monochrome ladder in `apps/web/app/globals.css` is the live truth.
+- `AGENTS.md` — Non-negotiable design rules (one primary action, 56px targets, copy never scolds, assigned-never-chosen), stack lock, API boundary. Note: its token section still describes the pre-monochrome color guidance; the monochrome ladder in `apps/web/app/globals.css` is the live truth.
 - `.planning/REQUIREMENTS.md` — SHEL-01..02 and ROUT-01..04 requirement texts; v2 deferrals (COAC-01/02 assignment UI + coach signup, THEM-01 toggle); out-of-scope table.
 - `.planning/ROADMAP.md` — Phase 3 goal and the four success criteria (the "must be TRUE" statements); dependency on Phase 2's session/role/RLS foundation.
 

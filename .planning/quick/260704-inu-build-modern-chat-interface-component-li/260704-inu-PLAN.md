@@ -165,7 +165,7 @@ Vitest: jsdom env, globals on, @testing-library/react + jest-dom, `@/*` alias to
     - MessageStatus: renders a distinct visual per status ("sending" | "sent" | "delivered" | "read") using Tabler check/checks icons; carries an `aria-label` describing the status (e.g. "Read").
     - TypingIndicator: renders three dots animated via the `animate-typing` utility; has an accessible label ("typing"); is silent under prefers-reduced-motion (dots hold, no error).
     - Reactions: renders a list of {emoji, count} pills; the current user's reaction pill is visually marked; each pill is a button with an aria-label; empty list renders nothing.
-    - QuotedMessage: renders author + snippet of a replied-to message with a leading accent rail; long snippets truncate to a single line.
+    - QuotedMessage: renders author + snippet of a replied-to message with a leading leading rail; long snippets truncate to a single line.
     - MessageActions: renders copy/edit/delete/reply/forward as icon buttons with aria-labels; destructive "delete" uses calm feedback tone, never alarming red chrome.
   </behavior>
   <action>

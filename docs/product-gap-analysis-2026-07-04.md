@@ -81,7 +81,7 @@ Scoring method: requirement/domain coverage, not story points.
 ### Technical Debt
 
 - From the foundation audit: Input missing `aria-describedby`/`aria-invalid`; Alert lacks component-level live-region default; icon-source regex can miss dynamic/subpath imports; `--shadow-card` relies on current Lightning CSS behavior; Tailwind packages use independent caret ranges; stale local seed password drift; two hardcoded `/home` redirects bypass the single-source `authRedirects` convention.
-- `AGENTS.md` design-token section still describes lime/accent tokens, while planning docs say the product moved to pure monochrome.
+- `AGENTS.md` design-token section still describes old color tokens, while planning docs say the product moved to pure monochrome.
 - `README.md` says open port 3000, but web dev script uses port 3001.
 - Android tests include source-text assertions; Compose behavior tests are still needed.
 - Linear draft follow-ups exist locally but were not published.
@@ -476,7 +476,7 @@ Do these before creating new Linear issues:
 - Acceptance criteria: audio feedback is calm, actionable, and optional; files are protected.
 - Test cases: clear audio, noisy audio, unsupported file, provider failure.
 - UAT: client records a phrase and receives gentle feedback.
-- Edge cases: accent bias, silence, background speech.
+- Edge cases: dialect bias, silence, background speech.
 
 #### GAP-030 — Exercise And Quiz Engine
 - Project: Platform. Workstream: Exercises. Priority: P2. Complexity: XL.

@@ -7,7 +7,7 @@ interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
   label?: string;
 }
 
-/** Visual progress: a lime fill on a dark track. No numbers shouted at the user. */
+/** Visual progress uses the primary token. No numbers shouted at the user. */
 export function Progress({ value, label, className, ...props }: ProgressProps) {
   const clamped = Math.max(0, Math.min(100, value));
   return (

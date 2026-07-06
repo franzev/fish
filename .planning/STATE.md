@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: The Coaching Loop
-status: executing
-stopped_at: Phase 8 chat route complete and verified; Phase 6 metadata remains active
-last_updated: "2026-07-06T07:43:12+08:00"
+milestone_name: The Coaching Loop Foundation
+status: complete
+stopped_at: Quick task 260706-rsd removed stale color wording and retired unvalidated learning-flow implementations
+last_updated: "2026-07-06T00:00:00Z"
 last_activity: 2026-07-06
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 9
-  percent: 80
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State: FISH
@@ -20,34 +20,28 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-04 after v1.0 milestone)
+See: .planning/PROJECT.md
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
-- **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements
-- **Current focus:** Phase 06 — tracker-engine metadata reconciliation
+- **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
+- **Current focus:** Post-removal verification and next-milestone selection.
 
 ## Current Position
 
-Phase: 06 (tracker-engine) — ACTIVE
-Plan: 0 of 3
-Status: Phase 8 completed and verified; Phase 6 remains the only roadmap phase not marked complete
-Last activity: 2026-07-06 -- Phase 08 chat route, RLS/security, and cross-role E2E completed
+Phase: none active
+Status: v1.1 is re-scoped to shipped foundations: client profiles plus persistent 1-on-1 chat. The unvalidated learning-flow implementations were removed from active code, schema contracts, seed data, and release gates.
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Milestone v1.1 Phases
-
-Dependency chain: profiles → onboarding → tracker → chat-schema → chat-route. Granularity: coarse. Chat split (7/8) is pitfall-driven (isolates the top data-leak + idempotency + integrity surface), not padding.
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
 | 4 | Client Profiles | v1.0 | PROF-01..06 | Complete |
-| 5 | Data-Driven Onboarding (build shared renderer) | Phase 4 | ONBD-01..07 | Complete |
-| 6 | Tracker Engine (reuse renderer) | Phase 5, Phase 4 | TRAK-01..06 | Active |
-| 7 | Chat Schema (realtime-ready, no subscriptions/UI) | v1.0 (parallelizable) | CHAT-01, CHAT-04, CHAT-06 | Complete |
-| 8 | Real Chat Route + send-message Edge Function | Phase 7, Phase 5, Phase 6 | CHAT-02/03/05/07, XC-04 | Complete |
+| 7 | Chat Schema | v1.0 | CHAT-01, CHAT-04, CHAT-06 | Complete |
+| 8 | Real Chat Route + send-message Edge Function | Phase 7 | CHAT-02/03/05/07 | Complete |
 
-Cross-cutting XC-01 (RLS + verify:rls gate) / XC-02 (zod + pg_jsonschema) / XC-03 (ND design line + sketch-findings-fish) are woven into every phase's success criteria they touch.
+Removed 2026-07-06: the previously built learning-flow engines are no longer part of the active product.
 
 ## Archived Milestones
 
@@ -59,41 +53,21 @@ Cross-cutting XC-01 (RLS + verify:rls gate) / XC-02 (zod + pg_jsonschema) / XC-0
 
 ### Decisions
 
-Milestone-scoped decision log archived with v1.0 (see PROJECT.md Key Decisions for outcomes and `milestones/v1.0-phases/` for full execution decisions). Durable conventions carried forward:
-
 - Layout-stability contract: no control changes size on state change (overlay spinners, reserved message rows, out-of-flow notices).
 - Every auth screen: `<form onSubmit>` + `type="submit"` — Enter always submits.
 - RLS is the sole authorization boundary for reads; `authRedirects` is the single redirect source of truth.
 - Alert tones are the one scoped color exception (low-chroma, contrast-gated); structural UI stays chroma-0.
 - Theme work must be verified against served/compiled CSS (Lightning CSS `light-dark()` polyfill), never authored CSS alone.
-- Dev origin must match the browser exactly: `localhost:3001` (host-scoped cookies), pinned via `next dev -p 3001` + supabase `site_url`.
-- [Phase 04]: Followed RESEARCH Pattern 1 DDL verbatim for the level freeze — column-scoped GRANT UPDATE (level never named) + independent BEFORE-UPDATE trigger mirroring 0005's shape
-- [Phase 04]: Auto-provision client_profiles via a separate AFTER INSERT ON profiles trigger — RESEARCH Pattern 3 Option B — keeps the hardened handle_new_user (0002) untouched
-- [Phase 04-02]: The repo's first Server Action (updateProfileAction) uses useActionState + uncontrolled defaultValue; re-verifies getUser() inside the action per T-04-05 — Server Actions are directly POST-reachable; the calling page's own wrong-door guard is not sufficient auth verification
-- [Phase 04-02]: Product-facing a11y prefs (theme/text-size/reduced-motion) use NEW html[data-*] attribute names distinct from the dev-only data-kit-theme, sharing only the Lightning CSS mechanism — Prevents a real client session and an open /kit dev-preview tab from ever colliding on the same attribute
-- [Phase 04-UAT]: Persisted a11y prefs hydrate at the authenticated shell level (not only inside `/profile`) so every authenticated route inherits theme/text-size/reduced-motion; browser Supabase clients require direct `process.env.NEXT_PUBLIC_*` property reads so Next can inline public env values; `AuthSessionMissingError` maps to signed-out/null so route guards redirect instead of rendering production RSC errors.
-
-### v1.1 roadmap decisions (2026-07-04)
-
-- **Phase numbering continues (4-8), not reset** — v1.0 ended at Phase 3.
-- **Onboarding (5) precedes Tracker (6)** to build ONE shared config-driven renderer/validator the tracker reuses; any ordering that duplicates the renderer is waste (research, load-bearing).
-- **Chat split into schema (7) + route/Edge (8)** — isolates the top data-leak + idempotency + integrity pitfalls; Phase 8 gets the largest planning/test budget. Chat depends only on the shipped pair, so Phase 7 may run in parallel with 5/6 if capacity allows.
-- **XC-01/02/03 are cross-cutting** (woven into every touched phase's success criteria); **XC-04 (E2E of the three cross-role flows) anchors to Phase 8**.
-- **Scope boundaries held:** persistent chat send/read only (realtime deferred, schema realtime-ready); human chat only (no AI); assignment seed-only (`assign-tracker` Edge Function seed-invocable, no assignment UI); consent = fields only; onboarding linear-first (branching is Future/ONBD-B01).
-- **One net-new runtime dep this milestone: `zod` v4** (apps/web + Edge Function, never `packages/core`); `pg_jsonschema` CHECK as the un-bypassable config backstop.
-- **Phase 07 completed as a parallel schema slice** — `send_chat_message` is the database-owned chat write boundary, conversations are one per assigned coach-client pair, messages are immutable to authenticated users, and Phase 8 should call the RPC rather than inserting into `messages`.
-
-### Known tech debt (from v1.0 audit — non-blocking)
-
-See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured list (Input a11y attributes, two hardcoded `/home` redirects vs authRedirects, icon-guard regex breadth, tailwind caret-range pinning, stale dev seed password for client1).
+- Dev origin must match the browser exactly: `localhost:3001` (host-scoped cookies), pinned via `next dev -p 3001` + Supabase `site_url`.
+- Product-facing a11y prefs hydrate at the authenticated shell level so every authenticated route inherits theme/text-size/reduced-motion.
+- `send_chat_message` is the database-owned chat write boundary; the Edge Function verifies JWT/membership and delegates the insert.
 
 ### Todos / open questions
 
-- [ ] AGENTS.md docs pass — design-token section still describes the pre-monochrome lime accent (tracked in PROJECT.md Active)
-- [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task
-- [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs — D-14 deploy checklist exists, execute at first deploy
-- [ ] `assign-tracker` + real `send-message` Edge Function signatures — design during Phase 6 / Phase 8 planning
-- [ ] Research flags for planning: Phase 8 (real chat route + Edge Function) remains highest-complexity — consider `/gsd:plan-phase --research-phase` (real Edge Function: JWT verify + membership + zod + idempotency + in-memory rate limit + `useOptimistic` reconciliation edge case, React issue #31967). Phase 6 (Tracker) uses standard/reuse patterns — skip research-phase.
+- [ ] Choose the next milestone now that the product foundation is profile + chat only.
+- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
+- [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
+- [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
 
 ### Blockers
 
@@ -110,15 +84,15 @@ See `milestones/v1.0-MILESTONE-AUDIT.md` frontmatter for the full structured lis
 | 260704-kfb | Design and implement production-ready service abstraction architecture | 2026-07-04 | 3c1ec95 | [260704-kfb-design-and-implement-a-production-ready-](./quick/260704-kfb-design-and-implement-a-production-ready-/) |
 | 260705-amu | Bootstrap the iOS project and configure foundational UI infrastructure | 2026-07-04 | 8c60efe | [260705-amu-bootstrap-the-ios-project-and-configure-](./quick/260705-amu-bootstrap-the-ios-project-and-configure-/) |
 | 260705-gby | Implement authentication improvements across web, iOS, and Android | 2026-07-05 | f494ca9 | [260705-gby-implement-authentication-improvements-ac](./quick/260705-gby-implement-authentication-improvements-ac/) |
+| 260706-rsd | Remove stale color wording and retire unvalidated learning-flow implementations | 2026-07-06 | 803d9b0 | [260706-rsd-remove-stale-color-language-and-re](./quick/260706-rsd-remove-stale-color-language-and-re/) |
 
 ## Session Continuity
 
-**Last session:** 2026-07-06T07:43:12+08:00
+**Last session:** 2026-07-06
 
-- **Last activity:** 2026-07-06
-- **Stopped at:** Phase 8 chat route complete and verified; Phase 6 remains active in roadmap metadata
-- **Resume file:** .planning/phases/06-tracker-engine/06-CONTEXT.md
-- **Next action:** Reconcile or complete Phase 6 tracker-engine metadata, then consider v1.1 milestone audit
+- **Last activity:** Quick task 260706-rsd cleanup and verification.
+- **Stopped at:** No active phase; choose the next milestone/workstream after verification.
+- **Next action:** Run the standard verification gates and commit this quick task.
 
 ---
-*State initialized: 2026-07-02 at roadmap creation. v1.1 roadmap added: 2026-07-04.*
+*State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*

@@ -1,6 +1,6 @@
 # FISH Architecture
 
-Last verified: 2026-07-05
+Last verified: 2026-07-06
 
 FISH is a calm English-coaching ChatHub for neurodivergent professionals. The
 architecture optimizes for a small set of clear product primitives: coach-led
@@ -16,16 +16,17 @@ prototypes as production behavior.
 FISH is currently a foundation-stage monorepo:
 
 - Web auth, role-aware routing, client/coach home pages, a shared UI kit, and a
-  presentational chat kit are implemented in `apps/web`.
+  real persisted 1-on-1 chat route are implemented in `apps/web`.
 - Supabase migrations implement auth profiles, coach-client assignments, RLS
-  helpers, role guards, and email-backed profile reads.
+  helpers, role guards, email-backed profile reads, and chat tables/RPCs.
 - Shared TypeScript contracts live in `packages/core` and `packages/supabase`.
 - Android has a native Jetpack Compose preview app plus token/component layer
   and local Google OAuth/deep-link plumbing.
 - iOS has a native SwiftUI preview app plus token/component and chat component
   scaffolding.
-- Real persisted chat, onboarding assessment, tracker engine, AI coaching,
-  production CI/CD, and production hosting setup are not implemented yet.
+- AI coaching, production CI/CD, and production hosting setup are not
+  implemented yet. The unvalidated learning-flow implementations were removed
+  from the active product on 2026-07-06.
 
 ## System Context
 
@@ -54,7 +55,7 @@ flowchart TB
     DB["Postgres + RLS"]
     Storage["Storage\nservice wrapper only"]
     Realtime["Realtime\nservice wrapper only"]
-    Edge["Edge Functions\nsend-message validation stub"]
+    Edge["Edge Functions\nsend-message"]
     Email["Auth email templates"]
   end
 
@@ -69,7 +70,7 @@ flowchart TB
   Services --> DB
   Services --> Storage
   Services --> Realtime
-  Browser -.future command write.-> Edge
+  Browser --> Edge
   Android -.future backend integration.-> Supabase
   IOS -.future backend integration.-> Supabase
   Auth --> Email
@@ -648,12 +649,9 @@ Current RLS verification covers:
 
 The following are intentional gaps or incomplete architecture areas:
 
-- No real `conversations` or `messages` tables.
-- `send-message` validates input only; it does not persist messages.
 - No realtime chat subscriptions are wired to product screens.
 - No storage buckets or attachment authorization model are defined.
-- No data-driven onboarding assessment exists yet.
-- No tracker engine or assigned tracker instance model exists yet.
+- No active learning-flow engine exists; future learning mechanics require a fresh coach-validation decision before implementation.
 - No AI provider, prompt, memory, evaluation, or safety architecture exists yet.
 - Android has no full backend integration beyond the local OAuth deep-link shell.
 - iOS has no backend integration.

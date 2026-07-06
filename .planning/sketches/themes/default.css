@@ -3,7 +3,7 @@
    Fraunces display, generous radii + whitespace, calm.
    Light/dark resolves from one ladder via CSS light-dark(); toggle sets
    color-scheme on :root. Structural UI stays chroma-0; a couple of very
-   low-chroma tone accents exist for status only (used sparingly). */
+   low-chroma status tones exist for status only (used sparingly). */
 
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,600&family=Lexend:wght@400;500;600&display=swap');
 
@@ -29,8 +29,8 @@
   --on-primary:    light-dark(#ffffff, #0c0c0b);
   --ring:          light-dark(#1b1b19, #f4f4f0);
 
-  /* Soft amber alert tone (carried from v1.0) — the ONE chromatic accent besides the teal logo.
-     Reserve strictly for alert/notice states (offline banner, failed message, gentle-correction underline); never a general decorative accent. */
+  /* Soft amber alert tone (carried from v1.0) — the ONE chromatic emphasis besides the teal logo.
+     Reserve strictly for alert/notice states (offline banner, failed message, gentle-correction underline); never a general decorative emphasis. */
   --notice:        light-dark(#7a6234, #d8bd86);  /* soft amber (light darkened for AA on notice text) */
 
   /* ---- Type ---- */

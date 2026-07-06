@@ -50,7 +50,7 @@ key-files:
 key-decisions:
   - "Sibling links (e.g. 'Already have an account? Log in') are plain text <Link> elements, never a second Button — keeps the one-primary grep gate meaningful"
   - "The one-primary source grep for /home spans page.tsx + logout-button.tsx combined (the primary lives in the composed island, not inlined in the page)"
-  - "Email template is pure monochrome mirroring the dark-theme token ladder; the lime accent in AGENTS.md is stale against the binding monochrome decision"
+  - "Email template is pure monochrome mirroring the dark-theme token ladder; the color guidance in AGENTS.md is stale against the binding monochrome decision"
   - "/auth/confirm maps any non-recovery type to a signup hint on the expired-link redirect, so the resend screen never guesses"
 
 patterns-established:
@@ -116,14 +116,14 @@ Each task was committed atomically:
 
 ### Auto-fixed Issues
 
-**1. [Rule 2 - Design violation] Monochrome email template — removed stale lime accent**
+**1. [Rule 2 - Design violation] Monochrome email template — removed stale color guidance**
 - **Found during:** Task 4 checkpoint (user flagged before walking the flow)
-- **Issue:** confirmation.html used lime #a3e635 (wordmark + action button), following AGENTS.md's lime guidance — but that guidance is STALE. The binding decisions (.claude/CLAUDE.md "Pure monochrome (black/white/greys)", STATE.md, Phase 1 globals.css token ladder — --color-primary is zero-chroma oklch in both themes) require zero chroma everywhere.
-- **Fix:** Wordmark → #a1a1a1; action button → #fafafa background with #0a0a0a text (mirrors dark-theme primary: near-white surface, near-black text). Verified all six template hex values are pure greys and that no lime/raw hex exists in any app screen introduced by this plan.
+- **Issue:** confirmation.html used old bright #a3e635 (wordmark + action button), following AGENTS.md's old bright color guidance — but that guidance is STALE. The binding decisions (.claude/CLAUDE.md "Pure monochrome (black/white/greys)", STATE.md, Phase 1 globals.css token ladder — --color-primary is zero-chroma oklch in both themes) require zero chroma everywhere.
+- **Fix:** Wordmark → #a1a1a1; action button → #fafafa background with #0a0a0a text (mirrors dark-theme primary: near-white surface, near-black text). Verified all six template hex values are pure greys and that no chromatic/raw hex exists in any app screen introduced by this plan.
 - **Files modified:** supabase/templates/confirmation.html
 - **Verification:** hex inventory all R=G=B; template gates re-run (token_hash, type=email, no ConfirmationURL); full suite 92/92
 - **Committed in:** ca899f0 (fix commit)
-- **Note for the project:** AGENTS.md still describes lime tokens (bg-primary "lime") — it should be updated to match the monochrome decision so future plans don't repeat this.
+- **Note for the project:** AGENTS.md still describes old color tokens (bg-primary "old bright color") — it should be updated to match the monochrome decision so future plans don't repeat this.
 
 ---
 

@@ -208,10 +208,10 @@ useEffect(() => {
 }, [mode]);
 ```
 
-### IN-09: Stale "lime fill" comment on Progress — the design is pure monochrome
+### IN-09: Stale "primary-token fill" comment on Progress — the design is pure monochrome
 
 **File:** `apps/web/components/ui/card.tsx:27`
-**Issue:** The doc comment reads "Visual progress: a lime fill on a dark track", but this phase's token ladder is pure monochrome (chroma 0, asserted by TOKN-01) and the fill is `bg-primary` (black/white inversion). The comment describes a superseded design and will mislead the next maintainer. (Same drift exists in AGENTS.md's token list — "bg-primary lime", "accent-pink/yellow" — which no longer matches `globals.css`; out of this review's file scope but worth a follow-up doc fix.)
+**Issue:** The doc comment reads "Visual progress: a primary-token fill on a dark track", but this phase's token ladder is pure monochrome (chroma 0, asserted by TOKN-01) and the fill is `bg-primary` (black/white inversion). The comment describes a superseded design and will mislead the next maintainer. (Same drift exists in AGENTS.md's token list — "bg-primary color guidance", "old-hue-token-a/yellow" — which no longer matches `globals.css`; out of this review's file scope but worth a follow-up doc fix.)
 **Fix:** Update the comment: "Visual progress: an inverted monochrome fill on a subtle track. No numbers shouted at the user."
 
 ## Conventions

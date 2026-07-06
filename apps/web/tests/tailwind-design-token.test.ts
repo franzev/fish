@@ -7,7 +7,6 @@ const SCAN_EXTENSIONS = [".ts", ".tsx"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "build"]);
 
 const VISUAL_UTILITY_PREFIXES = [
-  "accent",
   "backdrop-blur",
   "basis",
   "bg",

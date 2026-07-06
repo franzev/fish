@@ -1501,7 +1501,7 @@ Pronunciation feedback can support spoken English confidence, but it carries pri
 - Speech-to-text provider integration.
 - Pronunciation feedback schema.
 - Privacy and retention handling for audio.
-- Bias review for accent and noise sensitivity.
+- Bias review for dialect and noise sensitivity.
 
 ## What is not included
 
@@ -1529,7 +1529,7 @@ Pronunciation feedback can support spoken English confidence, but it carries pri
 - [ ] Coach validation decision is documented.
 - [ ] Audio files are protected by authorization and retention policy.
 - [ ] Feedback is calm, actionable, and optional.
-- [ ] Accent bias risks are reviewed.
+- [ ] Dialect bias risks are reviewed.
 - [ ] Provider errors do not lose user work.
 
 ## Test cases
@@ -1550,7 +1550,7 @@ Pronunciation feedback can support spoken English confidence, but it carries pri
 ## Edge cases
 
 - Background speech is captured.
-- User has a strong accent the provider misreads.
+- User has a speech pattern the provider misreads.
 - Audio upload succeeds but feedback generation fails.
 - User requests deletion of audio.
 

@@ -152,7 +152,7 @@ None.
 
 ## Known Stubs
 
-None in files created/modified by this plan. (Pre-existing: `apps/web/app/page.tsx` still references removed `accent-pink`/`accent-yellow` utilities — logged in `deferred-items.md`, out of this plan's scope; `/kit` supersedes that page as the contract.)
+None in files created/modified by this plan. (Pre-existing: `apps/web/app/page.tsx` still references removed `old-hue-token-a`/`old-hue-token-b` utilities — logged in `deferred-items.md`, out of this plan's scope; `/kit` supersedes that page as the contract.)
 
 ## User Setup Required
 

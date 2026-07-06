@@ -463,7 +463,7 @@ Not applicable — this phase is a modification of existing greenfield code (`gl
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|---------------------|--------------|
 | TOKN-01 | No hue-based color values in resolved tokens | unit (contrast/token script asserting chroma ≈ 0 for every color token) | `pnpm --filter @fish/web test -- --run contrast.test.ts` | ❌ Wave 0 |
-| TOKN-02 | Tokens are role-named, not hue-named | manual/code-review (grep-based check, not runtime-testable) | n/a — verify via `grep -E "accent-(pink|yellow)|grey-[0-9]" apps/web/app/globals.css` returns nothing | ❌ Wave 0 (grep script optional) |
+| TOKN-02 | Tokens are role-named, not hue-named | manual/code-review (grep-based check, not runtime-testable) | n/a — verify via `grep -E "emphasis-(pink|yellow)|grey-[0-9]" apps/web/app/globals.css` returns nothing | ❌ Wave 0 (grep script optional) |
 | TOKN-03 | Every token resolves correctly in both themes | unit (contrast test asserting both light and dark values differ and both pass AA) | `pnpm --filter @fish/web test -- --run contrast.test.ts` | ❌ Wave 0 |
 | TOKN-04 | No flash of wrong theme on first paint | manual (structural guarantee from `light-dark()`, not unit-testable in jsdom) | Manual: hard-refresh in OS-dark and OS-light, confirm no flash + no console hydration warning | ❌ Wave 0 (manual verification step in plan) |
 | TOKN-05 | Lexend body / Fraunces headings on every screen | unit (render `/kit` page or a component, assert computed `font-family` var) | `pnpm --filter @fish/web test -- --run fonts.test.ts` | ❌ Wave 0 |

@@ -49,7 +49,7 @@
 **Key Characteristics:**
 - **Simplicity by design:** UI removes choices (one primary action per screen); never build what a coach hasn't validated first.
 - **Shared contracts:** Product domain (Chat, Roles) lives in `packages/core`; Supabase integration lives in `packages/supabase`.
-- **Calm aesthetic:** Dark, spacious layout with one lime accent button; no scores, streaks, or alarming red. Errors guide, never scold.
+- **Calm aesthetic:** Dark, spacious layout with one high-contrast primary button; no scores, streaks, or alarming red. Errors guide, never scold.
 - **Large tap targets:** 56px minimum control height; readable fonts (Lexend for body, Fraunces for headings).
 
 ## Layers

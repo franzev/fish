@@ -78,7 +78,7 @@ Pure monochrome, dual-theme, resolved via CSS `light-dark()` per D-16 — **not*
 | `foreground` | oklch(0.15 0 0) | oklch(0.97 0 0) | Headings, highest-emphasis text |
 | `body` | oklch(0.32 0 0) | oklch(0.88 0 0) | Body copy — verified ≥4.5:1 against `bg` and `surface` in both themes |
 | `muted` | oklch(0.50 0 0) | oklch(0.68 0 0) | Captions, placeholders, hints, `Progress` label |
-| `primary` (10% accent — full-contrast inversion, D-03) | oklch(0.15 0 0) | oklch(0.98 0 0) | The ONE primary action fill per screen — button only |
+| `primary` (10% emphasis — full-contrast inversion, D-03) | oklch(0.15 0 0) | oklch(0.98 0 0) | The ONE primary action fill per screen — button only |
 | `on-primary` | oklch(0.98 0 0) | oklch(0.15 0 0) | Text/icon on the primary fill |
 | `notice` (icon + text tint, tier 1) | oklch(0.40 0 0) | oklch(0.80 0 0) | Notice-tier Alert/Input icon + message text — regular weight, `border-strong` border, no hue |
 | `error` (icon + text tint, tier 2) | oklch(0.20 0 0) | oklch(0.95 0 0) | Error-tier Alert/Input icon + message text — semibold weight (600), `border-strong`-or-heavier border, no hue — this is the ONE "second semantic color" the product allows, and it is monochrome, not red |
@@ -86,9 +86,9 @@ Pure monochrome, dual-theme, resolved via CSS `light-dark()` per D-16 — **not*
 | Focus ring inner | oklch(1 0 0) | oklch(0.15 0 0) | Two-tone ring, D-05 — inner light |
 | Focus ring outer | oklch(0.15 0 0) | oklch(1 0 0) | Two-tone ring, D-05 — outer dark, guaranteed visible against inverted `primary` fill (Pitfall 4) |
 
-**60/30/10 split, restated for a monochrome system without hue:** dominant = `bg` (the page canvas, ~60% of any screen); secondary = `surface`/`surface-2`/`border` (cards, inputs, dividers, ~30%); accent = `primary`, reserved **exclusively** for the single primary-action button fill on a screen (never for links, never for icons, never for decorative emphasis) — this is the "10%" role, expressed as contrast-inversion rather than hue, per D-03.
+**60/30/10 split, restated for a monochrome system without hue:** dominant = `bg` (the page canvas, ~60% of any screen); secondary = `surface`/`surface-2`/`border` (cards, inputs, dividers, ~30%); emphasis = `primary`, reserved **exclusively** for the single primary-action button fill on a screen (never for links, never for icons, never for decorative emphasis) — this is the "10%" role, expressed as contrast-inversion rather than hue, per D-03.
 
-Accent (`primary`) reserved for:
+Emphasis (`primary`) reserved for:
 - `Button variant="primary"` fill only (at most one per screen, per AGENTS.md rule 1)
 - Nothing else. Not links, not active nav state, not icons, not focus rings (focus rings use the separate two-tone ring tokens above, not `primary`).
 
@@ -98,7 +98,7 @@ Elevation (D-06): light theme uses soft `box-shadow` on `Card`/elevated surfaces
 
 **Contrast verification is mandatory, not advisory:** every foreground/background pairing above must pass the D-19 `colorjs.io` WCAG21 AA script (4.5:1 text, 3:1 UI components) in both themes before these exact numbers are treated as final. The values in this table are the starting proposal (per RESEARCH.md Open Question 1); the `/kit` page is where they get visually judged and, if the script fails a pairing, adjusted — this is expected iteration, not a spec violation.
 
-**Existing tokens being replaced (not additive):** `apps/web/app/globals.css` currently defines an aquatic-blue palette with `--color-accent-pink` and `--color-accent-yellow` (hue-named, violates TOKN-01/TOKN-02) and a `--color-primary-press` state. This entire `@theme` color block is replaced wholesale by the monochrome ladder above — no hue tokens carry forward. `primary-press` (pressed/hover state for the primary button) becomes a lightness shift within the neutral ladder (Claude's discretion — e.g., light theme press = oklch(0.25 0 0), dark theme press = oklch(0.90 0 0); verify contrast + visually confirm on `/kit`).
+**Existing tokens being replaced (not additive):** `apps/web/app/globals.css` currently defines an aquatic-blue palette with `--color-old-hue-token-a` and `--color-old-hue-token-b` (hue-named, violates TOKN-01/TOKN-02) and a `--color-primary-press` state. This entire `@theme` color block is replaced wholesale by the monochrome ladder above — no hue tokens carry forward. `primary-press` (pressed/hover state for the primary button) becomes a lightness shift within the neutral ladder (Claude's discretion — e.g., light theme press = oklch(0.25 0 0), dark theme press = oklch(0.90 0 0); verify contrast + visually confirm on `/kit`).
 
 ---
 

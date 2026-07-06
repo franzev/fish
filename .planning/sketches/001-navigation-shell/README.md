@@ -36,7 +36,7 @@ Three changes from user direction, each with the recommendation behind it:
 - **Brand mark** — the placeholder "F" is replaced by the real `logo.svg` (the teal fish badge
   from `apps/web/public/logo.svg`) inside an ink-bordered rounded square, in the web rail and
   both FISH conversation avatars. *Recommendation:* keep the logo in brand teal as the single
-  sanctioned color accent — a logo is identity, not chrome (same color-exception logic already
+  sanctioned color emphasis — a logo is identity, not chrome (same color-exception logic already
   granted to alert tones); the ink border gives it a crisp edge on both themes. *Flag:*
   `apps/web/app/icon.svg` is mint `#75D5CA` while `logo.svg` is teal `#1b7ba5` — app icon and
   logo are out of sync; pick one.

@@ -71,14 +71,14 @@ Unchanged from Phase 1's monochrome `light-dark()` ladder in `apps/web/app/globa
 | `bg` (60% dominant) | Auth page canvas behind the centered Card |
 | `surface` / `surface-2` (30% secondary) | Card background (`surface`), any inset/well |
 | `border` / `border-strong` | Input default border / notice-tier border |
-| `primary` (10% accent) | The ONE primary Button per auth screen — Sign up, Log in, Send reset link, Set new password, Resend email, Log out |
+| `primary` (10% emphasis) | The ONE primary Button per auth screen — Sign up, Log in, Send reset link, Set new password, Resend email, Log out |
 | `on-primary` | Text on the primary button fill |
 | `foreground` / `body` / `muted` | Card heading / body copy / hint text and the quiet sibling-flow link |
 | `notice` | Field-level guidance that isn't yet an error (e.g. password hint, "at least 8 characters") |
 | `error` | Field-level and form-level (`Alert`) validation failures — wrong password, weak password, expired link |
 | `success` | Not used as a persisted screen state this phase (no green checkmarks) — the closest analog, the "check your inbox" and "reset link sent" screens, use `Alert tone="notice"` or a plain Card body, not `tone="success"`, because they are process confirmations, not completed achievements |
 
-Accent (`primary`) reserved for, this phase specifically:
+Emphasis (`primary`) reserved for, this phase specifically:
 - Sign up (signup screen)
 - Log in (login screen)
 - Send reset link (forgot-password screen)

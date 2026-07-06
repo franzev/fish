@@ -40,8 +40,8 @@
   --color-primary-press: oklch(0.475 0.094 235);
   --color-on-primary: oklch(0.985 0.008 225);
 
-  --color-accent-pink: oklch(0.770 0.085 25);
-  --color-accent-yellow: oklch(0.760 0.105 75);
+  --color-old-hue-token-a: oklch(0.770 0.085 25);
+  --color-old-hue-token-b: oklch(0.760 0.105 75);
 
   --color-foreground: oklch(0.320 0.050 235);
   --color-body: oklch(0.445 0.038 233);
@@ -121,7 +121,7 @@
 }
 ```
 
-**Naming convention to preserve:** every token stays `--color-<role>` (or `--radius-*`, `--size-*`, `--font-*`), semantic-role-named only — no numbered ramp (D-04), no hue names (`accent-pink`/`accent-yellow`/`success`-as-green are removed, not renamed).
+**Naming convention to preserve:** every token stays `--color-<role>` (or `--radius-*`, `--size-*`, `--font-*`), semantic-role-named only — no numbered ramp (D-04), no hue names (`old-hue-token-a`/`old-hue-token-b`/`success`-as-green are removed, not renamed).
 
 ---
 
@@ -273,7 +273,7 @@ interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
   label?: string;
 }
 
-/** Visual progress: a lime fill on a dark track. No numbers shouted at the user. */
+/** Visual progress: a primary-token fill on a dark track. No numbers shouted at the user. */
 export function Progress({ value, label, className, ...props }: ProgressProps) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
@@ -427,8 +427,8 @@ const swatches = [
   { name: "bg", className: "bg-bg" },
   { name: "surface", className: "bg-surface" },
   { name: "primary", className: "bg-primary" },
-  { name: "accent-pink", className: "bg-accent-pink" },   // -> REMOVE, hue token gone
-  { name: "accent-yellow", className: "bg-accent-yellow" }, // -> REMOVE, hue token gone
+  { name: "old-hue-token-a", className: "bg-old-hue-token-a" },   // -> REMOVE, hue token gone
+  { name: "old-hue-token-b", className: "bg-old-hue-token-b" }, // -> REMOVE, hue token gone
   { name: "body", className: "bg-body" },
 ];
 

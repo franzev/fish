@@ -127,7 +127,7 @@ export const conversations: ConversationSummary[] = [
   {
     id: "c3",
     participant: { id: "coach-3", name: "Ana Torres", online: true },
-    lastMessage: "Let's review the assessment together.",
+    lastMessage: "Let's review your notes together.",
     lastMessageAt: "Mon",
     unreadCount: 128,
   },

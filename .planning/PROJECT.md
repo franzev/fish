@@ -17,23 +17,19 @@ What works today:
 
 Known tech debt (non-blocking, from the v1.0 audit): Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind version pinning via caret ranges; stale dev seed password for client1 (environment drift). Full list: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
 
-## Current Milestone: v1.1 The Coaching Loop
+## Current Milestone: v1.1 The Coaching Loop Foundation
 
-**Goal:** Turn FISH from an auth-and-role shell into a working coaching product — a coach can profile a client, run them through a data-driven onboarding, assign a config-driven tracker, and hold a real persistent 1-on-1 conversation; the client experiences all of it as calm, assigned, choice-free screens.
+**Goal:** Turn FISH from an auth-and-role shell into a working coaching foundation — a coach can understand an assigned client through a safe profile and hold a real persistent 1-on-1 conversation; the client experiences both as calm, assigned, choice-free screens.
 
-**Target features (all four remaining foundations, each with client *and* coach views):**
-- **Client profiles** (build order #2) — profile domain schema (goals, role context, level, locale/timezone, accessibility prefs, consent metadata), client read/edit flow, coach client-detail view
-- **Data-driven onboarding** (build order #3) — versioned DB question-bank (never hard-coded), response storage + resume, one-question-at-a-time renderer, coach review of answers
-- **Tracker engine** (build order #4) — config + versioning schema, assignment via seed/Edge Function (assigned-never-chosen), client renderer from config, coach entry review
-- **Real 1-on-1 chat** (build order #5) — conversation/message schema + RLS, a real `send-message` Edge Function replacing the stub (idempotent, calm errors), web chat route on live data (persistent send/read), coach reads the same thread
+**Current active foundations:**
+- **Client profiles** — profile domain schema (goals, role context, level, locale/timezone, accessibility prefs, consent metadata), client read/edit flow, coach client-detail view
+- **Real 1-on-1 chat** — conversation/message schema + RLS, a real `send-message` Edge Function (idempotent, calm errors), web chat route on live data (persistent send/read), coach reads the same thread
 
 **Scope boundaries (this milestone):**
 - Persistent chat send/read only — realtime/presence/typing deferred to the next milestone
 - Human coach↔client chat only — no AI replies or learning pipelines (AGENTS.md coach-first + build order)
-- Assignment stays seed-only — everything reads the existing seeded coach↔client relationship; no assignment UI
-- Engines, not validated content — build the onboarding renderer and config-driven tracker engine; specific questions/templates are minimal seed config, not coach-validated techniques
-
-Also flagged (carried, non-blocking): an AGENTS.md docs pass — its design-token section still describes the pre-monochrome lime accent.
+- Assignment stays seed/manual-only — everything reads the existing seeded coach↔client relationship; no assignment UI
+- Learning-flow engines were removed on 2026-07-06 and are not active product surfaces until a coach validates the technique and a new milestone accepts them
 
 ## Core Value
 
@@ -75,13 +71,10 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 
 v1.1 The Coaching Loop — scoped and committed (full requirements with REQ-IDs: `.planning/REQUIREMENTS.md`):
 
-- [ ] Client profiles — profile domain schema, client read/edit flow, coach client-detail view (build order #2)
-- [ ] Data-driven onboarding — versioned DB question-bank, response storage + resume, one-at-a-time renderer, coach review (build order #3)
-- [ ] Tracker engine — config/versioning schema, seed/Edge-Function assignment, client renderer, coach entry review (build order #4)
-- [ ] Real 1-on-1 chat route — real send-message Edge Function, web chat route on live data, optimistic send lifecycle, draft preservation, calm invalid-message guidance, and coach/client thread read (build order #5; Phase 7 schema is validated)
+- [x] Client profiles — profile domain schema, client read/edit flow, coach client-detail view
+- [x] Real 1-on-1 chat route — real send-message Edge Function, web chat route on live data, optimistic send lifecycle, draft preservation, calm invalid-message guidance, and coach/client thread read
 
 Carried (not owned by a v1.1 phase unless one adopts it):
-- [ ] AGENTS.md docs pass — design-token section still describes the pre-monochrome lime accent
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for now; THEM-02 trigger: native builds actually begin)
 
 ### Out of Scope
@@ -95,9 +88,9 @@ Durable exclusions:
 Deferred past v1.1 (in the build order, just not this milestone):
 - Realtime chat (presence, typing, read-state, live updates) — v1.1 ships persistent send/read; realtime is the next chat layer
 - AI-assisted coaching (AI replies, grammar/vocabulary/pronunciation pipelines, memory, personalization) — build the human chat foundation first; AI waits for coach-validated techniques
-- Assignment UI — coach→client assignment stays seed-only in v1.1; the relationship schema already carries chat, profiles, and trackers
+- Assignment UI — coach→client assignment stays seed/manual-only in v1.1; the relationship schema already carries chat and profiles
 - Full privacy tooling (consent flows, export, delete, retention, audit logging) — v1.1 captures consent *fields* on the profile; the privacy milestone precedes public launch
-- Validated learning content/templates — v1.1 builds the engines with minimal seed config; specific onboarding questions and tracker templates await coach validation (coach-first rule)
+- Validated learning content/templates — learning mechanics await coach validation (coach-first rule)
 
 ## Context
 
@@ -106,7 +99,7 @@ Deferred past v1.1 (in the build order, just not this milestone):
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
 - `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
-- **Current state (2026-07-04):** v1.0 Monochrome Foundations shipped and archived (see `## Current State` above). ~5.0k LOC product code (TS/TSX/SQL/CSS), 173 tests, local Supabase stack (CLI + Docker, Mailpit for email). Planning artifacts archived under `.planning/milestones/`. `AGENTS.md`'s design-token section still describes the pre-monochrome lime accent — docs pass flagged in Active. An Android static Compose preview of the auth screens exists as a quick-task spike (uncommitted working-tree changes under `apps/android/`); native work otherwise waits.
+- **Current state (2026-07-06):** v1.0 Monochrome Foundations shipped and archived (see `## Current State` above). v1.1 now contains client profiles and real persistent 1-on-1 chat. The unvalidated learning-flow implementations were removed from active code, schema contracts, seed data, and release gates. An Android static Compose preview of the auth screens exists as a quick-task spike (uncommitted working-tree changes under `apps/android/`); native work otherwise waits.
 
 ## Constraints
 
@@ -152,4 +145,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-05 after completing Phase 7 chat schema*
+*Last updated: 2026-07-06 after removing unvalidated learning-flow implementations*

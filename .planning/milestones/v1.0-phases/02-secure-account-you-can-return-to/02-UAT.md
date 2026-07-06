@@ -28,7 +28,7 @@ result: pass
 section: user-flow
 
 ### 3. Verify by Email
-expected: Open Mailpit at http://127.0.0.1:54324. A FISH-voice, pure-monochrome verification email is there (no lime, no color). Click its action link. You end up signed in at /home, which greets you calmly with a single Log out action.
+expected: Open Mailpit at http://127.0.0.1:54324. A FISH-voice, pure-monochrome verification email is there (no chromatic color). Click its action link. You end up signed in at /home, which greets you calmly with a single Log out action.
 result: pass
 note: "fresh signup on localhost:3001 landed signed in at /home after gap-closure plan 02-06; verified by user 2026-07-03"
 section: user-flow

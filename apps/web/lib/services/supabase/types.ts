@@ -10,19 +10,8 @@ import type { ServiceResult } from "../errors";
 import type {
   ClientProfileRow,
   CoachClientRow,
-  OnboardingAnswerRow,
-  OnboardingAttemptRow,
-  OnboardingQuestionRow,
   ProfileRow,
-  TrackerConfigVersionRow,
 } from "@fish/supabase";
-import type {
-  FieldAnswer,
-  FieldConfig,
-  OnboardingAttemptStatus,
-  OnboardingQuestion,
-  OnboardingReviewAnswer,
-} from "@fish/core";
 
 export type { ClientProfileRow };
 
@@ -109,197 +98,6 @@ export interface CoachClientRepository {
   listAssignedClients(): Promise<ServiceResult<CoachClientListItem[]>>;
 }
 
-export interface ClientOnboardingQuestion extends OnboardingQuestion {
-  versionId: string;
-  answerType: FieldConfig["type"];
-}
-
-export interface ClientOnboardingAnswer {
-  id: string;
-  questionId: string;
-  questionKey: string;
-  questionOrder: number;
-  questionPrompt: string;
-  config: FieldConfig;
-  answer: FieldAnswer;
-  updatedAt: string;
-}
-
-export interface ClientOnboardingData {
-  versionId: string;
-  status: OnboardingAttemptStatus | "not_started";
-  attemptId: string | null;
-  currentQuestionId: string | null;
-  questions: ClientOnboardingQuestion[];
-  answers: ClientOnboardingAnswer[];
-  savedAnswers: Record<string, FieldAnswer>;
-}
-
-export interface OnboardingQuestionForValidation {
-  id: string;
-  prompt: string;
-  answerType: FieldConfig["type"];
-  config: FieldConfig;
-  versionId: string;
-}
-
-export interface SaveOnboardingAnswerInput {
-  questionId: string;
-  answer: FieldAnswer;
-}
-
-export interface OnboardingSaveResult {
-  attemptId: string;
-  status: OnboardingAttemptStatus;
-  currentQuestionId: string | null;
-}
-
-export interface OnboardingFinalizeResult {
-  attemptId: string;
-  status: "submitted";
-  submittedAt: string;
-}
-
-export interface CoachOnboardingReviewData {
-  attemptId: string;
-  status: OnboardingAttemptStatus;
-  submittedAt: string | null;
-  answers: OnboardingReviewAnswer[];
-}
-
-export interface OnboardingRepository {
-  getActiveAssessmentForClient(): Promise<ServiceResult<ClientOnboardingData | null>>;
-  getClientAttemptState(): Promise<ServiceResult<ClientOnboardingData | null>>;
-  getQuestionForAnswerValidation(
-    questionId: string
-  ): Promise<ServiceResult<OnboardingQuestionForValidation | null>>;
-  saveAnswer(
-    input: SaveOnboardingAnswerInput
-  ): Promise<ServiceResult<OnboardingSaveResult>>;
-  finalizeAttempt(): Promise<ServiceResult<OnboardingFinalizeResult>>;
-  getCoachReview(
-    clientId: string
-  ): Promise<ServiceResult<CoachOnboardingReviewData | null>>;
-}
-
-export type OnboardingSourceRows = {
-  question: OnboardingQuestionRow;
-  attempt: OnboardingAttemptRow;
-  answer: OnboardingAnswerRow;
-};
-
-export type TrackerCadence = TrackerConfigVersionRow["cadence"];
-
-export interface ClientTrackerField {
-  id: string;
-  versionId: string;
-  fieldKey: string;
-  fieldOrder: number;
-  prompt: string;
-  answerType: FieldConfig["type"];
-  config: FieldConfig;
-}
-
-export interface ClientTrackerAnswer {
-  id: string;
-  fieldId: string;
-  fieldKey: string;
-  fieldOrder: number;
-  fieldPrompt: string;
-  config: FieldConfig;
-  answer: FieldAnswer;
-  entryDate: string;
-  updatedAt: string;
-  source: "draft" | "saved";
-}
-
-export type TrackerMilestoneState = "done" | "now" | "up_next";
-
-export interface TrackerProgressStep {
-  id: string;
-  label: string;
-  state: TrackerMilestoneState;
-  currentStepProgress: number;
-}
-
-export interface TrackerProgress {
-  entriesCount: number;
-  steps: TrackerProgressStep[];
-}
-
-export interface ClientTrackerData {
-  assignmentId: string;
-  versionId: string;
-  trackerName: string;
-  cadence: TrackerCadence;
-  coachDisplayName: string | null;
-  fields: ClientTrackerField[];
-  entries: ClientTrackerAnswer[];
-  savedAnswers: Record<string, FieldAnswer>;
-  draftAnswers: Record<string, FieldAnswer>;
-  progress: TrackerProgress;
-}
-
-export interface TrackerFieldForValidation {
-  id: string;
-  prompt: string;
-  answerType: FieldConfig["type"];
-  config: FieldConfig;
-  versionId: string;
-}
-
-export interface SaveTrackerEntryInput {
-  fieldId: string;
-  answer: FieldAnswer;
-}
-
-export interface TrackerSaveResult {
-  assignmentId: string;
-  entryId: string;
-  entryDate: string;
-  status: "active";
-}
-
-export interface TrackerDraftResult {
-  assignmentId: string;
-  draftId: string;
-  entryDate: string;
-  status: "draft";
-}
-
-export interface CoachTrackerEntryField {
-  id: string;
-  fieldId: string;
-  fieldKey: string;
-  fieldOrder: number;
-  fieldPrompt: string;
-  config: FieldConfig;
-  answer: FieldAnswer;
-  updatedAt: string;
-}
-
-export interface CoachTrackerEntryGroup {
-  entryDate: string;
-  fields: CoachTrackerEntryField[];
-}
-
-export interface CoachTrackerReviewData {
-  assignmentId: string | null;
-  status: "empty" | "saved";
-  entries: CoachTrackerEntryGroup[];
-}
-
-export interface TrackerRepository {
-  getActiveAssignmentForClient(): Promise<ServiceResult<ClientTrackerData | null>>;
-  getFieldForAnswerValidation(
-    fieldId: string
-  ): Promise<ServiceResult<TrackerFieldForValidation | null>>;
-  saveDraft(input: SaveTrackerEntryInput): Promise<ServiceResult<TrackerDraftResult>>;
-  saveEntry(input: SaveTrackerEntryInput): Promise<ServiceResult<TrackerSaveResult>>;
-  getProgress(): Promise<ServiceResult<TrackerProgress>>;
-  getCoachReview(clientId: string): Promise<ServiceResult<CoachTrackerReviewData | null>>;
-}
-
 export interface ClientChatMessage {
   id: string;
   conversationId: string;
@@ -333,8 +131,6 @@ export interface SupabaseDatabaseService {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
-  readonly onboarding: OnboardingRepository;
-  readonly tracker: TrackerRepository;
   readonly chat: ChatRepository;
 }
 

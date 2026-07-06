@@ -6,8 +6,8 @@ interface QuotedMessageProps extends HTMLAttributes<HTMLDivElement> {
   snippet: string;
 }
 
-/** A compact reply/quote preview: leading accent rail + author + a
- *  single-line-truncated snippet of the replied-to message. */
+/** A compact reply/quote preview: leading rail + author + a single-line
+ *  truncated snippet of the replied-to message. */
 export function QuotedMessage({ authorName, snippet, className, ...props }: QuotedMessageProps) {
   return (
     <div

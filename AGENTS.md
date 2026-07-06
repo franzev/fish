@@ -28,7 +28,7 @@ Native projects are opened with platform tools:
 
 ## The product rule that governs everything
 
-**Coach-first, code-second.** Don't build a feature until a coach has proven the technique works manually with a real client. If asked to build a learning feature (a tracker template, the community feed, gamification), check it has been validated first; if unclear, ask rather than assume.
+**Coach-first, code-second.** Don't build a feature until a coach has proven the technique works manually with a real client. If asked to build a learning feature (exercises, the community feed, gamification), check it has been validated first; if unclear, ask rather than assume.
 
 ## Design rules (non-negotiable, apply to every screen)
 
@@ -49,9 +49,9 @@ PDF-derived UI/UX review reference for this product.
 Defined in `apps/web/app/globals.css` under `@theme`. Reference via Tailwind utilities:
 
 - `bg-bg` `bg-surface` `bg-surface-2` — backgrounds (near-black → dark)
-- `bg-primary` `text-on-primary` — lime; the single action on a screen
+- `bg-primary` `text-on-primary` — high-contrast primary inversion; the single action on a screen
 - `text-foreground` (white, headings) · `text-body` (grey) · `text-muted` (dim)
-- `text-accent-pink` `text-accent-yellow` `text-notice`
+- `text-notice`
 - `rounded-card` (16px) · `rounded-control` (12px) · `rounded-pill`
 - Fonts are loaded in `apps/web/app/layout.tsx`.
 
@@ -75,10 +75,8 @@ Native clients should mirror these tokens in platform-native constants until a g
 
 1. Auth + roles (client / coach) on Supabase
 2. Client profiles
-3. Onboarding assessment as a **data-driven** form (questions read from the DB, not hard-coded)
-4. Tracker *engine* (renders a tracker from a config — not specific templates yet)
-5. 1-on-1 chat (NOT the community feed — that waits)
-6. Shared UI kit
+3. 1-on-1 chat (NOT the community feed — that waits)
+4. Shared UI kit
 
 ## Never
 

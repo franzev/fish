@@ -14,10 +14,9 @@ const statusLabel: Record<MessageStatusValue, string> = {
   read: "Read",
 };
 
-/** A distinct glyph per delivery state, monochrome except "read" which uses
- *  the same primary-inversion accent as the sole sent-bubble emphasis (not a
- *  new hue). Carries its own aria-label so screen readers announce the
- *  state without relying on icon shape alone. */
+/** A distinct glyph per delivery state. "Read" uses the same primary-inversion
+ *  emphasis as the sent bubble. Carries its own aria-label so screen readers
+ *  announce the state without relying on icon shape alone. */
 export function MessageStatus({ status, className, ...props }: MessageStatusProps) {
   const label = statusLabel[status];
   return (

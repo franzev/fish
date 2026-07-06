@@ -65,7 +65,7 @@ Do:
 - Remove options that are not needed for the current task.
 - Split complex flows into small, logical steps.
 - Show progress visually when a flow is long.
-- Let coaches assign plans, trackers, and next steps.
+- Let coaches assign next steps.
 
 Do not:
 
@@ -77,19 +77,18 @@ Do not:
 Example:
 
 - Do: one assigned check-in with one `Continue` or `Send update` action.
-- Do not: a screen that asks the client to choose from several tracker
-  templates, difficulty levels, and optional learning paths.
+- Do not: a screen that asks the client to choose from several templates,
+  difficulty levels, and optional learning paths.
 
 ### Coach-First, Code-Second
 
-Learning features must come from validated coaching practice. If a tracker,
-assessment pattern, community feature, gamification idea, or learning mechanic
+Learning features must come from validated coaching practice. If an exercise,
+community feature, gamification idea, or learning mechanic
 has not been validated manually by a coach, pause and ask.
 
 Do:
 
-- Implement foundations first: auth, profiles, data-driven onboarding,
-  tracker engine, 1-on-1 chat, shared UI kit.
+- Implement foundations first: auth, profiles, 1-on-1 chat, shared UI kit.
 - Keep the app flexible enough for coaches to assign work manually.
 - Favor simple primitives over hard-coded learning templates.
 
@@ -236,7 +235,7 @@ are usually calmer and narrower.
 
 Do:
 
-- Prefer single-column flows for auth, onboarding, check-ins, and client work.
+- Prefer single-column flows for auth, profile editing, chat, and client work.
 - Keep content width constrained so text stays readable.
 - Use side whitespace intentionally on desktop.
 - For dense coach/admin views, use grids only when comparison or scanning
@@ -361,11 +360,11 @@ Do:
 - Make structure work in monochrome first.
 - Reserve the strongest contrast for the primary action.
 - Use muted text for secondary information.
-- Keep accent color usage minimal.
+- Keep decorative color usage minimal.
 
 Do not:
 
-- Use multiple bright accents on one screen.
+- Use multiple bright decorative colors on one screen.
 - Use color alone to communicate state.
 - Make background color louder than the task.
 

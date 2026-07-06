@@ -84,7 +84,7 @@ coverage:
     requirement: "ROUT-01"
     verification:
       - kind: unit
-        ref: "apps/web/app/page.tsx + apps/web/app/login/page.tsx: grep-verified via task acceptance criteria (signedOut=/login, clientHome=/home present; no accent-pink/accent-yellow/swatches remnants)"
+        ref: "apps/web/app/page.tsx + apps/web/app/login/page.tsx: grep-verified via task acceptance criteria (signedOut=/login, clientHome=/home present; no old-hue-token-a/old-hue-token-b/swatches remnants)"
         status: pass
       - kind: integration
         ref: "pnpm build (Next.js production build compiles / and /login as valid routes)"

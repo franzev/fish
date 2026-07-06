@@ -156,7 +156,7 @@ None - no external service configuration required.
 
 - All 4 created files exist on disk; all 5 modified files contain their required markers (`AlertTone`, `data-kit-theme`, `opacity-0` label wrap, icon-source guard specifiers)
 - All 5 task commits found in git log (ddeeccc, b242773, 015fbad, a9c6c3f, ab58790)
-- Acceptance criteria re-verified: no red/green hue in alert.tsx (grep 0), no banned icon imports (grep 0), /kit renders all three Alert tones + border-strong/error/success swatches + 32px display sample, no accent-pink/accent-yellow, no "use client" in page
+- Acceptance criteria re-verified: no red/green hue in alert.tsx (grep 0), no banned icon imports (grep 0), /kit renders all three Alert tones + border-strong/error/success swatches + 32px display sample, no old-hue-token-a/old-hue-token-b, no "use client" in page
 - Full suite 57/57 green; `pnpm --filter @fish/web build`, `typecheck`, `lint` exit 0
 - TDD gate: test-before-feat commit order verified for Task 1 (ddeeccc → b242773)
 - Human checkpoint: approved after 2 fix cycles (all six manual checks pass)
