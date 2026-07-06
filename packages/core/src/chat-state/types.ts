@@ -3,7 +3,7 @@ import type { UserRole } from "../roles";
 export type ChatConversationId = string;
 export type ChatMessageId = string;
 export type ChatUserId = string;
-export type LocalMessageStatus = "sending" | "sent" | "failed";
+export type LocalMessageStatus = "pending" | "sending" | "sent" | "failed";
 export type OutgoingMessageStatus = "sent" | "delivered" | "read";
 export type RealtimeConnectionState =
   | "idle"
