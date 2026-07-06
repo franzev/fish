@@ -107,6 +107,13 @@ describe("ChatClient hook boundaries", () => {
     expect(chatClientSource).toContain(`from "./hooks/use-chat-read-state"`);
     expect(chatClientSource).toContain("useChatReadState(");
   });
+
+  it("delegates realtime and presence behavior to focused hooks", () => {
+    expect(chatClientSource).toContain(`from "./hooks/use-chat-realtime"`);
+    expect(chatClientSource).toContain("useChatRealtime(");
+    expect(chatClientSource).toContain(`from "./hooks/use-chat-presence"`);
+    expect(chatClientSource).toContain("useChatPresence(");
+  });
 });
 
 describe("ChatClient", () => {
