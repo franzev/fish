@@ -53,9 +53,32 @@ Defined in `apps/web/app/globals.css` under `@theme`. Reference via Tailwind uti
 - `text-foreground` (white, headings) · `text-body` (grey) · `text-muted` (dim)
 - `text-notice`
 - `rounded-card` (16px) · `rounded-control` (12px) · `rounded-pill`
+- Spacing: use the named Tailwind utilities generated from `--spacing-*`
+  tokens, such as `gap-sm`, `gap-md`, `mt-lg`, `px-md`, `py-xl`, and
+  semantic utilities built on those tokens.
 - Fonts are loaded in `apps/web/app/layout.tsx`.
 
 Native clients should mirror these tokens in platform-native constants until a generated token pipeline exists.
+
+### Spacing discipline
+
+Spacing is part of the design system. It must communicate intent, not raw
+implementation details.
+
+- Use only predefined spacing tokens (`spacing-3xs`, `spacing-2xs`,
+  `spacing-nudge`, `spacing-xs`, `spacing-compact`, `spacing-sm`,
+  `spacing-field-y`, `spacing-md`, `spacing-page`, `spacing-lg`,
+  `spacing-xl`, `spacing-2xl`, or semantic spacing tokens such as
+  `spacing-control`) for margins, padding, gaps, layout separation, and
+  `space-*` rhythm.
+- Use token-based Tailwind utilities like `mt-lg`, `gap-md`, `px-sm`, or
+  semantic utilities backed by those tokens.
+- Do not introduce one-off numeric spacing utilities such as `mt-6`,
+  `space-y-4`, `gap-5`, `px-3`, or `py-7`.
+- If a new spacing value is truly needed, add it to the design system first
+  with a semantic name and intent.
+- Components should stay consistent, scalable, and easy to maintain by relying
+  exclusively on the spacing token system.
 
 ## Code conventions (only what differs from defaults)
 

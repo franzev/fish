@@ -72,6 +72,35 @@ const VISUAL_UTILITY_PREFIXES = [
   "z",
 ];
 
+const SPACING_UTILITY_PREFIXES = [
+  "m",
+  "mb",
+  "ml",
+  "mr",
+  "mt",
+  "mx",
+  "my",
+  "p",
+  "pb",
+  "pl",
+  "pr",
+  "pt",
+  "px",
+  "py",
+  "gap",
+  "gap-x",
+  "gap-y",
+  "space-x",
+  "space-y",
+  "inset",
+  "inset-x",
+  "inset-y",
+  "top",
+  "right",
+  "bottom",
+  "left",
+];
+
 function collectSourceFiles(dir: string, files: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     if (SKIP_DIRS.has(entry)) continue;
@@ -131,6 +160,38 @@ describe("Tailwind design-token guard", () => {
               line: index + 1,
             });
           }
+        }
+      });
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("does not use hardcoded spacing utilities in web source", () => {
+    const webRoot = join(__dirname, "..");
+    const sourceFiles = collectSourceFiles(webRoot);
+    const spacingPrefixes = SPACING_UTILITY_PREFIXES.map(escapeRegExp).join("|");
+    const classStart = `(?:^|[\\s"'\\\`])`;
+    const classEnd = `(?=$|[\\s"'\\\`])`;
+    const hardcodedSpacingValue = `(?:px|\\d+(?:\\.\\d+)?(?:\\/\\d+)?)`;
+    const hardcodedSpacingClassPattern = new RegExp(
+      `${classStart}((?:[a-z0-9-]+:)*-?(?:${spacingPrefixes})-(?!0(?:\\.0)?${classEnd})${hardcodedSpacingValue})${classEnd}`,
+      "g"
+    );
+    const offenders: { className: string; file: string; line: number }[] = [];
+
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      const lines = content.split("\n");
+
+      lines.forEach((line, index) => {
+        let match: RegExpExecArray | null;
+        while ((match = hardcodedSpacingClassPattern.exec(line))) {
+          offenders.push({
+            className: match[1],
+            file: relative(webRoot, file),
+            line: index + 1,
+          });
         }
       });
     }
