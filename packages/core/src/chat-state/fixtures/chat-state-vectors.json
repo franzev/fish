@@ -1,0 +1,681 @@
+[
+  {
+    "name": "hydrateConversation",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "hydrateConversation",
+        "conversationId": "conversation-1",
+        "messages": [
+          {
+            "id": "message-1",
+            "conversationId": "conversation-1",
+            "senderId": "client-1",
+            "senderRole": "client",
+            "body": "I practiced the introduction.",
+            "clientRequestId": "request-1",
+            "createdAt": "2026-07-06T04:01:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-2",
+            "conversationId": "conversation-1",
+            "senderId": "coach-1",
+            "senderRole": "coach",
+            "body": "Good. Send one more version.",
+            "clientRequestId": "request-2",
+            "createdAt": "2026-07-06T04:02:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "readStates": [
+          {
+            "userId": "client-1",
+            "lastDeliveredMessageId": "message-2",
+            "deliveredAt": "2026-07-06T04:03:00.000Z",
+            "lastReadMessageId": "message-1",
+            "readAt": "2026-07-06T04:01:30.000Z"
+          }
+        ]
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "message-1",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "I practiced the introduction.",
+              "clientRequestId": "request-1",
+              "createdAt": "2026-07-06T04:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-2",
+              "conversationId": "conversation-1",
+              "senderId": "coach-1",
+              "senderRole": "coach",
+              "body": "Good. Send one more version.",
+              "clientRequestId": "request-2",
+              "createdAt": "2026-07-06T04:02:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [
+            {
+              "userId": "client-1",
+              "lastDeliveredMessageId": "message-2",
+              "deliveredAt": "2026-07-06T04:03:00.000Z",
+              "lastReadMessageId": "message-1",
+              "readAt": "2026-07-06T04:01:30.000Z"
+            }
+          ],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "sendOptimisticMessage",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "sendOptimisticMessage",
+        "message": {
+          "id": "local-request-1",
+          "conversationId": "conversation-1",
+          "senderId": "client-1",
+          "senderRole": "client",
+          "body": "My answer is ready.",
+          "clientRequestId": "request-1",
+          "createdAt": "2026-07-06T04:04:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      },
+      {
+        "type": "sendOptimisticMessage",
+        "message": {
+          "id": "local-request-1-again",
+          "conversationId": "conversation-1",
+          "senderId": "client-1",
+          "senderRole": "client",
+          "body": "My answer is ready.",
+          "clientRequestId": "request-1",
+          "createdAt": "2026-07-06T04:04:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-1-again",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "My answer is ready.",
+              "clientRequestId": "request-1",
+              "createdAt": "2026-07-06T04:04:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "confirmSentMessage",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-2",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "I can explain the report.",
+              "clientRequestId": "request-2",
+              "createdAt": "2026-07-06T04:05:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "confirmSentMessage",
+        "localRequestId": "request-2",
+        "message": {
+          "id": "message-3",
+          "conversationId": "conversation-1",
+          "senderId": "client-1",
+          "senderRole": "client",
+          "body": "I can explain the report.",
+          "clientRequestId": "request-2",
+          "createdAt": "2026-07-06T04:05:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "message-3",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "I can explain the report.",
+              "clientRequestId": "request-2",
+              "createdAt": "2026-07-06T04:05:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "markMessageFailed",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-3",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "This should stay visible.",
+              "clientRequestId": "request-3",
+              "createdAt": "2026-07-06T04:06:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "markMessageFailed",
+        "conversationId": "conversation-1",
+        "clientRequestId": "request-3",
+        "reason": "Try sending again."
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-3",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "This should stay visible.",
+              "clientRequestId": "request-3",
+              "createdAt": "2026-07-06T04:06:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "failed",
+              "failureReason": "Try sending again."
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "This should stay visible.",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "mergeRemoteMessage",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-4",
+          "conversationId": "conversation-1",
+          "senderId": "coach-1",
+          "senderRole": "coach",
+          "body": "Please try a shorter answer.",
+          "clientRequestId": "request-4",
+          "createdAt": "2026-07-06T04:07:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "message-4",
+              "conversationId": "conversation-1",
+              "senderId": "coach-1",
+              "senderRole": "coach",
+              "body": "Please try a shorter answer.",
+              "clientRequestId": "request-4",
+              "createdAt": "2026-07-06T04:07:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "duplicateClientRequestIdReconciliation",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-5",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "I repeated the request once.",
+              "clientRequestId": "request-5",
+              "createdAt": "2026-07-06T04:08:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "localRequestId": "request-5",
+        "message": {
+          "id": "message-5",
+          "conversationId": "conversation-1",
+          "senderId": "client-1",
+          "senderRole": "client",
+          "body": "I repeated the request once.",
+          "clientRequestId": "request-5",
+          "createdAt": "2026-07-06T04:08:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      },
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-5",
+          "conversationId": "conversation-1",
+          "senderId": "client-1",
+          "senderRole": "client",
+          "body": "I repeated the request once.",
+          "clientRequestId": "request-5",
+          "createdAt": "2026-07-06T04:08:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "message-5",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "I repeated the request once.",
+              "clientRequestId": "request-5",
+              "createdAt": "2026-07-06T04:08:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "mergeReadState",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [],
+          "readStates": [
+            {
+              "userId": "coach-1",
+              "lastDeliveredMessageId": "message-1",
+              "deliveredAt": "2026-07-06T04:01:00.000Z",
+              "lastReadMessageId": null,
+              "readAt": null
+            }
+          ],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "mergeReadState",
+        "conversationId": "conversation-1",
+        "readState": {
+          "userId": "coach-1",
+          "lastDeliveredMessageId": "message-2",
+          "deliveredAt": "2026-07-06T04:03:00.000Z",
+          "lastReadMessageId": "message-2",
+          "readAt": "2026-07-06T04:03:30.000Z"
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [],
+          "readStates": [
+            {
+              "userId": "coach-1",
+              "lastDeliveredMessageId": "message-2",
+              "deliveredAt": "2026-07-06T04:03:00.000Z",
+              "lastReadMessageId": "message-2",
+              "readAt": "2026-07-06T04:03:30.000Z"
+            }
+          ],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" }
+        }
+      }
+    }
+  },
+  {
+    "name": "unreadCount",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "hydrateConversation",
+        "conversationId": "conversation-1",
+        "messages": [
+          {
+            "id": "message-1",
+            "conversationId": "conversation-1",
+            "senderId": "coach-1",
+            "senderRole": "coach",
+            "body": "First note.",
+            "clientRequestId": "request-6",
+            "createdAt": "2026-07-06T04:01:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-2",
+            "conversationId": "conversation-1",
+            "senderId": "coach-1",
+            "senderRole": "coach",
+            "body": "New note.",
+            "clientRequestId": "request-7",
+            "createdAt": "2026-07-06T04:02:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-3",
+            "conversationId": "conversation-1",
+            "senderId": "client-1",
+            "senderRole": "client",
+            "body": "Mine.",
+            "clientRequestId": "request-8",
+            "createdAt": "2026-07-06T04:03:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-4",
+            "conversationId": "conversation-1",
+            "senderId": "coach-1",
+            "senderRole": "coach",
+            "body": "Another note.",
+            "clientRequestId": "request-9",
+            "createdAt": "2026-07-06T04:04:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "readStates": [
+          {
+            "userId": "client-1",
+            "lastDeliveredMessageId": "message-4",
+            "deliveredAt": "2026-07-06T04:05:00.000Z",
+            "lastReadMessageId": "message-1",
+            "readAt": "2026-07-06T04:01:30.000Z"
+          }
+        ]
+      }
+    ],
+    "expectedSelectors": {
+      "unreadCount": {
+        "conversationId": "conversation-1",
+        "currentUserId": "client-1",
+        "readStateUserId": "client-1",
+        "expected": 2
+      }
+    }
+  },
+  {
+    "name": "deletedMessageSnippet",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-6",
+          "conversationId": "conversation-1",
+          "senderId": "coach-1",
+          "senderRole": "coach",
+          "body": "",
+          "clientRequestId": "request-10",
+          "createdAt": "2026-07-06T04:09:00.000Z",
+          "editedAt": null,
+          "deletedAt": "2026-07-06T04:10:00.000Z",
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedSelectors": {
+      "snippet": {
+        "conversationId": "conversation-1",
+        "messageId": "message-6",
+        "expected": "Message deleted"
+      }
+    }
+  },
+  {
+    "name": "replyPreview",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-7",
+          "conversationId": "conversation-1",
+          "senderId": "coach-1",
+          "senderRole": "coach",
+          "body": "Please repeat the final sentence.",
+          "clientRequestId": "request-11",
+          "createdAt": "2026-07-06T04:11:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedSelectors": {
+      "replyPreview": {
+        "conversationId": "conversation-1",
+        "messageId": "message-7",
+        "currentUserId": "client-1",
+        "participantName": "Coach Dana",
+        "currentUserName": "Alex",
+        "expected": {
+          "id": "message-7",
+          "authorName": "Coach Dana",
+          "snippet": "Please repeat the final sentence."
+        }
+      }
+    }
+  }
+]
