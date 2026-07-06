@@ -25,6 +25,9 @@ import type {
   ClientProfileRow,
   CoachClientRow,
   MessageRow,
+  MessageReactionRow,
+  MessageReadRow,
+  PresenceSessionRow,
   ConversationRow,
   ProfileRow,
 } from "@fish/supabase";
@@ -644,6 +647,65 @@ class SupabaseChatRepository implements ChatRepository {
         );
       }
 
+      const { data: reactions, error: reactionError } = (await this.client
+        .from("message_reactions")
+        .select("*")
+        .eq("conversation_id", conversation.id)) as {
+        data: MessageReactionRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (reactionError) {
+        return serviceFailure(
+          mapSupabaseError(reactionError, {
+            code: "database",
+            fallbackMessage: "Could not load message reactions.",
+            operation: "chat.getAssignedConversation.reactions",
+            recoverable: true,
+          })
+        );
+      }
+
+      const { data: readStates, error: readStateError } = (await this.client
+        .from("message_reads")
+        .select("*")
+        .eq("conversation_id", conversation.id)) as {
+        data: MessageReadRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (readStateError) {
+        return serviceFailure(
+          mapSupabaseError(readStateError, {
+            code: "database",
+            fallbackMessage: "Could not load message read state.",
+            operation: "chat.getAssignedConversation.reads",
+            recoverable: true,
+          })
+        );
+      }
+
+      const { data: presenceSessions, error: presenceError } = (await this.client
+        .from("presence_sessions")
+        .select("*")
+        .eq("user_id", participant.id)
+        .order("last_heartbeat_at", { ascending: false })
+        .limit(20)) as {
+        data: PresenceSessionRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (presenceError) {
+        return serviceFailure(
+          mapSupabaseError(presenceError, {
+            code: "database",
+            fallbackMessage: "Could not load presence.",
+            operation: "chat.getAssignedConversation.presence",
+            recoverable: true,
+          })
+        );
+      }
+
       return serviceSuccess({
         conversationId: conversation.id,
         currentUserId: userId,
@@ -653,13 +715,41 @@ class SupabaseChatRepository implements ChatRepository {
           displayName: participant.display_name,
           role: participant.role,
         },
-        messages: (messages ?? []).map(toClientChatMessage),
+        messages: (messages ?? []).map((message) =>
+          toClientChatMessage(message, reactions ?? [], userId)
+        ),
+        readStates: (readStates ?? []).map(toClientChatReadState),
+        participantPresence: {
+          sessions: (presenceSessions ?? []).map(toClientPresenceSession),
+          lastSeenAt: getLastSeenAt(presenceSessions ?? []),
+        },
       });
     });
   }
 }
 
-function toClientChatMessage(row: MessageRow): ClientChatMessage {
+function toClientChatMessage(
+  row: MessageRow,
+  reactions: MessageReactionRow[] = [],
+  currentUserId = ""
+): ClientChatMessage {
+  const reactionCounts = new Map<string, { count: number; byMe: boolean }>();
+
+  for (const reaction of reactions) {
+    if (reaction.message_id !== row.id) {
+      continue;
+    }
+
+    const current = reactionCounts.get(reaction.emoji) ?? {
+      count: 0,
+      byMe: false,
+    };
+    reactionCounts.set(reaction.emoji, {
+      count: current.count + 1,
+      byMe: current.byMe || reaction.user_id === currentUserId,
+    });
+  }
+
   return {
     id: row.id,
     conversationId: row.conversation_id,
@@ -668,7 +758,53 @@ function toClientChatMessage(row: MessageRow): ClientChatMessage {
     body: row.body,
     clientRequestId: row.client_request_id,
     createdAt: row.created_at,
+    editedAt: row.edited_at,
+    deletedAt: row.deleted_at,
+    replyToMessageId: row.reply_to_message_id,
+    reactions: Array.from(reactionCounts.entries()).map(([emoji, reaction]) => ({
+      emoji,
+      count: reaction.count,
+      byMe: reaction.byMe,
+    })),
   };
+}
+
+function toClientChatReadState(row: MessageReadRow) {
+  return {
+    userId: row.user_id,
+    lastDeliveredMessageId: row.last_delivered_message_id,
+    deliveredAt: row.delivered_at,
+    lastReadMessageId: row.last_read_message_id,
+    readAt: row.read_at,
+  };
+}
+
+function toClientPresenceSession(row: PresenceSessionRow) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    activeAt: row.active_at,
+    lastHeartbeatAt: row.last_heartbeat_at,
+    endedAt: row.ended_at,
+  };
+}
+
+function getLastSeenAt(rows: PresenceSessionRow[]): string | null {
+  let latest: string | null = null;
+
+  for (const row of rows) {
+    const ended = row.ended_at ? Date.parse(row.ended_at) : Number.NaN;
+    const heartbeat = Date.parse(row.last_heartbeat_at);
+    const value = Number.isNaN(ended) || ended < heartbeat
+      ? row.last_heartbeat_at
+      : row.ended_at ?? row.last_heartbeat_at;
+
+    if (!latest || Date.parse(latest) < Date.parse(value)) {
+      latest = value;
+    }
+  }
+
+  return latest;
 }
 
 class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
