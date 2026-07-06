@@ -8,6 +8,7 @@
     "start": "next start",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
+    "e2e": "pnpm --dir ../.. seed && playwright test",
     "lint": "eslint",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
@@ -28,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "@storybook/addon-docs": "10.4.6",
     "@storybook/nextjs-vite": "10.4.6",
     "@tailwindcss/postcss": "^4.3.1",

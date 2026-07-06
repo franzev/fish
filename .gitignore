@@ -1,6 +1,8 @@
 .DS_Store
 .next/
 storybook-static/
+playwright-report/
+test-results/
 *.tsbuildinfo
 
 # Local env secrets (keep .env.example tracked)
