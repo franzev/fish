@@ -21,3 +21,23 @@ export const Offline: Story = {
     participant: client,
   },
 };
+
+export const ActiveNow: Story = {
+  args: {
+    participant: {
+      ...coach,
+      presenceLabel: "Active now",
+      showOnlineDot: true,
+    },
+  },
+};
+
+export const LastSeen: Story = {
+  args: {
+    participant: {
+      ...client,
+      presenceLabel: "Last seen yesterday at 8:15 PM",
+      showOnlineDot: false,
+    },
+  },
+};

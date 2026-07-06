@@ -2,7 +2,15 @@ import { EmptyState } from "@/components/chat";
 import { authRedirects } from "@/lib/auth/redirects";
 import { getChatPageData } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
-import { sendMessageAction } from "./actions";
+import {
+  deleteMessageAction,
+  editMessageAction,
+  markReadStateAction,
+  refreshConversationAction,
+  refreshMessagesAction,
+  sendMessageAction,
+  toggleReactionAction,
+} from "./actions";
 import { ChatClient } from "./chat-client";
 
 export default async function ChatPage() {
@@ -21,5 +29,16 @@ export default async function ChatPage() {
     );
   }
 
-  return <ChatClient chat={data.chat} sendMessageAction={sendMessageAction} />;
+  return (
+    <ChatClient
+      chat={data.chat}
+      sendMessageAction={sendMessageAction}
+      editMessageAction={editMessageAction}
+      deleteMessageAction={deleteMessageAction}
+      toggleReactionAction={toggleReactionAction}
+      markReadStateAction={markReadStateAction}
+      refreshMessagesAction={refreshMessagesAction}
+      refreshConversationAction={refreshConversationAction}
+    />
+  );
 }

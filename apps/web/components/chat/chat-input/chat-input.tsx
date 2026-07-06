@@ -47,7 +47,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     }
 
     return (
-      <div className={cn("flex items-end gap-2 border-t border-border bg-surface p-3", className)}>
+      <div className={cn("flex items-end gap-xs border-t border-border bg-surface p-sm", className)}>
         <button
           type="button"
           aria-label="Add emoji"
@@ -73,7 +73,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKeyDown}
           className={cn(
-            "min-h-control flex-1 resize-none rounded-control border border-border bg-surface px-4 py-3.5",
+            "min-h-control flex-1 resize-none rounded-control border border-border bg-surface px-md py-field-y",
             "text-copy text-foreground placeholder:text-muted",
             "transition-colors focus:border-primary"
           )}
@@ -85,7 +85,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           onClick={handleSend}
           disabled={!canSend}
           fullWidth={false}
-          className="shrink-0 px-4"
+          className="shrink-0 px-md"
         >
           <IconSend size={20} stroke={1.75} aria-hidden="true" />
         </Button>

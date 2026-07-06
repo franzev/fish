@@ -28,7 +28,7 @@ export function ChatHeader({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 border-b border-border bg-surface px-4 py-3",
+        "flex items-center gap-sm border-b border-border bg-surface px-md py-sm",
         className
       )}
       {...props}
@@ -36,9 +36,13 @@ export function ChatHeader({
       <Avatar name={participant.name} src={participant.avatarUrl} size="md" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-ui-md font-medium text-foreground">{participant.name}</p>
-        <PresenceIndicator online={participant.online} />
+        <PresenceIndicator
+          online={participant.online}
+          label={participant.presenceLabel}
+          showOnlineDot={participant.showOnlineDot}
+        />
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2xs">
         <button
           type="button"
           aria-label="Call"

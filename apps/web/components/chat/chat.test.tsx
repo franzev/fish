@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { applyTimeFormat } from "@/lib/prefs/apply-prefs";
 import { Avatar } from "./avatar";
 import { Bubble } from "./bubble";
 import { ChatInput } from "./chat-input";
@@ -8,8 +9,10 @@ import { EmptyState } from "./empty-state";
 import { Message } from "./message";
 import { MessageActions } from "./message-actions";
 import { MessageList } from "./message-list";
+import { MessageMeta } from "./message-meta";
 import { MessageStatus } from "./message-status";
 import { NotificationBadge } from "./notification-badge";
+import { PresenceIndicator } from "./presence-indicator";
 import { Reactions } from "./reactions";
 import { TypingIndicator } from "./typing-indicator";
 import type { ChatMessageView } from "./types";
@@ -61,6 +64,30 @@ describe("TypingIndicator", () => {
   it("renders three animated dots", () => {
     const { container } = render(<TypingIndicator />);
     expect(container.querySelectorAll(".animate-typing")).toHaveLength(3);
+  });
+});
+
+describe("PresenceIndicator", () => {
+  it("renders active presence with the online dot", () => {
+    const { container } = render(
+      <PresenceIndicator label="Active now" online showOnlineDot />
+    );
+
+    expect(screen.getByText("Active now")).toBeInTheDocument();
+    expect(container.querySelector(".bg-success")).toBeInTheDocument();
+  });
+
+  it("renders last seen without an online dot", () => {
+    const { container } = render(
+      <PresenceIndicator
+        label="Last seen yesterday at 8:15 PM"
+        online={false}
+        showOnlineDot={false}
+      />
+    );
+
+    expect(screen.getByText("Last seen yesterday at 8:15 PM")).toBeInTheDocument();
+    expect(container.querySelector(".bg-success")).toBeNull();
   });
 });
 
@@ -126,10 +153,51 @@ describe("Bubble", () => {
     const { rerender, getByText } = render(<Bubble mine>Hi there</Bubble>);
     expect(getByText("Hi there").className).toContain("bg-primary");
     expect(getByText("Hi there").className).toContain("text-on-primary");
+    expect(getByText("Hi there")).toHaveClass(
+      "rounded-tl-chat",
+      "rounded-tr-chat",
+      "rounded-bl-chat",
+      "rounded-br-chat-inner"
+    );
+    expect(getByText("Hi there")).not.toHaveClass("rounded-card");
 
     rerender(<Bubble mine={false}>Hi there</Bubble>);
     expect(getByText("Hi there").className).toContain("bg-surface");
-    expect(getByText("Hi there").className).toContain("border-border");
+    expect(getByText("Hi there")).toHaveClass(
+      "rounded-tl-chat",
+      "rounded-tr-chat",
+      "rounded-br-chat",
+      "rounded-bl-chat-inner"
+    );
+    expect(getByText("Hi there")).not.toHaveClass("rounded-card");
+    expect(getByText("Hi there").className).not.toContain("border ");
+    expect(getByText("Hi there").className).not.toContain("border-border");
+  });
+
+  it("tightens both touching corners for grouped middle bubbles", () => {
+    const { rerender, getByText } = render(
+      <Bubble mine={false} groupedWithPrevious groupedWithNext>
+        Grouped received
+      </Bubble>
+    );
+    expect(getByText("Grouped received")).toHaveClass(
+      "rounded-tl-chat-inner",
+      "rounded-bl-chat-inner",
+      "rounded-tr-chat",
+      "rounded-br-chat"
+    );
+
+    rerender(
+      <Bubble mine groupedWithPrevious groupedWithNext>
+        Grouped mine
+      </Bubble>
+    );
+    expect(getByText("Grouped mine")).toHaveClass(
+      "rounded-tr-chat-inner",
+      "rounded-br-chat-inner",
+      "rounded-tl-chat",
+      "rounded-bl-chat"
+    );
   });
 });
 
@@ -144,12 +212,45 @@ const baseMessage: ChatMessageView = {
 describe("Message", () => {
   it("aligns a received message to the start", () => {
     const { container } = render(<Message message={baseMessage} />);
-    expect(container.firstChild).toHaveClass("flex-row");
+    expect(container.firstChild).toHaveClass("justify-start");
   });
 
   it("aligns a sent (mine) message to the end", () => {
     const { container } = render(<Message message={{ ...baseMessage, mine: true }} />);
-    expect(container.firstChild).toHaveClass("flex-row-reverse");
+    expect(container.firstChild).toHaveClass("justify-end");
+  });
+});
+
+describe("MessageMeta", () => {
+  afterEach(() => {
+    applyTimeFormat(null);
+  });
+
+  it("uses the saved 24-hour preference for the visible timestamp", () => {
+    applyTimeFormat("24h");
+
+    render(
+      <MessageMeta
+        authorName="Alex Rivera"
+        sentAt="2026-07-05T13:05:00.000Z"
+      />
+    );
+
+    expect(screen.getByText(/^\d{2}:\d{2}$/)).toBeInTheDocument();
+    expect(screen.queryByText(/\b(?:AM|PM)\b/i)).toBeNull();
+  });
+
+  it("uses the saved 12-hour preference for the visible timestamp", () => {
+    applyTimeFormat("12h");
+
+    render(
+      <MessageMeta
+        authorName="Alex Rivera"
+        sentAt="2026-07-05T13:05:00.000Z"
+      />
+    );
+
+    expect(screen.getByText(/\b(?:AM|PM)\b/i)).toBeInTheDocument();
   });
 });
 
@@ -200,6 +301,62 @@ describe("MessageList", () => {
     ];
     render(<MessageList messages={messages} firstUnreadId="m2" />);
     expect(screen.getByRole("separator", { name: "Unread messages" })).toBeInTheDocument();
+  });
+
+  it("renders consecutive received messages as a tight connected stack", () => {
+    const messages: ChatMessageView[] = [
+      { ...baseMessage, id: "m1", body: "First received" },
+      { ...baseMessage, id: "m2", body: "Middle received" },
+      { ...baseMessage, id: "m3", body: "Last received" },
+    ];
+    render(<MessageList messages={messages} />);
+
+    expect(screen.getByText("First received")).toHaveClass(
+      "rounded-tl-chat",
+      "rounded-bl-chat-inner"
+    );
+    expect(screen.getByText("Middle received")).toHaveClass(
+      "rounded-tl-chat-inner",
+      "rounded-bl-chat-inner"
+    );
+    expect(screen.getByText("Last received")).toHaveClass(
+      "rounded-tl-chat-inner",
+      "rounded-bl-chat"
+    );
+
+    const middleWrapper =
+      screen.getByText("Middle received").parentElement?.parentElement?.parentElement;
+    const lastWrapper =
+      screen.getByText("Last received").parentElement?.parentElement?.parentElement;
+    expect(middleWrapper).toHaveClass("mt-3xs");
+    expect(lastWrapper).toHaveClass("mt-3xs");
+    expect(screen.getAllByText("AR")).toHaveLength(1);
+    expect(within(lastWrapper as HTMLElement).getByText("AR")).toBeInTheDocument();
+  });
+
+  it("shows sent status only on the last bubble in a sent group", () => {
+    const messages: ChatMessageView[] = [
+      {
+        ...baseMessage,
+        id: "m1",
+        author: { id: "u2", name: "Jordan Blake" },
+        body: "First sent",
+        mine: true,
+        status: "sent",
+      },
+      {
+        ...baseMessage,
+        id: "m2",
+        author: { id: "u2", name: "Jordan Blake" },
+        body: "Last sent",
+        mine: true,
+        status: "delivered",
+      },
+    ];
+    render(<MessageList messages={messages} />);
+
+    expect(screen.queryByLabelText("Sent")).toBeNull();
+    expect(screen.getByLabelText("Delivered")).toBeInTheDocument();
   });
 });
 

@@ -20,3 +20,19 @@ export const Offline: Story = {
     online: false,
   },
 };
+
+export const ActiveNow: Story = {
+  args: {
+    label: "Active now",
+    online: true,
+    showOnlineDot: true,
+  },
+};
+
+export const LastSeen: Story = {
+  args: {
+    label: "Last seen yesterday at 8:15 PM",
+    online: false,
+    showOnlineDot: false,
+  },
+};

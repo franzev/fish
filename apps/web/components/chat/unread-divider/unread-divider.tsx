@@ -8,7 +8,7 @@ export function UnreadDivider({ className, ...props }: HTMLAttributes<HTMLDivEle
     <div
       role="separator"
       aria-label="Unread messages"
-      className={cn("my-3 flex items-center gap-3", className)}
+      className={cn("my-sm flex items-center gap-sm", className)}
       {...props}
     >
       <span className="h-px flex-1 bg-border-strong" />

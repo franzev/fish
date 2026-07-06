@@ -12,7 +12,7 @@ export function QuotedMessage({ authorName, snippet, className, ...props }: Quot
   return (
     <div
       className={cn(
-        "mb-1.5 flex gap-2 rounded-control border-l-4 border-border-strong bg-surface-2 py-1.5 pl-2.5 pr-3",
+        "mb-nudge flex gap-xs rounded-control border-l-4 border-border-strong bg-surface-2 py-nudge pl-compact pr-sm",
         className
       )}
       {...props}

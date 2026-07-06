@@ -25,7 +25,7 @@ export function VoicePlayer({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-control border border-border bg-surface p-3",
+        "flex items-center gap-sm rounded-control border border-border bg-surface p-sm",
         className
       )}
       {...props}

@@ -29,6 +29,8 @@ export interface ChatParticipantView {
   name: string;
   avatarUrl?: string;
   online?: boolean;
+  presenceLabel?: string;
+  showOnlineDot?: boolean;
 }
 
 /** A single rendered message row. `mine` decides sent-vs-received alignment;

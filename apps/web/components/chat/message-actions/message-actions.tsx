@@ -34,7 +34,7 @@ export function MessageActions({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1 rounded-control border border-border bg-surface p-1 shadow-card",
+        "inline-flex items-center gap-2xs rounded-control border border-border bg-surface p-2xs shadow-card",
         className
       )}
       {...props}

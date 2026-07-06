@@ -9,11 +9,11 @@ export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>
   return (
     <div
       aria-hidden="true"
-      className={cn("flex flex-col gap-3 px-1 py-2", className)}
+      className={cn("flex flex-col gap-sm px-2xs py-xs", className)}
       {...props}
     >
       {[0, 1, 2].map((row) => (
-        <div key={row} className={cn("flex gap-2", row % 2 === 1 ? "flex-row-reverse" : "flex-row")}>
+        <div key={row} className={cn("flex gap-xs", row % 2 === 1 ? "flex-row-reverse" : "flex-row")}>
           <div className="size-8 shrink-0 animate-pulse rounded-pill bg-surface-2" />
           <div
             className={cn(

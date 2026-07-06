@@ -1,3 +1,9 @@
+"use client";
+
+import {
+  formatTimeOfDay,
+  useTimeFormatPreference,
+} from "@/lib/prefs/time-format";
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
@@ -6,18 +12,14 @@ interface MessageMetaProps extends HTMLAttributes<HTMLDivElement> {
   sentAt: Date | string;
 }
 
-function formatTime(sentAt: Date | string): string {
-  const date = typeof sentAt === "string" ? new Date(sentAt) : sentAt;
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-
 /** Username + timestamp caption above a message group. Quiet, muted tokens —
  *  this is metadata, not content. */
 export function MessageMeta({ authorName, sentAt, className, ...props }: MessageMetaProps) {
+  const timeFormat = useTimeFormatPreference();
+
   return (
     <div
-      className={cn("mb-1 flex items-baseline gap-2 text-ui-xs text-muted", className)}
+      className={cn("mb-2xs flex items-baseline gap-xs text-ui-xs text-muted", className)}
       {...props}
     >
       <span className="font-medium text-body">{authorName}</span>
@@ -28,7 +30,7 @@ export function MessageMeta({ authorName, sentAt, className, ...props }: Message
         dateTime={typeof sentAt === "string" ? sentAt : sentAt.toISOString()}
         suppressHydrationWarning
       >
-        {formatTime(sentAt)}
+        {formatTimeOfDay(sentAt, timeFormat)}
       </time>
     </div>
   );

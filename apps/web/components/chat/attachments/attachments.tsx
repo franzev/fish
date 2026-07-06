@@ -13,7 +13,7 @@ export function Attachments({ attachments, className, ...props }: AttachmentsPro
   if (!attachments || attachments.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-col gap-2", className)} {...props}>
+    <div className={cn("flex flex-col gap-xs", className)} {...props}>
       {attachments.map((attachment, index) => (
         <AttachmentCard key={`${attachment.kind}-${attachment.url}-${index}`} attachment={attachment} />
       ))}
@@ -54,7 +54,7 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
           </span>
         </button>
         {attachment.duration && (
-          <span className="absolute bottom-2 right-2 rounded-pill bg-surface px-2 py-0.5 text-ui-2xs text-body">
+          <span className="absolute bottom-xs right-xs rounded-pill bg-surface px-xs py-3xs text-ui-2xs text-body">
             {attachment.duration}
           </span>
         )}
@@ -64,7 +64,7 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
 
   if (attachment.kind === "audio") {
     return (
-      <div className="flex items-center gap-3 rounded-control border border-border bg-surface p-3">
+      <div className="flex items-center gap-sm rounded-control border border-border bg-surface p-sm">
         <button
           type="button"
           aria-label={`Play audio ${attachment.name}`}
@@ -85,7 +85,7 @@ function AttachmentCard({ attachment }: { attachment: Attachment }) {
   return (
     <a
       href={attachment.url}
-      className="flex items-center gap-3 rounded-control border border-border bg-surface p-3 transition-colors hover:bg-surface-2"
+      className="flex items-center gap-sm rounded-control border border-border bg-surface p-sm transition-colors hover:bg-surface-2"
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-surface-2 text-muted">
         <IconFile size={20} stroke={1.75} aria-hidden="true" />

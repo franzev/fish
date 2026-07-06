@@ -40,9 +40,9 @@ export function LinkPreview({
           <IconPlayerPlay size={20} stroke={1.75} aria-hidden="true" />
         </span>
       </div>
-      <div className="p-3">
+      <div className="p-sm">
         <p className="line-clamp-2 text-ui-sm font-medium text-foreground">{title}</p>
-        <p className="mt-1 text-ui-xs text-muted">{source}</p>
+        <p className="mt-2xs text-ui-xs text-muted">{source}</p>
       </div>
     </a>
   );

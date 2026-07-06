@@ -17,7 +17,7 @@ export function TypingIndicator({ className, ...props }: HTMLAttributes<HTMLDivE
     <div
       role="status"
       aria-label="typing"
-      className={cn("flex items-center gap-1 rounded-pill bg-surface-2 px-3 py-2", className)}
+      className={cn("flex items-center gap-2xs rounded-pill bg-surface-2 px-sm py-xs", className)}
       {...props}
     >
       {DOT_DELAY_TOKENS.map((delayToken) => (

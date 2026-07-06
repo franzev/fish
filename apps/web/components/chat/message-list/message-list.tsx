@@ -38,23 +38,38 @@ export function MessageList({
       // a scrollable container with focusable children is not auto-focusable in
       // Chromium, so without this the history can't be scrolled without a mouse.
       tabIndex={0}
-      className={cn("flex-1 overflow-y-auto px-4 py-3", className)}
+      className={cn("flex-1 overflow-y-auto px-md py-sm", className)}
       {...props}
     >
       {/* Top sentinel: a later phase attaches an IntersectionObserver here
           to call onLoadOlder() when it scrolls into view. */}
       <div data-testid="load-older-sentinel" onClick={onLoadOlder} className="h-1 w-full" />
       {loadingOlder && <Skeleton />}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col">
         {messages.map((message, index) => {
           const previous = messages[index - 1];
-          const grouped = Boolean(previous && previous.author.id === message.author.id && previous.mine === message.mine);
+          const next = messages[index + 1];
+          const groupedWithPrevious = Boolean(
+            previous &&
+              previous.author.id === message.author.id &&
+              previous.mine === message.mine
+          );
+          const groupedWithNext = Boolean(
+            next && next.author.id === message.author.id && next.mine === message.mine
+          );
           return (
-            <div key={message.id}>
+            <div
+              key={message.id}
+              className={cn(
+                index > 0 && (groupedWithPrevious ? "mt-3xs" : "mt-md")
+              )}
+            >
               {message.id === firstUnreadId && <UnreadDivider />}
               <Message
                 message={message}
-                grouped={grouped}
+                groupedWithPrevious={groupedWithPrevious}
+                groupedWithNext={groupedWithNext}
+                showStatus={message.mine && !groupedWithNext}
                 onReactionToggle={onReactionToggle ? (emoji) => onReactionToggle(message.id, emoji) : undefined}
               />
             </div>

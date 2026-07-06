@@ -41,7 +41,7 @@ export function ConversationList({
   }, [conversations, query]);
 
   return (
-    <div className={cn("flex flex-col gap-3", className)} {...props}>
+    <div className={cn("flex flex-col gap-sm", className)} {...props}>
       <Input
         label="Search conversations"
         placeholder="Search by name"
@@ -49,9 +49,9 @@ export function ConversationList({
         onChange={(event) => setQuery(event.target.value)}
       />
       {filtered.length === 0 ? (
-        <p className="px-1 py-6 text-center text-ui text-muted">No matches</p>
+        <p className="px-2xs py-lg text-center text-ui text-muted">No matches</p>
       ) : (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2xs">
           {filtered.map((conversation) => {
             const isActive = conversation.id === activeConversationId;
             // A button's aria-label REPLACES the accessible name from its
@@ -74,7 +74,7 @@ export function ConversationList({
                 aria-current={isActive || undefined}
                 onClick={() => onSelect?.(conversation.id)}
                 className={cn(
-                  "flex min-h-control w-full items-center gap-3 rounded-control border px-3 py-2 text-left transition-colors",
+                  "flex min-h-control w-full items-center gap-sm rounded-control border px-sm py-xs text-left transition-colors",
                   isActive
                     ? "border-border-strong bg-surface-2"
                     : "border-transparent hover:bg-surface-2"
@@ -91,7 +91,7 @@ export function ConversationList({
                   </p>
                   <p className="truncate text-ui-xs text-muted">{conversation.lastMessage}</p>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="flex shrink-0 flex-col items-end gap-2xs">
                   <span className="text-ui-2xs text-muted">{conversation.lastMessageAt}</span>
                   <NotificationBadge count={conversation.unreadCount} />
                 </div>
