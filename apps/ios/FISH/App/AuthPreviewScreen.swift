@@ -16,6 +16,21 @@ struct AuthPreviewScreen: View {
     @State private var triedCreateAccount = false
 
     var body: some View {
+        if route == .signedIn {
+            AppShell(
+                displayName: name.isEmpty ? "Alex Rivera" : name,
+                coachName: "Maya Chen",
+                onSignOut: {
+                    resetPasswords()
+                    route = .login
+                }
+            )
+        } else {
+            authBody
+        }
+    }
+
+    private var authBody: some View {
         ScrollView {
             VStack {
                 Spacer(minLength: Spacing.xxl)
@@ -104,15 +119,7 @@ struct AuthPreviewScreen: View {
             }
 
         case .signedIn:
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                Header(title: "You're signed in", message: "This confirms your session. Nothing else lives here yet.")
-                Button(fullWidth: true, action: {
-                    resetPasswords()
-                    route = .login
-                }) {
-                    Text("Log out")
-                }
-            }
+            EmptyView()
         }
     }
 

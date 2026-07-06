@@ -38,6 +38,12 @@ data class TypeTokens(
         fontSize = 17.sp,
         lineHeight = 26.sp,
     ),
+    val bodyMedium: TextStyle = TextStyle(
+        fontFamily = Lexend,
+        fontWeight = FontWeight.Medium,
+        fontSize = 17.sp,
+        lineHeight = 26.sp,
+    ),
     val label: TextStyle = TextStyle(
         fontFamily = Lexend,
         fontWeight = FontWeight.Medium,

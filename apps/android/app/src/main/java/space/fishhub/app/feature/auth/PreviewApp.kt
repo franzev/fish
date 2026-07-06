@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import space.fishhub.app.core.auth.OAuthCallbackResult
+import space.fishhub.app.feature.app.AppShell
 
 @Composable
 internal fun PreviewApp(
@@ -35,6 +36,21 @@ internal fun PreviewApp(
                 }
             }
         }
+    }
+
+    if (route == AuthRoute.SignedIn) {
+        AppShell(
+            displayName = name.ifBlank { "Alex Rivera" },
+            coachName = "Maya Chen",
+            onSignOut = {
+                authNotice = null
+                password = ""
+                confirmPassword = ""
+                onSignOut()
+                route = AuthRoute.Login
+            },
+        )
+        return
     }
 
     val page = pageForRoute(
