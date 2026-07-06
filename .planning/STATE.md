@@ -32,7 +32,7 @@ Phase: 09 (cross-platform-chat-state) — EXECUTING
 Plan: 2 of 4
 Status: Ready to execute
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] 75%
 
 ## Milestone v1.1 Phases
 
@@ -48,7 +48,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Planned |
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | In Progress |
 
 ## Archived Milestones
 
@@ -69,10 +69,12 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - Product-facing a11y prefs hydrate at the authenticated shell level so every authenticated route inherits theme/text-size/reduced-motion.
 - `send_chat_message` is the database-owned chat write boundary; the Edge Function verifies JWT/membership and delegates the insert.
 - Chat state portability decision: the durable chat brain should be a small event/result state machine with JSON fixtures; Zustand is only the web adapter, while Android/iOS use native state containers.
+- The shared chat brain is exported as `@fish/core/chat-state`; the web `chat-state.ts` helper remains a compatibility shim.
+- Chat-state fixtures use plain JSON vectors with expected state or selector outputs so native clients can replay the same contract later.
 
 ### Todos / open questions
 
-- [ ] Execute Phase 9 cross-platform chat state.
+- [ ] Continue Phase 9 cross-platform chat state with Plan 09-02.
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
@@ -80,6 +82,12 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 ### Blockers
 
 - None.
+
+### Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 09 | 01 | 8min | 3 | 10 |
 
 ### Quick Tasks Completed
 
@@ -99,8 +107,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Last session:** 2026-07-06T23:44:29.841Z
 
 - **Last activity:** 2026-07-06
-- **Stopped at:** Phase 9 is ready to execute.
-- **Next action:** Run `$gsd-execute-phase 09`.
+- **Stopped at:** Completed 09-01-PLAN.md.
+- **Next action:** Continue with Phase 9 Plan 09-02.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
