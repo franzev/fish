@@ -35,6 +35,14 @@ describe("Input", () => {
     expect(reservedRow.className).toContain("min-h-field-message");
   });
 
+  it("can skip the empty reserved row when a compact form owns spacing", () => {
+    const { container } = render(
+      <Input label="Email" reserveMessageSpace={false} />
+    );
+    const field = container.querySelector("input");
+    expect(field?.nextElementSibling).toBeNull();
+  });
+
   it("notice tier: field carries border-border-strong, message is regular weight with an info icon", () => {
     const { getByLabelText, getByText, container } = render(
       <Input
@@ -47,6 +55,10 @@ describe("Input", () => {
       "That doesn't look like an email yet. Check the spelling?"
     );
     expect(message.className).not.toContain("font-semibold");
+    expect(getByLabelText("Email")).toHaveAttribute(
+      "aria-describedby",
+      message.id
+    );
     expect(container.querySelector("svg")).not.toBeNull();
   });
 

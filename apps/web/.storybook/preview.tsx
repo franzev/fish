@@ -18,7 +18,7 @@ const preview: Preview = {
   decorators: [
     (Story) => (
       <div
-        className={`${lexend.variable} ${fraunces.variable} p-6 bg-bg`}
+        className={`${lexend.variable} ${fraunces.variable} p-lg bg-bg`}
       >
         <Story />
       </div>

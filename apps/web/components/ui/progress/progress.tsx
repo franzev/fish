@@ -12,7 +12,7 @@ export function Progress({ value, label, className, ...props }: ProgressProps) {
   const clamped = Math.max(0, Math.min(100, value));
   return (
     <div className={cn("w-full", className)} {...props}>
-      {label && <p className="mb-2 text-ui-sm text-muted">{label}</p>}
+      {label && <p className="mb-xs text-ui-sm text-muted">{label}</p>}
       <div
         className="h-3 w-full overflow-hidden rounded-pill bg-surface-2"
         role="progressbar"

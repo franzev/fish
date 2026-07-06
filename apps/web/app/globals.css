@@ -81,11 +81,29 @@
 
   /* ---- Radius (rounded, friendly) ---- */
   --radius-card: 16px;
+  --radius-chat: 16px;
   --radius-control: 12px;
+  --radius-chat-inner: 4px;
   --radius-pill: 999px;
 
   /* ---- Tap targets (ND rule: nothing tiny or fiddly) ---- */
   --size-control: 56px;           /* min height for buttons & inputs       */
+
+  /* ---- Spacing scale: intent tokens only, no one-off numeric utilities ---- */
+  --spacing-3xs: 2px;             /* hairline separation */
+  --spacing-2xs: 4px;             /* icon/text nudges */
+  --spacing-nudge: 6px;           /* close message/icon relationships */
+  --spacing-xs: 8px;              /* tight related items */
+  --spacing-compact: 10px;        /* dense component interiors */
+  --spacing-sm: 12px;             /* compact control interiors */
+  --spacing-field-y: 14px;        /* text-field vertical padding */
+  --spacing-md: 16px;             /* standard component rhythm */
+  --spacing-page: 20px;           /* page edge padding on small screens */
+  --spacing-lg: 24px;             /* section rhythm inside a view */
+  --spacing-xl: 40px;             /* page rhythm and calm breathing room */
+  --spacing-2xl: 48px;            /* large screen-level pauses */
+  --spacing-mobile-nav-offset: 112px;
+
   --spacing-control: var(--size-control);
   --spacing-field-message: 22px;
   --spacing-badge: 20px;

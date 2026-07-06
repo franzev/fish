@@ -7,7 +7,7 @@ export const buttonVariants = cva(
     // Layout stability: no state change may alter the rendered size.
     // relative anchors the loading overlay; a constant (transparent)
     // border keeps the box model identical across all variants.
-    "relative inline-flex items-center justify-center rounded-control px-6",
+    "relative inline-flex items-center justify-center rounded-control px-lg",
     "min-h-control text-copy transition-colors",
     "border border-transparent cursor-pointer",
     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -59,6 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       fullWidth = false,
       loading = false,
+      disabled,
       onClick,
       children,
       ...props
@@ -66,12 +67,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     // Non-activation, WHY: the native `disabled` attribute (passed through
-    // via ...props) already blocks click AND keyboard for the disabled
-    // state, so it needs no JS guard. Loading isn't `disabled` (that would
-    // also suppress focus/cursor), so it gets its own click-guard here
-    // instead. Neither state relies on `pointer-events-none` any more —
-    // that class swallows the element's OWN cursor, which is exactly what
-    // stopped cursor-progress/cursor-not-allowed from ever rendering.
+    // via the prop below) blocks click AND keyboard for the disabled state.
+    // Loading also disables native activation so submit buttons cannot fire
+    // twice while the request is in flight. Neither state relies on
+    // `pointer-events-none`; that class swallows the element's OWN cursor,
+    // which is exactly what stopped cursor-progress/cursor-not-allowed from
+    // ever rendering.
     //
     // The guard only matters when there is a consumer onClick to guard —
     // with none, the handler is a no-op and must not be attached at all.
@@ -92,6 +93,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         aria-busy={loading || undefined}
+        disabled={disabled || loading}
         onClick={onClick ? handleClick : undefined}
         className={cn(
           buttonVariants({ variant, fullWidth, loading }),

@@ -12,6 +12,6 @@ describe("cn", () => {
   });
 
   it("lets later Tailwind utilities win when classes conflict", () => {
-    expect(cn("px-6 text-body", "px-4")).toBe("text-body px-4");
+    expect(cn("px-lg text-body", "px-md")).toBe("text-body px-md");
   });
 });

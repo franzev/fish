@@ -41,26 +41,26 @@ const iconSamples = [
    dev control — the only client island on an otherwise server page. */
 export default function KitPage() {
   return (
-    <main className="mx-auto max-w-form px-5 py-12">
-      <header className="mb-10">
-        <p className="mb-2 text-ui-sm uppercase tracking-widest text-muted">
+    <main className="mx-auto max-w-form px-page py-2xl">
+      <header className="mb-xl">
+        <p className="mb-xs text-ui-sm uppercase tracking-widest text-muted">
           FISH
         </p>
         <h1 className="text-4xl">UI kit</h1>
-        <p className="mt-3 text-body">
+        <p className="mt-sm text-body">
           The contract every screen is built from. Every component, every
           state, both themes.
         </p>
-        <div className="mt-6">
+        <div className="mt-lg">
           <KitThemeToggle />
         </div>
       </header>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Tokens</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Tokens</h2>
+        <div className="grid grid-cols-2 gap-sm sm:grid-cols-3">
           {tokenSwatches.map((s) => (
-            <div key={s.name} className="min-w-0 space-y-2">
+            <div key={s.name} className="min-w-0 space-y-xs">
               <div
                 className={cn(
                   "h-12 w-full rounded-control border border-border",
@@ -73,35 +73,35 @@ export default function KitPage() {
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Typography</h2>
-        <div className="space-y-5">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Typography</h2>
+        <div className="space-y-page">
           <div>
-            <p className="mb-1 text-ui-xs text-muted">Display — 32px / 600 / Fraunces</p>
+            <p className="mb-2xs text-ui-xs text-muted">Display — 32px / 600 / Fraunces</p>
             <h1 className="text-display">The whole job is to remove choices</h1>
           </div>
           <div>
-            <p className="mb-1 text-ui-xs text-muted">Heading — 20px / 600 / Fraunces</p>
+            <p className="mb-2xs text-ui-xs text-muted">Heading — 20px / 600 / Fraunces</p>
             <h2 className="text-heading-sm">Every screen, one action</h2>
           </div>
           <div>
-            <p className="mb-1 text-ui-xs text-muted">Body — 17px / 400 / Lexend</p>
+            <p className="mb-2xs text-ui-xs text-muted">Body — 17px / 400 / Lexend</p>
             <p className="text-copy text-body">
               Calm, spacious copy that reads easily and never scolds.
             </p>
           </div>
           <div>
-            <p className="mb-1 text-ui-xs text-muted">Label — 14px / 400–500 / Lexend</p>
+            <p className="mb-2xs text-ui-xs text-muted">Label — 14px / 400–500 / Lexend</p>
             <p className="text-ui-sm text-muted">Field labels, hints, and captions.</p>
           </div>
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Icons</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Icons</h2>
+        <div className="grid grid-cols-2 gap-sm sm:grid-cols-3">
           {iconSamples.map(({ name, Icon }) => (
-            <div key={name} className="min-w-0 space-y-2">
+            <div key={name} className="min-w-0 space-y-xs">
               <Icon size={20} stroke={1.75} aria-hidden="true" className="text-foreground" />
               <p className="break-words text-ui-xs text-muted">{name}</p>
             </div>
@@ -109,10 +109,10 @@ export default function KitPage() {
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Button</h2>
-        <div className="space-y-5">
-          <div className="space-y-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Button</h2>
+        <div className="space-y-page">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Variants</p>
             <Button>Get started</Button>
             <Button variant="secondary">I already have an account</Button>
@@ -120,29 +120,29 @@ export default function KitPage() {
               Need help?
             </Button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Disabled</p>
             <Button disabled>Get started</Button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Loading</p>
             <Button loading>Saving</Button>
           </div>
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Input</h2>
-        <div className="space-y-5">
-          <div className="space-y-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Input</h2>
+        <div className="space-y-page">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Default</p>
             <Input label="Email" placeholder="you@example.com" />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Disabled</p>
             <Input label="Email" placeholder="you@example.com" disabled />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Notice</p>
             <Input
               label="Email"
@@ -150,7 +150,7 @@ export default function KitPage() {
               notice="That doesn't look like an email yet. Check the spelling?"
             />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Error</p>
             <Input
               label="Email"
@@ -160,16 +160,16 @@ export default function KitPage() {
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Card</h2>
-        <div className="space-y-5">
-          <div className="space-y-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Card</h2>
+        <div className="space-y-page">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Default</p>
             <Card>
               <p className="text-body">A calm container. The basic surface everything sits on.</p>
             </Card>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-sm">
             <p className="text-ui-sm text-muted">
               Elevated (soft shadow in light, surface-step in dark)
             </p>
@@ -180,17 +180,17 @@ export default function KitPage() {
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Progress</h2>
-        <div className="space-y-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Progress</h2>
+        <div className="space-y-sm">
           <p className="text-ui-sm text-muted">Visual only — never a grade</p>
           <Progress value={40} label="Step 2 of 5" />
         </div>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-4 text-xl">Alert</h2>
-        <div className="space-y-3">
+      <section className="mb-xl">
+        <h2 className="mb-md text-xl">Alert</h2>
+        <div className="space-y-sm">
           <Alert tone="notice">
             That doesn&apos;t look like an email yet. Check the spelling?
           </Alert>

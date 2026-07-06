@@ -24,7 +24,7 @@ export function KitThemeToggle() {
   }, [mode]);
 
   return (
-    <div role="group" aria-label="Preview theme" className="flex gap-2">
+    <div role="group" aria-label="Preview theme" className="flex gap-xs">
       {(["system", "light", "dark"] as const).map((opt) => (
         <button
           key={opt}
@@ -32,7 +32,7 @@ export function KitThemeToggle() {
           onClick={() => setMode(opt)}
           aria-pressed={mode === opt}
           className={cn(
-            "min-h-control rounded-control border px-4 text-ui transition-colors",
+            "min-h-control rounded-control border px-md text-ui transition-colors",
             // Active state signals with color only — a font-weight flip
             // would resize the buttons on every click (layout stability).
             mode === opt

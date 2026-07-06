@@ -79,6 +79,15 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it("loading state disables native activation, including submit buttons with no onClick", () => {
+    const { getByRole } = render(
+      <Button type="submit" loading>
+        Log in
+      </Button>
+    );
+    expect(getByRole("button", { name: "Log in" })).toBeDisabled();
+  });
+
   it("does not mark a non-loading button as busy", () => {
     const { getByRole } = render(<Button>Get started</Button>);
     const button = getByRole("button");
@@ -159,7 +168,7 @@ describe("Button layout stability", () => {
     const spinner = button.querySelector(".animate-spin");
     expect(spinner).not.toBeNull();
     expect(spinner!.className).toContain("absolute");
-    expect(spinner!.className).not.toContain("mr-2");
+    expect(spinner!.className).not.toContain("mr-xs");
   });
 
   it("every variant carries a constant border width so no variant changes the box model", () => {
