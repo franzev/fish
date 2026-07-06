@@ -1,5 +1,6 @@
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
 import type {
+  ClientChatData,
   ClientOnboardingData,
   ClientTrackerData,
   CoachClientListItem,
@@ -82,6 +83,11 @@ export interface CoachClientOnboardingReviewPageData {
 export interface ClientTrackerPageData {
   role: UserRole;
   tracker: ClientTrackerData | null;
+}
+
+export interface ChatPageData {
+  role: UserRole;
+  chat: ClientChatData | null;
 }
 
 export interface CoachClientTrackerReviewPageData {
@@ -424,6 +430,25 @@ export async function getClientTrackerData(): Promise<ClientTrackerPageData | nu
   return {
     role: profile.role,
     tracker: trackerResult.data,
+  };
+}
+
+export async function getChatPageData(): Promise<ChatPageData | null> {
+  const services = await createServerSupabaseServices();
+  const profile = await getCurrentProfile(services);
+
+  if (!profile) {
+    return null;
+  }
+
+  const chatResult = await services.database.chat.getAssignedConversation();
+  if (!chatResult.ok) {
+    throw chatResult.error;
+  }
+
+  return {
+    role: profile.role,
+    chat: chatResult.data,
   };
 }
 

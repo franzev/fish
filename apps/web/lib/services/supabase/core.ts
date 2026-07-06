@@ -7,6 +7,9 @@ import {
 } from "../errors";
 import type {
   AppSupabaseClient,
+  ClientChatMessage,
+  ClientChatData,
+  ChatRepository,
   ClientProfileRepository,
   ClientProfileSafeFields,
   ClientTrackerAnswer,
@@ -42,6 +45,8 @@ import type {
 import type {
   ClientProfileRow,
   CoachClientRow,
+  MessageRow,
+  ConversationRow,
   Json,
   OnboardingAnswerRow,
   OnboardingAssessmentVersionRow,
@@ -1400,12 +1405,149 @@ function groupCoachTrackerEntries(
   }));
 }
 
+class SupabaseChatRepository implements ChatRepository {
+  constructor(private readonly client: AppSupabaseClient) {}
+
+  async getAssignedConversation(): Promise<ServiceResult<ClientChatData | null>> {
+    return safely("chat.getAssignedConversation", async () => {
+      const { data: userData, error: userError } = await this.client.auth.getUser();
+      if (userError) {
+        return serviceFailure(
+          mapSupabaseError(userError, {
+            code: "auth",
+            fallbackMessage: "Could not read the current user.",
+            operation: "chat.getAssignedConversation",
+            recoverable: true,
+          })
+        );
+      }
+
+      const userId = userData.user?.id;
+      if (!userId) return serviceSuccess(null);
+
+      const { data: profile, error: profileError } = (await this.client
+        .from("profiles")
+        .select("id, role, display_name")
+        .eq("id", userId)
+        .maybeSingle()) as SupabaseResponse<Pick<ProfileRow, "id" | "role" | "display_name">>;
+
+      if (profileError) {
+        return serviceFailure(
+          mapSupabaseError(profileError, {
+            code: "database",
+            fallbackMessage: "Could not load your profile.",
+            operation: "chat.getAssignedConversation.profile",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!profile || (profile.role !== "client" && profile.role !== "coach")) {
+        return serviceSuccess(null);
+      }
+
+      const { data: conversations, error: conversationError } = (await this.client
+        .from("conversations")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)) as {
+        data: ConversationRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (conversationError) {
+        return serviceFailure(
+          mapSupabaseError(conversationError, {
+            code: "database",
+            fallbackMessage: "Could not load your conversation.",
+            operation: "chat.getAssignedConversation.conversation",
+            recoverable: true,
+          })
+        );
+      }
+
+      const conversation = conversations?.[0];
+      if (!conversation) return serviceSuccess(null);
+
+      const participantId = conversation.client_id === userId
+        ? conversation.coach_id
+        : conversation.client_id;
+      const { data: participant, error: participantError } = (await this.client
+        .from("profiles")
+        .select("id, role, display_name")
+        .eq("id", participantId)
+        .maybeSingle()) as SupabaseResponse<Pick<ProfileRow, "id" | "role" | "display_name">>;
+
+      if (participantError) {
+        return serviceFailure(
+          mapSupabaseError(participantError, {
+            code: "database",
+            fallbackMessage: "Could not load the conversation member.",
+            operation: "chat.getAssignedConversation.participant",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (!participant || (participant.role !== "client" && participant.role !== "coach")) {
+        return serviceSuccess(null);
+      }
+
+      const { data: messages, error: messageError } = (await this.client
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversation.id)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })) as {
+        data: MessageRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (messageError) {
+        return serviceFailure(
+          mapSupabaseError(messageError, {
+            code: "database",
+            fallbackMessage: "Could not load messages.",
+            operation: "chat.getAssignedConversation.messages",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess({
+        conversationId: conversation.id,
+        currentUserId: userId,
+        currentUserRole: profile.role,
+        participant: {
+          id: participant.id,
+          displayName: participant.display_name,
+          role: participant.role,
+        },
+        messages: (messages ?? []).map(toClientChatMessage),
+      });
+    });
+  }
+}
+
+function toClientChatMessage(row: MessageRow): ClientChatMessage {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    senderId: row.sender_id,
+    senderRole: row.sender_role as ClientChatMessage["senderRole"],
+    body: row.body,
+    clientRequestId: row.client_request_id,
+    createdAt: row.created_at,
+  };
+}
+
 class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
   readonly onboarding: OnboardingRepository;
   readonly tracker: TrackerRepository;
+  readonly chat: ChatRepository;
 
   constructor(readonly client: AppSupabaseClient) {
     this.profiles = new SupabaseProfileRepository(client);
@@ -1413,6 +1555,7 @@ class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
     this.clientProfiles = new SupabaseClientProfileRepository(client);
     this.onboarding = new SupabaseOnboardingRepository(client);
     this.tracker = new SupabaseTrackerRepository(client);
+    this.chat = new SupabaseChatRepository(client);
   }
 }
 

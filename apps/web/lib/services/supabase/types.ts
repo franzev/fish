@@ -300,6 +300,34 @@ export interface TrackerRepository {
   getCoachReview(clientId: string): Promise<ServiceResult<CoachTrackerReviewData | null>>;
 }
 
+export interface ClientChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderRole: "client" | "coach";
+  body: string;
+  clientRequestId: string;
+  createdAt: string;
+}
+
+export interface ClientChatParticipant {
+  id: string;
+  displayName: string;
+  role: "client" | "coach";
+}
+
+export interface ClientChatData {
+  conversationId: string;
+  currentUserId: string;
+  currentUserRole: "client" | "coach";
+  participant: ClientChatParticipant;
+  messages: ClientChatMessage[];
+}
+
+export interface ChatRepository {
+  getAssignedConversation(): Promise<ServiceResult<ClientChatData | null>>;
+}
+
 export interface SupabaseDatabaseService {
   readonly client: AppSupabaseClient;
   readonly profiles: ProfileRepository;
@@ -307,6 +335,7 @@ export interface SupabaseDatabaseService {
   readonly clientProfiles: ClientProfileRepository;
   readonly onboarding: OnboardingRepository;
   readonly tracker: TrackerRepository;
+  readonly chat: ChatRepository;
 }
 
 export interface SupabaseStorageService {
