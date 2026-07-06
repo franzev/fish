@@ -1,22 +1,22 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: The Coaching Loop Foundation
-status: complete
-stopped_at: Quick task 260706-rsd removed stale color wording and retired unvalidated learning-flow implementations
-last_updated: "2026-07-06T00:00:00Z"
-last_activity: 2026-07-06
+milestone: v1.2
+milestone_name: Cross-platform Chat State Foundation
+status: planning
+stopped_at: Phase 9 added for cross-platform chat state planning
+last_updated: "2026-07-07T00:00:00Z"
+last_activity: 2026-07-07
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: FISH
 
-**Last updated:** 2026-07-06
+**Last updated:** 2026-07-07
 
 ## Project Reference
 
@@ -24,14 +24,14 @@ See: .planning/PROJECT.md
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
-- **Current focus:** Post-removal verification and next-milestone selection.
+- **Current focus:** Phase 9 planning for cross-platform chat state.
 
 ## Current Position
 
-Phase: none active
-Status: v1.1 is re-scoped to shipped foundations: client profiles plus persistent 1-on-1 chat. The unvalidated learning-flow implementations were removed from active code, schema contracts, seed data, and release gates.
+Phase: 9 — Cross-platform Chat State
+Status: Planning. v1.1 remains shipped; v1.2 starts by extracting chat state into portable contracts and a web Zustand adapter without adding client-facing choice surfaces.
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Milestone v1.1 Phases
 
@@ -42,6 +42,12 @@ Progress: [██████████] 100%
 | 8 | Real Chat Route + send-message Edge Function | Phase 7 | CHAT-02/03/05/07 | Complete |
 
 Removed 2026-07-06: the previously built learning-flow engines are no longer part of the active product.
+
+## Milestone v1.2 Phases
+
+| Phase | Name | Depends on | Requirements | Status |
+|-------|------|------------|--------------|--------|
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Pending |
 
 ## Archived Milestones
 
@@ -61,10 +67,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - Dev origin must match the browser exactly: `localhost:3001` (host-scoped cookies), pinned via `next dev -p 3001` + Supabase `site_url`.
 - Product-facing a11y prefs hydrate at the authenticated shell level so every authenticated route inherits theme/text-size/reduced-motion.
 - `send_chat_message` is the database-owned chat write boundary; the Edge Function verifies JWT/membership and delegates the insert.
+- Chat state portability decision: the durable chat brain should be a small event/result state machine with JSON fixtures; Zustand is only the web adapter, while Android/iOS use native state containers.
 
 ### Todos / open questions
 
-- [ ] Choose the next milestone now that the product foundation is profile + chat only.
+- [ ] Plan and execute Phase 9 cross-platform chat state.
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
@@ -88,11 +95,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-06
+**Last session:** 2026-07-07
 
-- **Last activity:** Quick task 260706-rsd cleanup and verification.
-- **Stopped at:** No active phase; choose the next milestone/workstream after verification.
-- **Next action:** Run the standard verification gates and commit this quick task.
+- **Last activity:** Opened v1.2 Phase 9 for cross-platform chat state planning.
+- **Stopped at:** Phase 9 planning setup.
+- **Next action:** Run `$gsd-plan-phase 9 --skip-ui`.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*

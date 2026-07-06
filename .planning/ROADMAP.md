@@ -6,6 +6,7 @@
 
 - ✅ **v1.0 Monochrome Foundations** — Phases 1-3 (shipped 2026-07-04) — [archive](milestones/v1.0-ROADMAP.md)
 - ✅ **v1.1 The Coaching Loop Foundation** — Phases 4, 7, 8 (re-scoped 2026-07-06) — profiles plus real persistent 1-on-1 chat
+- ◆ **v1.2 Cross-platform Chat State Foundation** — Phase 9 — portable chat state contracts plus a web Zustand adapter
 
 ## Phases
 
@@ -27,6 +28,10 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 - [x] **Phase 8: Real Chat Route + send-message Edge Function** - A client and coach hold a real persisted 1-on-1 conversation through the live route and real Edge Function (completed 2026-07-06)
 
 Removed 2026-07-06: the previously built learning-flow engines are no longer part of this milestone or the active product.
+
+### v1.2 Cross-platform Chat State Foundation
+
+- [ ] **Phase 9: Cross-platform Chat State** - Chat state rules become portable and test-vector-backed; web adopts Zustand only as the React adapter for shared chat surfaces while Android/iOS get the same event contract to implement natively.
 
 ## Phase Details
 
@@ -62,6 +67,16 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 08-01-SUMMARY.md — real `/chat` route, `send-message` Edge Function, optimistic send lifecycle, draft-preserving failure state, validation, RLS/security, and Playwright cross-role E2E
 
+### Phase 9: Cross-platform Chat State
+
+**Goal**: Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
+**Depends on**: Phase 8
+**Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
+
+**Plans**: 0 plans
+
+- [ ] TBD (run `$gsd-plan-phase 9 --skip-ui` to break down)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -72,6 +87,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
+| 9. Cross-platform Chat State | v1.2 | 0/0 | Pending | |
 
 ---
-*Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06*
+*Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*
