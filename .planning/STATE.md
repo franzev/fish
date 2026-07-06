@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: planning
-stopped_at: Phase 9 added for cross-platform chat state planning
-last_updated: "2026-07-07T00:00:00Z"
-last_activity: 2026-07-07
+status: ready_to_execute
+stopped_at: Phase 9 planned; ready to execute 4 plans across 3 waves.
+last_updated: "2026-07-06T23:03:53.098Z"
+last_activity: Opened v1.2 Phase 9 for cross-platform chat state planning.
 progress:
   total_phases: 1
   completed_phases: 0
@@ -24,12 +24,12 @@ See: .planning/PROJECT.md
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
-- **Current focus:** Phase 9 planning for cross-platform chat state.
+- **Current focus:** Phase 9 execution for cross-platform chat state.
 
 ## Current Position
 
 Phase: 9 — Cross-platform Chat State
-Status: Planning. v1.1 remains shipped; v1.2 starts by extracting chat state into portable contracts and a web Zustand adapter without adding client-facing choice surfaces.
+Status: Ready to execute. Phase 9 has 4 verified plans across 3 waves to extract chat state into portable contracts and a web Zustand adapter without adding client-facing choice surfaces.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -47,7 +47,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Pending |
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Planned |
 
 ## Archived Milestones
 
@@ -71,7 +71,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ### Todos / open questions
 
-- [ ] Plan and execute Phase 9 cross-platform chat state.
+- [ ] Execute Phase 9 cross-platform chat state.
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
@@ -97,9 +97,9 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Last session:** 2026-07-07
 
-- **Last activity:** Opened v1.2 Phase 9 for cross-platform chat state planning.
-- **Stopped at:** Phase 9 planning setup.
-- **Next action:** Run `$gsd-plan-phase 9 --skip-ui`.
+- **Last activity:** Planned Phase 9 cross-platform chat state and verified 4 plans with the GSD plan checker.
+- **Stopped at:** Phase 9 is ready to execute.
+- **Next action:** Run `$gsd-execute-phase 09`.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*

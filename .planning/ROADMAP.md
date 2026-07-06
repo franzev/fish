@@ -72,13 +72,19 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
-
 **Plans**: 4 plans
+**Wave 1**
 
 - [ ] 09-01-PLAN.md — portable chat-state core, fixture vectors, dependency boundary tests, and web helper shim
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 09-02-PLAN.md — web chat hook extraction for messages, read state, realtime, presence, and composer behavior
-- [ ] 09-03-PLAN.md — web-only Zustand adapter, narrow selectors, hook integration, and release gates
 - [ ] 09-04-PLAN.md — platform-neutral protocol docs and Android/iOS native architecture notes
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 09-03-PLAN.md — web-only Zustand adapter, narrow selectors, hook integration, and release gates
 
 ## Progress
 
