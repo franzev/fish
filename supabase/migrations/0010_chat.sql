@@ -171,6 +171,7 @@ create or replace function public.send_chat_message(
 returns public.messages
 language plpgsql
 security definer
+volatile
 set search_path = ''
 as $$
 declare
