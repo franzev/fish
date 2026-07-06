@@ -114,6 +114,11 @@ describe("ChatClient hook boundaries", () => {
     expect(chatClientSource).toContain(`from "./hooks/use-chat-presence"`);
     expect(chatClientSource).toContain("useChatPresence(");
   });
+
+  it("delegates composer command behavior to a focused hook", () => {
+    expect(chatClientSource).toContain(`from "./hooks/use-chat-composer"`);
+    expect(chatClientSource).toContain("useChatComposer(");
+  });
 });
 
 describe("ChatClient", () => {
