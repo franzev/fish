@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./chat": "./src/chat.ts",
+    "./chat-state": "./src/chat-state/index.ts",
     "./roles": "./src/roles.ts"
   },
   "scripts": {

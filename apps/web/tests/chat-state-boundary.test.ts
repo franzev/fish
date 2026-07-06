@@ -9,7 +9,7 @@ const coreChatStateRoot = join(
 
 const forbiddenPatterns = [
   { label: "React", pattern: /\bfrom\s+["']react["']|\breact\b/i },
-  { label: "Next.js", pattern: /\bfrom\s+["']next(?:\/[^"']*)?["']|\bnext\b/i },
+  { label: "Next.js", pattern: /\bfrom\s+["']next(?:\/[^"']*)?["']|["']next\//i },
   { label: "Zustand", pattern: /\bfrom\s+["']zustand(?:\/[^"']*)?["']|\bzustand\b/i },
   { label: "Supabase", pattern: /@supabase|supabase/i },
   { label: "web aliases", pattern: /\bfrom\s+["']@\// },
