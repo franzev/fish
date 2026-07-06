@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
@@ -92,6 +94,20 @@ const chat: ClientChatData = {
     sessions: [],
   },
 };
+
+describe("ChatClient hook boundaries", () => {
+  const chatClientSource = readFileSync(
+    join(process.cwd(), "app/(authenticated)/chat/chat-client.tsx"),
+    "utf8"
+  );
+
+  it("delegates message and read-state behavior to focused hooks", () => {
+    expect(chatClientSource).toContain(`from "./hooks/use-chat-messages"`);
+    expect(chatClientSource).toContain("useChatMessages(");
+    expect(chatClientSource).toContain(`from "./hooks/use-chat-read-state"`);
+    expect(chatClientSource).toContain("useChatReadState(");
+  });
+});
 
 describe("ChatClient", () => {
   beforeEach(() => {
