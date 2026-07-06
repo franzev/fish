@@ -18,10 +18,8 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
-  countUnreadMessages,
   getMessageSnippet,
   getOutgoingMessageStatus,
-  mergeChatMessage,
 } from "./chat-state";
 import { cn } from "@/lib/utils";
 import {
@@ -39,8 +37,14 @@ import {
   IconX,
   IconMessageReply,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SendMessageActionState } from "./actions";
+import {
+  type LocalMessage,
+  mergeMessage,
+  useChatMessages,
+} from "./hooks/use-chat-messages";
+import { useChatReadState } from "./hooks/use-chat-read-state";
 import {
   type ConversationVoiceRecordingSubscription,
   type ConversationTypingSubscription,
@@ -52,12 +56,6 @@ import {
   subscribeToConversationTyping,
   startPresenceSession,
 } from "./realtime";
-
-type LocalStatus = "pending" | "sent" | "failed";
-
-type LocalMessage = ClientChatMessage & {
-  localStatus: LocalStatus;
-};
 
 interface ChatClientProps {
   chat: ClientChatData;
@@ -90,39 +88,6 @@ function makeRequestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
 }
 
-function toLocalMessage(message: ClientChatMessage): LocalMessage {
-  return {
-    ...message,
-    editedAt: message.editedAt ?? null,
-    deletedAt: message.deletedAt ?? null,
-    replyToMessageId: message.replyToMessageId ?? null,
-    reactions: message.reactions ?? [],
-    localStatus: "sent",
-  };
-}
-
-function mergeMessage(
-  current: LocalMessage[],
-  incomingMessage: ClientChatMessage,
-  localRequestId = incomingMessage.clientRequestId
-): LocalMessage[] {
-  return mergeChatMessage(current, toLocalMessage(incomingMessage), localRequestId);
-}
-
-function mergeReadState(
-  current: ClientChatReadState[],
-  incoming: ClientChatReadState
-): ClientChatReadState[] {
-  const existingIndex = current.findIndex((state) => state.userId === incoming.userId);
-  if (existingIndex === -1) {
-    return [...current, incoming];
-  }
-
-  const next = [...current];
-  next[existingIndex] = incoming;
-  return next;
-}
-
 function visibleMessageBody(message: ClientChatMessage): string {
   return message.deletedAt ? "Message deleted" : message.body;
 }
@@ -137,14 +102,29 @@ export function ChatClient({
   refreshMessagesAction,
   refreshConversationAction,
 }: ChatClientProps) {
-  const initialMessages = useMemo(
-    () => chat.messages.map(toLocalMessage),
-    [chat.messages]
+  const refreshedReadStatesRef = useRef<(readStates: ClientChatReadState[]) => void>(
+    () => undefined
   );
-  const [messages, setMessages] = useState<LocalMessage[]>(initialMessages);
-  const [readStates, setReadStates] = useState<ClientChatReadState[]>(
-    () => chat.readStates ?? []
-  );
+  const { messages, setMessages, refreshMessages, refreshConversation } =
+    useChatMessages({
+      chat,
+      refreshMessagesAction,
+      refreshConversationAction,
+      onReadStatesRefreshed(readStates) {
+        refreshedReadStatesRef.current(readStates);
+      },
+    });
+  const {
+    mergeReadState,
+    mergeReadStates,
+    participantReadState,
+    unreadCount,
+  } = useChatReadState({
+    chat,
+    messages,
+    markReadStateAction,
+  });
+  refreshedReadStatesRef.current = mergeReadStates;
   const [participantPresenceSessions, setParticipantPresenceSessions] = useState<
     ClientChatPresenceSession[]
   >(() => chat.participantPresence?.sessions ?? []);
@@ -164,22 +144,10 @@ export function ChatClient({
   const localTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const participantTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const participantRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const messageIdsRef = useRef<string[]>([]);
   const timeFormatPref = useTimeFormatPreference();
 
   const trimmedDraft = draft.trim();
   const canSend = trimmedDraft.length > 0;
-  const currentUserReadState = readStates.find(
-    (state) => state.userId === chat.currentUserId
-  );
-  const participantReadState = readStates.find(
-    (state) => state.userId === chat.participant.id
-  );
-  const unreadCount = countUnreadMessages(
-    messages,
-    chat.currentUserId,
-    currentUserReadState
-  );
   const participantPresence = derivePresenceSnapshot(
     participantPresenceSessions,
     now
@@ -221,62 +189,6 @@ export function ChatClient({
   }, [chat.currentUserId, messages]);
 
   useEffect(() => {
-    messageIdsRef.current = messages.map((message) => message.id);
-  }, [messages]);
-
-  const refreshMessages = useCallback(
-    async (messageIds: string[]) => {
-      if (!refreshMessagesAction || messageIds.length === 0) {
-        return;
-      }
-
-      const result = await refreshMessagesAction({
-        messageIds: Array.from(new Set(messageIds)),
-      }).catch(() => null);
-
-      if (result?.status === "sent" && result.messages) {
-        setMessages((current) =>
-          result.messages!.reduce(
-            (next, message) => mergeMessage(next, message),
-            current
-          )
-        );
-      }
-    },
-    [refreshMessagesAction]
-  );
-
-  const refreshConversation = useCallback(async () => {
-    if (!refreshConversationAction) {
-      void refreshMessages(messageIdsRef.current);
-      return;
-    }
-
-    const result = await refreshConversationAction({
-      conversationId: chat.conversationId,
-    }).catch(() => null);
-
-    if (result?.status !== "sent") {
-      return;
-    }
-
-    if (result.messages) {
-      setMessages((current) =>
-        result.messages!.reduce((next, message) => mergeMessage(next, message), current)
-      );
-    }
-
-    if (result.readStates) {
-      setReadStates((current) =>
-        result.readStates!.reduce(
-          (next, readState) => mergeReadState(next, readState),
-          current
-        )
-      );
-    }
-  }, [chat.conversationId, refreshConversationAction, refreshMessages]);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       setNow(new Date());
     }, 15000);
@@ -310,13 +222,13 @@ export function ChatClient({
     return subscribeToConversationReadStates(
       chat.conversationId,
       (readState) => {
-        setReadStates((current) => mergeReadState(current, readState));
+        mergeReadState(readState);
       },
       () => {
         void refreshConversation();
       }
     );
-  }, [chat.conversationId, refreshConversation]);
+  }, [chat.conversationId, mergeReadState, refreshConversation]);
 
   useEffect(() => {
     return subscribeToConversationReactionChanges(
@@ -415,44 +327,6 @@ export function ChatClient({
       }
     };
   }, [chat.conversationId, chat.currentUserId]);
-
-  useEffect(() => {
-    if (!markReadStateAction) {
-      return;
-    }
-
-    const latestParticipantMessage = [...messages]
-      .reverse()
-      .find((message) => message.senderId !== chat.currentUserId);
-
-    if (!latestParticipantMessage) {
-      return;
-    }
-
-    if (
-      currentUserReadState?.lastReadMessageId === latestParticipantMessage.id &&
-      currentUserReadState?.lastDeliveredMessageId === latestParticipantMessage.id
-    ) {
-      return;
-    }
-
-    void markReadStateAction({
-      conversationId: chat.conversationId,
-      lastDeliveredMessageId: latestParticipantMessage.id,
-      lastReadMessageId: latestParticipantMessage.id,
-    }).then((result) => {
-      if (result.status === "sent" && result.readState) {
-        setReadStates((current) => mergeReadState(current, result.readState!));
-      }
-    }).catch(() => undefined);
-  }, [
-    chat.conversationId,
-    chat.currentUserId,
-    currentUserReadState?.lastDeliveredMessageId,
-    currentUserReadState?.lastReadMessageId,
-    markReadStateAction,
-    messages,
-  ]);
 
   function sendLocalTyping(typing: boolean) {
     if (localTypingRef.current === typing) {
