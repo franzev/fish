@@ -22,7 +22,6 @@ import {
 } from "./chat-state";
 import { cn } from "@/lib/utils";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
-import { chatLimits } from "@fish/core/chat";
 import {
   IconMicrophone,
   IconPencil,
@@ -34,11 +33,8 @@ import {
 } from "@tabler/icons-react";
 import { useMemo, useRef, useState } from "react";
 import type { SendMessageActionState } from "./actions";
-import {
-  type LocalMessage,
-  mergeMessage,
-  useChatMessages,
-} from "./hooks/use-chat-messages";
+import { useChatComposer } from "./hooks/use-chat-composer";
+import { useChatMessages } from "./hooks/use-chat-messages";
 import { useChatPresence } from "./hooks/use-chat-presence";
 import { useChatReadState } from "./hooks/use-chat-read-state";
 import { useChatRealtime } from "./hooks/use-chat-realtime";
@@ -68,10 +64,6 @@ interface ChatClientProps {
     messages?: ClientChatMessage[];
     readStates?: ClientChatReadState[];
   }>;
-}
-
-function makeRequestId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
 }
 
 function visibleMessageBody(message: ClientChatMessage): string {
@@ -111,11 +103,7 @@ export function ChatClient({
     markReadStateAction,
   });
   refreshedReadStatesRef.current = mergeReadStates;
-  const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const timeFormatPref = useTimeFormatPreference();
   const {
     participantTyping,
@@ -133,15 +121,35 @@ export function ChatClient({
     refreshConversation,
   });
   const { presenceStatus } = useChatPresence({ chat, timeFormatPref });
+  const {
+    draft,
+    notice,
+    canSend,
+    replyingTo,
+    editingMessage,
+    handleDraftChange,
+    handleSend,
+    sendWithRequestId,
+    handleDeleteMessage,
+    handleToggleReaction,
+    startReplyingToMessage,
+    startEditingMessage,
+    cancelReply,
+    cancelEdit,
+    handleComposerKeyDown,
+  } = useChatComposer({
+    chat,
+    messages,
+    setMessages,
+    sendMessageAction,
+    editMessageAction,
+    deleteMessageAction,
+    toggleReactionAction,
+    sendLocalTyping,
+    stopLocalTyping,
+    scheduleLocalTypingStop,
+  });
 
-  const trimmedDraft = draft.trim();
-  const canSend = trimmedDraft.length > 0;
-  const replyingTo = replyingToId
-    ? messages.find((message) => message.id === replyingToId) ?? null
-    : null;
-  const editingMessage = editingMessageId
-    ? messages.find((message) => message.id === editingMessageId) ?? null
-    : null;
   const filteredMessages = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -162,182 +170,6 @@ export function ChatClient({
 
     return null;
   }, [chat.currentUserId, messages]);
-
-  function handleDraftChange(value: string) {
-    setDraft(value);
-    setNotice(null);
-
-    if (value.trim().length === 0) {
-      stopLocalTyping();
-      return;
-    }
-
-    sendLocalTyping(true);
-
-    scheduleLocalTypingStop();
-  }
-
-  async function sendWithRequestId(
-    body: string,
-    clientRequestId: string,
-    replyToMessageId: string | null,
-    clearComposer = false
-  ) {
-    setNotice(null);
-    stopLocalTyping();
-
-    const optimistic: LocalMessage = {
-      id: clientRequestId,
-      conversationId: chat.conversationId,
-      senderId: chat.currentUserId,
-      senderRole: chat.currentUserRole,
-      body,
-      clientRequestId,
-      editedAt: null,
-      deletedAt: null,
-      replyToMessageId,
-      reactions: [],
-      createdAt: new Date().toISOString(),
-      localStatus: "pending",
-    };
-
-    setMessages((current) => {
-      const exists = current.some(
-        (message) => message.clientRequestId === clientRequestId
-      );
-      return exists
-        ? current.map((message) =>
-            message.clientRequestId === clientRequestId ? optimistic : message
-          )
-        : [...current, optimistic];
-    });
-
-    if (clearComposer) {
-      setDraft("");
-      setReplyingToId(null);
-    }
-
-    const result = await sendMessageAction({
-      conversationId: chat.conversationId,
-      body,
-      clientRequestId,
-      replyToMessageId,
-    }).catch(() => ({
-      status: "notice" as const,
-      values: {},
-      notice: "That did not send yet. Keep this open and try again.",
-    }));
-
-    if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That did not send yet. Keep this open and try again.");
-      setMessages((current) =>
-        current.map((message) =>
-          message.clientRequestId === clientRequestId
-            ? { ...message, localStatus: "failed" }
-            : message
-        )
-      );
-      return;
-    }
-
-    const sentMessage = result.message;
-    setMessages((current) =>
-      mergeMessage(current, sentMessage, clientRequestId)
-    );
-  }
-
-  async function handleEditMessage(body: string) {
-    if (!editingMessageId || !editMessageAction) {
-      return;
-    }
-
-    setNotice(null);
-    const result = await editMessageAction({
-      messageId: editingMessageId,
-      body,
-    }).catch(() => ({
-      status: "notice" as const,
-      values: {},
-      notice: "That did not save yet. Keep this open and try again.",
-    }));
-
-    if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That did not save yet. Keep this open and try again.");
-      return;
-    }
-
-    setMessages((current) => mergeMessage(current, result.message!));
-    setDraft("");
-    setEditingMessageId(null);
-  }
-
-  async function handleSend() {
-    if (trimmedDraft.length === 0) {
-      setNotice("Add a message before sending.");
-      return;
-    }
-
-    if (trimmedDraft.length > chatLimits.messageBodyMaxLength) {
-      setNotice("This message is a little long. Try sending it in two parts.");
-      return;
-    }
-
-    if (editingMessageId) {
-      await handleEditMessage(trimmedDraft);
-      return;
-    }
-
-    await sendWithRequestId(trimmedDraft, makeRequestId(), replyingToId, true);
-  }
-
-  async function handleDeleteMessage(message: LocalMessage) {
-    if (!deleteMessageAction) {
-      setNotice("That action is not available yet.");
-      return;
-    }
-
-    const result = await deleteMessageAction({ messageId: message.id }).catch(() => ({
-      status: "notice" as const,
-      values: {},
-      notice: "That did not delete yet. Keep this open and try again.",
-    }));
-    if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That did not delete yet. Keep this open and try again.");
-      return;
-    }
-
-    setMessages((current) => mergeMessage(current, result.message!));
-  }
-
-  async function handleToggleReaction(message: LocalMessage, emoji: string) {
-    if (!toggleReactionAction) {
-      setNotice("That reaction did not save yet. Keep this open and try again.");
-      return;
-    }
-
-    const result = await toggleReactionAction({
-      messageId: message.id,
-      emoji,
-    }).catch(() => ({
-      status: "notice" as const,
-      values: {},
-      notice: "That reaction did not save yet. Keep this open and try again.",
-    }));
-
-    if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That reaction did not save yet. Keep this open and try again.");
-      return;
-    }
-
-    setMessages((current) => mergeMessage(current, result.message!));
-  }
-
-  function startEditingMessage(message: LocalMessage) {
-    setEditingMessageId(message.id);
-    setReplyingToId(null);
-    setDraft(message.body);
-    setNotice(null);
-  }
 
   return (
     <section
@@ -484,11 +316,7 @@ export function ChatClient({
                         <button
                           type="button"
                           aria-label="Reply to message"
-                          onClick={() => {
-                            setReplyingToId(message.id);
-                            setEditingMessageId(null);
-                            setNotice(null);
-                          }}
+                          onClick={() => startReplyingToMessage(message)}
                           className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                         >
                           <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
@@ -609,7 +437,7 @@ export function ChatClient({
               <button
                 type="button"
                 aria-label="Cancel reply"
-                onClick={() => setReplyingToId(null)}
+                onClick={cancelReply}
                 className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
               >
                 <IconX size={18} stroke={1.75} aria-hidden="true" />
@@ -622,10 +450,7 @@ export function ChatClient({
               <button
                 type="button"
                 aria-label="Cancel edit"
-                onClick={() => {
-                  setEditingMessageId(null);
-                  setDraft("");
-                }}
+                onClick={cancelEdit}
                 className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
               >
                 <IconX size={18} stroke={1.75} aria-hidden="true" />
@@ -658,14 +483,7 @@ export function ChatClient({
             handleDraftChange(event.target.value);
           }}
           onBlur={stopLocalTyping}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter" || event.shiftKey) {
-              return;
-            }
-
-            event.preventDefault();
-            void handleSend();
-          }}
+          onKeyDown={handleComposerKeyDown}
           rows={1}
           enterKeyHint="send"
           className="min-h-control flex-1 resize-none rounded-control border border-border bg-surface px-md py-field-y text-copy text-foreground placeholder:text-muted focus:border-primary"
