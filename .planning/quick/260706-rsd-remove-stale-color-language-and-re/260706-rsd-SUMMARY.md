@@ -3,7 +3,7 @@ quick_id: 260706-rsd
 slug: remove-stale-color-language-and-re
 status: complete
 completed: 2026-07-06
-commit: 803d9b0
+commit: f099a9e
 ---
 
 # Quick Task 260706-rsd Summary

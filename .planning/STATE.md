@@ -84,7 +84,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260704-kfb | Design and implement production-ready service abstraction architecture | 2026-07-04 | 3c1ec95 | [260704-kfb-design-and-implement-a-production-ready-](./quick/260704-kfb-design-and-implement-a-production-ready-/) |
 | 260705-amu | Bootstrap the iOS project and configure foundational UI infrastructure | 2026-07-04 | 8c60efe | [260705-amu-bootstrap-the-ios-project-and-configure-](./quick/260705-amu-bootstrap-the-ios-project-and-configure-/) |
 | 260705-gby | Implement authentication improvements across web, iOS, and Android | 2026-07-05 | f494ca9 | [260705-gby-implement-authentication-improvements-ac](./quick/260705-gby-implement-authentication-improvements-ac/) |
-| 260706-rsd | Remove stale color wording and retire unvalidated learning-flow implementations | 2026-07-06 | 803d9b0 | [260706-rsd-remove-stale-color-language-and-re](./quick/260706-rsd-remove-stale-color-language-and-re/) |
+| 260706-rsd | Remove stale color wording and retire unvalidated learning-flow implementations | 2026-07-06 | f099a9e | [260706-rsd-remove-stale-color-language-and-re](./quick/260706-rsd-remove-stale-color-language-and-re/) |
 
 ## Session Continuity
 
