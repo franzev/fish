@@ -3,7 +3,6 @@
 import type {
   ClientChatData,
   ClientChatMessage,
-  ClientChatPresenceSession,
   ClientChatReadState,
 } from "@/lib/services";
 import {
@@ -22,10 +21,6 @@ import {
   getOutgoingMessageStatus,
 } from "./chat-state";
 import { cn } from "@/lib/utils";
-import {
-  derivePresenceSnapshot,
-  formatPresenceStatus,
-} from "./presence";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import { chatLimits } from "@fish/core/chat";
 import {
@@ -37,25 +32,16 @@ import {
   IconX,
   IconMessageReply,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { SendMessageActionState } from "./actions";
 import {
   type LocalMessage,
   mergeMessage,
   useChatMessages,
 } from "./hooks/use-chat-messages";
+import { useChatPresence } from "./hooks/use-chat-presence";
 import { useChatReadState } from "./hooks/use-chat-read-state";
-import {
-  type ConversationVoiceRecordingSubscription,
-  type ConversationTypingSubscription,
-  subscribeToConversationMessages,
-  subscribeToConversationReadStates,
-  subscribeToConversationReactionChanges,
-  subscribeToConversationVoiceRecording,
-  subscribeToParticipantPresence,
-  subscribeToConversationTyping,
-  startPresenceSession,
-} from "./realtime";
+import { useChatRealtime } from "./hooks/use-chat-realtime";
 
 interface ChatClientProps {
   chat: ClientChatData;
@@ -125,42 +111,31 @@ export function ChatClient({
     markReadStateAction,
   });
   refreshedReadStatesRef.current = mergeReadStates;
-  const [participantPresenceSessions, setParticipantPresenceSessions] = useState<
-    ClientChatPresenceSession[]
-  >(() => chat.participantPresence?.sessions ?? []);
-  const [now, setNow] = useState(() => new Date());
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
-  const [participantTyping, setParticipantTyping] = useState(false);
-  const [participantRecording, setParticipantRecording] = useState(false);
-  const [localRecording, setLocalRecording] = useState(false);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const typingSubscriptionRef = useRef<ConversationTypingSubscription | null>(null);
-  const voiceSubscriptionRef =
-    useRef<ConversationVoiceRecordingSubscription | null>(null);
-  const localTypingRef = useRef(false);
-  const localTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const participantTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const participantRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeFormatPref = useTimeFormatPreference();
+  const {
+    participantTyping,
+    participantRecording,
+    localRecording,
+    sendLocalTyping,
+    stopLocalTyping,
+    scheduleLocalTypingStop,
+    setLocalVoiceRecording,
+  } = useChatRealtime({
+    chat,
+    setMessages,
+    mergeReadState,
+    refreshMessages,
+    refreshConversation,
+  });
+  const { presenceStatus } = useChatPresence({ chat, timeFormatPref });
 
   const trimmedDraft = draft.trim();
   const canSend = trimmedDraft.length > 0;
-  const participantPresence = derivePresenceSnapshot(
-    participantPresenceSessions,
-    now
-  );
-  const presenceStatus = formatPresenceStatus(
-    {
-      ...participantPresence,
-      lastSeenAt:
-        participantPresence.lastSeenAt ?? chat.participantPresence?.lastSeenAt ?? null,
-    },
-    now,
-    timeFormatPref
-  );
   const replyingTo = replyingToId
     ? messages.find((message) => message.id === replyingToId) ?? null
     : null;
@@ -188,169 +163,6 @@ export function ChatClient({
     return null;
   }, [chat.currentUserId, messages]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(new Date());
-    }, 15000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
-
-  useEffect(() => {
-    const presence = startPresenceSession(chat.currentUserId);
-
-    return () => {
-      presence.stop();
-    };
-  }, [chat.currentUserId]);
-
-  useEffect(() => {
-    return subscribeToConversationMessages(
-      chat.conversationId,
-      (message) => {
-        setMessages((current) => mergeMessage(current, message));
-      },
-      () => {
-        void refreshConversation();
-      }
-    );
-  }, [chat.conversationId, refreshConversation]);
-
-  useEffect(() => {
-    return subscribeToConversationReadStates(
-      chat.conversationId,
-      (readState) => {
-        mergeReadState(readState);
-      },
-      () => {
-        void refreshConversation();
-      }
-    );
-  }, [chat.conversationId, mergeReadState, refreshConversation]);
-
-  useEffect(() => {
-    return subscribeToConversationReactionChanges(
-      chat.conversationId,
-      (messageId) => {
-        void refreshMessages([messageId]);
-      },
-      () => {
-        void refreshConversation();
-      }
-    );
-  }, [chat.conversationId, refreshConversation, refreshMessages]);
-
-  useEffect(() => {
-    return subscribeToParticipantPresence(chat.participant.id, (session, eventType) => {
-      setParticipantPresenceSessions((current) => {
-        if (eventType === "DELETE") {
-          return current.filter((item) => item.id !== session.id);
-        }
-
-        const existingIndex = current.findIndex((item) => item.id === session.id);
-        if (existingIndex === -1) {
-          return [...current, session];
-        }
-
-        const next = [...current];
-        next[existingIndex] = session;
-        return next;
-      });
-      setNow(new Date());
-    });
-  }, [chat.participant.id]);
-
-  useEffect(() => {
-    const subscription = subscribeToConversationTyping(
-      chat.conversationId,
-      chat.currentUserId,
-      (typing) => {
-        setParticipantTyping(typing);
-
-        if (participantTypingTimeoutRef.current) {
-          clearTimeout(participantTypingTimeoutRef.current);
-        }
-
-        if (typing) {
-          participantTypingTimeoutRef.current = setTimeout(() => {
-            setParticipantTyping(false);
-          }, 4000);
-        }
-      }
-    );
-
-    typingSubscriptionRef.current = subscription;
-
-    return () => {
-      typingSubscriptionRef.current = null;
-      subscription.unsubscribe();
-
-      if (localTypingTimeoutRef.current) {
-        clearTimeout(localTypingTimeoutRef.current);
-      }
-
-      if (participantTypingTimeoutRef.current) {
-        clearTimeout(participantTypingTimeoutRef.current);
-      }
-    };
-  }, [chat.conversationId, chat.currentUserId]);
-
-  useEffect(() => {
-    const subscription = subscribeToConversationVoiceRecording(
-      chat.conversationId,
-      chat.currentUserId,
-      (recording) => {
-        setParticipantRecording(recording);
-
-        if (participantRecordingTimeoutRef.current) {
-          clearTimeout(participantRecordingTimeoutRef.current);
-        }
-
-        if (recording) {
-          participantRecordingTimeoutRef.current = setTimeout(() => {
-            setParticipantRecording(false);
-          }, 5000);
-        }
-      }
-    );
-
-    voiceSubscriptionRef.current = subscription;
-
-    return () => {
-      voiceSubscriptionRef.current = null;
-      subscription.unsubscribe();
-
-      if (participantRecordingTimeoutRef.current) {
-        clearTimeout(participantRecordingTimeoutRef.current);
-      }
-    };
-  }, [chat.conversationId, chat.currentUserId]);
-
-  function sendLocalTyping(typing: boolean) {
-    if (localTypingRef.current === typing) {
-      return;
-    }
-
-    localTypingRef.current = typing;
-    typingSubscriptionRef.current?.sendTyping(typing);
-  }
-
-  function stopLocalTyping() {
-    if (localTypingTimeoutRef.current) {
-      clearTimeout(localTypingTimeoutRef.current);
-      localTypingTimeoutRef.current = null;
-    }
-
-    sendLocalTyping(false);
-  }
-
-  function setLocalVoiceRecording(recording: boolean) {
-    setLocalRecording(recording);
-    voiceSubscriptionRef.current?.sendRecording(recording);
-  }
-
   function handleDraftChange(value: string) {
     setDraft(value);
     setNotice(null);
@@ -362,14 +174,7 @@ export function ChatClient({
 
     sendLocalTyping(true);
 
-    if (localTypingTimeoutRef.current) {
-      clearTimeout(localTypingTimeoutRef.current);
-    }
-
-    localTypingTimeoutRef.current = setTimeout(() => {
-      sendLocalTyping(false);
-      localTypingTimeoutRef.current = null;
-    }, 3000);
+    scheduleLocalTypingStop();
   }
 
   async function sendWithRequestId(
