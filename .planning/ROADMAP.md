@@ -73,9 +73,12 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
 
-**Plans**: 0 plans
+**Plans**: 4 plans
 
-- [ ] TBD (run `$gsd-plan-phase 9 --skip-ui` to break down)
+- [ ] 09-01-PLAN.md — portable chat-state core, fixture vectors, dependency boundary tests, and web helper shim
+- [ ] 09-02-PLAN.md — web chat hook extraction for messages, read state, realtime, presence, and composer behavior
+- [ ] 09-03-PLAN.md — web-only Zustand adapter, narrow selectors, hook integration, and release gates
+- [ ] 09-04-PLAN.md — platform-neutral protocol docs and Android/iOS native architecture notes
 
 ## Progress
 
@@ -87,7 +90,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 0/0 | Pending | |
+| 9. Cross-platform Chat State | v1.2 | 0/4 | Pending | |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*
