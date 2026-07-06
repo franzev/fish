@@ -2,6 +2,7 @@ type SendMessageCommand = {
   conversationId: string;
   body: string;
   clientRequestId: string;
+  replyToMessageId?: string | null;
 };
 
 const chatLimits = {
@@ -50,6 +51,7 @@ Deno.serve(async (request) => {
 
   const body = command.body?.trim() ?? "";
   const clientRequestId = command.clientRequestId?.trim() ?? "";
+  const replyToMessageId = command.replyToMessageId?.trim() || null;
 
   if (!command.conversationId || !body || !clientRequestId) {
     return calmError("Add a message before sending.", 400);
@@ -87,6 +89,7 @@ Deno.serve(async (request) => {
       p_conversation_id: command.conversationId,
       p_body: body,
       p_client_request_id: clientRequestId,
+      p_reply_to_message_id: replyToMessageId,
     }),
   });
 
@@ -102,6 +105,9 @@ Deno.serve(async (request) => {
     }
     if (message.includes("conflicts")) {
       return calmError("That send is already in progress. Try once more.", 409);
+    }
+    if (message.includes("reply target")) {
+      return calmError("That message is no longer available.", 400);
     }
     if (message.includes("required") || message.includes("too long")) {
       return calmError(

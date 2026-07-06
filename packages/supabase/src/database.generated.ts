@@ -47,6 +47,7 @@ export type Database = {
           reduced_motion_pref: boolean | null
           text_size_pref: string | null
           theme_pref: string | null
+          time_format_pref: string | null
           timezone: string | null
           updated_at: string
         }
@@ -62,6 +63,7 @@ export type Database = {
           reduced_motion_pref?: boolean | null
           text_size_pref?: string | null
           theme_pref?: string | null
+          time_format_pref?: string | null
           timezone?: string | null
           updated_at?: string
         }
@@ -77,6 +79,7 @@ export type Database = {
           reduced_motion_pref?: boolean | null
           text_size_pref?: string | null
           theme_pref?: string | null
+          time_format_pref?: string | null
           timezone?: string | null
           updated_at?: string
         }
@@ -192,21 +195,27 @@ export type Database = {
       message_reads: {
         Row: {
           conversation_id: string
+          delivered_at: string | null
           id: string
+          last_delivered_message_id: string | null
           last_read_message_id: string | null
           read_at: string
           user_id: string
         }
         Insert: {
           conversation_id: string
+          delivered_at?: string | null
           id?: string
+          last_delivered_message_id?: string | null
           last_read_message_id?: string | null
           read_at?: string
           user_id: string
         }
         Update: {
           conversation_id?: string
+          delivered_at?: string | null
           id?: string
+          last_delivered_message_id?: string | null
           last_read_message_id?: string | null
           read_at?: string
           user_id?: string
@@ -217,6 +226,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_last_delivered_message_id_fkey"
+            columns: ["last_delivered_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
@@ -235,13 +251,68 @@ export type Database = {
           },
         ]
       }
+      message_reactions: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          removed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          removed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          removed_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
           client_request_id: string
           conversation_id: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
+          reply_to_message_id: string | null
           sender_id: string
           sender_role: string
         }
@@ -250,7 +321,10 @@ export type Database = {
           client_request_id: string
           conversation_id: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_message_id?: string | null
           sender_id: string
           sender_role: string
         }
@@ -259,7 +333,10 @@ export type Database = {
           client_request_id?: string
           conversation_id?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_message_id?: string | null
           sender_id?: string
           sender_role?: string
         }
@@ -272,8 +349,50 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presence_sessions: {
+        Row: {
+          active_at: string
+          ended_at: string | null
+          id: string
+          last_heartbeat_at: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          active_at?: string
+          ended_at?: string | null
+          id: string
+          last_heartbeat_at?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          active_at?: string
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_sessions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -290,15 +409,88 @@ export type Database = {
           p_body: string
           p_client_request_id: string
           p_conversation_id: string
+          p_reply_to_message_id?: string | null
         }
         Returns: {
           body: string
           client_request_id: string
           conversation_id: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
+          reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+        }
+      }
+      edit_chat_message: {
+        Args: {
+          p_body: string
+          p_message_id: string
+        }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+      }
+      delete_chat_message: {
+        Args: {
+          p_message_id: string
+        }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+      }
+      toggle_message_reaction: {
+        Args: {
+          p_emoji: string
+          p_message_id: string
+        }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+      }
+      mark_chat_read_state: {
+        Args: {
+          p_conversation_id: string
+          p_last_delivered_message_id?: string | null
+          p_last_read_message_id?: string | null
+        }
+        Returns: {
+          conversation_id: string
+          delivered_at: string | null
+          id: string
+          last_delivered_message_id: string | null
+          last_read_message_id: string | null
+          read_at: string
+          user_id: string
         }
       }
     }

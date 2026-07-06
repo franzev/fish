@@ -374,8 +374,10 @@ type MessageReadRow = {
   id: string;
   conversation_id: string;
   user_id: string;
+  last_delivered_message_id: string | null;
+  delivered_at: string | null;
   last_read_message_id: string | null;
-  read_at: string;
+  read_at: string | null;
 };
 
 async function getOwnUserId(label: string, supabase: Awaited<ReturnType<typeof signInAs>>): Promise<string | null> {
@@ -466,6 +468,18 @@ async function resetChatVerificationState(): Promise<void> {
 
   const conversationIds = chatConversations.map((conversation) => conversation.id);
   if (conversationIds.length > 0) {
+    const { error: resetReadsError } = await admin
+      .from("message_reads")
+      .update({
+        last_delivered_message_id: null,
+        delivered_at: null,
+        last_read_message_id: null,
+        read_at: null,
+      })
+      .in("conversation_id", conversationIds);
+    report("CHAT setup: resets prior verification read markers", !resetReadsError, resetReadsError?.message);
+    if (resetReadsError) return;
+
     const { error: deleteError } = await admin
       .from("messages")
       .delete()
@@ -825,6 +839,166 @@ async function checkChatReadStateOwnRowOnly(): Promise<void> {
   report("CHAT-06 read-state ownership: other member insert is rejected", !!otherInsertError, otherInsertError?.message ?? "insert succeeded");
 }
 
+async function checkChatDeliveredOnlyReadState(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const clientId = await getOwnUserId("CHAT-07 delivered-only read state", supabase);
+  const conversation = await getClientOneConversationFixture("CHAT-07 delivered-only read state");
+  if (!clientId || !conversation) return;
+
+  const { data: sendData, error: sendError } = await supabase.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "Delivered-only probe",
+    p_client_request_id: "verify-chat-delivered-only",
+  });
+  checkNoRecursion("CHAT-07 delivered-only read state: setup send", sendError);
+  if (sendError) {
+    report("CHAT-07 delivered-only read state: setup send succeeds", false, sendError.message);
+    return;
+  }
+  const messageId = toChatMessage(sendData)?.id;
+  if (!messageId) {
+    report("CHAT-07 delivered-only read state: resolve message id", false);
+    return;
+  }
+
+  const { error: resetError } = await admin
+    .from("message_reads")
+    .update({
+      last_delivered_message_id: null,
+      delivered_at: null,
+      last_read_message_id: null,
+      read_at: null,
+    })
+    .eq("conversation_id", conversation.id)
+    .eq("user_id", clientId);
+  report("CHAT-07 delivered-only read state: resets read marker", !resetError, resetError?.message);
+  if (resetError) return;
+
+  const { data, error } = await supabase.rpc("mark_chat_read_state", {
+    p_conversation_id: conversation.id,
+    p_last_delivered_message_id: messageId,
+    p_last_read_message_id: null,
+  });
+  checkNoRecursion("CHAT-07 delivered-only read state", error);
+  if (error) {
+    report("CHAT-07 delivered-only read state: RPC succeeds", false, error.message);
+    return;
+  }
+
+  const row = (Array.isArray(data) ? data[0] : data) as MessageReadRow | null;
+  report("CHAT-07 delivered-only read state: delivered id is saved", row?.last_delivered_message_id === messageId);
+  report("CHAT-07 delivered-only read state: read marker may stay null", row?.last_read_message_id === null);
+}
+
+async function checkChatReadStateMonotonic(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const conversation = await getClientOneConversationFixture("CHAT-07 monotonic read state");
+  if (!conversation) return;
+
+  const { data: firstData, error: firstError } = await supabase.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "Monotonic first",
+    p_client_request_id: "verify-chat-monotonic-first",
+  });
+  const { data: secondData, error: secondError } = await supabase.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "Monotonic second",
+    p_client_request_id: "verify-chat-monotonic-second",
+  });
+  checkNoRecursion("CHAT-07 monotonic first send", firstError);
+  checkNoRecursion("CHAT-07 monotonic second send", secondError);
+  const firstId = toChatMessage(firstData)?.id;
+  const secondId = toChatMessage(secondData)?.id;
+  if (firstError || secondError || !firstId || !secondId) {
+    report("CHAT-07 monotonic read state: setup sends succeed", false, firstError?.message ?? secondError?.message);
+    return;
+  }
+
+  await supabase.rpc("mark_chat_read_state", {
+    p_conversation_id: conversation.id,
+    p_last_delivered_message_id: secondId,
+    p_last_read_message_id: secondId,
+  });
+  const { data, error } = await supabase.rpc("mark_chat_read_state", {
+    p_conversation_id: conversation.id,
+    p_last_delivered_message_id: firstId,
+    p_last_read_message_id: firstId,
+  });
+  checkNoRecursion("CHAT-07 monotonic stale read update", error);
+  if (error) {
+    report("CHAT-07 monotonic read state: stale RPC does not error", false, error.message);
+    return;
+  }
+
+  const row = (Array.isArray(data) ? data[0] : data) as MessageReadRow | null;
+  report("CHAT-07 monotonic read state: stale delivered marker does not move backward", row?.last_delivered_message_id === secondId);
+  report("CHAT-07 monotonic read state: stale read marker does not move backward", row?.last_read_message_id === secondId);
+}
+
+async function checkChatReactionsSoftDeleteAndIntegrity(): Promise<void> {
+  const supabase = await signInAs(client1.email, client1.password);
+  const conversation = await getClientOneConversationFixture("CHAT-08 reactions");
+  if (!conversation) return;
+
+  const { data: sendData, error: sendError } = await supabase.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "Reaction probe",
+    p_client_request_id: "verify-chat-reaction-message",
+  });
+  checkNoRecursion("CHAT-08 reactions: setup send", sendError);
+  if (sendError) {
+    report("CHAT-08 reactions: setup send succeeds", false, sendError.message);
+    return;
+  }
+  const messageId = toChatMessage(sendData)?.id;
+  if (!messageId) {
+    report("CHAT-08 reactions: resolve message id", false);
+    return;
+  }
+
+  const { error: addError } = await supabase.rpc("toggle_message_reaction", {
+    p_message_id: messageId,
+    p_emoji: "👍",
+  });
+  checkNoRecursion("CHAT-08 reactions: add", addError);
+  report("CHAT-08 reactions: add reaction RPC succeeds", !addError, addError?.message);
+
+  const { data: visibleRows, error: visibleError } = await supabase
+    .from("message_reactions")
+    .select("id, removed_at")
+    .eq("message_id", messageId);
+  checkNoRecursion("CHAT-08 reactions: select visible", visibleError);
+  report("CHAT-08 reactions: active reaction is visible", !visibleError && (visibleRows ?? []).length === 1, visibleError?.message ?? `got ${(visibleRows ?? []).length}`);
+
+  const { error: removeError } = await supabase.rpc("toggle_message_reaction", {
+    p_message_id: messageId,
+    p_emoji: "👍",
+  });
+  checkNoRecursion("CHAT-08 reactions: remove", removeError);
+  report("CHAT-08 reactions: remove reaction RPC succeeds", !removeError, removeError?.message);
+
+  const { data: hiddenRows, error: hiddenError } = await supabase
+    .from("message_reactions")
+    .select("id")
+    .eq("message_id", messageId);
+  checkNoRecursion("CHAT-08 reactions: select hidden", hiddenError);
+  report("CHAT-08 reactions: removed reaction is hidden by RLS policy", !hiddenError && (hiddenRows ?? []).length === 0, hiddenError?.message ?? `got ${(hiddenRows ?? []).length}`);
+
+  const { data: adminRows, error: adminError } = await admin
+    .from("message_reactions")
+    .select("id, removed_at")
+    .eq("message_id", messageId);
+  report("CHAT-08 reactions: removed reaction row is soft-deleted, not hard-deleted", !adminError && (adminRows ?? []).some((row) => row.removed_at), adminError?.message);
+
+  const { error: integrityError } = await admin.from("message_reactions").insert({
+    conversation_id: "00000000-0000-4000-8000-000000000000",
+    message_id: messageId,
+    user_id: conversation.client_id,
+    emoji: "👍",
+  });
+  report("CHAT-08 reactions: mismatched conversation insert is rejected", !!integrityError, integrityError?.message ?? "insert succeeded");
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
@@ -847,6 +1021,9 @@ async function main(): Promise<void> {
   await checkChatMessageImmutable();
   await checkChatBodyConstraintsRejected();
   await checkChatReadStateOwnRowOnly();
+  await checkChatDeliveredOnlyReadState();
+  await checkChatReadStateMonotonic();
+  await checkChatReactionsSoftDeleteAndIntegrity();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);

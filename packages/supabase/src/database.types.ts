@@ -14,6 +14,10 @@ export type ClientProfileRow = Database["public"]["Tables"]["client_profiles"]["
 export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 export type MessageReadRow = Database["public"]["Tables"]["message_reads"]["Row"];
+export type MessageReactionRow =
+  Database["public"]["Tables"]["message_reactions"]["Row"];
+export type PresenceSessionRow =
+  Database["public"]["Tables"]["presence_sessions"]["Row"];
 
 // Re-exported for callers that still import UserRole via this module's historical surface.
 export type { UserRole };
