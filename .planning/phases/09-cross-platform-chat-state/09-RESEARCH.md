@@ -170,12 +170,15 @@ Native future
 ```text
 packages/core/src/
   chat.ts                         # existing DTOs/limits, extend or re-export state types
+  docs/
+    chat-state-protocol.md        # platform-neutral event/result contract
   chat-state/
     index.ts                      # public reducer/helper exports
     types.ts                      # portable ChatState, ChatEvent, ChatResult
     reducer.ts                    # deterministic event transitions
     selectors.ts                  # unread/status/snippet/reply-preview helpers
-    fixtures/                     # JSON compatibility vectors
+    fixtures/
+      chat-state-vectors.json     # JSON compatibility vectors
 
 apps/web/app/(authenticated)/chat/
   chat-state.ts                   # compatibility shim to @fish/core/chat-state during migration
@@ -188,8 +191,6 @@ apps/web/app/(authenticated)/chat/
   store/
     chat-store.ts                 # zustand vanilla store and actions
     chat-selectors.ts             # narrow selectors by conversationId
-  docs/
-    chat-state-protocol.md        # event/result contract for native teams
 ```
 
 ### Pattern 1: Portable Event Reducer
@@ -431,17 +432,17 @@ All claims in this research were verified locally, checked against package tooli
 |---|-------|---------|---------------|
 | None | No `[ASSUMED]` claims. | All sections | None. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should edit/delete/reaction events enter the cross-platform fixture contract now?**
    - What we know: The current web route already implements edit/delete/reaction paths. [VERIFIED: apps/web/app/(authenticated)/chat/chat-client.tsx]
-   - What's unclear: CSTATE fixture minimums do not explicitly require edit/delete/reaction event parity. [VERIFIED: .planning/REQUIREMENTS.md]
-   - Recommendation: Preserve web behavior, but keep the portable fixture minimum to CSTATE-04 unless adding edit/delete/reaction cases is cheap after the core shape exists.
+   - Resolution: Edit, delete, and reaction events do not enter the required cross-platform fixture minimum in Phase 09. The portable fixture minimum remains the ten CSTATE/D-03 cases named in `09-01-PLAN.md`: `hydrateConversation`, `sendOptimisticMessage`, `confirmSentMessage`, `markMessageFailed`, `mergeRemoteMessage`, `duplicateClientRequestIdReconciliation`, `mergeReadState`, `unreadCount`, `deletedMessageSnippet`, and `replyPreview`.
+   - Execution note: Existing web edit/delete/reaction behavior must still be preserved and tested through `apps/web/app/(authenticated)/chat/chat-client.test.tsx` and Plans 09-02/09-03, but it is not part of the native parity fixture contract unless a later phase expands that contract.
 
 2. **Where should protocol docs live?**
    - What we know: `packages/core` is the portable contract owner and `apps/web` is the web adapter. [VERIFIED: packages/core/package.json]
-   - What's unclear: The repo has no existing convention for cross-platform protocol docs. [VERIFIED: local file scan]
-   - Recommendation: Put fixture JSON under `packages/core/src/chat-state/fixtures` and the human-readable protocol under `.planning/phases/09-cross-platform-chat-state/09-CHAT-STATE-PROTOCOL.md` or `packages/core/docs/chat-state-protocol.md`; planner should choose one path and keep links stable.
+   - Resolution: The human-readable protocol document lives at `packages/core/docs/chat-state-protocol.md`. Native implementation notes live at `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`. The fixture JSON lives at `packages/core/src/chat-state/fixtures/chat-state-vectors.json`.
+   - Execution note: Plans and implementation should link to those exact paths so web, Android, and iOS follow the same portable contract without moving protocol ownership into the web route.
 
 ## Environment Availability
 
@@ -492,7 +493,7 @@ All claims in this research were verified locally, checked against package tooli
 ### Wave 0 Gaps
 
 - [ ] `packages/core/src/chat-state/*` - portable reducer/types/selectors for CSTATE-01/CSTATE-04.
-- [ ] `packages/core/src/chat-state/fixtures/*.json` - cross-platform event/result vectors for CSTATE-04.
+- [ ] `packages/core/src/chat-state/fixtures/chat-state-vectors.json` - cross-platform event/result vectors for CSTATE-04.
 - [ ] `apps/web/app/(authenticated)/chat/store/chat-store.test.ts` - Zustand adapter constraints for CSTATE-03.
 - [ ] Dependency-boundary test - rejects forbidden imports from portable core for CSTATE-01.
 - [ ] Protocol/architecture notes - Android `ViewModel` + `StateFlow`, iOS observable model mapping for CSTATE-05.
