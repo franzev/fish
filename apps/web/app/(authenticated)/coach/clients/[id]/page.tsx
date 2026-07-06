@@ -42,16 +42,16 @@ export default async function CoachClientDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-lg">
       <h1 className="text-3xl">{data.client.displayName}</h1>
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
+      <Card className="flex flex-col gap-md">
+        <div className="flex flex-col gap-2xs">
           <span className="text-ui-sm text-muted">Working toward</span>
           <p className="text-foreground">
             {data.client.goal || "No goal recorded yet."}
           </p>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2xs">
           <span className="text-ui-sm text-muted">Level</span>
           <p className="text-foreground">{data.client.level ?? "Not set yet"}</p>
         </div>

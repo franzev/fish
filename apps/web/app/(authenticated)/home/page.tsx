@@ -25,7 +25,7 @@ export default async function ClientHomePage() {
 
   return (
     <>
-      <h1 className="mb-6 text-3xl">Welcome back, {data.firstName}</h1>
+      <h1 className="mb-lg text-3xl">Welcome back, {data.firstName}</h1>
       <EmptyState Icon={IconSparkles}>
         {data.coachName ? (
           <p>Your coach {data.coachName} is setting things up.</p>
@@ -33,7 +33,7 @@ export default async function ClientHomePage() {
           <p>We&apos;re getting things ready for you.</p>
         )}
       </EmptyState>
-      <p className="mt-6 text-center text-ui-sm text-muted">
+      <p className="mt-lg text-center text-ui-sm text-muted">
         <Link href="/profile" className="text-body underline">
           Your profile
         </Link>

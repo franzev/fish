@@ -9,6 +9,7 @@ vi.mock("next/navigation", () => ({
     // mirror that so the component body stops executing past the call.
     throw new Error("NEXT_REDIRECT");
   },
+  usePathname: () => "/home",
   useRouter: () => ({ push: vi.fn() }),
 }));
 
@@ -60,7 +61,7 @@ describe("AuthenticatedLayout", () => {
     render(Layout);
 
     expect(redirectMock).not.toHaveBeenCalled();
-    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+    expect(screen.getAllByText("Alex Rivera").length).toBeGreaterThan(0);
     expect(screen.getByText("Content")).toBeInTheDocument();
   });
 });

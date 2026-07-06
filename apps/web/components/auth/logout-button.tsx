@@ -5,13 +5,17 @@ import { signOut } from "@/lib/auth/browser";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+interface LogoutButtonProps {
+  className?: string;
+}
+
 /* The ONE client island in the shell's top bar (mirrors kit/page.tsx's
    KitThemeToggle precedent). No confirmation dialog — the product is
    calm/frictionless and sessions are cheap to re-establish (UI-SPEC).
    D-09: the bar is all-secondary — this is a quiet ghost action, not the
    screen's primary. The screen carries ZERO primary actions (D-18: "at
    most one primary action" includes zero). */
-export function LogoutButton() {
+export function LogoutButton({ className }: LogoutButtonProps = {}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -28,6 +32,7 @@ export function LogoutButton() {
       fullWidth={false}
       loading={loading}
       onClick={handleLogout}
+      className={className}
     >
       Log out
     </Button>

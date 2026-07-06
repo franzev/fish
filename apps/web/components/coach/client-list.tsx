@@ -22,7 +22,7 @@ export function ClientList({ clients }: { clients: Client[] }) {
         <Link
           key={client.id}
           href={`/coach/clients/${client.id}`}
-          className="flex flex-col gap-0.5 p-4"
+          className="flex flex-col gap-3xs p-md"
         >
           <span className="text-foreground">{client.displayName}</span>
           <span className="text-ui-sm text-muted">{client.email}</span>

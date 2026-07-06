@@ -8,9 +8,10 @@ const meta = {
   tags: ["autodocs"],
   args: {
     displayName: "Eli Ramos",
+    role: "client",
     children: (
       <Card>
-        <h1 className="mb-3 text-3xl">Today</h1>
+        <h1 className="mb-sm text-3xl">Today</h1>
         <p>Your coach will place the next step here.</p>
       </Card>
     ),
@@ -30,9 +31,10 @@ export const ClientHome: Story = {};
 export const CoachHome: Story = {
   args: {
     displayName: "Coach Maya",
+    role: "coach",
     children: (
       <Card>
-        <h1 className="mb-3 text-3xl">Clients</h1>
+        <h1 className="mb-sm text-3xl">Clients</h1>
         <p>Three clients are ready for review.</p>
       </Card>
     ),

@@ -29,10 +29,12 @@ export default async function AuthenticatedLayout({
   return (
     <AppShell
       displayName={profile.displayName}
+      role={profile.role}
       preferences={{
         themePref: profile.themePref,
         textSizePref: profile.textSizePref,
         reducedMotionPref: profile.reducedMotionPref,
+        timeFormatPref: profile.timeFormatPref,
       }}
     >
       {children}

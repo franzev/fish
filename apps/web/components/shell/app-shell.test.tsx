@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,29 +8,43 @@ vi.mock("@/lib/auth/browser", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => pathname,
   useRouter: () => ({ push: vi.fn() }),
 }));
 
 import { AppShell } from "./app-shell";
 
+let pathname = "/home";
+
 describe("AppShell", () => {
   afterEach(() => {
+    pathname = "/home";
     delete document.documentElement.dataset.theme;
     delete document.documentElement.dataset.textSize;
     delete document.documentElement.dataset.reducedMotion;
+    delete document.documentElement.dataset.timeFormat;
   });
 
   it("renders the muted display name (D-09) and the logout button", () => {
-    render(<AppShell displayName="Alex Rivera">Content</AppShell>);
+    render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
 
-    const name = screen.getByText("Alex Rivera");
-    expect(name.className).toContain("text-muted");
-    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+    const names = screen.getAllByText("Alex Rivera");
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.every((name) => name.className.includes("text-muted"))).toBe(
+      true
+    );
+    expect(screen.getAllByRole("button", { name: "Log out" }).length).toBeGreaterThan(0);
   });
 
   it("renders one centered content column with max-w-content and mx-auto (D-10)", () => {
     const { container } = render(
-      <AppShell displayName="Alex Rivera">Content</AppShell>
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
     );
 
     const mains = container.querySelectorAll("main");
@@ -43,10 +57,12 @@ describe("AppShell", () => {
     render(
       <AppShell
         displayName="Alex Rivera"
+        role="client"
         preferences={{
           themePref: "dark",
           textSizePref: "larger",
           reducedMotionPref: true,
+          timeFormatPref: "24h",
         }}
       >
         Content
@@ -57,6 +73,7 @@ describe("AppShell", () => {
       expect(document.documentElement.dataset.theme).toBe("dark");
       expect(document.documentElement.dataset.textSize).toBe("larger");
       expect(document.documentElement.dataset.reducedMotion).toBe("true");
+      expect(document.documentElement.dataset.timeFormat).toBe("24h");
     });
   });
 
@@ -71,5 +88,44 @@ describe("AppShell", () => {
       (logoutButtonSource.match(/variant="primary"/g) ?? []).length;
     expect(primaryMatches).toBe(0);
     expect(logoutButtonSource).toContain('variant="ghost"');
+  });
+
+  it("renders labeled client navigation without the unvalidated Progress tab", () => {
+    pathname = "/chat";
+
+    render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    const primaryNav = screen.getByRole("navigation", { name: "Primary" });
+    expect(primaryNav).toHaveTextContent("Home");
+    expect(primaryNav).toHaveTextContent("Messages");
+    expect(primaryNav).toHaveTextContent("Profile");
+    expect(primaryNav).not.toHaveTextContent("Progress");
+    expect(within(primaryNav).getByRole("link", { name: "Messages" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
+
+  it("renders coach navigation to the roster instead of client profile choices", () => {
+    pathname = "/coach";
+
+    render(
+      <AppShell displayName="Coach Dana" role="coach">
+        Content
+      </AppShell>
+    );
+
+    const primaryNav = screen.getByRole("navigation", { name: "Primary" });
+    expect(primaryNav).toHaveTextContent("Clients");
+    expect(primaryNav).toHaveTextContent("Messages");
+    expect(primaryNav).not.toHaveTextContent("Profile");
+    expect(within(primaryNav).getByRole("link", { name: "Clients" })).toHaveAttribute(
+      "href",
+      "/coach"
+    );
   });
 });
