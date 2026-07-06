@@ -12,7 +12,7 @@ import {
 import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 
 /* First form-with-state screen in the repo (theme-toggle.tsx is the only
    prior "use client" precedent, but it has no async call). Signup always
@@ -31,7 +31,7 @@ export function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setEmailError("");
     setConfirmPasswordError("");
@@ -112,10 +112,10 @@ export function SignupForm() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
       <Card className="w-full max-w-form">
         <h2 className="text-xl">Create your account</h2>
-        <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
+        <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <Input
             label="Name"
             value={name}
@@ -167,13 +167,13 @@ export function SignupForm() {
             loading={googleLoading}
             onClick={handleGoogleSignIn}
           >
-            <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-xs">
               <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
               Sign up with Google
             </span>
           </Button>
         </form>
-        <p className="mt-5 text-center text-ui-sm text-muted">
+        <p className="mt-page text-center text-ui-sm text-muted">
           Already have an account?{" "}
           <Link href="/login" className="text-body underline">
             Log in

@@ -10,7 +10,7 @@ import {
   signInWithPassword,
 } from "@/lib/auth/browser";
 import { authRedirects } from "@/lib/auth/redirects";
-import { IconBrandGoogle } from "@tabler/icons-react";
+import { IconBrandGoogle, IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -27,6 +27,7 @@ export function LoginForm() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,51 +98,78 @@ export function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
       <Card className="w-full max-w-form">
-        <h2 className="text-xl">Log in</h2>
-        <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            notice={passwordError || undefined}
-            required
-          />
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth={true}
-            loading={loading}
-          >
-            Log in
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth={true}
-            loading={googleLoading}
-            onClick={handleGoogleSignIn}
-          >
-            <span className="inline-flex items-center gap-2">
-              <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
-              Continue with Google
-            </span>
-          </Button>
-          {formError && <Alert tone="error">{formError}</Alert>}
+        <h1 className="text-xl">Log in</h1>
+        <form className="mt-lg" onSubmit={handleSubmit}>
+          <div className="space-y-md">
+            <Input
+              label="Email"
+              type="email"
+              autoComplete="email"
+              enterKeyHint="next"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              reserveMessageSpace={false}
+              required
+            />
+            <Input
+              label="Password"
+              type={passwordVisible ? "text" : "password"}
+              autoComplete="current-password"
+              enterKeyHint="go"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              notice={passwordError || undefined}
+              reserveMessageSpace={false}
+              trailingControl={
+                <button
+                  type="button"
+                  aria-label={passwordVisible ? "Hide password" : "Show password"}
+                  aria-pressed={passwordVisible}
+                  title={passwordVisible ? "Hide password" : "Show password"}
+                  className="flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:text-body"
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                >
+                  {passwordVisible ? (
+                    <IconEyeOff size={20} stroke={1.75} aria-hidden="true" />
+                  ) : (
+                    <IconEye size={20} stroke={1.75} aria-hidden="true" />
+                  )}
+                </button>
+              }
+              required
+            />
+          </div>
+          <div className="mt-lg space-y-sm">
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth={true}
+              loading={loading}
+            >
+              Log in
+            </Button>
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="ghost"
+                loading={googleLoading}
+                onClick={handleGoogleSignIn}
+              >
+                <span className="inline-flex items-center gap-xs">
+                  <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
+                  Continue with Google
+                </span>
+              </Button>
+            </div>
+          </div>
+          {formError && <Alert tone="error" className="mt-md">{formError}</Alert>}
         </form>
-        <p className="mt-5 text-center text-ui-sm text-muted">
+        <p className="mt-page text-center text-ui-sm text-muted">
           New here? <Link href="/signup" className="text-body underline">Create account</Link>
         </p>
-        <p className="mt-2 text-center text-ui-sm text-muted">
+        <p className="mt-xs text-center text-ui-sm text-muted">
           <Link href="/forgot-password" className="text-body underline">
             Forgot your password?
           </Link>

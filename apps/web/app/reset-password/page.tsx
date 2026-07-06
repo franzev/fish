@@ -9,7 +9,7 @@ import {
   updatePassword,
 } from "@/lib/auth/browser";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 
 /* D-08: arrives already signed in via the recovery session that
    /auth/confirm (type=recovery) established — single password field, no
@@ -21,7 +21,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLoading(true);
@@ -70,10 +70,10 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
       <Card className="w-full max-w-form">
         <h2 className="text-xl">Set a new password</h2>
-        <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
+        <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <Input
             label="Password"
             type="password"

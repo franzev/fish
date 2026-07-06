@@ -18,24 +18,27 @@ describe("A11yPrefs", () => {
     delete document.documentElement.dataset.theme;
     delete document.documentElement.dataset.textSize;
     delete document.documentElement.dataset.reducedMotion;
+    delete document.documentElement.dataset.timeFormat;
   });
 
-  it("renders exactly three preference controls (PROF-03 cap)", () => {
+  it("renders the four profile preference controls", () => {
     render(
       <A11yPrefs
         themePref={null}
         textSizePref={null}
         reducedMotionPref={null}
+        timeFormatPref={null}
       />
     );
 
     const groups = screen.getAllByRole("group");
-    expect(groups).toHaveLength(3);
+    expect(groups).toHaveLength(4);
     expect(screen.getByRole("group", { name: "Appearance" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Text size" })).toBeInTheDocument();
     expect(
       screen.getByRole("group", { name: "Reduced motion" })
     ).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Time format" })).toBeInTheDocument();
   });
 
   it("keeps segmented preference buttons at the 56px FISH control target", () => {
@@ -51,6 +54,7 @@ describe("A11yPrefs", () => {
         themePref={null}
         textSizePref={null}
         reducedMotionPref={null}
+        timeFormatPref={null}
       />
     );
 
@@ -71,6 +75,7 @@ describe("A11yPrefs", () => {
         themePref={null}
         textSizePref={null}
         reducedMotionPref={null}
+        timeFormatPref={null}
       />
     );
 
@@ -86,6 +91,7 @@ describe("A11yPrefs", () => {
         themePref={null}
         textSizePref={null}
         reducedMotionPref={null}
+        timeFormatPref={null}
       />
     );
 
@@ -103,6 +109,35 @@ describe("A11yPrefs", () => {
       themePref: "light",
       textSizePref: "default",
       reducedMotionPref: null,
+      timeFormatPref: null,
+    });
+  });
+
+  it("applies and persists a selected time format immediately", async () => {
+    render(
+      <A11yPrefs
+        themePref={null}
+        textSizePref={null}
+        reducedMotionPref={null}
+        timeFormatPref={null}
+      />
+    );
+
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Time format" })).getByRole(
+        "button",
+        { name: "24 hr" }
+      )
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.timeFormat).toBe("24h");
+    });
+    expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
+      themePref: null,
+      textSizePref: "default",
+      reducedMotionPref: null,
+      timeFormatPref: "24h",
     });
   });
 
@@ -112,6 +147,7 @@ describe("A11yPrefs", () => {
         themePref="dark"
         textSizePref="large"
         reducedMotionPref={true}
+        timeFormatPref="12h"
       />
     );
 
@@ -119,6 +155,7 @@ describe("A11yPrefs", () => {
       expect(document.documentElement.dataset.theme).toBe("dark");
       expect(document.documentElement.dataset.textSize).toBe("large");
       expect(document.documentElement.dataset.reducedMotion).toBe("true");
+      expect(document.documentElement.dataset.timeFormat).toBe("12h");
     });
 
     fireEvent.click(
@@ -135,6 +172,7 @@ describe("A11yPrefs", () => {
       themePref: null,
       textSizePref: "large",
       reducedMotionPref: true,
+      timeFormatPref: "12h",
     });
 
     fireEvent.click(
@@ -151,6 +189,24 @@ describe("A11yPrefs", () => {
       themePref: null,
       textSizePref: "large",
       reducedMotionPref: null,
+      timeFormatPref: "12h",
+    });
+
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Time format" })).getByRole(
+        "button",
+        { name: "System" }
+      )
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.timeFormat).toBeUndefined();
+    });
+    expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
+      themePref: null,
+      textSizePref: "large",
+      reducedMotionPref: null,
+      timeFormatPref: null,
     });
   });
 });

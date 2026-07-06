@@ -4,7 +4,9 @@ import {
   applyReducedMotion,
   applyTextSize,
   applyTheme,
+  applyTimeFormat,
 } from "@/lib/prefs/apply-prefs";
+import type { TimeFormatPref } from "@/lib/prefs/time-format";
 import { useEffect } from "react";
 
 type ThemePref = "light" | "dark" | null;
@@ -14,6 +16,7 @@ interface PreferenceHydratorProps {
   themePref?: ThemePref;
   textSizePref?: TextSizePref;
   reducedMotionPref?: boolean | null;
+  timeFormatPref?: TimeFormatPref;
 }
 
 /* Authenticated routes share one html element, so persisted preferences need
@@ -24,12 +27,14 @@ export function PreferenceHydrator({
   themePref,
   textSizePref,
   reducedMotionPref,
+  timeFormatPref,
 }: PreferenceHydratorProps) {
   useEffect(() => {
     applyTheme(themePref ?? null);
     applyTextSize(textSizePref ?? null);
     applyReducedMotion(reducedMotionPref ?? null);
-  }, [reducedMotionPref, textSizePref, themePref]);
+    applyTimeFormat(timeFormatPref ?? null);
+  }, [reducedMotionPref, textSizePref, themePref, timeFormatPref]);
 
   return null;
 }

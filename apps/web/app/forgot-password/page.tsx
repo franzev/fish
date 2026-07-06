@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { requestPasswordReset } from "@/lib/auth/browser";
-import { FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 
 /* Single-field reset-request form. D-07: the same success copy renders
    whether or not the email has an account — no enumeration branch, no
@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
 
@@ -32,22 +32,22 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
       <Card className="w-full max-w-form">
         <h2 className="text-xl">Reset your password</h2>
         {submitted ? (
-          <div className="mt-6">
+          <div className="mt-lg">
             <Alert tone="notice">
               If that address has an account, a reset link is on its way.
             </Alert>
           </div>
         ) : (
           <>
-            <p className="mt-3 text-body">
+            <p className="mt-sm text-body">
               Enter the email on your account and we&apos;ll send you a reset
               link.
             </p>
-            <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
+            <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
               <Input
                 label="Email"
                 type="email"

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { resendSignupEmail } from "@/lib/auth/browser";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { type SubmitEvent, Suspense, useState } from "react";
 
 /* Shared by signup AND unverified-login (D-05) — one screen, one owner.
    Reads ?email= via useSearchParams(), so this must sit under a page-level
@@ -18,7 +18,7 @@ function CheckInboxContent() {
   const [resultTone, setResultTone] = useState<"warning" | "success">("success");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     // Belt and braces — the button is disabled without an email, so never
     // call the API with "".
@@ -47,12 +47,12 @@ function CheckInboxContent() {
     // in-flow row).
     <Card className="relative w-full max-w-form">
       <h2 className="text-xl">Check your inbox</h2>
-      <p className="mt-3 text-body">
+      <p className="mt-sm text-body">
         {email
           ? `We sent a link to ${email}. Open it on this device to continue.`
           : "We sent you a link. Open it on this device to continue."}
       </p>
-      <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
+      <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
         <Button
           type="submit"
           variant="primary"
@@ -72,7 +72,7 @@ function CheckInboxContent() {
           previous fix). */}
       <div
         aria-live="polite"
-        className="pointer-events-none absolute inset-x-0 bottom-full mb-4"
+        className="pointer-events-none absolute inset-x-0 bottom-full mb-md"
       >
         {notice && (
           <Alert
@@ -89,7 +89,7 @@ function CheckInboxContent() {
 
 export default function CheckInboxPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
       <Suspense
         fallback={
           <Card className="w-full max-w-form">

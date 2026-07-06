@@ -49,7 +49,7 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
   return (
     <Card className="w-full max-w-form">
       <h2 className="text-xl">Edit profile</h2>
-      <form action={formAction} className="mt-6 space-y-1">
+      <form action={formAction} className="mt-lg space-y-2xs">
         <Input
           label="Display name"
           name="displayName"
@@ -66,18 +66,18 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="timezone" value={timezone} />
         <div className="w-full">
-          <span className="mb-2 block text-ui font-medium text-foreground">
+          <span className="mb-xs block text-ui font-medium text-foreground">
             Locale &amp; timezone
           </span>
           <p className="text-ui text-body">
             {locale} · {timezone}
           </p>
-          <p className="mt-1 text-ui-sm text-muted">
+          <p className="mt-2xs text-ui-sm text-muted">
             Detected from your browser.
           </p>
         </div>
         {state.notice && (
-          <p className="flex items-center gap-1.5 text-ui-sm text-notice">
+          <p className="flex items-center gap-nudge text-ui-sm text-notice">
             {state.notice}
           </p>
         )}

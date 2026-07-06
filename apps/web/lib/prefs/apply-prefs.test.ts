@@ -1,11 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { applyReducedMotion, applyTextSize, applyTheme } from "./apply-prefs";
+import {
+  applyReducedMotion,
+  applyTextSize,
+  applyTheme,
+  applyTimeFormat,
+} from "./apply-prefs";
 
 describe("apply-prefs helpers", () => {
   afterEach(() => {
     delete document.documentElement.dataset.theme;
     delete document.documentElement.dataset.textSize;
     delete document.documentElement.dataset.reducedMotion;
+    delete document.documentElement.dataset.timeFormat;
   });
 
   it("sets and clears the theme data attribute", () => {
@@ -39,5 +45,16 @@ describe("apply-prefs helpers", () => {
 
     applyReducedMotion(null);
     expect(document.documentElement.dataset.reducedMotion).toBeUndefined();
+  });
+
+  it("sets time-format overrides and clears system", () => {
+    applyTimeFormat("24h");
+    expect(document.documentElement.dataset.timeFormat).toBe("24h");
+
+    applyTimeFormat("12h");
+    expect(document.documentElement.dataset.timeFormat).toBe("12h");
+
+    applyTimeFormat(null);
+    expect(document.documentElement.dataset.timeFormat).toBeUndefined();
   });
 });

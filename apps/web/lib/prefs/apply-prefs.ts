@@ -1,3 +1,8 @@
+import {
+  notifyTimeFormatPrefChanged,
+  type TimeFormatPref,
+} from "@/lib/prefs/time-format";
+
 /* Instant-apply, client-side only. Mirrors KitThemeToggle's data-attribute +
    Lightning CSS mechanism (the ONE piece of that dev-only tool worth
    copying, RESEARCH Pattern 4) under NEW, product-facing attribute names
@@ -33,4 +38,14 @@ export function applyReducedMotion(pref: boolean | null): void {
   } else {
     document.documentElement.dataset.reducedMotion = String(pref);
   }
+}
+
+export function applyTimeFormat(pref: TimeFormatPref): void {
+  if (pref === null) {
+    delete document.documentElement.dataset.timeFormat;
+  } else {
+    document.documentElement.dataset.timeFormat = pref;
+  }
+
+  notifyTimeFormatPrefChanged();
 }

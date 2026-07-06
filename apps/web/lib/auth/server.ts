@@ -10,6 +10,7 @@ import { authRedirects } from "./redirects";
 
 export type ThemePref = "light" | "dark" | null;
 export type TextSizePref = "default" | "large" | "larger" | null;
+export type TimeFormatPref = "12h" | "24h" | null;
 
 // The DB column is a CHECK-constrained `text`, not a Postgres enum, so the
 // generated Row type is `string | null`. Narrow at this one server-side
@@ -24,6 +25,10 @@ function toTextSizePref(value: string | null): TextSizePref {
   return value === "large" || value === "larger" ? value : "default";
 }
 
+function toTimeFormatPref(value: string | null): TimeFormatPref {
+  return value === "12h" || value === "24h" ? value : null;
+}
+
 export interface CurrentProfile {
   userId: string;
   role: UserRole;
@@ -34,6 +39,7 @@ export interface AuthenticatedShellProfile extends CurrentProfile {
   themePref: ThemePref;
   textSizePref: TextSizePref;
   reducedMotionPref: boolean | null;
+  timeFormatPref: TimeFormatPref;
 }
 
 export interface ClientHomeData {
@@ -79,6 +85,7 @@ export interface ProfileData {
   themePref: ThemePref;
   textSizePref: TextSizePref;
   reducedMotionPref: boolean | null;
+  timeFormatPref: TimeFormatPref;
   consented: boolean;
   consentedAt: string | null;
   consentVersion: string | null;
@@ -151,6 +158,7 @@ export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShell
       themePref: null,
       textSizePref: "default",
       reducedMotionPref: null,
+      timeFormatPref: null,
     };
   }
 
@@ -166,6 +174,9 @@ export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShell
     themePref: toThemePref(clientProfileResult.data?.theme_pref ?? null),
     textSizePref: toTextSizePref(clientProfileResult.data?.text_size_pref ?? null),
     reducedMotionPref: clientProfileResult.data?.reduced_motion_pref ?? null,
+    timeFormatPref: toTimeFormatPref(
+      clientProfileResult.data?.time_format_pref ?? null
+    ),
   };
 }
 
@@ -249,6 +260,7 @@ export async function getProfileData(): Promise<ProfileData | null> {
     themePref: toThemePref(clientProfile?.theme_pref ?? null),
     textSizePref: toTextSizePref(clientProfile?.text_size_pref ?? null),
     reducedMotionPref: clientProfile?.reduced_motion_pref ?? null,
+    timeFormatPref: toTimeFormatPref(clientProfile?.time_format_pref ?? null),
     consented: clientProfile?.consented ?? false,
     consentedAt: clientProfile?.consented_at ?? null,
     consentVersion: clientProfile?.consent_version ?? null,

@@ -102,6 +102,7 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
         theme_pref: "dark",
         text_size_pref: "larger",
         reduced_motion_pref: true,
+        time_format_pref: "24h",
       },
     });
 
@@ -112,6 +113,7 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
       themePref: "dark",
       textSizePref: "larger",
       reducedMotionPref: true,
+      timeFormatPref: "24h",
     });
     expect(findClientProfileByIdMock).toHaveBeenCalledWith("client-1");
   });
@@ -130,6 +132,7 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
       themePref: null,
       textSizePref: "default",
       reducedMotionPref: null,
+      timeFormatPref: null,
     });
     expect(findClientProfileByIdMock).not.toHaveBeenCalled();
   });

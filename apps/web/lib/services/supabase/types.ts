@@ -70,6 +70,7 @@ export type ClientProfileSafeFields = Partial<
     | "theme_pref"
     | "text_size_pref"
     | "reduced_motion_pref"
+    | "time_format_pref"
     | "consented"
     | "consented_at"
     | "consent_version"
@@ -106,6 +107,16 @@ export interface ClientChatMessage {
   body: string;
   clientRequestId: string;
   createdAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
+  replyToMessageId?: string | null;
+  reactions?: ClientChatReaction[];
+}
+
+export interface ClientChatReaction {
+  emoji: string;
+  count: number;
+  byMe: boolean;
 }
 
 export interface ClientChatParticipant {
@@ -114,12 +125,35 @@ export interface ClientChatParticipant {
   role: "client" | "coach";
 }
 
+export interface ClientChatReadState {
+  userId: string;
+  lastDeliveredMessageId: string | null;
+  deliveredAt: string | null;
+  lastReadMessageId: string | null;
+  readAt: string | null;
+}
+
+export interface ClientChatPresenceSession {
+  id: string;
+  userId: string;
+  activeAt: string;
+  lastHeartbeatAt: string;
+  endedAt: string | null;
+}
+
+export interface ClientChatPresence {
+  sessions: ClientChatPresenceSession[];
+  lastSeenAt: string | null;
+}
+
 export interface ClientChatData {
   conversationId: string;
   currentUserId: string;
   currentUserRole: "client" | "coach";
   participant: ClientChatParticipant;
   messages: ClientChatMessage[];
+  readStates?: ClientChatReadState[];
+  participantPresence?: ClientChatPresence;
 }
 
 export interface ChatRepository {

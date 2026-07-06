@@ -9,7 +9,7 @@ import {
   resendSignupEmail,
 } from "@/lib/auth/browser";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { type SubmitEvent, Suspense, useState } from "react";
 
 /* Shared by verify AND reset expired/used links (D-06). Reads ?email= and
    ?type= via useSearchParams(), so this must sit under a page-level
@@ -25,7 +25,7 @@ function ExpiredLinkContent() {
   );
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     // The Input's `required` gates real-DOM submission, but the guard stays
     // so jsdom/programmatic submits (and any bypass) still show the calm
@@ -65,11 +65,11 @@ function ExpiredLinkContent() {
     // in-flow row).
     <Card className="relative w-full max-w-form">
       <h2 className="text-xl">That link has expired</h2>
-      <p className="mt-3 text-body">
+      <p className="mt-sm text-body">
         Links only work once, and this one&apos;s had its turn. Send
         yourself a fresh one.
       </p>
-      <form className="mt-6 space-y-1" onSubmit={handleSubmit}>
+      <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
         <Input
           label="Email"
           type="email"
@@ -95,7 +95,7 @@ function ExpiredLinkContent() {
           previous fix). */}
       <div
         aria-live="polite"
-        className="pointer-events-none absolute inset-x-0 bottom-full mb-4"
+        className="pointer-events-none absolute inset-x-0 bottom-full mb-md"
       >
         {notice && (
           <Alert
@@ -112,7 +112,7 @@ function ExpiredLinkContent() {
 
 export default function ExpiredLinkPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
       <Suspense
         fallback={
           <Card className="w-full max-w-form">

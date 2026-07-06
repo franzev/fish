@@ -43,18 +43,59 @@ describe("LoginForm", () => {
     expect(primaryButtons[0]).toHaveTextContent("Log in");
   });
 
+  it("uses a page-level heading for the login screen", () => {
+    render(<LoginForm />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Log in" })
+    ).toBeInTheDocument();
+  });
+
   it("renders two Inputs (email, password)", () => {
     render(<LoginForm />);
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
-  it("renders the Google action as secondary, keeping one primary button", () => {
+  it("adds autofill and enter-key hints that reduce typing effort", () => {
+    render(<LoginForm />);
+    expect(screen.getByLabelText("Email")).toHaveAttribute(
+      "autocomplete",
+      "email"
+    );
+    expect(screen.getByLabelText("Email")).toHaveAttribute(
+      "enterkeyhint",
+      "next"
+    );
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "autocomplete",
+      "current-password"
+    );
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "enterkeyhint",
+      "go"
+    );
+  });
+
+  it("lets the user reveal and hide the password without leaving the field", () => {
+    render(<LoginForm />);
+    const password = screen.getByLabelText("Password");
+    expect(password).toHaveAttribute("type", "password");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show password" }));
+    expect(password).toHaveAttribute("type", "text");
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(password).toHaveAttribute("type", "password");
+  });
+
+  it("renders the Google action as a quiet alternative, keeping one primary button", () => {
     render(<LoginForm />);
     const googleButton = screen.getByRole("button", {
       name: "Continue with Google",
     });
-    expect(googleButton.className).toContain("bg-surface");
+    expect(googleButton.className).toContain("bg-transparent");
+    expect(googleButton.className).toContain("text-muted");
+    expect(googleButton.className).not.toContain("w-full");
     expect(googleButton.className).not.toContain("bg-primary");
     expect(googleButton.querySelector("svg")).toHaveAttribute(
       "aria-hidden",
@@ -70,7 +111,10 @@ describe("LoginForm", () => {
     expect(
       screen.getByRole("link", { name: "Forgot your password?" })
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with Google" })
+    ).toBeInTheDocument();
   });
 
   it("starts Google sign-in from the secondary action", async () => {
@@ -120,6 +164,30 @@ describe("LoginForm", () => {
       })
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/home"));
+  });
+
+  it("disables the submit action while password sign-in is in flight", async () => {
+    let resolveSignIn: (value: { ok: true; data: undefined }) => void = () => {};
+    signInWithPasswordMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSignIn = resolve;
+      })
+    );
+    render(<LoginForm />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Log in" })).toBeDisabled()
+    );
+
+    resolveSignIn({ ok: true, data: undefined });
   });
 
   it("an 'Email not confirmed' error redirects to /check-inbox with the email param", async () => {

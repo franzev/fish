@@ -20,7 +20,7 @@ export default async function EditProfilePage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-start justify-center px-5 py-12">
+    <main className="flex min-h-dvh items-start justify-center px-page py-2xl">
       <EditProfileForm
         initial={{
           displayName: data.displayName,

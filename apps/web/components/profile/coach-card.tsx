@@ -12,9 +12,9 @@ interface CoachCardProps {
    Non-focusable -> plain function export (no forwardRef needed). */
 export function CoachCard({ coachName }: CoachCardProps) {
   return (
-    <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-4">
+    <div className="flex items-center gap-sm rounded-card border border-border bg-surface p-md">
       <Avatar name={coachName ?? undefined} size="md" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-3xs">
         <span className="truncate text-foreground">
           {coachName ?? "Your coach"}
         </span>

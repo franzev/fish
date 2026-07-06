@@ -118,6 +118,7 @@ export interface UpdatePrefsInput {
   themePref: "light" | "dark" | null;
   textSizePref: "default" | "large" | "larger" | null;
   reducedMotionPref: boolean | null;
+  timeFormatPref: "12h" | "24h" | null;
 }
 
 /* A11y prefs persist independently of the display-name/goal edit form (D-14:
@@ -138,6 +139,7 @@ export async function updatePrefsAction(input: UpdatePrefsInput): Promise<void> 
     theme_pref: input.themePref,
     text_size_pref: input.textSizePref,
     reduced_motion_pref: input.reducedMotionPref,
+    time_format_pref: input.timeFormatPref,
   };
 
   await services.database.clientProfiles.updateSafeFields(

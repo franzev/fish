@@ -198,12 +198,14 @@ describe("updatePrefsAction", () => {
       themePref: "dark",
       textSizePref: "larger",
       reducedMotionPref: true,
+      timeFormatPref: "24h",
     });
 
     expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
       theme_pref: "dark",
       text_size_pref: "larger",
       reduced_motion_pref: true,
+      time_format_pref: "24h",
     });
   });
 
@@ -218,12 +220,14 @@ describe("updatePrefsAction", () => {
       themePref: null,
       textSizePref: "default",
       reducedMotionPref: null,
+      timeFormatPref: null,
     });
 
     expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
       theme_pref: null,
       text_size_pref: "default",
       reduced_motion_pref: null,
+      time_format_pref: null,
     });
   });
 });

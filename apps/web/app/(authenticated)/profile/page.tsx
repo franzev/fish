@@ -29,8 +29,8 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-3 py-4 text-center">
+    <div className="flex flex-col gap-lg">
+      <div className="flex flex-col items-center gap-sm py-md text-center">
         <Avatar name={data.displayName} size="lg" />
         <div>
           <h1 className="text-2xl">{data.displayName}</h1>
@@ -46,7 +46,7 @@ export default async function ProfilePage() {
           control={
             <Link
               href="/profile/edit"
-              className="flex min-h-control items-center gap-1 rounded-control px-3 text-ui-sm text-body underline"
+              className="flex min-h-control items-center gap-2xs rounded-control px-sm text-ui-sm text-body underline"
             >
               Edit
               <IconChevronRight size={16} stroke={1.75} aria-hidden="true" />
@@ -57,6 +57,7 @@ export default async function ProfilePage() {
           themePref={data.themePref}
           textSizePref={data.textSizePref}
           reducedMotionPref={data.reducedMotionPref}
+          timeFormatPref={data.timeFormatPref}
         />
         <ConsentRow
           consented={data.consented}
