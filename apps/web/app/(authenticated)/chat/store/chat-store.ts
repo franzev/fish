@@ -13,11 +13,13 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 
 export interface ChatStoreState {
   conversations: ChatState["conversations"];
+  hydrationKeys: Record<ChatConversationId, string>;
   dispatchChatEvent: (event: ChatEvent) => void;
   hydrateConversation: (
     conversationId: ChatConversationId,
     messages: ChatMessageState[],
-    readStates: ChatReadState[]
+    readStates: ChatReadState[],
+    hydrationKey?: string
   ) => void;
   sendOptimisticMessage: (message: ChatMessageState) => void;
   confirmSentMessage: (
@@ -62,6 +64,35 @@ function createStateFromConversations(
   return { conversations };
 }
 
+export function createChatHydrationKey(
+  messages: ChatMessageState[],
+  readStates: ChatReadState[]
+): string {
+  return JSON.stringify({
+    messages: messages.map((message) => ({
+      id: message.id,
+      conversationId: message.conversationId,
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      body: message.body,
+      clientRequestId: message.clientRequestId,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt ?? null,
+      deletedAt: message.deletedAt ?? null,
+      replyToMessageId: message.replyToMessageId ?? null,
+      reactions: message.reactions ?? [],
+      localStatus: message.localStatus,
+    })),
+    readStates: readStates.map((readState) => ({
+      userId: readState.userId,
+      lastDeliveredMessageId: readState.lastDeliveredMessageId ?? null,
+      deliveredAt: readState.deliveredAt ?? null,
+      lastReadMessageId: readState.lastReadMessageId ?? null,
+      readAt: readState.readAt ?? null,
+    })),
+  });
+}
+
 function createChatStoreState(set: ChatStoreSet): ChatStoreState {
   const dispatchChatEvent = (event: ChatEvent) => {
     set((state) => ({
@@ -74,13 +105,31 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
 
   return {
     conversations: {},
+    hydrationKeys: {},
     dispatchChatEvent,
-    hydrateConversation: (conversationId, messages, readStates) => {
-      dispatchChatEvent({
-        type: "hydrateConversation",
-        conversationId,
-        messages,
-        readStates,
+    hydrateConversation: (conversationId, messages, readStates, hydrationKey) => {
+      set((state) => {
+        const conversations = reduceChatState(
+          createStateFromConversations(state.conversations),
+          {
+            type: "hydrateConversation",
+            conversationId,
+            messages,
+            readStates,
+          }
+        ).conversations;
+
+        if (hydrationKey === undefined) {
+          return { conversations };
+        }
+
+        return {
+          conversations,
+          hydrationKeys: {
+            ...state.hydrationKeys,
+            [conversationId]: hydrationKey,
+          },
+        };
       });
     },
     sendOptimisticMessage: (message) => {
@@ -121,8 +170,10 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
     clearConversation: (conversationId) => {
       set((state) => {
         const conversations = { ...state.conversations };
+        const hydrationKeys = { ...state.hydrationKeys };
         delete conversations[conversationId];
-        return { conversations };
+        delete hydrationKeys[conversationId];
+        return { conversations, hydrationKeys };
       });
     },
   };

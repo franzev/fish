@@ -6,10 +6,17 @@ import {
   countUnreadMessages,
   mergeReadState as mergeChatReadState,
 } from "../chat-state";
-import type { LocalMessage } from "./use-chat-messages";
+import { toLocalMessage, type LocalMessage } from "./use-chat-messages";
 import { useCallback, useEffect, useMemo } from "react";
-import { chatStore, useChatStore } from "../store/chat-store";
-import { selectReadStatesForConversation } from "../store/chat-selectors";
+import {
+  chatStore,
+  createChatHydrationKey,
+  useChatStore,
+} from "../store/chat-store";
+import {
+  selectHydrationKeyForConversation,
+  selectReadStatesForConversation,
+} from "../store/chat-selectors";
 
 export interface MarkReadStateActionState {
   status: "sent" | "notice";
@@ -29,10 +36,24 @@ export function useChatReadState({
   messages,
   markReadStateAction,
 }: UseChatReadStateOptions) {
-  const readStates = useChatStore((state) =>
+  const storeReadStates = useChatStore((state) =>
     selectReadStatesForConversation(state, chat.conversationId)
   ) as ClientChatReadState[];
+  const storedHydrationKey = useChatStore((state) =>
+    selectHydrationKeyForConversation(state, chat.conversationId)
+  );
   const mergeReadStateAction = useChatStore((state) => state.mergeReadState);
+  const initialMessages = useMemo(
+    () => chat.messages.map(toLocalMessage),
+    [chat.messages]
+  );
+  const initialReadStates = useMemo(() => chat.readStates ?? [], [chat.readStates]);
+  const hydrationKey = useMemo(
+    () => createChatHydrationKey(initialMessages, initialReadStates),
+    [initialMessages, initialReadStates]
+  );
+  const readStates =
+    storedHydrationKey === hydrationKey ? storeReadStates : initialReadStates;
 
   const setReadStates = useCallback(
     (nextReadStates: ClientChatReadState[]) => {

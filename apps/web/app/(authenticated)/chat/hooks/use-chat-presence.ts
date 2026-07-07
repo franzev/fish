@@ -1,6 +1,6 @@
 import type { ClientChatData, ClientChatPresenceSession } from "@/lib/services";
 import type { TimeFormatPref } from "@/lib/prefs/time-format";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   derivePresenceSnapshot,
   formatPresenceStatus,
@@ -15,11 +15,45 @@ interface UseChatPresenceOptions {
   timeFormatPref: TimeFormatPref;
 }
 
+interface ParticipantPresenceState {
+  participantId: string;
+  sourceKey: string;
+  sessions: ClientChatPresenceSession[];
+}
+
+function createPresenceSessionsKey(sessions: ClientChatPresenceSession[]): string {
+  return JSON.stringify(
+    sessions.map((session) => ({
+      id: session.id,
+      userId: session.userId,
+      activeAt: session.activeAt,
+      lastHeartbeatAt: session.lastHeartbeatAt,
+      endedAt: session.endedAt ?? null,
+    }))
+  );
+}
+
 export function useChatPresence({ chat, timeFormatPref }: UseChatPresenceOptions) {
-  const [participantPresenceSessions, setParticipantPresenceSessions] = useState<
-    ClientChatPresenceSession[]
-  >(() => chat.participantPresence?.sessions ?? []);
+  const providedPresenceSessions = useMemo(
+    () => chat.participantPresence?.sessions ?? [],
+    [chat.participantPresence?.sessions]
+  );
+  const providedPresenceKey = useMemo(
+    () => createPresenceSessionsKey(providedPresenceSessions),
+    [providedPresenceSessions]
+  );
+  const [participantPresenceState, setParticipantPresenceState] =
+    useState<ParticipantPresenceState>(() => ({
+      participantId: chat.participant.id,
+      sourceKey: providedPresenceKey,
+      sessions: providedPresenceSessions,
+    }));
   const [now, setNow] = useState(() => new Date());
+  const participantPresenceSessions =
+    participantPresenceState.participantId === chat.participant.id &&
+    participantPresenceState.sourceKey === providedPresenceKey
+      ? participantPresenceState.sessions
+      : providedPresenceSessions;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -41,23 +75,41 @@ export function useChatPresence({ chat, timeFormatPref }: UseChatPresenceOptions
 
   useEffect(() => {
     return subscribeToParticipantPresence(chat.participant.id, (session, eventType) => {
-      setParticipantPresenceSessions((current) => {
+      setParticipantPresenceState((current) => {
+        const currentSessions =
+          current.participantId === chat.participant.id &&
+          current.sourceKey === providedPresenceKey
+            ? current.sessions
+            : providedPresenceSessions;
+
         if (eventType === "DELETE") {
-          return current.filter((item) => item.id !== session.id);
+          return {
+            participantId: chat.participant.id,
+            sourceKey: providedPresenceKey,
+            sessions: currentSessions.filter((item) => item.id !== session.id),
+          };
         }
 
-        const existingIndex = current.findIndex((item) => item.id === session.id);
+        const existingIndex = currentSessions.findIndex((item) => item.id === session.id);
         if (existingIndex === -1) {
-          return [...current, session];
+          return {
+            participantId: chat.participant.id,
+            sourceKey: providedPresenceKey,
+            sessions: [...currentSessions, session],
+          };
         }
 
-        const next = [...current];
+        const next = [...currentSessions];
         next[existingIndex] = session;
-        return next;
+        return {
+          participantId: chat.participant.id,
+          sourceKey: providedPresenceKey,
+          sessions: next,
+        };
       });
       setNow(new Date());
     });
-  }, [chat.participant.id]);
+  }, [chat.participant.id, providedPresenceKey, providedPresenceSessions]);
 
   const participantPresence = derivePresenceSnapshot(
     participantPresenceSessions,

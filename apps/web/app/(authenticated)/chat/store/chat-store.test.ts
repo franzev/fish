@@ -7,6 +7,7 @@ import type {
   RealtimeConnectionState,
 } from "@fish/core/chat-state";
 import {
+  createChatHydrationKey,
   createChatStore,
   resetChatStoreForTests,
   type ChatStoreState,
@@ -14,6 +15,7 @@ import {
 import {
   selectComposerForConversation,
   selectConversationState,
+  selectHydrationKeyForConversation,
   selectMessagesForConversation,
   selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
@@ -211,6 +213,39 @@ describe("chat store actions", () => {
     expect(selectComposerForConversation(store.getState(), otherConversationId).draft).toBe(
       "Separate draft"
     );
+  });
+
+  it("tracks which server snapshot hydrated a conversation", () => {
+    const store = createChatStore();
+    const hydrationKey = createChatHydrationKey([baseMessage], [baseReadState]);
+
+    store
+      .getState()
+      .hydrateConversation(conversationId, [baseMessage], [baseReadState], hydrationKey);
+
+    expect(selectHydrationKeyForConversation(store.getState(), conversationId)).toBe(
+      hydrationKey
+    );
+
+    store.getState().sendOptimisticMessage({
+      id: "local-request-2",
+      conversationId,
+      senderId: "client-1",
+      senderRole: "client",
+      body: "It felt steady.",
+      clientRequestId: "request-2",
+      createdAt: "2026-07-06T04:03:00.000Z",
+      editedAt: null,
+      deletedAt: null,
+      replyToMessageId: null,
+      reactions: [],
+    });
+    expect(selectHydrationKeyForConversation(store.getState(), conversationId)).toBe(
+      hydrationKey
+    );
+
+    store.getState().clearConversation(conversationId);
+    expect(selectHydrationKeyForConversation(store.getState(), conversationId)).toBeNull();
   });
 });
 

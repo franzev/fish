@@ -1,9 +1,21 @@
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
 import type { ChatMessageState } from "@fish/core/chat-state";
 import { mergeChatMessage } from "../chat-state";
-import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
-import { chatStore, useChatStore } from "../store/chat-store";
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import {
+  chatStore,
+  createChatHydrationKey,
+  useChatStore,
+} from "../store/chat-store";
+import {
+  selectHydrationKeyForConversation,
   selectMessagesForConversation,
   selectReadStatesForConversation,
 } from "../store/chat-selectors";
@@ -59,20 +71,41 @@ export function useChatMessages({
   refreshConversationAction,
   onReadStatesRefreshed,
 }: UseChatMessagesOptions) {
-  const messages = useChatStore((state) =>
+  const storeMessages = useChatStore((state) =>
     selectMessagesForConversation(state, chat.conversationId)
   ) as LocalMessage[];
+  const storedHydrationKey = useChatStore((state) =>
+    selectHydrationKeyForConversation(state, chat.conversationId)
+  );
   const hydrateConversation = useChatStore((state) => state.hydrateConversation);
   const dispatchChatEvent = useChatStore((state) => state.dispatchChatEvent);
   const messageIdsRef = useRef<string[]>([]);
+  const initialMessages = useMemo(
+    () => chat.messages.map(toLocalMessage),
+    [chat.messages]
+  );
+  const initialReadStates = useMemo(() => chat.readStates ?? [], [chat.readStates]);
+  const hydrationKey = useMemo(
+    () => createChatHydrationKey(initialMessages, initialReadStates),
+    [initialMessages, initialReadStates]
+  );
+  const messages =
+    storedHydrationKey === hydrationKey ? storeMessages : initialMessages;
 
   useEffect(() => {
     hydrateConversation(
       chat.conversationId,
-      chat.messages.map(toLocalMessage),
-      chat.readStates ?? []
+      initialMessages,
+      initialReadStates,
+      hydrationKey
     );
-  }, [chat.conversationId, chat.messages, chat.readStates, hydrateConversation]);
+  }, [
+    chat.conversationId,
+    hydrateConversation,
+    hydrationKey,
+    initialMessages,
+    initialReadStates,
+  ]);
 
   const setMessages: Dispatch<SetStateAction<LocalMessage[]>> = useCallback(
     (nextMessages) => {

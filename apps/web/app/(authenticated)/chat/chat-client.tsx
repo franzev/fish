@@ -41,11 +41,9 @@ import { useChatRealtime } from "./hooks/use-chat-realtime";
 import { useChatStore } from "./store/chat-store";
 import {
   selectComposerForConversation,
-  selectMessagesForConversation,
   selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
 } from "./store/chat-selectors";
-import type { LocalMessage } from "./hooks/use-chat-messages";
 
 interface ChatClientProps {
   chat: ClientChatData;
@@ -88,15 +86,13 @@ export function ChatClient({
   refreshMessagesAction,
   refreshConversationAction,
 }: ChatClientProps) {
-  const messages = useChatStore((state) =>
-    selectMessagesForConversation(state, chat.conversationId)
-  ) as LocalMessage[];
   useChatStore((state) => selectComposerForConversation(state, chat.conversationId));
   useChatStore((state) => selectReadStatesForConversation(state, chat.conversationId));
   useChatStore((state) =>
     selectRealtimeStatusForConversation(state, chat.conversationId)
   );
-  const { setMessages, refreshMessages, refreshConversation } = useChatMessages({
+  const { messages, setMessages, refreshMessages, refreshConversation } =
+    useChatMessages({
       chat,
       refreshMessagesAction,
       refreshConversationAction,

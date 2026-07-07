@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
 import { ChatClient } from "./chat-client";
-import { resetChatStoreForTests } from "./store/chat-store";
+import { chatStore, resetChatStoreForTests } from "./store/chat-store";
 
 const realtimeMock = vi.hoisted(() => {
   const messageHandlers: Array<(payload: { new: unknown }) => void> = [];
@@ -123,7 +123,6 @@ describe("ChatClient hook boundaries", () => {
 
   it("wires the rendering shell to narrow chat store selectors", () => {
     expect(chatClientSource).toContain(`from "./store/chat-selectors"`);
-    expect(chatClientSource).toContain("selectMessagesForConversation");
     expect(chatClientSource).toContain("selectComposerForConversation");
     expect(chatClientSource).toContain("selectReadStatesForConversation");
     expect(chatClientSource).not.toContain("useChatStore()");
@@ -220,6 +219,26 @@ describe("ChatClient", () => {
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
   });
 
+  it("uses the current server snapshot when the chat store has stale cached messages", () => {
+    chatStore.getState().hydrateConversation(
+      chat.conversationId,
+      [
+        {
+          ...chat.messages[0],
+          body: "Stale cached message",
+          localStatus: "sent",
+        },
+      ],
+      chat.readStates ?? [],
+      "older-server-snapshot"
+    );
+
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
+    expect(screen.queryByText("Stale cached message")).toBeNull();
+  });
+
   it("renders realtime presence directly below the participant name", () => {
     render(
       <ChatClient
@@ -244,6 +263,52 @@ describe("ChatClient", () => {
 
     expect(screen.getByText("Active now")).toBeInTheDocument();
     expect(screen.getByLabelText("Participant is online")).toHaveClass("bg-success");
+  });
+
+  it("resets participant presence when the assigned participant changes without remounting", async () => {
+    const { rerender } = render(
+      <ChatClient
+        chat={{
+          ...chat,
+          participantPresence: {
+            lastSeenAt: "2026-07-06T04:14:50.000Z",
+            sessions: [
+              {
+                id: "presence-1",
+                userId: "coach-1",
+                activeAt: new Date().toISOString(),
+                lastHeartbeatAt: new Date().toISOString(),
+                endedAt: null,
+              },
+            ],
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Active now")).toBeInTheDocument();
+
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          participant: {
+            id: "coach-2",
+            displayName: "Coach Lee",
+            role: "coach",
+          },
+          participantPresence: {
+            lastSeenAt: "2026-07-05T00:00:00.000Z",
+            sessions: [],
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Coach Lee")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Active now")).toBeNull());
   });
 
   it("shows the unread message counter until read state catches up", () => {

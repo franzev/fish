@@ -28,6 +28,13 @@ export function selectMessagesForConversation(
   return selectConversationState(state, conversationId)?.messages ?? [];
 }
 
+export function selectHydrationKeyForConversation(
+  state: Pick<ChatStoreState, "hydrationKeys">,
+  conversationId: ChatConversationId
+): string | null {
+  return state.hydrationKeys[conversationId] ?? null;
+}
+
 export function selectComposerForConversation(
   state: Pick<ChatStoreState, "conversations">,
   conversationId: ChatConversationId
