@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-07-07T00:02:02.196Z"
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-07-07T00:12:06.193Z"
 last_activity: 2026-07-07
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 88
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
 Plan: 3 of 4
-Status: Ready to execute
+Status: Ready to execute Plan 09-03
 
 Progress: [█████████░] 88%
 
@@ -72,10 +72,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - The shared chat brain is exported as `@fish/core/chat-state`; the web `chat-state.ts` helper remains a compatibility shim.
 - Chat-state fixtures use plain JSON vectors with expected state or selector outputs so native clients can replay the same contract later.
 - [Phase 09]: Plan 09-02 keeps extracted web chat hooks backed by React local state; Zustand remains out of scope until Plan 09-03. — D-06 requires hook extraction before the web store so behavior remains testable and unchanged before shared coordination is introduced.
+- [Phase 09]: Chat state parity is documented as event/result replay with expected state or selector outputs, not generated shared native code. — Plan 09-04 creates the cross-platform protocol document and native notes from the existing fixture vectors.
+- [Phase 09]: Web Zustand, Android ViewModel/StateFlow, and iOS observable models are adapters only; Supabase/server boundaries remain authoritative. — The protocol and native notes keep auth, assignment, membership, writes, persistence, and durable read state outside local platform stores.
+- [Phase 09]: Native readiness is documentation only; Android/iOS production chat source remains untouched. — CSTATE-05 requires architecture notes without native production implementation.
 
 ### Todos / open questions
 
-- [ ] Continue Phase 9 cross-platform chat state with Plan 09-03 or remaining Wave 2 Plan 09-04.
+- [ ] Continue Phase 9 cross-platform chat state with Plan 09-03.
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
@@ -90,6 +93,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 |-------|------|----------|-------|-------|
 | 09 | 01 | 8min | 3 | 10 |
 | 09 | 02 | 12min | 3 | 9 |
+| 09 | 04 | 5min | 2 | 2 |
 
 ### Quick Tasks Completed
 
@@ -106,11 +110,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-07T00:01:55.282Z
+**Last session:** 2026-07-07T00:12:06.184Z
 
 - **Last activity:** 2026-07-07
-- **Stopped at:** Completed 09-02-PLAN.md
-- **Next action:** Continue with Phase 9 Plan 09-03 or remaining Wave 2 Plan 09-04.
+- **Stopped at:** Completed 09-04-PLAN.md
+- **Next action:** Continue with Phase 9 Plan 09-03.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
