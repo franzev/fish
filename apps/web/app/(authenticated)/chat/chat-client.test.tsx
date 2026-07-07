@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
 import { ChatClient } from "./chat-client";
+import { resetChatStoreForTests } from "./store/chat-store";
 
 const realtimeMock = vi.hoisted(() => {
   const messageHandlers: Array<(payload: { new: unknown }) => void> = [];
@@ -119,10 +120,40 @@ describe("ChatClient hook boundaries", () => {
     expect(chatClientSource).toContain(`from "./hooks/use-chat-composer"`);
     expect(chatClientSource).toContain("useChatComposer(");
   });
+
+  it("wires the rendering shell to narrow chat store selectors", () => {
+    expect(chatClientSource).toContain(`from "./store/chat-selectors"`);
+    expect(chatClientSource).toContain("selectMessagesForConversation");
+    expect(chatClientSource).toContain("selectComposerForConversation");
+    expect(chatClientSource).toContain("selectReadStatesForConversation");
+    expect(chatClientSource).not.toContain("useChatStore()");
+  });
+
+  it("keeps hook state transitions behind the chat store adapter", () => {
+    const hookSources = [
+      "use-chat-messages.ts",
+      "use-chat-read-state.ts",
+      "use-chat-realtime.ts",
+      "use-chat-composer.ts",
+    ].map((fileName) =>
+      readFileSync(
+        join(process.cwd(), `app/(authenticated)/chat/hooks/${fileName}`),
+        "utf8"
+      )
+    );
+
+    expect(hookSources.join("\n")).toContain("dispatchChatEvent");
+    expect(hookSources.join("\n")).toContain("setDraft");
+    expect(hookSources.join("\n")).toContain("sendOptimisticMessage");
+    expect(hookSources.join("\n")).toContain("confirmSentMessage");
+    expect(hookSources.join("\n")).toContain("markMessageFailed");
+    expect(hookSources.join("\n")).toContain("mergeReadState");
+  });
 });
 
 describe("ChatClient", () => {
   beforeEach(() => {
+    resetChatStoreForTests();
     realtimeMock.messageHandlers.length = 0;
     realtimeMock.messageUpdateHandlers.length = 0;
     realtimeMock.readHandlers.length = 0;
