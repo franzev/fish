@@ -53,7 +53,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 ### Cross-platform Chat State (CSTATE)
 
 - [x] **CSTATE-01**: Chat state merge/status/read/snippet helpers are extracted into a portable core module with no React, Next.js, Zustand, Supabase client, browser, Swift, or Kotlin dependencies.
-- [ ] **CSTATE-02**: The web chat route is split into focused local hooks for messages, read state, presence/realtime, typing/recording, and composer behavior while preserving the current one-assigned-conversation experience.
+- [x] **CSTATE-02**: The web chat route is split into focused local hooks for messages, read state, presence/realtime, typing/recording, and composer behavior while preserving the current one-assigned-conversation experience.
 - [ ] **CSTATE-03**: Zustand is introduced on web only as a thin chat coordination/cache adapter keyed by `conversationId`; it may hold drafts, reply/edit targets, optimistic pending/failed metadata, cached messages/read states, and realtime connection state, but never auth truth, role permissions, assignment logic, or RLS-sensitive decisions.
 - [x] **CSTATE-04**: Cross-platform JSON fixtures and a small chat-state protocol document define the hydrate/send/confirm/fail/merge/read-state events and expected state results so Android and iOS can implement equivalent native state machines.
 - [ ] **CSTATE-05**: Android and iOS architecture notes map the shared chat-state event contract to native containers (Android `ViewModel` + `StateFlow`, iOS observable model) without importing web state libraries or blocking web delivery on native implementation.
@@ -91,7 +91,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 | CHAT-06 | Phase 7 — Chat Schema | Complete |
 | CHAT-07 | Phase 8 — Real Chat Route + send-message Edge Function | Complete |
 | CSTATE-01 | Phase 9 — Cross-platform Chat State | Complete |
-| CSTATE-02 | Phase 9 — Cross-platform Chat State | Pending |
+| CSTATE-02 | Phase 9 — Cross-platform Chat State | Complete |
 | CSTATE-03 | Phase 9 — Cross-platform Chat State | Pending |
 | CSTATE-04 | Phase 9 — Cross-platform Chat State | Complete |
 | CSTATE-05 | Phase 9 — Cross-platform Chat State | Pending |

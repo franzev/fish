@@ -14,6 +14,7 @@
 - Named exports: camelCase (`cn`, `Card`, `Progress`, `Button`, `Input`)
 - Components exported as named exports (not default exports)
 - React components use PascalCase (`Card`, `Button`, `Input`, `Progress`)
+- React hooks use `use*` named exports and live near the route/component they coordinate when the state is route-specific
 - Utility functions use camelCase (`cn`)
 - Type guard functions: `isUserRole` (verb-subject pattern)
 
@@ -129,6 +130,7 @@
 **Exports:**
 - Named exports preferred over default exports (allows tree-shaking, explicit in imports)
 - React components: `export const Component = ...` or `export const Component = forwardRef(...)`
+- Route-local hooks: `export function useFeatureName(...)`; pass server actions and realtime callbacks in as dependencies when the hook coordinates command behavior
 - Utilities: `export function utils(...)`
 - Index files use barrel pattern: `export * from "./module"`
 

@@ -12,7 +12,11 @@ fish/                              # Monorepo root (pnpm workspaces)
 │   │   │   ├── layout.tsx          # Root layout (fonts, metadata)
 │   │   │   ├── page.tsx            # Home / design system showcase
 │   │   │   ├── globals.css         # Tailwind v4 CSS-first theme (@theme, @layer)
-│   │   │   └── [future pages]      # /chat, /coach, /onboarding (not yet built)
+│   │   │   ├── (authenticated)/     # Protected app surfaces
+│   │   │   │   └── chat/            # One assigned-conversation route
+│   │   │   │       ├── chat-client.tsx  # Rendering shell for chat UI
+│   │   │   │       └── hooks/       # Focused local-state chat hooks
+│   │   │   └── [future pages]      # Additional routes as validated
 │   │   ├── components/
 │   │   │   └── ui/                 # Design-system controls
 │   │   │       ├── button.tsx      # Button (primary/secondary/ghost variants)
@@ -100,8 +104,9 @@ fish/                              # Monorepo root (pnpm workspaces)
 
 **apps/web/app/ (Next.js App Router Pages):**
 - Purpose: Route handlers and page components.
-- Contains: `layout.tsx` (root wrapper), `page.tsx` (home), future: `chat/page.tsx`, `coach/page.tsx`, `onboarding/page.tsx`.
+- Contains: `layout.tsx` (root wrapper), `page.tsx` (home), authenticated route groups, `chat/page.tsx`, `coach/page.tsx`, and validated future routes.
 - Naming: kebab-case folders for routes (e.g., `/chat` → `chat/page.tsx`); `layout.tsx` applies to folder and children.
+- Pattern: Complex route clients may keep route-local hooks in `hooks/`; for chat these are `use-chat-messages`, `use-chat-read-state`, `use-chat-realtime`, `use-chat-presence`, and `use-chat-composer`.
 
 **apps/web/components/ui/ (Design System):**
 - Purpose: Centralized, reusable UI controls conforming to FISH rules.

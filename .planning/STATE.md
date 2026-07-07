@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Phase 9 is ready to execute.
-last_updated: "2026-07-06T23:44:29.844Z"
-last_activity: 2026-07-06
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-07-07T00:02:02.196Z"
+last_activity: 2026-07-07
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
-  percent: 50
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State: FISH
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Milestone v1.1 Phases
 
@@ -71,10 +71,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - Chat state portability decision: the durable chat brain should be a small event/result state machine with JSON fixtures; Zustand is only the web adapter, while Android/iOS use native state containers.
 - The shared chat brain is exported as `@fish/core/chat-state`; the web `chat-state.ts` helper remains a compatibility shim.
 - Chat-state fixtures use plain JSON vectors with expected state or selector outputs so native clients can replay the same contract later.
+- [Phase 09]: Plan 09-02 keeps extracted web chat hooks backed by React local state; Zustand remains out of scope until Plan 09-03. — D-06 requires hook extraction before the web store so behavior remains testable and unchanged before shared coordination is introduced.
 
 ### Todos / open questions
 
-- [ ] Continue Phase 9 cross-platform chat state with Plan 09-02.
+- [ ] Continue Phase 9 cross-platform chat state with Plan 09-03 or remaining Wave 2 Plan 09-04.
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
@@ -88,6 +89,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 09 | 01 | 8min | 3 | 10 |
+| 09 | 02 | 12min | 3 | 9 |
 
 ### Quick Tasks Completed
 
@@ -104,11 +106,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-06T23:44:29.841Z
+**Last session:** 2026-07-07T00:01:55.282Z
 
-- **Last activity:** 2026-07-06
-- **Stopped at:** Completed 09-01-PLAN.md.
-- **Next action:** Continue with Phase 9 Plan 09-02.
+- **Last activity:** 2026-07-07
+- **Stopped at:** Completed 09-02-PLAN.md
+- **Next action:** Continue with Phase 9 Plan 09-03 or remaining Wave 2 Plan 09-04.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
