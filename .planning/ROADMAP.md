@@ -31,7 +31,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ### v1.2 Cross-platform Chat State Foundation
 
-- [x] **Phase 9: Cross-platform Chat State** - Chat state rules become portable and test-vector-backed; web adopts Zustand only as the React adapter for shared chat surfaces while Android/iOS get the same event contract to implement natively. (completed 2026-07-07)
+- [ ] **Phase 9: Cross-platform Chat State** - Chat state rules become portable and test-vector-backed; web adopts Zustand only as the React adapter for shared chat surfaces while Android/iOS get the same event contract to implement natively. (needs UAT)
 
 ## Phase Details
 
@@ -96,7 +96,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 4/4 | Complete   | 2026-07-07 |
+| 9. Cross-platform Chat State | v1.2 | 4/4 | Needs UAT  | — |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*

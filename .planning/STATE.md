@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-07-07T00:30:37.914Z"
-last_activity: 2026-07-07
+status: verifying
+stopped_at: Phase 09 automated verification passed; UAT required for 2 human checks.
+last_updated: "2026-07-07T00:55:09Z"
+last_activity: Persisted Phase 09 UAT after human-needed verification.
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 8
   completed_plans: 8
-  percent: 100
+  percent: 88
 ---
 
 # Project State: FISH
@@ -24,15 +24,15 @@ See: .planning/PROJECT.md
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
-- **Current focus:** Phase 09 — cross-platform-chat-state
+- **Current focus:** Phase 09 UAT for cross-platform chat state.
 
 ## Current Position
 
-Phase: 09 (cross-platform-chat-state) — COMPLETE
+Phase: 09 (cross-platform-chat-state) — needs UAT
 Plan: 4 of 4
-Status: Phase 09 plans complete; ready for verification and milestone closeout
+Status: Automated verification passed 6/6 must-haves. Two human checks remain before phase completion: `/chat` visual calm and native notes readability.
 
-Progress: [██████████] 100%
+Progress: [█████████░] 88%
 
 ## Milestone v1.1 Phases
 
@@ -48,7 +48,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Complete |
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Needs UAT |
 
 ## Archived Milestones
 
@@ -112,11 +112,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-07T00:30:37.907Z
+**Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-07
-- **Stopped at:** Completed 09-03-PLAN.md
-- **Next action:** Run Phase 9 verification/UAT and milestone closeout.
+- **Last activity:** Persisted Phase 09 UAT after human-needed verification.
+- **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
+- **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
