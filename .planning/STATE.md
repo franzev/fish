@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-04-PLAN.md
-last_updated: "2026-07-07T00:30:01.778Z"
+stopped_at: Completed 09-03-PLAN.md
+last_updated: "2026-07-07T00:30:37.914Z"
 last_activity: 2026-07-07
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 8
-  completed_plans: 9
-  percent: 75
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State: FISH
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md
 
 ## Current Position
 
-Phase: 09 (cross-platform-chat-state) — EXECUTING
+Phase: 09 (cross-platform-chat-state) — COMPLETE
 Plan: 4 of 4
-Status: Ready to execute Plan 09-03
+Status: Phase 09 plans complete; ready for verification and milestone closeout
 
-Progress: [█████████░] 88%
+Progress: [██████████] 100%
 
 ## Milestone v1.1 Phases
 
@@ -48,7 +48,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | In Progress |
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Complete |
 
 ## Archived Milestones
 
@@ -75,10 +75,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: Chat state parity is documented as event/result replay with expected state or selector outputs, not generated shared native code. — Plan 09-04 creates the cross-platform protocol document and native notes from the existing fixture vectors.
 - [Phase 09]: Web Zustand, Android ViewModel/StateFlow, and iOS observable models are adapters only; Supabase/server boundaries remain authoritative. — The protocol and native notes keep auth, assignment, membership, writes, persistence, and durable read state outside local platform stores.
 - [Phase 09]: Native readiness is documentation only; Android/iOS production chat source remains untouched. — CSTATE-05 requires architecture notes without native production implementation.
+- [Phase 09]: Zustand is the web-only chat coordination/cache adapter keyed by conversationId; the portable reducer and Supabase/server boundaries remain authoritative. — Plan 09-03 introduced Zustand only in apps/web and store tests reject auth, role, assignment, Supabase client, and service-role drift.
+- [Phase 09]: ChatClient and hooks subscribe through narrow store selectors/actions while preserving the one assigned conversation UI. — Plan 09-03 wires messages, composer, read state, and realtime status through selector slices with existing chat tests green.
 
 ### Todos / open questions
 
-- [ ] Continue Phase 9 cross-platform chat state with Plan 09-03.
 - [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
@@ -94,6 +95,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 09 | 01 | 8min | 3 | 10 |
 | 09 | 02 | 12min | 3 | 9 |
 | 09 | 04 | 5min | 2 | 2 |
+| 09 | 03 | 12min | 3 | 11 |
 
 ### Quick Tasks Completed
 
@@ -110,11 +112,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-07T00:30:01.771Z
+**Last session:** 2026-07-07T00:30:37.907Z
 
 - **Last activity:** 2026-07-07
-- **Stopped at:** Completed 09-04-PLAN.md
-- **Next action:** Continue with Phase 9 Plan 09-03.
+- **Stopped at:** Completed 09-03-PLAN.md
+- **Next action:** Run Phase 9 verification/UAT and milestone closeout.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
