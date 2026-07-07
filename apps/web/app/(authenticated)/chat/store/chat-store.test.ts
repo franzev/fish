@@ -201,7 +201,7 @@ describe("chat store actions", () => {
     });
     expect(
       selectRealtimeStatusForConversation(store.getState(), conversationId)
-    ).toBe<RealtimeConnectionState>("connected");
+    ).toBe("connected" satisfies RealtimeConnectionState);
     expect(selectComposerForConversation(store.getState(), otherConversationId).draft).toBe(
       "Separate draft"
     );
