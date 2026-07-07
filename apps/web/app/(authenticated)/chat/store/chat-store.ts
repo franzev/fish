@@ -120,8 +120,8 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
     },
     clearConversation: (conversationId) => {
       set((state) => {
-        const { [conversationId]: _removed, ...conversations } =
-          state.conversations;
+        const conversations = { ...state.conversations };
+        delete conversations[conversationId];
         return { conversations };
       });
     },
@@ -134,16 +134,8 @@ export function createChatStore() {
 
 export const chatStore = createChatStore();
 
-export function useChatStore(): ChatStoreState;
-export function useChatStore<T>(selector: (state: ChatStoreState) => T): T;
-export function useChatStore<T>(
-  selector?: (state: ChatStoreState) => T
-): ChatStoreState | T {
-  if (selector) {
-    return useStore(chatStore, selector);
-  }
-
-  return useStore(chatStore);
+export function useChatStore<T>(selector: (state: ChatStoreState) => T): T {
+  return useStore(chatStore, selector);
 }
 
 export function resetChatStoreForTests() {

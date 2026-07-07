@@ -1,8 +1,14 @@
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
+import type { ChatMessageState } from "@fish/core/chat-state";
 import { mergeChatMessage } from "../chat-state";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import { chatStore, useChatStore } from "../store/chat-store";
+import {
+  selectMessagesForConversation,
+  selectReadStatesForConversation,
+} from "../store/chat-selectors";
 
-export type LocalStatus = "pending" | "sent" | "failed";
+export type LocalStatus = "pending" | "sending" | "sent" | "failed";
 
 export type LocalMessage = ClientChatMessage & {
   localStatus: LocalStatus;
@@ -53,12 +59,44 @@ export function useChatMessages({
   refreshConversationAction,
   onReadStatesRefreshed,
 }: UseChatMessagesOptions) {
-  const initialMessages = useMemo(
-    () => chat.messages.map(toLocalMessage),
-    [chat.messages]
-  );
-  const [messages, setMessages] = useState<LocalMessage[]>(initialMessages);
+  const messages = useChatStore((state) =>
+    selectMessagesForConversation(state, chat.conversationId)
+  ) as LocalMessage[];
+  const hydrateConversation = useChatStore((state) => state.hydrateConversation);
+  const dispatchChatEvent = useChatStore((state) => state.dispatchChatEvent);
   const messageIdsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    hydrateConversation(
+      chat.conversationId,
+      chat.messages.map(toLocalMessage),
+      chat.readStates ?? []
+    );
+  }, [chat.conversationId, chat.messages, chat.readStates, hydrateConversation]);
+
+  const setMessages: Dispatch<SetStateAction<LocalMessage[]>> = useCallback(
+    (nextMessages) => {
+      const currentMessages = selectMessagesForConversation(
+        chatStore.getState(),
+        chat.conversationId
+      ) as LocalMessage[];
+      const readStates = selectReadStatesForConversation(
+        chatStore.getState(),
+        chat.conversationId
+      );
+      const resolvedMessages =
+        typeof nextMessages === "function"
+          ? nextMessages(currentMessages)
+          : nextMessages;
+
+      hydrateConversation(
+        chat.conversationId,
+        resolvedMessages as ChatMessageState[],
+        readStates
+      );
+    },
+    [chat.conversationId, hydrateConversation]
+  );
 
   useEffect(() => {
     messageIdsRef.current = messages.map((message) => message.id);
@@ -75,15 +113,12 @@ export function useChatMessages({
       }).catch(() => null);
 
       if (result?.status === "sent" && result.messages) {
-        setMessages((current) =>
-          result.messages!.reduce(
-            (next, message) => mergeMessage(next, message),
-            current
-          )
-        );
+        for (const message of result.messages) {
+          dispatchChatEvent({ type: "mergeRemoteMessage", message });
+        }
       }
     },
-    [refreshMessagesAction]
+    [dispatchChatEvent, refreshMessagesAction]
   );
 
   const refreshConversation = useCallback(async () => {
@@ -101,16 +136,24 @@ export function useChatMessages({
     }
 
     if (result.messages) {
-      setMessages((current) =>
-        result.messages!.reduce((next, message) => mergeMessage(next, message), current)
-      );
+      for (const message of result.messages) {
+        dispatchChatEvent({ type: "mergeRemoteMessage", message });
+      }
     }
 
     if (result.readStates) {
+      for (const readState of result.readStates) {
+        dispatchChatEvent({
+          type: "mergeReadState",
+          conversationId: chat.conversationId,
+          readState,
+        });
+      }
       onReadStatesRefreshed?.(result.readStates);
     }
   }, [
     chat.conversationId,
+    dispatchChatEvent,
     onReadStatesRefreshed,
     refreshConversationAction,
     refreshMessages,

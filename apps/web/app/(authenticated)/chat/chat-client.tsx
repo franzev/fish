@@ -31,13 +31,21 @@ import {
   IconX,
   IconMessageReply,
 } from "@tabler/icons-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { SendMessageActionState } from "./actions";
 import { useChatComposer } from "./hooks/use-chat-composer";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { useChatPresence } from "./hooks/use-chat-presence";
 import { useChatReadState } from "./hooks/use-chat-read-state";
 import { useChatRealtime } from "./hooks/use-chat-realtime";
+import { useChatStore } from "./store/chat-store";
+import {
+  selectComposerForConversation,
+  selectMessagesForConversation,
+  selectReadStatesForConversation,
+  selectRealtimeStatusForConversation,
+} from "./store/chat-selectors";
+import type { LocalMessage } from "./hooks/use-chat-messages";
 
 interface ChatClientProps {
   chat: ClientChatData;
@@ -80,21 +88,21 @@ export function ChatClient({
   refreshMessagesAction,
   refreshConversationAction,
 }: ChatClientProps) {
-  const refreshedReadStatesRef = useRef<(readStates: ClientChatReadState[]) => void>(
-    () => undefined
+  const messages = useChatStore((state) =>
+    selectMessagesForConversation(state, chat.conversationId)
+  ) as LocalMessage[];
+  useChatStore((state) => selectComposerForConversation(state, chat.conversationId));
+  useChatStore((state) => selectReadStatesForConversation(state, chat.conversationId));
+  useChatStore((state) =>
+    selectRealtimeStatusForConversation(state, chat.conversationId)
   );
-  const { messages, setMessages, refreshMessages, refreshConversation } =
-    useChatMessages({
+  const { setMessages, refreshMessages, refreshConversation } = useChatMessages({
       chat,
       refreshMessagesAction,
       refreshConversationAction,
-      onReadStatesRefreshed(readStates) {
-        refreshedReadStatesRef.current(readStates);
-      },
     });
   const {
     mergeReadState,
-    mergeReadStates,
     participantReadState,
     unreadCount,
   } = useChatReadState({
@@ -102,7 +110,6 @@ export function ChatClient({
     messages,
     markReadStateAction,
   });
-  refreshedReadStatesRef.current = mergeReadStates;
   const [search, setSearch] = useState("");
   const timeFormatPref = useTimeFormatPreference();
   const {
@@ -140,7 +147,6 @@ export function ChatClient({
   } = useChatComposer({
     chat,
     messages,
-    setMessages,
     sendMessageAction,
     editMessageAction,
     deleteMessageAction,

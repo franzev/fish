@@ -10,7 +10,7 @@ import {
   subscribeToConversationVoiceRecording,
 } from "../realtime";
 import type { LocalMessage } from "./use-chat-messages";
-import { mergeMessage } from "./use-chat-messages";
+import { useChatStore } from "../store/chat-store";
 
 interface UseChatRealtimeOptions {
   chat: ClientChatData;
@@ -30,6 +30,8 @@ export function useChatRealtime({
   const [participantTyping, setParticipantTyping] = useState(false);
   const [participantRecording, setParticipantRecording] = useState(false);
   const [localRecording, setLocalRecording] = useState(false);
+  const dispatchChatEvent = useChatStore((state) => state.dispatchChatEvent);
+  const setRealtimeStatus = useChatStore((state) => state.setRealtimeStatus);
   const typingSubscriptionRef = useRef<ConversationTypingSubscription | null>(null);
   const voiceSubscriptionRef =
     useRef<ConversationVoiceRecordingSubscription | null>(null);
@@ -39,28 +41,41 @@ export function useChatRealtime({
   const participantRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    setRealtimeStatus(chat.conversationId, "connecting");
     return subscribeToConversationMessages(
       chat.conversationId,
       (message) => {
-        setMessages((current) => mergeMessage(current, message));
+        dispatchChatEvent({ type: "mergeRemoteMessage", message });
       },
       () => {
+        setRealtimeStatus(chat.conversationId, "connected");
         void refreshConversation();
       }
     );
-  }, [chat.conversationId, refreshConversation, setMessages]);
+  }, [
+    chat.conversationId,
+    dispatchChatEvent,
+    refreshConversation,
+    setMessages,
+    setRealtimeStatus,
+  ]);
 
   useEffect(() => {
     return subscribeToConversationReadStates(
       chat.conversationId,
       (readState) => {
+        dispatchChatEvent({
+          type: "mergeReadState",
+          conversationId: chat.conversationId,
+          readState,
+        });
         mergeReadState(readState);
       },
       () => {
         void refreshConversation();
       }
     );
-  }, [chat.conversationId, mergeReadState, refreshConversation]);
+  }, [chat.conversationId, dispatchChatEvent, mergeReadState, refreshConversation]);
 
   useEffect(() => {
     return subscribeToConversationReactionChanges(

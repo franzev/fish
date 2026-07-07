@@ -1,14 +1,14 @@
 import type { ClientChatData } from "@/lib/services";
 import { chatLimits } from "@fish/core/chat";
-import { useMemo, useState, type Dispatch, type KeyboardEvent, type SetStateAction } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import type { SendMessageActionState } from "../actions";
 import type { LocalMessage } from "./use-chat-messages";
-import { mergeMessage } from "./use-chat-messages";
+import { useChatStore } from "../store/chat-store";
+import { selectComposerForConversation } from "../store/chat-selectors";
 
 interface UseChatComposerOptions {
   chat: ClientChatData;
   messages: LocalMessage[];
-  setMessages: Dispatch<SetStateAction<LocalMessage[]>>;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
@@ -25,7 +25,6 @@ function makeRequestId(): string {
 export function useChatComposer({
   chat,
   messages,
-  setMessages,
   sendMessageAction,
   editMessageAction,
   deleteMessageAction,
@@ -34,11 +33,20 @@ export function useChatComposer({
   stopLocalTyping,
   scheduleLocalTypingStop,
 }: UseChatComposerOptions) {
-  const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const composer = useChatStore((state) =>
+    selectComposerForConversation(state, chat.conversationId)
+  );
+  const setDraft = useChatStore((state) => state.setDraft);
+  const setReplyTarget = useChatStore((state) => state.setReplyTarget);
+  const setEditTarget = useChatStore((state) => state.setEditTarget);
+  const sendOptimisticMessage = useChatStore((state) => state.sendOptimisticMessage);
+  const confirmSentMessage = useChatStore((state) => state.confirmSentMessage);
+  const markMessageFailed = useChatStore((state) => state.markMessageFailed);
+  const mergeRemoteMessage = useChatStore((state) => state.mergeRemoteMessage);
 
+  const { draft, replyTargetId: replyingToId, editTargetId: editingMessageId } =
+    composer;
   const trimmedDraft = draft.trim();
   const canSend = trimmedDraft.length > 0;
   const replyingTo = useMemo(
@@ -57,7 +65,7 @@ export function useChatComposer({
   );
 
   function handleDraftChange(value: string) {
-    setDraft(value);
+    setDraft(chat.conversationId, value);
     setNotice(null);
 
     if (value.trim().length === 0) {
@@ -90,23 +98,14 @@ export function useChatComposer({
       replyToMessageId,
       reactions: [],
       createdAt: new Date().toISOString(),
-      localStatus: "pending",
+      localStatus: "sending",
     };
 
-    setMessages((current) => {
-      const exists = current.some(
-        (message) => message.clientRequestId === clientRequestId
-      );
-      return exists
-        ? current.map((message) =>
-            message.clientRequestId === clientRequestId ? optimistic : message
-          )
-        : [...current, optimistic];
-    });
+    sendOptimisticMessage(optimistic);
 
     if (clearComposer) {
-      setDraft("");
-      setReplyingToId(null);
+      setDraft(chat.conversationId, "");
+      setReplyTarget(chat.conversationId, null);
     }
 
     const result = await sendMessageAction({
@@ -122,20 +121,19 @@ export function useChatComposer({
 
     if (result.status !== "sent" || !result.message) {
       setNotice(result.notice ?? "That did not send yet. Keep this open and try again.");
-      setMessages((current) =>
-        current.map((message) =>
-          message.clientRequestId === clientRequestId
-            ? { ...message, localStatus: "failed" }
-            : message
-        )
+      markMessageFailed(
+        chat.conversationId,
+        clientRequestId,
+        result.notice ?? "Not sent yet"
       );
+      if (clearComposer) {
+        setDraft(chat.conversationId, "");
+      }
       return;
     }
 
     const sentMessage = result.message;
-    setMessages((current) =>
-      mergeMessage(current, sentMessage, clientRequestId)
-    );
+    confirmSentMessage(sentMessage, clientRequestId);
   }
 
   async function handleEditMessage(body: string) {
@@ -158,9 +156,9 @@ export function useChatComposer({
       return;
     }
 
-    setMessages((current) => mergeMessage(current, result.message!));
-    setDraft("");
-    setEditingMessageId(null);
+    mergeRemoteMessage(result.message!);
+    setDraft(chat.conversationId, "");
+    setEditTarget(chat.conversationId, null);
   }
 
   async function handleSend() {
@@ -198,7 +196,7 @@ export function useChatComposer({
       return;
     }
 
-    setMessages((current) => mergeMessage(current, result.message!));
+    mergeRemoteMessage(result.message!);
   }
 
   async function handleToggleReaction(message: LocalMessage, emoji: string) {
@@ -221,29 +219,29 @@ export function useChatComposer({
       return;
     }
 
-    setMessages((current) => mergeMessage(current, result.message!));
+    mergeRemoteMessage(result.message!);
   }
 
   function startReplyingToMessage(message: LocalMessage) {
-    setReplyingToId(message.id);
-    setEditingMessageId(null);
+    setReplyTarget(chat.conversationId, message.id);
+    setEditTarget(chat.conversationId, null);
     setNotice(null);
   }
 
   function startEditingMessage(message: LocalMessage) {
-    setEditingMessageId(message.id);
-    setReplyingToId(null);
-    setDraft(message.body);
+    setEditTarget(chat.conversationId, message.id);
+    setReplyTarget(chat.conversationId, null);
+    setDraft(chat.conversationId, message.body);
     setNotice(null);
   }
 
   function cancelReply() {
-    setReplyingToId(null);
+    setReplyTarget(chat.conversationId, null);
   }
 
   function cancelEdit() {
-    setEditingMessageId(null);
-    setDraft("");
+    setEditTarget(chat.conversationId, null);
+    setDraft(chat.conversationId, "");
   }
 
   function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {

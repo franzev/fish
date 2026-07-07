@@ -7,7 +7,9 @@ import {
   mergeReadState as mergeChatReadState,
 } from "../chat-state";
 import type { LocalMessage } from "./use-chat-messages";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { chatStore, useChatStore } from "../store/chat-store";
+import { selectReadStatesForConversation } from "../store/chat-selectors";
 
 export interface MarkReadStateActionState {
   status: "sent" | "notice";
@@ -27,19 +29,35 @@ export function useChatReadState({
   messages,
   markReadStateAction,
 }: UseChatReadStateOptions) {
-  const [readStates, setReadStates] = useState<ClientChatReadState[]>(
-    () => chat.readStates ?? []
+  const readStates = useChatStore((state) =>
+    selectReadStatesForConversation(state, chat.conversationId)
+  ) as ClientChatReadState[];
+  const mergeReadStateAction = useChatStore((state) => state.mergeReadState);
+
+  const setReadStates = useCallback(
+    (nextReadStates: ClientChatReadState[]) => {
+      const messagesSnapshot =
+        chatStore.getState().conversations[chat.conversationId]?.messages ?? [];
+      chatStore
+        .getState()
+        .hydrateConversation(chat.conversationId, messagesSnapshot, nextReadStates);
+    },
+    [chat.conversationId]
   );
 
   const mergeReadState = useCallback((readState: ClientChatReadState) => {
-    setReadStates((current) => mergeChatReadState(current, readState));
-  }, []);
+    mergeReadStateAction(chat.conversationId, readState);
+  }, [chat.conversationId, mergeReadStateAction]);
 
   const mergeReadStates = useCallback((incoming: ClientChatReadState[]) => {
-    setReadStates((current) =>
+    const current = selectReadStatesForConversation(
+      chatStore.getState(),
+      chat.conversationId
+    ) as ClientChatReadState[];
+    setReadStates(
       incoming.reduce((next, readState) => mergeChatReadState(next, readState), current)
     );
-  }, []);
+  }, [chat.conversationId, setReadStates]);
 
   const currentUserReadState = useMemo(
     () => readStates.find((state) => state.userId === chat.currentUserId),
