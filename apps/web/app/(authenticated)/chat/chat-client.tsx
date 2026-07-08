@@ -18,6 +18,7 @@ import {
 } from "@/components/chat";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area/scroll-area";
 import {
   getMessageSnippet,
   getOutgoingMessageStatus,
@@ -25,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import {
+  IconArrowDown,
   IconMicrophone,
   IconMoodSmile,
   IconPencil,
@@ -41,6 +43,7 @@ import { useChatMessages } from "./hooks/use-chat-messages";
 import { useChatPresence } from "./hooks/use-chat-presence";
 import { useChatReadState } from "./hooks/use-chat-read-state";
 import { useChatRealtime } from "./hooks/use-chat-realtime";
+import { useStickToBottom } from "./hooks/use-stick-to-bottom";
 import { useChatStore } from "./store/chat-store";
 import {
   selectComposerForConversation,
@@ -139,6 +142,12 @@ export function ChatClient({
     refreshConversation,
   });
   const { presenceStatus } = useChatPresence({ chat, timeFormatPref });
+  // Full messages array (not filteredMessages): search filtering must never
+  // trigger scroll behavior.
+  const { viewportRef, showNewMessages, scrollToBottom } = useStickToBottom({
+    messages,
+    currentUserId: chat.currentUserId,
+  });
   const {
     draft,
     notice,
@@ -254,13 +263,21 @@ export function ChatClient({
         </label>
       </header>
 
-      <div
-        role="log"
-        aria-label={isCommunity ? "Community messages" : "Conversation messages"}
-        className="flex-1 overflow-y-auto px-md py-md"
-      >
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <ScrollArea
+          className="flex-1"
+          viewportRef={viewportRef}
+          viewportClassName="px-md py-md"
+        >
+          <div
+            role="log"
+            aria-label={
+              isCommunity ? "Community messages" : "Conversation messages"
+            }
+            className="flex min-h-full flex-col"
+          >
         {filteredMessages.length === 0 && !participantTyping && !participantRecording ? (
-          <div className="flex min-h-full items-center justify-center text-center text-copy text-body">
+          <div className="flex flex-1 items-center justify-center text-center text-copy text-body">
             {search
               ? "No messages match"
               : isCommunity
@@ -536,6 +553,18 @@ export function ChatClient({
             )}
           </ol>
         )}
+          </div>
+        </ScrollArea>
+        {showNewMessages && (
+          <button
+            type="button"
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-sm left-1/2 inline-flex min-h-control -translate-x-1/2 items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-body shadow-popover hover:bg-surface-2"
+          >
+            <IconArrowDown size={18} stroke={1.75} aria-hidden="true" />
+            New messages
+          </button>
+        )}
       </div>
 
       {notice && (
@@ -624,7 +653,10 @@ export function ChatClient({
           type="button"
           fullWidth={false}
           disabled={!canSend}
-          onClick={() => void handleSend()}
+          onClick={() => {
+            scrollToBottom();
+            void handleSend();
+          }}
           className="shrink-0 px-md"
           aria-label="Send message"
         >
