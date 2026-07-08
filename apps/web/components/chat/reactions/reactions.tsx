@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
+import { EmojiPickerButton } from "../emoji-picker";
 import type { Reaction } from "../types";
 
 interface ReactionsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"> {
@@ -9,14 +10,17 @@ interface ReactionsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"
   onToggle?: (emoji: string) => void;
 }
 
-/** A row of emoji-count pills. The viewer's own reaction (`byMe`) is marked
- *  with a heavier tone, never a color hue. Renders nothing for an empty/
- *  missing list — no empty pill row taking up space. */
+/** A row of emoji-count pills, plus a trailing circular add-reaction pill
+ *  (screenshot geometry) that opens the grouped emoji picker. The viewer's
+ *  own reaction (`byMe`) is marked with a heavier tone, never a color hue.
+ *  Renders nothing for an empty/missing list — the hover-bar smiley handles
+ *  a message's first reaction, so there is no empty pill row taking up
+ *  space. */
 export function Reactions({ reactions, onToggle, className, ...props }: ReactionsProps) {
   if (!reactions || reactions.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-wrap gap-nudge", className)} {...props}>
+    <div className={cn("flex flex-wrap items-center gap-nudge", className)} {...props}>
       {reactions.map((reaction) => (
         <button
           key={reaction.emoji}
@@ -48,6 +52,13 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
           </span>
         </button>
       ))}
+      {onToggle && (
+        <EmojiPickerButton
+          label="Add a reaction"
+          onSelect={(emoji) => onToggle(emoji)}
+          className="inline-flex items-center justify-center rounded-pill border border-transparent bg-surface-2 px-xs py-2xs text-muted transition-colors hover:border-border hover:text-body"
+        />
+      )}
     </div>
   );
 }

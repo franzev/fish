@@ -8,6 +8,7 @@ const meta = {
   tags: ["autodocs"],
   args: {
     reactions,
+    onToggle: () => {},
   },
 } satisfies Meta<typeof Reactions>;
 

@@ -7,6 +7,7 @@ export * from "./chat-container";
 export * from "./chat-header";
 export * from "./chat-input";
 export * from "./conversation-list";
+export * from "./emoji-picker";
 export * from "./empty-state";
 export * from "./link-preview";
 export * from "./message";

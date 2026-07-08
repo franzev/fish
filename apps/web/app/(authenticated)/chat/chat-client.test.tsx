@@ -493,7 +493,7 @@ describe("ChatClient", () => {
     expect(messageRow).toBeInTheDocument();
     const pendingItem = messageRow.closest("li") as HTMLElement;
     expect(within(pendingItem).queryByRole("button", { name: "Reply to message" })).toBeNull();
-    expect(within(pendingItem).queryByRole("button", { name: "React with thumbs up" })).toBeNull();
+    expect(within(pendingItem).queryByRole("button", { name: "Add a reaction" })).toBeNull();
     expect(within(pendingItem).queryByRole("button", { name: "Edit message" })).toBeNull();
     expect(within(pendingItem).queryByRole("button", { name: "Delete message" })).toBeNull();
     expect(screen.queryByText("Sending")).toBeNull();
@@ -889,7 +889,14 @@ describe("ChatClient", () => {
       />
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "React with thumbs up" })[0]);
+    // Open the emoji picker from the first message's "Add a reaction"
+    // trigger, then search to a single result before clicking it — keeps
+    // the rendered DOM small and deterministic in jsdom.
+    fireEvent.click(screen.getAllByRole("button", { name: "Add a reaction" })[0]);
+    fireEvent.change(screen.getByPlaceholderText("Search emoji"), {
+      target: { value: "thumbs up" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "thumbs up" }));
     await waitFor(() =>
       expect(toggleReactionAction).toHaveBeenCalledWith({
         messageId: "message-1",
