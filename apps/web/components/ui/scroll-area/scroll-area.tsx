@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { ScrollArea as BaseScrollArea } from "@base-ui/react/scroll-area";
-import { ReactNode } from "react";
+import { ReactNode, Ref } from "react";
 
 interface ScrollAreaProps {
   children: ReactNode;
@@ -10,6 +10,8 @@ interface ScrollAreaProps {
   className?: string;
   /** Applied to the scrolling viewport (padding for content goes here). */
   viewportClassName?: string;
+  /** Ref to the scrolling viewport element, for programmatic scrolling. */
+  viewportRef?: Ref<HTMLDivElement>;
 }
 
 /** Shared vertical scroll region with the product's thin monochrome
@@ -21,10 +23,12 @@ export function ScrollArea({
   children,
   className,
   viewportClassName,
+  viewportRef,
 }: ScrollAreaProps) {
   return (
     <BaseScrollArea.Root className={cn("relative min-h-0", className)}>
       <BaseScrollArea.Viewport
+        ref={viewportRef}
         className={cn("h-full w-full overscroll-contain", viewportClassName)}
       >
         {children}
