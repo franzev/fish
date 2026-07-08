@@ -31,6 +31,7 @@
   --color-bg: light-dark(oklch(0.98 0 0), oklch(0.15 0 0));            /* page canvas — near-white / near-black */
   --color-surface: light-dark(oklch(1 0 0), oklch(0.20 0 0));          /* cards, inputs, elevated containers */
   --color-surface-2: light-dark(oklch(0.94 0 0), oklch(0.26 0 0));     /* alt rows, subtle wells, progress track */
+  --color-surface-3: light-dark(oklch(0.88 0 0), oklch(0.33 0 0));     /* selected wells — e.g. the viewer's own reaction chip; state by fill step, not border or hue */
   --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* separators, field borders — meets 3:1 on surface */
   --color-border-strong: light-dark(oklch(0.55 0 0), oklch(0.65 0 0)); /* notice-tier borders — heavier step than border */
 
@@ -110,7 +111,11 @@
   --spacing-field-message: 22px;
   --spacing-badge: 20px;
   --spacing-emoji-panel: 288px;   /* emoji picker popover width */
-  --spacing-emoji-panel-h: 320px; /* emoji picker popover height */
+  /* Panel height is derived so the resting grid view ends on a full row
+     with bottom space equal to the top padding (no half-clipped row):
+     search 56 (p-xs + h-10) + grid 232 (8 + 5 rows x 40 + 4 gaps x 4 + 8)
+     + tab strip 49 (border 1 + py-2xs + h-10). */
+  --spacing-emoji-panel-h: 337px; /* emoji picker popover height */
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
   --spacing-chat-container-demo: 720px;

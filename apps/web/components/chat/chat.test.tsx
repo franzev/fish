@@ -113,10 +113,13 @@ describe("Reactions", () => {
     );
     const mine = screen.getByRole("button", { name: /including you/ });
     expect(mine).toHaveAttribute("aria-pressed", "true");
-    expect(mine.className).toContain("bg-surface-2");
+    // Own reaction reads by a heavier borderless fill step, not a border.
+    expect(mine.className).toContain("bg-surface-3");
+    expect(mine.className).not.toContain("border-border");
 
     const theirs = screen.getByRole("button", { name: /🎉 reaction, 1 person/ });
     expect(theirs).toHaveAttribute("aria-pressed", "false");
+    expect(theirs.className).toContain("bg-surface-2");
   });
 });
 

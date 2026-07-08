@@ -32,13 +32,13 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
           onClick={() => onToggle?.(reaction.emoji)}
           className={cn(
             // Compact reference geometry: a small emoji+count chip resting
-            // under the message, not a full-height control. Border is
-            // reserved for the viewer's own reaction (byMe) — the rest read
-            // as quiet surface chips until hovered.
-            "animate-reaction-pop inline-flex items-center gap-2xs rounded-pill border px-xs py-2xs transition-colors",
+            // under the message, not a full-height control. Borderless —
+            // the viewer's own reaction (byMe) reads by a heavier fill step
+            // on the monochrome ladder, never a border or color hue.
+            "animate-reaction-pop inline-flex items-center gap-2xs rounded-pill px-xs py-2xs transition-colors",
             reaction.byMe
-              ? "border-border-strong bg-surface-2 text-foreground"
-              : "border-transparent bg-surface-2 text-body hover:border-border"
+              ? "bg-surface-3 text-foreground"
+              : "bg-surface-2 text-body hover:bg-surface-3"
           )}
         >
           {/* Sizes live on the spans, not the button: twMerge has no
@@ -56,7 +56,7 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
         <EmojiPickerButton
           label="Add a reaction"
           onSelect={(emoji) => onToggle(emoji)}
-          className="inline-flex items-center justify-center rounded-pill border border-transparent bg-surface-2 px-xs py-2xs text-muted transition-colors hover:border-border hover:text-body"
+          className="inline-flex items-center justify-center rounded-pill bg-surface-2 px-xs py-2xs text-muted transition-colors hover:bg-surface-3 hover:text-body"
         />
       )}
     </div>
