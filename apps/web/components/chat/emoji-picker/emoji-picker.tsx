@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input/input";
 import { ScrollArea } from "@/components/ui/scroll-area/scroll-area";
 import {
   Icon,
@@ -86,21 +85,21 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
       role="dialog"
       aria-label="Choose an emoji"
     >
-      <div className="sticky top-0 z-10 border-b border-border bg-surface p-xs">
-        <Input
-          label="Search emoji"
+      {/* Quiet pill search — no visible label or field chrome; the panel is
+          already announced as "Choose an emoji", so aria-label carries the
+          field name. The global :focus-visible ring lands on the pill
+          itself. */}
+      <div className="relative shrink-0 p-xs">
+        <span className="pointer-events-none absolute inset-y-0 left-page flex items-center text-muted">
+          <IconSearch size={16} stroke={1.75} aria-hidden="true" />
+        </span>
+        <input
+          type="search"
+          aria-label="Search emoji"
           placeholder="Search emoji"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          reserveMessageSpace={false}
-          trailingControl={
-            <IconSearch
-              size={18}
-              stroke={1.75}
-              aria-hidden="true"
-              className="text-muted"
-            />
-          }
+          className="h-10 w-full rounded-pill bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:shadow-none"
         />
       </div>
       {results ? (
@@ -222,7 +221,10 @@ export function EmojiPickerButton({
           sideOffset={4}
           className="z-20"
         >
-          <Popover.Popup>
+          {/* Keep focus on the trigger at open — autofocusing the search
+              field flashes a focus ring on every open and pops the mobile
+              keyboard over the grid. Tab reaches the field in one step. */}
+          <Popover.Popup initialFocus={false}>
             <EmojiPicker
               onSelect={(emoji) => {
                 onSelect(emoji);
