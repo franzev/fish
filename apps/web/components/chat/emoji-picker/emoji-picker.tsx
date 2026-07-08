@@ -48,7 +48,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
   return (
     <div
       className={cn(
-        "flex h-80 w-72 flex-col overflow-hidden rounded-card border border-border bg-surface",
+        "flex h-emoji-panel-h w-emoji-panel flex-col overflow-hidden rounded-card border border-border bg-surface",
         className
       )}
       role="dialog"
@@ -149,8 +149,11 @@ export function EmojiPickerButton({
   const [open, setOpen] = useState(false);
   // Panel edge-alignment, measured at open time: a trigger near the left
   // viewport edge (received messages) would clip a right-aligned panel
-  // off-screen, and vice versa for sent messages on the right.
+  // off-screen, and vice versa for sent messages on the right. Vertically,
+  // recent chat messages sit near the bottom of the viewport, so the panel
+  // opens upward when there is more room above than below.
   const [alignRight, setAlignRight] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,8 +185,17 @@ export function EmojiPickerButton({
         aria-label={label}
         onClick={() => {
           const rect = containerRef.current?.getBoundingClientRect();
+          // innerWidth/innerHeight can be 0 in embedded contexts — fall back
+          // to the document's client box.
+          const viewportWidth =
+            window.innerWidth || document.documentElement.clientWidth;
+          const viewportHeight =
+            window.innerHeight || document.documentElement.clientHeight;
           setAlignRight(
-            Boolean(rect && rect.left + rect.width / 2 > window.innerWidth / 2)
+            Boolean(rect && rect.left + rect.width / 2 > viewportWidth / 2)
+          );
+          setOpenUp(
+            Boolean(rect && rect.top + rect.height / 2 > viewportHeight / 2)
           );
           setOpen((value) => !value);
         }}
@@ -196,7 +208,8 @@ export function EmojiPickerButton({
       {open && (
         <EmojiPicker
           className={cn(
-            "absolute top-full z-20 mt-2xs",
+            "absolute z-20",
+            openUp ? "bottom-full mb-2xs" : "top-full mt-2xs",
             alignRight ? "right-0" : "left-0"
           )}
           onSelect={(emoji) => {

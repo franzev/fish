@@ -107,6 +107,8 @@
   --spacing-control: var(--size-control);
   --spacing-field-message: 22px;
   --spacing-badge: 20px;
+  --spacing-emoji-panel: 288px;   /* emoji picker popover width */
+  --spacing-emoji-panel-h: 320px; /* emoji picker popover height */
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
   --spacing-chat-container-demo: 720px;
