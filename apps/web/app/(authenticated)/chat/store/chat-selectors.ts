@@ -14,6 +14,11 @@ const emptyComposer: ChatComposerState = {
   editTargetId: null,
 };
 
+// Selectors run as useSyncExternalStore snapshots (zustand v5): fallbacks must
+// be referentially stable or React's getServerSnapshot loop guard fires on SSR.
+const emptyMessages: ChatMessageState[] = [];
+const emptyReadStates: ChatReadState[] = [];
+
 export function selectConversationState(
   state: Pick<ChatStoreState, "conversations">,
   conversationId: ChatConversationId
@@ -25,7 +30,7 @@ export function selectMessagesForConversation(
   state: Pick<ChatStoreState, "conversations">,
   conversationId: ChatConversationId
 ): ChatMessageState[] {
-  return selectConversationState(state, conversationId)?.messages ?? [];
+  return selectConversationState(state, conversationId)?.messages ?? emptyMessages;
 }
 
 export function selectHydrationKeyForConversation(
@@ -46,7 +51,9 @@ export function selectReadStatesForConversation(
   state: Pick<ChatStoreState, "conversations">,
   conversationId: ChatConversationId
 ): ChatReadState[] {
-  return selectConversationState(state, conversationId)?.readStates ?? [];
+  return (
+    selectConversationState(state, conversationId)?.readStates ?? emptyReadStates
+  );
 }
 
 export function selectRealtimeStatusForConversation(
