@@ -112,12 +112,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260708-doh | Fix getServerSnapshot caching infinite loop in chat-store useChatStore | 2026-07-08 | d56fc795 | [260708-doh-fix-getserversnapshot-caching-infinite-l](./quick/260708-doh-fix-getserversnapshot-caching-infinite-l/) |
 | 260708-du5 | Redesign chat UI from 1-on-1 messaging to community-room (Discord-like) experience | 2026-07-08 | 4e9d52c4 | [260708-du5-redesign-chat-ui-from-1-on-1-messaging-t](./quick/260708-du5-redesign-chat-ui-from-1-on-1-messaging-t/) |
 | 260708-eoo | Port Discord community-chat idioms into ChatClient using existing FISH design tokens only | 2026-07-08 | cb088b0a | [260708-eoo-port-discord-community-chat-idioms-into-](./quick/260708-eoo-port-discord-community-chat-idioms-into-/) |
+| 260708-exm | Replace inline message action rows with hover-revealed action bar following the community design reference | 2026-07-08 | a8df0c45 | [260708-exm-replace-inline-message-action-rows-with-](./quick/260708-exm-replace-inline-message-action-rows-with-/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-eoo: Ported Discord community-chat idioms into ChatClient using existing design tokens only.
+- **Last activity:** 2026-07-08 - Completed quick task 260708-exm: Replaced inline message action rows with a hover-revealed action bar.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
