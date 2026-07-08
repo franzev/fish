@@ -61,6 +61,32 @@ describe("chat-state", () => {
     expect(merged[1].body).toBe("server copy");
   });
 
+  it("keeps the known sender display name when a command ack omits it", () => {
+    const current = [
+      message({
+        id: "message-1",
+        senderId: "them",
+        body: "hahahaha",
+        senderDisplayName: "Coach Jordan",
+      }),
+    ];
+
+    // Reaction/delete acks return the bare message row: no display name.
+    const merged = mergeChatMessage(
+      current,
+      message({
+        id: "message-1",
+        senderId: "them",
+        body: "hahahaha",
+        senderDisplayName: null,
+        reactions: [{ emoji: "👍", count: 2, byMe: true }],
+      })
+    );
+
+    expect(merged[0].senderDisplayName).toBe("Coach Jordan");
+    expect(merged[0].reactions).toEqual([{ emoji: "👍", count: 2, byMe: true }]);
+  });
+
   it("derives sent, delivered, and read states from the participant read row", () => {
     const messages = [
       message({ id: "m1", senderId: "me", body: "one" }),

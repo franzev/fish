@@ -30,7 +30,15 @@ export function mergeChatMessage<T extends ChatMessageState>(
   }
 
   const next = [...current];
-  next[existingIndex] = { ...next[existingIndex], ...incoming };
+  const existing = next[existingIndex];
+  next[existingIndex] = {
+    ...existing,
+    ...incoming,
+    // Server acks for commands (reactions, deletes) return the bare message
+    // row without the resolved display name — keep the name we already know
+    // instead of falling back to the anonymous placeholder.
+    senderDisplayName: incoming.senderDisplayName ?? existing.senderDisplayName,
+  };
   return next.sort(compareChatMessages);
 }
 

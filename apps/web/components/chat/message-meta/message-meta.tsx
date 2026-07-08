@@ -22,10 +22,14 @@ export function MessageMeta({ authorName, sentAt, tag, className, ...props }: Me
 
   return (
     <div
-      className={cn("mb-2xs flex items-baseline gap-xs text-ui-xs text-muted", className)}
+      className={cn("mb-2xs flex items-baseline gap-xs text-muted", className)}
       {...props}
     >
-      <span className="font-medium text-body">{authorName}</span>
+      {/* Sizes live on the leaf elements: twMerge has no font-size group for
+          the custom text-ui-* scale, so a size on the cn() container is
+          swallowed by the text color class. Name reads at copy size; the
+          timestamp stays a quiet caption beside it. */}
+      <span className="text-copy font-medium leading-none text-body">{authorName}</span>
       {tag && (
         <span className="rounded-pill bg-surface-2 px-xs text-ui-2xs font-medium text-body">
           {tag}
@@ -35,6 +39,7 @@ export function MessageMeta({ authorName, sentAt, tag, className, ...props }: Me
           client-hydrated output can differ. Suppress the hydration warning on
           this leaf — the machine-readable dateTime attribute stays stable. */}
       <time
+        className="text-ui-xs"
         dateTime={typeof sentAt === "string" ? sentAt : sentAt.toISOString()}
         suppressHydrationWarning
       >

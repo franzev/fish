@@ -22,6 +22,9 @@ export interface ChatMessageState {
   conversationId: ChatConversationId;
   senderId: ChatUserId;
   senderRole: UserRole;
+  /** Display name resolved at fetch time. Command/realtime payloads often
+   *  omit it — merges must not let a null overwrite a known name. */
+  senderDisplayName?: string | null;
   body: string;
   clientRequestId: string;
   createdAt: string;
