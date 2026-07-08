@@ -223,8 +223,10 @@ describe("ChatClient", () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
-      title: "FISH Community",
-      subtitle: "Community room",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
       participant: {
         id: chat.conversationId,
         displayName: "FISH Community",
@@ -245,8 +247,8 @@ describe("ChatClient", () => {
 
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
-    expect(screen.getByLabelText("FISH Community room")).toBeInTheDocument();
-    expect(screen.getByText("Community room")).toBeInTheDocument();
+    expect(screen.getByLabelText("general room")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "general" })).toBeInTheDocument();
     // Members derived from read states (client-1, coach-1) + sender (client-2).
     expect(screen.getByText("3 members")).toBeInTheDocument();
     expect(screen.getByText("Sam Okafor")).toBeInTheDocument();
@@ -258,8 +260,10 @@ describe("ChatClient", () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
-      title: "FISH Community",
-      subtitle: "Community room",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
       messages: [
         {
           ...chat.messages[0],
@@ -288,8 +292,10 @@ describe("ChatClient", () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
-      title: "FISH Community",
-      subtitle: "Community room",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
       messages: [
         {
           ...chat.messages[0],
@@ -319,7 +325,11 @@ describe("ChatClient", () => {
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
     expect(screen.getByRole("separator")).toHaveTextContent("July 6, 2026");
-    expect(screen.getByText("Coach")).toBeInTheDocument();
+    // Scoped to the feed: the header eyebrow also reads "Coach" now that the
+    // community subtitle is retired in favor of the channel-name title.
+    expect(
+      within(screen.getByLabelText("Community messages")).getByText("Coach")
+    ).toBeInTheDocument();
     // The reply preview restates the original author and snippet inline, so
     // both appear twice: once on the original message, once in the preview.
     expect(screen.getAllByText("Sam Okafor").length).toBeGreaterThan(1);

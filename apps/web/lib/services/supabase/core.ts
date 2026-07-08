@@ -40,6 +40,9 @@ type SupabaseResponse<T> = {
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";
+const demoCommunityChannelId = "22222222-2222-4222-8222-222222222222";
+const demoCommunityChannelSlug = "general";
+const demoCommunityChannelName = "general";
 
 function isAuthSessionMissingError(error: {
   message?: string;
@@ -785,8 +788,12 @@ class SupabaseChatRepository implements ChatRepository {
       return serviceSuccess({
         conversationId: conversation.id,
         kind: isDemoCommunity ? "community" : "direct",
-        title: isDemoCommunity ? demoCommunityTitle : undefined,
-        subtitle: isDemoCommunity ? "Community room" : undefined,
+        channelId: isDemoCommunity ? demoCommunityChannelId : undefined,
+        channelSlug: isDemoCommunity ? demoCommunityChannelSlug : undefined,
+        channelName: isDemoCommunity ? demoCommunityChannelName : undefined,
+        // The simplified header renders "# general" from the channel name;
+        // the old "FISH Community"/"Community room" title/subtitle pair is retired.
+        title: isDemoCommunity ? demoCommunityChannelName : undefined,
         currentUserId: userId,
         currentUserRole: profile.role,
         participant: {

@@ -13,6 +13,19 @@ function createQueryResult<T>(value: T) {
   };
 }
 
+function createChainStub<T>(value: T) {
+  const result = { data: value, error: null };
+  const builder: Record<string, unknown> = {
+    maybeSingle: vi.fn(async () => result),
+    then: (resolve: (outcome: typeof result) => unknown) =>
+      Promise.resolve(result).then(resolve),
+  };
+  for (const method of ["select", "eq", "in", "order", "limit"]) {
+    builder[method] = vi.fn(() => builder);
+  }
+  return builder;
+}
+
 describe("Supabase service registry", () => {
   it("exposes cohesive auth, database, storage, and realtime services over one injected client", async () => {
     const profile = {
@@ -141,6 +154,48 @@ describe("Supabase service registry", () => {
       provider: "google",
       options: { redirectTo: "http://localhost:3001/auth/callback" },
     });
+  });
+
+  it("exposes the general channel identity for the demo community conversation", async () => {
+    const demoConversationId = "11111111-1111-4111-8111-111111111111";
+    const tables: Record<string, unknown> = {
+      profiles: { id: "user-1", role: "client", display_name: "Franz Fish" },
+      conversations: {
+        id: demoConversationId,
+        client_id: "user-1",
+        coach_id: "coach-1",
+      },
+      messages: [],
+      message_reactions: [],
+      message_reads: [],
+      presence_sessions: [],
+    };
+    const client = {
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "user-1" } },
+          error: null,
+        })),
+      },
+      from: vi.fn((table: string) => createChainStub(tables[table])),
+    } as unknown as AppSupabaseClient;
+
+    const result = await createSupabaseServices(
+      client
+    ).database.chat.getAssignedConversation();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        conversationId: demoConversationId,
+        kind: "community",
+        channelId: "22222222-2222-4222-8222-222222222222",
+        channelSlug: "general",
+        channelName: "general",
+        title: "general",
+      });
+      expect(result.data?.subtitle).toBeUndefined();
+    }
   });
 
   it("maps Google OAuth start failures into auth service failures", async () => {
