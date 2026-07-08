@@ -32,7 +32,7 @@ import {
   IconX,
   IconMessageReply,
 } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { SendMessageActionState } from "./actions";
 import { useChatComposer } from "./hooks/use-chat-composer";
 import { useChatMessages } from "./hooks/use-chat-messages";
@@ -291,24 +291,60 @@ export function ChatClient({
                 mine &&
                 (message.localStatus === "failed" ||
                   (compactSent && !isCommunity));
+              const replyMessage = message.replyToMessageId
+                ? messages.find((item) => item.id === message.replyToMessageId) ??
+                  null
+                : null;
               // Community rows read top-down like a feed: author meta and
-              // avatar sit at the start of a group. Direct chat keeps the
-              // messenger idiom: avatar at the end of the partner's group.
+              // avatar sit at the start of a group, and a reply always
+              // restates its author so quoted context reads in place. Direct
+              // chat keeps the messenger idiom: avatar at the end of the
+              // partner's group.
+              const startsCommunityGroup =
+                isCommunity && (!groupedWithPrevious || Boolean(replyMessage));
               const showParticipantAvatar = isCommunity
-                ? !groupedWithPrevious
+                ? startsCommunityGroup
                 : !mine && !groupedWithNext;
-              const showAuthorMeta = isCommunity && !groupedWithPrevious;
+              const showAuthorMeta = startsCommunityGroup;
+              const previousDay = previous
+                ? new Date(previous.createdAt).toDateString()
+                : null;
+              const dayDividerLabel =
+                isCommunity &&
+                previousDay &&
+                previousDay !== new Date(message.createdAt).toDateString()
+                  ? new Date(message.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : null;
               const showMessageActions =
                 message.localStatus === "sent" && !message.deletedAt;
 
               return (
+                <Fragment key={message.clientRequestId}>
+                {dayDividerLabel && (
+                  <li role="separator" className="mt-md flex items-center gap-xs">
+                    <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                    <span
+                      suppressHydrationWarning
+                      className="text-ui-2xs font-medium text-muted"
+                    >
+                      {dayDividerLabel}
+                    </span>
+                    <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                  </li>
+                )}
                 <li
-                  key={message.clientRequestId}
                   className={cn(
                     "flex",
-                    index > 0 && (groupedWithPrevious ? "mt-3xs" : "mt-md"),
+                    index > 0 &&
+                      (groupedWithPrevious && !startsCommunityGroup
+                        ? "mt-3xs"
+                        : "mt-md"),
                     isCommunity
-                      ? "items-start gap-xs"
+                      ? "-mx-md items-start gap-xs px-md transition-colors hover:bg-surface"
                       : cn(
                           "items-end",
                           !mine && "gap-xs",
@@ -330,28 +366,43 @@ export function ChatClient({
                         : cn("max-w-message", mine && "items-end")
                     )}
                   >
+                    {isCommunity && replyMessage && (
+                      <div className="-ml-lg mb-2xs flex items-center gap-2xs self-stretch text-ui-xs text-muted">
+                        <span
+                          aria-hidden="true"
+                          className="h-xs w-lg shrink-0 self-end rounded-tl-chat-inner border-l border-t border-border"
+                        />
+                        <Avatar
+                          name={getMessageAuthorName(replyMessage)}
+                          size="xs"
+                        />
+                        <span className="shrink-0 font-medium text-body">
+                          {getMessageAuthorName(replyMessage)}
+                        </span>
+                        <span className="min-w-0 truncate">
+                          {getMessageSnippet(replyMessage)}
+                        </span>
+                      </div>
+                    )}
                     {showAuthorMeta && (
                       <MessageMeta
                         authorName={getMessageAuthorName(message)}
                         sentAt={message.createdAt}
+                        tag={
+                          message.senderRole === "coach" ? "Coach" : undefined
+                        }
                       />
                     )}
-                    {message.replyToMessageId &&
-                      (() => {
-                        const reply = messages.find(
-                          (item) => item.id === message.replyToMessageId
-                        );
-                        return reply ? (
-                          <QuotedMessage
-                            authorName={
-                              reply.senderId === chat.currentUserId
-                                ? "You"
-                                : getMessageAuthorName(reply)
-                            }
-                            snippet={getMessageSnippet(reply)}
-                          />
-                        ) : null;
-                      })()}
+                    {!isCommunity && replyMessage && (
+                      <QuotedMessage
+                        authorName={
+                          replyMessage.senderId === chat.currentUserId
+                            ? "You"
+                            : getMessageAuthorName(replyMessage)
+                        }
+                        snippet={getMessageSnippet(replyMessage)}
+                      />
+                    )}
                     <div
                       className={cn(
                         "text-copy break-words",
@@ -452,6 +503,7 @@ export function ChatClient({
                     </div>
                   </div>
                 </li>
+                </Fragment>
               );
             })}
             {participantTyping && (

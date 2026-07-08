@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { IconUser } from "@tabler/icons-react";
 import { HTMLAttributes, useState } from "react";
 
-type AvatarSize = "sm" | "md" | "lg";
+type AvatarSize = "xs" | "sm" | "md" | "lg";
 
 interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   src?: string;
@@ -13,6 +13,8 @@ interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const sizeClasses: Record<AvatarSize, string> = {
+  /* xs rides the badge size token — inline identity chips (reply previews). */
+  xs: "size-badge text-ui-2xs",
   sm: "size-8 text-ui-xs",
   md: "size-10 text-ui",
   lg: "size-14 text-copy",

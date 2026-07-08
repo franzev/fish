@@ -284,6 +284,50 @@ describe("ChatClient", () => {
     expect(row?.className).not.toContain("justify-end");
   });
 
+  it("shows community day dividers, coach role pill, and inline reply previews", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      title: "FISH Community",
+      subtitle: "Community room",
+      messages: [
+        {
+          ...chat.messages[0],
+          id: "message-1",
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "Can anyone share a short intro?",
+          clientRequestId: "seed-1",
+          createdAt: "2026-07-05T10:00:00.000Z",
+        },
+        {
+          ...chat.messages[0],
+          id: "message-2",
+          senderId: "coach-1",
+          senderRole: "coach",
+          senderDisplayName: "Coach Dana",
+          body: "Welcome! Introductions are a great place to start.",
+          clientRequestId: "seed-2",
+          createdAt: "2026-07-06T10:00:00.000Z",
+          replyToMessageId: "message-1",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.getByRole("separator")).toHaveTextContent("July 6, 2026");
+    expect(screen.getByText("Coach")).toBeInTheDocument();
+    // The reply preview restates the original author and snippet inline, so
+    // both appear twice: once on the original message, once in the preview.
+    expect(screen.getAllByText("Sam Okafor").length).toBeGreaterThan(1);
+    expect(
+      screen.getAllByText(/Can anyone share a short intro\?/).length
+    ).toBeGreaterThan(1);
+  });
+
   it("uses the current server snapshot when the chat store has stale cached messages", () => {
     chatStore.getState().hydrateConversation(
       chat.conversationId,
