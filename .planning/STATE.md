@@ -115,12 +115,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260708-exm | Replace inline message action rows with hover-revealed action bar following the community design reference | 2026-07-08 | a8df0c45 | [260708-exm-replace-inline-message-action-rows-with-](./quick/260708-exm-replace-inline-message-action-rows-with-/) |
 | 260708-knl | Align community reply preview with the reference — avatar on header row, spline from avatar into preview | 2026-07-08 | 0146deba | [260708-knl-align-community-reply-preview-with-the-r](./quick/260708-knl-align-community-reply-preview-with-the-r/) |
 | 260708-mjs | Remove the card/box wrapping the chat thread and restyle message reaction counters to match the Discord reference | 2026-07-08 | 4261f40c | [260708-mjs-remove-the-card-box-wrapping-the-chat-th](./quick/260708-mjs-remove-the-card-box-wrapping-the-chat-th/) |
+| 260708-n53 | Make the chat occupy the full shell pane width and height, simplify its tailwind classes, and remove redundant wrapper divs | 2026-07-08 | ec419638 | [260708-n53-make-the-chat-occupy-the-full-shell-pane](./quick/260708-n53-make-the-chat-occupy-the-full-shell-pane/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-mjs: Unboxed the chat thread and compacted reaction pills to the reference geometry.
+- **Last activity:** 2026-07-08 - Completed quick task 260708-n53: Chat now fills the shell pane full-bleed and viewport-locked; simplified classes and dropped redundant wrappers.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
