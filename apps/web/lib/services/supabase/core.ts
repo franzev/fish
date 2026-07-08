@@ -38,6 +38,9 @@ type SupabaseResponse<T> = {
   error: { message?: string; code?: string; name?: string; status?: number } | null;
 };
 
+const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
+const demoCommunityTitle = "FISH Community";
+
 function isAuthSessionMissingError(error: {
   message?: string;
   code?: string;
@@ -579,51 +582,91 @@ class SupabaseChatRepository implements ChatRepository {
         return serviceSuccess(null);
       }
 
-      const { data: conversations, error: conversationError } = (await this.client
-        .from("conversations")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1)) as {
-        data: ConversationRow[] | null;
-        error: SupabaseResponse<unknown>["error"];
-      };
+      const { data: demoConversation, error: demoConversationError } =
+        (await this.client
+          .from("conversations")
+          .select("*")
+          .eq("id", demoCommunityConversationId)
+          .maybeSingle()) as SupabaseResponse<ConversationRow>;
 
-      if (conversationError) {
+      if (demoConversationError) {
         return serviceFailure(
-          mapSupabaseError(conversationError, {
+          mapSupabaseError(demoConversationError, {
             code: "database",
-            fallbackMessage: "Could not load your conversation.",
-            operation: "chat.getAssignedConversation.conversation",
+            fallbackMessage: "Could not load the community room.",
+            operation: "chat.getAssignedConversation.demoConversation",
             recoverable: true,
           })
         );
       }
 
-      const conversation = conversations?.[0];
+      let conversation = demoConversation;
+
+      if (!conversation) {
+        const { data: conversations, error: conversationError } = (await this.client
+          .from("conversations")
+          .select("*")
+          .order("updated_at", { ascending: false })
+          .limit(1)) as {
+          data: ConversationRow[] | null;
+          error: SupabaseResponse<unknown>["error"];
+        };
+
+        if (conversationError) {
+          return serviceFailure(
+            mapSupabaseError(conversationError, {
+              code: "database",
+              fallbackMessage: "Could not load your conversation.",
+              operation: "chat.getAssignedConversation.conversation",
+              recoverable: true,
+            })
+          );
+        }
+
+        conversation = conversations?.[0] ?? null;
+      }
+
       if (!conversation) return serviceSuccess(null);
 
-      const participantId = conversation.client_id === userId
-        ? conversation.coach_id
-        : conversation.client_id;
-      const { data: participant, error: participantError } = (await this.client
-        .from("profiles")
-        .select("id, role, display_name")
-        .eq("id", participantId)
-        .maybeSingle()) as SupabaseResponse<Pick<ProfileRow, "id" | "role" | "display_name">>;
+      const isDemoCommunity = conversation.id === demoCommunityConversationId;
+      let participant: Pick<ProfileRow, "id" | "role" | "display_name"> = {
+        id: demoCommunityConversationId,
+        role: "coach",
+        display_name: demoCommunityTitle,
+      };
 
-      if (participantError) {
-        return serviceFailure(
-          mapSupabaseError(participantError, {
-            code: "database",
-            fallbackMessage: "Could not load the conversation member.",
-            operation: "chat.getAssignedConversation.participant",
-            recoverable: true,
-          })
-        );
-      }
+      if (!isDemoCommunity) {
+        const participantId = conversation.client_id === userId
+          ? conversation.coach_id
+          : conversation.client_id;
+        const { data: directParticipant, error: participantError } =
+          (await this.client
+            .from("profiles")
+            .select("id, role, display_name")
+            .eq("id", participantId)
+            .maybeSingle()) as SupabaseResponse<
+            Pick<ProfileRow, "id" | "role" | "display_name">
+          >;
 
-      if (!participant || (participant.role !== "client" && participant.role !== "coach")) {
-        return serviceSuccess(null);
+        if (participantError) {
+          return serviceFailure(
+            mapSupabaseError(participantError, {
+              code: "database",
+              fallbackMessage: "Could not load the conversation member.",
+              operation: "chat.getAssignedConversation.participant",
+              recoverable: true,
+            })
+          );
+        }
+
+        if (
+          !directParticipant ||
+          (directParticipant.role !== "client" && directParticipant.role !== "coach")
+        ) {
+          return serviceSuccess(null);
+        }
+
+        participant = directParticipant;
       }
 
       const { data: messages, error: messageError } = (await this.client
@@ -645,6 +688,37 @@ class SupabaseChatRepository implements ChatRepository {
             recoverable: true,
           })
         );
+      }
+
+      const senderIds = Array.from(
+        new Set((messages ?? []).map((message) => message.sender_id))
+      );
+      const senderDisplayNames = new Map<string, string>();
+
+      if (senderIds.length > 0) {
+        const { data: senderProfiles, error: senderProfileError } =
+          (await this.client
+            .from("profiles")
+            .select("id, display_name")
+            .in("id", senderIds)) as {
+            data: Array<Pick<ProfileRow, "id" | "display_name">> | null;
+            error: SupabaseResponse<unknown>["error"];
+          };
+
+        if (senderProfileError) {
+          return serviceFailure(
+            mapSupabaseError(senderProfileError, {
+              code: "database",
+              fallbackMessage: "Could not load message senders.",
+              operation: "chat.getAssignedConversation.senderProfiles",
+              recoverable: true,
+            })
+          );
+        }
+
+        for (const senderProfile of senderProfiles ?? []) {
+          senderDisplayNames.set(senderProfile.id, senderProfile.display_name);
+        }
       }
 
       const { data: reactions, error: reactionError } = (await this.client
@@ -706,17 +780,22 @@ class SupabaseChatRepository implements ChatRepository {
         );
       }
 
+      const participantRole = participant.role === "client" ? "client" : "coach";
+
       return serviceSuccess({
         conversationId: conversation.id,
+        kind: isDemoCommunity ? "community" : "direct",
+        title: isDemoCommunity ? demoCommunityTitle : undefined,
+        subtitle: isDemoCommunity ? "Community room" : undefined,
         currentUserId: userId,
         currentUserRole: profile.role,
         participant: {
           id: participant.id,
           displayName: participant.display_name,
-          role: participant.role,
+          role: participantRole,
         },
         messages: (messages ?? []).map((message) =>
-          toClientChatMessage(message, reactions ?? [], userId)
+          toClientChatMessage(message, reactions ?? [], userId, senderDisplayNames)
         ),
         readStates: (readStates ?? []).map(toClientChatReadState),
         participantPresence: {
@@ -731,7 +810,8 @@ class SupabaseChatRepository implements ChatRepository {
 function toClientChatMessage(
   row: MessageRow,
   reactions: MessageReactionRow[] = [],
-  currentUserId = ""
+  currentUserId = "",
+  senderDisplayNames: Map<string, string> = new Map()
 ): ClientChatMessage {
   const reactionCounts = new Map<string, { count: number; byMe: boolean }>();
 
@@ -755,6 +835,7 @@ function toClientChatMessage(
     conversationId: row.conversation_id,
     senderId: row.sender_id,
     senderRole: row.sender_role as ClientChatMessage["senderRole"],
+    senderDisplayName: senderDisplayNames.get(row.sender_id) ?? null,
     body: row.body,
     clientRequestId: row.client_request_id,
     createdAt: row.created_at,

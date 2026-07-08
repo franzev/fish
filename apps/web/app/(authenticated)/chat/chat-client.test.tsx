@@ -219,6 +219,71 @@ describe("ChatClient", () => {
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
   });
 
+  it("renders the fixed demo conversation as a community room", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      title: "FISH Community",
+      subtitle: "Community room",
+      participant: {
+        id: chat.conversationId,
+        displayName: "FISH Community",
+        role: "coach",
+      },
+      messages: [
+        {
+          ...chat.messages[0],
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "Can anyone share a short intro?",
+          clientRequestId: "seed-2",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.getByLabelText("FISH Community room")).toBeInTheDocument();
+    expect(screen.getByText("Community room")).toBeInTheDocument();
+    // Members derived from read states (client-1, coach-1) + sender (client-2).
+    expect(screen.getByText("3 members")).toBeInTheDocument();
+    expect(screen.getByText("Sam Okafor")).toBeInTheDocument();
+    expect(screen.getByText("Can anyone share a short intro?")).toBeInTheDocument();
+    expect(screen.getByLabelText("Community messages")).toBeInTheDocument();
+  });
+
+  it("renders community rows as a left-aligned feed without direct-message bubbles", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      title: "FISH Community",
+      subtitle: "Community room",
+      messages: [
+        {
+          ...chat.messages[0],
+          senderId: "client-1",
+          senderRole: "client",
+          senderDisplayName: "Alex Rivera",
+          body: "Hello everyone!",
+          clientRequestId: "seed-own",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    // Own messages join the shared feed: authored as "You", flat monochrome
+    // text — never the mine-right primary bubble from direct chat.
+    expect(screen.getByText("You")).toBeInTheDocument();
+    const body = screen.getByText("Hello everyone!");
+    expect(body.className).not.toContain("bg-primary");
+    const row = body.closest("li");
+    expect(row?.className).not.toContain("justify-end");
+  });
+
   it("uses the current server snapshot when the chat store has stale cached messages", () => {
     chatStore.getState().hydrateConversation(
       chat.conversationId,

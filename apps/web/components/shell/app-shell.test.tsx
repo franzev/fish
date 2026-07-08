@@ -101,10 +101,10 @@ describe("AppShell", () => {
 
     const primaryNav = screen.getByRole("navigation", { name: "Primary" });
     expect(primaryNav).toHaveTextContent("Home");
-    expect(primaryNav).toHaveTextContent("Messages");
+    expect(primaryNav).toHaveTextContent("Community");
     expect(primaryNav).toHaveTextContent("Profile");
     expect(primaryNav).not.toHaveTextContent("Progress");
-    expect(within(primaryNav).getByRole("link", { name: "Messages" })).toHaveAttribute(
+    expect(within(primaryNav).getByRole("link", { name: "Community" })).toHaveAttribute(
       "aria-current",
       "page"
     );
@@ -121,7 +121,7 @@ describe("AppShell", () => {
 
     const primaryNav = screen.getByRole("navigation", { name: "Primary" });
     expect(primaryNav).toHaveTextContent("Clients");
-    expect(primaryNav).toHaveTextContent("Messages");
+    expect(primaryNav).toHaveTextContent("Community");
     expect(primaryNav).not.toHaveTextContent("Profile");
     expect(within(primaryNav).getByRole("link", { name: "Clients" })).toHaveAttribute(
       "href",

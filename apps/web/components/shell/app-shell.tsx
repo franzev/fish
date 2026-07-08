@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 import type { UserRole } from "@fish/core/roles";
 import {
   IconHome,
-  IconMessageCircle,
   IconUser,
   IconUsers,
+  IconUsersGroup,
   type Icon,
 } from "@tabler/icons-react";
 import Image from "next/image";
@@ -39,13 +39,13 @@ interface NavItem {
 
 const clientNavItems: NavItem[] = [
   { href: "/home", label: "Home", Icon: IconHome },
-  { href: "/chat", label: "Messages", Icon: IconMessageCircle },
+  { href: "/chat", label: "Community", Icon: IconUsersGroup },
   { href: "/profile", label: "Profile", Icon: IconUser },
 ];
 
 const coachNavItems: NavItem[] = [
   { href: "/coach", label: "Clients", Icon: IconUsers },
-  { href: "/chat", label: "Messages", Icon: IconMessageCircle },
+  { href: "/chat", label: "Community", Icon: IconUsersGroup },
 ];
 
 function getNavItems(role: UserRole) {

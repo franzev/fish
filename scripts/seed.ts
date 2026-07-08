@@ -42,6 +42,8 @@ const clients = [
   { email: "client3@fish.dev", password: "fish-client-dev", displayName: "Priya Nair", level: "A2" },
 ];
 
+const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
+
 /** Pages through admin.listUsers() until it finds the given email — never assumes page 1. */
 async function findUserIdByEmail(email: string): Promise<string | null> {
   let page = 1;
@@ -117,7 +119,11 @@ async function backfillClientProfile(clientId: string, level: string): Promise<v
 }
 
 
-async function seedChatConversations(): Promise<void> {
+async function seedChatConversations(
+  coachId: string,
+  coach2Id: string,
+  clientIds: string[]
+): Promise<void> {
   const { data: assignments, error: assignmentError } = await supabase
     .from("coach_clients")
     .select("coach_id, client_id");
@@ -156,6 +162,39 @@ async function seedChatConversations(): Promise<void> {
       );
     if (readStateError) throw readStateError;
   }
+
+  const demoClientId = clientIds[0];
+  if (!demoClientId) {
+    return;
+  }
+
+  const { data: demoConversation, error: demoConversationError } =
+    await supabase
+      .from("conversations")
+      .upsert(
+        {
+          id: demoCommunityConversationId,
+          client_id: demoClientId,
+          coach_id: coach2Id,
+        },
+        { onConflict: "id" },
+      )
+      .select("id")
+      .single();
+  if (demoConversationError || !demoConversation) {
+    throw demoConversationError;
+  }
+
+  const demoReadRows = [coachId, coach2Id, ...clientIds].map((userId) => ({
+    conversation_id: demoConversation.id,
+    user_id: userId,
+    last_read_message_id: null,
+  }));
+
+  const { error: demoReadStateError } = await supabase
+    .from("message_reads")
+    .upsert(demoReadRows, { onConflict: "conversation_id,user_id" });
+  if (demoReadStateError) throw demoReadStateError;
 }
 
 async function main(): Promise<void> {
@@ -180,7 +219,7 @@ async function main(): Promise<void> {
     await backfillClientProfile(clientId, client.level);
   }
 
-  await seedChatConversations();
+  await seedChatConversations(coachId, coach2Id, clientIds);
 
   console.log("\nSeed complete. Dev credentials (local only):");
   console.log(`  Coach: ${coach.email} / ${coach.password}`);
@@ -191,6 +230,7 @@ async function main(): Promise<void> {
   console.log(`\nCoach id: ${coachId}`);
   console.log(`Coach2 id (unassigned): ${coach2Id}`);
   console.log(`Client ids: ${clientIds.join(", ")}`);
+  console.log(`Demo community conversation id: ${demoCommunityConversationId}`);
 }
 
 await main();

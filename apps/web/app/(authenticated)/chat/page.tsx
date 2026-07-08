@@ -23,8 +23,8 @@ export default async function ChatPage() {
   if (!data.chat) {
     return (
       <EmptyState
-        title="No conversation yet"
-        description="Your conversation will appear when your coach is ready."
+        title="The community is on its way"
+        description="Your community space will appear here once it's ready."
       />
     );
   }

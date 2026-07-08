@@ -50,6 +50,8 @@ type MessageResponseRow = {
   conversation_id: string;
   sender_id: string;
   sender_role: "client" | "coach";
+  sender_display_name?: string | null;
+  senderDisplayName?: string | null;
   body: string;
   client_request_id: string;
   created_at: string;
@@ -114,6 +116,7 @@ function toClientChatMessage(row: MessageResponseRow): ClientChatMessage {
     conversationId: row.conversation_id,
     senderId: row.sender_id,
     senderRole: row.sender_role,
+    senderDisplayName: row.senderDisplayName ?? row.sender_display_name ?? null,
     body: row.body,
     clientRequestId: row.client_request_id,
     createdAt: row.created_at,
@@ -312,6 +315,54 @@ async function addReactionAggregates(
   }));
 }
 
+async function addSenderDisplayNames(
+  context: NonNullable<Awaited<ReturnType<typeof getLocalFallbackContext>>>,
+  messages: MessageResponseRow[]
+): Promise<MessageResponseRow[]> {
+  const senderIds = Array.from(new Set(messages.map((message) => message.sender_id)));
+  if (senderIds.length === 0) {
+    return messages;
+  }
+
+  let response: {
+    data: Array<{ id: string; display_name: string }> | null;
+    error: unknown;
+  };
+
+  try {
+    response = await context.services.client
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", senderIds);
+  } catch {
+    return messages;
+  }
+
+  if (response.error) {
+    return messages;
+  }
+
+  const displayNames = new Map(
+    (response.data ?? []).map((profile) => [profile.id, profile.display_name])
+  );
+
+  return messages.map((message) => ({
+    ...message,
+    senderDisplayName: displayNames.get(message.sender_id) ?? null,
+  }));
+}
+
+async function toClientChatMessagesWithSenders(
+  messages: MessageResponseRow[]
+): Promise<ClientChatMessage[]> {
+  const context = await getLocalFallbackContext();
+  const namedMessages = context
+    ? await addSenderDisplayNames(context, messages)
+    : messages;
+
+  return namedMessages.map(toClientChatMessage);
+}
+
 async function sendMessageViaLocalRpc(
   values: z.infer<typeof sendMessageSchema>
 ): Promise<SendMessageActionState> {
@@ -447,11 +498,12 @@ async function refreshMessagesViaLocalRpc(
     context,
     data as MessageResponseRow[]
   );
+  const messagesWithSenders = await addSenderDisplayNames(context, messages);
 
   return {
     status: "sent",
     values,
-    messages: messages.map(toClientChatMessage),
+    messages: messagesWithSenders.map(toClientChatMessage),
   };
 }
 
@@ -501,11 +553,12 @@ async function refreshConversationViaLocalRpc(
     context,
     messageRows as MessageResponseRow[]
   );
+  const messagesWithSenders = await addSenderDisplayNames(context, messages);
 
   return {
     status: "sent",
     values,
-    messages: messages.map(toClientChatMessage),
+    messages: messagesWithSenders.map(toClientChatMessage),
     readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
   };
 }
@@ -771,7 +824,7 @@ export async function refreshMessagesAction(
   return {
     status: "sent",
     values: parsed.data,
-    messages: payload.messages.map(toClientChatMessage),
+    messages: await toClientChatMessagesWithSenders(payload.messages),
   };
 }
 
@@ -825,7 +878,7 @@ export async function refreshConversationAction(
   return {
     status: "sent",
     values: parsed.data,
-    messages: payload.messages.map(toClientChatMessage),
+    messages: await toClientChatMessagesWithSenders(payload.messages),
     readStates: payload.readStates.map(toClientReadState),
   };
 }

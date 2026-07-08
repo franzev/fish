@@ -8,6 +8,7 @@ import type {
 import {
   Avatar,
   getBubbleRadiusClasses,
+  MessageMeta,
   MessageStatus,
   NotificationBadge,
   QuotedMessage,
@@ -108,6 +109,18 @@ export function ChatClient({
   });
   const [search, setSearch] = useState("");
   const timeFormatPref = useTimeFormatPreference();
+  const isCommunity = chat.kind === "community";
+  const chatTitle = chat.title ?? chat.participant.displayName;
+  const chatSubtitle =
+    chat.subtitle ?? (chat.participant.role === "coach" ? "Coach" : "Client");
+  const activityName = isCommunity ? "Someone" : chat.participant.displayName;
+  const getMessageAuthorName = (message: ClientChatMessage) => {
+    if (message.senderId === chat.currentUserId) {
+      return "You";
+    }
+
+    return message.senderDisplayName ?? (isCommunity ? "Member" : chat.participant.displayName);
+  };
   const {
     participantTyping,
     participantRecording,
@@ -152,6 +165,19 @@ export function ChatClient({
     scheduleLocalTypingStop,
   });
 
+  // Room membership has no dedicated table yet (demo bridge), so the member
+  // count is derived from everyone the room has already seen: read states,
+  // message senders, and the current user.
+  const memberCount = useMemo(() => {
+    const memberIds = new Set<string>([chat.currentUserId]);
+    for (const readState of chat.readStates ?? []) {
+      memberIds.add(readState.userId);
+    }
+    for (const message of messages) {
+      memberIds.add(message.senderId);
+    }
+    return memberIds.size;
+  }, [chat.currentUserId, chat.readStates, messages]);
   const filteredMessages = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -176,25 +202,29 @@ export function ChatClient({
   return (
     <section
       className="mx-auto flex min-h-chat-container-demo w-full max-w-chat flex-col overflow-hidden rounded-card border border-border bg-bg"
-      aria-label={`Conversation with ${chat.participant.displayName}`}
+      aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
       <header className="border-b border-border bg-surface px-md py-sm">
         <div className="flex items-start justify-between gap-sm">
           <div className="min-w-0">
             <p className="text-ui text-muted">
-              {chat.participant.role === "coach" ? "Coach" : "Client"}
+              {chatSubtitle}
             </p>
             <h1 className="truncate font-display text-heading text-foreground">
-              {chat.participant.displayName}
+              {chatTitle}
             </h1>
             <p className="mt-2xs flex items-center gap-nudge text-ui-sm text-muted">
-              {presenceStatus.showOnlineDot && (
+              {!isCommunity && presenceStatus.showOnlineDot && (
                 <span
                   aria-label="Participant is online"
                   className="size-2 rounded-pill bg-success"
                 />
               )}
-              <span>{presenceStatus.label}</span>
+              <span>
+                {isCommunity
+                  ? `${memberCount} ${memberCount === 1 ? "member" : "members"}`
+                  : presenceStatus.label}
+              </span>
             </p>
           </div>
           <NotificationBadge count={unreadCount} />
@@ -224,12 +254,16 @@ export function ChatClient({
 
       <div
         role="log"
-        aria-label="Conversation messages"
+        aria-label={isCommunity ? "Community messages" : "Conversation messages"}
         className="flex-1 overflow-y-auto px-md py-md"
       >
         {filteredMessages.length === 0 && !participantTyping && !participantRecording ? (
           <div className="flex min-h-full items-center justify-center text-center text-copy text-body">
-            {search ? "No messages match" : "No messages yet."}
+            {search
+              ? "No messages match"
+              : isCommunity
+                ? "No messages yet. Say hello to the community."
+                : "No messages yet."}
           </div>
         ) : (
           <ol className="flex flex-col">
@@ -255,8 +289,15 @@ export function ChatClient({
                 : "sent";
               const showStatus =
                 mine &&
-                (message.localStatus === "failed" || compactSent);
-              const showParticipantAvatar = !mine && !groupedWithNext;
+                (message.localStatus === "failed" ||
+                  (compactSent && !isCommunity));
+              // Community rows read top-down like a feed: author meta and
+              // avatar sit at the start of a group. Direct chat keeps the
+              // messenger idiom: avatar at the end of the partner's group.
+              const showParticipantAvatar = isCommunity
+                ? !groupedWithPrevious
+                : !mine && !groupedWithNext;
+              const showAuthorMeta = isCommunity && !groupedWithPrevious;
               const showMessageActions =
                 message.localStatus === "sent" && !message.deletedAt;
 
@@ -264,19 +305,37 @@ export function ChatClient({
                 <li
                   key={message.clientRequestId}
                   className={cn(
-                    "flex items-end",
+                    "flex",
                     index > 0 && (groupedWithPrevious ? "mt-3xs" : "mt-md"),
-                    !mine && "gap-xs",
-                    mine ? "justify-end" : "justify-start"
+                    isCommunity
+                      ? "items-start gap-xs"
+                      : cn(
+                          "items-end",
+                          !mine && "gap-xs",
+                          mine ? "justify-end" : "justify-start"
+                        )
                   )}
                 >
-                  {!mine &&
+                  {(isCommunity || !mine) &&
                     (showParticipantAvatar ? (
-                      <Avatar name={chat.participant.displayName} size="sm" />
+                      <Avatar name={getMessageAuthorName(message)} size="sm" />
                     ) : (
                       <div aria-hidden="true" className="size-8 shrink-0" />
                     ))}
-                  <div className={cn("flex max-w-message flex-col", mine && "items-end")}>
+                  <div
+                    className={cn(
+                      "flex flex-col",
+                      isCommunity
+                        ? "min-w-0 flex-1 items-start"
+                        : cn("max-w-message", mine && "items-end")
+                    )}
+                  >
+                    {showAuthorMeta && (
+                      <MessageMeta
+                        authorName={getMessageAuthorName(message)}
+                        sentAt={message.createdAt}
+                      />
+                    )}
                     {message.replyToMessageId &&
                       (() => {
                         const reply = messages.find(
@@ -287,7 +346,7 @@ export function ChatClient({
                             authorName={
                               reply.senderId === chat.currentUserId
                                 ? "You"
-                                : chat.participant.displayName
+                                : getMessageAuthorName(reply)
                             }
                             snippet={getMessageSnippet(reply)}
                           />
@@ -295,12 +354,17 @@ export function ChatClient({
                       })()}
                     <div
                       className={cn(
-                        "px-md py-compact text-copy break-words",
-                        mine
-                          ? "bg-primary text-on-primary"
-                          : "bg-surface text-body",
-                        message.deletedAt && "italic text-muted",
-                        connectedBubbleRadius
+                        "text-copy break-words",
+                        isCommunity
+                          ? "text-body"
+                          : cn(
+                              "px-md py-compact",
+                              mine
+                                ? "bg-primary text-on-primary"
+                                : "bg-surface text-body",
+                              connectedBubbleRadius
+                            ),
+                        message.deletedAt && "italic text-muted"
                       )}
                     >
                       {visibleMessageBody(message)}
@@ -312,7 +376,7 @@ export function ChatClient({
                       <div
                         className={cn(
                           "mt-2xs flex flex-wrap items-center gap-2xs",
-                          mine ? "justify-end" : "justify-start"
+                          mine && !isCommunity ? "justify-end" : "justify-start"
                         )}
                       >
                         <button
@@ -362,7 +426,7 @@ export function ChatClient({
                       className={cn(
                         "flex min-h-5 items-center gap-xs text-ui-xs text-muted",
                         !showStatus && "hidden",
-                        mine ? "justify-end" : "justify-start"
+                        mine && !isCommunity ? "justify-end" : "justify-start"
                       )}
                     >
                       {compactSent && <MessageStatus status={deliveryStatus} />}
@@ -393,15 +457,15 @@ export function ChatClient({
             {participantTyping && (
               <li className="mt-sm flex justify-start">
                 <div className="flex items-center gap-xs text-ui-sm text-muted">
-                  <TypingIndicator aria-label={`${chat.participant.displayName} is typing`} />
-                  <span>{chat.participant.displayName} is typing</span>
+                  <TypingIndicator aria-label={`${activityName} is typing`} />
+                  <span>{activityName} is typing</span>
                 </div>
               </li>
             )}
             {participantRecording && (
               <li className="mt-sm flex justify-start">
                 <div className="rounded-control bg-surface-2 px-sm py-xs text-ui-sm text-muted">
-                  {chat.participant.displayName} is recording audio
+                  {activityName} is recording audio
                 </div>
               </li>
             )}
@@ -424,13 +488,13 @@ export function ChatClient({
                   Replying to{" "}
                   {replyingTo.senderId === chat.currentUserId
                     ? "your message"
-                    : chat.participant.displayName}
+                    : getMessageAuthorName(replyingTo)}
                 </p>
                 <QuotedMessage
                   authorName={
                     replyingTo.senderId === chat.currentUserId
                       ? "You"
-                      : chat.participant.displayName
+                      : getMessageAuthorName(replyingTo)
                   }
                   snippet={getMessageSnippet(replyingTo)}
                   className="mb-0 mt-2xs"

@@ -104,6 +104,7 @@ export interface ClientChatMessage {
   conversationId: string;
   senderId: string;
   senderRole: "client" | "coach";
+  senderDisplayName?: string | null;
   body: string;
   clientRequestId: string;
   createdAt: string;
@@ -148,6 +149,9 @@ export interface ClientChatPresence {
 
 export interface ClientChatData {
   conversationId: string;
+  kind?: "direct" | "community";
+  title?: string;
+  subtitle?: string;
   currentUserId: string;
   currentUserRole: "client" | "coach";
   participant: ClientChatParticipant;
