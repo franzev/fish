@@ -114,12 +114,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260708-eoo | Port Discord community-chat idioms into ChatClient using existing FISH design tokens only | 2026-07-08 | cb088b0a | [260708-eoo-port-discord-community-chat-idioms-into-](./quick/260708-eoo-port-discord-community-chat-idioms-into-/) |
 | 260708-exm | Replace inline message action rows with hover-revealed action bar following the community design reference | 2026-07-08 | a8df0c45 | [260708-exm-replace-inline-message-action-rows-with-](./quick/260708-exm-replace-inline-message-action-rows-with-/) |
 | 260708-knl | Align community reply preview with the reference — avatar on header row, spline from avatar into preview | 2026-07-08 | 0146deba | [260708-knl-align-community-reply-preview-with-the-r](./quick/260708-knl-align-community-reply-preview-with-the-r/) |
+| 260708-mjs | Remove the card/box wrapping the chat thread and restyle message reaction counters to match the Discord reference | 2026-07-08 | 4261f40c | [260708-mjs-remove-the-card-box-wrapping-the-chat-th](./quick/260708-mjs-remove-the-card-box-wrapping-the-chat-th/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-knl: Aligned the community reply preview with the reference geometry.
+- **Last activity:** 2026-07-08 - Completed quick task 260708-mjs: Unboxed the chat thread and compacted reaction pills to the reference geometry.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
