@@ -3,9 +3,9 @@
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input/input";
 import { IconMoodSmile, IconSearch } from "@tabler/icons-react";
+import { Popover } from "@base-ui/react/popover";
 import groups from "unicode-emoji-json/data-by-group.json";
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { ReactNode, useMemo, useState } from "react";
 
 interface EmojiEntry {
   emoji: string;
@@ -138,137 +138,43 @@ interface EmojiPickerButtonProps {
   children?: ReactNode;
 }
 
-/** Reads a pixel design token off :root, with a fallback for tests. */
-function readPixelToken(name: string, fallback: number): number {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
-  const parsed = Number.parseFloat(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-/** Fixed viewport coordinates for the panel, anchored to the trigger.
- *  The panel portals to <body>: chat triggers live inside overflow-y-auto
- *  message lists and hover-revealed action bars, where an absolutely
- *  positioned panel is clipped by the scrollport and stretches its scroll
- *  content. Opens upward when the trigger sits in the lower half of the
- *  viewport (in a chat the newest messages are at the bottom). */
-function panelPositionFor(trigger: DOMRect): { top: number; left: number } {
-  const width = readPixelToken("--spacing-emoji-panel", 288);
-  const height = readPixelToken("--spacing-emoji-panel-h", 320);
-  const gap = readPixelToken("--spacing-2xs", 4);
-  const inset = readPixelToken("--spacing-xs", 8);
-  // innerWidth/innerHeight can be 0 in embedded contexts — fall back to the
-  // document's client box.
-  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-  const viewportHeight =
-    window.innerHeight || document.documentElement.clientHeight;
-
-  const openUp = trigger.top + trigger.height / 2 > viewportHeight / 2;
-  const alignRight = trigger.left + trigger.width / 2 > viewportWidth / 2;
-
-  const clamp = (value: number, min: number, max: number) =>
-    Math.min(Math.max(value, min), Math.max(min, max));
-
-  return {
-    top: clamp(
-      openUp ? trigger.top - height - gap : trigger.bottom + gap,
-      inset,
-      viewportHeight - height - inset
-    ),
-    left: clamp(
-      alignRight ? trigger.right - width : trigger.left,
-      inset,
-      viewportWidth - width - inset
-    ),
-  };
-}
-
 /** Self-contained popover trigger — an icon button (default smiley) that
- *  opens the grouped/searchable EmojiPicker panel in a body portal beside
- *  it. Closes on selecting an emoji, pressing Escape, clicking outside, or
- *  scrolling the conversation. */
+ *  opens the grouped/searchable EmojiPicker panel in a Base UI Popover
+ *  (portaled to <body>, collision-aware flip/align, Escape + outside-click
+ *  dismiss, and focus return handled for free). Closes on selecting an
+ *  emoji. */
 export function EmojiPickerButton({
   onSelect,
   label,
   className,
   children,
 }: EmojiPickerButtonProps) {
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(
-    null
-  );
-  const containerRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const open = position !== null;
-
-  useEffect(() => {
-    if (!open) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-      if (
-        !containerRef.current?.contains(target) &&
-        !panelRef.current?.contains(target)
-      ) {
-        setPosition(null);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setPosition(null);
-    }
-    function handleScroll(event: Event) {
-      // The panel anchors to a viewport point; scrolling the thread would
-      // detach it from its trigger, so close calmly. Scrolls inside the
-      // panel's own emoji list keep it open.
-      if (event.target instanceof Node && panelRef.current?.contains(event.target)) {
-        return;
-      }
-      setPosition(null);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("resize", handleScroll);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, [open]);
+  const [open, setOpen] = useState(false);
 
   return (
-    <div ref={containerRef} className="inline-block">
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={label}
-        onClick={() => {
-          const rect = containerRef.current?.getBoundingClientRect();
-          setPosition((value) => (value || !rect ? null : panelPositionFor(rect)));
-        }}
-        className={className}
-      >
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger aria-label={label} className={className}>
         {children ?? (
           <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
         )}
-      </button>
-      {open &&
-        createPortal(
-          <div
-            ref={panelRef}
-            className="fixed z-20"
-            style={{ top: position.top, left: position.left }}
-          >
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner
+          side="top"
+          align="end"
+          sideOffset={4}
+          className="z-20"
+        >
+          <Popover.Popup>
             <EmojiPicker
               onSelect={(emoji) => {
                 onSelect(emoji);
-                setPosition(null);
+                setOpen(false);
               }}
             />
-          </div>,
-          document.body
-        )}
-    </div>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
