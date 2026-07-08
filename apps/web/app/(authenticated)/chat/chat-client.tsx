@@ -358,14 +358,19 @@ export function ChatClient({
                 <li
                   className={cn(
                     "group relative flex",
-                    index > 0 &&
-                      (groupedWithPrevious && !startsCommunityGroup
-                        ? "mt-3xs"
-                        : "mt-md"),
                     isCommunity
-                      ? "-mx-md items-start gap-md px-md transition-colors hover:bg-surface"
+                      ? cn(
+                          // Feed rows touch (no between-row gap); the breathing
+                          // room lives inside the row as padding, so the hover
+                          // highlight covers the whole message. A new author
+                          // block gets a little more space above; same-author
+                          // lines stay flush so the block reads as one.
+                          "-mx-md items-start gap-md px-md py-2xs transition-colors hover:bg-surface",
+                          index > 0 && startsCommunityGroup && "pt-sm"
+                        )
                       : cn(
                           "items-end",
+                          index > 0 && (groupedWithPrevious ? "mt-3xs" : "mt-md"),
                           !mine && "gap-md",
                           mine ? "justify-end" : "justify-start"
                         )

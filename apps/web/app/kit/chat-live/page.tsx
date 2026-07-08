@@ -146,7 +146,7 @@ async function sendMessageStub(input: unknown): Promise<SendMessageActionState> 
 
 export default function ChatLiveKitPage() {
   return (
-    <div className="flex h-dvh flex-col bg-bg">
+    <div className="flex h-dvh min-h-0 flex-col bg-bg">
       <ChatClient
         chat={chat}
         sendMessageAction={sendMessageStub}
