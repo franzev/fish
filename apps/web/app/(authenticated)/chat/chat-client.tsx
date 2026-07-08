@@ -202,7 +202,7 @@ export function ChatClient({
 
   return (
     <section
-      className="mx-auto flex min-h-chat-container-demo w-full max-w-chat flex-col overflow-hidden rounded-card border border-border bg-bg"
+      className="flex min-h-chat-container-demo w-full flex-col bg-bg"
       aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
       <header className="border-b border-border bg-surface px-md py-sm">

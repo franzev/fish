@@ -27,14 +27,25 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
           aria-pressed={reaction.byMe}
           onClick={() => onToggle?.(reaction.emoji)}
           className={cn(
-            "animate-reaction-pop inline-flex min-h-control items-center gap-2xs rounded-pill border px-md text-ui-xs transition-colors",
+            // Compact reference geometry: a small emoji+count chip resting
+            // under the message, not a full-height control. Border is
+            // reserved for the viewer's own reaction (byMe) — the rest read
+            // as quiet surface chips until hovered.
+            "animate-reaction-pop inline-flex items-center gap-2xs rounded-pill border px-xs py-2xs transition-colors",
             reaction.byMe
               ? "border-border-strong bg-surface-2 text-foreground"
-              : "border-border bg-surface text-body hover:bg-surface-2"
+              : "border-transparent bg-surface-2 text-body hover:border-border"
           )}
         >
-          <span aria-hidden="true">{reaction.emoji}</span>
-          <span>{reaction.count}</span>
+          {/* Sizes live on the spans, not the button: twMerge has no
+              font-size group for the custom text-ui-* scale, so a size on
+              the button is swallowed by the text color class above. */}
+          <span aria-hidden="true" className="text-ui-sm leading-none">
+            {reaction.emoji}
+          </span>
+          <span className="text-ui-xs font-medium leading-none">
+            {reaction.count}
+          </span>
         </button>
       ))}
     </div>

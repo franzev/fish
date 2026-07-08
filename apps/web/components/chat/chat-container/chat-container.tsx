@@ -17,9 +17,9 @@ interface ChatContainerProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /** The responsive chat shell: a column flex stacking ChatHeader (fixed top)
- *  + MessageList (flex-1, scrolls) + ChatInput (fixed bottom). Mobile-first
- *  full-width; on md: it sits within a bounded pane — responsive Tailwind
- *  prefixes only, no JS breakpoints. */
+ *  + MessageList (flex-1, scrolls) + ChatInput (fixed bottom). Full-width at
+ *  every breakpoint — the thread sits directly on the page background with
+ *  no wrapping card. */
 export function ChatContainer({
   participant,
   messages,
@@ -34,7 +34,7 @@ export function ChatContainer({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-col bg-bg md:mx-auto md:max-w-content md:rounded-card md:border md:border-border",
+        "flex h-full w-full flex-col bg-bg",
         className
       )}
       {...props}
