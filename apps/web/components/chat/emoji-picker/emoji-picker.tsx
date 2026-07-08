@@ -79,7 +79,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
   return (
     <div
       className={cn(
-        "flex h-emoji-panel-h w-emoji-panel flex-col overflow-hidden rounded-card border border-border bg-surface",
+        "flex h-emoji-panel-h w-emoji-panel flex-col overflow-hidden rounded-card bg-surface shadow-popover",
         className
       )}
       role="dialog"
@@ -99,7 +99,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
           placeholder="Search emoji"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="h-10 w-full rounded-pill bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:shadow-none"
+          className="h-10 w-full rounded-pill border border-transparent bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:border-border-strong focus-visible:shadow-none focus-visible:outline-none"
         />
       </div>
       {results ? (
@@ -143,9 +143,13 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
                   key={group.slug}
                   value={group.slug}
                   aria-label={group.name}
-                  className="flex h-10 flex-1 items-center justify-center rounded-control text-muted hover:bg-surface-2 data-[active]:bg-surface-2 data-[active]:text-foreground"
+                  className="group flex h-10 flex-1 items-center justify-center text-muted data-[active]:text-foreground"
                 >
-                  <GroupIcon size={18} stroke={1.75} aria-hidden="true" />
+                  {/* Circular highlight sized to the tab, not the icon —
+                      active state reads by shape, not color alone. */}
+                  <span className="flex size-8 items-center justify-center rounded-pill group-hover:bg-surface-2 group-data-[active]:bg-surface-2">
+                    <GroupIcon size={18} stroke={1.75} aria-hidden="true" />
+                  </span>
                 </Tabs.Tab>
               );
             })}
@@ -177,7 +181,7 @@ function EmojiGroupList({
             onClick={() => onSelect(entry.emoji)}
             className="flex size-10 items-center justify-center rounded-control hover:bg-surface-2"
           >
-            <span aria-hidden="true" className="text-copy leading-none">
+            <span aria-hidden="true" className="text-emoji">
               {entry.emoji}
             </span>
           </button>

@@ -76,6 +76,8 @@
   --text-copy--line-height: 1.55;
   --text-heading-sm: 20px;
   --text-heading-sm--line-height: 1.15;
+  --text-emoji: 24px;            /* emoji glyphs in dense pickers — fills the cell so grid gaps read tight */
+  --text-emoji--line-height: 1;
   --text-display: 32px;
   --text-display--line-height: 1.1;
 
@@ -141,6 +143,12 @@
      Soft shadow in light; dark relies on the surface lightness-step
      already in the ladder, so the shadow resolves to none there. */
   --shadow-card: light-dark(0 4px 16px oklch(0.15 0 0 / 0.08), none);
+  /* Floating overlays (popovers) — surface step stays the primary depth cue
+     in dark; the shadow just settles the edge where the border used to be. */
+  --shadow-popover: light-dark(
+    0 8px 24px oklch(0.15 0 0 / 0.16),
+    0 8px 24px oklch(0 0 0 / 0.5)
+  );
 }
 
 /* ---- Base ---- */
