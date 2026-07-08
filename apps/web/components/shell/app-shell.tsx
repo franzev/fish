@@ -110,9 +110,13 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const navItems = getNavItems(role);
+  /* Chat is the one immersive surface: the thread owns the pane edge-to-edge
+     and scrolls internally, so the shell locks to the viewport here. Every
+     other screen keeps the centered reading column (D-10). */
+  const immersive = isActivePath(pathname, "/chat");
 
   return (
-    <div className="flex min-h-dvh bg-bg">
+    <div className={cn("flex bg-bg", immersive ? "h-dvh" : "min-h-dvh")}>
       <PreferenceHydrator
         themePref={preferences?.themePref}
         textSizePref={preferences?.textSizePref}
@@ -147,7 +151,14 @@ export function AppShell({
           </span>
           <LogoutButton />
         </header>
-        <main className="mx-auto w-full max-w-content flex-1 px-page py-xl pb-mobile-nav-offset md:py-2xl">
+        <main
+          className={cn(
+            "w-full flex-1",
+            immersive
+              ? "flex min-h-0 flex-col pb-mobile-nav-offset md:pb-0"
+              : "mx-auto max-w-content px-page py-xl pb-mobile-nav-offset md:py-2xl"
+          )}
+        >
           {children}
         </main>
         <nav

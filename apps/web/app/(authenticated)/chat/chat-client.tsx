@@ -202,7 +202,7 @@ export function ChatClient({
 
   return (
     <section
-      className="flex min-h-chat-container-demo w-full flex-col bg-bg"
+      className="flex min-h-0 w-full flex-1 flex-col"
       aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
       <header className="border-b border-border bg-surface px-md py-sm">
@@ -539,9 +539,9 @@ export function ChatClient({
       </div>
 
       {notice && (
-        <div className="border-t border-border px-md pt-sm">
-          <Alert tone="notice">{notice}</Alert>
-        </div>
+        <Alert tone="notice" className="mx-md mb-xs">
+          {notice}
+        </Alert>
       )}
 
       {(replyingTo || editingMessage || localRecording) && (

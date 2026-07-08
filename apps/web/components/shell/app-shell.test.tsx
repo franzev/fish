@@ -53,6 +53,21 @@ describe("AppShell", () => {
     expect(mains[0].className).toContain("mx-auto");
   });
 
+  it("gives the chat route the full pane instead of the centered column", () => {
+    pathname = "/chat";
+    const { container } = render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    const main = container.querySelector("main");
+    expect(main?.className).not.toContain("max-w-content");
+    expect(main?.className).toContain("min-h-0");
+    // The shell locks to the viewport so only the message log scrolls.
+    expect(container.firstElementChild?.className).toContain("h-dvh");
+  });
+
   it("hydrates persisted client preferences at the shell level", async () => {
     render(
       <AppShell
