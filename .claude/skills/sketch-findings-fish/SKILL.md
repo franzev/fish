@@ -11,9 +11,9 @@ also non-native English readers. The product's job is to **remove choices** — 
 the app presents. Calm, focus-first.
 
 Design direction (from the sketch intake): **pure monochrome, soft & spacious** (Headspace/Calm-
-like) with **native-per-platform** structure (responsive web + Material 3 Android) sharing one set
-of tokens, Lexend/Fraunces type, and Tabler icons. Reference points: Headspace/Calm (the "calm"),
-Messenger/WhatsApp (the conversation idiom), the shipped v1.0 monochrome design system.
+like), a responsive web app sharing one set of tokens, Lexend/Fraunces type, and Tabler icons.
+Reference points: Headspace/Calm (the "calm"), Messenger/WhatsApp (the conversation idiom), the
+shipped v1.0 monochrome design system.
 
 Sketch session wrapped: 2026-07-04.
 </context>
@@ -21,13 +21,13 @@ Sketch session wrapped: 2026-07-04.
 <design_direction>
 ## Overall direction
 
-- **Shell:** a Messenger-style bottom-nav app — **Home · Progress · Messages · Profile**. Web = left rail + desktop two-pane; Android = Material 3 bottom nav, full-screen thread. Always-visible labels.
+- **Shell:** a Messenger-style bottom-nav app — **Home · Progress · Messages · Profile**. Desktop = left rail + two-pane; mobile web = bottom nav, full-screen thread. Always-visible labels.
 - **Chat:** gentle correction via **quoted reply** (never red/scolding); conversation list → thread; voice notes; monochrome presence.
 - **Profile:** **essentials only** (identity + assigned coach + settings) — metrics live in the Progress tab, which is a **milestone journey, never a scoreboard**.
 - **Coach side:** a client **roster**; correcting/assigning happens via tap → menu → inline compose (coaches get real tools; clients never choose).
 - **States:** calm message lifecycle (sending/sent/seen/failed), empty, and loading/offline states — reassure, never alarm; `--notice` tone for problems, never red.
 - **Onboarding:** the data-driven assessment is a warm **in-chat conversation**.
-- **Responsive web:** one container-query system — desktop two-pane → tablet single → mobile **bottom-nav** (mirrors Android).
+- **Responsive web:** one container-query system — desktop two-pane → tablet single → mobile **bottom-nav**.
 - **Theme:** monochrome `light-dark()` ladder; the teal logo + alert tones are the only colors; AA contrast, 56px targets, visible focus, reduced-motion, active-state-by-shape.
 - **Never:** streaks that reset, scoreboards/grades/percentages client-facing, icon-only nav, color in structural UI, sub-56px targets, a `tailwind.config.js`.
 </design_direction>

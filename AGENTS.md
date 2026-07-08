@@ -6,8 +6,6 @@ FISH is a ChatHub that teaches English to neurodivergent professionals (many wit
 
 - Monorepo managed with pnpm workspaces.
 - Web: Next.js (App Router) + React + TypeScript in `apps/web`.
-- iOS: native SwiftUI in `apps/ios`.
-- Android: native Kotlin + Jetpack Compose in `apps/android`.
 - Tailwind CSS **v4** for web — CSS-first config via `@theme` in `apps/web/app/globals.css`. There is **no `tailwind.config.js`**; do not create one. Keep `tailwindcss` and `@tailwindcss/postcss` on the **same** version or the build breaks.
 - Supabase (auth + database + storage + realtime + Edge Functions) — one backend service, no separate auth provider and no Express API unless the product proves it needs one.
 - Package manager: pnpm (lockfile is `pnpm-lock.yaml`; do not use npm).
@@ -20,11 +18,6 @@ pnpm build       # production web build + shared package typechecks; must pass b
 pnpm lint
 pnpm typecheck
 ```
-
-Native projects are opened with platform tools:
-
-- iOS: `apps/ios/FISH.xcodeproj`
-- Android: `apps/android`
 
 ## The product rule that governs everything
 
@@ -57,8 +50,6 @@ Defined in `apps/web/app/globals.css` under `@theme`. Reference via Tailwind uti
   tokens, such as `gap-sm`, `gap-md`, `mt-lg`, `px-md`, `py-xl`, and
   semantic utilities built on those tokens.
 - Fonts are loaded in `apps/web/app/layout.tsx`.
-
-Native clients should mirror these tokens in platform-native constants until a generated token pipeline exists.
 
 ### Spacing discipline
 

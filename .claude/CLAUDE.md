@@ -10,7 +10,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 
 ### Constraints
 
-- **Tech stack**: Next.js App Router + TypeScript + Tailwind v4 (CSS-first) + Supabase — locked by AGENTS.md; no Express/Node API service
+- **Tech stack**: Next.js App Router + TypeScript + Tailwind v4 (CSS-first) + Supabase — locked by AGENTS.md; web-only, no Express/Node API service
 - **Design**: Pure monochrome (black/white/greys), both light and dark themes — user decision, hierarchy before color
 - **Iconography**: Tabler Icons (https://tabler.io/icons) — single icon set, consistent stroke style
 - **Typography**: Lexend (body/UI — designed for reading fluency, fits the neurodivergent audience) + Fraunces (headings/display serif)
@@ -27,10 +27,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 ## Languages
 
 - TypeScript 5.7.3 - All shared packages (`packages/core`, `packages/supabase`) and web frontend (`apps/web`)
-- Kotlin 1.x (from AGP 9.2.1) - Android native app (`apps/android`)
-- Swift - iOS native app (`apps/ios`)
 - JavaScript (ESM) - Configuration files (`.mjs`)
-- TOML - Gradle version catalogs (`apps/android/gradle/libs.versions.toml`)
 - CSS - Design tokens and utilities (`apps/web/app/globals.css`)
 
 ## Runtime
@@ -46,14 +43,10 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 - Next.js 16.2.9 - React app framework with App Router; web frontend in `apps/web`
 - React 19.2.7 - Component library and UI framework
 - Tailwind CSS 4.3.1 - Utility-first CSS framework (CSS-first config via `@theme` in `globals.css`; no `tailwind.config.js`)
-- Jetpack Compose (via Material library 1.10.0) - Android UI framework in `apps/android`
-- SwiftUI - iOS UI framework in `apps/ios`
 - Not yet detected in codebase (lint and typecheck only via tsc and eslint)
 - PostCSS with `@tailwindcss/postcss` 4.3.1 - CSS transformation pipeline (`apps/web/postcss.config.mjs`)
 - ESLint 9.39.4 - Code quality linting (`apps/web/eslint.config.mjs`, uses Next.js ESLint config)
 - TypeScript compiler (tsc) - Type checking via `typecheck` script
-- Gradle 9.2.1 (AGP) - Android build system with version catalog (`apps/android`)
-- Xcode build system - iOS project build
 
 ## Key Dependencies
 
@@ -70,11 +63,6 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 - `@fish/core` - Product domain types (roles, chat contracts) - workspace package
 - `@fish/supabase` - Supabase auth and database types - workspace package
 - TypeScript 5.7.3 - Language and compiler (used across all packages)
-- `androidx.core:core-ktx` 1.10.1 - Kotlin extensions for Android
-- `androidx.appcompat:appcompat` 1.6.1 - Backward-compatible Android UI
-- `com.google.android.material:material` 1.10.0 - Material Design components
-- `junit` 4.13.2 - Unit testing (test scope)
-- `androidx.test.espresso:espresso-core` 3.5.1 - Instrumented testing (androidTest scope)
 
 ## Configuration
 
@@ -85,10 +73,6 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 - `apps/web/tsconfig.json` - Strict TypeScript with JSX support and path alias `@/*` mapping to `app/` directory
 - `apps/web/postcss.config.mjs` - PostCSS with `@tailwindcss/postcss` plugin
 - `apps/web/eslint.config.mjs` - ESLint config using Next.js core-web-vitals and TypeScript rulesets
-- `apps/android/build.gradle.kts` - Top-level Gradle config with Android Application plugin
-- `apps/android/app/build.gradle.kts` - App-level config (Android 24+, targetSdk 36)
-- `apps/android/gradle.properties` - JVM settings and Gradle optimizations (configuration-cache enabled, parallel disabled)
-- `apps/android/gradle/libs.versions.toml` - Centralized dependency version catalog
 
 ## Platform Requirements
 
@@ -96,11 +80,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 - pnpm 11.7.0+
 - TypeScript 5.7.3 (installed globally or via pnpm)
 - ESLint for linting
-- For Android: Android Studio, JDK 11+, AGP 9.2.1
-- For iOS: Xcode (macOS required)
 - **Web:** Node.js runtime or static export (Next.js deployment target not explicitly specified; Edge Runtime required for Supabase Edge Functions)
-- **Android:** Android 7.0+ (minSdk 24, targetSdk 36)
-- **iOS:** iOS target version not yet specified; SwiftUI requires iOS 13+
 - **Backend:** Supabase-managed infrastructure (PostgreSQL database, authentication, Edge Functions runtime)
 
 <!-- GSD:stack-end -->
@@ -225,7 +205,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 ## Shared Package Contracts
 
 - Pure TypeScript types and constants — no dependencies on Supabase or React
-- Shared between web, iOS, Android, and Edge Functions
+- Shared between web and Edge Functions
 - Examples: `UserRole`, `ChatMessage`, `chatLimits`, type guards
 - Supabase-specific contracts (auth, database types, redirects)
 - Depends on `@fish/core`
@@ -299,7 +279,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 - Location: `supabase/` (config.toml) and Supabase Cloud
 - Contains: Auth policies, database tables (users, conversations, messages), RLS rules, function configurations
 - Depends on: PostgreSQL, Supabase cloud infrastructure
-- Used by: Web app, iOS app, Android app via `supabase-js` or platform SDKs
+- Used by: Web app via `supabase-js`
 
 ## Data Flow
 

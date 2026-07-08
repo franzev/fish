@@ -20,10 +20,6 @@ FISH is currently a foundation-stage monorepo:
 - Supabase migrations implement auth profiles, coach-client assignments, RLS
   helpers, role guards, email-backed profile reads, and chat tables/RPCs.
 - Shared TypeScript contracts live in `packages/core` and `packages/supabase`.
-- Android has a native Jetpack Compose preview app plus token/component layer
-  and local Google OAuth/deep-link plumbing.
-- iOS has a native SwiftUI preview app plus token/component and chat component
-  scaffolding.
 - AI coaching, production CI/CD, and production hosting setup are not
   implemented yet. The unvalidated learning-flow implementations were removed
   from the active product on 2026-07-06.
@@ -34,8 +30,6 @@ FISH is currently a foundation-stage monorepo:
 flowchart TB
   subgraph Clients
     Browser["Web browser"]
-    Android["Android app\npreview/auth shell"]
-    IOS["iOS app\npreview/design system"]
   end
 
   subgraph Web["apps/web"]
@@ -71,8 +65,6 @@ flowchart TB
   Services --> Storage
   Services --> Realtime
   Browser --> Edge
-  Android -.future backend integration.-> Supabase
-  IOS -.future backend integration.-> Supabase
   Auth --> Email
 ```
 
@@ -87,8 +79,6 @@ flowchart TB
 | Web tests | Vitest, React Testing Library, jsdom | Route/component/service-boundary/token tests live under `apps/web`. |
 | Backend | Supabase Auth, Postgres, RLS, Edge Functions, Storage, Realtime | Supabase is the only backend service by default. |
 | Shared contracts | TypeScript packages | `@fish/core` contains product types; `@fish/supabase` contains Supabase-specific contracts. |
-| Android | Kotlin, Jetpack Compose, Material 3, Gradle | Native preview app, design tokens, and OAuth deep-link shell exist; no Supabase SDK integration yet. |
-| iOS | SwiftUI, Xcode project | Native preview app and design tokens/chat components exist; no Supabase integration yet. |
 
 ## Repository Modules
 
@@ -101,8 +91,6 @@ flowchart TB
 | `apps/web/lib/auth` | Browser/server auth helpers and redirect decisions. |
 | `apps/web/lib/services` | Runtime-neutral service result/error types, env validation, DI container, and Supabase service registry. |
 | `apps/web/lib/supabase` | Compatibility adapters that delegate to the newer service-layer factories. |
-| `apps/android` | Native Compose preview app, token mirror, and basic component layer. |
-| `apps/ios` | Native SwiftUI preview app, token mirror, and basic component layer. |
 | `packages/core` | Supabase-free domain contracts: roles, chat DTOs, `SendMessageCommand`, and limits. |
 | `packages/supabase` | Shared Supabase auth redirects and generated database types. |
 | `supabase/migrations` | Database schema, triggers, grants, RLS policies, and private helper functions. |
@@ -187,38 +175,7 @@ apps/* -> packages/core
 supabase/functions -> packages/core
 ```
 
-`packages/core` must not import web, native, or Supabase implementation code.
-
-### Android App
-
-The Android app is a native preview shell:
-
-- `MainActivity` renders `Theme { PreviewApp(...) }`.
-- `designsystem/theme/Tokens.kt` mirrors web color, spacing, radius, type,
-  size, stroke, elevation, and opacity tokens.
-- `designsystem/component/Button.kt` and `TextField.kt` implement native
-  token-driven primitives.
-- `ui/PreviewApp.kt` models auth-like screens with local Compose state.
-- `ui/AndroidAuth.kt` builds the Supabase Google OAuth URL, parses the
-  `fish://auth/callback` deep link, and stores the returned tokens locally.
-
-There is no Android Supabase SDK integration, real navigation graph, chat data,
-or offline persistence yet.
-
-### iOS App
-
-The iOS app is a native SwiftUI preview shell:
-
-- `App/AppEntry.swift` registers fonts and renders `ContentView`.
-- `App/AuthPreviewScreen.swift` models auth-like screens with local SwiftUI
-  state, confirm-password validation, and secondary Google actions.
-- `Core/DesignSystem` mirrors web color, spacing, radius, type, size, stroke,
-  opacity, and component tokens.
-- `Features/Chat` contains presentational chat models, components, and preview
-  screens.
-
-There is no iOS auth integration, Supabase SDK integration, real navigation
-graph, chat data, or offline persistence yet.
+`packages/core` must not import web or Supabase implementation code.
 
 ### Supabase Backend
 
@@ -436,9 +393,6 @@ The web component layer uses:
 - `forwardRef` for focusable primitives.
 - Tabler icons only, enforced by `apps/web/tests/icon-source.test.ts`.
 
-The Android token layer mirrors current web tokens manually in Kotlin until a
-generated token pipeline exists.
-
 ## Module Interaction Rules
 
 ### Reads
@@ -605,11 +559,6 @@ All web design tokens live in `apps/web/app/globals.css`. Do not add
 `tailwind.config.js`. Keep `tailwindcss` and `@tailwindcss/postcss` on the same
 major/minor version family.
 
-### Native Tokens Mirror Web Until Generation Exists
-
-Android currently mirrors web tokens manually in Kotlin. Any generated token
-pipeline should preserve the product semantics, not just copy color values.
-
 ## Testing And Verification
 
 Primary verification commands:
@@ -620,13 +569,6 @@ pnpm lint
 pnpm --filter @fish/web test -- --run
 pnpm build
 pnpm verify:rls
-```
-
-Android verification:
-
-```bash
-cd apps/android
-JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' ./gradlew app:testDebugUnitTest app:lintDebug app:assembleDebug
 ```
 
 Current web test coverage includes:
@@ -653,8 +595,6 @@ The following are intentional gaps or incomplete architecture areas:
 - No storage buckets or attachment authorization model are defined.
 - No active learning-flow engine exists; future learning mechanics require a fresh coach-validation decision before implementation.
 - No AI provider, prompt, memory, evaluation, or safety architecture exists yet.
-- Android has no full backend integration beyond the local OAuth deep-link shell.
-- iOS has no backend integration.
 - No checked-in CI/CD pipeline or production web host config exists.
 - No production observability, privacy export/delete workflow, or incident
   runbook exists yet.

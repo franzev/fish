@@ -15,11 +15,11 @@ A **bottom-nav shell**, Messenger/WhatsApp-inspired. Four fixed destinations, le
 
 Four tabs is the ceiling for this remove-choices product; a fifth erodes calm.
 
-## Cross-platform: native per platform, shared design language
+## Responsive: one product, layout adapts by width
 
-- **Web (desktop):** left **rail** (icons + labels) + **two-pane** Messages (conversation list beside the open thread — Messenger-Web pattern).
-- **Android:** Material 3 **bottom navigation**; opening a thread goes **full-screen** (bottom nav hides).
-- Same tokens, type, spacing on both; layout is native to each. Never force web layouts onto Android.
+- **Desktop:** left **rail** (icons + labels) + **two-pane** Messages (conversation list beside the open thread — Messenger-Web pattern).
+- **Mobile:** **bottom navigation**; opening a thread goes **full-screen** (bottom nav hides).
+- Same tokens, type, spacing at every width; layout reflows, it doesn't fork.
 
 ## Labels: always visible (decided)
 
@@ -27,7 +27,7 @@ Full labels on every tab. **Icon-only nav was explicitly rejected** — it confl
 
 ## Active state (more than color)
 
-Web rail active = distinct fill (`--surface-3`) **+ bold label**, never equal to `:hover`. Android = the Material active **pill** (a shape) + `--ink` icon/label + bold. In the real build add `aria-current`. Never signal the current tab by color alone (guideline l.634/646).
+Desktop rail active = distinct fill (`--surface-3`) **+ bold label**, never equal to `:hover`. Mobile bottom-nav active = a **pill** (a shape) + `--ink` icon/label + bold. In the real build add `aria-current`. Never signal the current tab by color alone (guideline l.634/646).
 
 ## Brand mark
 

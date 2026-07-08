@@ -19,10 +19,10 @@ is done.
       web origin (for example `https://app.example.com`). Every `{{ .SiteURL }}` placeholder
       in the email templates resolves from this value — if it still points at localhost, every
       verification and reset link in production email will be broken.
-- [ ] Add the deployed origin's `/auth/confirm` and `/auth/callback` paths, plus the Android
-      deep link `fish://auth/callback`, to the redirect allow-list so email token links and
-      Google OAuth callbacks are permitted destinations. If preview deployments get their own
-      origins, each origin that should accept auth links needs an allow-list entry.
+- [ ] Add the deployed origin's `/auth/confirm` and `/auth/callback` paths to the redirect
+      allow-list so email token links and Google OAuth callbacks are permitted destinations.
+      If preview deployments get their own origins, each origin that should accept auth links
+      needs an allow-list entry.
 
 ## 3. Push migrations to the hosted database
 
@@ -54,8 +54,6 @@ is done.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` — the hosted service-role key, set only in the server-side
       environment. It must never carry a `NEXT_PUBLIC_` prefix, never be committed, and never
       be exposed to the browser; it bypasses RLS entirely.
-- [ ] Android: set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `apps/android/local.properties`
-      or Gradle properties so Google sign-in can open the hosted Supabase OAuth URL.
 
 ## 6. Confirm the hosted auth config matches local
 

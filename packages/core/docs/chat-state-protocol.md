@@ -4,11 +4,10 @@ This document is the platform-neutral contract for local chat state. The reducer
 and selectors live in `packages/core/src/chat-state`; platform apps adapt the
 same event/result rules through their own state containers.
 
-The protocol is JSON-shaped and does not depend on React, Next.js, Zustand,
-Supabase clients, browser APIs, Kotlin, or Swift runtime code. Web Zustand,
-Android `ViewModel`/`StateFlow`, and iOS observable models are adapters over
-this contract. They are not the source of authorization, assignment,
-membership, writes, persistence, or durable read state.
+The protocol is JSON-shaped and does not depend on React, Next.js, Zustand, or
+Supabase clients, or browser APIs. Web Zustand is an adapter over this
+contract, not the source of authorization, assignment, membership, writes,
+persistence, or durable read state.
 
 Supabase RLS, database functions, Edge Functions, and Next server actions remain
 authoritative for auth, coach-client assignment, conversation membership, write
@@ -119,14 +118,3 @@ Web may keep a Zustand store as a React coordination/cache adapter keyed by
 selectors, but it must not store auth truth, role permission truth, assignment
 decisions, direct Supabase clients, service-role data, or final persistence
 decisions.
-
-Android should later model the same state through a `ViewModel` with
-`StateFlow`, dispatching the same event names and validating against the JSON
-fixtures.
-
-iOS should later model the same state through SwiftUI observable model data,
-dispatching the same event names and validating against the JSON fixtures.
-
-Native clients should implement the event/result behavior idiomatically in
-Kotlin or Swift. They should not import Zustand, React, Next.js, Supabase web
-clients, or TypeScript runtime code.

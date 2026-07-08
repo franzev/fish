@@ -9,8 +9,8 @@ The coach is the one who **assigns**, so the coach side authors the entire clien
 The coach's Messages tab is a **roster of many clients** (unlike the client's single-coach list).
 Rows show the client, last message, and a **monochrome ink "waiting for you" dot** — which MUST carry a
 text/`aria-label` ("Waiting for your reply"), never shade + shape alone — (never a colored
-badge) so the coach sees who needs a reply. Web puts the roster in the left pane of a two-pane;
-Android is a list → conversation.
+badge) so the coach sees who needs a reply. Desktop puts the roster in the left pane of a two-pane;
+mobile is a list → conversation.
 
 ## Authoring: tap → menu → inline compose
 

@@ -8,7 +8,6 @@
     "dev:web": "pnpm --filter @fish/web dev",
     "storybook": "pnpm --filter @fish/web storybook",
     "build-storybook": "pnpm --filter @fish/web build-storybook",
-    "android:preview": "node scripts/android-preview.mjs",
     "build": "pnpm -r --if-present build",
     "build:web": "pnpm --filter @fish/web build",
     "lint": "pnpm -r --if-present lint",

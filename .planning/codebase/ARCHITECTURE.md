@@ -44,7 +44,7 @@
 
 ## Pattern Overview
 
-**Overall:** Foundation-first, coach-validated, neurodivergent-focused monorepo. Multi-platform (web, iOS, Android) with a single Supabase backend. Web is the primary delivery surface during build-out of foundational features.
+**Overall:** Foundation-first, coach-validated, neurodivergent-focused monorepo. Web-only client with a single Supabase backend.
 
 **Key Characteristics:**
 - **Simplicity by design:** UI removes choices (one primary action per screen); never build what a coach hasn't validated first.
@@ -101,7 +101,7 @@
 - Location: `supabase/` (config.toml) and Supabase Cloud
 - Contains: Auth policies, database tables (users, conversations, messages), RLS rules, function configurations
 - Depends on: PostgreSQL, Supabase cloud infrastructure
-- Used by: Web app, iOS app, Android app via `supabase-js` or platform SDKs
+- Used by: Web app via `supabase-js`
 
 ## Data Flow
 

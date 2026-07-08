@@ -11,8 +11,6 @@ The product stays deliberately minimal. For this audience, too much choice cause
 ## Tech stack
 
 - `apps/web` — Next.js App Router + React + TypeScript + Tailwind CSS v4
-- `apps/ios` — native SwiftUI
-- `apps/android` — native Kotlin + Jetpack Compose
 - `packages/core` — shared product contracts
 - `packages/supabase` — shared Supabase auth/database contracts
 - `supabase/functions` — Edge Functions for command-style API logic
@@ -37,11 +35,6 @@ pnpm build        # build/typecheck all pnpm workspace packages
 pnpm lint         # lint all pnpm workspace packages
 pnpm typecheck    # typecheck all pnpm workspace packages
 ```
-
-Native apps are opened with their platform tools:
-
-- iOS: open `apps/ios/FISH.xcodeproj` in Xcode.
-- Android: open `apps/android` in Android Studio.
 
 ## Product rules
 

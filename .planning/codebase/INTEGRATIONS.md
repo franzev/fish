@@ -154,7 +154,6 @@
 - Supabase JavaScript client library not in `apps/web/package.json`
 - Environment variables for Supabase URL/keys not configured
 - Web app does not yet call Supabase APIs or use auth
-- Native apps (iOS, Android) have no SDK dependencies yet
 
 ---
 

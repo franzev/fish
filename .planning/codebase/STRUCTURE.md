@@ -30,17 +30,6 @@ fish/                              # Monorepo root (pnpm workspaces)
 │   │   ├── tsconfig.json           # TypeScript config (paths: @/* → ./*))
 │   │   ├── next.config.mjs         # Next.js config (empty; no overrides)
 │   │   └── eslint.config.mjs       # ESLint rules
-│   │
-│   ├── ios/                        # SwiftUI app (native, not yet scaffolded)
-│   │   └── [placeholder]
-│   │
-│   └── android/                    # Kotlin + Jetpack Compose (native)
-│       ├── app/src/
-│       │   ├── main/
-│       │   │   └── java/space/fishhub/app/  # App entry point
-│       │   ├── test/
-│       │   └── androidTest/
-│       └── build.gradle            # Gradle config
 │
 ├── packages/
 │   ├── core/                       # Shared domain contracts (no impl, types only)
@@ -88,8 +77,8 @@ fish/                              # Monorepo root (pnpm workspaces)
 - Key files: `package.json` (dev: next, typescript), `pnpm-workspace.yaml` (defines apps/*, packages/*), `AGENTS.md` (product rules).
 
 **apps/ (Applications):**
-- Purpose: End-user applications (web, iOS, Android).
-- Contains: Web (Next.js), iOS (SwiftUI placeholder), Android (Kotlin + Compose).
+- Purpose: End-user applications (web).
+- Contains: Web (Next.js).
 
 **apps/web/ (Web App):**
 - Purpose: Primary client interface (coaches, clients).
@@ -166,7 +155,6 @@ fish/                              # Monorepo root (pnpm workspaces)
 **Testing:**
 - `apps/web/` — Jest config (future; not yet added).
 - `packages/core/` — Unit tests for type guards (future).
-- `apps/android/app/src/test/java/space/fishhub/app/` — Android test stubs.
 
 ## Naming Conventions
 

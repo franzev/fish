@@ -34,12 +34,6 @@
 - Impact: Changes are unverified. Regressions will ship to production undetected. Design system components and validation logic are untested.
 - Fix approach: Add vitest to `apps/web/` and `packages/core/`. Write unit tests for: `cn()` utility, Button/Input/Card/Progress components, chat limits, role validation, message length checks. Add integration tests for Edge Functions (mock Deno environment or use Supabase emulator).
 
-**Missing Android and iOS projects:**
-- Issue: `apps/ios/` contains only a `.DS_Store` file. `apps/android/` has skeleton Gradle project with no FISH-specific code. No native clients exist to test product behavior.
-- Files: `apps/ios/`, `apps/android/`
-- Impact: Web is the only client surface; cross-platform rollout is blocked. Design tokens have not been ported to native platforms.
-- Fix approach: This is lower priority (foundation-first approach). When ready: port design tokens to `apps/ios/` (SwiftUI constants) and `apps/android/` (Compose Theming). Implement auth flow and chat UI in both platforms.
-
 ## Known Bugs
 
 **No open bugs identified in code comments or patterns.** Codebase is too early-stage to have bugs; it has missing features instead.
@@ -97,7 +91,7 @@
 
 **Database schema is not yet created:**
 - Files: `packages/supabase/src/database.types.ts` (types only), missing `supabase/migrations/`
-- Why fragile: Once created, schema changes require migrations. Breaking changes (renaming columns, deleting tables) must be coordinated across web, iOS, Android, and Edge Functions. Without a migration system in place, deployments will be chaotic.
+- Why fragile: Once created, schema changes require migrations. Breaking changes (renaming columns, deleting tables) must be coordinated across web and Edge Functions. Without a migration system in place, deployments will be chaotic.
 - Safe modification: Use Supabase CLI migrations from the start. Every schema change goes through `supabase migration create [name]` and is version-controlled. Document the migration step in STRUCTURE.md. Before any release, test migrations on a staging database.
 
 ## Scaling Limits

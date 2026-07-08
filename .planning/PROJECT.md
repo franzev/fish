@@ -74,16 +74,13 @@ v1.1 The Coaching Loop — scoped and committed (full requirements with REQ-IDs:
 - [x] Client profiles — profile domain schema, client read/edit flow, coach client-detail view
 - [x] Real 1-on-1 chat route — real send-message Edge Function, web chat route on live data, optimistic send lifecycle, draft preservation, calm invalid-message guidance, and coach/client thread read
 
-Carried (not owned by a v1.1 phase unless one adopts it):
-- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later (hand-written CSS kept for now; THEM-02 trigger: native builds actually begin)
-
 ### Out of Scope
 
 Durable exclusions:
 - Color palette / brand colors — hierarchy before color; if the UI works in monochrome, the structure is right; color is a deliberate later layer
 - Coach signup UI — coach accounts are created manually (seed/dashboard); open role pickers would let anyone claim coach powers
 - Community feed, gamification, streaks — explicitly barred until foundations are done and techniques are coach-validated (AGENTS.md)
-- Native iOS/Android implementation — web-first; native clients mirror tokens later
+- Native iOS/Android clients — web-only product; no native apps
 
 Deferred past v1.1 (in the build order, just not this milestone):
 - Realtime chat (presence, typing, read-state, live updates) — v1.1 ships persistent send/read; realtime is the next chat layer
@@ -98,8 +95,7 @@ Deferred past v1.1 (in the build order, just not this milestone):
 - Web stack: Next.js 16.2.9, React 19.2.7, Tailwind CSS v4.3.1 (CSS-first `@theme` — **never** create `tailwind.config.js`; keep `tailwindcss` and `@tailwindcss/postcss` on the same version).
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
-- `apps/ios` is empty; `apps/android` is a Gradle skeleton. Both wait.
-- **Current state (2026-07-06):** v1.0 Monochrome Foundations shipped and archived (see `## Current State` above). v1.1 now contains client profiles and real persistent 1-on-1 chat. The unvalidated learning-flow implementations were removed from active code, schema contracts, seed data, and release gates. An Android static Compose preview of the auth screens exists as a quick-task spike (uncommitted working-tree changes under `apps/android/`); native work otherwise waits.
+- **Current state (2026-07-06):** v1.0 Monochrome Foundations shipped and archived (see `## Current State` above). v1.1 now contains client profiles and real persistent 1-on-1 chat. The unvalidated learning-flow implementations were removed from active code, schema contracts, seed data, and release gates. The product is web-only; the native iOS/Android app scaffolds were removed.
 
 ## Constraints
 

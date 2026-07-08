@@ -182,7 +182,7 @@ className={cn(
 
 **`packages/core`:**
 - Pure TypeScript types and constants — no dependencies on Supabase or React
-- Shared between web, iOS, Android, and Edge Functions
+- Shared between web and Edge Functions
 - Examples: `UserRole`, `ChatMessage`, `chatLimits`, type guards
 
 **`packages/supabase`:**
