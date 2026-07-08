@@ -119,6 +119,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260708-nr2 | Redesign chat emoji reactions: screenshot-style pills, monochrome tokens, any-emoji grouped searchable picker, cursor-pointer, DB persistence | 2026-07-08 | 3a3f0dcf | [260708-nr2-redesign-chat-emoji-reactions-screenshot](./quick/260708-nr2-redesign-chat-emoji-reactions-screenshot/) |
 | fast | Fix reaction ack wiping sender name to "Member"; shrink message timestamp to caption size | 2026-07-08 | 768d08b2 | — |
 | fast | Emoji panel semantic size tokens + vertical flip near viewport bottom | 2026-07-08 | b349327d | — |
+| fast | Portal emoji picker to body (fixes clipping in real chat scrollport); /kit/chat-live harness renders real ChatClient without auth | 2026-07-08 | 19ca8286 | — |
 
 ## Session Continuity
 
