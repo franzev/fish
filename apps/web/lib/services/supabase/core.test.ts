@@ -198,6 +198,53 @@ describe("Supabase service registry", () => {
     }
   });
 
+  it("leaves channel identity unset for a direct 1-on-1 conversation", async () => {
+    // Each from() call per table consumes the next queued value: profiles is
+    // read for the current user then the participant; conversations misses
+    // the demo-community lookup, then returns the assigned direct one.
+    const queues: Record<string, unknown[]> = {
+      profiles: [
+        { id: "user-1", role: "client", display_name: "Franz Fish" },
+        { id: "coach-1", role: "coach", display_name: "Coach Dana" },
+      ],
+      conversations: [
+        null,
+        [{ id: "conversation-1", client_id: "user-1", coach_id: "coach-1" }],
+      ],
+      messages: [[]],
+      message_reactions: [[]],
+      message_reads: [[]],
+      presence_sessions: [[]],
+    };
+    const client = {
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "user-1" } },
+          error: null,
+        })),
+      },
+      from: vi.fn((table: string) => {
+        const queue = queues[table] ?? [];
+        return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
+      }),
+    } as unknown as AppSupabaseClient;
+
+    const result = await createSupabaseServices(
+      client
+    ).database.chat.getAssignedConversation();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        conversationId: "conversation-1",
+        kind: "direct",
+      });
+      expect(result.data?.channelId).toBeUndefined();
+      expect(result.data?.channelSlug).toBeUndefined();
+      expect(result.data?.channelName).toBeUndefined();
+    }
+  });
+
   it("maps Google OAuth start failures into auth service failures", async () => {
     const client = {
       auth: {

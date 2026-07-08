@@ -40,6 +40,7 @@ type SupabaseResponse<T> = {
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";
+// Must match the seed in supabase/migrations/0016_channels.sql and scripts/seed.ts.
 const demoCommunityChannelId = "22222222-2222-4222-8222-222222222222";
 const demoCommunityChannelSlug = "general";
 const demoCommunityChannelName = "general";
