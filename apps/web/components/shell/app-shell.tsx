@@ -2,6 +2,7 @@
 
 import { LogoutButton } from "@/components/auth/logout-button";
 import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
+import { generalChannelHref } from "@/lib/channels";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@fish/core/roles";
 import {
@@ -36,10 +37,6 @@ interface NavItem {
   label: string;
   Icon: Icon;
 }
-
-/* The seed `general` channel — id must match supabase/migrations/0016_channels.sql
-   and scripts/seed.ts. Single-channel milestone: nav links straight to it. */
-const generalChannelHref = "/channels/22222222-2222-4222-8222-222222222222";
 
 const clientNavItems: NavItem[] = [
   { href: "/home", label: "Home", Icon: IconHome },
