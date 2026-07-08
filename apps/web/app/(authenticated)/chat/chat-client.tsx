@@ -355,7 +355,16 @@ export function ChatClient({
                 >
                   {(isCommunity || !mine) &&
                     (showParticipantAvatar ? (
-                      <Avatar name={getMessageAuthorName(message)} size="sm" />
+                      <Avatar
+                        name={getMessageAuthorName(message)}
+                        size="sm"
+                        /* With a reply preview above, the avatar drops to sit
+                           beside the author header — the preview row belongs
+                           to the quoted message, not this one. */
+                        className={cn(
+                          isCommunity && replyMessage && "mt-lg"
+                        )}
+                      />
                     ) : (
                       <div aria-hidden="true" className="size-8 shrink-0" />
                     ))}
@@ -368,10 +377,12 @@ export function ChatClient({
                     )}
                   >
                     {isCommunity && replyMessage && (
-                      <div className="-ml-lg mb-2xs flex items-center gap-2xs self-stretch text-ui-xs text-muted">
+                      <div className="relative mb-2xs flex items-center gap-2xs self-stretch text-ui-xs text-muted">
+                        {/* Connector spline: rises from the avatar centre in
+                            the gutter and curves into the preview line. */}
                         <span
                           aria-hidden="true"
-                          className="h-xs w-lg shrink-0 self-end rounded-tl-chat-inner border-l border-t border-border"
+                          className="absolute -left-lg top-compact h-sm w-badge rounded-tl-chat-inner border-l border-t border-border"
                         />
                         <Avatar
                           name={getMessageAuthorName(replyMessage)}
