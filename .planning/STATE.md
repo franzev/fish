@@ -117,6 +117,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260708-mjs | Remove the card/box wrapping the chat thread and restyle message reaction counters to match the Discord reference | 2026-07-08 | 4261f40c | [260708-mjs-remove-the-card-box-wrapping-the-chat-th](./quick/260708-mjs-remove-the-card-box-wrapping-the-chat-th/) |
 | 260708-n53 | Make the chat occupy the full shell pane width and height, simplify its tailwind classes, and remove redundant wrapper divs | 2026-07-08 | ec419638 | [260708-n53-make-the-chat-occupy-the-full-shell-pane](./quick/260708-n53-make-the-chat-occupy-the-full-shell-pane/) |
 | 260708-nr2 | Redesign chat emoji reactions: screenshot-style pills, monochrome tokens, any-emoji grouped searchable picker, cursor-pointer, DB persistence | 2026-07-08 | 3a3f0dcf | [260708-nr2-redesign-chat-emoji-reactions-screenshot](./quick/260708-nr2-redesign-chat-emoji-reactions-screenshot/) |
+| fast | Fix reaction ack wiping sender name to "Member"; shrink message timestamp to caption size | 2026-07-08 | 768d08b2 | — |
 
 ## Session Continuity
 
