@@ -150,6 +150,10 @@ export interface ClientChatPresence {
 export interface ClientChatData {
   conversationId: string;
   kind?: "direct" | "community";
+  /** Channel identity — present for community/channel rooms. */
+  channelId?: string;
+  channelSlug?: string;
+  channelName?: string;
   title?: string;
   subtitle?: string;
   currentUserId: string;
