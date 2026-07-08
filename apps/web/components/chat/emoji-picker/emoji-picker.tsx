@@ -2,7 +2,20 @@
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input/input";
-import { IconMoodSmile, IconSearch } from "@tabler/icons-react";
+import { ScrollArea } from "@/components/ui/scroll-area/scroll-area";
+import {
+  Icon,
+  IconBallBasketball,
+  IconBulb,
+  IconCar,
+  IconFlag,
+  IconHandStop,
+  IconHash,
+  IconMoodSmile,
+  IconPaw,
+  IconSearch,
+  IconToolsKitchen2,
+} from "@tabler/icons-react";
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
 import groups from "unicode-emoji-json/data-by-group.json";
@@ -23,6 +36,21 @@ interface EmojiGroup {
 // Bundled dataset (unicode-emoji-json) — no CDN calls, no network dependency
 // for the picker to render.
 const emojiGroups = groups as EmojiGroup[];
+
+// Monochrome Tabler icon per category — colored emoji glyphs as tab icons
+// competed with the grid; icons keep the tab strip quiet (structural UI
+// carries no color).
+const groupIcons: Record<string, Icon> = {
+  "Smileys & Emotion": IconMoodSmile,
+  "People & Body": IconHandStop,
+  "Animals & Nature": IconPaw,
+  "Food & Drink": IconToolsKitchen2,
+  "Travel & Places": IconCar,
+  Activities: IconBallBasketball,
+  Objects: IconBulb,
+  Symbols: IconHash,
+  Flags: IconFlag,
+};
 
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
@@ -76,7 +104,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
         />
       </div>
       {results ? (
-        <div className="flex-1 overflow-y-auto p-xs">
+        <ScrollArea className="flex-1" viewportClassName="p-xs">
           {results.length === 0 ? (
             <p className="p-xs text-ui-sm text-muted">
               No emoji match that yet.
@@ -88,35 +116,41 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
               onSelect={onSelect}
             />
           )}
-        </div>
+        </ScrollArea>
       ) : (
         <Tabs.Root
           defaultValue={emojiGroups[0]?.slug}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <Tabs.List className="flex shrink-0 gap-2xs overflow-x-auto border-b border-border bg-surface p-xs">
-            {emojiGroups.map((group) => (
-              <Tabs.Tab
-                key={group.slug}
-                value={group.slug}
-                aria-label={group.name}
-                className="flex size-10 shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 data-[active]:bg-surface-2 data-[active]:text-foreground"
-              >
-                <span aria-hidden="true" className="text-copy leading-none">
-                  {group.emojis[0]?.emoji}
-                </span>
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
           {emojiGroups.map((group) => (
             <Tabs.Panel
               key={group.slug}
               value={group.slug}
-              className="flex-1 overflow-y-auto p-xs"
+              className="flex min-h-0 flex-1 flex-col"
             >
-              <EmojiGroupList emojis={group.emojis} onSelect={onSelect} />
+              <ScrollArea className="flex-1" viewportClassName="p-xs">
+                <EmojiGroupList emojis={group.emojis} onSelect={onSelect} />
+              </ScrollArea>
             </Tabs.Panel>
           ))}
+          {/* Tab strip lives below the grid (thumb-reach on mobile) and
+              distributes evenly — nine fixed categories, no horizontal
+              scrolling. */}
+          <Tabs.List className="flex shrink-0 border-t border-border bg-surface px-2xs py-2xs">
+            {emojiGroups.map((group) => {
+              const GroupIcon = groupIcons[group.name] ?? IconMoodSmile;
+              return (
+                <Tabs.Tab
+                  key={group.slug}
+                  value={group.slug}
+                  aria-label={group.name}
+                  className="flex h-10 flex-1 items-center justify-center rounded-control text-muted hover:bg-surface-2 data-[active]:bg-surface-2 data-[active]:text-foreground"
+                >
+                  <GroupIcon size={18} stroke={1.75} aria-hidden="true" />
+                </Tabs.Tab>
+              );
+            })}
+          </Tabs.List>
         </Tabs.Root>
       )}
     </div>
