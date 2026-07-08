@@ -106,7 +106,7 @@ describe("AppShell", () => {
   });
 
   it("renders labeled client navigation without the unvalidated Progress tab", () => {
-    pathname = "/chat";
+    pathname = "/channels/22222222-2222-4222-8222-222222222222";
 
     render(
       <AppShell displayName="Alex Rivera" role="client">
@@ -119,10 +119,12 @@ describe("AppShell", () => {
     expect(primaryNav).toHaveTextContent("Community");
     expect(primaryNav).toHaveTextContent("Profile");
     expect(primaryNav).not.toHaveTextContent("Progress");
-    expect(within(primaryNav).getByRole("link", { name: "Community" })).toHaveAttribute(
-      "aria-current",
-      "page"
+    const community = within(primaryNav).getByRole("link", { name: "Community" });
+    expect(community).toHaveAttribute(
+      "href",
+      "/channels/22222222-2222-4222-8222-222222222222"
     );
+    expect(community).toHaveAttribute("aria-current", "page");
   });
 
   it("renders coach navigation to the roster instead of client profile choices", () => {

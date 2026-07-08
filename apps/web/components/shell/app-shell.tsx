@@ -37,15 +37,19 @@ interface NavItem {
   Icon: Icon;
 }
 
+/* The seed `general` channel — id must match supabase/migrations/0016_channels.sql
+   and scripts/seed.ts. Single-channel milestone: nav links straight to it. */
+const generalChannelHref = "/channels/22222222-2222-4222-8222-222222222222";
+
 const clientNavItems: NavItem[] = [
   { href: "/home", label: "Home", Icon: IconHome },
-  { href: "/chat", label: "Community", Icon: IconUsersGroup },
+  { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
   { href: "/profile", label: "Profile", Icon: IconUser },
 ];
 
 const coachNavItems: NavItem[] = [
   { href: "/coach", label: "Clients", Icon: IconUsers },
-  { href: "/chat", label: "Community", Icon: IconUsersGroup },
+  { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
 
 function getNavItems(role: UserRole) {
@@ -113,7 +117,8 @@ export function AppShell({
   /* Chat is the one immersive surface: the thread owns the pane edge-to-edge
      and scrolls internally, so the shell locks to the viewport here. Every
      other screen keeps the centered reading column (D-10). */
-  const immersive = isActivePath(pathname, "/chat");
+  const immersive =
+    isActivePath(pathname, "/channels") || isActivePath(pathname, "/chat");
 
   return (
     <div className={cn("flex bg-bg", immersive ? "h-dvh" : "min-h-dvh")}>
