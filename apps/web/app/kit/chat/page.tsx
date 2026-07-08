@@ -1,4 +1,5 @@
 import { KitThemeToggle } from "@/components/kit/theme-toggle";
+import { ReactionsDemo } from "@/components/kit/reactions-demo";
 import {
   Attachments,
   Avatar,
@@ -15,7 +16,6 @@ import {
   NotificationBadge,
   PresenceIndicator,
   QuotedMessage,
-  Reactions,
   Skeleton,
   TypingIndicator,
   UnreadDivider,
@@ -75,12 +75,7 @@ export default function ChatKitPage() {
           </div>
           <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Reactions</p>
-            <Reactions
-              reactions={[
-                { emoji: "👍", count: 3, byMe: true },
-                { emoji: "🎉", count: 1, byMe: false },
-              ]}
-            />
+            <ReactionsDemo />
           </div>
           <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Quoted message</p>

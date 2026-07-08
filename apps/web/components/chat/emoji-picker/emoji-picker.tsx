@@ -147,6 +147,10 @@ export function EmojiPickerButton({
   children,
 }: EmojiPickerButtonProps) {
   const [open, setOpen] = useState(false);
+  // Panel edge-alignment, measured at open time: a trigger near the left
+  // viewport edge (received messages) would clip a right-aligned panel
+  // off-screen, and vice versa for sent messages on the right.
+  const [alignRight, setAlignRight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -176,7 +180,13 @@ export function EmojiPickerButton({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={label}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          const rect = containerRef.current?.getBoundingClientRect();
+          setAlignRight(
+            Boolean(rect && rect.left + rect.width / 2 > window.innerWidth / 2)
+          );
+          setOpen((value) => !value);
+        }}
         className={className}
       >
         {children ?? (
@@ -185,7 +195,10 @@ export function EmojiPickerButton({
       </button>
       {open && (
         <EmojiPicker
-          className="absolute right-0 top-full z-20 mt-2xs"
+          className={cn(
+            "absolute top-full z-20 mt-2xs",
+            alignRight ? "right-0" : "left-0"
+          )}
           onSelect={(emoji) => {
             onSelect(emoji);
             setOpen(false);
