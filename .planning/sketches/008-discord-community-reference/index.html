@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sketch 008 — Discord community reference (pixel recreation)</title>
+<link rel="stylesheet" href="../themes/default.css">
+<style>
+  /* ============================================================
+     PIXEL RECREATION — this sketch intentionally does NOT use the
+     FISH monochrome theme. It reproduces Discord's dark palette,
+     type ramp, and spacing verbatim as a community-direction
+     reference. Values mirror Discord's own CSS custom properties.
+     ============================================================ */
+  :root {
+    --dc-bg: #313338;                 /* --background-primary */
+    --dc-bg-hover: #2e3035;           /* message hover band */
+    --dc-text: #dbdee1;               /* --text-normal */
+    --dc-muted: #949ba4;              /* --text-muted (timestamps) */
+    --dc-reply-text: #b5bac1;         /* reply preview */
+    --dc-spline: #4e5058;             /* reply connector */
+    --dc-divider: #3f4147;            /* date divider rule */
+    --dc-pill-bg: #3d3f45;            /* ZTM tag pill */
+    --dc-blue: #3498db;               /* syntax role color */
+    --dc-orange: #e8a033;             /* Labalaba role color */
+    --dc-pink: #e9527e;               /* kazu role color */
+    --dc-font: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dc-bg);
+    font-family: var(--dc-font);
+    font-size: 16px;
+    line-height: 1.375;
+    color: var(--dc-text);
+    -webkit-font-smoothing: antialiased;
+    padding-top: 41px; /* variant nav bar */
+  }
+
+  /* ---------- variant nav (sketch chrome, not part of design) --- */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: #1e1f22; border-bottom: 1px solid #111214;
+    padding: 8px 16px; display: flex; gap: 8px;
+    font-family: system-ui; font-size: 13px;
+  }
+  #variant-nav button {
+    background: #313338; color: #dbdee1; border: none;
+    padding: 5px 12px; border-radius: 4px; cursor: default;
+  }
+
+  /* ---------- message list --------------------------------------- */
+  .chat { padding: 24px 0 32px; overflow-x: hidden; }
+  ol { list-style: none; }
+
+  .msg {
+    position: relative;
+    padding: 2px 48px 2px 72px;   /* Discord cozy: .125rem 48px .125rem 72px */
+    min-height: 1.375rem;
+  }
+  .msg:hover { background: var(--dc-bg-hover); }
+  .msg.is-hover { background: var(--dc-bg-hover); } /* frozen hover — top row in the reference shot */
+
+  .group-start { margin-top: 1.0625rem; } /* 17px between author groups */
+  .msg:first-child { margin-top: 0; }
+
+  /* ---------- avatar ---------------------------------------------- */
+  .avatar {
+    position: absolute; left: 16px; top: 2px;
+    width: 40px; height: 40px; border-radius: 50%;
+    overflow: hidden; cursor: pointer; user-select: none;
+  }
+  .has-reply .avatar { top: calc(2px + 1.375rem + 4px); } /* below the reply row */
+
+  .avatar-syntax {
+    background: radial-gradient(circle at 38% 32%, #33363d 0%, #17181c 68%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .avatar-syntax::after {
+    content: "🧑‍💻"; font-size: 19px; filter: grayscale(65%) brightness(1.4);
+  }
+  .avatar-laba {
+    background:
+      radial-gradient(circle at 68% 28%, rgba(46,196,182,.55) 0%, rgba(46,196,182,0) 34%),
+      radial-gradient(circle at 30% 72%, rgba(23,120,130,.6) 0%, rgba(23,120,130,0) 42%),
+      radial-gradient(circle at 50% 45%, #143036 0%, #060d10 78%);
+  }
+  .avatar-kazu {
+    background:
+      radial-gradient(circle at 32% 26%, #fdf3f6 0%, rgba(253,243,246,0) 45%),
+      radial-gradient(circle at 70% 70%, #e5aebf 0%, rgba(229,174,191,0) 55%),
+      linear-gradient(135deg, #f3dbe4 0%, #cf95a9 100%);
+  }
+  /* avatar decoration hearts (kazu) */
+  .deco { position: absolute; font-size: 10px; color: #f273a0; pointer-events: none; z-index: 1; }
+  .deco.d1 { left: 6px;  top: calc(2px + 1.375rem + 2px);  font-size: 11px; transform: rotate(-14deg); }
+  .deco.d2 { left: 2px;  top: calc(2px + 1.375rem + 20px); font-size: 9px;  transform: rotate(10deg); }
+  .deco.d3 { left: 12px; top: calc(2px + 1.375rem + 40px); font-size: 12px; transform: rotate(-6deg); }
+  .deco.d4 { left: 47px; top: calc(2px + 1.375rem + 42px); font-size: 10px; color: #fff; }
+
+  /* ---------- reply context row ----------------------------------- */
+  .reply {
+    position: relative;
+    display: flex; align-items: center;
+    margin-bottom: 4px;
+    font-size: .875rem; line-height: 1.125rem;
+    white-space: nowrap;
+    color: var(--dc-reply-text);
+    cursor: pointer;
+  }
+  /* connector spline: rises from the avatar and curves into the row */
+  .reply::before {
+    content: "";
+    position: absolute;
+    left: -36px;                 /* back into the gutter (avatar centre) */
+    top: 50%;
+    width: 30px;
+    height: 20px;
+    border-left: 2px solid var(--dc-spline);
+    border-top: 2px solid var(--dc-spline);
+    border-top-left-radius: 6px;
+  }
+  .reply .r-avatar {
+    flex: 0 0 auto;
+    width: 16px; height: 16px; border-radius: 50%;
+    margin-right: 4px;
+  }
+  .reply .r-name { font-weight: 500; margin-right: 4px; flex: 0 0 auto; }
+  .reply .r-name.orange { color: var(--dc-orange); }
+  .reply .r-name.light  { color: #c8ccd2; }
+  .reply .r-text {
+    overflow: hidden; text-overflow: ellipsis;
+    flex: 0 1 auto;
+  }
+  .reply:hover .r-text { color: #dbdee1; }
+
+  /* ---------- group header ---------------------------------------- */
+  .header {
+    display: flex; align-items: center;
+    min-height: 1.375rem;
+  }
+  .username {
+    font-size: 1rem; font-weight: 500;
+    cursor: pointer;
+  }
+  .username:hover { text-decoration: underline; }
+  .username.blue   { color: var(--dc-blue); }
+  .username.orange { color: var(--dc-orange); }
+  .username.pink   { color: var(--dc-pink); }
+  .timestamp {
+    font-size: .75rem;
+    color: var(--dc-muted);
+    margin-left: .5rem;
+    font-weight: 500;
+  }
+
+  /* ---------- badges ----------------------------------------------- */
+  .badge { display: inline-flex; margin-left: 4px; cursor: pointer; flex: 0 0 auto; }
+  .badge svg { display: block; }
+
+  /* ZTM role tag pill */
+  .pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: var(--dc-pill-bg);
+    border-radius: 4px;
+    padding: 1px 5px 1px 4px;
+    margin-left: 6px;
+    font-size: .75rem; font-weight: 600; letter-spacing: .02em;
+    color: #dfe1e5;
+    line-height: 15px;
+    flex: 0 0 auto;
+    cursor: default;
+  }
+  .reply .pill { margin-left: 0; margin-right: 4px; font-size: .6875rem; padding: 0 4px 0 3px; }
+  .pill .sword { font-size: 10px; line-height: 1; }
+
+  /* ---------- message body ----------------------------------------- */
+  .content { color: var(--dc-text); }
+  .content .gap { display: block; height: 1.375rem; } /* blank line inside one message */
+
+  /* ---------- date divider ------------------------------------------ */
+  .divider {
+    display: flex; align-items: center;
+    margin: 24px 16px 8px;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--dc-divider);
+  }
+  .divider span {
+    padding: 0 8px;
+    font-size: .75rem; font-weight: 600;
+    color: var(--dc-muted);
+  }
+
+  /* ---------- sketch toolbar ---------------------------------------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999;
+    font-family: system-ui; font-size: 12px;
+    background: rgba(0,0,0,.7); color: #fff;
+    padding: 8px 12px; border-radius: 8px;
+    opacity: .35; transition: opacity .2s;
+  }
+  #sketch-tools:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button>A: Faithful recreation ★ Selected</button>
+</div>
+
+<div class="chat">
+  <ol>
+
+    <!-- ── syntax · 7/2/26 12:26 PM ─────────────────────────────── -->
+    <li class="msg group-start is-hover">
+      <div class="avatar avatar-syntax" aria-hidden="true"></div>
+      <div class="header">
+        <span class="username blue">syntax</span>
+        <span class="badge" title="Server booster">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#f0b232" d="M12 1.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 7.8l6.1-.7L12 1.5z"/><path fill="#f8d878" d="M12 5.2l1.6 3.4 3.7.4-2.7 2.6.7 3.6-3.3-1.8-3.3 1.8.7-3.6-2.7-2.6 3.7-.4L12 5.2z"/></svg>
+        </span>
+        <span class="timestamp">7/2/26, 12:26 PM</span>
+      </div>
+      <div class="content">ah yes, having type: modules would do that</div>
+    </li>
+    <li class="msg">
+      <div class="content">sorry if that wasn't much help</div>
+    </li>
+
+    <!-- ── Labalaba · 7/2/26 1:38 PM (reply to kazu) ─────────────── -->
+    <li class="msg group-start has-reply">
+      <div class="reply">
+        <span class="r-avatar avatar-kazu"></span>
+        <span class="r-name light">@kazu</span>
+        <span class="pill"><span class="sword">🗡️</span>ZTM</span>
+        <span class="r-text">If you're also more focused on cybersecurity over web development, a formal whitepaper to accompany your project is a big plus here too. Similar to how you'd write writeups for CTFs.</span>
+      </div>
+      <div class="avatar avatar-laba" aria-hidden="true"></div>
+      <div class="header">
+        <span class="username orange">Labalaba</span>
+        <span class="badge" title="Role badge">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#e8a033" d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z"/><path fill="#f6c76b" d="M12 4.4l5.8 2.2v4.6c0 3.7-2.4 7-5.8 8.3-3.4-1.3-5.8-4.6-5.8-8.3V6.6L12 4.4z"/></svg>
+        </span>
+        <span class="timestamp">7/2/26, 1:38 PM</span>
+      </div>
+      <div class="content">Uhm, so you're suggesting I make like a writeup of how I develop this website?<span class="gap"></span>It's still in production btw, I have plans to include more features like write ups and certifications</div>
+    </li>
+
+    <!-- ── kazu · 7/2/26 1:44 PM (reply to Labalaba) ─────────────── -->
+    <li class="msg group-start has-reply">
+      <div class="reply">
+        <span class="r-avatar avatar-laba"></span>
+        <span class="r-name orange">@Labalaba</span>
+        <span class="r-text">Uhm, so you're suggesting I make like a writeup of how I develop this website?&nbsp; It's still in production btw, I have plans to include more features like write ups and certifications</span>
+      </div>
+      <span class="deco d1">♥</span>
+      <span class="deco d2">♥</span>
+      <span class="deco d3">♥</span>
+      <span class="deco d4">✧</span>
+      <div class="avatar avatar-kazu" aria-hidden="true"></div>
+      <div class="header">
+        <span class="username pink">kazu</span>
+        <span class="pill"><span class="sword">🗡️</span>ZTM</span>
+        <span class="badge" title="Server booster">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#f0b232" d="M12 1.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 7.8l6.1-.7L12 1.5z"/><path fill="#f8d878" d="M12 5.2l1.6 3.4 3.7.4-2.7 2.6.7 3.6-3.3-1.8-3.3 1.8.7-3.6-2.7-2.6 3.7-.4L12 5.2z"/></svg>
+        </span>
+        <span class="timestamp">7/2/26, 1:44 PM</span>
+      </div>
+      <div class="content">Documentation is key for most web projects anyway. Just as it is important for developers to actually allow other developers to read their code, it's the same with pentesters, being able to document what you've done against a vulnerable victim.</div>
+    </li>
+    <li class="msg">
+      <div class="content">If you're framing this as a web project with the intent of showing vulnerabilities and then patching those vulnerabilities, then a writeup can explain your project.</div>
+    </li>
+    <li class="msg">
+      <div class="content">You have to understand this: not every web developer will understand what specific methodology you've done to exploit your own web app since they aren't pentesters. Likewise, most pentesters aren't web app developers, so you need to explain your work when you're appealing to two different tech audiences.</div>
+    </li>
+
+    <!-- ── Labalaba · 7/2/26 1:48 PM (reply to kazu) ─────────────── -->
+    <li class="msg group-start has-reply">
+      <div class="reply">
+        <span class="r-avatar avatar-kazu"></span>
+        <span class="r-name light">@kazu</span>
+        <span class="pill"><span class="sword">🗡️</span>ZTM</span>
+        <span class="r-text">You have to understand this: not every web developer will understand what specific methodology you've done to exploit your own web app since they aren't pentesters. Likewise, most pentesters aren't web app de</span>
+      </div>
+      <div class="avatar avatar-laba" aria-hidden="true"></div>
+      <div class="header">
+        <span class="username orange">Labalaba</span>
+        <span class="badge" title="Role badge">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#e8a033" d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z"/><path fill="#f6c76b" d="M12 4.4l5.8 2.2v4.6c0 3.7-2.4 7-5.8 8.3-3.4-1.3-5.8-4.6-5.8-8.3V6.6L12 4.4z"/></svg>
+        </span>
+        <span class="timestamp">7/2/26, 1:48 PM</span>
+      </div>
+      <div class="content">Oh yeah, I get what you mean now<br>But the portfolio website is not the project I will be building to attack because it doesn't have much functionalities and is rather static, but I will be making another web dev project just for that specific purpose. Do you have any project ideas for web development and for the specific purpose of hacking and hardening it</div>
+    </li>
+
+    <!-- ── date divider ──────────────────────────────────────────── -->
+    <li class="divider" role="separator"><span>July 6, 2026</span></li>
+
+  </ol>
+</div>
+
+<div id="sketch-tools">sketch 008 · Discord reference · hover any row</div>
+
+</body>
+</html>
