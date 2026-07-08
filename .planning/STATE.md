@@ -4,8 +4,8 @@ milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: verifying
 stopped_at: Phase 09 automated verification passed; UAT required for 2 human checks.
-last_updated: "2026-07-07T00:55:09Z"
-last_activity: Persisted Phase 09 UAT after human-needed verification.
+last_updated: "2026-07-08T09:57:21Z"
+last_activity: "Quick task 260708-oxs: removed iOS and Android native app code and all references."
 progress:
   total_phases: 4
   completed_phases: 3
@@ -80,7 +80,6 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ### Todos / open questions
 
-- [ ] Token pipeline formalized so native iOS/Android can mirror tokens later.
 - [ ] Hosted Supabase environments (staging/prod): linked project, per-env email templates, Site URL / Redirect URLs.
 - [ ] `vite@8` peer-wants `@types/node >=22.12.0` (installed 22.10.7) — warning only; bump with the next dependency task.
 
@@ -108,6 +107,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260704-kfb | Design and implement production-ready service abstraction architecture | 2026-07-04 | 3c1ec95 | [260704-kfb-design-and-implement-a-production-ready-](./quick/260704-kfb-design-and-implement-a-production-ready-/) |
 | 260705-amu | Bootstrap the iOS project and configure foundational UI infrastructure | 2026-07-04 | 8c60efe | [260705-amu-bootstrap-the-ios-project-and-configure-](./quick/260705-amu-bootstrap-the-ios-project-and-configure-/) |
 | 260705-gby | Implement authentication improvements across web, iOS, and Android | 2026-07-05 | f494ca9 | [260705-gby-implement-authentication-improvements-ac](./quick/260705-gby-implement-authentication-improvements-ac/) |
+| 260708-oxs | Remove iOS and Android native app code and all references | 2026-07-08 | 7aa64b36 | [260708-oxs-remove-ios-and-android-native-app-code-a](./quick/260708-oxs-remove-ios-and-android-native-app-code-a/) |
 | 260706-rsd | Remove stale color wording and retire unvalidated learning-flow implementations | 2026-07-06 | f099a9e | [260706-rsd-remove-stale-color-language-and-re](./quick/260706-rsd-remove-stale-color-language-and-re/) |
 | 260708-doh | Fix getServerSnapshot caching infinite loop in chat-store useChatStore | 2026-07-08 | d56fc795 | [260708-doh-fix-getserversnapshot-caching-infinite-l](./quick/260708-doh-fix-getserversnapshot-caching-infinite-l/) |
 | 260708-du5 | Redesign chat UI from 1-on-1 messaging to community-room (Discord-like) experience | 2026-07-08 | 4e9d52c4 | [260708-du5-redesign-chat-ui-from-1-on-1-messaging-t](./quick/260708-du5-redesign-chat-ui-from-1-on-1-messaging-t/) |
