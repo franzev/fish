@@ -200,7 +200,7 @@ async function seedChatConversations(
         name: "general",
         conversation_id: demoConversation.id,
       },
-      { onConflict: "slug" },
+      { onConflict: "id" },
     );
   if (generalChannelError) throw generalChannelError;
 
