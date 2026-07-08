@@ -7,6 +7,7 @@ import type {
 } from "@/lib/services";
 import {
   Avatar,
+  EmojiPickerButton,
   getBubbleRadiusClasses,
   MessageMeta,
   MessageStatus,
@@ -25,10 +26,10 @@ import { cn } from "@/lib/utils";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import {
   IconMicrophone,
+  IconMoodSmile,
   IconPencil,
   IconSearch,
   IconSend,
-  IconThumbUp,
   IconTrash,
   IconX,
   IconMessageReply,
@@ -451,14 +452,13 @@ export function ChatClient({
                         >
                           <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
                         </button>
-                        <button
-                          type="button"
-                          aria-label="React with thumbs up"
-                          onClick={() => void handleToggleReaction(message, "👍")}
+                        <EmojiPickerButton
+                          label="Add a reaction"
+                          onSelect={(emoji) => void handleToggleReaction(message, emoji)}
                           className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                         >
-                          <IconThumbUp size={18} stroke={1.75} aria-hidden="true" />
-                        </button>
+                          <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
+                        </EmojiPickerButton>
                         {mine && (
                           <>
                             <button

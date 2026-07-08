@@ -56,6 +56,9 @@ importers:
       tailwind-merge:
         specifier: 2.6.0
         version: 2.6.0
+      unicode-emoji-json:
+        specifier: ^0.9.0
+        version: 0.9.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -3286,6 +3289,9 @@ packages:
   undici@7.28.0:
     resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
     engines: {node: '>=20.18.1'}
+
+  unicode-emoji-json@0.9.0:
+    resolution: {integrity: sha512-HdrQW/7SdbXUsTd8uTATv7LvQJkCSgbAgRCDCtOhQ6xn3EAx+xZHQtRniOXWJK3ywIqPegkNhP4U4EbuFsiQng==}
 
   unplugin@2.3.11:
     resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
@@ -6694,6 +6700,8 @@ snapshots:
   undici-types@6.20.0: {}
 
   undici@7.28.0: {}
+
+  unicode-emoji-json@0.9.0: {}
 
   unplugin@2.3.11:
     dependencies:

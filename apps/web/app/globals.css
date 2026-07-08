@@ -216,6 +216,14 @@
     box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-inner);
     border-radius: var(--focus-radius);
   }
+  /* Tailwind v4 preflight leaves buttons at the OS default cursor — a single
+     base-layer rule so every clickable (native buttons and role="button"
+     custom controls) shows a pointer, instead of sprinkling `cursor-pointer`
+     utility classes across components. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
   /* Respect reduced motion. Covers the animate-fade-in utility below too —
      one rule, no per-animation opt-out to forget (D-08). iteration-count:1 is
      required alongside the duration clamp: an infinite animation (typing dots,
