@@ -44,6 +44,12 @@ const clients = [
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 
+// Fixed id matching the 0016_channels migration seed — the "general" channel is a
+// thin naming layer over the demo community conversation, upserted here because a
+// fresh `db reset` runs migrations before any profiles exist (the migration's
+// guarded insert no-ops in that case).
+const generalChannelId = "22222222-2222-4222-8222-222222222222";
+
 /** Pages through admin.listUsers() until it finds the given email — never assumes page 1. */
 async function findUserIdByEmail(email: string): Promise<string | null> {
   let page = 1;
@@ -184,6 +190,19 @@ async function seedChatConversations(
   if (demoConversationError || !demoConversation) {
     throw demoConversationError;
   }
+
+  const { error: generalChannelError } = await supabase
+    .from("channels")
+    .upsert(
+      {
+        id: generalChannelId,
+        slug: "general",
+        name: "general",
+        conversation_id: demoConversation.id,
+      },
+      { onConflict: "slug" },
+    );
+  if (generalChannelError) throw generalChannelError;
 
   const demoReadRows = [coachId, coach2Id, ...clientIds].map((userId) => ({
     conversation_id: demoConversation.id,
