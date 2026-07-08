@@ -60,7 +60,7 @@ export const Bubble = forwardRef<HTMLDivElement, BubbleProps>(
       <div
         ref={ref}
         className={cn(
-          "animate-message-in inline-block max-w-message px-md py-compact text-ui break-words",
+          "animate-message-in inline-block max-w-message px-md py-compact text-ui-sm break-words",
           getBubbleRadiusClasses({ mine, groupedWithPrevious, groupedWithNext }),
           mine ? "bg-primary text-on-primary" : "bg-surface text-body",
           className

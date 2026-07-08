@@ -346,10 +346,10 @@ export function ChatClient({
                         ? "mt-3xs"
                         : "mt-md"),
                     isCommunity
-                      ? "-mx-md items-start gap-xs px-md transition-colors hover:bg-surface"
+                      ? "-mx-md items-start gap-sm px-md transition-colors hover:bg-surface"
                       : cn(
                           "items-end",
-                          !mine && "gap-xs",
+                          !mine && "gap-sm",
                           mine ? "justify-end" : "justify-start"
                         )
                   )}
@@ -418,7 +418,7 @@ export function ChatClient({
                     )}
                     <div
                       className={cn(
-                        "text-copy break-words",
+                        "text-ui-sm break-words",
                         isCommunity
                           ? "text-body"
                           : cn(

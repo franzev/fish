@@ -25,6 +25,40 @@ const SPACING_TOKENS = [
   "motion-typing",
 ] as const;
 
+/* Without these groups twMerge can't tell the custom type scale from the
+   color tokens — `text-body` and `text-ui-sm` both fall into its default
+   font-size bucket, so whichever comes later silently swallows the other. */
+const FONT_SIZE_TOKENS = [
+  "ui-2xs",
+  "ui-xs",
+  "ui-sm",
+  "ui",
+  "ui-md",
+  "copy",
+  "heading-sm",
+  "emoji",
+  "display",
+] as const;
+
+const TEXT_COLOR_TOKENS = [
+  "bg",
+  "surface",
+  "surface-2",
+  "surface-3",
+  "border",
+  "border-strong",
+  "primary",
+  "primary-press",
+  "on-primary",
+  "foreground",
+  "body",
+  "muted",
+  "notice",
+  "error",
+  "warning",
+  "success",
+] as const;
+
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
@@ -35,6 +69,10 @@ const twMerge = extendTailwindMerge({
       space: SPACING_TOKENS,
       spacing: SPACING_TOKENS,
       translate: SPACING_TOKENS,
+    },
+    classGroups: {
+      "font-size": [{ text: [...FONT_SIZE_TOKENS] }],
+      "text-color": [{ text: [...TEXT_COLOR_TOKENS] }],
     },
   },
 });

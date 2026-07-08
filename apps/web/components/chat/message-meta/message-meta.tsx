@@ -27,9 +27,9 @@ export function MessageMeta({ authorName, sentAt, tag, className, ...props }: Me
     >
       {/* Sizes live on the leaf elements: twMerge has no font-size group for
           the custom text-ui-* scale, so a size on the cn() container is
-          swallowed by the text color class. Name reads at copy size; the
-          timestamp stays a quiet caption beside it. */}
-      <span className="text-copy font-medium leading-none text-body">{authorName}</span>
+          swallowed by the text color class. Name reads at the message body
+          size; the timestamp stays a quiet caption beside it. */}
+      <span className="text-ui-sm font-medium leading-none text-body">{authorName}</span>
       {tag && (
         <span className="rounded-pill bg-surface-2 px-xs text-ui-2xs font-medium text-body">
           {tag}
