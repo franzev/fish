@@ -122,6 +122,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | fast | Portal emoji picker to body (fixes clipping in real chat scrollport); /kit/chat-live harness renders real ChatClient without auth | 2026-07-08 | 19ca8286 | — |
 | 260708-pgh | Adopt Base UI: emoji picker on Popover (portal, collision flip, focus return) + per-category Tabs | 2026-07-08 | 747c7e21 | [260708-pgh-adopt-base-ui-emoji-picker-popover-refac](./quick/260708-pgh-adopt-base-ui-emoji-picker-popover-refac/) |
 | fast | Emoji picker bottom monochrome icon tabs (no h-scroll) + shared ui/ScrollArea with thin auto-fading scrollbar | 2026-07-08 | e7161ece | — |
+| fast | Emoji picker search simplified to quiet pill (inline icon, aria-label, no ring flash on open) | 2026-07-08 | 5dd2dfbb | — |
 
 ## Session Continuity
 
