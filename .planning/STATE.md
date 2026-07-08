@@ -124,6 +124,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | fast | Emoji picker bottom monochrome icon tabs (no h-scroll) + shared ui/ScrollArea with thin auto-fading scrollbar | 2026-07-08 | e7161ece | — |
 | fast | Emoji picker search simplified to quiet pill (inline icon, aria-label, no ring flash on open) | 2026-07-08 | 5dd2dfbb | — |
 | fast | Emoji picker polish: 24px glyph token, circular active tabs, --shadow-popover replaces border, calm input focus border | 2026-07-08 | 62e612b7 | — |
+| fast | Unclip emoji picker edge tabs: 28px circle, px-nudge list padding, focus ring moved onto the circle | 2026-07-08 | 6374a35e | — |
 
 ## Session Continuity
 
