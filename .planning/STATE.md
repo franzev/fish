@@ -126,6 +126,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | fast | Emoji picker polish: 24px glyph token, circular active tabs, --shadow-popover replaces border, calm input focus border | 2026-07-08 | 62e612b7 | — |
 | fast | Unclip emoji picker edge tabs: 28px circle, px-nudge list padding, focus ring moved onto the circle | 2026-07-08 | 6374a35e | — |
 | fast | Borderless reaction pills via new --color-surface-3 step; emoji panel height 337px so resting grid ends on a full row | 2026-07-08 | d145169e | — |
+| fast | Chat type drops to 14px ui-sm (body + author name), avatar gutter widens to gap-sm; twMerge taught custom text size/color groups | 2026-07-08 | a45be3c3 | — |
 
 ## Session Continuity
 
