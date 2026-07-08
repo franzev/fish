@@ -127,12 +127,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | fast | Unclip emoji picker edge tabs: 28px circle, px-nudge list padding, focus ring moved onto the circle | 2026-07-08 | 6374a35e | — |
 | fast | Borderless reaction pills via new --color-surface-3 step; emoji panel height 337px so resting grid ends on a full row | 2026-07-08 | d145169e | — |
 | fast | Chat type drops to 14px ui-sm (body + author name), avatar gutter widens to gap-sm; twMerge taught custom text size/color groups | 2026-07-08 | a45be3c3 | — |
+| 260709-8aa | Chat log: shared ScrollArea + conditional stick-to-bottom scroll with new-messages pill | 2026-07-08 | b9d76d0e | [260709-8aa-chat-log-shared-scrollarea-conditional-s](./quick/260709-8aa-chat-log-shared-scrollarea-conditional-s/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-pgh: Emoji picker moved onto Base UI Popover (portaled, collision-aware flip, focus return) with per-category Base UI Tabs; hand-rolled flip math and document listeners deleted; verified in /kit/chat and /kit/chat-live.
+- **Last activity:** 2026-07-08 - Completed quick task 260709-8aa: Chat log moved onto shared ScrollArea (viewportRef prop added) with useStickToBottom hook — instant bottom on mount, own sends follow, near-bottom sticks, scrolled-up readers get a calm "New messages" pill instead of a yank; reduced-motion aware. Verified live at /kit/chat-live.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
