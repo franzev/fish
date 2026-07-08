@@ -18,3 +18,4 @@ DerivedData/
 .gradle/
 *.xcuserstate
 xcuserdata/
+.superpowers/
