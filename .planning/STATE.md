@@ -110,12 +110,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260705-gby | Implement authentication improvements across web, iOS, and Android | 2026-07-05 | f494ca9 | [260705-gby-implement-authentication-improvements-ac](./quick/260705-gby-implement-authentication-improvements-ac/) |
 | 260706-rsd | Remove stale color wording and retire unvalidated learning-flow implementations | 2026-07-06 | f099a9e | [260706-rsd-remove-stale-color-language-and-re](./quick/260706-rsd-remove-stale-color-language-and-re/) |
 | 260708-doh | Fix getServerSnapshot caching infinite loop in chat-store useChatStore | 2026-07-08 | d56fc795 | [260708-doh-fix-getserversnapshot-caching-infinite-l](./quick/260708-doh-fix-getserversnapshot-caching-infinite-l/) |
+| 260708-du5 | Redesign chat UI from 1-on-1 messaging to community-room (Discord-like) experience | 2026-07-08 | 4e9d52c4 | [260708-du5-redesign-chat-ui-from-1-on-1-messaging-t](./quick/260708-du5-redesign-chat-ui-from-1-on-1-messaging-t/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-doh: Fix getServerSnapshot caching infinite loop in chat-store useChatStore.
+- **Last activity:** 2026-07-08 - Completed quick task 260708-du5: Redesign chat UI from 1-on-1 messaging to community-room (Discord-like) experience.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
