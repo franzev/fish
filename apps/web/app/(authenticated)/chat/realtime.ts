@@ -4,8 +4,10 @@ import type {
   ClientChatReadState,
 } from "@/lib/services";
 import { createBrowserSupabaseClient } from "@/lib/services/supabase/browser";
+import type { AppSupabaseClient } from "@/lib/services/supabase/types";
 import type { MessageReadRow, MessageRow } from "@fish/supabase";
 import type {
+  RealtimeChannel,
   RealtimePostgresChangesPayload,
   RealtimePostgresInsertPayload,
   RealtimePostgresUpdatePayload,
@@ -51,6 +53,52 @@ type PresenceSessionRow = {
   last_heartbeat_at: string;
   ended_at: string | null;
 };
+
+interface DeferredChannel {
+  getChannel: () => RealtimeChannel | null;
+  unsubscribe: () => void;
+}
+
+// Realtime joins snapshot the client's current access token. On a full page
+// load the session is still being restored while chat mounts, so an immediate
+// subscribe joins as `anon` — Postgres then rejects the postgres_changes
+// registration (silently: the join itself still acks SUBSCRIBED) and the page
+// sits believed-connected but dead until the next client-side remount. Wait
+// for the session and hand it to realtime before opening any channel.
+function subscribeAfterAuth(
+  build: (supabase: AppSupabaseClient) => RealtimeChannel
+): DeferredChannel {
+  const supabase = createBrowserSupabaseClient();
+  let channel: RealtimeChannel | null = null;
+  let disposed = false;
+
+  void (async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (accessToken) {
+        await supabase.realtime.setAuth(accessToken);
+      }
+    } catch {
+      // Session lookup failed; subscribe with whatever auth the client holds.
+    }
+
+    if (!disposed) {
+      channel = build(supabase);
+    }
+  })();
+
+  return {
+    getChannel: () => channel,
+    unsubscribe: () => {
+      disposed = true;
+      if (channel) {
+        void supabase.removeChannel(channel);
+        channel = null;
+      }
+    },
+  };
+}
 
 function isChatSenderRole(value: string): value is ClientChatMessage["senderRole"] {
   return value === "client" || value === "coach";
@@ -106,8 +154,7 @@ export function subscribeToConversationMessages(
   onMessage: (message: ClientChatMessage) => void,
   onReconnected?: () => void
 ): () => void {
-  const supabase = createBrowserSupabaseClient();
-  const channel = supabase
+  const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`conversation:${conversationId}:messages`)
     .on(
       "postgres_changes",
@@ -143,11 +190,9 @@ export function subscribeToConversationMessages(
       if (status === "SUBSCRIBED") {
         onReconnected?.();
       }
-    });
+    }));
 
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+  return deferred.unsubscribe;
 }
 
 export function subscribeToConversationReadStates(
@@ -155,8 +200,7 @@ export function subscribeToConversationReadStates(
   onReadState: (readState: ClientChatReadState) => void,
   onReconnected?: () => void
 ): () => void {
-  const supabase = createBrowserSupabaseClient();
-  const channel = supabase
+  const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`conversation:${conversationId}:reads`)
     .on(
       "postgres_changes",
@@ -176,11 +220,9 @@ export function subscribeToConversationReadStates(
       if (status === "SUBSCRIBED") {
         onReconnected?.();
       }
-    });
+    }));
 
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+  return deferred.unsubscribe;
 }
 
 export function subscribeToConversationReactionChanges(
@@ -188,8 +230,7 @@ export function subscribeToConversationReactionChanges(
   onReactionChange: (messageId: string) => void,
   onReconnected?: () => void
 ): () => void {
-  const supabase = createBrowserSupabaseClient();
-  const channel = supabase
+  const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`conversation:${conversationId}:reactions`)
     .on(
       "postgres_changes",
@@ -218,11 +259,9 @@ export function subscribeToConversationReactionChanges(
       if (status === "SUBSCRIBED") {
         onReconnected?.();
       }
-    });
+    }));
 
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+  return deferred.unsubscribe;
 }
 
 export function subscribeToParticipantPresence(
@@ -232,8 +271,7 @@ export function subscribeToParticipantPresence(
     eventType: "INSERT" | "UPDATE" | "DELETE"
   ) => void
 ): () => void {
-  const supabase = createBrowserSupabaseClient();
-  const channel = supabase
+  const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`presence:${participantId}:sessions`)
     .on(
       "postgres_changes",
@@ -255,11 +293,9 @@ export function subscribeToParticipantPresence(
         );
       }
     )
-    .subscribe();
+    .subscribe());
 
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+  return deferred.unsubscribe;
 }
 
 export function subscribeToConversationTyping(
@@ -267,8 +303,7 @@ export function subscribeToConversationTyping(
   currentUserId: string,
   onTypingChange: (typing: boolean) => void
 ): ConversationTypingSubscription {
-  const supabase = createBrowserSupabaseClient();
-  const channel = supabase
+  const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`conversation:${conversationId}:typing`, {
       config: {
         broadcast: { self: false },
@@ -285,11 +320,11 @@ export function subscribeToConversationTyping(
         onTypingChange(typing);
       }
     })
-    .subscribe();
+    .subscribe());
 
   return {
     sendTyping(typing) {
-      void channel.send({
+      void deferred.getChannel()?.send({
         type: "broadcast",
         event: "typing",
         payload: {
@@ -298,9 +333,7 @@ export function subscribeToConversationTyping(
         },
       });
     },
-    unsubscribe() {
-      void supabase.removeChannel(channel);
-    },
+    unsubscribe: deferred.unsubscribe,
   };
 }
 
@@ -309,8 +342,7 @@ export function subscribeToConversationVoiceRecording(
   currentUserId: string,
   onRecordingChange: (recording: boolean) => void
 ): ConversationVoiceRecordingSubscription {
-  const supabase = createBrowserSupabaseClient();
-  const channel = supabase
+  const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`conversation:${conversationId}:voice-recording`, {
       config: {
         broadcast: { self: false },
@@ -331,11 +363,11 @@ export function subscribeToConversationVoiceRecording(
         }
       }
     )
-    .subscribe();
+    .subscribe());
 
   return {
     sendRecording(recording) {
-      void channel.send({
+      void deferred.getChannel()?.send({
         type: "broadcast",
         event: "voice-recording",
         payload: {
@@ -344,9 +376,7 @@ export function subscribeToConversationVoiceRecording(
         },
       });
     },
-    unsubscribe() {
-      void supabase.removeChannel(channel);
-    },
+    unsubscribe: deferred.unsubscribe,
   };
 }
 
