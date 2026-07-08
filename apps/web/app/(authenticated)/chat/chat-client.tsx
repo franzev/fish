@@ -346,10 +346,10 @@ export function ChatClient({
                         ? "mt-3xs"
                         : "mt-md"),
                     isCommunity
-                      ? "-mx-md items-start gap-sm px-md transition-colors hover:bg-surface"
+                      ? "-mx-md items-start gap-md px-md transition-colors hover:bg-surface"
                       : cn(
                           "items-end",
-                          !mine && "gap-sm",
+                          !mine && "gap-md",
                           mine ? "justify-end" : "justify-start"
                         )
                   )}

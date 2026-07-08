@@ -45,7 +45,7 @@ export function Message({
     <div
       className={cn(
         "flex items-end",
-        !mine && "gap-sm",
+        !mine && "gap-md",
         mine ? "justify-end" : "justify-start",
         className
       )}
