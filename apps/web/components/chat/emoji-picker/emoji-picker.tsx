@@ -135,7 +135,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
           {/* Tab strip lives below the grid (thumb-reach on mobile) and
               distributes evenly — nine fixed categories, no horizontal
               scrolling. */}
-          <Tabs.List className="flex shrink-0 border-t border-border bg-surface px-2xs py-2xs">
+          <Tabs.List className="flex shrink-0 border-t border-border bg-surface px-nudge py-2xs">
             {emojiGroups.map((group) => {
               const GroupIcon = groupIcons[group.name] ?? IconMoodSmile;
               return (
@@ -143,11 +143,14 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
                   key={group.slug}
                   value={group.slug}
                   aria-label={group.name}
-                  className="group flex h-10 flex-1 items-center justify-center text-muted data-[active]:text-foreground"
+                  className="group flex h-10 flex-1 items-center justify-center text-muted focus-visible:shadow-none focus-visible:outline-none data-[active]:text-foreground"
                 >
-                  {/* Circular highlight sized to the tab, not the icon —
-                      active state reads by shape, not color alone. */}
-                  <span className="flex size-8 items-center justify-center rounded-pill group-hover:bg-surface-2 group-data-[active]:bg-surface-2">
+                  {/* Circular highlight sized to fit inside the ~30px
+                      flex-1 tab — a wider circle (or the global focus
+                      ring on the full tab rect) clips against the
+                      panel's overflow-hidden edge on the first/last
+                      tab. Focus ring renders on the circle instead. */}
+                  <span className="flex size-7 items-center justify-center rounded-pill group-hover:bg-surface-2 group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-outer group-data-[active]:bg-surface-2">
                     <GroupIcon size={18} stroke={1.75} aria-hidden="true" />
                   </span>
                 </Tabs.Tab>
