@@ -28,6 +28,7 @@ import {
   IconPencil,
   IconSearch,
   IconSend,
+  IconThumbUp,
   IconTrash,
   IconX,
   IconMessageReply,
@@ -338,7 +339,7 @@ export function ChatClient({
                 )}
                 <li
                   className={cn(
-                    "flex",
+                    "group relative flex",
                     index > 0 &&
                       (groupedWithPrevious && !startsCommunityGroup
                         ? "mt-3xs"
@@ -424,17 +425,18 @@ export function ChatClient({
                       <p className="mt-2xs text-ui-xs text-muted">Edited</p>
                     )}
                     {showMessageActions && (
+                      /* Reference idiom: rows stay clean at rest; actions
+                         surface in a compact bar on row hover. Revealed via
+                         opacity (not display) so keyboard focus still reaches
+                         the buttons, with focus-within keeping it visible. */
                       <div
-                        className={cn(
-                          "mt-2xs flex flex-wrap items-center gap-2xs",
-                          mine && !isCommunity ? "justify-end" : "justify-start"
-                        )}
+                        className="pointer-events-none absolute -top-sm right-md flex items-center gap-3xs rounded-control border border-border bg-surface p-3xs opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100"
                       >
                         <button
                           type="button"
                           aria-label="Reply to message"
                           onClick={() => startReplyingToMessage(message)}
-                          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                          className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                         >
                           <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
                         </button>
@@ -442,30 +444,30 @@ export function ChatClient({
                           type="button"
                           aria-label="React with thumbs up"
                           onClick={() => void handleToggleReaction(message, "👍")}
-                          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                          className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                         >
-                          <span aria-hidden="true">👍</span>
+                          <IconThumbUp size={18} stroke={1.75} aria-hidden="true" />
                         </button>
                         {mine && (
                           <>
-                          <button
-                            type="button"
-                            aria-label="Edit message"
-                            onClick={() => startEditingMessage(message)}
-                            className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-                          >
-                            <IconPencil size={18} stroke={1.75} aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Delete message"
-                            onClick={() => void handleDeleteMessage(message)}
-                            className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-notice hover:bg-surface-2"
-                          >
-                            <IconTrash size={18} stroke={1.75} aria-hidden="true" />
-                          </button>
-                        </>
-                      )}
+                            <button
+                              type="button"
+                              aria-label="Edit message"
+                              onClick={() => startEditingMessage(message)}
+                              className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                            >
+                              <IconPencil size={18} stroke={1.75} aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Delete message"
+                              onClick={() => void handleDeleteMessage(message)}
+                              className="inline-flex size-10 items-center justify-center rounded-control text-notice hover:bg-surface-2"
+                            >
+                              <IconTrash size={18} stroke={1.75} aria-hidden="true" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                     <Reactions
