@@ -120,12 +120,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | fast | Fix reaction ack wiping sender name to "Member"; shrink message timestamp to caption size | 2026-07-08 | 768d08b2 | — |
 | fast | Emoji panel semantic size tokens + vertical flip near viewport bottom | 2026-07-08 | b349327d | — |
 | fast | Portal emoji picker to body (fixes clipping in real chat scrollport); /kit/chat-live harness renders real ChatClient without auth | 2026-07-08 | 19ca8286 | — |
+| 260708-pgh | Adopt Base UI: emoji picker on Popover (portal, collision flip, focus return) + per-category Tabs | 2026-07-08 | 747c7e21 | [260708-pgh-adopt-base-ui-emoji-picker-popover-refac](./quick/260708-pgh-adopt-base-ui-emoji-picker-popover-refac/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-nr2: Reaction pills redesigned to the reference geometry with an any-emoji grouped + searchable monochrome picker; DB whitelist removed via migration 0015.
+- **Last activity:** 2026-07-08 - Completed quick task 260708-pgh: Emoji picker moved onto Base UI Popover (portaled, collision-aware flip, focus return) with per-category Base UI Tabs; hand-rolled flip math and document listeners deleted; verified in /kit/chat and /kit/chat-live.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
