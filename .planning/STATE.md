@@ -116,12 +116,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260708-knl | Align community reply preview with the reference — avatar on header row, spline from avatar into preview | 2026-07-08 | 0146deba | [260708-knl-align-community-reply-preview-with-the-r](./quick/260708-knl-align-community-reply-preview-with-the-r/) |
 | 260708-mjs | Remove the card/box wrapping the chat thread and restyle message reaction counters to match the Discord reference | 2026-07-08 | 4261f40c | [260708-mjs-remove-the-card-box-wrapping-the-chat-th](./quick/260708-mjs-remove-the-card-box-wrapping-the-chat-th/) |
 | 260708-n53 | Make the chat occupy the full shell pane width and height, simplify its tailwind classes, and remove redundant wrapper divs | 2026-07-08 | ec419638 | [260708-n53-make-the-chat-occupy-the-full-shell-pane](./quick/260708-n53-make-the-chat-occupy-the-full-shell-pane/) |
+| 260708-nr2 | Redesign chat emoji reactions: screenshot-style pills, monochrome tokens, any-emoji grouped searchable picker, cursor-pointer, DB persistence | 2026-07-08 | 3a3f0dcf | [260708-nr2-redesign-chat-emoji-reactions-screenshot](./quick/260708-nr2-redesign-chat-emoji-reactions-screenshot/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-08 - Completed quick task 260708-n53: Chat now fills the shell pane full-bleed and viewport-locked; simplified classes and dropped redundant wrappers.
+- **Last activity:** 2026-07-08 - Completed quick task 260708-nr2: Reaction pills redesigned to the reference geometry with an any-emoji grouped + searchable monochrome picker; DB whitelist removed via migration 0015.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
