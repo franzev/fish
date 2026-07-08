@@ -12,6 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+import { generalChannelHref, generalChannelId } from "@/lib/channels";
 import { AppShell } from "./app-shell";
 
 let pathname = "/home";
@@ -66,6 +67,58 @@ describe("AppShell", () => {
     expect(main?.className).toContain("min-h-0");
     // The shell locks to the viewport so only the message log scrolls.
     expect(container.firstElementChild?.className).toContain("h-dvh");
+  });
+
+  it("gives channel routes the full pane instead of the centered column", () => {
+    pathname = `/channels/${generalChannelId}`;
+    const { container } = render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    const main = container.querySelector("main");
+    expect(main?.className).not.toContain("max-w-content");
+    expect(main?.className).toContain("min-h-0");
+    // The shell locks to the viewport so only the message log scrolls.
+    expect(container.firstElementChild?.className).toContain("h-dvh");
+  });
+
+  it("renders the channel column with the active # general link on channel routes", () => {
+    pathname = `/channels/${generalChannelId}`;
+
+    render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Community" })
+    ).toBeInTheDocument();
+
+    const channelNav = screen.getByRole("navigation", { name: "Channels" });
+    const general = within(channelNav).getByRole("link", { name: "general" });
+    expect(general).toHaveAttribute("href", generalChannelHref);
+    expect(general).toHaveAttribute("aria-current", "page");
+    expect(general).toHaveTextContent("# general");
+  });
+
+  it("does not render the channel column outside channel routes", () => {
+    pathname = "/home";
+
+    render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Community" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Channels" })
+    ).not.toBeInTheDocument();
   });
 
   it("hydrates persisted client preferences at the shell level", async () => {

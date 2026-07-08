@@ -123,6 +123,7 @@
   --spacing-motion-typing: 4px;
 
   /* ---- Layout widths ---- */
+  --container-channel-col: 232px; /* channel list column beside the nav rail */
   --container-form: 440px;
   --container-content: 640px;
   --container-chat: 720px;

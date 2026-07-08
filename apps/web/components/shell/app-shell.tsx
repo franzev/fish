@@ -145,6 +145,32 @@ export function AppShell({
         </div>
       </aside>
 
+      {/* Single-channel milestone: the column lists only `# general`, so it
+          appears just on the immersive channel/chat surface where it orients
+          the reader — never as a browsable menu on other screens. */}
+      {immersive && (
+        <aside className="hidden w-channel-col shrink-0 flex-col border-r border-border bg-surface px-sm py-page md:flex">
+          <h2 className="px-xs pb-sm text-ui-2xs font-medium uppercase tracking-wide text-muted">
+            Community
+          </h2>
+          <nav aria-label="Channels" className="flex flex-col gap-3xs">
+            <Link
+              href={generalChannelHref}
+              aria-current={
+                isActivePath(pathname, "/channels") ? "page" : undefined
+              }
+              className={cn(
+                "flex min-h-control items-center gap-2xs rounded-control px-sm text-ui-sm text-muted transition-colors hover:bg-surface-2 hover:text-foreground",
+                isActivePath(pathname, "/channels") &&
+                  "bg-surface-2 font-semibold text-foreground"
+              )}
+            >
+              <span aria-hidden="true">#</span> general
+            </Link>
+          </nav>
+        </aside>
+      )}
+
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border bg-surface px-page py-md md:hidden">
           <Image src="/logo.svg" alt="FISH" width={32} height={32} />
