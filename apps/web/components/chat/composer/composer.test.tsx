@@ -45,6 +45,29 @@ describe("Composer", () => {
     expect(onStub).toHaveBeenCalledWith("Stickers");
   });
 
+  it("toggles recording through the + menu's Audio Recording item", () => {
+    const onToggleRecording = vi.fn();
+    render(<Composer {...baseProps} onToggleRecording={onToggleRecording} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
+
+    expect(onToggleRecording).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes Upload File and Create Poll through onStub with sentence-ready labels", () => {
+    const onStub = vi.fn();
+    render(<Composer {...baseProps} onStub={onStub} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Upload File" }));
+    expect(onStub).toHaveBeenCalledWith("File uploads");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create Poll" }));
+    expect(onStub).toHaveBeenCalledWith("Polls");
+  });
+
   it("reports draft changes from the textarea", () => {
     const onDraftChange = vi.fn();
     render(<Composer {...baseProps} onDraftChange={onDraftChange} />);

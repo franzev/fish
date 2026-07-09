@@ -10,6 +10,7 @@ import {
   IconSticker,
 } from "@tabler/icons-react";
 import type { KeyboardEvent } from "react";
+import { AddMenu } from "./add-menu";
 
 /** Shared chrome for the quiet icon affordances inside the composer bar —
  *  full 56px tap targets (ND floor), ghost at rest, one fill step up on
@@ -40,10 +41,12 @@ export function Composer({
   channelName,
   draft,
   canSend,
+  localRecording,
   onDraftChange,
   onSend,
   onKeyDown,
   onBlur,
+  onToggleRecording,
   onSelectEmoji,
   onStub,
 }: ComposerProps) {
@@ -59,6 +62,14 @@ export function Composer({
           "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-outer"
         )}
       >
+        {/* Labels double as subjects for the coming-soon notice sentence
+            ("File uploads are coming soon."), so they arrive plural. */}
+        <AddMenu
+          onUploadFile={() => onStub("File uploads")}
+          onAudioRecording={onToggleRecording}
+          onCreatePoll={() => onStub("Polls")}
+          recording={localRecording}
+        />
         <textarea
           aria-label="Message"
           value={draft}
