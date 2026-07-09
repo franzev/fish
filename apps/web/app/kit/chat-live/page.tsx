@@ -3,6 +3,11 @@
 import { ChatClient } from "@/app/(authenticated)/chat/chat-client";
 import type { SendMessageActionState } from "@/app/(authenticated)/chat/actions";
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
+import {
+  generalChannelId,
+  generalChannelName,
+  generalChannelSlug,
+} from "@/lib/channels";
 
 /* Dev-only harness: the REAL ChatClient (shell-sized, scroll container,
    hover bars) with mock data and stubbed actions, so chat-interior changes
@@ -79,14 +84,18 @@ const messages: ClientChatMessage[] = [
   }),
 ];
 
+/* Channel identity mirrors production's seeded #general channel via the
+   shared constants, so the harness stays honest if the seed ever changes.
+   The conversationId above stays the harness's own fake uuid on purpose —
+   the stubs never hit the server, so it only needs to be internally
+   consistent. */
 const chat: ClientChatData = {
   conversationId,
   kind: "community",
-  title: "Community",
-  // Explicit channelName: the composer placeholder only takes the
-  // #channel idiom from a real channel name (direct chats say "Message").
-  channelName: "Community",
-  subtitle: "4 members",
+  channelId: generalChannelId,
+  channelSlug: generalChannelSlug,
+  channelName: generalChannelName,
+  title: generalChannelName,
   currentUserId: you,
   currentUserRole: "coach",
   participant: { id: "user-jordan", displayName: "Coach Jordan", role: "coach" },
