@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FiltersDialog } from "./filters-dialog";
 import { SearchFilterPopover } from "./search-filter-popover";
@@ -76,6 +82,36 @@ describe("SearchFilterPopover", () => {
     expect(onValueChange).toHaveBeenCalledWith("hello mentions: ");
   });
 
+  it("appends without doubling the space after a trailing-space value", () => {
+    const onValueChange = vi.fn();
+    render(
+      <SearchFilterPopover value="hello " onValueChange={onValueChange} />
+    );
+
+    openPopover();
+    fireEvent.click(
+      screen.getByRole("button", { name: /from a specific user/i })
+    );
+
+    expect(onValueChange).toHaveBeenCalledWith("hello from: ");
+  });
+
+  it("returns focus to the search trigger after the dialog closes", async () => {
+    render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
+
+    openPopover();
+    fireEvent.click(screen.getByRole("button", { name: /more filters/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    // The popover (the dialog's opener) unmounted when the dialog opened, so
+    // without an explicit finalFocus target focus would fall to <body>.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Search messages" })
+      ).toHaveFocus()
+    );
+  });
+
   it("opens the Filters dialog from More filters", () => {
     render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
 
@@ -96,6 +132,11 @@ describe("FiltersDialog", () => {
     for (const label of ["From", "In", "Has", "Mentions", "Date"]) {
       expect(within(dialog).getByText(label)).toBeInTheDocument();
     }
+    // The date stub is an honest inert well, not a dead-end button.
+    expect(within(dialog).getByText("+ Add date")).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("button", { name: /add date/i })
+    ).toBeNull();
     expect(
       within(dialog).getByRole("button", { name: "Clear filters" })
     ).toBeInTheDocument();

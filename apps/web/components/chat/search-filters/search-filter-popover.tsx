@@ -10,7 +10,7 @@ import {
   IconSearch,
   IconUser,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FiltersDialog } from "./filters-dialog";
 
 export interface SearchFilterPopoverProps {
@@ -68,15 +68,20 @@ export function SearchFilterPopover({
 }: SearchFilterPopoverProps) {
   const [open, setOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Focus restore target for the Filters dialog: the popover (the dialog's
+  // opener) unmounts when the dialog opens, so the dialog needs a surviving
+  // element to return focus to on close.
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const appendToken = (token: string) => {
-    onValueChange(`${value} ${token} `.trimStart());
+    onValueChange(`${value.trimEnd()} ${token} `.trimStart());
   };
 
   return (
     <>
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger
+          ref={triggerRef}
           aria-label="Search messages"
           className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
         >
@@ -153,7 +158,11 @@ export function SearchFilterPopover({
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
-      <FiltersDialog open={filtersOpen} onOpenChange={setFiltersOpen} />
+      <FiltersDialog
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        finalFocus={triggerRef}
+      />
     </>
   );
 }

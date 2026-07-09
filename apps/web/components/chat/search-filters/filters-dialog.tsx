@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@base-ui/react/dialog";
 import { IconX } from "@tabler/icons-react";
+import type { RefObject } from "react";
 
 /** UI stub: every field is inert and all three footer actions simply close
  *  the dialog — the filtering logic lands with the real search feature. */
@@ -10,6 +11,10 @@ import { IconX } from "@tabler/icons-react";
 export interface FiltersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Where focus lands on close. The opener (the search popover) unmounts
+   *  before this dialog closes, so Base UI's default restore target is a
+   *  disconnected node — callers pass a surviving element instead. */
+  finalFocus?: RefObject<HTMLElement | null>;
 }
 
 interface FilterField {
@@ -43,7 +48,11 @@ const filterFields: FilterField[] = [
 
 /** Full filter sheet behind the popover's "More filters" — a bottom sheet on
  *  small screens that becomes a centered dialog on md+. */
-export function FiltersDialog({ open, onOpenChange }: FiltersDialogProps) {
+export function FiltersDialog({
+  open,
+  onOpenChange,
+  finalFocus,
+}: FiltersDialogProps) {
   const close = () => onOpenChange(false);
 
   return (
@@ -55,7 +64,10 @@ export function FiltersDialog({ open, onOpenChange }: FiltersDialogProps) {
             with a fixed width, fit height, and auto margins — the absolute
             -centering idiom — while small screens keep it docked to the
             bottom edge as a sheet. */}
-        <Dialog.Popup className="fixed inset-x-0 bottom-0 z-50 flex max-h-filters-sheet flex-col overflow-hidden rounded-t-card border border-border bg-surface md:inset-0 md:m-auto md:h-fit md:w-filters-dialog md:rounded-card">
+        <Dialog.Popup
+          finalFocus={finalFocus}
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-filters-sheet flex-col overflow-hidden rounded-t-card border border-border bg-surface md:inset-0 md:m-auto md:h-fit md:w-filters-dialog md:rounded-card"
+        >
           <header className="flex items-center justify-between gap-sm border-b border-border px-md py-sm">
             <Dialog.Title className="text-heading-sm text-foreground">
               Filters
@@ -85,12 +97,11 @@ export function FiltersDialog({ open, onOpenChange }: FiltersDialogProps) {
               <p className="text-ui-xs text-muted">
                 Messages sent in a time range
               </p>
-              <button
-                type="button"
-                className="flex min-h-control w-full items-center justify-center rounded-control bg-surface-2 text-ui-sm text-body hover:bg-surface-3"
-              >
+              {/* Honest stub: a plain well like the four selects above — a
+                  focusable button with no handler would be a dead end. */}
+              <div className="flex min-h-control w-full items-center justify-center rounded-control bg-surface-2 text-ui-sm text-muted">
                 + Add date
-              </button>
+              </div>
             </div>
           </div>
           <footer className="flex items-center gap-sm border-t border-border px-md py-sm">
