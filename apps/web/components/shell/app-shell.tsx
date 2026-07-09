@@ -157,11 +157,11 @@ export function AppShell({
             <Link
               href={generalChannelHref}
               aria-current={
-                isActivePath(pathname, "/channels") ? "page" : undefined
+                isActivePath(pathname, generalChannelHref) ? "page" : undefined
               }
               className={cn(
                 "flex min-h-control items-center gap-2xs rounded-control px-sm text-ui-sm text-muted transition-colors hover:bg-surface-2 hover:text-foreground",
-                isActivePath(pathname, "/channels") &&
+                isActivePath(pathname, generalChannelHref) &&
                   "bg-surface-2 font-semibold text-foreground"
               )}
             >
