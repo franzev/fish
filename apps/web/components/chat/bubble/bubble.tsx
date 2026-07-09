@@ -1,13 +1,4 @@
 import { cn } from "@/lib/utils";
-import { HTMLAttributes, forwardRef } from "react";
-
-interface BubbleProps extends HTMLAttributes<HTMLDivElement> {
-  /** Sent (true) vs received (false). Not a color prop — the visual
-   *  distinction is derived from this single boolean. */
-  mine: boolean;
-  groupedWithPrevious?: boolean;
-  groupedWithNext?: boolean;
-}
 
 interface BubbleRadiusOptions {
   mine: boolean;
@@ -38,38 +29,3 @@ export function getBubbleRadiusClasses({
       : "rounded-bl-chat"
   );
 }
-
-/** The message bubble shell. Sent = inverted primary block (the message's
- *  own emphasis, not a competing primary *button* — the single-primary-
- *  action rule governs action buttons, and the one action button is Send in
- *  ChatInput). Received = plain surface. Consecutive messages tighten the
- *  touching corners so a run reads as one connected stack. */
-export const Bubble = forwardRef<HTMLDivElement, BubbleProps>(
-  (
-    {
-      mine,
-      groupedWithPrevious = false,
-      groupedWithNext = false,
-      className,
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "animate-message-in inline-block max-w-message px-md py-compact text-ui-sm break-words",
-          getBubbleRadiusClasses({ mine, groupedWithPrevious, groupedWithNext }),
-          mine ? "bg-primary text-on-primary" : "bg-surface text-body",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-Bubble.displayName = "Bubble";
