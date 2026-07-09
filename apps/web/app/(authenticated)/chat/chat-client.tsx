@@ -543,7 +543,7 @@ export function ChatClient({
           <button
             type="button"
             onClick={() => scrollToBottom()}
-            className="absolute bottom-sm left-1/2 inline-flex min-h-control -translate-x-1/2 items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-body shadow-popover hover:bg-surface-2"
+            className="absolute inset-x-0 bottom-sm mx-auto inline-flex min-h-control w-fit items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-body shadow-popover hover:bg-surface-2"
           >
             <IconArrowDown size={18} stroke={1.75} aria-hidden="true" />
             New messages
