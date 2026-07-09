@@ -97,7 +97,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Wave 1** *(parallel — no shared files)*
 
 - [x] 10-01-PLAN.md — portable pagination contract: additive events (hydrateWindow/olderPageLoaded/…), pagination state, read-marker-outside-window selector fix, fixtures, protocol + native docs
-- [ ] 10-02-PLAN.md — bounded keyset SSR window + cursor-based load-older & bounded reconnect-backfill read actions (direct RLS selects; no new migration)
+- [x] 10-02-PLAN.md — bounded keyset SSR window + cursor-based load-older & bounded reconnect-backfill read actions (direct RLS selects; no new migration)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -118,7 +118,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 | 9. Cross-platform Chat State | v1.2 | 4/4 | Needs UAT  | — |
-| 10. Chat Message Loading Optimization | v1.2 | 1/4 | In Progress|  |
+| 10. Chat Message Loading Optimization | v1.2 | 2/4 | In Progress|  |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*

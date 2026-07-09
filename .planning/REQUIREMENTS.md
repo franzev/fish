@@ -61,7 +61,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 
 ### Chat Message Loading (CLOAD)
 
-- [ ] **CLOAD-01**: Opening the chat renders the newest messages from a bounded initial window (no full-history fetch) — minimal time-to-first-message on load and refresh
+- [x] **CLOAD-01**: Opening the chat renders the newest messages from a bounded initial window (no full-history fetch) — minimal time-to-first-message on load and refresh
 - [ ] **CLOAD-02**: New incoming messages arrive through the realtime channel and merge into the loaded list in place — never a full reload or history refetch
 - [x] **CLOAD-03**: Older history loads on demand via cursor-based (keyset) pagination — a calm "load earlier" affordance plus auto-load as the user scrolls up (infinite scroll)
 - [ ] **CLOAD-04**: Loading older messages preserves the reading position — no scroll jump and no layout shift; newest-message anchoring on send/receive is unchanged
@@ -107,7 +107,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 | CSTATE-04 | Phase 9 — Cross-platform Chat State | Complete |
 | CSTATE-05 | Phase 9 — Cross-platform Chat State | Complete |
 | CSTATE-06 | Phase 9 — Cross-platform Chat State | Complete |
-| CLOAD-01 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-01 | Phase 10 — Chat Message Loading Optimization | Complete |
 | CLOAD-02 | Phase 10 — Chat Message Loading Optimization | Pending |
 | CLOAD-03 | Phase 10 — Chat Message Loading Optimization | Complete |
 | CLOAD-04 | Phase 10 — Chat Message Loading Optimization | Pending |
