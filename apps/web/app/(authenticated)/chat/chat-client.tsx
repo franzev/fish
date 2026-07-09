@@ -11,7 +11,6 @@ import {
   getBubbleRadiusClasses,
   MessageMeta,
   MessageStatus,
-  NotificationBadge,
   QuotedMessage,
   Reactions,
   TypingIndicator,
@@ -103,21 +102,17 @@ export function ChatClient({
       refreshMessagesAction,
       refreshConversationAction,
     });
-  const {
-    mergeReadState,
-    participantReadState,
-    unreadCount,
-  } = useChatReadState({
+  const { mergeReadState, participantReadState } = useChatReadState({
     chat,
     messages,
     markReadStateAction,
   });
-  const [search, setSearch] = useState("");
+  // Search state stays wired to filteredMessages; the upcoming search/filter
+  // popover (which replaces the placeholder header button) re-adds the setter.
+  const [search] = useState("");
   const timeFormatPref = useTimeFormatPreference();
   const isCommunity = chat.kind === "community";
   const chatTitle = chat.title ?? chat.participant.displayName;
-  const chatSubtitle =
-    chat.subtitle ?? (chat.participant.role === "coach" ? "Coach" : "Client");
   const activityName = isCommunity ? "Someone" : chat.participant.displayName;
   const getMessageAuthorName = (message: ClientChatMessage) => {
     if (message.senderId === chat.currentUserId) {
@@ -216,15 +211,12 @@ export function ChatClient({
       aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
       <header className="border-b border-border bg-surface px-md py-sm">
-        <div className="flex items-start justify-between gap-sm">
-          <div className="min-w-0">
-            <p className="text-ui text-muted">
-              {chatSubtitle}
-            </p>
+        <div className="flex items-center justify-between gap-sm">
+          <div className="flex min-w-0 items-baseline gap-2xs">
             <h1 className="truncate font-display text-heading text-foreground">
-              {chatTitle}
+              {isCommunity ? `# ${chat.channelName ?? chatTitle}` : chatTitle}
             </h1>
-            <p className="mt-2xs flex items-center gap-nudge text-ui-sm text-muted">
+            <span className="flex shrink-0 items-center gap-nudge text-ui-sm text-muted">
               {!isCommunity && presenceStatus.showOnlineDot && (
                 <span
                   aria-label="Participant is online"
@@ -233,34 +225,21 @@ export function ChatClient({
               )}
               <span>
                 {isCommunity
-                  ? `${memberCount} ${memberCount === 1 ? "member" : "members"}`
+                  ? `· ${memberCount} ${memberCount === 1 ? "member" : "members"}`
                   : presenceStatus.label}
               </span>
-            </p>
+            </span>
           </div>
-          <NotificationBadge count={unreadCount} />
-        </div>
-        <label className="mt-sm flex min-h-control items-center gap-xs rounded-control border border-border bg-bg px-sm text-ui-sm text-muted focus-within:border-primary">
-          <IconSearch size={18} stroke={1.75} aria-hidden="true" />
-          <span className="sr-only">Search messages</span>
-          <input
+          {/* Placeholder trigger: a later task replaces this with the
+              search/filter popover that drives the message filter. */}
+          <button
+            type="button"
             aria-label="Search messages"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted"
-            placeholder="Search messages"
-          />
-          {search && (
-            <button
-              type="button"
-              aria-label="Clear message search"
-              onClick={() => setSearch("")}
-              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-            >
-              <IconX size={18} stroke={1.75} aria-hidden="true" />
-            </button>
-          )}
-        </label>
+            className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+          >
+            <IconSearch size={20} stroke={1.75} aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       <div className="relative flex min-h-0 flex-1 flex-col">

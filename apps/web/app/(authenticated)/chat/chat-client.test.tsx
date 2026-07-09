@@ -248,12 +248,35 @@ describe("ChatClient", () => {
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
     expect(screen.getByLabelText("general room")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "general" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "# general" })).toBeInTheDocument();
     // Members derived from read states (client-1, coach-1) + sender (client-2).
-    expect(screen.getByText("3 members")).toBeInTheDocument();
+    expect(screen.getByText("· 3 members")).toBeInTheDocument();
     expect(screen.getByText("Sam Okafor")).toBeInTheDocument();
     expect(screen.getByText("Can anyone share a short intro?")).toBeInTheDocument();
     expect(screen.getByLabelText("Community messages")).toBeInTheDocument();
+  });
+
+  it("renders a simplified channel header with a search trigger and no subtitle line", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      participant: {
+        id: chat.conversationId,
+        displayName: "FISH Community",
+        role: "coach",
+      },
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: /# general/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /search messages/i })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Search messages")).toBeNull();
   });
 
   it("renders community rows as a left-aligned feed without direct-message bubbles", () => {
@@ -325,8 +348,8 @@ describe("ChatClient", () => {
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
     expect(screen.getByRole("separator")).toHaveTextContent("July 6, 2026");
-    // Scoped to the feed: the header eyebrow also reads "Coach" now that the
-    // community subtitle is retired in favor of the channel-name title.
+    // Scoped to the feed so the assertion stays anchored to the coach role
+    // pill on the message row, not any other "Coach" copy elsewhere.
     expect(
       within(screen.getByLabelText("Community messages")).getByText("Coach")
     ).toBeInTheDocument();
@@ -428,12 +451,6 @@ describe("ChatClient", () => {
 
     expect(screen.getByText("Coach Lee")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText("Active now")).toBeNull());
-  });
-
-  it("shows the unread message counter until read state catches up", () => {
-    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
-
-    expect(screen.getByLabelText("1 unread message")).toBeInTheDocument();
   });
 
   it("renders the participant avatar next to a received message bubble", () => {
