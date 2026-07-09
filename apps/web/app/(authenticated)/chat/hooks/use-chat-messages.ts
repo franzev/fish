@@ -37,6 +37,8 @@ export interface RefreshConversationActionState extends RefreshMessagesActionSta
   readStates?: ClientChatData["readStates"];
 }
 
+const refreshMessageCooldownMs = 2_000;
+
 export function toLocalMessage(message: ClientChatMessage): LocalMessage {
   return {
     ...message,
@@ -80,6 +82,8 @@ export function useChatMessages({
   const hydrateConversation = useChatStore((state) => state.hydrateConversation);
   const dispatchChatEvent = useChatStore((state) => state.dispatchChatEvent);
   const messageIdsRef = useRef<string[]>([]);
+  const refreshingMessageIdsRef = useRef<Set<string>>(new Set());
+  const lastMessageRefreshAtRef = useRef<Map<string, number>>(new Map());
   const initialMessages = useMemo(
     () => chat.messages.map(toLocalMessage),
     [chat.messages]
@@ -141,9 +145,34 @@ export function useChatMessages({
         return;
       }
 
+      const now = Date.now();
+      const idsToRefresh = Array.from(new Set(messageIds)).filter((messageId) => {
+        if (refreshingMessageIdsRef.current.has(messageId)) {
+          return false;
+        }
+
+        const lastRefreshAt = lastMessageRefreshAtRef.current.get(messageId) ?? 0;
+        return now - lastRefreshAt >= refreshMessageCooldownMs;
+      });
+
+      if (idsToRefresh.length === 0) {
+        return;
+      }
+
+      idsToRefresh.forEach((messageId) => {
+        refreshingMessageIdsRef.current.add(messageId);
+        lastMessageRefreshAtRef.current.set(messageId, now);
+      });
+
       const result = await refreshMessagesAction({
-        messageIds: Array.from(new Set(messageIds)),
-      }).catch(() => null);
+        messageIds: idsToRefresh,
+      })
+        .catch(() => null)
+        .finally(() => {
+          idsToRefresh.forEach((messageId) => {
+            refreshingMessageIdsRef.current.delete(messageId);
+          });
+        });
 
       if (result?.status === "sent" && result.messages) {
         for (const message of result.messages) {

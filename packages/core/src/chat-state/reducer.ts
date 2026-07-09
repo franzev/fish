@@ -77,10 +77,20 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
       );
 
     case "mergeReadState":
-      return updateConversation(state, event.conversationId, (conversation) => ({
-        ...conversation,
-        readStates: mergeReadStateList(conversation.readStates, event.readState),
-      }));
+      return updateConversation(state, event.conversationId, (conversation) => {
+        const readStates = mergeReadStateList(
+          conversation.readStates,
+          event.readState
+        );
+        if (readStates === conversation.readStates) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          readStates,
+        };
+      });
 
     case "setReplyTarget":
       return updateConversation(state, event.conversationId, (conversation) => ({
@@ -101,10 +111,16 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
       }));
 
     case "setRealtimeStatus":
-      return updateConversation(state, event.conversationId, (conversation) => ({
-        ...conversation,
-        realtime: { status: event.status },
-      }));
+      return updateConversation(state, event.conversationId, (conversation) => {
+        if (conversation.realtime.status === event.status) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          realtime: { status: event.status },
+        };
+      });
 
     case "clearComposer":
       return updateConversation(state, event.conversationId, (conversation) => ({
@@ -119,10 +135,21 @@ function mergeMessage(
   message: ChatMessageState,
   localRequestId = message.clientRequestId
 ): ChatState {
-  return updateConversation(state, message.conversationId, (conversation) => ({
-    ...conversation,
-    messages: mergeChatMessage(conversation.messages, message, localRequestId),
-  }));
+  return updateConversation(state, message.conversationId, (conversation) => {
+    const messages = mergeChatMessage(
+      conversation.messages,
+      message,
+      localRequestId
+    );
+    if (messages === conversation.messages) {
+      return conversation;
+    }
+
+    return {
+      ...conversation,
+      messages,
+    };
+  });
 }
 
 function markMessageFailed(
@@ -161,7 +188,10 @@ function updateConversation(
   update: (conversation: ChatConversationState) => ChatConversationState
 ): ChatState {
   const conversation = getConversation(state, conversationId);
-  return setConversation(state, update(conversation));
+  const nextConversation = update(conversation);
+  return nextConversation === conversation
+    ? state
+    : setConversation(state, nextConversation);
 }
 
 function setConversation(

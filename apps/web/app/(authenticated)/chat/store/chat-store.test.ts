@@ -247,6 +247,30 @@ describe("chat store actions", () => {
     store.getState().clearConversation(conversationId);
     expect(selectHydrationKeyForConversation(store.getState(), conversationId)).toBeNull();
   });
+
+  it("ignores duplicate realtime payloads without replacing stable store slices", () => {
+    const store = createChatStore();
+    store.getState().hydrateConversation(conversationId, [baseMessage], [baseReadState]);
+
+    const messagesBefore = selectMessagesForConversation(
+      store.getState(),
+      conversationId
+    );
+    const readStatesBefore = selectReadStatesForConversation(
+      store.getState(),
+      conversationId
+    );
+
+    store.getState().mergeRemoteMessage({ ...baseMessage, localStatus: "sent" });
+    store.getState().mergeReadState(conversationId, { ...baseReadState });
+
+    expect(selectMessagesForConversation(store.getState(), conversationId)).toBe(
+      messagesBefore
+    );
+    expect(selectReadStatesForConversation(store.getState(), conversationId)).toBe(
+      readStatesBefore
+    );
+  });
 });
 
 describe("chat store selectors", () => {

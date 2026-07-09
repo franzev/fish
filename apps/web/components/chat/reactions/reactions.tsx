@@ -20,7 +20,7 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
   if (!reactions || reactions.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-nudge", className)} {...props}>
+    <div className={cn("flex flex-wrap items-center gap-2xs", className)} {...props}>
       {reactions.map((reaction) => (
         <button
           key={reaction.emoji}

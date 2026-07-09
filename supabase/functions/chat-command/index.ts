@@ -31,6 +31,7 @@ type ChatCommand =
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
 };
+const reactionPageSize = 1000;
 
 function calmError(error: string, status: number): Response {
   return Response.json({ error }, { status, headers: jsonHeaders });
@@ -110,26 +111,36 @@ async function enrichMessage(
     return { ...message, reactions: [] };
   }
 
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/message_reactions?select=emoji,user_id&message_id=eq.${messageId}&removed_at=is.null`,
-    {
-      headers: {
-        apikey: apiKey,
-        Authorization: authHeader,
-      },
-    },
-  );
+  const rows: Array<{ emoji?: string; user_id?: string }> = [];
 
-  if (!response.ok) {
-    return { ...message, reactions: [] };
+  for (let offset = 0;; offset += reactionPageSize) {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/message_reactions?select=emoji,user_id&message_id=eq.${messageId}&removed_at=is.null&limit=${reactionPageSize}&offset=${offset}`,
+      {
+        headers: {
+          apikey: apiKey,
+          Authorization: authHeader,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      return { ...message, reactions: [] };
+    }
+
+    const page = (await readJson(response)) as
+      | Array<{ emoji?: string; user_id?: string }>
+      | null;
+    rows.push(...(page ?? []));
+
+    if ((page ?? []).length < reactionPageSize) {
+      break;
+    }
   }
 
-  const rows = (await readJson(response)) as
-    | Array<{ emoji?: string; user_id?: string }>
-    | null;
   const reactions = new Map<string, { emoji: string; count: number; by_me: boolean }>();
 
-  for (const row of rows ?? []) {
+  for (const row of rows) {
     if (!row.emoji) continue;
     const current = reactions.get(row.emoji) ?? {
       emoji: row.emoji,

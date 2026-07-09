@@ -4,6 +4,7 @@
 // signup. Fixed, documented dev credentials — local only, never run against production
 // (see docs/deploy-checklist.md).
 import { createClient } from "@supabase/supabase-js";
+import { buildSeedReactionRows } from "./seed-reaction-randomizer.ts";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -41,6 +42,22 @@ const clients = [
   { email: "client2@fish.dev", password: "fish-client-dev", displayName: "Sam Okafor", level: "B1" },
   { email: "client3@fish.dev", password: "fish-client-dev", displayName: "Priya Nair", level: "A2" },
 ];
+
+// Community-only profiles (QAG-seed follow-up): never assigned via coach_clients, so the
+// scripts/verify-rls.ts "coach sees exactly 3 assigned clients" fixture stays true. These
+// exist purely to give the general channel a believable cast of real names instead of
+// generic, hard-to-tell-apart placeholders — each one is added to the demo conversation's
+// message_reads below so the "demo community members read room profiles" RLS policy
+// (0014) lets every viewer resolve their display name instead of falling back to "Member".
+const communityExtras = [
+  { email: "member1@fish.dev", password: "fish-client-dev", displayName: "Beef Patty" },
+  { email: "member2@fish.dev", password: "fish-client-dev", displayName: "Renata Souza" },
+  { email: "member3@fish.dev", password: "fish-client-dev", displayName: "Kenji Watanabe" },
+  { email: "member4@fish.dev", password: "fish-client-dev", displayName: "Amara Chukwu" },
+];
+
+const reactionStressUserCount = 3000;
+const reactionStressPassword = "fish-reaction-dev";
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 
@@ -96,6 +113,45 @@ async function upsertUser(email: string, password: string, displayName: string):
   throw error;
 }
 
+async function ensureReactionStressUsers(): Promise<string[]> {
+  const existingByEmail = new Map<string, string>();
+  let page = 1;
+  const perPage = 1000;
+
+  for (;;) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    for (const user of data.users) {
+      if (user.email) existingByEmail.set(user.email, user.id);
+    }
+    if (data.users.length === 0) break;
+    page += 1;
+  }
+
+  const users: string[] = [];
+  for (let index = 1; index <= reactionStressUserCount; index += 1) {
+    const padded = String(index).padStart(4, "0");
+    const email = `reaction-${padded}@fish.dev`;
+    const existingId = existingByEmail.get(email);
+    if (existingId) {
+      users.push(existingId);
+      continue;
+    }
+
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password: reactionStressPassword,
+      email_confirm: true,
+      user_metadata: { display_name: `Reaction tester ${padded}` },
+    });
+    if (error) throw error;
+    users.push(data.user.id);
+  }
+
+  console.log(`Ensured ${users.length} reaction stress users.`);
+  return users;
+}
+
 /** Promotes a profile to coach via service-role update (bypasses the escalation guard by design). */
 async function promoteToCoach(userId: string): Promise<void> {
   const { error } = await supabase.from("profiles").update({ role: "coach" }).eq("id", userId);
@@ -125,15 +181,21 @@ async function backfillClientProfile(clientId: string, level: string): Promise<v
 }
 
 
+/** Per-client direct-message conversation id, returned so seedDirectMessages() can target it. */
+type DirectConversation = { clientId: string; conversationId: string };
+
 async function seedChatConversations(
   coachId: string,
   coach2Id: string,
-  clientIds: string[]
-): Promise<void> {
+  clientIds: string[],
+  extraIds: string[],
+): Promise<DirectConversation[]> {
   const { data: assignments, error: assignmentError } = await supabase
     .from("coach_clients")
     .select("coach_id, client_id");
   if (assignmentError) throw assignmentError;
+
+  const directConversations: DirectConversation[] = [];
 
   for (const assignment of assignments ?? []) {
     const { data: conversation, error: conversationError } = await supabase
@@ -148,6 +210,8 @@ async function seedChatConversations(
       .select("id, client_id, coach_id")
       .single();
     if (conversationError || !conversation) throw conversationError;
+
+    directConversations.push({ clientId: conversation.client_id, conversationId: conversation.id });
 
     const { error: readStateError } = await supabase
       .from("message_reads")
@@ -171,7 +235,7 @@ async function seedChatConversations(
 
   const demoClientId = clientIds[0];
   if (!demoClientId) {
-    return;
+    return directConversations;
   }
 
   const { data: demoConversation, error: demoConversationError } =
@@ -204,7 +268,7 @@ async function seedChatConversations(
     );
   if (generalChannelError) throw generalChannelError;
 
-  const demoReadRows = [coachId, coach2Id, ...clientIds].map((userId) => ({
+  const demoReadRows = [coachId, coach2Id, ...clientIds, ...extraIds].map((userId) => ({
     conversation_id: demoConversation.id,
     user_id: userId,
     last_read_message_id: null,
@@ -214,6 +278,123 @@ async function seedChatConversations(
     .from("message_reads")
     .upsert(demoReadRows, { onConflict: "conversation_id,user_id" });
   if (demoReadStateError) throw demoReadStateError;
+
+  return directConversations;
+}
+
+/**
+ * Realistic 1-on-1 coaching threads (D-seed-02: more chat volume for testing) for each of
+ * the coach's real assigned clients. Unlike the community essays below, these read like an
+ * actual back-and-forth chat — short turns, quick corrections, scheduling — since that's the
+ * shape of a real coaching conversation and the demo data had none of this before.
+ */
+async function seedDirectMessages(
+  coachId: string,
+  directConversations: DirectConversation[],
+  clientIds: { alex: string; sam: string; priya: string },
+): Promise<void> {
+  const threads: Record<string, { sender: "coach" | "client"; body: string }[]> = {
+    [clientIds.alex]: [
+      { sender: "coach", body: "Hi Alex! How did the mock interview practice go yesterday?" },
+      { sender: "client", body: `It went okay! I got stuck on "I have work there for two years" — I think it should be "worked"?` },
+      { sender: "coach", body: `Exactly right. Past simple for a finished period: "I worked there for two years." Nice catch.` },
+      { sender: "client", body: "Thank you! I keep mixing up have + past tense." },
+      { sender: "coach", body: "That's really common. Quick rule: if you say WHEN something happened (yesterday, in 2019, for two years and it's over now), use past simple. If you don't say exactly when, use present perfect." },
+      { sender: "client", body: "Okay, that helps a lot." },
+      { sender: "coach", body: `Want to try one more? "Tell me about a project you finished last year."` },
+      { sender: "client", body: "I finish a big project last year for my team. We built new dashboard." },
+      { sender: "coach", body: `Close! "I finished a big project last year." — small fix on finish -> finished. Everything else was clear and easy to follow.` },
+      { sender: "client", body: "I finished a big project last year for my team." },
+      { sender: "coach", body: "Perfect." },
+      { sender: "client", body: "Can we practice more interview questions on Thursday?" },
+      { sender: "coach", body: "Yes, let's do a full 10 minute mock interview then." },
+      { sender: "client", body: "Sounds good. A little nervous but ready." },
+      { sender: "coach", body: "That's completely normal. Nervous and prepared can be true at the same time." },
+      { sender: "client", body: "I like that." },
+      { sender: "coach", body: "See you Thursday!" },
+      { sender: "client", body: "Just wanted to say thank you, the interview went well today!" },
+      { sender: "coach", body: "That's wonderful news, Alex! How did the past tense practice feel in the moment?" },
+      { sender: "client", body: "It felt automatic actually, I didn't even think about it." },
+      { sender: "coach", body: "That's the goal exactly — the grammar becomes invisible once it's practiced enough." },
+      { sender: "client", body: "Should we start something new next week?" },
+      { sender: "coach", body: "Let's talk Thursday about what's next. For now, enjoy this win." },
+      { sender: "client", body: "Will do." },
+    ],
+    [clientIds.sam]: [
+      { sender: "coach", body: "Hi Sam, how's the narrating-out-loud exercise going?" },
+      { sender: "client", body: "Honestly it felt silly for the first few days but I kept going." },
+      { sender: "coach", body: "That's exactly the reaction most people have. What have you noticed so far?" },
+      { sender: "client", body: "I think I am translating less in my head before I talk now." },
+      { sender: "coach", body: "That's a big shift. How did it show up this week specifically?" },
+      { sender: "client", body: "In standup yesterday I answered right away instead of waiting to translate first." },
+      { sender: "coach", body: "That's fantastic. How did that feel in the moment?" },
+      { sender: "client", body: "Fast! A little scary but good." },
+      { sender: "coach", body: "Fast and a little scary is a great sign — it means you're not over-planning every sentence anymore." },
+      { sender: "client", body: "Should I keep doing the narrating exercise?" },
+      { sender: "coach", body: "Yes, keep it up for two more weeks, then we'll switch to something new." },
+      { sender: "client", body: `Okay. Also, quick question — is "I am agree" correct?` },
+      { sender: "coach", body: `Close! In English "agree" is a verb on its own: "I agree" (no "am"). "I am agreeing" would only work for something happening right now, which is rare for this word.` },
+      { sender: "client", body: `Ah, I always add "am" before it.` },
+      { sender: "coach", body: `Very common mix-up from languages that use "to be" + adjective for this. Just "I agree" from now on.` },
+      { sender: "client", body: "Got it, thank you." },
+      { sender: "coach", body: "How's the Slack message speed going?" },
+      { sender: "client", body: "Much better, maybe 2 minutes instead of 10." },
+      { sender: "coach", body: "That's a huge improvement. What changed?" },
+      { sender: "client", body: "I stopped writing it in my language first." },
+      { sender: "coach", body: "That's the whole exercise working exactly as intended. Well done, Sam." },
+      { sender: "client", body: "Thank you! Can we work on emails next?" },
+      { sender: "coach", body: "Yes, let's make that the focus for our next session." },
+      { sender: "client", body: "Perfect, see you then." },
+    ],
+    [clientIds.priya]: [
+      { sender: "coach", body: "Hi Priya, congrats again on the mock interview yesterday!" },
+      { sender: "client", body: "Thank you! I was very nervous before." },
+      { sender: "coach", body: "That's totally normal. What felt hardest going in?" },
+      { sender: "client", body: "I was scared I will forget the words." },
+      { sender: "coach", body: `Small fix: "I was scared I would forget the words." But you did great regardless — what surprised you once it started?` },
+      { sender: "client", body: "I didn't forget as much as I thought." },
+      { sender: "coach", body: "That's usually how it goes. The fear is bigger than the reality almost every time." },
+      { sender: "client", body: "Yes! Can we do another one before my real interview?" },
+      { sender: "coach", body: "Absolutely, let's schedule one for next week." },
+      { sender: "client", body: `Thank you. Also I have a question about "will" vs "going to".` },
+      { sender: "coach", body: `Good question — quick version: "going to" for plans you already decided, "will" for decisions you're making right now or predictions.` },
+      { sender: "client", body: `So "I am going to apply next month" because I already decide?` },
+      { sender: "coach", body: `Exactly right, and small fix: "already decided" not "decide" there. But the going to / will choice was perfect.` },
+      { sender: "client", body: `Okay! I will practice that this week — wait, is "will" correct there?` },
+      { sender: "coach", body: "Yes! You're deciding that right now, so \"will\" fits perfectly." },
+      { sender: "client", body: "Haha okay, I think I'm starting to feel this one." },
+      { sender: "coach", body: "That's exactly what it should feel like eventually — a feeling, not a rule you're calculating." },
+      { sender: "client", body: "Can we review my resume language too sometime?" },
+      { sender: "coach", body: "Yes, let's spend 10 minutes on it in our next session." },
+      { sender: "client", body: "Thank you so much." },
+      { sender: "coach", body: "Of course. You're doing really well, Priya." },
+      { sender: "client", body: "That means a lot, thank you." },
+      { sender: "coach", body: "See you next week for the mock interview." },
+      { sender: "client", body: "See you then!" },
+    ],
+  };
+
+  let totalSeeded = 0;
+  for (const direct of directConversations) {
+    const thread = threads[direct.clientId];
+    if (!thread) continue;
+
+    const rows = thread.map((turn, index) => ({
+      conversation_id: direct.conversationId,
+      sender_id: turn.sender === "coach" ? coachId : direct.clientId,
+      sender_role: turn.sender,
+      body: turn.body,
+      client_request_id: `seed-dm-${direct.clientId}-${String(index + 1).padStart(2, "0")}`,
+    }));
+
+    const { error } = await supabase
+      .from("messages")
+      .upsert(rows, { onConflict: "conversation_id,client_request_id" });
+    if (error) throw error;
+    totalSeeded += rows.length;
+  }
+
+  console.log(`Seeded ${totalSeeded} direct messages across ${directConversations.length} 1-on-1 conversations.`);
 }
 
 /**
@@ -229,6 +410,7 @@ async function seedCommunityMessages(
   coachId: string,
   coach2Id: string,
   clientIds: string[],
+  extraIds: string[],
 ): Promise<void> {
   const welcome = `Welcome to the general channel! This is where we share wins, ask questions, and practice writing in a low-pressure space. Say hello and tell us one thing you're working on this week.`;
 
@@ -392,6 +574,41 @@ It feels strange the first few times — you're deliberately doing something "wr
 
 Three lines. That's the whole template. No need to write more than that unless the situation truly needs it.`;
 
+  // Shorter, ordinary chat turns (D-seed-02) from a wider cast — including the community-only
+  // extras — so the channel reads like a real, busy room instead of a handful of essays.
+  const [beefPatty, renata, kenji, amara] = extraIds;
+
+  const shortRows = [
+    { sender_id: beefPatty, sender_role: "client", body: "Hi everyone! I'm Beef Patty, new here. Working on speaking up more in group meetings." },
+    { sender_id: coachId, sender_role: "coach", body: "Welcome, Beef Patty! Great to have you." },
+    { sender_id: renata, sender_role: "client", body: "Hi all, excited to be here." },
+    { sender_id: clientIds[1], sender_role: "client", body: "Welcome Renata!" },
+    { sender_id: beefPatty, sender_role: "client", body: "Quick win: I asked a follow-up question in a meeting today instead of staying quiet." },
+    { sender_id: coach2Id, sender_role: "coach", body: "That's a great win, congrats!" },
+    { sender_id: kenji, sender_role: "client", body: "Does anyone have tips for phone calls? They're the hardest for me." },
+    { sender_id: coachId, sender_role: "coach", body: "Great question — I'll write a longer post on this soon. Short version: it's completely normal to ask someone to repeat themselves once." },
+    { sender_id: clientIds[2], sender_role: "client", body: "Phone calls are hard for me too, you're not alone." },
+    { sender_id: amara, sender_role: "client", body: "Just joined, hello everyone." },
+    { sender_id: beefPatty, sender_role: "client", body: "Welcome Amara!" },
+    { sender_id: clientIds[0], sender_role: "client", body: "Anyone else practicing for interviews this week?" },
+    { sender_id: renata, sender_role: "client", body: "Yes! Good luck to everyone." },
+    { sender_id: coachId, sender_role: "coach", body: "Good luck to everyone with interviews this week — you're more ready than you feel." },
+    { sender_id: clientIds[1], sender_role: "client", body: "Small win: answered a question in standup without translating first." },
+    { sender_id: coach2Id, sender_role: "coach", body: "Love that. That's exactly the goal." },
+    { sender_id: kenji, sender_role: "client", body: "How long did it take people to feel comfortable speaking up in meetings?" },
+    { sender_id: coachId, sender_role: "coach", body: "It's different for everyone, but most people notice a real shift around two to three months of consistent small practice." },
+    { sender_id: clientIds[2], sender_role: "client", body: "For me it was around two months." },
+    { sender_id: beefPatty, sender_role: "client", body: "Still working on it here, but definitely improving." },
+    { sender_id: amara, sender_role: "client", body: "This channel already feels supportive, thank you all." },
+    { sender_id: coach2Id, sender_role: "coach", body: "That's exactly what we want it to be." },
+    { sender_id: clientIds[0], sender_role: "client", body: "Does anyone want to practice mock interviews together sometime?" },
+    { sender_id: renata, sender_role: "client", body: "I'd be up for that." },
+    { sender_id: beefPatty, sender_role: "client", body: "Me too!" },
+    { sender_id: coachId, sender_role: "coach", body: "Love this idea — I'll set up an optional group practice slot next week." },
+    { sender_id: clientIds[1], sender_role: "client", body: "Count me in." },
+    { sender_id: kenji, sender_role: "client", body: "Same here, sign me up." },
+  ];
+
   const rows = [
     { sender_id: coachId, sender_role: "coach", body: welcome, client_request_id: "seed-msg-01" },
     { sender_id: clientIds[0], sender_role: "client", body: alexIntro, client_request_id: "seed-msg-02" },
@@ -405,6 +622,10 @@ Three lines. That's the whole template. No need to write more than that unless t
     { sender_id: coachId, sender_role: "coach", body: grammarDrillsEssay, client_request_id: "seed-msg-10" },
     { sender_id: coach2Id, sender_role: "coach", body: noSessionReminder, client_request_id: "seed-msg-11" },
     { sender_id: coachId, sender_role: "coach", body: wrapUpChecklist, client_request_id: "seed-msg-12" },
+    ...shortRows.map((row, index) => ({
+      ...row,
+      client_request_id: `seed-msg-${String(index + 13).padStart(2, "0")}`,
+    })),
   ].map((row) => ({ conversation_id: demoCommunityConversationId, ...row }));
 
   const { error } = await supabase
@@ -413,6 +634,366 @@ Three lines. That's the whole template. No need to write more than that unless t
   if (error) throw error;
 
   console.log(`Seeded ${rows.length} community messages into the general channel.`);
+}
+
+/**
+ * Stress-test community history for message rendering. This intentionally appends
+ * to the existing hand-written seed rows instead of replacing them: the older
+ * seed data stays readable, while this deterministic set gives the chat UI
+ * enough volume and edge cases to exercise grouping, dates, replies, edits,
+ * deletes, reactions, and the small markdown renderer.
+ */
+async function seedCommunityStressMessages(
+  coachId: string,
+  coach2Id: string,
+  clientIds: string[],
+  extraIds: string[],
+): Promise<void> {
+  const participants = [
+    { id: coachId, role: "coach", name: "Coach Dana" },
+    { id: coach2Id, role: "coach", name: "Coach Jordan" },
+    { id: clientIds[0], role: "client", name: "Alex" },
+    { id: clientIds[1], role: "client", name: "Sam" },
+    { id: clientIds[2], role: "client", name: "Priya" },
+    { id: extraIds[0], role: "client", name: "Beef Patty" },
+    { id: extraIds[1], role: "client", name: "Renata" },
+    { id: extraIds[2], role: "client", name: "Kenji" },
+    { id: extraIds[3], role: "client", name: "Amara" },
+  ].filter((participant) => participant.id);
+
+  const dayVolumes = [
+    4, 3, 52, 7, 41, 2, 65, 8, 36, 5, 72, 3, 58, 6, 49,
+    2, 80, 9, 34, 4, 61, 7, 45, 3, 69, 6, 37, 5, 59, 56,
+  ];
+
+  const shortBodies = [
+    "Yes.",
+    "Got it",
+    "Same here",
+    "Thank you",
+    "Makes sense",
+    "Will try",
+    "Tiny win",
+    "I agree",
+    "Good point",
+    "Noted",
+    "Helpful",
+    "Love this",
+    "Me too",
+    "Okay",
+    "Clear now",
+    "Almost there",
+  ];
+
+  const mediumBodies = [
+    "I practiced the repair phrase twice today. It felt awkward, but I stayed in the conversation instead of going quiet.",
+    "Phone calls still feel fast for me. I can understand the first sentence, then I lose the thread when the topic changes.",
+    "I used the calmer request wording in a Slack message today, and my teammate replied quickly. Small but nice.",
+    "Could we practice explaining blockers next week? I know the technical details, but I freeze when I need to summarize them.",
+    "I noticed I write much more clearly when I start with the action first. The context can come after that.",
+    "My meeting update was shorter today. I said what changed, what is blocked, and what I need next.",
+    "The two-minute narration exercise is starting to feel less strange. I caught myself thinking in English while making coffee.",
+    "I still mix up \"I worked\" and \"I have worked\" when I am nervous. Seeing examples in real messages helps.",
+    "Today I asked someone to repeat the question instead of pretending I understood. That was a good moment.",
+    "I want to sound natural, but I also want to stop over-editing every sentence. That balance is hard.",
+  ];
+
+  const longBodies = [
+    `I tried the meeting sentence exercise today.
+
+Before the call, I wrote one sentence I wanted to land clearly. I said it out loud twice, slowly, and then used almost the same sentence in the meeting.
+
+It felt too slow in my head, but nobody seemed impatient. I actually think they understood me faster because I did not rush.`,
+    `Longer reflection from this week:
+
+I thought my main problem was vocabulary, but I am starting to think the bigger problem is panic. When I feel calm, I can explain most things with simple words. When I feel watched, even easy sentences disappear.
+
+So this week I am practicing one boring skill: pausing for one second before I answer. Not a dramatic pause, just enough time to choose the first word instead of grabbing the first translation.`,
+    `Something clicked for me in the mock interview.
+
+The interviewer asked about a project that failed, and normally I would try to make the answer sound impressive. This time I made it clear instead:
+
+- what happened
+- what I learned
+- what I changed afterward
+
+It was simpler than my old answer, and honestly much better.`,
+    `I want to document a small win because it was easy to miss.
+
+Yesterday I wrote a message to my manager without drafting it in my first language first. It was not perfect, and I changed two words after reading it once, but I did not spend ten minutes translating.
+
+That saved energy for the actual work, which is the whole point.`,
+  ];
+
+  const formattedBodies = [
+    `**Win:** I answered quickly today.
+
+*Still hard:* follow-up questions after I finish my prepared sentence.`,
+    `I used \`let me rephrase that\` in a meeting and it worked 👍`,
+    `> Could you say that a different way?
+
+This phrase feels softer than "I don't understand" for me.`,
+    `# Practice notes
+
+1. Start with the outcome
+2. Add one detail
+3. Stop talking before I over-explain`,
+    `## Nested list test
+
+- Before the meeting
+  - write one sentence
+  - say it twice
+- During the meeting
+  - pause
+  - repair if needed`,
+    `Here is my tiny script:
+
+\`\`\`text
+I looked into it.
+The main issue is timing.
+I need one more day.
+\`\`\``,
+    `Mixing **bold**, *italic*, \`code\`, and emoji 🎉 in one message.`,
+    `Link test: [calm email tone](https://example.com/calm-email-tone) and [mailto test](mailto:coach@fish.dev).`,
+    `Literal unsupported markdown check: ~~strikethrough~~ should stay visible as text.`,
+    `Table-ish text, because tables are not a supported renderer feature:
+
+| Goal | Status |
+| --- | --- |
+| Speak slowly | trying |`,
+  ];
+
+  const emojiBodies = [
+    "🙂",
+    "🎉",
+    "🙏",
+    "👍",
+    "I finally asked the question 🙂",
+    "**Small win** 🎉",
+    "Not perfect, still progress 👍",
+  ];
+
+  const edgeBodies = [
+    "https://example.com",
+    "a".repeat(240),
+    "Line one\n\n\nLine four after empty space",
+    ".",
+    "@coach I tried this in #general and it stayed readable.",
+    "![not rendered as an image](https://example.com/image.png)",
+    "javascript link should not become clickable: [bad](javascript:alert(1))",
+  ];
+
+  const specialByIndex = new Map<number, Partial<{
+    body: string;
+    deleted: boolean;
+    edited: boolean;
+    replyTo: string;
+    senderOffset: number;
+  }>>();
+
+  specialByIndex.set(24, {
+    body: "This parent will be deleted, but replies should still show its placeholder.",
+    deleted: true,
+    senderOffset: 2,
+  });
+  specialByIndex.set(25, {
+    body: "Replying to a deleted parent should still keep context visible.",
+    replyTo: "fish-stress-message-0024",
+    senderOffset: 1,
+  });
+  specialByIndex.set(60, {
+    body: "Can several people reply to this same question?",
+    senderOffset: 4,
+  });
+  specialByIndex.set(61, {
+    body: "Yes, first reply.",
+    replyTo: "fish-stress-message-0060",
+    senderOffset: 5,
+  });
+  specialByIndex.set(62, {
+    body: "Second reply from a different voice.",
+    replyTo: "fish-stress-message-0060",
+    senderOffset: 6,
+  });
+  specialByIndex.set(63, {
+    body: "Third reply, keeping the thread easy to scan.",
+    replyTo: "fish-stress-message-0060",
+    senderOffset: 7,
+  });
+  specialByIndex.set(120, {
+    body: "Root of a multi-level reply chain.",
+    senderOffset: 0,
+  });
+  specialByIndex.set(121, {
+    body: "Level 1 reply.",
+    replyTo: "fish-stress-message-0120",
+    senderOffset: 2,
+  });
+  specialByIndex.set(122, {
+    body: "Level 2 reply that points at the previous reply.",
+    replyTo: "fish-stress-message-0121",
+    senderOffset: 3,
+  });
+  specialByIndex.set(123, {
+    body: "Level 3 reply, mostly to test quote stacking behavior.",
+    replyTo: "fish-stress-message-0122",
+    senderOffset: 1,
+  });
+  specialByIndex.set(240, {
+    body: "   \n\n   ",
+    deleted: true,
+    senderOffset: 8,
+  });
+  specialByIndex.set(360, {
+    body: "Edited message: I cleaned up the wording after sending.",
+    edited: true,
+    senderOffset: 2,
+  });
+  specialByIndex.set(520, {
+    body: "**Formatting plus emoji** with `inline code` and a calm finish 🙏",
+    edited: true,
+    senderOffset: 0,
+  });
+  specialByIndex.set(700, {
+    body: "https://fish.dev",
+    senderOffset: 6,
+  });
+
+  const rows: Array<{
+    id: string;
+    conversation_id: string;
+    sender_id: string;
+    sender_role: string;
+    body: string;
+    client_request_id: string;
+    created_at: string;
+    edited_at?: string | null;
+    deleted_at?: string | null;
+    reply_to_message_id?: string | null;
+  }> = [];
+
+  let globalIndex = 0;
+  const start = Date.UTC(2026, 4, 18, 8, 0, 0);
+
+  for (let dayIndex = 0; dayIndex < dayVolumes.length; dayIndex += 1) {
+    const volume = dayVolumes[dayIndex];
+    for (let dayMessageIndex = 0; dayMessageIndex < volume; dayMessageIndex += 1) {
+      globalIndex += 1;
+      const id = `00000000-0000-4000-8000-${String(globalIndex).padStart(12, "0")}`;
+      const special = specialByIndex.get(globalIndex);
+      const participant =
+        participants[
+          (globalIndex + dayIndex + (special?.senderOffset ?? 0)) % participants.length
+        ];
+      const createdAt = new Date(
+        start +
+          dayIndex * 24 * 60 * 60 * 1000 +
+          (8 * 60 + dayMessageIndex * 7 + (dayMessageIndex % 5)) * 60 * 1000
+      ).toISOString();
+
+      let body: string;
+      if (special?.body !== undefined) {
+        body = special.body;
+      } else if (globalIndex % 97 === 0) {
+        body = longBodies[(globalIndex + dayIndex) % longBodies.length];
+      } else if (globalIndex % 43 === 0) {
+        body = formattedBodies[(globalIndex + dayIndex) % formattedBodies.length];
+      } else if (globalIndex % 29 === 0) {
+        body = edgeBodies[(globalIndex + dayIndex) % edgeBodies.length];
+      } else if (globalIndex % 17 === 0) {
+        body = emojiBodies[(globalIndex + dayIndex) % emojiBodies.length];
+      } else if (globalIndex % 5 === 0) {
+        body = mediumBodies[(globalIndex + dayIndex) % mediumBodies.length];
+      } else {
+        body = shortBodies[(globalIndex + dayMessageIndex) % shortBodies.length];
+      }
+
+      const deletedAt = special?.deleted
+        ? new Date(new Date(createdAt).getTime() + 4 * 60 * 1000).toISOString()
+        : null;
+      const editedAt = special?.edited
+        ? new Date(new Date(createdAt).getTime() + 5 * 60 * 1000).toISOString()
+        : null;
+
+      rows.push({
+        id,
+        conversation_id: demoCommunityConversationId,
+        sender_id: participant.id,
+        sender_role: participant.role,
+        body: deletedAt ? "" : body,
+        client_request_id: `seed-stress-msg-${String(globalIndex).padStart(4, "0")}`,
+        created_at: createdAt,
+        edited_at: editedAt,
+        deleted_at: deletedAt,
+        reply_to_message_id: special?.replyTo
+          ? `00000000-0000-4000-8000-${special.replyTo.slice(-4).padStart(12, "0")}`
+          : globalIndex > 10 && globalIndex % 31 === 0
+            ? `00000000-0000-4000-8000-${String(globalIndex - 1).padStart(12, "0")}`
+            : null,
+      });
+    }
+  }
+
+  const { error } = await supabase
+    .from("messages")
+    .upsert(rows, { onConflict: "conversation_id,client_request_id" });
+  if (error) throw error;
+
+  const reactionMessages: Array<{
+    id: string;
+    conversation_id: string;
+    created_at: string;
+    deleted_at: string | null;
+    body: string;
+  }> = [];
+  const reactionMessagePageSize = 1000;
+  for (let from = 0;; from += reactionMessagePageSize) {
+    const { data, error: reactionMessageError } = await supabase
+      .from("messages")
+      .select("id, conversation_id, created_at, deleted_at, body")
+      .eq("conversation_id", demoCommunityConversationId)
+      .range(from, from + reactionMessagePageSize - 1);
+    if (reactionMessageError) throw reactionMessageError;
+
+    reactionMessages.push(...(data ?? []));
+    if ((data ?? []).length < reactionMessagePageSize) break;
+  }
+
+  const reactionUsers = [
+    ...clientIds,
+    coachId,
+    coach2Id,
+    ...extraIds,
+    ...(await ensureReactionStressUsers()),
+  ].filter(Boolean);
+  const reactionRows = buildSeedReactionRows({
+    conversationId: demoCommunityConversationId,
+    messages: reactionMessages,
+    users: reactionUsers,
+    seed: "fish-general-channel-reactions",
+  });
+
+  for (let startIndex = 0; startIndex < reactionMessages.length; startIndex += 100) {
+    const batch = reactionMessages.slice(startIndex, startIndex + 100).map((row) => row.id);
+    const { error: deleteReactionError } = await supabase
+      .from("message_reactions")
+      .delete()
+      .in("message_id", batch);
+    if (deleteReactionError) throw deleteReactionError;
+  }
+
+  for (let startIndex = 0; startIndex < reactionRows.length; startIndex += 1000) {
+    const { error: reactionError } = await supabase
+      .from("message_reactions")
+      .upsert(reactionRows.slice(startIndex, startIndex + 1000), {
+        onConflict: "message_id,user_id,emoji",
+      });
+    if (reactionError) throw reactionError;
+  }
+
+  console.log(
+    `Seeded ${rows.length} community stress messages and ${reactionRows.length} active reactions across ${reactionMessages.length} community messages.`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -437,8 +1018,20 @@ async function main(): Promise<void> {
     await backfillClientProfile(clientId, client.level);
   }
 
-  await seedChatConversations(coachId, coach2Id, clientIds);
-  await seedCommunityMessages(coachId, coach2Id, clientIds);
+  // Community-only cast (never assigned via coach_clients — see communityExtras comment above).
+  const extraIds: string[] = [];
+  for (const extra of communityExtras) {
+    extraIds.push(await upsertUser(extra.email, extra.password, extra.displayName));
+  }
+
+  const directConversations = await seedChatConversations(coachId, coach2Id, clientIds, extraIds);
+  await seedDirectMessages(coachId, directConversations, {
+    alex: clientIds[0],
+    sam: clientIds[1],
+    priya: clientIds[2],
+  });
+  await seedCommunityMessages(coachId, coach2Id, clientIds, extraIds);
+  await seedCommunityStressMessages(coachId, coach2Id, clientIds, extraIds);
 
   console.log("\nSeed complete. Dev credentials (local only):");
   console.log(`  Coach: ${coach.email} / ${coach.password}`);
@@ -446,6 +1039,12 @@ async function main(): Promise<void> {
   for (const client of clients) {
     console.log(`  Client: ${client.email} / ${client.password}`);
   }
+  for (const extra of communityExtras) {
+    console.log(`  Community member (unassigned): ${extra.email} / ${extra.password}`);
+  }
+  console.log(
+    `  Reaction stress users: reaction-0001@fish.dev through reaction-${String(reactionStressUserCount).padStart(4, "0")}@fish.dev / ${reactionStressPassword}`,
+  );
   console.log(`\nCoach id: ${coachId}`);
   console.log(`Coach2 id (unassigned): ${coach2Id}`);
   console.log(`Client ids: ${clientIds.join(", ")}`);

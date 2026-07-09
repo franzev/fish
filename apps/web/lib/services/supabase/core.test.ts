@@ -20,7 +20,7 @@ function createChainStub<T>(value: T) {
     then: (resolve: (outcome: typeof result) => unknown) =>
       Promise.resolve(result).then(resolve),
   };
-  for (const method of ["select", "eq", "in", "order", "limit"]) {
+  for (const method of ["select", "eq", "in", "order", "limit", "range"]) {
     builder[method] = vi.fn(() => builder);
   }
   return builder;
@@ -105,6 +105,26 @@ describe("Supabase service registry", () => {
             name: "AuthSessionMissingError",
             message: "Auth session missing!",
             status: 400,
+          },
+        })),
+      },
+    } as unknown as AppSupabaseClient;
+
+    await expect(
+      createSupabaseServices(client).auth.getCurrentUser()
+    ).resolves.toEqual({ ok: true, data: null });
+  });
+
+  it("treats a stale auth user token as signed out, not a service failure", async () => {
+    const client = {
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: null },
+          error: {
+            name: "AuthApiError",
+            message: "User from sub claim in JWT does not exist",
+            code: "user_not_found",
+            status: 403,
           },
         })),
       },

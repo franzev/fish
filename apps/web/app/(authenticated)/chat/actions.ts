@@ -9,6 +9,7 @@ import { z } from "zod";
 const sendNotice = "That did not send yet. Keep this open and try again.";
 const saveNotice = "That did not save yet. Keep this open and try again.";
 const localEdgeTimeoutMs = 1_500;
+const reactionPageSize = 1000;
 
 const sendMessageSchema = z.strictObject({
   conversationId: z.string().uuid(),
@@ -290,22 +291,38 @@ async function addReactionAggregates(
     return messages;
   }
 
-  const { data, error } = await context.services.client
-    .from("message_reactions")
-    .select("message_id, emoji, user_id")
-    .in("message_id", ids)
-    .is("removed_at", null);
+  const reactionRows: Array<{ message_id: string; emoji: string; user_id: string }> = [];
 
-  if (error) {
-    return messages.map((message) => ({ ...message, reactions: [] }));
+  for (let batchStart = 0; batchStart < ids.length; batchStart += 25) {
+    const batchIds = ids.slice(batchStart, batchStart + 25);
+    for (let from = 0;; from += reactionPageSize) {
+      const { data, error } = await context.services.client
+        .from("message_reactions")
+        .select("message_id, emoji, user_id")
+        .in("message_id", batchIds)
+        .is("removed_at", null)
+        .range(from, from + reactionPageSize - 1);
+
+      if (error) {
+        return messages.map((message) => ({ ...message, reactions: [] }));
+      }
+
+      reactionRows.push(
+        ...(data ?? []).map((row) => ({
+          message_id: row.message_id,
+          emoji: row.emoji,
+          user_id: row.user_id,
+        }))
+      );
+
+      if ((data ?? []).length < reactionPageSize) {
+        break;
+      }
+    }
   }
 
   const reactionsByMessage = aggregateReactions(
-    (data ?? []).map((row) => ({
-      message_id: row.message_id,
-      emoji: row.emoji,
-      user_id: row.user_id,
-    })),
+    reactionRows,
     context.userId
   );
 

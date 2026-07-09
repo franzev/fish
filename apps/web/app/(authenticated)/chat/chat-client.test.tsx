@@ -313,6 +313,38 @@ describe("ChatClient", () => {
     expect(row?.className).not.toContain("justify-end");
   });
 
+  it("keeps new community author rows vertically balanced", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      messages: [
+        chat.messages[0],
+        {
+          ...chat.messages[0],
+          id: "message-2",
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "A second author starts here.",
+          clientRequestId: "seed-second-author",
+          createdAt: "2026-07-05T00:01:00.000Z",
+          reactions: [{ emoji: "💙", count: 1, byMe: false }],
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    const row = screen.getByText("A second author starts here.").closest("li");
+    expect(row).toHaveClass("py-sm");
+    expect(row).not.toHaveClass("pt-sm");
+  });
+
   it("shows community day dividers, coach role pill, and inline reply previews", () => {
     const communityChat: ClientChatData = {
       ...chat,
@@ -989,6 +1021,42 @@ describe("ChatClient", () => {
     });
 
     expect(await screen.findByLabelText("Read")).toBeInTheDocument();
+  });
+
+  it("coalesces repeated realtime reaction events for the same message", async () => {
+    const refreshMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [],
+    });
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        refreshMessagesAction={refreshMessagesAction}
+      />
+    );
+
+    await waitFor(() => expect(realtimeMock.reactionHandlers).toHaveLength(1));
+
+    act(() => {
+      for (let index = 0; index < 5; index += 1) {
+        realtimeMock.reactionHandlers[0]?.({
+          eventType: "UPDATE",
+          new: {
+            message_id: "message-1",
+            conversation_id: chat.conversationId,
+          },
+          old: {},
+        });
+      }
+    });
+
+    await waitFor(() => expect(refreshMessagesAction).toHaveBeenCalledTimes(1));
+    expect(refreshMessagesAction).toHaveBeenCalledWith({
+      messageIds: ["message-1"],
+    });
   });
 
   it("sends the message when Enter is pressed in the message field", async () => {

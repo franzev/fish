@@ -31,7 +31,7 @@ export function mergeChatMessage<T extends ChatMessageState>(
 
   const next = [...current];
   const existing = next[existingIndex];
-  next[existingIndex] = {
+  const merged = {
     ...existing,
     ...incoming,
     // Server acks for commands (reactions, deletes) return the bare message
@@ -39,6 +39,11 @@ export function mergeChatMessage<T extends ChatMessageState>(
     // instead of falling back to the anonymous placeholder.
     senderDisplayName: incoming.senderDisplayName ?? existing.senderDisplayName,
   };
+  if (areChatMessagesEqual(existing, merged)) {
+    return current;
+  }
+
+  next[existingIndex] = merged;
   return next.sort(compareChatMessages);
 }
 
@@ -52,8 +57,59 @@ export function mergeReadState<T extends ChatReadState>(
   }
 
   const next = [...current];
+  if (areReadStatesEqual(next[existingIndex], incoming)) {
+    return current;
+  }
+
   next[existingIndex] = incoming;
   return next;
+}
+
+function areChatMessagesEqual(
+  left: ChatMessageState,
+  right: ChatMessageState
+): boolean {
+  return (
+    left.id === right.id &&
+    left.conversationId === right.conversationId &&
+    left.senderId === right.senderId &&
+    left.senderRole === right.senderRole &&
+    (left.senderDisplayName ?? null) === (right.senderDisplayName ?? null) &&
+    left.body === right.body &&
+    left.clientRequestId === right.clientRequestId &&
+    left.createdAt === right.createdAt &&
+    (left.editedAt ?? null) === (right.editedAt ?? null) &&
+    (left.deletedAt ?? null) === (right.deletedAt ?? null) &&
+    (left.replyToMessageId ?? null) === (right.replyToMessageId ?? null) &&
+    (left.localStatus ?? null) === (right.localStatus ?? null) &&
+    (left.failureReason ?? null) === (right.failureReason ?? null) &&
+    areReactionsEqual(left.reactions ?? [], right.reactions ?? [])
+  );
+}
+
+function areReactionsEqual(
+  left: NonNullable<ChatMessageState["reactions"]>,
+  right: NonNullable<ChatMessageState["reactions"]>
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (reaction, index) =>
+        reaction.emoji === right[index]?.emoji &&
+        reaction.count === right[index]?.count &&
+        reaction.byMe === right[index]?.byMe
+    )
+  );
+}
+
+function areReadStatesEqual(left: ChatReadState, right: ChatReadState): boolean {
+  return (
+    left.userId === right.userId &&
+    left.lastDeliveredMessageId === right.lastDeliveredMessageId &&
+    left.deliveredAt === right.deliveredAt &&
+    left.lastReadMessageId === right.lastReadMessageId &&
+    left.readAt === right.readAt
+  );
 }
 
 function isAtOrAfterMessage(

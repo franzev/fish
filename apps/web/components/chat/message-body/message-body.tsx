@@ -274,17 +274,26 @@ function renderLines(lines: string[], keyPrefix: string, mine?: boolean): ReactN
   ));
 }
 
-function renderList(list: ListToken, keyPrefix: string, mine?: boolean): ReactNode {
+function renderList(
+  list: ListToken,
+  keyPrefix: string,
+  mine?: boolean,
+  className?: string
+): ReactNode {
   const Tag = list.ordered ? "ol" : "ul";
   return (
     <Tag
       key={keyPrefix}
-      className={cn("flex flex-col gap-3xs pl-md", list.ordered ? "list-decimal" : "list-disc")}
+      className={cn(
+        "flex flex-col gap-xs pl-md",
+        list.ordered ? "list-decimal" : "list-disc",
+        className
+      )}
     >
       {list.items.map((item, index) => (
         <li key={`${keyPrefix}-${index}`}>
           {parseInline(item.text, `${keyPrefix}-${index}`, mine)}
-          {item.children && renderList(item.children, `${keyPrefix}-${index}-child`, mine)}
+          {item.children && renderList(item.children, `${keyPrefix}-${index}-child`, mine, "mt-xs")}
         </li>
       ))}
     </Tag>
@@ -298,7 +307,7 @@ function renderBlock(block: BlockToken, key: string, mine?: boolean): ReactNode 
         <pre
           key={key}
           className={cn(
-            "overflow-x-auto rounded-control p-sm font-mono text-ui-xs",
+            "mt-sm overflow-x-auto rounded-control p-sm font-mono text-ui-xs",
             mine ? "bg-on-primary/10" : "bg-surface-2"
           )}
         >
@@ -317,22 +326,28 @@ function renderBlock(block: BlockToken, key: string, mine?: boolean): ReactNode 
       );
     case "heading": {
       const Tag = HEADING_TAGS[block.level];
+      // A heading starts a new section, so it needs more space above it than
+      // the gap between paragraphs — proximity binds it to the copy below.
       return (
-        <Tag key={key} className={cn("font-sans text-current", HEADING_CLASSES[block.level])}>
+        <Tag key={key} className={cn("mt-lg font-sans text-current", HEADING_CLASSES[block.level])}>
           {parseInline(block.text, key, mine)}
         </Tag>
       );
     }
     case "blockquote":
       return (
-        <blockquote key={key} className="border-l-2 border-current/30 pl-sm text-current/90">
+        <blockquote key={key} className="mt-sm border-l-2 border-current/30 pl-sm text-current/90">
           {renderLines(block.lines, key, mine)}
         </blockquote>
       );
     case "list":
-      return renderList(block, key, mine);
+      return renderList(block, key, mine, "mt-sm");
     case "paragraph":
-      return <p key={key}>{renderLines(block.lines, key, mine)}</p>;
+      return (
+        <p key={key} className="mt-sm">
+          {renderLines(block.lines, key, mine)}
+        </p>
+      );
     default:
       return null;
   }
@@ -351,7 +366,7 @@ export function MessageBody({ body, mine, className }: MessageBodyProps) {
   const blocks = tokenize(body);
 
   return (
-    <div className={cn("flex flex-col gap-2xs break-words", className)}>
+    <div className={cn("flex flex-col break-words [&>*:first-child]:mt-0", className)}>
       {blocks.map((block, index) => renderBlock(block, `b${index}`, mine))}
     </div>
   );

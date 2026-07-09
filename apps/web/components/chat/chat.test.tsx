@@ -58,6 +58,15 @@ describe("TypingIndicator", () => {
 });
 
 describe("Reactions", () => {
+  it("uses the compact spacing token uniformly between reaction pills", () => {
+    const { container } = render(
+      <Reactions reactions={[{ emoji: "👍", count: 1, byMe: false }]} />
+    );
+
+    expect(container.firstElementChild).toHaveClass("gap-2xs");
+    expect(container.firstElementChild).not.toHaveClass("gap-nudge");
+  });
+
   it("renders nothing for an empty list", () => {
     const { container } = render(<Reactions reactions={[]} />);
     expect(container).toBeEmptyDOMElement();

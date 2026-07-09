@@ -45,6 +45,7 @@ type SupabaseResponse<T> = {
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";
+const reactionPageSize = 1000;
 
 function isAuthSessionMissingError(error: {
   message?: string;
@@ -68,6 +69,7 @@ function isSignedOutAuthError(error: {
 
   return (
     isAuthSessionMissingError(error) ||
+    error.code === "user_not_found" ||
     error.code === "refresh_token_not_found" ||
     error.code === "refresh_token_already_used" ||
     error.code === "session_not_found" ||
@@ -76,6 +78,33 @@ function isSignedOutAuthError(error: {
       (message.includes("refresh token not found") ||
         message.includes("already used")))
   );
+}
+
+async function fetchConversationReactions(
+  client: AppSupabaseClient,
+  conversationId: string
+): Promise<{ data: MessageReactionRow[]; error: SupabaseResponse<unknown>["error"] }> {
+  const rows: MessageReactionRow[] = [];
+
+  for (let from = 0;; from += reactionPageSize) {
+    const { data, error } = (await client
+      .from("message_reactions")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .range(from, from + reactionPageSize - 1)) as {
+      data: MessageReactionRow[] | null;
+      error: SupabaseResponse<unknown>["error"];
+    };
+
+    if (error) {
+      return { data: rows, error };
+    }
+
+    rows.push(...(data ?? []));
+    if ((data ?? []).length < reactionPageSize) {
+      return { data: rows, error: null };
+    }
+  }
 }
 
 async function safely<T>(
@@ -102,7 +131,7 @@ class SupabaseAuthServiceImpl implements SupabaseAuthService {
     return safely("auth.getCurrentUser", async () => {
       const { data, error } = await this.client.auth.getUser();
       if (error) {
-        if (isAuthSessionMissingError(error)) {
+        if (isSignedOutAuthError(error)) {
           return serviceSuccess(null);
         }
 
@@ -726,13 +755,8 @@ class SupabaseChatRepository implements ChatRepository {
         }
       }
 
-      const { data: reactions, error: reactionError } = (await this.client
-        .from("message_reactions")
-        .select("*")
-        .eq("conversation_id", conversation.id)) as {
-        data: MessageReactionRow[] | null;
-        error: SupabaseResponse<unknown>["error"];
-      };
+      const { data: reactions, error: reactionError } =
+        await fetchConversationReactions(this.client, conversation.id);
 
       if (reactionError) {
         return serviceFailure(
@@ -805,7 +829,7 @@ class SupabaseChatRepository implements ChatRepository {
           role: participantRole,
         },
         messages: (messages ?? []).map((message) =>
-          toClientChatMessage(message, reactions ?? [], userId, senderDisplayNames)
+              toClientChatMessage(message, reactions, userId, senderDisplayNames)
         ),
         readStates: (readStates ?? []).map(toClientChatReadState),
         participantPresence: {
