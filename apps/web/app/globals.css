@@ -56,6 +56,10 @@
      nothing alarming, tuned so tests/contrast.test.ts still clears 4.5:1
      text / 3:1 UI on every surface. */
   --color-notice: light-dark(oklch(0.40 0 0), oklch(0.80 0 0));        /* tier 1 — regular weight, still monochrome */
+
+  /* Modal scrim behind dialogs/sheets — monochrome with alpha; depth comes
+     from dimming, never a hue. */
+  --color-scrim: light-dark(oklch(0.15 0 0 / 0.4), oklch(0 0 0 / 0.6));
   --color-error: light-dark(oklch(0.45 0.14 20), oklch(0.78 0.11 20));    /* soft rose/coral — not pure red */
   --color-warning: light-dark(oklch(0.42 0.12 80), oklch(0.78 0.12 80));  /* soft amber */
   --color-success: light-dark(oklch(0.40 0.11 150), oklch(0.75 0.12 150)); /* soft green */
@@ -116,6 +120,7 @@
      search 56 (p-xs + h-10) + grid 232 (8 + 5 rows x 40 + 4 gaps x 4 + 8)
      + tab strip 49 (border 1 + py-2xs + h-10). */
   --spacing-emoji-panel-h: 337px; /* emoji picker popover height */
+  --spacing-filters-sheet: 85dvh; /* Filters bottom-sheet max height on small screens */
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
   --spacing-chat-container-demo: 720px;
@@ -130,6 +135,8 @@
   --container-chat: 720px;
   --container-chat-preview: 360px;
   --container-message: 85%;
+  --container-search-pop: 340px;    /* chat search/quick-filter popover panel */
+  --container-filters-dialog: 384px; /* centered Filters dialog on md+ */
 
   /* ---- Focus and motion ---- */
   --focus-outline-width: 2px;
