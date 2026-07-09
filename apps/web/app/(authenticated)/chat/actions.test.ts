@@ -20,8 +20,11 @@ vi.mock("@/lib/services/supabase/server", () => ({
 vi.stubGlobal("fetch", fetchMock);
 
 import {
+  backfillMessagesAction,
   deleteMessageAction,
   editMessageAction,
+  loadNewestMessagesAction,
+  loadOlderMessagesAction,
   markReadStateAction,
   refreshConversationAction,
   refreshMessagesAction,
@@ -73,6 +76,36 @@ function messageRow(overrides: Partial<{
     reactions: [],
     ...overrides,
   };
+}
+
+// Chainable Supabase query-builder stub for the new pagination/backfill/reset
+// actions — these skip the Edge-Function-first branch and query fromMock
+// directly, so `.or(...)` (the composite keyset filter) must be supported
+// alongside select/eq/in/order/limit.
+function createChainStub(value: unknown) {
+  const result = { data: value, error: null };
+  const builder: Record<string, unknown> = {
+    then: (
+      resolve: (outcome: typeof result) => unknown,
+      reject?: (reason: unknown) => unknown
+    ) => Promise.resolve(result).then(resolve, reject),
+  };
+  for (const method of ["select", "eq", "in", "is", "order", "limit", "range", "or"]) {
+    builder[method] = vi.fn(() => builder);
+  }
+  return builder;
+}
+
+function stubChatTables(tables: Record<string, unknown>) {
+  fromMock.mockImplementation((table: string) => createChainStub(tables[table] ?? []));
+}
+
+function paginationMessageRow(position: number) {
+  const minute = String(position).padStart(2, "0");
+  return messageRow({
+    id: `message-${String(position).padStart(3, "0")}`,
+    created_at: `2026-07-05T00:${minute}:00.000Z`,
+  });
 }
 
 describe("sendMessageAction", () => {
@@ -506,5 +539,159 @@ describe("chat command actions", () => {
         }),
       })
     );
+  });
+});
+
+describe("pagination, backfill, and reset-window actions", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    getCurrentUserMock.mockReset();
+    getSessionMock.mockReset();
+    rpcMock.mockReset();
+    fromMock.mockReset();
+    fetchMock.mockReset();
+  });
+
+  it("returns a bounded older page ascending with hasMoreOlder true past the boundary", async () => {
+    mockSignedIn();
+    // Seeded newest-first (DESC), matching what the keyset query returns
+    // before app code reverses it back to ascending.
+    const rows = Array.from({ length: 41 }, (_, index) =>
+      paginationMessageRow(40 - index)
+    );
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+    });
+
+    const result = await loadOlderMessagesAction({
+      conversationId: validInput.conversationId,
+      cursor: null,
+    });
+
+    expect(result.status).toBe("sent");
+    expect(result.messages).toHaveLength(40);
+    expect(result.hasMoreOlder).toBe(true);
+    expect(result.messages?.[0]?.id).toBe("message-001");
+    expect(result.messages?.[39]?.id).toBe("message-040");
+    expect(result.messages?.[0]?.senderDisplayName).toBe("Franz Fish");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns hasMoreOlder false when the older page is at or under the boundary", async () => {
+    mockSignedIn();
+    const rows = [2, 1, 0].map((position) => paginationMessageRow(position));
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+    });
+
+    const result = await loadOlderMessagesAction({
+      conversationId: validInput.conversationId,
+      cursor: {
+        createdAt: "2026-07-05T00:05:00.000Z",
+        id: "22222222-2222-4222-8222-222222222222",
+      },
+    });
+
+    expect(result.status).toBe("sent");
+    expect(result.hasMoreOlder).toBe(false);
+    expect(result.messages?.map((message) => message.id)).toEqual([
+      "message-000",
+      "message-001",
+      "message-002",
+    ]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sets needsReset true when more than the bound of newer messages exist during backfill", async () => {
+    mockSignedIn();
+    const rows = Array.from({ length: 41 }, (_, index) => paginationMessageRow(index));
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+    });
+
+    const result = await backfillMessagesAction({
+      conversationId: validInput.conversationId,
+      afterCreatedAt: "2026-07-04T23:59:00.000Z",
+      afterMessageId: "33333333-3333-4333-8333-333333333333",
+    });
+
+    expect(result.status).toBe("sent");
+    expect(result.needsReset).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sets needsReset false when newer messages stay at or under the bound", async () => {
+    mockSignedIn();
+    const rows = [0, 1, 2].map((position) => paginationMessageRow(position));
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+    });
+
+    const result = await backfillMessagesAction({
+      conversationId: validInput.conversationId,
+      afterCreatedAt: "2026-07-04T23:59:00.000Z",
+      afterMessageId: "33333333-3333-4333-8333-333333333333",
+    });
+
+    expect(result.status).toBe("sent");
+    expect(result.needsReset).toBe(false);
+    expect(result.messages).toHaveLength(3);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the bounded newest window with read states for the reconnect reset fallback", async () => {
+    mockSignedIn();
+    const rows = Array.from({ length: 41 }, (_, index) =>
+      paginationMessageRow(40 - index)
+    );
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+      message_reads: [
+        {
+          user_id: "coach-1",
+          last_delivered_message_id: "message-040",
+          delivered_at: "2026-07-05T00:41:00.000Z",
+          last_read_message_id: null,
+          read_at: null,
+        },
+      ],
+    });
+
+    const result = await loadNewestMessagesAction({
+      conversationId: validInput.conversationId,
+    });
+
+    expect(result.status).toBe("sent");
+    expect(result.messages).toHaveLength(40);
+    expect(result.hasMoreOlder).toBe(true);
+    expect(result.oldestCursor).toEqual({
+      createdAt: "2026-07-05T00:01:00.000Z",
+      id: "message-001",
+    });
+    expect(result.readStates?.[0]?.userId).toBe("coach-1");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed cursor with a calm notice before ever touching the query", async () => {
+    mockSignedIn();
+
+    const result = await loadOlderMessagesAction({
+      conversationId: validInput.conversationId,
+      cursor: { createdAt: "not-a-date", id: "not-a-uuid" },
+    });
+
+    expect(result.status).toBe("notice");
+    expect(fromMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

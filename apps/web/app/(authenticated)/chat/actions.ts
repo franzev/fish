@@ -10,6 +10,9 @@ const sendNotice = "That did not send yet. Keep this open and try again.";
 const saveNotice = "That did not save yet. Keep this open and try again.";
 const localEdgeTimeoutMs = 1_500;
 const reactionPageSize = 1000;
+// Shared page-size default for every bounded pagination/backfill read below;
+// a client-suppliable limit is always clamped with Math.min(..., 100).
+const chatOlderPageSize = 40;
 
 const sendMessageSchema = z.strictObject({
   conversationId: z.string().uuid(),
@@ -44,6 +47,29 @@ const refreshMessagesSchema = z.strictObject({
 
 const refreshConversationSchema = z.strictObject({
   conversationId: z.string().uuid(),
+});
+
+const chatCursorInputSchema = z.strictObject({
+  createdAt: z.iso.datetime(),
+  id: z.string().uuid(),
+});
+
+const loadOlderMessagesSchema = z.strictObject({
+  conversationId: z.string().uuid(),
+  cursor: chatCursorInputSchema.nullable().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+});
+
+const backfillMessagesSchema = z.strictObject({
+  conversationId: z.string().uuid(),
+  afterCreatedAt: z.iso.datetime(),
+  afterMessageId: z.string().uuid(),
+  limit: z.number().int().positive().max(100).optional(),
+});
+
+const loadNewestMessagesSchema = z.strictObject({
+  conversationId: z.string().uuid(),
+  limit: z.number().int().positive().max(100).optional(),
 });
 
 type MessageResponseRow = {
@@ -580,6 +606,184 @@ async function refreshConversationViaLocalRpc(
   };
 }
 
+async function loadOlderMessagesViaLocalRpc(
+  values: z.infer<typeof loadOlderMessagesSchema>
+): Promise<{
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  hasMoreOlder?: boolean;
+}> {
+  const context = await getLocalFallbackContext();
+  if (!context) {
+    return { status: "notice", values, notice: sendNotice };
+  }
+
+  const size = Math.min(values.limit ?? chatOlderPageSize, 100);
+  const cursor = values.cursor ?? null;
+
+  let query = context.services.client
+    .from("messages")
+    .select("*")
+    .eq("conversation_id", values.conversationId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(size + 1);
+
+  if (cursor) {
+    query = query.or(
+      `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
+    );
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    return {
+      status: "notice",
+      values,
+      notice: mapChatErrorNotice(error, sendNotice),
+    };
+  }
+
+  const rows = data as MessageResponseRow[];
+  const hasMoreOlder = rows.length > size;
+  // Newest-first from the query above; bound to the page then reverse back
+  // to the ascending order the reducer/UI expect.
+  const windowRows = rows.slice(0, size).reverse();
+
+  const enriched = await addReactionAggregates(context, windowRows);
+  const withSenders = await addSenderDisplayNames(context, enriched);
+
+  return {
+    status: "sent",
+    values,
+    messages: withSenders.map(toClientChatMessage),
+    hasMoreOlder,
+  };
+}
+
+async function backfillMessagesViaLocalRpc(
+  values: z.infer<typeof backfillMessagesSchema>
+): Promise<{
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  needsReset?: boolean;
+}> {
+  const context = await getLocalFallbackContext();
+  if (!context) {
+    return { status: "notice", values, notice: sendNotice };
+  }
+
+  const size = Math.min(values.limit ?? chatOlderPageSize, 100);
+
+  const { data, error } = await context.services.client
+    .from("messages")
+    .select("*")
+    .eq("conversation_id", values.conversationId)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
+    .or(
+      `created_at.gt.${values.afterCreatedAt},and(created_at.eq.${values.afterCreatedAt},id.gt.${values.afterMessageId})`
+    )
+    .limit(size + 1);
+
+  if (error || !data) {
+    return {
+      status: "notice",
+      values,
+      notice: mapChatErrorNotice(error, sendNotice),
+    };
+  }
+
+  const rows = data as MessageResponseRow[];
+  // Gap exceeds the bound: the caller should discard this partial page and
+  // reset to the newest window (loadNewestMessagesAction) instead of
+  // stitching a too-large catch-up in.
+  const needsReset = rows.length > size;
+
+  const enriched = await addReactionAggregates(context, rows);
+  const withSenders = await addSenderDisplayNames(context, enriched);
+
+  return {
+    status: "sent",
+    values,
+    messages: withSenders.map(toClientChatMessage),
+    needsReset,
+  };
+}
+
+async function loadNewestMessagesViaLocalRpc(
+  values: z.infer<typeof loadNewestMessagesSchema>
+): Promise<{
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  readStates?: ClientChatReadState[];
+  hasMoreOlder?: boolean;
+  oldestCursor?: { createdAt: string; id: string } | null;
+}> {
+  const context = await getLocalFallbackContext();
+  if (!context) {
+    return { status: "notice", values, notice: sendNotice };
+  }
+
+  const size = Math.min(values.limit ?? chatOlderPageSize, 100);
+
+  const { data: messageRows, error: messageError } = await context.services.client
+    .from("messages")
+    .select("*")
+    .eq("conversation_id", values.conversationId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(size + 1);
+
+  if (messageError || !messageRows) {
+    return {
+      status: "notice",
+      values,
+      notice: mapChatErrorNotice(messageError, sendNotice),
+    };
+  }
+
+  const { data: readRows, error: readError } = await context.services.client
+    .from("message_reads")
+    .select("*")
+    .eq("conversation_id", values.conversationId);
+
+  if (readError || !readRows) {
+    return {
+      status: "notice",
+      values,
+      notice: mapChatErrorNotice(readError, sendNotice),
+    };
+  }
+
+  const rows = messageRows as MessageResponseRow[];
+  const hasMoreOlder = rows.length > size;
+  const windowRows = rows.slice(0, size).reverse();
+  const oldestCursor =
+    windowRows.length > 0
+      ? { createdAt: windowRows[0].created_at, id: windowRows[0].id }
+      : null;
+
+  const enriched = await addReactionAggregates(context, windowRows);
+  const withSenders = await addSenderDisplayNames(context, enriched);
+
+  return {
+    status: "sent",
+    values,
+    messages: withSenders.map(toClientChatMessage),
+    readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
+    hasMoreOlder,
+    oldestCursor,
+  };
+}
+
 export async function sendMessageAction(
   input: unknown
 ): Promise<SendMessageActionState> {
@@ -898,4 +1102,55 @@ export async function refreshConversationAction(
     messages: await toClientChatMessagesWithSenders(payload.messages),
     readStates: payload.readStates.map(toClientReadState),
   };
+}
+
+// The three actions below are reads (pagination/backfill/reset), so — per the
+// AGENTS.md API boundary — they go straight to a direct RLS-protected select
+// and never post to the write-oriented chat-command Edge Function.
+
+export async function loadOlderMessagesAction(input: unknown): Promise<{
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  hasMoreOlder?: boolean;
+}> {
+  const parsed = loadOlderMessagesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "notice", values: input, notice: sendNotice };
+  }
+
+  return loadOlderMessagesViaLocalRpc(parsed.data);
+}
+
+export async function backfillMessagesAction(input: unknown): Promise<{
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  needsReset?: boolean;
+}> {
+  const parsed = backfillMessagesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "notice", values: input, notice: sendNotice };
+  }
+
+  return backfillMessagesViaLocalRpc(parsed.data);
+}
+
+export async function loadNewestMessagesAction(input: unknown): Promise<{
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  readStates?: ClientChatReadState[];
+  hasMoreOlder?: boolean;
+  oldestCursor?: { createdAt: string; id: string } | null;
+}> {
+  const parsed = loadNewestMessagesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "notice", values: input, notice: sendNotice };
+  }
+
+  return loadNewestMessagesViaLocalRpc(parsed.data);
 }
