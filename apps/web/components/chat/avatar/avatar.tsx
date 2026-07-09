@@ -1,24 +1,37 @@
 "use client";
 
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { IconUser } from "@tabler/icons-react";
 import { HTMLAttributes, useState } from "react";
 
-type AvatarSize = "xs" | "sm" | "md" | "lg";
+export const avatarVariants = cva(
+  "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-surface-2 font-medium text-body",
+  {
+    variants: {
+      size: {
+        /* xs rides the badge size token — inline identity chips (reply previews).
+           Initials use the smallest UI text token: at this diameter, text-ui-2xs
+           (12px) crowds two glyphs against the pill's edge. */
+        xs: "size-badge text-ui-3xs",
+        sm: "size-8 text-ui-xs",
+        md: "size-10 text-ui",
+        lg: "size-14 text-copy",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+    },
+  }
+);
+
+type AvatarSize = NonNullable<VariantProps<typeof avatarVariants>["size"]>;
 
 interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   src?: string;
   name?: string;
   size?: AvatarSize;
 }
-
-const sizeClasses: Record<AvatarSize, string> = {
-  /* xs rides the badge size token — inline identity chips (reply previews). */
-  xs: "size-badge text-ui-2xs",
-  sm: "size-8 text-ui-xs",
-  md: "size-10 text-ui",
-  lg: "size-14 text-copy",
-};
 
 /** Derive up to two uppercase initials from a display name. Never throws —
  *  falls back to an empty string for names with no usable characters. */
@@ -43,11 +56,7 @@ export function Avatar({ src, name, size = "md", className, ...props }: AvatarPr
 
   return (
     <div
-      className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-surface-2 font-medium text-body",
-        sizeClasses[size],
-        className
-      )}
+      className={cn(avatarVariants({ size }), className)}
       {...props}
     >
       {showImage ? (
