@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { Bubble } from "../bubble";
+import { cn } from "@/lib/utils";
+import { getBubbleRadiusClasses } from "../bubble/bubble";
 import { MessageBody } from "./message-body";
 
 const meta = {
@@ -11,13 +12,22 @@ const meta = {
     body: "Try it once more, a little slower on the middle word.",
   },
   decorators: [
-    (Story, context) => (
-      <div className="max-w-message p-md">
-        <Bubble mine={Boolean(context.args.mine)}>
-          <Story />
-        </Bubble>
-      </div>
-    ),
+    (Story, context) => {
+      const mine = Boolean(context.args.mine);
+      return (
+        <div className="max-w-message p-md">
+          <div
+            className={cn(
+              "inline-block px-md py-compact text-ui-sm break-words",
+              getBubbleRadiusClasses({ mine }),
+              mine ? "bg-primary text-on-primary" : "bg-surface text-body"
+            )}
+          >
+            <Story />
+          </div>
+        </div>
+      );
+    },
   ],
 } satisfies Meta<typeof MessageBody>;
 
