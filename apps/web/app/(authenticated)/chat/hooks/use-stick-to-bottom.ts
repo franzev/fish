@@ -21,7 +21,9 @@ export function useStickToBottom({
 }: UseStickToBottomOptions) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const isNearBottomRef = useRef(true);
-  const previousCountRef = useRef(messages.length);
+  const previousLastIdRef = useRef(
+    messages[messages.length - 1]?.id ?? messages[messages.length - 1]?.clientRequestId
+  );
   const [showNewMessages, setShowNewMessages] = useState(false);
 
   const scrollToBottom = useCallback((behavior?: ScrollBehavior) => {
@@ -89,15 +91,21 @@ export function useStickToBottom({
   }, []);
 
   // New message: follow own sends and near-bottom readers; otherwise leave
-  // the reading position alone and raise the pill instead.
+  // the reading position alone and raise the pill instead. Keyed off the
+  // newest message's IDENTITY (not the array length) so a prepended older
+  // page — same newest message, larger array — is inert to this hook; a
+  // length comparison would misread a prepend as "a new message arrived"
+  // and yank a reader mid-scroll-restore down to the bottom (CLOAD-04).
   useEffect(() => {
-    const previousCount = previousCountRef.current;
-    previousCountRef.current = messages.length;
-    if (messages.length <= previousCount) {
+    const lastMessage = messages[messages.length - 1];
+    const lastId = lastMessage?.id ?? lastMessage?.clientRequestId;
+    const previousLastId = previousLastIdRef.current;
+    previousLastIdRef.current = lastId;
+
+    if (!lastId || lastId === previousLastId) {
       return;
     }
 
-    const lastMessage = messages[messages.length - 1];
     if (lastMessage?.senderId === currentUserId || isNearBottomRef.current) {
       scrollToBottom();
       return;

@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import { installIntersectionObserverMock } from "./tests/intersection-observer";
 
 // jsdom does not implement ResizeObserver, matchMedia, or getAnimations,
 // which useStickToBottom and the Base UI ScrollArea need to track chat
@@ -10,6 +11,11 @@ if (typeof globalThis.ResizeObserver === "undefined") {
     disconnect() {}
   };
 }
+
+// jsdom also has no IntersectionObserver, which the "load earlier" sentinel
+// (Plan 10-04) needs. The mock + its triggerIntersection helper live in
+// tests/intersection-observer.ts (shared registry) — this only installs it.
+installIntersectionObserverMock();
 
 if (typeof window !== "undefined" && typeof window.matchMedia === "undefined") {
   window.matchMedia = (query: string) =>
