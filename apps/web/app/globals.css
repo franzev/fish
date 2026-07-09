@@ -137,7 +137,8 @@
   --container-chat: 720px;
   --container-chat-preview: 360px;
   --container-message: 85%;
-  --container-search-pop: 340px;    /* chat search/quick-filter popover panel */
+  --container-search-header: 180px; /* compact always-visible chat header search field */
+  --container-search-pop: 340px;    /* chat quick-filter popover panel */
   --container-filters-dialog: 384px; /* centered Filters dialog on md+ */
 
   /* ---- Focus and motion ---- */

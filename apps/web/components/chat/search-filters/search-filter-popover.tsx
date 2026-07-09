@@ -11,7 +11,6 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useRef, useState } from "react";
-import { cn } from "@/lib/utils";
 import { FiltersDialog } from "./filters-dialog";
 
 export interface SearchFilterPopoverProps {
@@ -59,10 +58,12 @@ const quickFilters: QuickFilter[] = [
 const quickFilterItemClass =
   "flex min-h-control w-full items-center gap-sm rounded-control px-sm text-left hover:bg-surface-2";
 
-/** The chat header's search trigger — opens a quiet popover holding the live
- *  search field plus quick-filter shortcuts that drop `from:`-style tokens
- *  into the query. UI stub for now: the tokens land in the search text; real
- *  token-aware filtering ships with the search feature. */
+/** The chat header's search field: a compact, always-visible input — no
+ *  popover to open before typing — paired with a quiet filters trigger that
+ *  holds quick-filter shortcuts (dropping `from:`-style tokens into the
+ *  query) and the full Filters dialog. UI stub for now: the tokens land in
+ *  the search text; real token-aware filtering ships with the search
+ *  feature. */
 export function SearchFilterPopover({
   value,
   onValueChange,
@@ -80,92 +81,89 @@ export function SearchFilterPopover({
 
   return (
     <>
-      <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Trigger
-          ref={triggerRef}
-          aria-label="Search messages"
-          // The popover can close while the search text keeps filtering the
-          // message list, so the trigger holds a visible active state.
-          aria-pressed={Boolean(value)}
-          data-search-active={value ? "" : undefined}
-          className={cn(
-            "inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body",
-            value && "bg-surface-2 text-foreground"
-          )}
-        >
-          <IconSearch size={20} stroke={1.75} aria-hidden="true" />
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Positioner
-            side="bottom"
-            align="end"
-            sideOffset={4}
-            className="z-20"
+      <div className="flex min-w-0 items-center gap-2xs">
+        {/* Same quiet-well idiom as the emoji picker: no field chrome, focus
+            lands as a border step on the well itself. Fixed compact width —
+            this lives inline in the header now, not in its own panel. */}
+        <div className="relative min-w-0 max-w-search-header flex-1">
+          <span className="pointer-events-none absolute inset-y-0 left-sm flex items-center text-muted">
+            <IconSearch size={18} stroke={1.75} aria-hidden="true" />
+          </span>
+          <input
+            type="search"
+            aria-label="Search messages"
+            placeholder="Search"
+            value={value}
+            onChange={(event) => onValueChange(event.target.value)}
+            className="h-10 w-full rounded-control border border-transparent bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:border-border-strong focus-visible:shadow-none focus-visible:outline-none"
+          />
+        </div>
+
+        <Popover.Root open={open} onOpenChange={setOpen}>
+          <Popover.Trigger
+            ref={triggerRef}
+            aria-label="Search filters"
+            className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
           >
-            <Popover.Popup className="w-search-pop rounded-card border border-border bg-surface p-3xs shadow-popover">
-              {/* Same quiet-well search idiom as the emoji picker: no field
-                  chrome, focus lands as a border step on the well itself. */}
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-sm flex items-center text-muted">
-                  <IconSearch size={18} stroke={1.75} aria-hidden="true" />
-                </span>
-                <input
-                  type="search"
-                  aria-label="Search messages"
-                  placeholder="Search messages"
-                  value={value}
-                  onChange={(event) => onValueChange(event.target.value)}
-                  className="min-h-control w-full rounded-control border border-transparent bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:border-border-strong focus-visible:shadow-none focus-visible:outline-none"
-                />
-              </div>
-              <p className="px-sm pb-2xs pt-xs text-ui-2xs font-medium uppercase tracking-wide text-muted">
-                Filters
-              </p>
-              {quickFilters.map((filter) => (
-                <button
-                  key={filter.token}
-                  type="button"
-                  onClick={() => appendToken(filter.token)}
-                  className={quickFilterItemClass}
-                >
-                  <filter.icon
-                    size={20}
-                    stroke={1.75}
-                    aria-hidden="true"
-                    className="shrink-0 text-muted"
-                  />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="text-ui-sm text-foreground">
-                      {filter.title}
+            <IconAdjustmentsHorizontal size={20} stroke={1.75} aria-hidden="true" />
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Positioner
+              side="bottom"
+              align="end"
+              sideOffset={4}
+              className="z-20"
+            >
+              <Popover.Popup className="w-search-pop rounded-card border border-border bg-surface p-3xs shadow-popover">
+                <p className="px-sm pb-2xs pt-xs text-ui-2xs font-medium uppercase tracking-wide text-muted">
+                  Filters
+                </p>
+                {quickFilters.map((filter) => (
+                  <button
+                    key={filter.token}
+                    type="button"
+                    onClick={() => appendToken(filter.token)}
+                    className={quickFilterItemClass}
+                  >
+                    <filter.icon
+                      size={20}
+                      stroke={1.75}
+                      aria-hidden="true"
+                      className="shrink-0 text-muted"
+                    />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-ui-sm text-foreground">
+                        {filter.title}
+                      </span>
+                      <span className="text-ui-xs text-muted">{filter.hint}</span>
                     </span>
-                    <span className="text-ui-xs text-muted">{filter.hint}</span>
-                  </span>
-                </button>
-              ))}
-              <div className="mt-3xs border-t border-border pt-3xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    setFiltersOpen(true);
-                  }}
-                  className={quickFilterItemClass}
-                >
-                  <IconAdjustmentsHorizontal
-                    size={20}
-                    stroke={1.75}
-                    aria-hidden="true"
-                    className="shrink-0 text-muted"
-                  />
-                  <span className="text-ui-sm text-foreground">
-                    More filters
-                  </span>
-                </button>
-              </div>
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
+                  </button>
+                ))}
+                <div className="mt-3xs border-t border-border pt-3xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setFiltersOpen(true);
+                    }}
+                    className={quickFilterItemClass}
+                  >
+                    <IconAdjustmentsHorizontal
+                      size={20}
+                      stroke={1.75}
+                      aria-hidden="true"
+                      className="shrink-0 text-muted"
+                    />
+                    <span className="text-ui-sm text-foreground">
+                      More filters
+                    </span>
+                  </button>
+                </div>
+              </Popover.Popup>
+            </Popover.Positioner>
+          </Popover.Portal>
+        </Popover.Root>
+      </div>
       <FiltersDialog
         open={filtersOpen}
         onOpenChange={setFiltersOpen}

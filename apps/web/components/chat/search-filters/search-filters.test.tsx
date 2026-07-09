@@ -9,19 +9,39 @@ import { describe, expect, it, vi } from "vitest";
 import { FiltersDialog } from "./filters-dialog";
 import { SearchFilterPopover } from "./search-filter-popover";
 
-function openPopover() {
-  fireEvent.click(screen.getByRole("button", { name: "Search messages" }));
+function openFiltersPopover() {
+  fireEvent.click(screen.getByRole("button", { name: "Search filters" }));
 }
 
 describe("SearchFilterPopover", () => {
-  it("opens a popover with a search input and the quick filters", () => {
+  it("shows the always-visible search input", () => {
     render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
 
-    openPopover();
+    expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
+  });
 
-    expect(
-      screen.getByPlaceholderText("Search messages")
-    ).toBeInTheDocument();
+  it("shows the controlled value in the search input", () => {
+    render(<SearchFilterPopover value="hola" onValueChange={vi.fn()} />);
+
+    expect(screen.getByPlaceholderText("Search")).toHaveValue("hola");
+  });
+
+  it("reports typing through onValueChange", () => {
+    const onValueChange = vi.fn();
+    render(<SearchFilterPopover value="" onValueChange={onValueChange} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Search"), {
+      target: { value: "hello" },
+    });
+
+    expect(onValueChange).toHaveBeenCalledWith("hello");
+  });
+
+  it("opens a popover with only the quick filters, no search input", () => {
+    render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
+
+    openFiltersPopover();
+
     for (const title of [
       "From a specific user",
       "Sent in a specific channel",
@@ -32,35 +52,15 @@ describe("SearchFilterPopover", () => {
         screen.getByRole("button", { name: new RegExp(title, "i") })
       ).toBeInTheDocument();
     }
-  });
-
-  it("shows the controlled value in the search input", () => {
-    render(<SearchFilterPopover value="hola" onValueChange={vi.fn()} />);
-
-    openPopover();
-
-    expect(screen.getByPlaceholderText("Search messages")).toHaveValue(
-      "hola"
-    );
-  });
-
-  it("reports typing through onValueChange", () => {
-    const onValueChange = vi.fn();
-    render(<SearchFilterPopover value="" onValueChange={onValueChange} />);
-
-    openPopover();
-    fireEvent.change(screen.getByPlaceholderText("Search messages"), {
-      target: { value: "hello" },
-    });
-
-    expect(onValueChange).toHaveBeenCalledWith("hello");
+    // The search field lives in the header now, not duplicated in the popup.
+    expect(screen.getAllByPlaceholderText("Search")).toHaveLength(1);
   });
 
   it("appends the quick-filter token without a leading space when empty", () => {
     const onValueChange = vi.fn();
     render(<SearchFilterPopover value="" onValueChange={onValueChange} />);
 
-    openPopover();
+    openFiltersPopover();
     fireEvent.click(
       screen.getByRole("button", { name: /from a specific user/i })
     );
@@ -74,7 +74,7 @@ describe("SearchFilterPopover", () => {
       <SearchFilterPopover value="hello" onValueChange={onValueChange} />
     );
 
-    openPopover();
+    openFiltersPopover();
     fireEvent.click(
       screen.getByRole("button", { name: /mentions a specific user/i })
     );
@@ -88,7 +88,7 @@ describe("SearchFilterPopover", () => {
       <SearchFilterPopover value="hello " onValueChange={onValueChange} />
     );
 
-    openPopover();
+    openFiltersPopover();
     fireEvent.click(
       screen.getByRole("button", { name: /from a specific user/i })
     );
@@ -96,10 +96,10 @@ describe("SearchFilterPopover", () => {
     expect(onValueChange).toHaveBeenCalledWith("hello from: ");
   });
 
-  it("returns focus to the search trigger after the dialog closes", async () => {
+  it("returns focus to the filters trigger after the dialog closes", async () => {
     render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
 
-    openPopover();
+    openFiltersPopover();
     fireEvent.click(screen.getByRole("button", { name: /more filters/i }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -107,36 +107,15 @@ describe("SearchFilterPopover", () => {
     // without an explicit finalFocus target focus would fall to <body>.
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Search messages" })
+        screen.getByRole("button", { name: "Search filters" })
       ).toHaveFocus()
     );
-  });
-
-  it("marks the trigger active while a search value is filtering", () => {
-    render(<SearchFilterPopover value="hi" onValueChange={vi.fn()} />);
-
-    const trigger = screen.getByRole("button", { name: "Search messages" });
-    // The popover closes but the filter stays live, so the trigger must keep
-    // signalling the active search state.
-    expect(trigger).toHaveAttribute("aria-pressed", "true");
-    expect(trigger).toHaveAttribute("data-search-active");
-    expect(trigger).toHaveClass("bg-surface-2", "text-foreground");
-  });
-
-  it("keeps the trigger quiet while the search value is empty", () => {
-    render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
-
-    const trigger = screen.getByRole("button", { name: "Search messages" });
-    expect(trigger).toHaveAttribute("aria-pressed", "false");
-    expect(trigger).not.toHaveAttribute("data-search-active");
-    // hover:bg-surface-2 stays; the resting state itself carries no fill.
-    expect(trigger).not.toHaveClass("bg-surface-2");
   });
 
   it("opens the Filters dialog from More filters", () => {
     render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
 
-    openPopover();
+    openFiltersPopover();
     fireEvent.click(screen.getByRole("button", { name: /more filters/i }));
 
     expect(
