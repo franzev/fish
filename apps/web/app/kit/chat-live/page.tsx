@@ -83,6 +83,9 @@ const chat: ClientChatData = {
   conversationId,
   kind: "community",
   title: "Community",
+  // Explicit channelName: the composer placeholder only takes the
+  // #channel idiom from a real channel name (direct chats say "Message").
+  channelName: "Community",
   subtitle: "4 members",
   currentUserId: you,
   currentUserRole: "coach",

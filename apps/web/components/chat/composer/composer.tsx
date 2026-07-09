@@ -11,15 +11,11 @@ import {
 } from "@tabler/icons-react";
 import type { KeyboardEvent } from "react";
 import { AddMenu } from "./add-menu";
-
-/** Shared chrome for the quiet icon affordances inside the composer bar —
- *  full 56px tap targets (ND floor), ghost at rest, one fill step up on
- *  hover so they read against the bar's own surface-2. */
-export const composerIconButtonClass =
-  "inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-3 hover:text-body";
+import { composerIconButtonClass } from "./icon-button-class";
 
 export interface ComposerProps {
-  channelName: string;
+  /** Community channel name for the placeholder; direct chats omit it. */
+  channelName?: string;
   draft: string;
   canSend: boolean;
   localRecording: boolean;
@@ -78,7 +74,7 @@ export function Composer({
           onBlur={onBlur}
           rows={1}
           enterKeyHint="send"
-          placeholder={`Message #${channelName}`}
+          placeholder={channelName ? `Message #${channelName}` : "Message"}
           className="min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-copy text-foreground outline-none placeholder:text-muted focus-visible:shadow-none focus-visible:outline-none"
         />
         <button

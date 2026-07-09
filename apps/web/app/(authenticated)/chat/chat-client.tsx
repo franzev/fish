@@ -559,7 +559,9 @@ export function ChatClient({
       )}
 
       {stubNotice && (
-        <Alert tone="notice" className="mx-md mb-xs">
+        // role="status": the notice mounts in response to a click, so it must
+        // be announced without stealing focus.
+        <Alert tone="notice" role="status" className="mx-md mb-xs">
           {stubNotice}
         </Alert>
       )}
@@ -615,7 +617,7 @@ export function ChatClient({
       )}
 
       <Composer
-        channelName={chat.channelName ?? chatTitle}
+        channelName={chat.channelName}
         draft={draft}
         canSend={canSend}
         localRecording={localRecording}

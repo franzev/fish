@@ -22,6 +22,11 @@ describe("Composer", () => {
     expect(screen.getByPlaceholderText("Message #general")).toBeInTheDocument();
   });
 
+  it("falls back to a plain placeholder without a channel name", () => {
+    render(<Composer {...baseProps} channelName={undefined} />);
+    expect(screen.getByPlaceholderText("Message")).toBeInTheDocument();
+  });
+
   it("hides the Send button while the draft is empty", () => {
     render(<Composer {...baseProps} canSend={false} />);
     expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();

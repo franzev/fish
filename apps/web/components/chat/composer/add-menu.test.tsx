@@ -47,9 +47,9 @@ describe("AddMenu", () => {
   it("reflects the active recording state on the trigger", () => {
     const { rerender } = render(<AddMenu {...baseProps} recording={false} />);
     const trigger = screen.getByRole("button", { name: "Add to message" });
-    expect(trigger.className).not.toContain("bg-surface-2");
+    expect(trigger).not.toHaveAttribute("data-recording");
 
     rerender(<AddMenu {...baseProps} recording />);
-    expect(trigger.className).toContain("bg-surface-2");
+    expect(trigger).toHaveAttribute("data-recording");
   });
 });

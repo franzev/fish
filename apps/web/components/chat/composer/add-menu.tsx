@@ -8,9 +8,7 @@ import {
   IconPlus,
   IconUpload,
 } from "@tabler/icons-react";
-// Render-time-only usage keeps this composer <-> add-menu import cycle inert:
-// the const is read when the trigger renders, never during module evaluation.
-import { composerIconButtonClass } from "./composer";
+import { composerIconButtonClass } from "./icon-button-class";
 
 export interface AddMenuProps {
   onUploadFile: () => void;
@@ -35,11 +33,13 @@ export function AddMenu({
     <Menu.Root>
       <Menu.Trigger
         aria-label="Add to message"
+        data-recording={recording || undefined}
         className={cn(
           composerIconButtonClass,
           // Recording is armed from inside this menu, so the trigger carries
-          // the on-state fill while a recording is live.
-          recording && "bg-surface-2 text-foreground"
+          // the on-state fill while a recording is live — surface-3, one step
+          // above the bar's own surface-2, per the state-by-fill convention.
+          recording && "bg-surface-3 text-foreground"
         )}
       >
         <IconPlus size={20} stroke={1.75} aria-hidden="true" />

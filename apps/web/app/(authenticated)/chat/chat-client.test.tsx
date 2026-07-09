@@ -378,7 +378,15 @@ describe("ChatClient", () => {
 
     const notice = await screen.findByText(/coming soon/i);
     expect(notice).toBeInTheDocument();
-    expect(notice.closest('[role="status"], [role="alert"], div')).not.toBeNull();
+    // Announced politely: the notice mounts after a click, so it needs a
+    // live region (role="status"), never focus-stealing.
+    expect(notice.closest('[role="status"]')).not.toBeNull();
+  });
+
+  it("uses the plain Message placeholder in a direct chat (no channel idiom)", () => {
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.getByPlaceholderText("Message")).toBeInTheDocument();
   });
 
   it("hides the Send button until the draft has content", () => {
