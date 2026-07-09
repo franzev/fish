@@ -95,9 +95,12 @@ Tasks 2 and 3.
   `/kit/chat-live` are gone while `/kit` (general design-token showcase) still builds.
 - `node --experimental-strip-types --check scripts/seed.ts` — clean; all 12 seeded message
   bodies measured 77–3553 characters, safely under the 4000-char DB constraint.
-- Manual follow-up (not blocking, no live Supabase instance in this environment): run
-  `pnpm seed` against `supabase start` to confirm the new messages actually insert and
-  render in the general channel.
+- **Live verification (completed post-summary):** a local Supabase instance was already
+  running. `pnpm seed` was run against it — output confirmed `Seeded 12 community messages
+  into the general channel.` A direct `psql` query against `supabase_db_fish` confirmed all
+  12 rows landed with the expected `client_request_id`, `sender_role`, and body length
+  (77–3547 chars). Re-running `pnpm seed` a second time left the row count at exactly 12 —
+  the idempotent upsert works as designed.
 
 ## Self-Check: PASSED
 
