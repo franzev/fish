@@ -361,6 +361,56 @@ describe("ChatClient", () => {
     ).toBeGreaterThan(1);
   });
 
+  it("shows a calm coming-soon notice when a stubbed composer affordance is used", async () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
+
+    const notice = await screen.findByText(/coming soon/i);
+    expect(notice).toBeInTheDocument();
+    expect(notice.closest('[role="status"], [role="alert"], div')).not.toBeNull();
+  });
+
+  it("hides the Send button until the draft has content", () => {
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Hello" },
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Send message" })
+    ).toBeInTheDocument();
+  });
+
+  it("toggles local voice recording through the + menu", async () => {
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
+
+    expect(await screen.findByText("Recording audio")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
+
+    await waitFor(() =>
+      expect(screen.queryByText("Recording audio")).toBeNull()
+    );
+  });
+
   it("uses the current server snapshot when the chat store has stale cached messages", () => {
     chatStore.getState().hydrateConversation(
       chat.conversationId,
@@ -525,10 +575,9 @@ describe("ChatClient", () => {
     expect(within(pendingItem).queryByRole("button", { name: "Delete message" })).toBeNull();
     expect(screen.queryByText("Sending")).toBeNull();
     expect(screen.getByLabelText("Message")).toHaveValue("");
-    expect(screen.getByRole("button", { name: "Send message" })).not.toHaveAttribute(
-      "aria-busy",
-      "true"
-    );
+    // The draft cleared, so the conditional Send button leaves the bar —
+    // there is no lingering busy/disabled Send while the action is pending.
+    expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();
 
     fireEvent.change(screen.getByLabelText("Message"), {
       target: { value: "Another quick one." },

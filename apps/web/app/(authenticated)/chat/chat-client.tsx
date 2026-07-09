@@ -7,6 +7,7 @@ import type {
 } from "@/lib/services";
 import {
   Avatar,
+  Composer,
   EmojiPickerButton,
   getBubbleRadiusClasses,
   MessageMeta,
@@ -16,7 +17,6 @@ import {
   TypingIndicator,
 } from "@/components/chat";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area/scroll-area";
 import {
   getMessageSnippet,
@@ -26,11 +26,9 @@ import { cn } from "@/lib/utils";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import {
   IconArrowDown,
-  IconMicrophone,
   IconMoodSmile,
   IconPencil,
   IconSearch,
-  IconSend,
   IconTrash,
   IconX,
   IconMessageReply,
@@ -110,6 +108,9 @@ export function ChatClient({
   // Search state stays wired to filteredMessages; the upcoming search/filter
   // popover (which replaces the placeholder header button) re-adds the setter.
   const [search] = useState("");
+  // Coming-soon notice for stubbed composer affordances (GIFs, stickers,
+  // uploads, polls) — calm copy, never a dead-end error.
+  const [stubNotice, setStubNotice] = useState<string | null>(null);
   const timeFormatPref = useTimeFormatPreference();
   const isCommunity = chat.kind === "community";
   const chatTitle = chat.title ?? chat.participant.displayName;
@@ -557,6 +558,12 @@ export function ChatClient({
         </Alert>
       )}
 
+      {stubNotice && (
+        <Alert tone="notice" className="mx-md mb-xs">
+          {stubNotice}
+        </Alert>
+      )}
+
       {(replyingTo || editingMessage || localRecording) && (
         <div className="border-t border-border bg-surface px-md py-sm">
           {replyingTo && (
@@ -607,46 +614,22 @@ export function ChatClient({
         </div>
       )}
 
-      <div className="flex items-end gap-xs border-t border-border bg-surface p-sm">
-        <button
-          type="button"
-          aria-label={localRecording ? "Stop voice recording" : "Start voice recording"}
-          aria-pressed={localRecording}
-          onClick={() => setLocalVoiceRecording(!localRecording)}
-          className={cn(
-            "inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body",
-            localRecording && "bg-surface-2 text-foreground"
-          )}
-        >
-          <IconMicrophone size={20} stroke={1.75} aria-hidden="true" />
-        </button>
-        <textarea
-          aria-label="Message"
-          value={draft}
-          onChange={(event) => {
-            handleDraftChange(event.target.value);
-          }}
-          onBlur={stopLocalTyping}
-          onKeyDown={handleComposerKeyDown}
-          rows={1}
-          enterKeyHint="send"
-          className="min-h-control flex-1 resize-none rounded-control border border-border bg-surface px-md py-field-y text-copy text-foreground placeholder:text-muted focus:border-primary"
-          placeholder="Message"
-        />
-        <Button
-          type="button"
-          fullWidth={false}
-          disabled={!canSend}
-          onClick={() => {
-            scrollToBottom();
-            void handleSend();
-          }}
-          className="shrink-0 px-md"
-          aria-label="Send message"
-        >
-          <IconSend size={20} stroke={1.75} aria-hidden="true" />
-        </Button>
-      </div>
+      <Composer
+        channelName={chat.channelName ?? chatTitle}
+        draft={draft}
+        canSend={canSend}
+        localRecording={localRecording}
+        onDraftChange={handleDraftChange}
+        onSend={() => {
+          scrollToBottom();
+          void handleSend();
+        }}
+        onKeyDown={handleComposerKeyDown}
+        onBlur={stopLocalTyping}
+        onToggleRecording={() => setLocalVoiceRecording(!localRecording)}
+        onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
+        onStub={(label) => setStubNotice(`${label} are coming soon.`)}
+      />
     </section>
   );
 }
