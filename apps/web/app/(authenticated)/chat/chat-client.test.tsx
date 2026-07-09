@@ -54,6 +54,7 @@ const chat: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
   currentUserId: "client-1",
   currentUserRole: "client",
+  currentUserDisplayName: "Alex Rivera",
   participant: {
     id: "coach-1",
     displayName: "Coach Dana",
@@ -302,9 +303,9 @@ describe("ChatClient", () => {
 
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
-    // Own messages join the shared feed: authored as "You", flat monochrome
-    // text — never the mine-right primary bubble from direct chat.
-    expect(screen.getByText("You")).toBeInTheDocument();
+    // Own messages join the shared feed with the author's display name, flat
+    // monochrome text — never the mine-right primary bubble from direct chat.
+    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
     const body = screen.getByText("Hello everyone!");
     expect(body.className).not.toContain("bg-primary");
     const row = body.closest("li");

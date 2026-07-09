@@ -161,6 +161,7 @@ export interface ClientChatData {
   subtitle?: string;
   currentUserId: string;
   currentUserRole: "client" | "coach";
+  currentUserDisplayName: string;
   participant: ClientChatParticipant;
   messages: ClientChatMessage[];
   readStates?: ClientChatReadState[];

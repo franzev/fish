@@ -91,6 +91,7 @@ export function useChatComposer({
       conversationId: chat.conversationId,
       senderId: chat.currentUserId,
       senderRole: chat.currentUserRole,
+      senderDisplayName: chat.currentUserDisplayName,
       body,
       clientRequestId,
       editedAt: null,

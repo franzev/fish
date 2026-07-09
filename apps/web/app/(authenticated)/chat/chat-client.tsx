@@ -113,13 +113,8 @@ export function ChatClient({
   const isCommunity = chat.kind === "community";
   const chatTitle = chat.title ?? chat.participant.displayName;
   const activityName = isCommunity ? "Someone" : chat.participant.displayName;
-  const getMessageAuthorName = (message: ClientChatMessage) => {
-    if (message.senderId === chat.currentUserId) {
-      return "You";
-    }
-
-    return message.senderDisplayName ?? (isCommunity ? "Member" : chat.participant.displayName);
-  };
+  const getMessageAuthorName = (message: ClientChatMessage) =>
+    message.senderDisplayName ?? (isCommunity ? "Member" : chat.participant.displayName);
   const {
     participantTyping,
     participantRecording,
@@ -371,11 +366,10 @@ export function ChatClient({
                   >
                     {isCommunity && replyMessage && (
                       <div className="relative mb-2xs flex items-center gap-2xs self-stretch text-ui-xs text-muted">
-                        {/* Connector spline: rises from the avatar centre in
-                            the gutter and curves into the preview line. */}
+                        {/* L-connector: stem on avatar centre, arm into preview row. */}
                         <span
                           aria-hidden="true"
-                          className="absolute -left-lg top-compact h-sm w-badge rounded-tl-chat-inner border-l border-t border-border"
+                          className="pointer-events-none absolute -left-reply-spline-left top-compact h-sm w-lg rounded-tl-chat-inner border-l border-t border-border"
                         />
                         <Avatar
                           name={getMessageAuthorName(replyMessage)}
@@ -400,11 +394,7 @@ export function ChatClient({
                     )}
                     {!isCommunity && replyMessage && (
                       <QuotedMessage
-                        authorName={
-                          replyMessage.senderId === chat.currentUserId
-                            ? "You"
-                            : getMessageAuthorName(replyMessage)
-                        }
+                        authorName={getMessageAuthorName(replyMessage)}
                         snippet={getMessageSnippet(replyMessage)}
                       />
                     )}
@@ -568,11 +558,7 @@ export function ChatClient({
                     : getMessageAuthorName(replyingTo)}
                 </p>
                 <QuotedMessage
-                  authorName={
-                    replyingTo.senderId === chat.currentUserId
-                      ? "You"
-                      : getMessageAuthorName(replyingTo)
-                  }
+                  authorName={getMessageAuthorName(replyingTo)}
                   snippet={getMessageSnippet(replyingTo)}
                   className="mb-0 mt-2xs"
                 />

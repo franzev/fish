@@ -798,6 +798,7 @@ class SupabaseChatRepository implements ChatRepository {
         title: isDemoCommunity ? generalChannelName : undefined,
         currentUserId: userId,
         currentUserRole: profile.role,
+        currentUserDisplayName: profile.display_name,
         participant: {
           id: participant.id,
           displayName: participant.display_name,

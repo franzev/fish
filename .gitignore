@@ -12,6 +12,7 @@ test-results/
 supabase/.branches/
 supabase/.temp/
 node_modules/
+.pnpm-store/
 dist/
 build/
 DerivedData/

@@ -69,6 +69,14 @@ const messages: ClientChatMessage[] = [
       { emoji: "🙏", count: 3, byMe: true },
     ],
   }),
+  mockMessage({
+    id: "m4b",
+    senderId: "user-jordan",
+    senderRole: "coach",
+    senderDisplayName: "Coach Jordan",
+    body: "Welcome! Introductions are a great place to start.",
+    replyToMessageId: "m1",
+  }),
   mockMessage({ id: "m5", senderId: you, body: "asfasf" }),
   mockMessage({
     id: "m6",
@@ -98,6 +106,7 @@ const chat: ClientChatData = {
   title: generalChannelName,
   currentUserId: you,
   currentUserRole: "coach",
+  currentUserDisplayName: "Sam Okafor",
   participant: { id: "user-jordan", displayName: "Coach Jordan", role: "coach" },
   messages,
   readStates: [],
