@@ -15,8 +15,11 @@ import {
   useChatStore,
 } from "../store/chat-store";
 import {
+  selectHasMoreOlderForConversation,
   selectHydrationKeyForConversation,
+  selectIsLoadingOlderForConversation,
   selectMessagesForConversation,
+  selectOldestCursorForConversation,
   selectReadStatesForConversation,
 } from "../store/chat-selectors";
 
@@ -34,6 +37,17 @@ export interface RefreshMessagesActionState {
 }
 
 export interface RefreshConversationActionState extends RefreshMessagesActionState {
+  readStates?: ClientChatData["readStates"];
+}
+
+// Shared shape for the three bounded pagination/backfill/reset reads (Plan
+// 10-02): each action only ever populates the subset of these optional
+// fields it actually returns, so one superset interface covers all three
+// injected props below without three near-identical interfaces.
+export interface LoadOlderMessagesActionState extends RefreshMessagesActionState {
+  hasMoreOlder?: boolean;
+  needsReset?: boolean;
+  oldestCursor?: { createdAt: string; id: string } | null;
   readStates?: ClientChatData["readStates"];
 }
 
@@ -64,6 +78,9 @@ interface UseChatMessagesOptions {
   refreshConversationAction?: (
     input: unknown
   ) => Promise<RefreshConversationActionState>;
+  loadOlderMessagesAction?: (input: unknown) => Promise<LoadOlderMessagesActionState>;
+  backfillMessagesAction?: (input: unknown) => Promise<LoadOlderMessagesActionState>;
+  loadNewestMessagesAction?: (input: unknown) => Promise<LoadOlderMessagesActionState>;
   onReadStatesRefreshed?: (readStates: NonNullable<ClientChatData["readStates"]>) => void;
 }
 
@@ -71,6 +88,9 @@ export function useChatMessages({
   chat,
   refreshMessagesAction,
   refreshConversationAction,
+  loadOlderMessagesAction,
+  backfillMessagesAction,
+  loadNewestMessagesAction,
   onReadStatesRefreshed,
 }: UseChatMessagesOptions) {
   const storeMessages = useChatStore((state) =>
@@ -79,11 +99,22 @@ export function useChatMessages({
   const storedHydrationKey = useChatStore((state) =>
     selectHydrationKeyForConversation(state, chat.conversationId)
   );
+  const hasMoreOlder = useChatStore((state) =>
+    selectHasMoreOlderForConversation(state, chat.conversationId)
+  );
+  const isLoadingOlder = useChatStore((state) =>
+    selectIsLoadingOlderForConversation(state, chat.conversationId)
+  );
   const hydrateConversation = useChatStore((state) => state.hydrateConversation);
+  const hydrateWindow = useChatStore((state) => state.hydrateWindow);
+  const requestOlderMessages = useChatStore((state) => state.requestOlderMessages);
+  const applyOlderPage = useChatStore((state) => state.applyOlderPage);
+  const markOlderPageFailed = useChatStore((state) => state.markOlderPageFailed);
   const dispatchChatEvent = useChatStore((state) => state.dispatchChatEvent);
   const messageIdsRef = useRef<string[]>([]);
   const refreshingMessageIdsRef = useRef<Set<string>>(new Set());
   const lastMessageRefreshAtRef = useRef<Map<string, number>>(new Map());
+  const isLoadingOlderRef = useRef(false);
   const initialMessages = useMemo(
     () => chat.messages.map(toLocalMessage),
     [chat.messages]
@@ -97,15 +128,19 @@ export function useChatMessages({
     storedHydrationKey === hydrationKey ? storeMessages : initialMessages;
 
   useEffect(() => {
-    hydrateConversation(
+    hydrateWindow(
       chat.conversationId,
       initialMessages,
       initialReadStates,
+      chat.hasMoreOlder ?? false,
+      chat.oldestCursor ?? null,
       hydrationKey
     );
   }, [
     chat.conversationId,
-    hydrateConversation,
+    chat.hasMoreOlder,
+    chat.oldestCursor,
+    hydrateWindow,
     hydrationKey,
     initialMessages,
     initialReadStates,
@@ -183,7 +218,128 @@ export function useChatMessages({
     [dispatchChatEvent, refreshMessagesAction]
   );
 
+  // Cursor-based "load earlier" page (CLOAD-03). Guarded by an in-flight ref
+  // (same idiom as refreshingMessageIdsRef) so a second call while a load is
+  // already running is a no-op, and returns a resolved promise so callers
+  // (Plan 04) can restore scroll position only once the prepend has landed.
+  const loadOlderMessages = useCallback(async (): Promise<void> => {
+    if (!loadOlderMessagesAction || !hasMoreOlder || isLoadingOlderRef.current) {
+      return;
+    }
+
+    isLoadingOlderRef.current = true;
+    requestOlderMessages(chat.conversationId);
+
+    try {
+      const cursor = selectOldestCursorForConversation(
+        chatStore.getState(),
+        chat.conversationId
+      );
+
+      const result = await loadOlderMessagesAction({
+        conversationId: chat.conversationId,
+        cursor,
+      }).catch(() => null);
+
+      if (result?.status === "sent" && result.messages) {
+        const oldestRow = result.messages[0];
+        applyOlderPage(
+          chat.conversationId,
+          result.messages,
+          result.hasMoreOlder ?? false,
+          oldestRow ? { createdAt: oldestRow.createdAt, id: oldestRow.id } : cursor
+        );
+      } else {
+        markOlderPageFailed(chat.conversationId);
+      }
+    } finally {
+      isLoadingOlderRef.current = false;
+    }
+  }, [
+    applyOlderPage,
+    chat.conversationId,
+    hasMoreOlder,
+    loadOlderMessagesAction,
+    markOlderPageFailed,
+    requestOlderMessages,
+  ]);
+
+  // Bounded reconnect gap-backfill (CLOAD-06). On a small gap, merges the
+  // returned rows through the single mergeRemoteMessage path (same as a live
+  // realtime insert). On needsReset (the gap exceeds the bound), it never
+  // falls back to the unbounded refreshConversationAction — it resets to the
+  // bounded newest window via loadNewestMessagesAction and re-hydrates
+  // (review HIGH 10-03).
+  const applyGapBackfill = useCallback(async (): Promise<void> => {
+    if (!backfillMessagesAction) {
+      return;
+    }
+
+    const currentMessages = selectMessagesForConversation(
+      chatStore.getState(),
+      chat.conversationId
+    );
+    const newestMessage = currentMessages[currentMessages.length - 1];
+
+    if (!newestMessage) {
+      return;
+    }
+
+    const result = await backfillMessagesAction({
+      conversationId: chat.conversationId,
+      afterCreatedAt: newestMessage.createdAt,
+      afterMessageId: newestMessage.id,
+    }).catch(() => null);
+
+    if (!result || result.status !== "sent") {
+      return;
+    }
+
+    if (result.needsReset) {
+      if (!loadNewestMessagesAction) {
+        return;
+      }
+
+      const resetResult = await loadNewestMessagesAction({
+        conversationId: chat.conversationId,
+      }).catch(() => null);
+
+      if (resetResult?.status === "sent" && resetResult.messages) {
+        hydrateWindow(
+          chat.conversationId,
+          resetResult.messages,
+          resetResult.readStates ?? [],
+          resetResult.hasMoreOlder ?? false,
+          resetResult.oldestCursor ?? null
+        );
+      }
+
+      return;
+    }
+
+    if (result.messages) {
+      for (const message of result.messages) {
+        dispatchChatEvent({ type: "mergeRemoteMessage", message });
+      }
+    }
+  }, [
+    backfillMessagesAction,
+    chat.conversationId,
+    dispatchChatEvent,
+    hydrateWindow,
+    loadNewestMessagesAction,
+  ]);
+
   const refreshConversation = useCallback(async () => {
+    // The bounded backfill is preferred whenever it's wired; the full
+    // conversation refetch below is kept ONLY as a deep fallback for callers
+    // that have not injected backfillMessagesAction yet (review Suggestion
+    // 10-03) — reconnect no longer calls it in the normal path.
+    if (backfillMessagesAction) {
+      await applyGapBackfill();
+      return;
+    }
+
     if (!refreshConversationAction) {
       void refreshMessages(messageIdsRef.current);
       return;
@@ -214,6 +370,8 @@ export function useChatMessages({
       onReadStatesRefreshed?.(result.readStates);
     }
   }, [
+    applyGapBackfill,
+    backfillMessagesAction,
     chat.conversationId,
     dispatchChatEvent,
     onReadStatesRefreshed,
@@ -226,5 +384,9 @@ export function useChatMessages({
     setMessages,
     refreshMessages,
     refreshConversation,
+    loadOlderMessages,
+    applyGapBackfill,
+    hasMoreOlder,
+    isLoadingOlder,
   };
 }
