@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: verifying
-stopped_at: Phase 09 automated verification passed; UAT required for 2 human checks.
-last_updated: "2026-07-09T15:10:11Z"
-last_activity: "Phase 10 (Chat Message Loading Optimization) planned via /gsd-plan-phase from inline directive: CLOAD-01..06 defined, research + patterns + validation strategy + 4 plans in 3 waves, plan-checker passed first iteration."
+status: executing
+stopped_at: Completed 10-01-PLAN.md (portable pagination contract); ready for 10-02
+last_updated: "2026-07-09T22:43:03.575Z"
+last_activity: 2026-07-09
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 12
-  completed_plans: 8
-  percent: 67
+  completed_plans: 10
+  percent: 60
 ---
 
 # Project State: FISH
@@ -24,16 +24,16 @@ See: .planning/PROJECT.md
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
-- **Current focus:** Phase 09 UAT for cross-platform chat state; Phase 10 (message loading optimization) planned and ready to execute.
+- **Current focus:** Phase 10 — chat-message-loading-optimization
 
 ## Current Position
 
-Phase: 09 (cross-platform-chat-state) — needs UAT
-Plan: 4 of 4
-Status: Automated verification passed 6/6 must-haves. Two human checks remain before phase completion: `/chat` visual calm and native notes readability.
+Phase: 10 (chat-message-loading-optimization) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 83%
 
 ## Milestone v1.1 Phases
 
@@ -79,6 +79,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: Native readiness is documentation only; Android/iOS production chat source remains untouched. — CSTATE-05 requires architecture notes without native production implementation.
 - [Phase 09]: Zustand is the web-only chat coordination/cache adapter keyed by conversationId; the portable reducer and Supabase/server boundaries remain authoritative. — Plan 09-03 introduced Zustand only in apps/web and store tests reject auth, role, assignment, Supabase client, and service-role drift.
 - [Phase 09]: ChatClient and hooks subscribe through narrow store selectors/actions while preserving the one assigned conversation UI. — Plan 09-03 wires messages, composer, read state, and realtime status through selector slices with existing chat tests green.
+- [Phase 10]: Portable pagination contract (hydrateWindow/olderMessagesRequested/olderPageLoaded/olderPageLoadFailed events, ChatPaginationState) lands in packages/core first, proven by 17 JSON fixtures. — Plan 10-01 is the shared contract every later plan (Supabase read, actions.ts, hooks/store, chat-client UI) consumes.
 
 ### Todos / open questions
 
@@ -97,6 +98,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 09 | 02 | 12min | 3 | 9 |
 | 09 | 04 | 5min | 2 | 2 |
 | 09 | 03 | 12min | 3 | 11 |
+| Phase 10 P01 | 21min | 3 tasks | 7 files |
 
 ### Quick Tasks Completed
 
@@ -135,10 +137,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-07T00:55:09Z
+**Last session:** 2026-07-09T22:43:03.571Z
 
-- **Last activity:** 2026-07-09 - Completed quick task 260709-qag: removed the entire dev-only chat kit (/kit/chat, /kit/chat-live, mock-data.ts, and every chat component that only existed to support them — 51 files, 2695 lines) since the product moved to a Discord-like community/channel chat and the kit modeled outdated 1:1 messaging. Added scripts/seed.ts::seedCommunityMessages — 12 real long-form messages (up to 3553 chars, under the 4000-char DB constraint) seeded directly into the general channel, exercising the MessageBody markdown subset. /kit (general design-token showcase) and theme-toggle.tsx were kept, untouched.
-- **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
+- **Last activity:** 2026-07-09
+- **Stopped at:** Completed 10-01-PLAN.md (portable pagination contract); ready for 10-02
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
