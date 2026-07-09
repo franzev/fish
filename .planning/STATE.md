@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 10-02-PLAN.md (bounded keyset SSR window + pagination/backfill/reset actions); ready for 10-03
-last_updated: "2026-07-09T23:10:30.302Z"
+stopped_at: Completed 10-03-PLAN.md (pagination/reconnect brain wired into Zustand store + hooks); ready for 10-04
+last_updated: "2026-07-09T23:36:34.720Z"
 last_activity: 2026-07-09
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   percent: 60
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 10 (chat-message-loading-optimization) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Milestone v1.1 Phases
 
@@ -81,6 +81,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: ChatClient and hooks subscribe through narrow store selectors/actions while preserving the one assigned conversation UI. — Plan 09-03 wires messages, composer, read state, and realtime status through selector slices with existing chat tests green.
 - [Phase 10]: Portable pagination contract (hydrateWindow/olderMessagesRequested/olderPageLoaded/olderPageLoadFailed events, ChatPaginationState) lands in packages/core first, proven by 17 JSON fixtures. — Plan 10-01 is the shared contract every later plan (Supabase read, actions.ts, hooks/store, chat-client UI) consumes.
 - [Phase 10]: Plan 10-02 bounds the SSR message query (getAssignedConversation) to a 40+1 keyset window and adds loadOlderMessagesAction, backfillMessagesAction, and loadNewestMessagesAction as direct-select reads that never post to chat-command. — Closes the review-flagged gap where Plan 03's reconnect reset fallback would otherwise need an unbounded refetch, while keeping the AGENTS.md read/write API boundary intact.
+- [Phase 10]: Plan 10-03's useChatRealtime keeps applyGapBackfill as an optional prop that falls back to the existing required refreshConversation when unset, rather than a hard rename — chat-client.tsx (Plan 04's UI-wiring scope) still only passes refreshConversation; the fallback lets the bounded reconnect path activate the moment a page injects backfillMessagesAction into useChatMessages, with zero breakage before Plan 04 wires the UI
+- [Phase 10]: Reconnect coalescing tracks first-subscribe PER realtime channel (a Set keyed by channel identity), not one shared boolean, since messages/reads/reactions each fire their own initial post-mount SUBSCRIBED — closes the cross-AI review's HIGH-severity gap; only a channel's second-or-later SUBSCRIBED is eligible to backfill, and all three share one in-flight lock so a simultaneous reconnect produces exactly one bounded backfill instead of three full refetches
 
 ### Todos / open questions
 
@@ -101,6 +103,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 09 | 03 | 12min | 3 | 11 |
 | Phase 10 P01 | 21min | 3 tasks | 7 files |
 | Phase 10 P02 | 18min | 2 tasks | 5 files |
+| Phase 10 P03 | 17min | 3 tasks | 6 files |
 
 ### Quick Tasks Completed
 
@@ -139,10 +142,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-09T23:07:24.916Z
+**Last session:** 2026-07-09T23:36:34.715Z
 
 - **Last activity:** 2026-07-09
-- **Stopped at:** Completed 10-02-PLAN.md (bounded keyset SSR window + pagination/backfill/reset actions); ready for 10-03
+- **Stopped at:** Completed 10-03-PLAN.md (pagination/reconnect brain wired into Zustand store + hooks); ready for 10-04
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---

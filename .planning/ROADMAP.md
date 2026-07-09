@@ -101,7 +101,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 10-03-PLAN.md — Zustand pagination wiring + selectors, message-hook loadOlder/gap-backfill, hydrateWindow hydration, reconnect consolidation (3→1 bounded backfill)
+- [x] 10-03-PLAN.md — Zustand pagination wiring + selectors, message-hook loadOlder/gap-backfill, hydrateWindow hydration, reconnect consolidation (3→1 bounded backfill)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -118,7 +118,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 | 9. Cross-platform Chat State | v1.2 | 4/4 | Needs UAT  | — |
-| 10. Chat Message Loading Optimization | v1.2 | 2/4 | In Progress|  |
+| 10. Chat Message Loading Optimization | v1.2 | 3/4 | In Progress|  |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*
