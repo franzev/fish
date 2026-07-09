@@ -2,6 +2,7 @@ import type {
   ChatComposerState,
   ChatConversationId,
   ChatConversationState,
+  ChatMessageCursor,
   ChatMessageState,
   ChatReadState,
   RealtimeConnectionState,
@@ -61,4 +62,31 @@ export function selectRealtimeStatusForConversation(
   conversationId: ChatConversationId
 ): RealtimeConnectionState {
   return selectConversationState(state, conversationId)?.realtime.status ?? "idle";
+}
+
+export function selectHasMoreOlderForConversation(
+  state: Pick<ChatStoreState, "conversations">,
+  conversationId: ChatConversationId
+): boolean {
+  return (
+    selectConversationState(state, conversationId)?.pagination.hasMoreOlder ?? false
+  );
+}
+
+export function selectIsLoadingOlderForConversation(
+  state: Pick<ChatStoreState, "conversations">,
+  conversationId: ChatConversationId
+): boolean {
+  return (
+    selectConversationState(state, conversationId)?.pagination.isLoadingOlder ?? false
+  );
+}
+
+export function selectOldestCursorForConversation(
+  state: Pick<ChatStoreState, "conversations">,
+  conversationId: ChatConversationId
+): ChatMessageCursor | null {
+  return (
+    selectConversationState(state, conversationId)?.pagination.oldestLoadedCursor ?? null
+  );
 }

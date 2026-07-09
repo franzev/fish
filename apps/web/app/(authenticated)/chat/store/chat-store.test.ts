@@ -15,8 +15,11 @@ import {
 import {
   selectComposerForConversation,
   selectConversationState,
+  selectHasMoreOlderForConversation,
   selectHydrationKeyForConversation,
+  selectIsLoadingOlderForConversation,
   selectMessagesForConversation,
+  selectOldestCursorForConversation,
   selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
 } from "./chat-selectors";
@@ -83,6 +86,63 @@ describe("chat store authority boundary", () => {
 
     for (const key of forbiddenKeys) {
       expect(state).not.toHaveProperty(key);
+    }
+  });
+
+  it("keeps pagination as plain client-cache values with no auth/role/assignment/token authority", () => {
+    const store = createChatStore();
+    store
+      .getState()
+      .hydrateWindow(conversationId, [baseMessage], [baseReadState], true, {
+        createdAt: baseMessage.createdAt,
+        id: baseMessage.id,
+      });
+    store.getState().applyOlderPage(
+      conversationId,
+      [
+        {
+          ...baseMessage,
+          id: "message-0",
+          clientRequestId: "request-0",
+          createdAt: "2026-07-06T04:00:00.000Z",
+        },
+      ],
+      false,
+      { createdAt: "2026-07-06T04:00:00.000Z", id: "message-0" }
+    );
+
+    const state = store.getState();
+    const pagination = selectConversationState(state, conversationId)?.pagination;
+
+    expect(pagination).toBeDefined();
+    expect(Object.keys(pagination ?? {}).sort()).toEqual(
+      ["hasMoreOlder", "isLoadingOlder", "oldestLoadedCursor"].sort()
+    );
+    expect(selectHasMoreOlderForConversation(state, conversationId)).toBe(false);
+    expect(selectIsLoadingOlderForConversation(state, conversationId)).toBe(false);
+    expect(selectOldestCursorForConversation(state, conversationId)).toEqual({
+      createdAt: "2026-07-06T04:00:00.000Z",
+      id: "message-0",
+    });
+
+    const forbiddenKeys = [
+      "session",
+      "auth",
+      "currentUser",
+      "currentUserId",
+      "currentUserRole",
+      "rolePermissions",
+      "assignment",
+      "assignedCoach",
+      "supabase",
+      "serviceRole",
+      "serviceRoleKey",
+      "token",
+      "accessToken",
+    ];
+
+    for (const key of forbiddenKeys) {
+      expect(pagination).not.toHaveProperty(key);
     }
   });
 });
@@ -269,6 +329,74 @@ describe("chat store actions", () => {
     );
     expect(selectReadStatesForConversation(store.getState(), conversationId)).toBe(
       readStatesBefore
+    );
+  });
+
+  it("pages older history through hydrateWindow/applyOlderPage without duplicating an overlapping page", () => {
+    const store = createChatStore();
+    const oldestCursor = { createdAt: baseMessage.createdAt, id: baseMessage.id };
+
+    store
+      .getState()
+      .hydrateWindow(conversationId, [baseMessage], [baseReadState], true, oldestCursor);
+    expect(selectHasMoreOlderForConversation(store.getState(), conversationId)).toBe(
+      true
+    );
+    expect(selectOldestCursorForConversation(store.getState(), conversationId)).toEqual(
+      oldestCursor
+    );
+
+    store.getState().requestOlderMessages(conversationId);
+    expect(selectIsLoadingOlderForConversation(store.getState(), conversationId)).toBe(
+      true
+    );
+
+    const olderMessage: ChatMessageState = {
+      ...baseMessage,
+      id: "message-0",
+      clientRequestId: "request-0",
+      body: "Earlier in the conversation.",
+      createdAt: "2026-07-06T04:00:00.000Z",
+    };
+    const newOldestCursor = { createdAt: olderMessage.createdAt, id: olderMessage.id };
+
+    // Overlaps the already-loaded message by id — must merge, not duplicate.
+    store
+      .getState()
+      .applyOlderPage(conversationId, [olderMessage, baseMessage], false, newOldestCursor);
+
+    expect(selectMessagesForConversation(store.getState(), conversationId)).toHaveLength(
+      2
+    );
+    expect(selectHasMoreOlderForConversation(store.getState(), conversationId)).toBe(
+      false
+    );
+    expect(selectIsLoadingOlderForConversation(store.getState(), conversationId)).toBe(
+      false
+    );
+    expect(selectOldestCursorForConversation(store.getState(), conversationId)).toEqual(
+      newOldestCursor
+    );
+  });
+
+  it("leaves pagination retryable when an older page fails to load", () => {
+    const store = createChatStore();
+    store
+      .getState()
+      .hydrateWindow(conversationId, [baseMessage], [baseReadState], true, {
+        createdAt: baseMessage.createdAt,
+        id: baseMessage.id,
+      });
+
+    store.getState().requestOlderMessages(conversationId);
+    store.getState().markOlderPageFailed(conversationId);
+
+    expect(selectIsLoadingOlderForConversation(store.getState(), conversationId)).toBe(
+      false
+    );
+    // hasMoreOlder/cursor stay untouched so a retry is still possible.
+    expect(selectHasMoreOlderForConversation(store.getState(), conversationId)).toBe(
+      true
     );
   });
 });

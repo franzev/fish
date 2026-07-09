@@ -2,6 +2,7 @@ import {
   reduceChatState,
   type ChatConversationId,
   type ChatEvent,
+  type ChatMessageCursor,
   type ChatMessageId,
   type ChatMessageState,
   type ChatReadState,
@@ -21,6 +22,22 @@ export interface ChatStoreState {
     readStates: ChatReadState[],
     hydrationKey?: string
   ) => void;
+  hydrateWindow: (
+    conversationId: ChatConversationId,
+    messages: ChatMessageState[],
+    readStates: ChatReadState[],
+    hasMoreOlder: boolean,
+    oldestCursor: ChatMessageCursor | null,
+    hydrationKey?: string
+  ) => void;
+  requestOlderMessages: (conversationId: ChatConversationId) => void;
+  applyOlderPage: (
+    conversationId: ChatConversationId,
+    messages: ChatMessageState[],
+    hasMoreOlder: boolean,
+    oldestCursor: ChatMessageCursor | null
+  ) => void;
+  markOlderPageFailed: (conversationId: ChatConversationId) => void;
   sendOptimisticMessage: (message: ChatMessageState) => void;
   confirmSentMessage: (
     message: ChatMessageState,
@@ -64,6 +81,11 @@ function createStateFromConversations(
   return { conversations };
 }
 
+// Hashes only messages + read states. Pagination metadata (hasMoreOlder/
+// oldestCursor) is derived server-side from the same SSR payload and always
+// travels alongside it, so it needs no place of its own in this key — adding
+// it here would not change when a re-entrant hydration should be treated as
+// "already seen" (review MEDIUM 10-03).
 export function createChatHydrationKey(
   messages: ChatMessageState[],
   readStates: ChatReadState[]
@@ -131,6 +153,55 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
           },
         };
       });
+    },
+    hydrateWindow: (
+      conversationId,
+      messages,
+      readStates,
+      hasMoreOlder,
+      oldestCursor,
+      hydrationKey
+    ) => {
+      set((state) => {
+        const conversations = reduceChatState(
+          createStateFromConversations(state.conversations),
+          {
+            type: "hydrateWindow",
+            conversationId,
+            messages,
+            readStates,
+            hasMoreOlder,
+            oldestCursor,
+          }
+        ).conversations;
+
+        if (hydrationKey === undefined) {
+          return { conversations };
+        }
+
+        return {
+          conversations,
+          hydrationKeys: {
+            ...state.hydrationKeys,
+            [conversationId]: hydrationKey,
+          },
+        };
+      });
+    },
+    requestOlderMessages: (conversationId) => {
+      dispatchChatEvent({ type: "olderMessagesRequested", conversationId });
+    },
+    applyOlderPage: (conversationId, messages, hasMoreOlder, oldestCursor) => {
+      dispatchChatEvent({
+        type: "olderPageLoaded",
+        conversationId,
+        messages,
+        hasMoreOlder,
+        oldestCursor,
+      });
+    },
+    markOlderPageFailed: (conversationId) => {
+      dispatchChatEvent({ type: "olderPageLoadFailed", conversationId });
     },
     sendOptimisticMessage: (message) => {
       dispatchChatEvent({ type: "sendOptimisticMessage", message });
