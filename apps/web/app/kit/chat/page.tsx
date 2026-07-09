@@ -21,7 +21,14 @@ import {
   UnreadDivider,
   VoicePlayer,
 } from "@/components/chat";
-import { coach, conversations, mockMessages } from "./mock-data";
+import {
+  coach,
+  conversations,
+  longMessages,
+  mockMessages,
+  shortMessages,
+  superLongMessages,
+} from "./mock-data";
 
 /* The chat kit's design-system contract page (mirrors /kit's pattern). One
    long calm scroll, no client-facing nav link, KitThemeToggle at the top as
@@ -139,8 +146,36 @@ export default function ChatKitPage() {
 
       <section className="mb-xl">
         <h2 className="mb-md text-xl">Full container</h2>
-        <div className="h-chat-demo overflow-hidden rounded-card border border-border">
-          <ChatContainer participant={coach} messages={mockMessages} firstUnreadId="m6" />
+        <p className="mb-md text-ui-sm text-muted">
+          Original mock conversation plus short/long/super-long seeds, stacked so length,
+          wrapping, and formatting legibility can be compared side by side on both bubble
+          variants.
+        </p>
+        <div className="space-y-lg">
+          <div className="space-y-xs">
+            <p className="text-ui-sm text-muted">Original (mixed content + attachments)</p>
+            <div className="h-chat-demo overflow-hidden rounded-card border border-border">
+              <ChatContainer participant={coach} messages={mockMessages} firstUnreadId="m6" />
+            </div>
+          </div>
+          <div className="space-y-xs">
+            <p className="text-ui-sm text-muted">Short (2 messages)</p>
+            <div className="h-chat-demo overflow-hidden rounded-card border border-border">
+              <ChatContainer participant={coach} messages={shortMessages} />
+            </div>
+          </div>
+          <div className="space-y-xs">
+            <p className="text-ui-sm text-muted">Long (formatted + long-form seeds)</p>
+            <div className="h-chat-demo overflow-hidden rounded-card border border-border">
+              <ChatContainer participant={coach} messages={longMessages} />
+            </div>
+          </div>
+          <div className="space-y-xs">
+            <p className="text-ui-sm text-muted">Super-long (long conversation, several long messages)</p>
+            <div className="h-chat-demo overflow-hidden rounded-card border border-border">
+              <ChatContainer participant={coach} messages={superLongMessages} />
+            </div>
+          </div>
         </div>
       </section>
 
