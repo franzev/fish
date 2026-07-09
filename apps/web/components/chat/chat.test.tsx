@@ -314,23 +314,28 @@ describe("MessageList", () => {
     ];
     render(<MessageList messages={messages} />);
 
-    expect(screen.getByText("First received")).toHaveClass(
+    // Body text now renders through MessageBody, which wraps it in its own
+    // block container inside the Bubble — two parent hops up from the text
+    // reaches the Bubble div carrying the rounded-corner classes.
+    expect(screen.getByText("First received").parentElement?.parentElement).toHaveClass(
       "rounded-tl-chat",
       "rounded-bl-chat-inner"
     );
-    expect(screen.getByText("Middle received")).toHaveClass(
+    expect(screen.getByText("Middle received").parentElement?.parentElement).toHaveClass(
       "rounded-tl-chat-inner",
       "rounded-bl-chat-inner"
     );
-    expect(screen.getByText("Last received")).toHaveClass(
+    expect(screen.getByText("Last received").parentElement?.parentElement).toHaveClass(
       "rounded-tl-chat-inner",
       "rounded-bl-chat"
     );
 
     const middleWrapper =
-      screen.getByText("Middle received").parentElement?.parentElement?.parentElement;
+      screen.getByText("Middle received").parentElement?.parentElement?.parentElement
+        ?.parentElement?.parentElement;
     const lastWrapper =
-      screen.getByText("Last received").parentElement?.parentElement?.parentElement;
+      screen.getByText("Last received").parentElement?.parentElement?.parentElement
+        ?.parentElement?.parentElement;
     expect(middleWrapper).toHaveClass("mt-3xs");
     expect(lastWrapper).toHaveClass("mt-3xs");
     expect(screen.getAllByText("AR")).toHaveLength(1);

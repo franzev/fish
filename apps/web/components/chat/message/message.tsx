@@ -3,6 +3,7 @@ import { HTMLAttributes } from "react";
 import { Attachments } from "../attachments";
 import { Avatar } from "../avatar";
 import { Bubble } from "../bubble";
+import { MessageBody } from "../message-body";
 import { MessageMeta } from "../message-meta";
 import { MessageStatus } from "../message-status";
 import { QuotedMessage } from "../quoted-message";
@@ -65,7 +66,7 @@ export function Message({
             groupedWithPrevious={isGroupedWithPrevious}
             groupedWithNext={groupedWithNext}
           >
-            {body}
+            <MessageBody body={body} mine={mine} />
           </Bubble>
         )}
         <Attachments attachments={attachments} className="mt-nudge w-full max-w-message" />

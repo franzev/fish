@@ -10,6 +10,7 @@ import {
   Composer,
   EmojiPickerButton,
   getBubbleRadiusClasses,
+  MessageBody,
   MessageMeta,
   MessageStatus,
   QuotedMessage,
@@ -106,9 +107,6 @@ export function ChatClient({
     markReadStateAction,
   });
   const [search, setSearch] = useState("");
-  // Coming-soon notice for stubbed composer affordances (GIFs, stickers,
-  // uploads, polls) — calm copy, never a dead-end error.
-  const [stubNotice, setStubNotice] = useState<string | null>(null);
   const timeFormatPref = useTimeFormatPreference();
   const isCommunity = chat.kind === "community";
   const chatTitle = chat.title ?? chat.participant.displayName;
@@ -117,12 +115,9 @@ export function ChatClient({
     message.senderDisplayName ?? (isCommunity ? "Member" : chat.participant.displayName);
   const {
     participantTyping,
-    participantRecording,
-    localRecording,
     sendLocalTyping,
     stopLocalTyping,
     scheduleLocalTypingStop,
-    setLocalVoiceRecording,
   } = useChatRealtime({
     chat,
     setMessages,
@@ -204,10 +199,10 @@ export function ChatClient({
       className="flex min-h-0 w-full flex-1 flex-col"
       aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
-      <header className="border-b border-border bg-surface px-md py-sm">
+      <div className="border-b border-border bg-surface px-md">
         <div className="flex items-center justify-between gap-sm">
           <div className="flex min-w-0 items-baseline gap-2xs">
-            <h1 className="truncate font-display text-heading text-foreground">
+            <h1 className="truncate font-sans text-heading text-foreground">
               {isCommunity ? `# ${chat.channelName ?? chatTitle}` : chatTitle}
             </h1>
             <span className="flex shrink-0 items-center gap-nudge text-ui-sm text-muted">
@@ -226,7 +221,7 @@ export function ChatClient({
           </div>
           <SearchFilterPopover value={search} onValueChange={setSearch} />
         </div>
-      </header>
+      </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         <ScrollArea
@@ -241,7 +236,7 @@ export function ChatClient({
             }
             className="flex min-h-full flex-col"
           >
-        {filteredMessages.length === 0 && !participantTyping && !participantRecording ? (
+        {filteredMessages.length === 0 && !participantTyping ? (
           <div className="flex flex-1 items-center justify-center text-center text-copy text-body">
             {search
               ? "No messages match"
@@ -413,7 +408,7 @@ export function ChatClient({
                         message.deletedAt && "italic text-muted"
                       )}
                     >
-                      {visibleMessageBody(message)}
+                      <MessageBody body={visibleMessageBody(message)} mine={mine} />
                     </div>
                     {message.editedAt && !message.deletedAt && (
                       <p className="mt-2xs text-ui-xs text-muted">Edited</p>
@@ -509,13 +504,6 @@ export function ChatClient({
                 </div>
               </li>
             )}
-            {participantRecording && (
-              <li className="mt-sm flex justify-start">
-                <div className="rounded-control bg-surface-2 px-sm py-xs text-ui-sm text-muted">
-                  {activityName} is recording audio
-                </div>
-              </li>
-            )}
           </ol>
         )}
           </div>
@@ -538,15 +526,7 @@ export function ChatClient({
         </Alert>
       )}
 
-      {stubNotice && (
-        // role="status": the notice mounts in response to a click, so it must
-        // be announced without stealing focus.
-        <Alert tone="notice" role="status" className="mx-md mb-xs">
-          {stubNotice}
-        </Alert>
-      )}
-
-      {(replyingTo || editingMessage || localRecording) && (
+      {(replyingTo || editingMessage) && (
         <div className="border-t border-border bg-surface px-md py-sm">
           {replyingTo && (
             <div className="flex items-center gap-xs">
@@ -586,9 +566,6 @@ export function ChatClient({
               </button>
             </div>
           )}
-          {localRecording && (
-            <p className="text-ui-sm text-muted">Recording audio</p>
-          )}
         </div>
       )}
 
@@ -596,23 +573,14 @@ export function ChatClient({
         channelName={chat.channelName}
         draft={draft}
         canSend={canSend}
-        localRecording={localRecording}
-        onDraftChange={(value) => {
-          // Typing or sending means the user has moved on from the stubbed
-          // affordance — the coming-soon notice must not linger.
-          setStubNotice(null);
-          handleDraftChange(value);
-        }}
+        onDraftChange={handleDraftChange}
         onSend={() => {
-          setStubNotice(null);
           scrollToBottom();
           void handleSend();
         }}
         onKeyDown={handleComposerKeyDown}
         onBlur={stopLocalTyping}
-        onToggleRecording={() => setLocalVoiceRecording(!localRecording)}
         onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
-        onStub={(label) => setStubNotice(`${label} are coming soon.`)}
       />
     </section>
   );
