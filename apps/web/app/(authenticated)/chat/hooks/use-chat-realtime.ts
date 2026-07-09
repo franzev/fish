@@ -1,5 +1,12 @@
 import type { ClientChatData, ClientChatReadState } from "@/lib/services";
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import {
   type ConversationTypingSubscription,
   type ConversationVoiceRecordingSubscription,
@@ -12,12 +19,26 @@ import {
 import type { LocalMessage } from "./use-chat-messages";
 import { useChatStore } from "../store/chat-store";
 
+// Each of the messages/reads/reactions channels below fires its own initial
+// post-mount SUBSCRIBED — track first-subscribe PER CHANNEL so all three
+// initial subscribes are skipped (SSR data is already current) and only a
+// channel's genuine re-subscribe after a drop is eligible to backfill
+// (review HIGH 10-03).
+type ReconnectChannelKey = "messages" | "reads" | "reactions";
+
 interface UseChatRealtimeOptions {
   chat: ClientChatData;
   setMessages: Dispatch<SetStateAction<LocalMessage[]>>;
   mergeReadState: (readState: ClientChatReadState) => void;
   refreshMessages: (messageIds: string[]) => Promise<void>;
   refreshConversation: () => Promise<void>;
+  /**
+   * Bounded, coalesced reconnect backfill (Plan 10-02/10-03). Preferred over
+   * refreshConversation on every channel's reconnect when wired;
+   * refreshConversation stays as the deep fallback until every caller
+   * injects this (review Suggestion 10-03).
+   */
+  applyGapBackfill?: () => Promise<void>;
 }
 
 export function useChatRealtime({
@@ -26,6 +47,7 @@ export function useChatRealtime({
   mergeReadState,
   refreshMessages,
   refreshConversation,
+  applyGapBackfill,
 }: UseChatRealtimeOptions) {
   const [participantTyping, setParticipantTyping] = useState(false);
   const [participantRecording, setParticipantRecording] = useState(false);
@@ -39,6 +61,31 @@ export function useChatRealtime({
   const localTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const participantTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const participantRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Per-channel first-subscribe tracker + one shared in-flight lock across
+  // all three channels' onReconnected, so a near-simultaneous reconnect
+  // triggers exactly one bounded backfill instead of three full refetches
+  // (CLOAD-06, review HIGH 10-03).
+  const seenFirstSubscribeRef = useRef<Set<ReconnectChannelKey>>(new Set());
+  const backfillInFlightRef = useRef<Promise<void> | null>(null);
+
+  const handleReconnected = useCallback(
+    (channelKey: ReconnectChannelKey) => {
+      if (!seenFirstSubscribeRef.current.has(channelKey)) {
+        seenFirstSubscribeRef.current.add(channelKey);
+        return;
+      }
+
+      if (backfillInFlightRef.current) {
+        return;
+      }
+
+      const backfill = applyGapBackfill ?? refreshConversation;
+      backfillInFlightRef.current = backfill().finally(() => {
+        backfillInFlightRef.current = null;
+      });
+    },
+    [applyGapBackfill, refreshConversation]
+  );
 
   useEffect(() => {
     setRealtimeStatus(chat.conversationId, "connecting");
@@ -49,13 +96,16 @@ export function useChatRealtime({
       },
       () => {
         setRealtimeStatus(chat.conversationId, "connected");
-        void refreshConversation();
+        handleReconnected("messages");
+      },
+      () => {
+        setRealtimeStatus(chat.conversationId, "disconnected");
       }
     );
   }, [
     chat.conversationId,
     dispatchChatEvent,
-    refreshConversation,
+    handleReconnected,
     setMessages,
     setRealtimeStatus,
   ]);
@@ -72,10 +122,10 @@ export function useChatRealtime({
         mergeReadState(readState);
       },
       () => {
-        void refreshConversation();
+        handleReconnected("reads");
       }
     );
-  }, [chat.conversationId, dispatchChatEvent, mergeReadState, refreshConversation]);
+  }, [chat.conversationId, dispatchChatEvent, handleReconnected, mergeReadState]);
 
   useEffect(() => {
     return subscribeToConversationReactionChanges(
@@ -84,10 +134,10 @@ export function useChatRealtime({
         void refreshMessages([messageId]);
       },
       () => {
-        void refreshConversation();
+        handleReconnected("reactions");
       }
     );
-  }, [chat.conversationId, refreshConversation, refreshMessages]);
+  }, [chat.conversationId, handleReconnected, refreshMessages]);
 
   useEffect(() => {
     const subscription = subscribeToConversationTyping(

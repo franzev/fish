@@ -152,7 +152,8 @@ function toClientPresenceSession(
 export function subscribeToConversationMessages(
   conversationId: string,
   onMessage: (message: ClientChatMessage) => void,
-  onReconnected?: () => void
+  onReconnected?: () => void,
+  onDisconnected?: () => void
 ): () => void {
   const deferred = subscribeAfterAuth((supabase) => supabase
     .channel(`conversation:${conversationId}:messages`)
@@ -189,6 +190,19 @@ export function subscribeToConversationMessages(
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
         onReconnected?.();
+        return;
+      }
+
+      // Terminal/error states (CLOAD-06): surface these so the caller can
+      // flip the store's realtime status to "disconnected" — the calm
+      // offline signal Plan 04's UI renders. SUBSCRIBED above is the only
+      // status that restores "connected".
+      if (
+        status === "CHANNEL_ERROR" ||
+        status === "TIMED_OUT" ||
+        status === "CLOSED"
+      ) {
+        onDisconnected?.();
       }
     }));
 
