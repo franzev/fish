@@ -6,6 +6,7 @@ export * from "./bubble";
 export * from "./chat-container";
 export * from "./chat-header";
 export * from "./chat-input";
+export * from "./composer/composer";
 export * from "./conversation-list";
 export * from "./emoji-picker";
 export * from "./empty-state";
