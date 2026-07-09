@@ -4,6 +4,7 @@ import type {
   ChatConversationState,
   ChatEvent,
   ChatMessageState,
+  ChatPaginationState,
   ChatReadState,
   ChatState,
   LocalMessageStatus,
@@ -23,6 +24,12 @@ const emptyComposer: ChatComposerState = {
 
 const defaultRealtime: { status: RealtimeConnectionState } = {
   status: "idle",
+};
+
+const defaultPagination: ChatPaginationState = {
+  oldestLoadedCursor: null,
+  hasMoreOlder: false,
+  isLoadingOlder: false,
 };
 
 export function createEmptyChatState(): ChatState {
@@ -127,6 +134,66 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
         ...conversation,
         composer: { ...emptyComposer },
       }));
+
+    case "hydrateWindow":
+      return setConversation(state, {
+        ...getConversation(state, event.conversationId),
+        conversationId: event.conversationId,
+        messages: event.messages
+          .map((message) => normalizeMessage(message, "sent"))
+          .sort(compareChatMessages),
+        readStates: event.readStates,
+        pagination: {
+          oldestLoadedCursor: event.oldestCursor,
+          hasMoreOlder: event.hasMoreOlder,
+          isLoadingOlder: false,
+        },
+      });
+
+    case "olderMessagesRequested":
+      return updateConversation(state, event.conversationId, (conversation) => {
+        if (conversation.pagination.isLoadingOlder) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          pagination: { ...conversation.pagination, isLoadingOlder: true },
+        };
+      });
+
+    case "olderPageLoaded":
+      return updateConversation(state, event.conversationId, (conversation) => {
+        const messages = event.messages.reduce(
+          (current, message) =>
+            mergeChatMessage(current, normalizeMessage(message, "sent")),
+          conversation.messages
+        );
+
+        return {
+          ...conversation,
+          messages,
+          pagination: {
+            oldestLoadedCursor: event.oldestCursor,
+            hasMoreOlder: event.hasMoreOlder,
+            isLoadingOlder: false,
+          },
+        };
+      });
+
+    case "olderPageLoadFailed":
+      return updateConversation(state, event.conversationId, (conversation) => {
+        if (!conversation.pagination.isLoadingOlder) {
+          return conversation;
+        }
+
+        // hasMoreOlder/oldestLoadedCursor are left untouched so a retry
+        // (dispatching olderMessagesRequested again) is still possible.
+        return {
+          ...conversation,
+          pagination: { ...conversation.pagination, isLoadingOlder: false },
+        };
+      });
   }
 }
 
@@ -218,6 +285,7 @@ function getConversation(
       readStates: [] satisfies ChatReadState[],
       composer: { ...emptyComposer },
       realtime: { ...defaultRealtime },
+      pagination: { ...defaultPagination },
     }
   );
 }

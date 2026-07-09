@@ -124,6 +124,18 @@ function isAtOrAfterMessage(
   const targetIndex = messages.findIndex((message) => message.id === targetMessageId);
   const markerIndex = messages.findIndex((message) => message.id === markerMessageId);
 
+  if (markerIndex === -1) {
+    // The marker id is set but not present in the currently loaded
+    // (newest-anchored) window — e.g. pagination hasn't loaded back that
+    // far yet. Treat it as strictly older than the whole window, so it
+    // marks NO in-window message as delivered/read. This is a distinct case
+    // from "no marker at all" (handled above): the read and delivered
+    // markers are each routed through this function independently by
+    // getOutgoingMessageStatus, so an out-of-window read marker must never
+    // suppress a still-in-window delivered marker.
+    return false;
+  }
+
   return targetIndex >= 0 && markerIndex >= targetIndex;
 }
 
@@ -160,6 +172,12 @@ export function countUnreadMessages(
   currentUserId: string,
   currentUserReadState: ChatReadState | null | undefined
 ): number {
+  // A read marker id that findIndex can't locate means the reader's last-read
+  // position is outside the currently loaded (newest-anchored) window —
+  // older than every loaded message. The -1 fallback below then counts every
+  // loaded other-participant message as unread, which is the correct
+  // conservative answer until pagination loads back far enough to find the
+  // real marker.
   const lastReadIndex = currentUserReadState?.lastReadMessageId
     ? messages.findIndex(
         (message) => message.id === currentUserReadState.lastReadMessageId

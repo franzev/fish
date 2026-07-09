@@ -50,6 +50,18 @@ export interface ChatComposerState {
   editTargetId: ChatMessageId | null;
 }
 
+/** Keyset pagination cursor: the oldest loaded message's ordering key. */
+export interface ChatMessageCursor {
+  createdAt: string;
+  id: string;
+}
+
+export interface ChatPaginationState {
+  oldestLoadedCursor: ChatMessageCursor | null;
+  hasMoreOlder: boolean;
+  isLoadingOlder: boolean;
+}
+
 export interface ChatConversationState {
   conversationId: ChatConversationId;
   messages: ChatMessageState[];
@@ -58,6 +70,7 @@ export interface ChatConversationState {
   realtime: {
     status: RealtimeConnectionState;
   };
+  pagination: ChatPaginationState;
 }
 
 export interface ChatState {
@@ -118,6 +131,29 @@ export type ChatEvent =
     }
   | {
       type: "clearComposer";
+      conversationId: ChatConversationId;
+    }
+  | {
+      type: "hydrateWindow";
+      conversationId: ChatConversationId;
+      messages: ChatMessageState[];
+      readStates: ChatReadState[];
+      hasMoreOlder: boolean;
+      oldestCursor: ChatMessageCursor | null;
+    }
+  | {
+      type: "olderMessagesRequested";
+      conversationId: ChatConversationId;
+    }
+  | {
+      type: "olderPageLoaded";
+      conversationId: ChatConversationId;
+      messages: ChatMessageState[];
+      hasMoreOlder: boolean;
+      oldestCursor: ChatMessageCursor | null;
+    }
+  | {
+      type: "olderPageLoadFailed";
       conversationId: ChatConversationId;
     };
 
