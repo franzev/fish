@@ -24,6 +24,11 @@ permission, message persistence, and durable read state.
 - `ChatConversationState.composer`: local draft, reply target, and edit target.
 - `ChatConversationState.realtime.status`: `"idle"`, `"connecting"`,
   `"connected"`, or `"disconnected"`.
+- `ChatConversationState.pagination`: `oldestLoadedCursor` (the oldest loaded
+  message's `{ createdAt, id }` keyset cursor, or `null` before any window is
+  loaded), `hasMoreOlder`, and `isLoadingOlder`. Every conversation gets a
+  well-formed default (`{ oldestLoadedCursor: null, hasMoreOlder: false,
+  isLoadingOlder: false }`).
 
 `ChatMessageState` carries the message id, conversation id, sender id and role,
 body, `clientRequestId`, timestamps, reply target, reactions, local status, and
@@ -51,6 +56,10 @@ Every adapter must be able to apply the current `ChatEvent` names:
 | `setEditTarget` | Set or clear the local edit target id. |
 | `setRealtimeStatus` | Set the local realtime connection status for the conversation. |
 | `clearComposer` | Reset the local draft, reply target, and edit target to empty values. |
+| `hydrateWindow` | Replace a conversation's message/read snapshot exactly like `hydrateConversation` (normalize to `sent`, sort by `createdAt` then `id`), and additionally set `pagination` to the provided `hasMoreOlder`/`oldestCursor` with `isLoadingOlder` reset to `false`. |
+| `olderMessagesRequested` | Set `pagination.isLoadingOlder` to `true`. Nothing else changes. |
+| `olderPageLoaded` | Merge each message in an older page through the same `mergeChatMessage` primitive used by every other message-touching event (dedup by `id`/`clientRequestId`, re-sort), then set `pagination.oldestLoadedCursor`/`hasMoreOlder` from the event and reset `isLoadingOlder` to `false`. Re-delivering a message that is already loaded (page overlap, or a page racing a live insert) produces no duplicate. |
+| `olderPageLoadFailed` | Reset `pagination.isLoadingOlder` to `false`. `hasMoreOlder` and `oldestLoadedCursor` are left untouched so a retry (dispatching `olderMessagesRequested` again) is still possible. |
 
 `ChatResult` is the portable reducer result envelope: it contains the next
 `state` and the `event` that produced it. Adapters may expose richer platform
@@ -70,6 +79,14 @@ Adapters must preserve these selector expectations:
   it, otherwise `sent`.
 - `countUnreadMessages` counts messages after the current user's last read
   marker, excluding messages sent by the current user.
+- A read or delivered marker id that is set but absent from the currently
+  loaded (newest-anchored) window is treated as strictly older than the
+  window — it marks no loaded message as delivered/read. The read and
+  delivered markers are evaluated independently, so an out-of-window read
+  marker never suppresses a still-in-window delivered marker, and
+  `countUnreadMessages` falls back to counting every loaded
+  other-participant message as unread until pagination loads back far
+  enough to locate the real read marker.
 - `getMessageSnippet` returns `Message deleted` for deleted messages, trims body
   text, and truncates long snippets to the shared 96-character rule.
 - `toReplyPreview` returns the message id, the current-user or participant
@@ -105,9 +122,19 @@ The current fixture case names are:
 - `unreadCount`
 - `deletedMessageSnippet`
 - `replyPreview`
+- `hydrateWindow`
+- `olderPageLoaded`
+- `olderPageDuplicateReconciliation`
+- `gapBackfillOutOfOrder`
+- `olderPageLifecycle`
+- `deliveredMarkerOutsideWindow`
+- `readMarkerOutsideWindow`
 
 These fixtures prove parity for hydrate/send/confirm/fail/merge/read behavior,
-unread derivation, deleted-message snippets, and reply previews. They use
+unread derivation, deleted-message snippets, reply previews, keyset
+pagination (initial window, older-page load, page/live-insert duplicate
+reconciliation, request/failure lifecycle), out-of-order/duplicate reconnect
+backfill, and the out-of-window read/delivered marker rule. They use
 synthetic ids and copy only; credentials, JWTs, service-role keys, and seeded
 account passwords do not belong in fixture data.
 
