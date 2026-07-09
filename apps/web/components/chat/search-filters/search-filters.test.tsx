@@ -112,6 +112,27 @@ describe("SearchFilterPopover", () => {
     );
   });
 
+  it("marks the trigger active while a search value is filtering", () => {
+    render(<SearchFilterPopover value="hi" onValueChange={vi.fn()} />);
+
+    const trigger = screen.getByRole("button", { name: "Search messages" });
+    // The popover closes but the filter stays live, so the trigger must keep
+    // signalling the active search state.
+    expect(trigger).toHaveAttribute("aria-pressed", "true");
+    expect(trigger).toHaveAttribute("data-search-active");
+    expect(trigger).toHaveClass("bg-surface-2", "text-foreground");
+  });
+
+  it("keeps the trigger quiet while the search value is empty", () => {
+    render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
+
+    const trigger = screen.getByRole("button", { name: "Search messages" });
+    expect(trigger).toHaveAttribute("aria-pressed", "false");
+    expect(trigger).not.toHaveAttribute("data-search-active");
+    // hover:bg-surface-2 stays; the resting state itself carries no fill.
+    expect(trigger).not.toHaveClass("bg-surface-2");
+  });
+
   it("opens the Filters dialog from More filters", () => {
     render(<SearchFilterPopover value="" onValueChange={vi.fn()} />);
 

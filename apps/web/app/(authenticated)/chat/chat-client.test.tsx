@@ -383,6 +383,35 @@ describe("ChatClient", () => {
     expect(notice.closest('[role="status"]')).not.toBeNull();
   });
 
+  it("clears the coming-soon notice once the user types in the composer", async () => {
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
+    expect(await screen.findByText(/coming soon/i)).toBeInTheDocument();
+
+    // Typing means the user has moved on — the notice must not linger.
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "H" },
+    });
+
+    expect(screen.queryByText(/coming soon/i)).toBeNull();
+  });
+
+  it("clears the coming-soon notice when the user sends a message", async () => {
+    const sendMessageAction = vi.fn(() => new Promise<never>(() => undefined));
+    render(<ChatClient chat={chat} sendMessageAction={sendMessageAction} />);
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Hello" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
+    expect(await screen.findByText(/coming soon/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    expect(screen.queryByText(/coming soon/i)).toBeNull();
+  });
+
   it("uses the plain Message placeholder in a direct chat (no channel idiom)", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 

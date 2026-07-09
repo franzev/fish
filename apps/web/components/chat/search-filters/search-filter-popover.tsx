@@ -11,6 +11,7 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { FiltersDialog } from "./filters-dialog";
 
 export interface SearchFilterPopoverProps {
@@ -83,7 +84,14 @@ export function SearchFilterPopover({
         <Popover.Trigger
           ref={triggerRef}
           aria-label="Search messages"
-          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+          // The popover can close while the search text keeps filtering the
+          // message list, so the trigger holds a visible active state.
+          aria-pressed={Boolean(value)}
+          data-search-active={value ? "" : undefined}
+          className={cn(
+            "inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body",
+            value && "bg-surface-2 text-foreground"
+          )}
         >
           <IconSearch size={20} stroke={1.75} aria-hidden="true" />
         </Popover.Trigger>

@@ -611,8 +611,14 @@ export function ChatClient({
         draft={draft}
         canSend={canSend}
         localRecording={localRecording}
-        onDraftChange={handleDraftChange}
+        onDraftChange={(value) => {
+          // Typing or sending means the user has moved on from the stubbed
+          // affordance — the coming-soon notice must not linger.
+          setStubNotice(null);
+          handleDraftChange(value);
+        }}
         onSend={() => {
+          setStubNotice(null);
           scrollToBottom();
           void handleSend();
         }}
