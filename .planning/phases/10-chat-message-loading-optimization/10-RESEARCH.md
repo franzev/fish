@@ -759,9 +759,10 @@ events) is deprecated by this phase — it is extended, not replaced.
 | A4 | `content-visibility: auto` is recommended as the first-line DOM-cost mitigation before virtualization, and is expected to be "enough" at this app's current scale | Standard Stack, Common Pitfall #8 | Medium — if the general channel's full ~928-message history is regularly scrolled end-to-end by real users (not just QA), this may prove insufficient sooner than assumed, and `react-virtuoso` would need to land before the "documented threshold" the discretion note anticipates |
 | A5 | Recommending pagination/backfill reads go through direct Supabase selects rather than the `chat-command` Edge Function | Common Pitfall #9 | Low-medium — reasoned from AGENTS.md's stated read/write boundary, but the EXISTING `refresh-messages`/`refresh-conversation` actions already set the opposite precedent (reads riding the Edge Function) before this phase. The planner may reasonably prioritize consistency with that existing pattern over strict boundary adherence for this narrow case |
 
-## Open Questions
+## Open Questions (PARTIALLY RESOLVED — dispositions inline)
 
 1. **Exact PostgREST `.or()` composite-cursor filter syntax against the pinned `@supabase/supabase-js` 2.110.0**
+   `[IMPL-TIME VERIFY: scheduled in Plan 10-02 Task 2 — actions.test.ts stub covers `.or(...)`; exact filter string checked against the locally-running Supabase REST endpoint during implementation]`
    - What we know: the row-wise tuple comparison shape `(created_at, id) > (X, Y)` is confirmed
      via Supabase's own official `agent-skills` repository; the `.or()` JS-client workaround
      (`created_at.lt.X,and(created_at.eq.X,id.lt.Y)`) is corroborated by multiple GitHub
@@ -776,6 +777,7 @@ events) is deprecated by this phase — it is extended, not replaced.
      `.select().or(...)` path first, per the AGENTS.md read boundary.
 
 2. **Does pagination metadata (cursor, hasMore, isLoadingOlder) belong in the portable `ChatConversationState`, or purely in a web-only slice outside the fixture-tested reducer?**
+   `[RESOLVED: portable reducer owns pagination state — adopted by Plan 10-01 (pagination state + additive events)]`
    - What we know: CONTEXT.md's own directive text names portable event examples
      (`hydrate-window`, `older-page-loaded`, `gap-backfill`), implying the reducer should own this
      state — consistent with how `composer` and `realtime.status` already live inside
@@ -787,6 +789,7 @@ events) is deprecated by this phase — it is extended, not replaced.
      phase's equivalent of `09-NATIVE-CHAT-STATE-NOTES.md`.
 
 3. **Is the general/community channel truly the only practically-reachable conversation surface today, and should pagination logic assume that?**
+   `[RESOLVED: pagination implemented generically against conversationId — adopted by Plans 10-02/10-03; general channel's ~928-message volume used for manual QA]`
    - What we know: `SupabaseChatRepository.getAssignedConversation()`
      (`apps/web/lib/services/supabase/core.ts`) always prefers the fixed demo-community
      conversation id when it exists in the database — which it always does after migration
