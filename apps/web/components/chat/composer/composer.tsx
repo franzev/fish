@@ -18,54 +18,44 @@ export interface ComposerProps {
   channelName?: string;
   draft: string;
   canSend: boolean;
-  localRecording: boolean;
   onDraftChange: (value: string) => void;
   onSend: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onBlur: () => void;
-  onToggleRecording: () => void;
   onSelectEmoji: (emoji: string) => void;
-  /** Fired by stubbed affordances (upload/poll/gif/sticker) with a label. */
-  onStub: (label: string) => void;
 }
 
 /** The message composer: one borderless surface-2 bar holding every input
  *  affordance. The Send button only exists while there is something to send
  *  — with an empty draft the bar has no primary action at all, keeping the
- *  one-primary-action rule intact for the whole screen. */
+ *  one-primary-action rule intact for the whole screen. GIFs, stickers,
+ *  uploads, audio recording, and polls aren't built yet; those controls stay
+ *  visible but inert rather than raising an alert. */
 export function Composer({
   channelName,
   draft,
   canSend,
-  localRecording,
   onDraftChange,
   onSend,
   onKeyDown,
   onBlur,
-  onToggleRecording,
   onSelectEmoji,
-  onStub,
 }: ComposerProps) {
   return (
     <div className="p-sm">
       {/* Accessibility floor: the textarea carries no border or ring of its
           own (explicit design decision), so the visible keyboard-focus
-          indicator moves to the bar via focus-within — same 2px focus-outer
-          outline the global :focus-visible rule draws. */}
+          indicator moves to the bar via focus-within — a thinner, dimmed
+          1px focus-outer/60 outline (vs. the global solid 2px
+          :focus-visible rule) to stay unobtrusive on this dense control
+          bar while still being visible. */}
       <div
         className={cn(
           "flex items-end gap-xs rounded-control bg-surface-2 p-xs",
-          "focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-outer"
+          "focus-within:outline-1 focus-within:outline-offset-2 focus-within:outline-focus-outer/60"
         )}
       >
-        {/* Labels double as subjects for the coming-soon notice sentence
-            ("File uploads are coming soon."), so they arrive plural. */}
-        <AddMenu
-          onUploadFile={() => onStub("File uploads")}
-          onAudioRecording={onToggleRecording}
-          onCreatePoll={() => onStub("Polls")}
-          recording={localRecording}
-        />
+        <AddMenu />
         <textarea
           aria-label="Message"
           value={draft}
@@ -80,7 +70,6 @@ export function Composer({
         <button
           type="button"
           aria-label="Add a GIF"
-          onClick={() => onStub("GIFs")}
           className={composerIconButtonClass}
         >
           <IconGif size={20} stroke={1.75} aria-hidden="true" />
@@ -88,7 +77,6 @@ export function Composer({
         <button
           type="button"
           aria-label="Add a sticker"
-          onClick={() => onStub("Stickers")}
           className={composerIconButtonClass}
         >
           <IconSticker size={20} stroke={1.75} aria-hidden="true" />

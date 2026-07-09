@@ -6,14 +6,11 @@ const baseProps = {
   channelName: "general",
   draft: "",
   canSend: false,
-  localRecording: false,
   onDraftChange: vi.fn(),
   onSend: vi.fn(),
   onKeyDown: vi.fn(),
   onBlur: vi.fn(),
-  onToggleRecording: vi.fn(),
   onSelectEmoji: vi.fn(),
-  onStub: vi.fn(),
 };
 
 describe("Composer", () => {
@@ -39,38 +36,26 @@ describe("Composer", () => {
     ).toBeInTheDocument();
   });
 
-  it("routes the GIF and sticker affordances through onStub", () => {
-    const onStub = vi.fn();
-    render(<Composer {...baseProps} onStub={onStub} />);
+  it("keeps the GIF, sticker, and + menu affordances visible but inert", () => {
+    render(<Composer {...baseProps} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
-    expect(onStub).toHaveBeenCalledWith("GIFs");
-
-    fireEvent.click(screen.getByRole("button", { name: "Add a sticker" }));
-    expect(onStub).toHaveBeenCalledWith("Stickers");
-  });
-
-  it("toggles recording through the + menu's Audio Recording item", () => {
-    const onToggleRecording = vi.fn();
-    render(<Composer {...baseProps} onToggleRecording={onToggleRecording} />);
+    expect(
+      screen.getByRole("button", { name: "Add a GIF" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add a sticker" })
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
-
-    expect(onToggleRecording).toHaveBeenCalledTimes(1);
-  });
-
-  it("routes Upload File and Create Poll through onStub with sentence-ready labels", () => {
-    const onStub = vi.fn();
-    render(<Composer {...baseProps} onStub={onStub} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Upload File" }));
-    expect(onStub).toHaveBeenCalledWith("File uploads");
-
-    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Create Poll" }));
-    expect(onStub).toHaveBeenCalledWith("Polls");
+    expect(
+      screen.getByRole("menuitem", { name: "Upload File" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Audio Recording" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Create Poll" })
+    ).toBeInTheDocument();
   });
 
   it("reports draft changes from the textarea", () => {
