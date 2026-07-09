@@ -166,6 +166,10 @@ export interface ClientChatData {
   messages: ClientChatMessage[];
   readStates?: ClientChatReadState[];
   participantPresence?: ClientChatPresence;
+  /** True when older history exists beyond the returned window (keyset N+1 probe). */
+  hasMoreOlder?: boolean;
+  /** Ordering key of the oldest message in the returned window; null when empty. */
+  oldestCursor?: { createdAt: string; id: string } | null;
 }
 
 export interface ChatRepository {

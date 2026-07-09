@@ -265,6 +265,148 @@ describe("Supabase service registry", () => {
     }
   });
 
+  it("bounds the initial message window to 40 and reports hasMoreOlder for a long conversation", async () => {
+    const demoConversationId = "11111111-1111-4111-8111-111111111111";
+    const totalMessages = 41;
+    // Seeded newest-first (DESC), matching what the bounded keyset query
+    // returns before app code reverses it back to ascending.
+    const messageRows = Array.from({ length: totalMessages }, (_, index) => {
+      const position = totalMessages - 1 - index; // 40 (newest) down to 0 (oldest)
+      const minute = String(position).padStart(2, "0");
+      return {
+        id: `message-${String(position).padStart(3, "0")}`,
+        conversation_id: demoConversationId,
+        sender_id: "user-1",
+        sender_role: "client",
+        body: `Message ${position}`,
+        client_request_id: `request-${position}`,
+        created_at: `2026-07-05T00:${minute}:00.000Z`,
+        edited_at: null,
+        deleted_at: null,
+        reply_to_message_id: null,
+      };
+    });
+    const queues: Record<string, unknown[]> = {
+      profiles: [
+        { id: "user-1", role: "client", display_name: "Franz Fish" },
+        [{ id: "user-1", display_name: "Franz Fish" }],
+      ],
+    };
+    const tables: Record<string, unknown> = {
+      conversations: {
+        id: demoConversationId,
+        client_id: "user-1",
+        coach_id: "coach-1",
+      },
+      messages: messageRows,
+      message_reactions: [],
+      message_reads: [],
+      presence_sessions: [],
+    };
+    const client = {
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "user-1" } },
+          error: null,
+        })),
+      },
+      from: vi.fn((table: string) => {
+        if (table === "profiles") {
+          const queue = queues.profiles;
+          return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
+        }
+        return createChainStub(tables[table]);
+      }),
+    } as unknown as AppSupabaseClient;
+
+    const result = await createSupabaseServices(
+      client
+    ).database.chat.getAssignedConversation();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data?.messages).toHaveLength(40);
+      expect(result.data?.hasMoreOlder).toBe(true);
+      // Ascending order preserved; the oldest kept message is position 1 (the
+      // very oldest of all 41, position 0, fell outside the 40-message window).
+      expect(result.data?.messages[0]?.id).toBe("message-001");
+      expect(result.data?.messages[39]?.id).toBe("message-040");
+      expect(result.data?.oldestCursor).toEqual({
+        createdAt: "2026-07-05T00:01:00.000Z",
+        id: "message-001",
+      });
+    }
+  });
+
+  it("returns every message and hasMoreOlder false for a short conversation", async () => {
+    const demoConversationId = "11111111-1111-4111-8111-111111111111";
+    const messageRows = [0, 1, 2]
+      .map((position) => ({
+        id: `message-${position}`,
+        conversation_id: demoConversationId,
+        sender_id: "user-1",
+        sender_role: "client",
+        body: `Message ${position}`,
+        client_request_id: `request-${position}`,
+        created_at: `2026-07-05T00:0${position}:00.000Z`,
+        edited_at: null,
+        deleted_at: null,
+        reply_to_message_id: null,
+      }))
+      .reverse(); // seeded newest-first, matching the DESC keyset query
+    const queues: Record<string, unknown[]> = {
+      profiles: [
+        { id: "user-1", role: "client", display_name: "Franz Fish" },
+        [{ id: "user-1", display_name: "Franz Fish" }],
+      ],
+    };
+    const tables: Record<string, unknown> = {
+      conversations: {
+        id: demoConversationId,
+        client_id: "user-1",
+        coach_id: "coach-1",
+      },
+      messages: messageRows,
+      message_reactions: [],
+      message_reads: [],
+      presence_sessions: [],
+    };
+    const client = {
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "user-1" } },
+          error: null,
+        })),
+      },
+      from: vi.fn((table: string) => {
+        if (table === "profiles") {
+          const queue = queues.profiles;
+          return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
+        }
+        return createChainStub(tables[table]);
+      }),
+    } as unknown as AppSupabaseClient;
+
+    const result = await createSupabaseServices(
+      client
+    ).database.chat.getAssignedConversation();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data?.messages).toHaveLength(3);
+      expect(result.data?.hasMoreOlder).toBe(false);
+      expect(result.data?.messages.map((message) => message.id)).toEqual([
+        "message-0",
+        "message-1",
+        "message-2",
+      ]);
+      expect(result.data?.oldestCursor).toEqual({
+        createdAt: "2026-07-05T00:00:00.000Z",
+        id: "message-0",
+      });
+    }
+  });
+
   it("maps Google OAuth start failures into auth service failures", async () => {
     const client = {
       auth: {

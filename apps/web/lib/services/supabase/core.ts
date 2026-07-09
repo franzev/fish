@@ -46,6 +46,10 @@ type SupabaseResponse<T> = {
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";
 const reactionPageSize = 1000;
+// Bounded newest-message window for the initial SSR load (CLOAD-01). One
+// reusable page size keeps the initial fetch and every later "load earlier"
+// page (Plan 10-02 actions.ts) consistent.
+const chatInitialWindowSize = 40;
 
 function isAuthSessionMissingError(error: {
   message?: string;
@@ -703,12 +707,16 @@ class SupabaseChatRepository implements ChatRepository {
         participant = directParticipant;
       }
 
-      const { data: messages, error: messageError } = (await this.client
+      // Keyset window: newest-first + N+1 limit tells us hasMoreOlder without
+      // a second round trip. `messages_conversation_created_id_idx` (0010)
+      // already covers this DESC,DESC scan direction — see plan migration note.
+      const { data: messageWindow, error: messageError } = (await this.client
         .from("messages")
         .select("*")
         .eq("conversation_id", conversation.id)
-        .order("created_at", { ascending: true })
-        .order("id", { ascending: true })) as {
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(chatInitialWindowSize + 1)) as {
         data: MessageRow[] | null;
         error: SupabaseResponse<unknown>["error"];
       };
@@ -724,8 +732,18 @@ class SupabaseChatRepository implements ChatRepository {
         );
       }
 
+      const messageRows = messageWindow ?? [];
+      const hasMoreOlder = messageRows.length > chatInitialWindowSize;
+      // Bound to the window, then reverse back to ascending — the order the
+      // reducer/UI expect and that `hydrateConversation`/`hydrateWindow` render.
+      const messages = messageRows.slice(0, chatInitialWindowSize).reverse();
+      const oldestCursor =
+        messages.length > 0
+          ? { createdAt: messages[0].created_at, id: messages[0].id }
+          : null;
+
       const senderIds = Array.from(
-        new Set((messages ?? []).map((message) => message.sender_id))
+        new Set(messages.map((message) => message.sender_id))
       );
       const senderDisplayNames = new Map<string, string>();
 
@@ -828,14 +846,16 @@ class SupabaseChatRepository implements ChatRepository {
           displayName: participant.display_name,
           role: participantRole,
         },
-        messages: (messages ?? []).map((message) =>
-              toClientChatMessage(message, reactions, userId, senderDisplayNames)
+        messages: messages.map((message) =>
+          toClientChatMessage(message, reactions, userId, senderDisplayNames)
         ),
         readStates: (readStates ?? []).map(toClientChatReadState),
         participantPresence: {
           sessions: (presenceSessions ?? []).map(toClientPresenceSession),
           lastSeenAt: getLastSeenAt(presenceSessions ?? []),
         },
+        hasMoreOlder,
+        oldestCursor,
       });
     });
   }
