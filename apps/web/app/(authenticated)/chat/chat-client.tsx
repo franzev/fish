@@ -14,6 +14,7 @@ import {
   MessageStatus,
   QuotedMessage,
   Reactions,
+  SearchFilterPopover,
   TypingIndicator,
 } from "@/components/chat";
 import { Alert } from "@/components/ui/alert";
@@ -28,7 +29,6 @@ import {
   IconArrowDown,
   IconMoodSmile,
   IconPencil,
-  IconSearch,
   IconTrash,
   IconX,
   IconMessageReply,
@@ -105,9 +105,7 @@ export function ChatClient({
     messages,
     markReadStateAction,
   });
-  // Search state stays wired to filteredMessages; the upcoming search/filter
-  // popover (which replaces the placeholder header button) re-adds the setter.
-  const [search] = useState("");
+  const [search, setSearch] = useState("");
   // Coming-soon notice for stubbed composer affordances (GIFs, stickers,
   // uploads, polls) — calm copy, never a dead-end error.
   const [stubNotice, setStubNotice] = useState<string | null>(null);
@@ -231,15 +229,7 @@ export function ChatClient({
               </span>
             </span>
           </div>
-          {/* Placeholder trigger: a later task replaces this with the
-              search/filter popover that drives the message filter. */}
-          <button
-            type="button"
-            aria-label="Search messages"
-            className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-          >
-            <IconSearch size={20} stroke={1.75} aria-hidden="true" />
-          </button>
+          <SearchFilterPopover value={search} onValueChange={setSearch} />
         </div>
       </header>
 

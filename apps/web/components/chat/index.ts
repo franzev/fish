@@ -20,6 +20,7 @@ export * from "./notification-badge";
 export * from "./presence-indicator";
 export * from "./quoted-message";
 export * from "./reactions";
+export * from "./search-filters";
 export * from "./skeleton";
 export type {
   Attachment,
