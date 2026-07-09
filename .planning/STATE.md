@@ -4,8 +4,8 @@ milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: verifying
 stopped_at: Phase 09 automated verification passed; UAT required for 2 human checks.
-last_updated: "2026-07-09T10:00:13Z"
-last_activity: "Quick task 260709-p06: MessageBody rich-text renderer + kit seed data for long/formatted chat rendering."
+last_updated: "2026-07-09T19:11:32Z"
+last_activity: "Quick task 260709-qag: removed the dev-only chat kit entirely (51 files, outdated 1:1-messaging mock) and seeded real long-form community messages into the general channel."
 progress:
   total_phases: 4
   completed_phases: 3
@@ -129,12 +129,13 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | fast | Chat type drops to 14px ui-sm (body + author name), avatar gutter widens to gap-sm; twMerge taught custom text size/color groups | 2026-07-08 | a45be3c3 | — |
 | 260709-8aa | Chat log: shared ScrollArea + conditional stick-to-bottom scroll with new-messages pill | 2026-07-08 | b9d76d0e | [260709-8aa-chat-log-shared-scrollarea-conditional-s](./quick/260709-8aa-chat-log-shared-scrollarea-conditional-s/) |
 | 260709-p06 | Add seed data for testing long/formatted chat message rendering, plus a self-contained MessageBody rich-text renderer | 2026-07-09 | 98d33b60 | [260709-p06-add-seed-data-for-testing-long-formatted](./quick/260709-p06-add-seed-data-for-testing-long-formatted/) |
+| 260709-qag | Remove the dev-only chat kit entirely (outdated 1:1-messaging mock demo); seed real long-form community messages into the general channel via scripts/seed.ts | 2026-07-09 | 76580eef | [260709-qag-remove-the-dev-only-chat-kit-entirely-an](./quick/260709-qag-remove-the-dev-only-chat-kit-entirely-an/) |
 
 ## Session Continuity
 
 **Last session:** 2026-07-07T00:55:09Z
 
-- **Last activity:** 2026-07-09 - Completed quick task 260709-p06: added a self-contained MessageBody rich-text renderer (bold/italic/code/lists/headings/blockquotes/links, line-break preservation, link sanitization) wired into both the kit Message component and the production ChatClient, plus short/long/super-long seeded conversations on /kit/chat's Full container for side-by-side comparison. Also fixed the resulting DOM-depth regression in chat-client.test.tsx's grouped-bubble-corner assertions.
+- **Last activity:** 2026-07-09 - Completed quick task 260709-qag: removed the entire dev-only chat kit (/kit/chat, /kit/chat-live, mock-data.ts, and every chat component that only existed to support them — 51 files, 2695 lines) since the product moved to a Discord-like community/channel chat and the kit modeled outdated 1:1 messaging. Added scripts/seed.ts::seedCommunityMessages — 12 real long-form messages (up to 3553 chars, under the 4000-char DB constraint) seeded directly into the general channel, exercising the MessageBody markdown subset. /kit (general design-token showcase) and theme-toggle.tsx were kept, untouched.
 - **Stopped at:** Phase 09 automated verification passed; UAT required for 2 human checks.
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
