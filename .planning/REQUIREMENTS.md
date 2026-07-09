@@ -59,7 +59,18 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 - [x] **CSTATE-05**: Android and iOS architecture notes map the shared chat-state event contract to native containers (Android `ViewModel` + `StateFlow`, iOS observable model) without importing web state libraries or blocking web delivery on native implementation.
 - [x] **CSTATE-06**: Existing chat behavior remains unchanged: no extra client choices or conversation picker, no new user-facing primary action, no lost drafts, no duplicate optimistic messages, no layout shift regression, and `pnpm build`, `pnpm lint`, `pnpm typecheck`, and focused chat tests pass.
 
+### Chat Message Loading (CLOAD)
+
+- [ ] **CLOAD-01**: Opening the chat renders the newest messages from a bounded initial window (no full-history fetch) — minimal time-to-first-message on load and refresh
+- [ ] **CLOAD-02**: New incoming messages arrive through the realtime channel and merge into the loaded list in place — never a full reload or history refetch
+- [ ] **CLOAD-03**: Older history loads on demand via cursor-based (keyset) pagination — a calm "load earlier" affordance plus auto-load as the user scrolls up (infinite scroll)
+- [ ] **CLOAD-04**: Loading older messages preserves the reading position — no scroll jump and no layout shift; newest-message anchoring on send/receive is unchanged
+- [ ] **CLOAD-05**: The merged list never shows duplicate messages across optimistic sends, realtime inserts, and paginated fetches — deduplicated by message id and `clientRequestId`
+- [ ] **CLOAD-06**: History stays gap-free and correctly ordered across offline/reconnect — messages missed while disconnected are backfilled on resubscribe, and read-state behavior stays consistent with pagination
+
 ## Out of Scope
+
+*(v1.1-era table. The realtime row is partially superseded: Phase 9 shipped realtime/presence hooks on web, and CLOAD-02/-06 require realtime merge + reconnect backfill. Typing indicators and read receipts remain non-goals except where existing read-state behavior must stay consistent with pagination.)*
 
 | Feature | Reason |
 |---------|--------|
@@ -96,6 +107,12 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 | CSTATE-04 | Phase 9 — Cross-platform Chat State | Complete |
 | CSTATE-05 | Phase 9 — Cross-platform Chat State | Complete |
 | CSTATE-06 | Phase 9 — Cross-platform Chat State | Complete |
+| CLOAD-01 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-02 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-03 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-04 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-05 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-06 | Phase 10 — Chat Message Loading Optimization | Pending |
 | XC-01 | All shipped phases | Complete |
 | XC-02 | Command write surfaces | Complete |
 | XC-03 | Client-facing shipped phases | Complete |
@@ -105,7 +122,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 
 - v1 requirements: 17 total (13 functional + 4 cross-cutting)
 - Active learning-flow requirements: 0
-- v1.2 active requirements: 6 cross-platform chat-state requirements
+- v1.2 active requirements: 12 — 6 cross-platform chat-state (complete) + 6 chat message loading (CLOAD, pending)
 
 ---
-*Requirements defined: 2026-07-04 · Re-scoped after removal: 2026-07-06 · v1.2 chat-state requirements added: 2026-07-07*
+*Requirements defined: 2026-07-04 · Re-scoped after removal: 2026-07-06 · v1.2 chat-state requirements added: 2026-07-07 · CLOAD message-loading requirements added: 2026-07-09*
