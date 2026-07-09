@@ -93,7 +93,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -161,7 +166,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -194,7 +204,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     },
@@ -243,7 +258,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -276,7 +296,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     },
@@ -315,7 +340,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -367,7 +397,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -400,7 +435,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     },
@@ -465,7 +505,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -491,7 +536,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     },
@@ -527,7 +577,12 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" }
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
         }
       }
     }
@@ -675,6 +730,761 @@
           "authorName": "Coach Dana",
           "snippet": "Please repeat the final sentence."
         }
+      }
+    }
+  },
+  {
+    "name": "hydrateWindow",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "hydrateWindow",
+        "conversationId": "conversation-2",
+        "messages": [
+          {
+            "id": "message-20",
+            "conversationId": "conversation-2",
+            "senderId": "client-2",
+            "senderRole": "client",
+            "body": "Here is my update.",
+            "clientRequestId": "request-20",
+            "createdAt": "2026-07-09T10:00:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-21",
+            "conversationId": "conversation-2",
+            "senderId": "coach-2",
+            "senderRole": "coach",
+            "body": "Good work.",
+            "clientRequestId": "request-21",
+            "createdAt": "2026-07-09T10:01:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "readStates": [],
+        "hasMoreOlder": true,
+        "oldestCursor": { "createdAt": "2026-07-09T10:00:00.000Z", "id": "message-20" }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-2": {
+          "conversationId": "conversation-2",
+          "messages": [
+            {
+              "id": "message-20",
+              "conversationId": "conversation-2",
+              "senderId": "client-2",
+              "senderRole": "client",
+              "body": "Here is my update.",
+              "clientRequestId": "request-20",
+              "createdAt": "2026-07-09T10:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-21",
+              "conversationId": "conversation-2",
+              "senderId": "coach-2",
+              "senderRole": "coach",
+              "body": "Good work.",
+              "clientRequestId": "request-21",
+              "createdAt": "2026-07-09T10:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T10:00:00.000Z", "id": "message-20" },
+            "hasMoreOlder": true,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "olderPageLoaded",
+    "initialState": {
+      "conversations": {
+        "conversation-3": {
+          "conversationId": "conversation-3",
+          "messages": [
+            {
+              "id": "message-31",
+              "conversationId": "conversation-3",
+              "senderId": "client-3",
+              "senderRole": "client",
+              "body": "Second message in the window.",
+              "clientRequestId": "request-31",
+              "createdAt": "2026-07-09T11:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T11:01:00.000Z", "id": "message-31" },
+            "hasMoreOlder": true,
+            "isLoadingOlder": true
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "olderPageLoaded",
+        "conversationId": "conversation-3",
+        "messages": [
+          {
+            "id": "message-30",
+            "conversationId": "conversation-3",
+            "senderId": "coach-3",
+            "senderRole": "coach",
+            "body": "First message, now loaded from an older page.",
+            "clientRequestId": "request-30",
+            "createdAt": "2026-07-09T11:00:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "hasMoreOlder": false,
+        "oldestCursor": { "createdAt": "2026-07-09T11:00:00.000Z", "id": "message-30" }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-3": {
+          "conversationId": "conversation-3",
+          "messages": [
+            {
+              "id": "message-30",
+              "conversationId": "conversation-3",
+              "senderId": "coach-3",
+              "senderRole": "coach",
+              "body": "First message, now loaded from an older page.",
+              "clientRequestId": "request-30",
+              "createdAt": "2026-07-09T11:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-31",
+              "conversationId": "conversation-3",
+              "senderId": "client-3",
+              "senderRole": "client",
+              "body": "Second message in the window.",
+              "clientRequestId": "request-31",
+              "createdAt": "2026-07-09T11:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T11:00:00.000Z", "id": "message-30" },
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "olderPageDuplicateReconciliation",
+    "initialState": {
+      "conversations": {
+        "conversation-4": {
+          "conversationId": "conversation-4",
+          "messages": [
+            {
+              "id": "message-45",
+              "conversationId": "conversation-4",
+              "senderId": "coach-4",
+              "senderRole": "coach",
+              "body": "Let's continue from here.",
+              "clientRequestId": "request-45",
+              "createdAt": "2026-07-09T12:02:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "local-request-47",
+              "conversationId": "conversation-4",
+              "senderId": "client-4",
+              "senderRole": "client",
+              "body": "Sending my answer now.",
+              "clientRequestId": "request-47",
+              "createdAt": "2026-07-09T12:03:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            },
+            {
+              "id": "message-46",
+              "conversationId": "conversation-4",
+              "senderId": "coach-4",
+              "senderRole": "coach",
+              "body": "Good, thanks for the update.",
+              "clientRequestId": "request-46",
+              "createdAt": "2026-07-09T12:04:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T12:02:00.000Z", "id": "message-45" },
+            "hasMoreOlder": true,
+            "isLoadingOlder": true
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "olderPageLoaded",
+        "conversationId": "conversation-4",
+        "messages": [
+          {
+            "id": "message-45",
+            "conversationId": "conversation-4",
+            "senderId": "coach-4",
+            "senderRole": "coach",
+            "body": "Let's continue from here.",
+            "clientRequestId": "request-45",
+            "createdAt": "2026-07-09T12:02:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-44",
+            "conversationId": "conversation-4",
+            "senderId": "client-4",
+            "senderRole": "client",
+            "body": "This is the first message in the thread.",
+            "clientRequestId": "request-44",
+            "createdAt": "2026-07-09T12:01:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-47",
+            "conversationId": "conversation-4",
+            "senderId": "client-4",
+            "senderRole": "client",
+            "body": "Sending my answer now.",
+            "clientRequestId": "request-47",
+            "createdAt": "2026-07-09T12:03:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "hasMoreOlder": false,
+        "oldestCursor": { "createdAt": "2026-07-09T12:01:00.000Z", "id": "message-44" }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-4": {
+          "conversationId": "conversation-4",
+          "messages": [
+            {
+              "id": "message-44",
+              "conversationId": "conversation-4",
+              "senderId": "client-4",
+              "senderRole": "client",
+              "body": "This is the first message in the thread.",
+              "clientRequestId": "request-44",
+              "createdAt": "2026-07-09T12:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-45",
+              "conversationId": "conversation-4",
+              "senderId": "coach-4",
+              "senderRole": "coach",
+              "body": "Let's continue from here.",
+              "clientRequestId": "request-45",
+              "createdAt": "2026-07-09T12:02:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-47",
+              "conversationId": "conversation-4",
+              "senderId": "client-4",
+              "senderRole": "client",
+              "body": "Sending my answer now.",
+              "clientRequestId": "request-47",
+              "createdAt": "2026-07-09T12:03:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-46",
+              "conversationId": "conversation-4",
+              "senderId": "coach-4",
+              "senderRole": "coach",
+              "body": "Good, thanks for the update.",
+              "clientRequestId": "request-46",
+              "createdAt": "2026-07-09T12:04:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T12:01:00.000Z", "id": "message-44" },
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "gapBackfillOutOfOrder",
+    "initialState": {
+      "conversations": {
+        "conversation-5": {
+          "conversationId": "conversation-5",
+          "messages": [
+            {
+              "id": "message-50",
+              "conversationId": "conversation-5",
+              "senderId": "coach-5",
+              "senderRole": "coach",
+              "body": "Last message before you went offline.",
+              "clientRequestId": "request-50",
+              "createdAt": "2026-07-09T13:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T13:00:00.000Z", "id": "message-50" },
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-52",
+          "conversationId": "conversation-5",
+          "senderId": "client-5",
+          "senderRole": "client",
+          "body": "Third message, arrived first during backfill.",
+          "clientRequestId": "request-52",
+          "createdAt": "2026-07-09T13:02:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      },
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-51",
+          "conversationId": "conversation-5",
+          "senderId": "coach-5",
+          "senderRole": "coach",
+          "body": "Second message, arrived after the third during backfill.",
+          "clientRequestId": "request-51",
+          "createdAt": "2026-07-09T13:01:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      },
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-52",
+          "conversationId": "conversation-5",
+          "senderId": "client-5",
+          "senderRole": "client",
+          "body": "Third message, arrived first during backfill.",
+          "clientRequestId": "request-52",
+          "createdAt": "2026-07-09T13:02:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-5": {
+          "conversationId": "conversation-5",
+          "messages": [
+            {
+              "id": "message-50",
+              "conversationId": "conversation-5",
+              "senderId": "coach-5",
+              "senderRole": "coach",
+              "body": "Last message before you went offline.",
+              "clientRequestId": "request-50",
+              "createdAt": "2026-07-09T13:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-51",
+              "conversationId": "conversation-5",
+              "senderId": "coach-5",
+              "senderRole": "coach",
+              "body": "Second message, arrived after the third during backfill.",
+              "clientRequestId": "request-51",
+              "createdAt": "2026-07-09T13:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "message-52",
+              "conversationId": "conversation-5",
+              "senderId": "client-5",
+              "senderRole": "client",
+              "body": "Third message, arrived first during backfill.",
+              "clientRequestId": "request-52",
+              "createdAt": "2026-07-09T13:02:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T13:00:00.000Z", "id": "message-50" },
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "olderPageLifecycle",
+    "initialState": {
+      "conversations": {
+        "conversation-6": {
+          "conversationId": "conversation-6",
+          "messages": [
+            {
+              "id": "message-60",
+              "conversationId": "conversation-6",
+              "senderId": "client-6",
+              "senderRole": "client",
+              "body": "Currently loaded message.",
+              "clientRequestId": "request-60",
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T14:00:00.000Z", "id": "message-60" },
+            "hasMoreOlder": true,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "olderMessagesRequested",
+        "conversationId": "conversation-6"
+      },
+      {
+        "type": "olderPageLoadFailed",
+        "conversationId": "conversation-6"
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-6": {
+          "conversationId": "conversation-6",
+          "messages": [
+            {
+              "id": "message-60",
+              "conversationId": "conversation-6",
+              "senderId": "client-6",
+              "senderRole": "client",
+              "body": "Currently loaded message.",
+              "clientRequestId": "request-60",
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-09T14:00:00.000Z", "id": "message-60" },
+            "hasMoreOlder": true,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "deliveredMarkerOutsideWindow",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "hydrateConversation",
+        "conversationId": "conversation-7",
+        "messages": [
+          {
+            "id": "message-71",
+            "conversationId": "conversation-7",
+            "senderId": "client-7",
+            "senderRole": "client",
+            "body": "Here is my first draft.",
+            "clientRequestId": "request-71",
+            "createdAt": "2026-07-09T15:01:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-72",
+            "conversationId": "conversation-7",
+            "senderId": "client-7",
+            "senderRole": "client",
+            "body": "Here is my revised version.",
+            "clientRequestId": "request-72",
+            "createdAt": "2026-07-09T15:02:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "readStates": [
+          {
+            "userId": "coach-7",
+            "lastDeliveredMessageId": "message-69",
+            "deliveredAt": "2026-07-09T14:50:00.000Z",
+            "lastReadMessageId": null,
+            "readAt": null
+          }
+        ]
+      }
+    ],
+    "expectedSelectors": {
+      "outgoingStatus": {
+        "conversationId": "conversation-7",
+        "messageId": "message-72",
+        "readStateUserId": "coach-7",
+        "expected": "sent"
+      }
+    }
+  },
+  {
+    "name": "readMarkerOutsideWindow",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "hydrateConversation",
+        "conversationId": "conversation-8",
+        "messages": [
+          {
+            "id": "message-81",
+            "conversationId": "conversation-8",
+            "senderId": "client-8",
+            "senderRole": "client",
+            "body": "First practice sentence.",
+            "clientRequestId": "request-81",
+            "createdAt": "2026-07-09T16:01:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-82",
+            "conversationId": "conversation-8",
+            "senderId": "client-8",
+            "senderRole": "client",
+            "body": "Second practice sentence.",
+            "clientRequestId": "request-82",
+            "createdAt": "2026-07-09T16:02:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          },
+          {
+            "id": "message-83",
+            "conversationId": "conversation-8",
+            "senderId": "coach-8",
+            "senderRole": "coach",
+            "body": "Nice work on both.",
+            "clientRequestId": "request-83",
+            "createdAt": "2026-07-09T16:03:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "readStates": [
+          {
+            "userId": "coach-8",
+            "lastDeliveredMessageId": "message-82",
+            "deliveredAt": "2026-07-09T16:02:30.000Z",
+            "lastReadMessageId": "message-79",
+            "readAt": "2026-07-09T15:59:00.000Z"
+          }
+        ]
+      }
+    ],
+    "expectedSelectors": {
+      "outgoingStatus": {
+        "conversationId": "conversation-8",
+        "messageId": "message-82",
+        "readStateUserId": "coach-8",
+        "expected": "delivered"
+      },
+      "unreadCount": {
+        "conversationId": "conversation-8",
+        "currentUserId": "coach-8",
+        "readStateUserId": "coach-8",
+        "expected": 2
       }
     }
   }

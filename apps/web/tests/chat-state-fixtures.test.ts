@@ -149,6 +149,13 @@ describe("chat-state fixture vectors", () => {
       "unreadCount",
       "deletedMessageSnippet",
       "replyPreview",
+      "hydrateWindow",
+      "olderPageLoaded",
+      "olderPageDuplicateReconciliation",
+      "gapBackfillOutOfOrder",
+      "olderPageLifecycle",
+      "deliveredMarkerOutsideWindow",
+      "readMarkerOutsideWindow",
     ]);
 
     for (const fixture of cases) {
