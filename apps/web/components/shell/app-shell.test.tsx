@@ -170,7 +170,7 @@ describe("AppShell", () => {
     const primaryNav = screen.getByRole("navigation", { name: "Primary" });
     expect(primaryNav).toHaveTextContent("Home");
     expect(primaryNav).toHaveTextContent("Community");
-    expect(primaryNav).toHaveTextContent("Profile");
+    expect(primaryNav).not.toHaveTextContent("Profile");
     expect(primaryNav).not.toHaveTextContent("Progress");
     const community = within(primaryNav).getByRole("link", { name: "Community" });
     expect(community).toHaveAttribute(
@@ -197,5 +197,26 @@ describe("AppShell", () => {
       "href",
       "/coach"
     );
+  });
+
+  it("links the client display name to /profile so it doubles as the profile entry point", () => {
+    render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    const nameLink = screen.getByRole("link", { name: "Alex Rivera" });
+    expect(nameLink).toHaveAttribute("href", "/profile");
+  });
+
+  it("does not link the coach display name, since coaches have no /profile view", () => {
+    render(
+      <AppShell displayName="Coach Dana" role="coach">
+        Content
+      </AppShell>
+    );
+
+    expect(screen.queryByRole("link", { name: "Coach Dana" })).not.toBeInTheDocument();
   });
 });

@@ -20,7 +20,7 @@ export default async function EditProfilePage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-start justify-center px-page py-2xl">
+    <div className="mx-auto w-full max-w-form">
       <EditProfileForm
         initial={{
           displayName: data.displayName,
@@ -29,6 +29,6 @@ export default async function EditProfilePage() {
           timezone: data.timezone ?? "",
         }}
       />
-    </main>
+    </div>
   );
 }

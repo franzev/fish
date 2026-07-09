@@ -130,7 +130,7 @@
   --spacing-motion-typing: 4px;
 
   /* ---- Layout widths ---- */
-  --container-channel-col: 232px; /* channel list column beside the nav rail */
+  --container-channel-col: 232px; /* channel list column beside immersive content */
   --container-menu: 224px;        /* floating action menus (composer +) */
   --container-form: 440px;
   --container-content: 640px;
