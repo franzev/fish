@@ -92,6 +92,20 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
 **Depends on**: Phase 8, Phase 9
 **Requirements**: CLOAD-01, CLOAD-02, CLOAD-03, CLOAD-04, CLOAD-05, CLOAD-06
+**Plans**: 4 plans
+
+**Wave 1** *(parallel — no shared files)*
+
+- [ ] 10-01-PLAN.md — portable pagination contract: additive events (hydrateWindow/olderPageLoaded/…), pagination state, read-marker-outside-window selector fix, fixtures, protocol + native docs
+- [ ] 10-02-PLAN.md — bounded keyset SSR window + cursor-based load-older & bounded reconnect-backfill read actions (direct RLS selects; no new migration)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 10-03-PLAN.md — Zustand pagination wiring + selectors, message-hook loadOlder/gap-backfill, hydrateWindow hydration, reconnect consolidation (3→1 bounded backfill)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 10-04-PLAN.md — IntersectionObserver sentinel + manual scroll-anchor restore, stick-to-bottom prepend fix, quiet "load earlier" affordance, calm skeleton/offline states, CSS (skeleton pulse + overflow-anchor)
 
 ## Progress
 
@@ -104,7 +118,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 | 9. Cross-platform Chat State | v1.2 | 4/4 | Needs UAT  | — |
-| 10. Chat Message Loading Optimization | v1.2 | 0/0 | Not started | — |
+| 10. Chat Message Loading Optimization | v1.2 | 0/4 | Planned | — |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*
