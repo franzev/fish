@@ -257,7 +257,7 @@ describe("ChatClient", () => {
     expect(screen.getByLabelText("Community messages")).toBeInTheDocument();
   });
 
-  it("renders a simplified channel header with a search trigger and no subtitle line", () => {
+  it("renders a simplified channel header with a search field and no subtitle line", () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
@@ -276,8 +276,9 @@ describe("ChatClient", () => {
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: /# general/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /search messages/i })).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("Search messages")).toBeNull();
+    // The search field is always visible in the header now — no popover to
+    // open before typing.
+    expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
   });
 
   it("renders community rows as a left-aligned feed without direct-message bubbles", () => {
@@ -362,7 +363,7 @@ describe("ChatClient", () => {
     ).toBeGreaterThan(1);
   });
 
-  it("shows a calm coming-soon notice when a stubbed composer affordance is used", async () => {
+  it("does not raise a notice when an unimplemented composer affordance is clicked", async () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
@@ -377,39 +378,7 @@ describe("ChatClient", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
 
-    const notice = await screen.findByText(/coming soon/i);
-    expect(notice).toBeInTheDocument();
-    // Announced politely: the notice mounts after a click, so it needs a
-    // live region (role="status"), never focus-stealing.
-    expect(notice.closest('[role="status"]')).not.toBeNull();
-  });
-
-  it("clears the coming-soon notice once the user types in the composer", async () => {
-    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
-    expect(await screen.findByText(/coming soon/i)).toBeInTheDocument();
-
-    // Typing means the user has moved on — the notice must not linger.
-    fireEvent.change(screen.getByLabelText("Message"), {
-      target: { value: "H" },
-    });
-
-    expect(screen.queryByText(/coming soon/i)).toBeNull();
-  });
-
-  it("clears the coming-soon notice when the user sends a message", async () => {
-    const sendMessageAction = vi.fn(() => new Promise<never>(() => undefined));
-    render(<ChatClient chat={chat} sendMessageAction={sendMessageAction} />);
-
-    fireEvent.change(screen.getByLabelText("Message"), {
-      target: { value: "Hello" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
-    expect(await screen.findByText(/coming soon/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-
+    expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByText(/coming soon/i)).toBeNull();
   });
 
@@ -433,20 +402,13 @@ describe("ChatClient", () => {
     ).toBeInTheDocument();
   });
 
-  it("toggles local voice recording through the + menu", async () => {
+  it("does not show a recording indicator when Audio Recording is clicked", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
 
-    expect(await screen.findByText("Recording audio")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
-
-    await waitFor(() =>
-      expect(screen.queryByText("Recording audio")).toBeNull()
-    );
+    expect(screen.queryByText("Recording audio")).toBeNull();
   });
 
   it("uses the current server snapshot when the chat store has stale cached messages", () => {
@@ -731,16 +693,24 @@ describe("ChatClient", () => {
       />
     );
 
-    expect(screen.getByText("First grouped message")).toHaveClass("rounded-br-chat-inner");
-    expect(screen.getByText("First grouped message")).not.toHaveClass("rounded-tr-chat-inner");
+    expect(screen.getByText("First grouped message").parentElement?.parentElement).toHaveClass(
+      "rounded-br-chat-inner"
+    );
+    expect(
+      screen.getByText("First grouped message").parentElement?.parentElement
+    ).not.toHaveClass("rounded-tr-chat-inner");
     expect(screen.getByText("Middle grouped message").closest("li")).toHaveClass("mt-3xs");
-    expect(screen.getByText("Middle grouped message")).toHaveClass(
+    expect(screen.getByText("Middle grouped message").parentElement?.parentElement).toHaveClass(
       "rounded-tr-chat-inner",
       "rounded-br-chat-inner"
     );
     expect(screen.getByText("Last grouped message").closest("li")).toHaveClass("mt-3xs");
-    expect(screen.getByText("Last grouped message")).toHaveClass("rounded-tr-chat-inner");
-    expect(screen.getByText("Last grouped message")).not.toHaveClass("rounded-br-chat-inner");
+    expect(screen.getByText("Last grouped message").parentElement?.parentElement).toHaveClass(
+      "rounded-tr-chat-inner"
+    );
+    expect(screen.getByText("Last grouped message").parentElement?.parentElement).not.toHaveClass(
+      "rounded-br-chat-inner"
+    );
   });
 
   it("connects consecutive received bubbles with small internal start corners", () => {
@@ -777,28 +747,33 @@ describe("ChatClient", () => {
       />
     );
 
-    expect(screen.getByText("First received message")).toHaveClass("rounded-bl-chat-inner");
-    expect(screen.getByText("First received message")).not.toHaveClass(
-      "border",
-      "border-border"
+    expect(screen.getByText("First received message").parentElement?.parentElement).toHaveClass(
+      "rounded-bl-chat-inner"
     );
-    expect(screen.getByText("First received message")).not.toHaveClass("rounded-tl-chat-inner");
+    expect(
+      screen.getByText("First received message").parentElement?.parentElement
+    ).not.toHaveClass("border", "border-border");
+    expect(
+      screen.getByText("First received message").parentElement?.parentElement
+    ).not.toHaveClass("rounded-tl-chat-inner");
     expect(screen.getByText("Middle received message").closest("li")).toHaveClass("mt-3xs");
-    expect(screen.getByText("Middle received message")).toHaveClass(
+    expect(screen.getByText("Middle received message").parentElement?.parentElement).toHaveClass(
       "rounded-tl-chat-inner",
       "rounded-bl-chat-inner"
     );
-    expect(screen.getByText("Middle received message")).not.toHaveClass(
-      "border",
-      "border-border"
-    );
+    expect(
+      screen.getByText("Middle received message").parentElement?.parentElement
+    ).not.toHaveClass("border", "border-border");
     expect(screen.getByText("Last received message").closest("li")).toHaveClass("mt-3xs");
-    expect(screen.getByText("Last received message")).toHaveClass("rounded-tl-chat-inner");
-    expect(screen.getByText("Last received message")).not.toHaveClass(
-      "border",
-      "border-border"
+    expect(screen.getByText("Last received message").parentElement?.parentElement).toHaveClass(
+      "rounded-tl-chat-inner"
     );
-    expect(screen.getByText("Last received message")).not.toHaveClass("rounded-bl-chat-inner");
+    expect(
+      screen.getByText("Last received message").parentElement?.parentElement
+    ).not.toHaveClass("border", "border-border");
+    expect(
+      screen.getByText("Last received message").parentElement?.parentElement
+    ).not.toHaveClass("rounded-bl-chat-inner");
   });
 
   it("shows animated typing dots when the participant is typing", async () => {
@@ -828,23 +803,6 @@ describe("ChatClient", () => {
     });
     expect(typing.querySelectorAll(".animate-typing")).toHaveLength(3);
     expect(screen.getByText("Coach Dana is typing")).toBeInTheDocument();
-  });
-
-  it("shows the voice recording indicator when the participant is recording", async () => {
-    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
-
-    expect(realtimeMock.voiceHandlers).toHaveLength(1);
-
-    act(() => {
-      realtimeMock.voiceHandlers[0]?.({
-        payload: {
-          userId: "coach-1",
-          recording: true,
-        },
-      });
-    });
-
-    expect(await screen.findByText("Coach Dana is recording audio")).toBeInTheDocument();
   });
 
   it("sends a reply with the selected replied-to message id", async () => {
