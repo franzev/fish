@@ -13,6 +13,7 @@ export * from "./empty-state";
 export * from "./link-preview";
 export * from "./message";
 export * from "./message-actions";
+export * from "./message-body";
 export * from "./message-list";
 export * from "./message-meta";
 export { MessageStatus } from "./message-status";
