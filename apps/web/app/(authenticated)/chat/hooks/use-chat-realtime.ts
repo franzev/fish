@@ -17,7 +17,44 @@ import {
   subscribeToConversationVoiceRecording,
 } from "../realtime";
 import type { LocalMessage } from "./use-chat-messages";
-import { useChatStore } from "../store/chat-store";
+import { chatStore, useChatStore } from "../store/chat-store";
+import { selectMessagesForConversation } from "../store/chat-selectors";
+import type { ClientChatMessage } from "@/lib/services";
+
+// Supabase postgres_changes payloads carry only the raw messages row — no
+// joined profile — so a live-received message arrives with senderDisplayName
+// undefined. Every other path (SSR, refresh, backfill) enriches names from the
+// `profiles` table; the realtime path must do the same or a community message
+// renders the "Member" fallback (chat-client getMessageAuthorName). Resolve
+// from names we already hold (own user, the direct participant, or an earlier
+// loaded message from the same sender) without a round-trip; return null only
+// when the sender is genuinely unknown so the caller can fall back to a
+// targeted refetch.
+function resolveRealtimeSenderName(
+  message: ClientChatMessage,
+  conversationId: string,
+  currentUserId: string,
+  currentUserDisplayName: string,
+  participant: { id: string; displayName: string }
+): string | null {
+  if (message.senderDisplayName) {
+    return message.senderDisplayName;
+  }
+  if (message.senderId === currentUserId) {
+    return currentUserDisplayName;
+  }
+  if (message.senderId === participant.id) {
+    return participant.displayName;
+  }
+  const known = selectMessagesForConversation(
+    chatStore.getState(),
+    conversationId
+  ).find(
+    (candidate) =>
+      candidate.senderId === message.senderId && candidate.senderDisplayName
+  );
+  return known?.senderDisplayName ?? null;
+}
 
 // Each of the messages/reads/reactions channels below fires its own initial
 // post-mount SUBSCRIBED — track first-subscribe PER CHANNEL so all three
@@ -138,7 +175,24 @@ export function useChatRealtime({
     const unsubscribe = subscribeToConversationMessages(
       chat.conversationId,
       (message) => {
-        dispatchChatEvent({ type: "mergeRemoteMessage", message });
+        const senderDisplayName = resolveRealtimeSenderName(
+          message,
+          chat.conversationId,
+          chat.currentUserId,
+          chat.currentUserDisplayName,
+          chat.participant
+        );
+        dispatchChatEvent({
+          type: "mergeRemoteMessage",
+          message: senderDisplayName ? { ...message, senderDisplayName } : message,
+        });
+        // Sender not among names we already hold (e.g. first message from a
+        // community member with no earlier loaded message): pull the enriched
+        // row through the same profiles-backed refresh path SSR/reactions use,
+        // so the transient "Member" fallback self-corrects.
+        if (!senderDisplayName) {
+          void refreshMessages([message.id]);
+        }
       },
       () => {
         setRealtimeStatus(chat.conversationId, "connected");
@@ -161,8 +215,12 @@ export function useChatRealtime({
     };
   }, [
     chat.conversationId,
+    chat.currentUserId,
+    chat.currentUserDisplayName,
+    chat.participant,
     dispatchChatEvent,
     handleReconnected,
+    refreshMessages,
     setMessages,
     setRealtimeStatus,
   ]);

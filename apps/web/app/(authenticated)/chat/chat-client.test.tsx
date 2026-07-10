@@ -1226,6 +1226,129 @@ describe("ChatClient", () => {
     expect(await screen.findByText("Nice work today.")).toBeInTheDocument();
   });
 
+  it("enriches a realtime community message from an already-known sender instead of showing Member", async () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      participant: {
+        id: chat.conversationId,
+        displayName: "FISH Community",
+        role: "coach",
+      },
+      messages: [
+        {
+          ...chat.messages[0],
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "Can anyone share a short intro?",
+          clientRequestId: "seed-2",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    // Live INSERT payloads carry the bare messages row — no display name.
+    act(() => {
+      realtimeMock.messageHandlers[0]?.({
+        new: {
+          id: "message-live",
+          conversation_id: chat.conversationId,
+          sender_id: "client-2",
+          sender_role: "client",
+          body: "Following up on that.",
+          client_request_id: "live-1",
+          created_at: "2026-07-05T00:03:00.000Z",
+        },
+      });
+    });
+
+    const liveRow = (await screen.findByText("Following up on that.")).closest("li");
+    expect(liveRow).not.toBeNull();
+    // The sender's name is resolved from the already-loaded message, so the
+    // "Member" fallback never renders for this row.
+    expect(within(liveRow as HTMLElement).queryByText("Member")).toBeNull();
+  });
+
+  it("refetches enriched sender names for a realtime community message from an unknown sender", async () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      participant: {
+        id: chat.conversationId,
+        displayName: "FISH Community",
+        role: "coach",
+      },
+      messages: [
+        {
+          ...chat.messages[0],
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "Can anyone share a short intro?",
+          clientRequestId: "seed-2",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    const refreshMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      messages: [
+        {
+          id: "message-unknown",
+          conversationId: chat.conversationId,
+          senderId: "client-9",
+          senderRole: "client",
+          senderDisplayName: "Priya Nair",
+          body: "Hi, I just joined!",
+          clientRequestId: "unknown-1",
+          createdAt: "2026-07-05T00:04:00.000Z",
+          reactions: [],
+        },
+      ],
+    });
+
+    render(
+      <ChatClient
+        chat={communityChat}
+        sendMessageAction={vi.fn()}
+        refreshMessagesAction={refreshMessagesAction}
+      />
+    );
+
+    act(() => {
+      realtimeMock.messageHandlers[0]?.({
+        new: {
+          id: "message-unknown",
+          conversation_id: chat.conversationId,
+          sender_id: "client-9",
+          sender_role: "client",
+          body: "Hi, I just joined!",
+          client_request_id: "unknown-1",
+          created_at: "2026-07-05T00:04:00.000Z",
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(refreshMessagesAction).toHaveBeenCalledWith({
+        messageIds: ["message-unknown"],
+      })
+    );
+    expect(await screen.findByText("Priya Nair")).toBeInTheDocument();
+  });
+
   it("shows the quiet Load earlier messages button only when hasMoreOlder is true", () => {
     render(
       <ChatClient
