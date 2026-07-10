@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-07-PLAN.md
-last_updated: "2026-07-10T04:26:15.805Z"
+stopped_at: Completed 09-08-PLAN.md
+last_updated: "2026-07-10T04:37:44.490Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 19
-  completed_plans: 16
+  completed_plans: 17
   percent: 60
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 2 of 11
+Plan: 3 of 11
 Status: Ready to execute
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
-Progress: [████████░░] 84%
+Progress: [█████████░] 89%
 
 ## Milestone v1.1 Phases
 
@@ -90,6 +90,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: Missing community avatar and timestamp are separate presentation behavior, not a delivery root cause. — Same-sender grouping suppresses avatar and MessageMeta without a time-gap cutoff; layout changes remain separate scoped work.
 - [Phase 09]: resetChatStoreForTests() now delegates to clearChatStore() so the test reset path and the real sign-out clear path are provably the same code. — Prevents drift between what tests reset and what production logout actually clears (closes CR-01).
 - [Phase 09]: clearChatStore() is called after signOut() and before router.push('/login') inside LogoutButton.handleLogout. — Ensures no stale conversation slice is readable by the next signed-in account once the soft navigation to /login completes.
+- [Phase 09]: Removed the /chat route file (kept shared chat internals under chat/ as a module folder); narrowed app-shell.tsx immersive check to /channels only. — channels/[id]/page.tsx already imports from ../../chat/*, so relocating internals would be unnecessary churn; deleting only the dead route resolves the VERIFICATION Gap 4 route-scope drift.
+- [Phase 09]: CSTATE-02/CSTATE-06 (REQUIREMENTS.md), D-09 (09-CONTEXT.md), and the Phase 9 goal (ROADMAP.md) now carry dated 2026-07-10 supersede notes pointing at the community room /channels/general. — Notes are additive blockquotes; original requirement/decision/goal wording is preserved so history stays auditable, and re-verification measures the shipped surface instead of the removed 1-on-1 route.
 
 ### Todos / open questions
 
@@ -114,6 +116,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 10 P04 | 12min | 3 tasks | 9 files |
 | Phase 09 P05 | 23min | 2 tasks | 1 files |
 | Phase 09 P07 | 7min | 2 tasks | 4 files |
+| Phase 09 P08 | 8min | 2 tasks | 7 files |
 
 ### Quick Tasks Completed
 
@@ -152,10 +155,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T04:26:15.801Z
+**Last session:** 2026-07-10T04:37:44.486Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-07-PLAN.md
+- **Stopped at:** Completed 09-08-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
