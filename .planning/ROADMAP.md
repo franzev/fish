@@ -31,7 +31,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ### v1.2 Cross-platform Chat State Foundation
 
-- [ ] **Phase 9: Cross-platform Chat State** - Chat state rules become portable and test-vector-backed; web adopts Zustand only as the React adapter for shared chat surfaces while Android/iOS get the same event contract to implement natively. (needs UAT)
+- [x] **Phase 9: Cross-platform Chat State** - Chat state rules become portable and test-vector-backed; web adopts Zustand only as the React adapter for shared chat surfaces while Android/iOS get the same event contract to implement natively. (needs UAT) (completed 2026-07-10)
 - [x] **Phase 10: Chat Message Loading Optimization** - Conversations open near-instantly on a bounded newest-messages window; older history loads via cursor-based load-more and infinite scroll with reading position preserved; realtime messages merge in place with no duplicates, full reloads, or layout shift. (completed 2026-07-10)
 
 ## Phase Details
@@ -89,7 +89,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Wave 4** *(gap closure; blocked on the completed Phase 09 implementation)*
 
-- [ ] 09-05-PLAN.md — obtain real authenticated two-session realtime evidence for the inconclusive new-message UAT gap
+- [x] 09-05-PLAN.md — obtain real authenticated two-session realtime evidence for the inconclusive new-message UAT gap
 - [x] 09-06-PLAN.md — synchronize the canonical Phase 09 native notes with the current pagination contract and align UAT documentation references
 
 ### Phase 10: Chat Message Loading Optimization
@@ -122,7 +122,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 5/6 | In Progress|  |
+| 9. Cross-platform Chat State | v1.2 | 6/6 | Complete   | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---

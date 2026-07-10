@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: executing
-stopped_at: Completed 10-04-PLAN.md (pagination/reconnect UI wired into ChatClient); Phase 10 all 4 plans complete, ready for phase verification
-last_updated: "2026-07-10T01:17:28.278Z"
+status: verifying
+stopped_at: Completed 09-05-PLAN.md
+last_updated: "2026-07-10T02:27:28.692Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 14
-  completed_plans: 13
-  percent: 60
+  completed_plans: 15
+  percent: 80
 ---
 
 # Project State: FISH
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 09
+Plan: 6 of 6
+Status: Phase complete — ready for verification
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
 Progress: [██████████] 100%
@@ -85,6 +85,9 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 10]: Reconnect coalescing tracks first-subscribe PER realtime channel (a Set keyed by channel identity), not one shared boolean, since messages/reads/reactions each fire their own initial post-mount SUBSCRIBED — closes the cross-AI review's HIGH-severity gap; only a channel's second-or-later SUBSCRIBED is eligible to backfill, and all three share one in-flight lock so a simultaneous reconnect produces exactly one bounded backfill instead of three full refetches
 - [Phase 10]: Plan 10-04 gates the 'Reconnecting…' pill on a genuine prior connect (previous-status render-time comparison, not a ref-read or setState-in-effect), so an ordinary initial chat load never reads as a reconnect. — Avoids react-hooks/refs and react-hooks/set-state-in-effect lint failures while keeping the first-load experience calm per states.md.
 - [Phase 10]: loadOlderAndPreserveScroll is the single wrapped callback both the IntersectionObserver sentinel and the 'Load earlier messages' button call; the raw Promise-returning loadOlderMessages is never called directly from the UI. — Guarantees neither trigger path can bypass the manual scrollHeight-diff restore (CLOAD-04).
+- [Phase 09]: Overall live realtime capture is inconclusive because raw WebSocket frames, callback status transitions, and sender HTTP response status were unavailable. — The protocol requires an inconclusive result when transport/request capture cannot be completed.
+- [Phase 09]: Functional message delivery was not reproduced as failing; both independent-session messages rendered exactly once without receiver refresh. — Database rows and receiver DOM counts confirmed both sends, including after fresh receiver restoration.
+- [Phase 09]: Missing community avatar and timestamp are separate presentation behavior, not a delivery root cause. — Same-sender grouping suppresses avatar and MessageMeta without a time-gap cutoff; layout changes remain separate scoped work.
 
 ### Todos / open questions
 
@@ -107,6 +110,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 10 P02 | 18min | 2 tasks | 5 files |
 | Phase 10 P03 | 17min | 3 tasks | 6 files |
 | Phase 10 P04 | 12min | 3 tasks | 9 files |
+| Phase 09 P05 | 23min | 2 tasks | 1 files |
 
 ### Quick Tasks Completed
 
@@ -145,10 +149,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T00:04:57.202Z
+**Last session:** 2026-07-10T02:27:28.687Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 10-04-PLAN.md (pagination/reconnect UI wired into ChatClient); Phase 10 all 4 plans complete, ready for phase verification
+- **Stopped at:** Completed 09-05-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
