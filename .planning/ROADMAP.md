@@ -75,7 +75,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 > **Supersede note (2026-07-10):** The canonical chat surface for Phase 9 is the community room at `/channels/general` (the `/chat` route was removed); any "assigned conversation" phrasing above is superseded accordingly, and re-verification targets `/channels/:id`.
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
-**Plans**: 11 plans (6 complete, 5 gap-closure round 2 from the 2026-07-10 re-verification)
+**Plans**: 12 plans (6 complete, 5 gap-closure round 2, 1 gap-closure round 3 from the 2026-07-10 UAT)
 **Wave 1**
 
 - [x] 09-01-PLAN.md — portable chat-state core, fixture vectors, dependency boundary tests, and web helper shim
@@ -108,6 +108,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 09-11-PLAN.md — community grouping predicate (avatar/time reappear), truthful offline copy, and 56px touch-safe actions (WR-02, WR-03, WR-04)
 
+**Wave 8** *(gap closure round 3; blocked on the 2026-07-10 UAT Test 2 blocker)*
+
+- [ ] 09-12-PLAN.md — bound the older-page-load sentinel auto-retry and add a calm notice-tone failure affordance so a failed "load earlier" no longer becomes a silent unbounded retry storm (UAT Test 2 blocker)
+
 ### Phase 10: Chat Message Loading Optimization
 
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
@@ -138,7 +142,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 11/11 | Complete    | 2026-07-10 |
+| 9. Cross-platform Chat State | v1.2 | 11/12 | Gap closure round 3 | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
