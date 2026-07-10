@@ -1,127 +1,195 @@
 ---
 phase: 09-cross-platform-chat-state
-reviewed: 2026-07-10T02:39:33Z
-depth: standard
 status: issues_found
-files_reviewed: 22
+depth: standard
+files_reviewed: 31
 files_reviewed_list:
-  - apps/web/app/(authenticated)/chat/chat-client.test.tsx
-  - apps/web/app/(authenticated)/chat/chat-client.tsx
-  - apps/web/app/(authenticated)/chat/chat-state.ts
-  - apps/web/app/(authenticated)/chat/hooks/use-chat-composer.ts
-  - apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts
-  - apps/web/app/(authenticated)/chat/hooks/use-chat-presence.ts
-  - apps/web/app/(authenticated)/chat/hooks/use-chat-read-state.ts
-  - apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts
-  - apps/web/app/(authenticated)/chat/store/chat-selectors.ts
-  - apps/web/app/(authenticated)/chat/store/chat-store.test.ts
-  - apps/web/app/(authenticated)/chat/store/chat-store.ts
-  - apps/web/package.json
-  - apps/web/tests/chat-state-boundary.test.ts
-  - apps/web/tests/chat-state-fixtures.test.ts
-  - packages/core/docs/chat-state-protocol.md
-  - packages/core/package.json
-  - packages/core/src/chat-state/fixtures/chat-state-vectors.json
-  - packages/core/src/chat-state/index.ts
-  - packages/core/src/chat-state/reducer.ts
-  - packages/core/src/chat-state/selectors.ts
-  - packages/core/src/chat-state/types.ts
-  - packages/core/src/index.ts
+  - ".claude/skills/sketch-findings-fish/references/states.md"
+  - "apps/web/app/(authenticated)/chat/chat-client.test.tsx"
+  - "apps/web/app/(authenticated)/chat/chat-client.tsx"
+  - "apps/web/app/(authenticated)/chat/chat-state.ts"
+  - "apps/web/app/(authenticated)/chat/hooks/use-chat-composer.ts"
+  - "apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts"
+  - "apps/web/app/(authenticated)/chat/hooks/use-chat-presence.ts"
+  - "apps/web/app/(authenticated)/chat/hooks/use-chat-read-state.ts"
+  - "apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts"
+  - "apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts"
+  - "apps/web/app/(authenticated)/chat/message-grouping.test.ts"
+  - "apps/web/app/(authenticated)/chat/message-grouping.ts"
+  - "apps/web/app/(authenticated)/chat/store/chat-selectors.ts"
+  - "apps/web/app/(authenticated)/chat/store/chat-store.test.ts"
+  - "apps/web/app/(authenticated)/chat/store/chat-store.ts"
+  - "apps/web/components/auth/logout-button.test.tsx"
+  - "apps/web/components/auth/logout-button.tsx"
+  - "apps/web/components/shell/app-shell.test.tsx"
+  - "apps/web/components/shell/app-shell.tsx"
+  - "apps/web/e2e/chat-send.spec.ts"
+  - "apps/web/package.json"
+  - "apps/web/tests/chat-state-boundary.test.ts"
+  - "apps/web/tests/chat-state-fixtures.test.ts"
+  - "packages/core/docs/chat-state-protocol.md"
+  - "packages/core/package.json"
+  - "packages/core/src/chat-state/fixtures/chat-state-vectors.json"
+  - "packages/core/src/chat-state/index.ts"
+  - "packages/core/src/chat-state/reducer.ts"
+  - "packages/core/src/chat-state/selectors.ts"
+  - "packages/core/src/chat-state/types.ts"
+  - "packages/core/src/index.ts"
 findings:
   critical: 1
-  warning: 6
+  warning: 10
   info: 1
-  total: 8
+  total: 12
+reviewed_at: "2026-07-10T06:48:04Z"
+diff_base: b605c2a318726cb067dab9cdae56aa1d3b41af94
 ---
 
 # Phase 09: Code Review Report
 
 ## Summary
 
-The portable reducer boundary and web adapter remain structurally sound, but the committed implementation has one cross-account privacy defect, six user-visible or contract-impacting defects, and one low-frequency ordering risk. The most urgent issue is that the module-global Zustand store preserves composer state across a soft logout/login and keys it only by conversation id. The fixed community conversation makes that state reusable by a different signed-in account.
+The settled-error retry path from Plan 09-12 is bounded and its manual recovery control follows the required calm tone and 56px floor. The implementation is not ready to close, however: one auth-lifecycle gap can expose account A's local chat content to account B, and ten warning-level defects cover async message ordering, pagination conversation races, reaction loss, false read receipts, stale transient state, layout stability, an unusable E2E assertion, a sub-56px shell control, and a malformed-Unicode protocol edge.
 
-The reported missing avatar/time behavior is confirmed as `WR-02`: community grouping is based only on adjacent sender id, so a same-sender run can suppress identity and timestamp metadata indefinitely. This is a presentation defect and does not explain or resolve the separate realtime-delivery diagnosis from Plan 09-05.
+Passing tests do not disprove these findings. Several defects require deliberately reordered promises or an auth/conversation transition that the current suites do not exercise.
 
-Scope isolation was preserved. The committed `HEAD` versions of `chat-client.test.tsx` and `use-chat-messages.ts` were reviewed with `git show`; their unrelated uncommitted pagination hunks were neither reviewed nor reported. `.planning/config.json` was excluded. No production source was changed.
+## Narrative Findings (AI reviewer)
 
-## Critical
+## Critical Issues
 
-### CR-01 — Composer state can leak between accounts in the shared conversation
+### CR-01 — Chat cache cleanup is not bound to a verified account transition
 
-**Files:** `apps/web/app/(authenticated)/chat/store/chat-store.ts:132`, `apps/web/app/(authenticated)/chat/store/chat-store.ts:157`, `apps/web/app/(authenticated)/chat/store/chat-store.ts:257`, `packages/core/src/chat-state/reducer.ts:138`
+**Evidence:** `apps/web/app/(authenticated)/chat/store/chat-store.ts:257-269`; `apps/web/components/auth/logout-button.tsx:15-24`; `apps/web/components/auth/logout-button.test.tsx:34-66`; imported dependency `apps/web/lib/auth/use-logout.ts:18-22`.
 
-`chatStore` is a module-global singleton keyed only by `conversationId`. Both hydration reducers spread the existing conversation before replacing server data, deliberately preserving `composer`; `clearConversation` is only exercised by tests and has no production caller. Logout and login use soft Next navigation, so the JavaScript module and Zustand singleton survive. If account A leaves an unsent draft in the fixed community conversation and account B signs in in the same tab, account B receives the same conversation id and sees account A's draft, with the ability to send it under account B's identity. Pending/failed local message state can also flash before post-mount hydration when the server hydration key matches.
+`chatStore` is a module-global singleton keyed only by `conversationId`. The only production reset is the explicit `useLogout` path; there is no auth-state/identity listener that clears or namespaces the store when a session expires, is revoked, or is signed out in another tab. A soft navigation to `/login` followed by account B signing in can therefore retain account A's draft, reply/edit targets, and failed/pending local messages for the shared community conversation. The manual path is unsafe in the opposite direction too: `signOut()` returns `ServiceResult`, but `useLogout` ignores `ok`; an `ok: false` result still clears the draft and navigates even though the authenticated session remains active. The regression test supplies only `{ ok: true }` and covers only the button path.
 
-**Recommendation:** clear all user-scoped chat cache on the auth sign-out/session transition, or namespace volatile composer/local-send state by both user and conversation without treating the client key as authorization truth. Add a regression test that drafts as account A, performs the same soft logout/login lifecycle used by the app, and asserts account B starts with an empty composer and no account-A local messages.
+**Impact:** Sensitive unsent chat content can cross account boundaries in the same tab, while a recoverable sign-out failure can erase local work and cause a login/authenticated redirect bounce without guidance.
+
+**Recommendation:** Put cache ownership at the auth identity boundary: namespace volatile chat state by verified user id or clear it whenever the verified user changes or becomes signed out, including cross-tab/session-expiry transitions. Separately branch on `signOut().ok`; on failure preserve state, reset loading, and show calm retry guidance. Add account-A → non-button sign-out/session expiry → account-B coverage plus an `ok: false` logout test.
 
 ## Warnings
 
-### WR-01 — The send-failure hook erases the draft that the portable protocol restores
+### WR-01 — An in-flight older-page request can poison the next conversation's retry gate and scroll
 
-**Files:** `apps/web/app/(authenticated)/chat/hooks/use-chat-composer.ts:123`, `apps/web/app/(authenticated)/chat/chat-client.test.tsx:630`, `packages/core/src/chat-state/reducer.ts:222`, `packages/core/docs/chat-state-protocol.md:67`
+**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts:119`, `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts:227-260`; `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts:29-35`, `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts:37-55`; `apps/web/app/(authenticated)/chat/chat-client.test.tsx:1456-1503`.
 
-`markMessageFailed` restores the failed body to `composer.draft`, as required by the reducer fixture and protocol, but `sendWithRequestId` immediately calls `setDraft(..., "")` for normal sends. The component test explicitly expects this contradictory behavior. Worse, the async failure can arrive after the user has already typed a new message; the reducer first replaces that newer text with the failed body and the hook then clears it, losing both drafts.
+The load lock is one hook-level ref, not conversation-scoped. If conversation A is still loading when the component is rerendered for B, B's first sentinel callback returns `"skipped"` because A left the ref true. A visible sentinel does not have to emit another entry when A later settles, so B can miss automatic loading. Worse, A's old wrapper still calls `setHasOlderLoadError(...)` and runs a `requestAnimationFrame` against the captured viewport after the switch; an A failure can display/gate B's history and an A completion can restore B to A's scroll coordinates. The reset test switches only after A's failure has fully settled, so it cannot catch this race.
 
-**Recommendation:** make failure recovery conditional and atomic: retain any newer composer edit, otherwise restore the failed body. Remove the unconditional clear and update the component test to match the portable contract. Cover a delayed failure after the user starts a second draft.
+**Impact:** A newly opened conversation can appear failed or stop auto-loading even though no request for it failed, and its reading position can jump.
 
-### WR-02 — Same-sender community grouping suppresses avatar and time without a cutoff
+**Recommendation:** Pass an explicit `conversationId`/reset key into the pagination hook, scope the in-flight lock by conversation, and capture a request generation. Ignore error/scroll completions whose generation no longer matches; cancel pending animation frames on reset/unmount. Add a deferred A request test that rerenders to B before resolving A, covering both A failure and success.
 
-**File:** `apps/web/app/(authenticated)/chat/chat-client.tsx:324`
+### WR-02 — Rehydration can delete unresolved local sends and their failure-recovery body
 
-`groupedWithPrevious` and `groupedWithNext` compare only `senderId`. `startsCommunityGroup` therefore stays false for every consecutive message by one sender, regardless of elapsed time or a calendar-day boundary. Since both the `Avatar` and `MessageMeta` timestamp render only at a group start, a later same-sender message can have neither identity nor time even after hours or immediately below a day divider. This matches the reported missing avatar/time symptom.
+**Evidence:** `apps/web/app/(authenticated)/chat/store/chat-store.ts:89-115`, `apps/web/app/(authenticated)/chat/store/chat-store.ts:157-189`; `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts:120-149`, `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts:307-318`; `packages/core/src/chat-state/reducer.ts:138-151`, `packages/core/src/chat-state/reducer.ts:229-253`.
 
-**Recommendation:** define one shared grouping predicate that requires the same sender, the same day, and a documented short time gap; use it for previous/next grouping and bubble radii. Add committed tests for a same-sender message inside the cutoff, outside it, and on the next day. This UI finding is independent of realtime message delivery.
+The hydration key changes for read-state-only prop updates, and both ordinary hydration and reconnect reset replace the complete message array with the server window. Any local `pending`/`sending`/`failed` row absent from that snapshot disappears. If its request later fails, `markMessageFailed` cannot find the removed row's body, so it cannot restore the draft as promised by CSTATE-06.
 
-### WR-03 — Offline copy promises an automatic queue that does not exist
+**Impact:** A server refresh, read-state refresh, or reconnect reset racing a send can make the optimistic message vanish and permanently lose the text that failure recovery was supposed to preserve.
 
-**File:** `apps/web/app/(authenticated)/chat/chat-client.tsx:606`
+**Recommendation:** Reconcile authoritative hydration with unresolved local rows instead of replacing them: retain local pending/sending/failed messages until confirmed or explicitly discarded, while replacing authoritative sent rows/read state. Add tests for read-state-only rehydration and `hydrateWindow` reset during an in-flight send, followed by both success and failure.
 
-The alert says, “Messages will send when you're back,” but offline-first queuing is explicitly out of scope and the composer continues to call the server action immediately. A failed offline send becomes a manual `Retry`; nothing automatically sends on reconnect. The current copy therefore makes a false product promise.
+### WR-03 — A late transport failure downgrades a message already confirmed by realtime
 
-**Recommendation:** use accurate calm copy such as “You're offline. Reconnect, then try again,” and prevent an offline submit or clearly preserve it as a manual retry. Do not promise background delivery until an actual queue exists.
+**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:98-107`; `apps/web/app/(authenticated)/chat/hooks/use-chat-composer.ts:112-133`; `packages/core/src/chat-state/reducer.ts:222-255`.
 
-### WR-04 — Message action controls violate the 56px interaction floor
+Realtime may observe the committed server row before the initiating request reports a timeout or lost response. `mergeRemoteMessage` then marks the optimistic row `sent`, but the later catch/notice dispatches `markMessageFailed`. That reducer matches only `clientRequestId` and unconditionally overwrites the already-authoritative row to `failed` and restores its body to the draft.
 
-**File:** `apps/web/app/(authenticated)/chat/chat-client.tsx:491`
+**Impact:** A message that really sent is presented as failed and retryable, encouraging duplicate text and undermining delivery confidence.
 
-Reply, reaction, edit, and delete use `size-10` (40px) inside an opacity-hidden, hover-revealed toolbar. This violates the project's non-negotiable minimum control size and its token-only spacing rule, and it leaves touch users with small, poorly discoverable actions.
+**Recommendation:** Make failure a valid transition only from `pending`/`sending`; if the row is already `sent`, return the existing state. Add a parity vector and component regression for optimistic send → realtime confirmation → delayed action failure.
 
-**Recommendation:** use `min-h-control min-w-control` (or a token-backed equivalent) and provide a coarse-pointer/touch presentation that does not depend on hover. Preserve the existing keyboard labels and focus behavior.
+### WR-04 — Bare realtime message updates erase existing reactions
 
-### WR-05 — Realtime lifecycle state survives unmount and is not conversation-scoped within the hook
+**Evidence:** `packages/core/src/chat-state/types.ts:20-35`; `packages/core/src/chat-state/reducer.ts:300-311`; `packages/core/src/chat-state/selectors.ts:16-47`; inspected caller `apps/web/app/(authenticated)/chat/realtime.ts:107-124`.
 
-**Files:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:64`, `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:90`, `apps/web/app/(authenticated)/chat/chat-client.tsx:170`
+`reactions` is optional in the portable message contract, but normalization converts absence to `[]` before `mergeChatMessage` spreads the incoming row over the existing row. The web realtime adapter also emits `reactions: []` for bare message INSERT/UPDATE rows. An edit update for a message that already has reactions therefore replaces the known reaction snapshot with an empty array.
 
-The message subscription sets the store to `connected`/`disconnected`, but cleanup never returns it to an inactive state. Revisiting the same conversation can initialize `hasConnected` from stale `connected`, then the mount effect sets `connecting`, causing an ordinary first connection for the new component instance to be labeled “Reconnecting…”. Separately, `seenFirstSubscribeRef` and `backfillInFlightRef` are never reset when `conversationId` changes, so the first subscriptions for a new conversation can be mistaken for reconnects or have their backfill suppressed by the prior conversation.
+**Impact:** Reaction chips disappear after an unrelated edit/update and remain wrong until a separate enriched refresh happens.
 
-**Recommendation:** scope connection-history/backfill refs to the current conversation and reset them on id change. Model subscription cleanup without letting one surface falsely disconnect another; at minimum, make the “has connected in this mount” decision hook-local rather than deriving it from stale cached status. Add unmount/remount and prop-change tests.
+**Recommendation:** Distinguish "reaction snapshot absent" from "authoritatively empty." Preserve existing reactions when an incoming payload does not carry an enriched snapshot, or refresh/enrich message updates before merging. Add a reducer/store test for editing a reacted message.
 
-### WR-06 — The same realtime read-state payload is dispatched twice
+### WR-05 — Messages are marked read even while the UI says they are unseen
 
-**Files:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:113`, `apps/web/app/(authenticated)/chat/hooks/use-chat-read-state.ts:69`
+**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-read-state.ts:96-126`; `apps/web/app/(authenticated)/chat/chat-client.tsx:151-156`, `apps/web/app/(authenticated)/chat/chat-client.tsx:613-621`.
 
-The read subscription calls `dispatchChatEvent({ type: "mergeReadState" })` and then calls `mergeReadState(readState)`, which dispatches the same event again through the store action. Equality checks usually make the second dispatch a no-op, but every read update still performs redundant store work and obscures which adapter path is canonical.
+Every new participant message immediately writes both delivered and read markers from an effect. The effect does not check document visibility, the scroll position, or `showNewMessages`. When the user is reading older history and the UI displays the `New messages` control, the newest hidden message has already been marked read.
 
-**Recommendation:** keep one dispatch path—prefer the injected `mergeReadState` callback or the direct store event, not both—and assert one store transition per realtime payload.
+**Impact:** Senders receive a false read receipt and unread state is cleared for content the recipient has not actually seen.
+
+**Recommendation:** Advance delivered state on receipt, but advance read state only when the message is actually visible (for example, document visible and the log at bottom/latest message intersecting). Add a regression where a user scrolled away from the bottom receives a message: `New messages` remains and the read action is withheld until the user reveals it.
+
+### WR-06 — Conversation switches retain old realtime transient UI indefinitely
+
+**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:52-63`, `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:159-192`; `apps/web/app/(authenticated)/chat/chat-client.tsx:171-179`, `apps/web/app/(authenticated)/chat/chat-client.tsx:601-607`.
+
+`participantTyping` is initialized once. On a conversation change, the typing effect cleanup cancels the old four-second reset timeout but never sets the state back to false; without a broadcast in the new room, the old participant's typing indicator can remain forever. `localTypingRef` and `hasConnected` are likewise not reset by conversation id, so the first local typing event may be suppressed and an ordinary first connection may be labeled as reconnecting.
+
+**Impact:** A new conversation can show the wrong person typing indefinitely, fail to broadcast the user's first typing state, or display misleading reconnect copy.
+
+**Recommendation:** Reset conversation-scoped transient state and refs in an id-keyed transition (or remount/key the hook by conversation id), and add prop-switch tests while typing/connected states are active.
+
+### WR-07 — The older-load failure affordance does not preserve layout height
+
+**Evidence:** `apps/web/app/(authenticated)/chat/chat-client.tsx:293-318`; `apps/web/app/(authenticated)/chat/chat-client.test.tsx:1302-1350`.
+
+The loading state inserts two fixed-height skeleton rows, while the failure state replaces them with one Alert/button row; there is no stable-height wrapper or overlay. Both are in normal flow before the message list. The committed tests assert presence, tone, and classes only, so they do not verify Plan 09-12's explicit "does not shove the message list" claim.
+
+**Impact:** The transcript moves vertically as loading becomes failure/success, disrupting the reading position for the audience this product is designed to keep oriented.
+
+**Recommendation:** Reserve one token-backed, state-invariant pagination feedback region (or overlay feedback without changing transcript geometry) and verify the first message's bounding position across idle → loading → failure → retry success in Playwright.
+
+### WR-08 — Message lifecycle contracts conflict, and the community send E2E cannot pass
+
+**Evidence:** `.claude/skills/sketch-findings-fish/references/states.md:7-13`; `apps/web/app/(authenticated)/chat/chat-client.tsx:358-368`, `apps/web/app/(authenticated)/chat/chat-client.tsx:568-595`; `apps/web/app/(authenticated)/chat/chat-client.test.tsx:617-641`; `apps/web/e2e/chat-send.spec.ts:13-21`.
+
+The validated state reference requires visible `sending → sent → seen → failed` feedback, the unit suite explicitly requires no `Sending` feedback, and `ChatClient` hides every successful status in community rooms. The browser smoke test opens the community room and waits for a visible `Sent|Delivered|Read` image, so a successful implementation times out. It also selects `.last()` for the body, allowing duplicate optimistic/server rows to pass unnoticed.
+
+**Impact:** The release-level send smoke test is unusable, duplicate-reconciliation regressions can be masked, and users have no canonical in-flight/success confirmation behavior.
+
+**Recommendation:** Choose and document one community lifecycle. A coherent option is quiet `Sending`/`Sent` feedback while omitting participant-specific delivered/read states; otherwise update the reference and make E2E prove persistence by reloading. In either case assert exactly one matching message row instead of selecting `.last()`.
+
+### WR-09 — The shell logo link is below the mandatory 56px target
+
+**Evidence:** `apps/web/components/shell/app-shell.tsx:134-153`.
+
+The home link has only `shrink-0`; its contents are a 32×32 mobile image or 40×40 desktop image. Header padding is outside the anchor and does not enlarge its clickable area.
+
+**Impact:** A persistent navigation control violates FISH's non-negotiable 56px interaction floor and is harder to tap for the target audience.
+
+**Recommendation:** Give the link `inline-flex min-h-control min-w-control items-center justify-center` while retaining the visual logo size, and add a rendered-class/geometry regression assertion.
+
+### WR-10 — Snippet truncation can emit malformed Unicode and violates the documented length
+
+**Evidence:** `packages/core/src/chat-state/selectors.ts:191-201`; `packages/core/docs/chat-state-protocol.md:105-108`; `apps/web/tests/chat-state-fixtures.test.ts:213-217`.
+
+Long snippets use `body.slice(0, 95) + "..."`. For ASCII the result is 98 characters despite the protocol's 96-character rule. Because `slice` counts UTF-16 code units, a surrogate pair crossing offset 95 is split; for example, 94 ASCII characters followed by an emoji produces a lone surrogate/replacement glyph. Existing snippet parity coverage exercises only the deleted-message case.
+
+**Impact:** Reply previews can display corrupted text, and Kotlin/Swift implementations can follow the stated 96-character contract yet disagree with web fixtures.
+
+**Recommendation:** Define the portable counting unit (prefer user-perceived grapheme clusters), truncate without splitting a grapheme, and make the final ellipsis fit within 96 characters. Add long ASCII and emoji parity fixtures.
 
 ## Info
 
-### IN-01 — Read-state replacement can regress on an out-of-order stale row
+### IN-01 — Out-of-order read-state rows can move markers backward
 
-**Files:** `packages/core/src/chat-state/selectors.ts:50`, `packages/core/docs/chat-state-protocol.md:69`
+**Evidence:** `packages/core/src/chat-state/selectors.ts:50-65`; `packages/core/docs/chat-state-protocol.md:69`, `packages/core/docs/chat-state-protocol.md:91-104`.
 
-`mergeReadState` replaces an existing user's row wholesale whenever any field differs. The database command advances markers monotonically, but action responses, reconnect refreshes, and multi-tab realtime delivery can complete out of order at the client. A late older row can temporarily move delivered/read markers backward and downgrade message statuses until another refresh. Existing fixtures cover only a forward replacement.
+`mergeReadState` replaces the entire user's row whenever any field differs. A delayed older action response or multi-tab realtime row can therefore overwrite newer delivered/read markers and temporarily downgrade message statuses. Current parity vectors cover forward replacement and out-of-window markers, not a newer row followed by a stale row.
 
-**Recommendation:** specify the ordering rule in the portable protocol and reject older marker timestamps/rows (while merging delivered and read dimensions independently). Add parity vectors for a newer row followed by a stale row and for independently advancing delivered/read markers.
+**Impact:** Delivered/read indicators and unread counts can regress until another refresh corrects them.
 
-## Verification Notes
+**Recommendation:** Specify monotonic ordering in the protocol and merge delivered/read dimensions independently by their timestamps, rejecting stale values. Add parity vectors for newer → stale and independently advancing delivered/read fields.
 
-- Reviewed all 22 listed committed source artifacts at standard depth.
-- Read `AGENTS.md` and `docs/ui-ux-agent-guidelines.md` before reviewing `ChatClient`.
-- Used committed `HEAD` content for the two dirty pagination files; no finding above depends on their uncommitted changes.
-- This review is source-based. Tests were not rerun against the dirty working tree because that would mix the explicitly excluded pagination edits into the evidence.
+## Scope and Verification
+
+- Reviewed the 31 explicitly scoped files at standard depth against `AGENTS.md`, `docs/ui-ux-agent-guidelines.md`, Phase 09 context, and Plan 09-12. Imported callers were inspected only where needed to prove a scoped call-chain defect.
+- Explicitly traced Plan 09-12's observer creation/cleanup, callback identity reset, `loaded`/`failed`/`skipped` outcomes, duplicate triggers, manual retry, scroll restoration, conversation changes, tone/copy, and the 56px retry control.
+- `pnpm test -- run ...` from `apps/web` completed with 60 files and 468 tests passing, including the focused chat/store/fixture/boundary/shell/logout files.
+- `pnpm typecheck`, `pnpm lint`, and `pnpm build` passed from the repository root.
+- E2E execution was not run because it requires the seeded local Supabase/Edge runtime and mutates chat data; its contradictory assertion was verified statically against the rendered community branch. No source file was modified by this review.
 
 ---
 
+_Reviewed: 2026-07-10T06:48:04Z_
 _Reviewer: gsd-code-reviewer_
-_Depth: standard_
+_Completion: REVIEW_COMPLETE_
