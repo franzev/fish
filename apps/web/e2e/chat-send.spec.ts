@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test("client can send a chat message from the browser", async ({ page }) => {
+test("client sends a message and it persists as exactly one row after reload", async ({
+  page,
+}) => {
   const body = `Playwright chat send ${Date.now()}`;
 
   await page.goto("/login");
@@ -14,13 +16,22 @@ test("client can send a chat message from the browser", async ({ page }) => {
   await page.getByRole("textbox", { name: "Message", exact: true }).fill(body);
   await page.getByRole("button", { name: "Send message" }).click();
 
-  const messageRow = page.locator("li", { hasText: body }).last();
-  await expect(messageRow).toBeVisible();
-  await expect(
-    messageRow.getByRole("img", { name: /Sent|Delivered|Read/ })
-  ).toBeVisible();
-  await expect(messageRow.getByText("Not sent yet")).toHaveCount(0);
+  // Exactly one matching row proves the send landed without a duplicate.
+  // A newest-row-only match is never used here — selecting only the most
+  // recent row would silently hide a duplicate instead of proving there is
+  // only one.
+  await expect(page.locator("li", { hasText: body })).toHaveCount(1);
+  await expect(page.getByText("Not sent yet")).toHaveCount(0);
   await expect(
     page.getByText("That did not send yet. Keep this open and try again.")
   ).toHaveCount(0);
+
+  // The community feed proves the send lifecycle through persistence, not a
+  // per-message Sent/Delivered/Read status tick — the feed intentionally
+  // does not render one (calm, one-thing, feed idiom; sketch-findings-fish).
+  await page.reload();
+  await expect(
+    page.getByRole("textbox", { name: "Message", exact: true })
+  ).toBeVisible();
+  await expect(page.locator("li", { hasText: body })).toHaveCount(1);
 });
