@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-15-PLAN.md
-last_updated: "2026-07-10T09:12:40.882Z"
+stopped_at: Completed 09-17-PLAN.md
+last_updated: "2026-07-10T09:23:40.200Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 26
-  completed_plans: 24
+  completed_plans: 25
   percent: 60
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 4 of 18
+Plan: 5 of 18
 Status: Ready to execute
 Next planned: Re-run Phase 09 UAT Test 2 at `/channels/general`, then complete the milestone audit.
 
-Progress: [█████████░] 92%
+Progress: [██████████] 96%
 
 ## Milestone v1.1 Phases
 
@@ -108,6 +108,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09-14]: A failed signOut preserves state and shows guidance instead of half-completing the clear+navigate sequence — Closes the repudiation gap where a failed sign-out was previously treated as success (CR-01)
 - [Phase 09-15]: loadingOlderConversationsRef (a Set<ChatConversationId>) replaces the single hook-wide isLoadingOlderRef boolean in useChatMessages, and loadOlderAndPreserveScroll stale-completion guard drops a completion once onLoadOlder identity no longer matches the request it was captured for. — Closes WR-01 -- an older-load in-flight in conversation A could gate, error, or scroll-corrupt conversation B once the mounted ChatClient switched to it.
 - [Phase 09-15]: The stale-completion generation-token ref (latestOnLoadOlderRef) is written only inside a useEffect keyed on onLoadOlder, never in the render body. — eslint-plugin-react-hooks 7.1.1 recommended config (via eslint-config-next 16.2.9) enforces the refs rule (error, Recommended preset) against any ref access during render; reads stay inside useCallback/rAF callback bodies, matching this codebase existing effect-write pattern for a value that must stay visible to a stale async closure.
+- [Phase 09]: Plan 09-17: Community send smoke rewritten to prove send + reload-persistence + dedup with exact-count assertions instead of a per-message Sent/Delivered/Read status tick. — Closes WR-08 — the community feed intentionally does not render per-message status ticks (calm, one-thing, feed idiom), and .last() could never prove deduplication; reload + toHaveCount(1) proves both Supabase persistence and no duplicate.
 
 ### Todos / open questions
 
@@ -140,6 +141,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P13 | 25min | 3 tasks | 6 files |
 | Phase 09 P14 | 20min | 3 tasks | 10 files |
 | Phase 09 P15 | 15min | 3 tasks | 3 files |
+| Phase 09 P17 | 5min | 1 tasks | 1 files |
 
 ### Quick Tasks Completed
 
@@ -182,10 +184,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T09:12:40.878Z
+**Last session:** 2026-07-10T09:23:40.197Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-15-PLAN.md
+- **Stopped at:** Completed 09-17-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
