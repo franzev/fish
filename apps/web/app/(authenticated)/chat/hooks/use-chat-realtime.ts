@@ -68,12 +68,50 @@ export function useChatRealtime({
   const seenFirstSubscribeRef = useRef<Set<ReconnectChannelKey>>(new Set());
   const backfillInFlightRef = useRef<Promise<void> | null>(null);
 
+  // A mounted client can switch conversations without unmounting. Every
+  // participant/local realtime transient (typing, recording, the local "am
+  // I typing" flag) is scoped to the conversation it was observed in --
+  // carrying A's activity into B would show a false participant indicator
+  // (WR-06). Reset the STATE values via the render-time "adjusting state
+  // when a prop changes" pattern (the same idiom ChatClient already uses for
+  // previousRealtimeStatus) so no setState-in-effect lint fires.
+  const [previousConversationId, setPreviousConversationId] = useState(
+    chat.conversationId
+  );
+  if (chat.conversationId !== previousConversationId) {
+    setPreviousConversationId(chat.conversationId);
+    setParticipantTyping(false);
+    setParticipantRecording(false);
+    setLocalRecording(false);
+  }
+
   // A new conversation's first subscribes must read as first connects, not
   // reconnects, and its backfill lock must not carry over from whatever
   // conversation was open before — reset both per conversation id (WR-05).
+  // localTypingRef and the three pending typing/recording timeout refs are
+  // also conversation-scoped (WR-06): left uncleared, a delayed
+  // setParticipantTyping(false)/setParticipantRecording(false) callback
+  // scheduled by the previous conversation could fire after the new
+  // conversation's own indicator was set, wiping real activity. Refs are
+  // never read or written during render (react-hooks/refs) -- unlike the
+  // state resets above, these live in this effect.
   useEffect(() => {
     seenFirstSubscribeRef.current = new Set();
     backfillInFlightRef.current = null;
+    localTypingRef.current = false;
+
+    if (localTypingTimeoutRef.current) {
+      clearTimeout(localTypingTimeoutRef.current);
+      localTypingTimeoutRef.current = null;
+    }
+    if (participantTypingTimeoutRef.current) {
+      clearTimeout(participantTypingTimeoutRef.current);
+      participantTypingTimeoutRef.current = null;
+    }
+    if (participantRecordingTimeoutRef.current) {
+      clearTimeout(participantRecordingTimeoutRef.current);
+      participantRecordingTimeoutRef.current = null;
+    }
   }, [chat.conversationId]);
 
   const handleReconnected = useCallback(

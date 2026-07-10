@@ -178,6 +178,22 @@ describe("ChatClient hook boundaries", () => {
     expect(hookSources.join("\n")).toContain("markMessageFailed");
     expect(hookSources.join("\n")).toContain("mergeReadState");
   });
+
+  it("resets every conversation-scoped realtime transient via a previousConversationId render-time comparison (WR-06)", () => {
+    const useChatRealtimeSource = readFileSync(
+      join(
+        process.cwd(),
+        "app/(authenticated)/chat/hooks/use-chat-realtime.ts"
+      ),
+      "utf8"
+    );
+
+    expect(useChatRealtimeSource).toContain("previousConversationId");
+    expect(useChatRealtimeSource).toContain("setParticipantTyping(false)");
+    expect(useChatRealtimeSource).toContain("setParticipantRecording(false)");
+    expect(useChatRealtimeSource).toContain("setLocalRecording(false)");
+    expect(useChatRealtimeSource).toContain("localTypingRef.current = false");
+  });
 });
 
 describe("ChatClient", () => {
@@ -1904,5 +1920,43 @@ describe("ChatClient", () => {
       lastReadMessageId: "message-1",
       readAt: "2026-07-05T00:03:00.000Z",
     });
+  });
+
+  it("resets the participant typing indicator when a mounted client switches conversations (WR-06)", async () => {
+    const { rerender } = render(
+      <ChatClient chat={chat} sendMessageAction={vi.fn()} />
+    );
+
+    act(() => {
+      realtimeMock.typingHandlers[0]?.({
+        payload: { userId: "coach-1", typing: true },
+      });
+    });
+
+    expect(
+      await screen.findByRole("status", { name: "Coach Dana is typing" })
+    ).toBeInTheDocument();
+
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    // A's typing indicator does not bleed into B, the freshly switched
+    // conversation on the same mounted client.
+    expect(screen.queryByText("Coach Dana is typing")).toBeNull();
+    expect(
+      screen.queryByRole("status", { name: "Coach Dana is typing" })
+    ).toBeNull();
   });
 });
