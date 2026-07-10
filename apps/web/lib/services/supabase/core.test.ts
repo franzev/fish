@@ -299,9 +299,63 @@ describe("Supabase service registry", () => {
         coach_id: "coach-1",
       },
       messages: messageRows,
-      message_reactions: [],
       message_reads: [],
       presence_sessions: [],
+    };
+    const reactionRows = [
+      {
+        id: "reaction-retained",
+        conversation_id: demoConversationId,
+        message_id: "message-040",
+        user_id: "user-1",
+        emoji: "👍",
+        removed_at: null,
+        created_at: "2026-07-05T01:00:00.000Z",
+      },
+      {
+        id: "reaction-excluded",
+        conversation_id: demoConversationId,
+        message_id: "message-000",
+        user_id: "coach-1",
+        emoji: "👎",
+        removed_at: null,
+        created_at: "2026-07-05T01:01:00.000Z",
+      },
+    ];
+    const reactionConversationIds: string[] = [];
+    const reactionMessageIdBatches: string[][] = [];
+    const createReactionChain = () => {
+      let conversationId: string | null = null;
+      let messageIds: string[] | null = null;
+      const builder: Record<string, unknown> = {
+        select: vi.fn(() => builder),
+        eq: vi.fn((column: string, value: string) => {
+          if (column === "conversation_id") {
+            conversationId = value;
+            reactionConversationIds.push(value);
+          }
+          return builder;
+        }),
+        in: vi.fn((column: string, values: string[]) => {
+          if (column === "message_id") {
+            messageIds = values;
+            reactionMessageIdBatches.push(values);
+          }
+          return builder;
+        }),
+        range: vi.fn(() => builder),
+        then: (
+          resolve: (outcome: { data: typeof reactionRows; error: null }) => unknown
+        ) => {
+          const data = reactionRows.filter(
+            (reaction) =>
+              (!conversationId || reaction.conversation_id === conversationId) &&
+              (!messageIds || messageIds.includes(reaction.message_id))
+          );
+          return Promise.resolve({ data, error: null }).then(resolve);
+        },
+      };
+      return builder;
     };
     const client = {
       auth: {
@@ -314,6 +368,9 @@ describe("Supabase service registry", () => {
         if (table === "profiles") {
           const queue = queues.profiles;
           return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
+        }
+        if (table === "message_reactions") {
+          return createReactionChain();
         }
         return createChainStub(tables[table]);
       }),
@@ -335,6 +392,23 @@ describe("Supabase service registry", () => {
         createdAt: "2026-07-05T00:01:00.000Z",
         id: "message-001",
       });
+      expect(reactionConversationIds).toEqual([
+        demoConversationId,
+        demoConversationId,
+      ]);
+      expect(reactionMessageIdBatches.every((ids) => ids.length <= 25)).toBe(true);
+      expect(new Set(reactionMessageIdBatches.flat())).toEqual(
+        new Set(result.data?.messages.map((message) => message.id))
+      );
+      expect(
+        reactionMessageIdBatches.some((ids) => ids.includes("message-000"))
+      ).toBe(false);
+      expect(result.data?.messages[39]?.reactions).toEqual([
+        { emoji: "👍", count: 1, byMe: true },
+      ]);
+      expect(
+        result.data?.messages.flatMap((message) => message.reactions ?? [])
+      ).not.toContainEqual(expect.objectContaining({ emoji: "👎" }));
     }
   });
 
