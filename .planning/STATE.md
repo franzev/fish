@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-16-PLAN.md
-last_updated: "2026-07-10T10:08:30.506Z"
+stopped_at: Completed 09-19-PLAN.md
+last_updated: "2026-07-10T21:09:07.264Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 26
-  completed_plans: 27
+  total_plans: 27
+  completed_plans: 28
   percent: 80
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 7 of 18
+Plan: 2 of 19
 Status: Ready to execute
 Next planned: Re-run Phase 09 UAT Test 2 at `/channels/general`, then complete the milestone audit.
 
@@ -112,6 +112,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: Plan 09-18: app-shell logo Link aria-label is a static "FISH home" regardless of role (client -> /home, coach -> /coach); min-h-control/min-w-control 56px target closes WR-09. — Both /home and /coach are the landing screen for their role, so a static label keeps the accessible name deterministic and simple rather than branching copy for a brand-mark link.
 - [Phase 09]: localTypingRef and the three pending typing/recording timeout refs reset inside the existing [chat.conversationId]-keyed effect, not the render-time block, because the project's react-hooks/refs ESLint rule (error severity) forbids ref access during render. — localTypingRef is never read during rendering (only inside event-handler-triggered callbacks), so a post-commit effect reset satisfies the WR-06 behavioral intent without breaking pnpm lint.
 - [Phase 09]: The pagination-feedback reserved height (104px, --size-pagination-slot) is sized to exactly fit the tallest existing state (the two-row loading skeleton), with the shorter error/button states vertically centered within it. — Closes WR-07: a single reserved-height data-testid=load-older-slot wrapper now hosts skeleton/error/button so the transcript below never shifts between states.
+- [Phase 09-19]: Deleted the local hasOlderLoadError useState and callback-identity reset block in use-load-older-messages.ts entirely rather than re-keying the reset to conversationId. — Once the older-page failure flag became store state (pagination.hasLoadError) read via a conversationId-scoped selector, there was no local state left to reset -- deleting is strictly simpler and matches the plan's own Task 2 action text.
+- [Phase 09-19]: The IntersectionObserver test mock's intersectingTargets set is deliberately never cleared by disconnect()/unobserve(). — Element visibility belongs to DOM geometry, not to any one observer instance's subscription lifecycle; clearing it on disconnect (the plan's own first-offered example) empirically made a disconnect-then-re-observe regression test pass identically whether the underlying atomic-commit fix was present or reverted -- verified with a throwaway test before landing the final version.
 
 ### Todos / open questions
 
@@ -147,6 +149,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P17 | 5min | 1 tasks | 1 files |
 | Phase 09 P18 | 6min | 2 tasks | 2 files |
 | Phase 09 P16 | 36min | 3 tasks | 4 files |
+| Phase 09 P19 | 18min | 3 tasks | 11 files |
 
 ### Quick Tasks Completed
 
@@ -189,10 +192,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T10:08:30.501Z
+**Last session:** 2026-07-10T21:09:07.259Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-16-PLAN.md
+- **Stopped at:** Completed 09-19-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---

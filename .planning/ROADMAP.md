@@ -126,7 +126,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Wave 11** *(gap closure round 5; blocked on the 2026-07-10 UAT Test 2 minor gap — older-load double automatic attempt)*
 
-- [ ] 09-19-PLAN.md — commit the older-page failure flag atomically into per-conversation pagination state (store-backed hasLoadError) so a failed load fires exactly one automatic attempt; browser-faithful IO test + contract vectors (UAT Test 2)
+- [x] 09-19-PLAN.md — commit the older-page failure flag atomically into per-conversation pagination state (store-backed hasLoadError) so a failed load fires exactly one automatic attempt; browser-faithful IO test + contract vectors (UAT Test 2)
 
 ### Phase 10: Chat Message Loading Optimization
 
@@ -158,7 +158,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 18/18 | Complete   | 2026-07-10 |
+| 9. Cross-platform Chat State | v1.2 | 19/19 | Complete   | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
