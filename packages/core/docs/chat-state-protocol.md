@@ -13,6 +13,21 @@ Supabase RLS, database functions, Edge Functions, and Next server actions remain
 authoritative for auth, coach-client assignment, conversation membership, write
 permission, message persistence, and durable read state.
 
+## Contract Ownership
+
+The TypeScript types, reducer, and selectors in
+`packages/core/src/chat-state`, together with
+`packages/core/src/chat-state/fixtures/chat-state-vectors.json`, are the
+executable parity contract. This file is the canonical human-readable,
+platform-neutral explanation of that contract.
+
+`.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`
+is the canonical current Android/iOS architecture companion. Any change to the
+portable event union, state shape, selector behavior, or fixture cases must
+update this protocol and that Phase 09 native companion together. Native
+implementations replay the JSON vectors idiomatically; they do not consume
+generated TypeScript or import web state libraries.
+
 ## State Shape
 
 `ChatState` is normalized by conversation id:
