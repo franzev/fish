@@ -133,7 +133,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
 **Depends on**: Phase 8, Phase 9
 **Requirements**: CLOAD-01, CLOAD-02, CLOAD-03, CLOAD-04, CLOAD-05, CLOAD-06
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans executed
 
 **Wave 1** *(parallel — no shared files)*
 
@@ -163,7 +163,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 | 9. Cross-platform Chat State | v1.2 | 19/19 | Complete   | 2026-07-10 |
-| 10. Chat Message Loading Optimization | v1.2 | 5/5 | Complete   | 2026-07-10 |
+| 10. Chat Message Loading Optimization | v1.2 | 5/5 | Gaps found | — |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*

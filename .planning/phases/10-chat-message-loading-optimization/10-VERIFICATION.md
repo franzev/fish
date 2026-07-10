@@ -1,145 +1,104 @@
 ---
 phase: 10-chat-message-loading-optimization
-verified: 2026-07-10T00:11:21Z
-status: human_needed
-score: 6/6 must-haves verified (structural + automated); 5 sub-truths route to human verification
-has_blocking_gaps: false
-overrides_applied: 0
+verified: 2026-07-10T22:24:17Z
+status: gaps_found
+score: "4/6 requirements passed; CLOAD-01 and CLOAD-06 have blocking implementation gaps"
+has_blocking_gaps: true
+re_verification: true
+head_verified: 8e193bd35f331b7b612d95f61f1ca314069ecdf9
+requirements:
+  CLOAD-01: failed
+  CLOAD-02: passed
+  CLOAD-03: passed
+  CLOAD-04: passed
+  CLOAD-05: passed
+  CLOAD-06: failed
+requirements_verified:
+  - CLOAD-02
+  - CLOAD-03
+  - CLOAD-04
+  - CLOAD-05
+requirements_failed:
+  - CLOAD-01
+  - CLOAD-06
+schema_drift: false
+gaps:
+  - id: WR-01
+    requirement: CLOAD-06
+    summary: "Reconnect backfill uses the last local row as a server cursor and returns early for an empty transcript."
+  - id: WR-02
+    requirement: CLOAD-01
+    summary: "The 40-message SSR window still fetches every reaction in the conversation."
 human_verification:
-  - test: "Open a real seeded conversation (pnpm seed) with >40 messages and scroll up through 3+ older pages using both the sentinel (scroll near top) and the 'Load earlier messages' button."
-    expected: "The message under the eye never visibly moves (instant restore, no jump/jank); skeleton rows never shift surrounding layout; no duplicate messages appear across pages."
-    why_human: "jsdom performs no real layout — scrollTop/scrollHeight pixel-level restoration cannot be asserted by an automated test. Structural code (capture -> await -> requestAnimationFrame restore, overflow-anchor:none) is verified; this is the plan's own designated human-check (10-04 Task 3)."
-  - test: "Toggle the network offline then online while a conversation is open; observe the loading skeleton, the offline banner, and the 'Reconnecting…' pill."
-    expected: "All loading/offline/reconnect states read calm: notice/muted tone only, never red or alarming, non-scolding sentence-case copy, no spinner storms, reduced-motion respected."
-    why_human: "Visual/perceptual calm is a design judgment, not a structural property — grep confirms tone=\"notice\" and no error/red classes, but 'does this feel calm' requires a human looking at it. Plan 10-04's own designated human-check."
-  - test: "Force a real Supabase Realtime reconnect (e.g. suspend/resume the tab or toggle network) while three channels (messages/reads/reactions) are subscribed, and confirm exactly one bounded backfill fires — not three full refetches — and that each channel's very first post-mount SUBSCRIBED does not trigger a backfill."
-    expected: "One coalesced, bounded gap-backfill call (via applyGapBackfill) runs per genuine reconnect; initial mount produces zero backfills; history stays gap-free with no duplicates."
-    why_human: "No automated test drives the mocked Supabase channel's `.subscribe()` status callback through SUBSCRIBED/CHANNEL_ERROR/re-SUBSCRIBED transitions (chat-client.test.tsx's `realtimeMock.channel.subscribe.mockReturnValue(...)` never invokes the status callback). The per-channel first-subscribe Set and shared in-flight lock are verified structurally (code read, matches plan spec exactly) and by typecheck, but the coalescing behavior itself is unexercised by any test."
-  - test: "Simulate (or wait for) a reconnect gap exceeding 40 newer messages while disconnected, and confirm the client resets to the bounded newest window (via loadNewestMessagesAction + hydrateWindow) rather than hanging or unbounded-refetching."
-    expected: "needsReset triggers loadNewestMessagesAction, and the returned window re-hydrates via hydrateWindow with correct hasMoreOlder/oldestCursor/readStates; the transcript lands on the current newest window with no gap and no duplicate."
-    why_human: "applyGapBackfill's needsReset branch is not exercised by any current automated test (no test injects backfillMessagesAction/loadNewestMessagesAction into ChatClient with a needsReset:true response). Verified structurally: the code path exactly matches the plan's specified needsReset -> loadNewestMessagesAction -> hydrateWindow sequence, and typecheck/build hold across the whole chain."
-  - test: "Force the messages realtime channel to emit CHANNEL_ERROR/TIMED_OUT/CLOSED (e.g. kill the websocket) and confirm the store's realtime status flips to 'disconnected', then recovers to 'connected' on re-subscribe."
-    expected: "The offline banner and 'Reconnecting…' pill appear/disappear correctly, driven by the real channel's status transitions, not just a manually-set store value."
-    why_human: "chat-client.test.tsx proves the UI renders correctly GIVEN a manually-set 'disconnected' store status, but no test drives the actual mocked channel's subscribe callback with CHANNEL_ERROR/TIMED_OUT/CLOSED to prove realtime.ts's onDisconnected wiring fires in response to a real channel state change. Verified structurally (grep confirms the CHANNEL_ERROR/TIMED_OUT/CLOSED branch calls onDisconnected, and the messages effect wires it to setRealtimeStatus(..., 'disconnected'))."
+  - id: HV-01
+    test: "After the blocking gaps are fixed, load at least three older pages in a real seeded conversation using both the sentinel and the button."
+    expected: "The message under the reader's eye does not move; the two-row skeleton transitions into final rows without a visible jump; no duplicate appears."
+    why_human: "Real scroll geometry, paint timing, and perceptual layout stability are not measurable in jsdom."
 ---
 
-# Phase 10: Chat Message Loading Optimization Verification Report
+# Phase 10: Chat Message Loading Optimization Verification
 
-**Phase Goal:** Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
-**Verified:** 2026-07-10T00:11:21Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Phase goal:** Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based load earlier and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place without full reloads, duplicates, or layout shift; reconnect recovery stays gap-free and ordered.
 
-## Goal Achievement
+**Verdict:** `gaps_found`. Plans 10-01 through 10-05 are implemented and their declared artifacts are substantive and wired, including the 10-05 skeleton gap closure. However, direct inspection confirms both warnings in `10-REVIEW.md` still exist. WR-02 prevents the initial load from being bounded by conversation history, and WR-01 can permanently omit messages missed during a reconnect. These failures block the phase goal and CLOAD-01/CLOAD-06 respectively.
 
-### Observable Truths
+## Requirement Results
 
-| # | Truth | Status | Evidence |
-|---|-------|--------|----------|
-| 1 | Opening a conversation fetches a bounded newest-window (not full history) | VERIFIED | `core.ts:52,717-719` — `chatInitialWindowSize = 40`, keyset `.order(created_at DESC).order(id DESC).limit(41)`, `hasMoreOlder`/`oldestCursor` computed and returned on `ClientChatData`. Proven by `core.test.ts` (2 new cases, both pass: large conversation → 40-window + hasMoreOlder true; small conversation → hasMoreOlder false). |
-| 2 | Older history loads via cursor-based (keyset) pagination — a "load earlier" affordance plus auto-load on scroll-up | VERIFIED | `actions.ts` exports `loadOlderMessagesAction` (composite `.or()` keyset filter, N+1 probe). `use-chat-messages.ts` exposes guarded, Promise-returning `loadOlderMessages`. `use-load-older-messages.ts` implements an `IntersectionObserver` sentinel (`rootMargin: "200px..."`) plus a "Load earlier messages" ghost button, both routed through the single `loadOlderAndPreserveScroll` callback. `chat-client.test.tsx` proves both trigger paths call the injected action and render results without duplicates. |
-| 3 | Loading older messages preserves reading position — no scroll jump, no layout shift; newest-anchoring on send/receive unchanged | PARTIAL / STRUCTURAL | `use-load-older-messages.ts` captures `scrollHeight`/`scrollTop`, awaits the load, restores via `requestAnimationFrame` with no animated scroll; `.chat-log-viewport { overflow-anchor: none }` added to `globals.css`. `use-stick-to-bottom.ts` now keys new-message detection off the newest message's *identity* (not `messages.length`), proven inert-to-prepend by 3 new unit tests. The exact pixel-level restore across a real prepend cannot be asserted in jsdom — routed to human verification (item 1). |
-| 4 | Realtime messages merge into the loaded list in place — never a full reload | VERIFIED | `use-chat-realtime.ts`'s messages channel still dispatches `mergeRemoteMessage` on every INSERT (unchanged); `grep -c "refreshConversation()" use-chat-realtime.ts` = 0 — the three full-refetch-on-reconnect call sites are gone, replaced by coalesced `handleReconnected`. |
-| 5 | The merged list never shows duplicates across optimistic/realtime/paginated sources — deduped by id/clientRequestId | VERIFIED | `olderPageLoaded` reducer case loops the existing `mergeChatMessage` primitive (no second dedup path) — proven by fixtures `olderPageDuplicateReconciliation` and `gapBackfillOutOfOrder` (both replay green, exactly one copy per id). Store-level `applyOlderPage` dedup also proven in `chat-store.test.ts`. |
-| 6 | History stays gap-free and correctly ordered across offline/reconnect; read-state stays consistent with pagination | PARTIAL / STRUCTURAL | `backfillMessagesAction` + `applyGapBackfill`'s `needsReset` → `loadNewestMessagesAction` → `hydrateWindow` reset path matches the plan's spec exactly (code read confirms). Per-channel reconnect coalescing (`seenFirstSubscribeRef`, `backfillInFlightRef`) matches spec. Read-state-outside-window fixtures (`deliveredMarkerOutsideWindow`, `readMarkerOutsideWindow`) pass. **Not exercised by any automated test**: the real reconnect sequence (SUBSCRIBED → re-SUBSCRIBED → coalesced backfill) and the `needsReset` reset-to-window branch — routed to human verification (items 3, 4, 5). |
+| Requirement | Status | Evidence |
+|---|---|---|
+| CLOAD-01 | **FAILED** | `getAssignedConversation` correctly limits messages to 41 and retains 40, but then calls `fetchConversationReactions(client, conversation.id)`. That helper filters only by `conversation_id` and paginates through every reaction row. Initial SSR work therefore still grows with complete conversation history, contrary to the bounded-load/near-instant goal. |
+| CLOAD-02 | PASSED | Realtime message INSERTs dispatch `mergeRemoteMessage`; reconnect handling no longer performs three full-history refreshes. The shared reducer merges in place. |
+| CLOAD-03 | PASSED | `loadOlderMessagesAction` performs bounded composite `(created_at,id)` keyset reads; `useChatMessages` guards requests; the observer sentinel and quiet ghost button both call the same load-and-preserve callback. |
+| CLOAD-04 | PASSED at source/test level | `useLoadOlderMessages` captures `scrollHeight`/`scrollTop` and restores by height delta in `requestAnimationFrame`; `.chat-log-viewport` disables browser anchoring; `useStickToBottom` keys off newest identity so prepends are inert. Plan 10-05 adds a fixed 112px slot and shared final/skeleton row geometry. Final perceptual confirmation remains HV-01. |
+| CLOAD-05 | PASSED | `olderPageLoaded`, optimistic confirmation, and realtime delivery all reuse `mergeChatMessage`, deduplicating by id/clientRequestId and sorting by `(createdAt,id)`. Fixture/store tests pass. |
+| CLOAD-06 | **FAILED** | `applyGapBackfill` selects `currentMessages[currentMessages.length - 1]` without requiring `localStatus === "sent"`, and returns without reset when there is no local message. An empty transcript or trailing pending/failed optimistic row can therefore provide no authoritative server cursor and skip missed messages. Read-marker-outside-window and ordering fixtures pass, but they do not repair this reconnect hole. |
 
-**Score:** 4/6 truths fully automated-VERIFIED; 2/6 structurally verified with real-reconnect/scroll-pixel behavior requiring human confirmation (not implementation gaps — see Human Verification section).
+## Plan Must-Haves
 
-### Required Artifacts
+| Plan | Result | Direct verification |
+|---|---|---|
+| 10-01 portable contract | PASSED | Four pagination events and pagination state/default are present; `olderPageLoaded` calls `mergeChatMessage`; out-of-window read/delivered markers are handled independently; fixture replay passes. Later Phase 9 hardening adds `hasLoadError` and extra vectors without invalidating the Phase 10 contract. |
+| 10-02 bounded reads | **PARTIAL / BLOCKING** | Initial/older/backfill/newest message queries are bounded and keyset-based, action inputs are Zod-validated, page reads enrich only returned message ids, and no read was added to `chat-command`. The SSR reaction side query remains unbounded (WR-02). |
+| 10-03 store/reconnect wiring | **PARTIAL / BLOCKING** | Conversation-keyed pagination actions/selectors, `hydrateWindow`, one shared reconnect in-flight lock, per-channel first-subscribe tracking, reset-to-newest handling, and disconnected status wiring exist. The chosen reconnect cursor is unsafe or absent in valid states (WR-01). |
+| 10-04 pagination UI | PASSED | Sentinel/button share `loadOlderAndPreserveScroll`; prepend does not trigger stick-to-bottom; failure gating is per-conversation and atomic; action props are threaded from `/channels/[id]`; calm notice states and reduced-motion-compatible opacity animation are present. |
+| 10-05 skeleton gap closure | PASSED | Visible loading copy/spinner/generic bars are removed. Two skeleton rows and final community rows use `CommunityMessageRowLayout`; the slot is `h-pagination-slot` backed by `--size-pagination-slot: 112px`; the log exposes `aria-busy`, visual atoms are hidden, and one sr-only status announces loading. Focus is not moved. This closes the cosmetic gap recorded in `10-UAT.md` at source/test level. |
 
-| Artifact | Expected | Status | Details |
-|----------|----------|--------|---------|
-| `packages/core/src/chat-state/types.ts` | 4 new events + `ChatPaginationState`/`ChatMessageCursor` | VERIFIED | All symbols present; `pagination: ChatPaginationState` on `ChatConversationState`. |
-| `packages/core/src/chat-state/reducer.ts` | Cases for all 4 events, reusing `mergeChatMessage` | VERIFIED | `case "hydrateWindow"/"olderMessagesRequested"/"olderPageLoaded"/"olderPageLoadFailed"` all present; `olderPageLoaded` calls `mergeChatMessage`; `defaultPagination` on `getConversation`. |
-| `packages/core/src/chat-state/selectors.ts` | Out-of-window marker handling | VERIFIED | `isAtOrAfterMessage` has a distinct `markerIndex === -1` branch, independent read/delivered evaluation. |
-| `packages/core/src/chat-state/fixtures/chat-state-vectors.json` | 17 fixture cases | VERIFIED | `grep -c '"name"'` = 17; all replay green (`vitest run chat-state-fixtures` → 19/19 tests pass). |
-| `apps/web/lib/services/supabase/core.ts` | Bounded keyset SSR window | VERIFIED | `chatInitialWindowSize`, `.limit(41)`, `.reverse()`, `hasMoreOlder`/`oldestCursor` computed and returned. |
-| `apps/web/lib/services/supabase/types.ts` | `hasMoreOlder`/`oldestCursor` on `ClientChatData` | VERIFIED | Both optional fields present. |
-| `apps/web/app/(authenticated)/chat/actions.ts` | 3 new exported actions, no chat-command write case | VERIFIED | `loadOlderMessagesAction`, `backfillMessagesAction`, `loadNewestMessagesAction` all exported; `chat-command/index.ts` untouched since the pre-phase checkpoint (`git diff 50ff7a40 -- supabase/functions/chat-command/` empty). |
-| `apps/web/app/(authenticated)/chat/store/chat-store.ts` | Pagination dispatch wrappers | VERIFIED | `hydrateWindow`, `requestOlderMessages`, `applyOlderPage`, `markOlderPageFailed` all present (interface + impl). |
-| `apps/web/app/(authenticated)/chat/store/chat-selectors.ts` | Pagination selectors | VERIFIED | `selectHasMoreOlderForConversation`, `selectIsLoadingOlderForConversation`, `selectOldestCursorForConversation` all present. |
-| `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts` | `loadOlderMessages`/`applyGapBackfill`, `hydrateWindow`-based hydration | VERIFIED | All present; behavior matches plan spec exactly (code read). |
-| `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts` | Coalesced per-channel reconnect + disconnected emission | VERIFIED (wiring) / UNTESTED (runtime) | `seenFirstSubscribeRef`, `backfillInFlightRef`, `handleReconnected` all present and match plan spec; `refreshConversation()` direct-call count is 0. Not exercised by a live-reconnect test — see human verification. |
-| `apps/web/app/(authenticated)/chat/realtime.ts` | `onDisconnected` on CHANNEL_ERROR/TIMED_OUT/CLOSED | VERIFIED | Present, wired to the messages channel only (per plan). |
-| `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts` | Sentinel + wrapped scroll-restore callback | VERIFIED | `IntersectionObserver`, single `loadOlderAndPreserveScroll`, `requestAnimationFrame` restore, no animated scroll. |
-| `apps/web/app/(authenticated)/chat/hooks/use-stick-to-bottom.ts` | Identity-based new-message detection | VERIFIED | `previousCountRef` gone (count = 0), replaced by `previousLastIdRef`; 3 new unit tests all pass. |
-| `apps/web/app/(authenticated)/chat/chat-client.tsx` | Sentinel/button/skeleton/offline UI wired | VERIFIED | All elements present (`sentinelRef`, "Load earlier messages" ghost button, skeleton rows, offline `Alert tone="notice"`, `Reconnecting…` pill); `variant="primary"` count is 0 (no new primary). |
-| `apps/web/app/(authenticated)/channels/[id]/page.tsx` | Threads 3 new actions to `<ChatClient>` | VERIFIED | All 3 actions imported and passed as props. |
-| `apps/web/app/globals.css` | skeleton-pulse + overflow-anchor utilities | VERIFIED | `@keyframes skeleton-pulse` (opacity-only), `@utility animate-skeleton-pulse`, `.chat-log-viewport { overflow-anchor: none }` all present. |
-| `apps/web/tests/intersection-observer.ts` | Shared IO mock + trigger helper | VERIFIED | `IntersectionObserverMock`, `installIntersectionObserverMock`, `triggerIntersection` share one registry; used by `chat-client.test.tsx`. |
+## Blocking Gaps
 
-### Key Link Verification
+### WR-01 — authoritative reconnect cursor
 
-| From | To | Via | Status | Details |
-|------|-----|-----|--------|---------|
-| `reducer.ts` `olderPageLoaded` | `selectors.ts` `mergeChatMessage` | function call | WIRED | Confirmed by grep + fixture replay (`olderPageDuplicateReconciliation`). |
-| `use-chat-messages.ts` `loadOlderMessages` | `actions.ts` `loadOlderMessagesAction` (Plan 02) | injected prop, dispatched as `applyOlderPage` | WIRED | Confirmed by code read + `chat-client.test.tsx` sentinel/button tests calling the injected action and rendering results. |
-| `use-chat-realtime.ts` `handleReconnected` | `use-chat-messages.ts` `applyGapBackfill` | `applyGapBackfill ?? refreshConversation` | WIRED (structural) | Confirmed by code read; not exercised by a live-reconnect test (human verification item 3). |
-| `chat-client.tsx` sentinel + button | `use-load-older-messages.ts` `loadOlderAndPreserveScroll` | shared callback, not raw `loadOlderMessages` | WIRED | Confirmed by code read and by the "drives the same wrapped scroll-preserving callback from the button as the sentinel" test passing. |
-| `channels/[id]/page.tsx` | `chat-client.tsx` (3 new actions) | prop threading | WIRED | Confirmed: `grep -c` for all 3 action names on the route file returns non-zero for each; `pnpm build` succeeds against the real prop types. |
+`apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts` derives the backfill marker from the final local array entry. That array may be empty or end in `pending`, `sending`, or `failed` client-only state. The empty case returns without fetching; the optimistic case sends a client timestamp/id to the server action. Either can exclude messages sent during the offline interval.
 
-### Data-Flow Trace (Level 4)
+Required closure: search backward for the newest server-confirmed (`localStatus === "sent"`) message. If none exists, call the bounded newest-window action and `hydrateWindow`. Add regressions asserting exact action inputs for an empty transcript and for a confirmed row followed by optimistic/failed rows.
 
-| Artifact | Data Variable | Source | Produces Real Data | Status |
-|----------|---------------|--------|---------------------|--------|
-| `chat-client.tsx` skeleton/sentinel/button | `hasMoreOlder`, `isLoadingOlder` (from `useChatMessages`) | `selectHasMoreOlderForConversation`/`selectIsLoadingOlderForConversation` reading real store `pagination` state, itself hydrated from the real bounded SSR query (`ClientChatData.hasMoreOlder`) | Yes | FLOWING |
-| `chat-client.tsx` offline banner / reconnect pill | `realtimeStatus` (from `selectRealtimeStatusForConversation`) | Real store value set by `use-chat-realtime.ts`'s `setRealtimeStatus` calls, which are wired to real Supabase channel subscribe callbacks (`onDisconnected`/`onReconnected`) | Yes, but the store-to-UI leg is proven; the real-channel-to-store leg (CHANNEL_ERROR → `setRealtimeStatus("disconnected")`) is unexercised by a test that drives the mocked channel through that transition | Partial — see human verification item 5 |
+### WR-02 — bounded reaction enrichment
 
-### Behavioral Spot-Checks
+`apps/web/lib/services/supabase/core.ts` limits the initial message query but `fetchConversationReactions` subsequently retrieves all reaction pages for the conversation. Reactions belonging to unloaded messages are discarded after transfer, so latency and row volume still scale with full history.
 
-| Behavior | Command | Result | Status |
-|----------|---------|--------|--------|
-| Bounded SSR window returns exactly 40 + hasMoreOlder | `vitest run lib/services/supabase/core.test.ts` | 2/2 new cases pass (part of 31/31 in the file) | PASS |
-| Keyset older page + backfill + reset actions | `vitest run "app/(authenticated)/chat/actions.test.ts"` | 31/31 pass (file total) | PASS |
-| Pagination reducer/selector fixture replay | `vitest run chat-state-fixtures` | 19/19 pass | PASS |
-| Store pagination dispatch/selectors/dedup/retry | `vitest run "app/(authenticated)/chat/store/chat-store.test.ts"` | pass (part of 52/52 combined run) | PASS |
-| Stick-to-bottom prepend-inert fix | `vitest run "app/(authenticated)/chat/hooks/use-stick-to-bottom.test.ts"` | 3/3 pass | PASS |
-| Sentinel/button/skeleton/offline UI | `vitest run "app/(authenticated)/chat/chat-client.test.tsx"` | pass (52 combined with store+stick-to-bottom run above) | PASS |
-| Full workspace suite | `pnpm --filter @fish/web exec vitest run` | 446/446 pass | PASS |
-| Typecheck | `pnpm typecheck` | 0 errors (3 packages) | PASS |
-| Lint | `pnpm lint` | 0 errors | PASS |
-| Production build | `pnpm build` | Compiled + typechecked + all 18 routes generated | PASS |
-| Debt-marker scan (TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER) on all 17 phase-modified files | grep | 0 matches | PASS |
-| `chat-command` Edge Function untouched (API boundary held) | `git diff 50ff7a40 -- supabase/functions/chat-command/` | empty | PASS |
+Required closure: enrich only the retained window's message ids, using batched `.in("message_id", ids)` reads as the page actions already do. Add a service test proving an excluded 41st message's reactions are not queried or included.
 
-### Probe Execution
+## Verification Evidence
 
-Step 7c: SKIPPED — no `scripts/*/tests/probe-*.sh` files exist in this repository and neither PLAN nor SUMMARY documents reference a probe script for this phase. This phase's verification convention is unit/fixture tests + build gates (per CLAUDE.md/AGENTS.md and CONTEXT.md's explicit "no Claude Preview MCP" instruction), which was followed above.
+- Directly inspected every plan's declared implementation surface and key links rather than relying on summaries.
+- Focused verification rerun: 6 Vitest files, **139/139 tests passed** (`core`, chat actions, store, stick-to-bottom, chat client, portable fixtures).
+- Existing integration evidence supplied to this pass: `pnpm build` passed; full web Vitest suite passed **61 files / 499 tests**; schema drift is false.
+- `10-UAT.md`: calm offline/reconnect presentation and channel error recovery passed; plan 10-05 closes the recorded skeleton issue. Reconnect-call counting and >40-message reset UAT remained blocked and do not override the source-confirmed WR-01 defect.
+- `10-REVIEW.md`: both warnings independently reproduced in current HEAD; neither was fixed after the review commit.
 
-### Requirements Coverage
+## Tracking Consistency
 
-| Requirement | Source Plan | Description | Status | Evidence |
-|--------------|-------------|--------------|--------|----------|
-| CLOAD-01 | 10-02 | Opening the chat renders newest messages from a bounded window — minimal time-to-first-message | SATISFIED | `core.ts` keyset window (40+1), `core.test.ts` proves bound + hasMoreOlder. |
-| CLOAD-02 | 10-03 | New incoming messages merge in place via realtime — never a full reload | SATISFIED | `mergeRemoteMessage` dispatch unchanged; `refreshConversation()` full-refetch-on-reconnect calls removed (count 0). |
-| CLOAD-03 | 10-01, 10-02, 10-03, 10-04 | Older history loads via cursor-based (keyset) pagination — "load earlier" + infinite scroll | SATISFIED | `loadOlderMessagesAction` (keyset `.or()` filter), sentinel + button both wired to one scroll-preserving callback, all unit/integration tested. |
-| CLOAD-04 | 10-04 | Loading older messages preserves reading position — no scroll jump/layout shift; newest-anchoring unchanged | SATISFIED (structural) + NEEDS HUMAN (perceptual/pixel) | Manual scrollHeight-diff restore + `overflow-anchor:none` + stick-to-bottom identity fix all code-verified and unit-tested where jsdom permits; exact pixel restore across a real prepend needs a human pass (Plan 04's own designated human-check). |
-| CLOAD-05 | 10-01, 10-03 | Merged list never shows duplicates across optimistic/realtime/paginated sources — deduped by id/clientRequestId | SATISFIED | `mergeChatMessage` reused everywhere (no second dedup path); fixtures + store test prove it. |
-| CLOAD-06 | 10-01, 10-02, 10-03 | History stays gap-free/ordered across offline/reconnect; read-state stays consistent with pagination | SATISFIED (structural) + NEEDS HUMAN (live reconnect) | Backfill/reset/coalescing code matches spec exactly and fixtures cover ordering/dedup/out-of-window markers; the live Supabase-Realtime reconnect sequence itself is not exercised by any test. |
+`.planning/ROADMAP.md` is internally inconsistent: the Phase 10 detail heading says `4/5 plans executed`, while all five plan rows are checked and the progress table says `5/5 Complete`. This is a documentation/tracking defect, not an implementation gap; actual plan execution is 5/5. Separately, `REQUIREMENTS.md` and the progress table mark all CLOAD requirements complete even though this verification finds CLOAD-01 and CLOAD-06 blocking. Completion tracking should be corrected when gap-closure work is planned or completed.
 
-No orphaned requirements — all 6 CLOAD-01..06 IDs appear in at least one plan's `requirements:` frontmatter and are traced above.
+## Human Verification
 
-### Anti-Patterns Found
+Only HV-01 requires actual observation: pixel-level reading-position preservation and the visual transition from the layout-matched skeleton to real rows. Reconnect cursor selection, backfill coalescing, and reaction-query bounds are deterministic code/test concerns and are not deferred to human judgment.
 
-None. Scanned all 17 files modified across the phase's 4 plans (chat-state core, service/action layer, store/hooks, realtime, UI component, route, CSS) for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER|not yet implemented|coming soon` — zero matches. No empty-return stubs, no hardcoded-empty props flowing to render, no console.log-only implementations found in the modified surface.
+## Verification Complete
 
-### Human Verification Required
+**Status:** `gaps_found`
 
-See YAML frontmatter `human_verification` for the full structured list (5 items). Summary:
+**Score:** 4/6 requirements passed
 
-1. **Reading-position preservation** (pixel-level, real scroll through ≥3 older pages) — jsdom cannot assert this; Plan 04's own designated human-check.
-2. **Perceptual calm of loading/offline/reconnect states** — visual/design judgment, not a structural property.
-3. **Real reconnect coalescing** (one bounded backfill, not three; per-channel first-subscribe skip) — no test drives the mocked Supabase channel's subscribe callback through a reconnect sequence.
-4. **Gap-exceeds-bound reset path** (`needsReset` → `loadNewestMessagesAction` → `hydrateWindow`) — not exercised by any automated test.
-5. **CHANNEL_ERROR/TIMED_OUT/CLOSED → "disconnected" emission from a real channel** — the UI's response to a manually-set store status is tested; the real channel-to-store wiring is not.
+**Blocking:** WR-01 (CLOAD-06 reconnect gap) and WR-02 (CLOAD-01 unbounded initial reaction fetch)
 
-Items 3–5 are technically automatable in vitest without a browser (e.g., a `renderHook` harness for `useChatRealtime`/`useChatMessages` driving a richer channel mock) — they are not intrinsically "browser-only" behaviors the way items 1–2 are. They are listed as human-verification here (rather than as blocking gaps) because: (a) the underlying code was read in full and matches the plan's specified behavior exactly, symbol-for-symbol; (b) the phase's four SUMMARYs already flagged these exact truths as `human_judgment: true` with the same rationale; (c) the orchestrator's explicit brief for this verification pass directed treating these as human-verification items rather than failures when the code structure checks out, which it does. A future hardening pass could close items 3–5 with dedicated reconnect-simulation tests without needing a browser.
-
-### Gaps Summary
-
-No blocking gaps. All 4 plans' declared artifacts, key links, and requirements exist, are substantive (not stubs), and are wired correctly per direct code inspection — cross-checked against 446/446 passing tests, clean `pnpm typecheck`/`pnpm lint`/`pnpm build`, and a zero-hit debt-marker scan across every file the phase touched. The five items above are the phase's own honestly-disclosed edges (perceptual calm/pixel-scroll behavior, and reconnect/backfill sequences that are hard to drive through the current test mocks) — they represent real, structurally-correct implementation whose final proof needs either a human pass or a follow-up test-infrastructure investment, not missing work.
-
----
-
-*Verified: 2026-07-10T00:11:21Z*
-*Verifier: Claude (gsd-verifier)*
+**Gap closure confirmed:** Plan 10-05 implements the UAT-requested message-shaped skeleton with shared geometry and a fixed semantic slot.
