@@ -1,69 +1,103 @@
 ---
-status: diagnosed
+status: complete
 phase: 09-cross-platform-chat-state
-source: [09-VERIFICATION.md]
-started: 2026-07-07T00:55:09Z
-updated: 2026-07-10T00:39:00Z
+source: [09-07-SUMMARY.md, 09-08-SUMMARY.md, 09-09-SUMMARY.md, 09-10-SUMMARY.md, 09-11-SUMMARY.md, 09-VERIFICATION.md]
+started: 2026-07-10T05:49:32Z
+updated: 2026-07-10T06:05:00Z
 ---
 
 ## Current Test
+<!-- OVERWRITE each test - shows where we are -->
 
 [testing complete]
 
 ## Tests
 
-### 1. Visual calm after refactor
-expected: Open `/chat` and confirm the screen still shows one assigned conversation, one send action, no conversation picker/menu, calm notice copy, and no obvious layout movement.
-result: issue
-reported: "loading new messages is broken"
-severity: major
+### 1. Automated coverage confirmation
+expected: |
+  These deliverables from gap-closure plans 09-07 and 09-11 are covered by
+  passing automated tests (re-run directly at HEAD by 09-VERIFICATION.md,
+  460/460 tests green) rather than manual observation:
 
-### 2. Native notes readability
-expected: Read the canonical pair — `packages/core/docs/chat-state-protocol.md` and `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md` — and confirm a future Android/iOS implementer can understand the event contract, fixture replay path, native state-container mapping, and scope boundary. `.planning/phases/10-chat-message-loading-optimization/10-NATIVE-CHAT-STATE-NOTES.md` is supplementary Phase 10 pagination history only, not a second canonical contract.
+  - Cross-account leak closed: signing out clears the chat store before the
+    next login (chat-store.test.ts, logout-button.test.tsx)
+  - Full gate green: typecheck, lint, build, full web suite
+  - Same-sender messages regroup avatar/author name after a gap
+    (message-grouping.test.ts, chat-client.test.tsx)
+  - Offline banner never promises a queue that doesn't exist
+    (chat-client.test.tsx)
+  - Message action buttons meet the 56px touch floor
+    (chat-client.test.tsx)
+
+  Reply to accept these on the strength of the automated evidence, or name
+  one to spot-check by hand.
+result: pass
+coverage_id: 09-07-D1,09-07-D2,09-07-D3,09-11-D1,09-11-D2,09-11-D3,09-11-D4
+
+### 2. Community room — calm layout after the /chat removal
+expected: |
+  Open the community room at `/channels/general`. Confirm the screen shows
+  one conversation (no picker/menu), one send action, calm notice-tone
+  copy, and no obvious layout jump — the same calm shape the old `/chat`
+  screen had, just at the new canonical URL.
 result: issue
-reported: "The protocol includes pagination events and fixture cases that the native notes do not list or map, so the future native implementation contract is incomplete."
-severity: major
+reported: "loading earlier messages breaks the app"
+severity: blocker
+
+### 3. New messages appear live, and same-sender messages regroup
+expected: |
+  Send a message from a second account/tab into the community room. It
+  appears in the first tab without a manual refresh. Then, after pausing
+  more than 5 minutes (or checking an existing long same-sender run),
+  confirm the avatar and author name reappear instead of staying hidden
+  indefinitely — this is the fix for the originally reported "loading new
+  messages is broken," which turned out to be a missing regroup cutoff,
+  not a delivery failure.
+result: pass
+
+### 4. Native chat-state notes are complete for a future implementer
+expected: |
+  Read `packages/core/docs/chat-state-protocol.md` alongside
+  `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`.
+  Confirm the native notes now list the pagination events, fixture cases,
+  and the `markMessageFailedPreservesNewerDraft` case — the gap from the
+  original UAT report — so a future Android/iOS implementer has a complete
+  contract without needing the Phase 10 notes as a second source.
+result: pass
+reported: "Verified by direct file comparison (Claude): all 18 fixture cases, all 15 events, pagination state, dispatch mapping, and the out-of-window marker rule match between the two documents."
+
+### 5. e2e spec targets the community channel, not the deleted /chat route
+expected: |
+  Open `apps/web/e2e/chat-send.spec.ts` (or run it against a live server).
+  Confirm it navigates to `/channels/22222222-2222-4222-8222-222222222222`
+  instead of the removed `/chat` URL.
+result: pass
+reported: "Verified by direct file read (Claude): line 13 navigates to /channels/22222222-2222-4222-8222-222222222222; no /chat reference anywhere in the file."
+
+### 6. Revisiting a channel doesn't get stuck on a stale "Reconnecting…"
+expected: |
+  Open a channel, navigate away to a different channel or screen, then
+  come back. Confirm the realtime status does not falsely show
+  "Reconnecting…" on an ordinary revisit — the per-channel subscribe
+  tracker should reset cleanly for the new conversation.
+result: pass
+reported: "Verified by direct source read (Claude): use-chat-realtime.ts lines 74-77 reset seenFirstSubscribeRef and backfillInFlightRef in a useEffect keyed on [chat.conversationId], which React re-runs on any conversationId change, mounted or not."
 
 ## Summary
 
-total: 2
-passed: 0
-issues: 2
+total: 6
+passed: 5
+issues: 1
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
-- truth: "Open `/chat` and confirm the screen still shows one assigned conversation, one send action, no conversation picker/menu, calm notice copy, and no obvious layout movement."
+- truth: "Open the community room at `/channels/general`. Confirm the screen shows one conversation (no picker/menu), one send action, calm notice-tone copy, and no obvious layout jump."
   status: failed
-  reason: "User reported: loading new messages is broken"
-  severity: major
-  test: 1
-  root_cause: "Investigation inconclusive: focused tests pass, but no live authenticated browser reproduction was available. The current /chat route redirects to the fixed general community channel, which conflicts with the UAT's assigned-conversation expectation; an environment-specific realtime failure or stale/wrong-route UAT report remains possible."
-  artifacts:
-    - path: ".planning/debug/loading-new-messages.md"
-      issue: "Realtime subscription, auth setup, hydration keys, Zustand reducer, rendering, and scroll behavior were checked; no failing code path was isolated."
-    - path: "apps/web/app/(authenticated)/chat/chat-client.tsx"
-      issue: "Current route behavior was found to redirect to the fixed general channel rather than the assigned-conversation flow expected by this UAT."
-  missing:
-    - "Re-run the flow in a real authenticated two-tab session."
-    - "Capture realtime channel status and errors while a new message is delivered."
-  debug_session: ".planning/debug/loading-new-messages.md"
-- truth: "A future Android/iOS implementer can understand the event contract, fixture replay path, native state-container mapping, and scope boundary."
-  status: failed
-  reason: "The protocol includes pagination events and fixture cases that the native notes do not list or map, so the future native implementation contract is incomplete."
-  severity: major
+  reason: "User reported: loading earlier messages breaks the app"
+  severity: blocker
   test: 2
-  root_cause: "Phase 10 extended the portable chat contract but created a separate native-notes document without synchronizing the Phase 09 notes referenced by this UAT. The Phase 09 notes are a stale pre-pagination snapshot."
-  artifacts:
-    - path: ".planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md"
-      issue: "Omits pagination state, four pagination events, seven pagination fixture cases, native pagination dispatch mapping, and the out-of-window marker selector rule."
-    - path: "packages/core/docs/chat-state-protocol.md"
-      issue: "Defines the pagination events, fixture cases, and selector rule that the Phase 09 native notes fail to mirror."
-    - path: ".planning/phases/10-chat-message-loading-optimization/10-NATIVE-CHAT-STATE-NOTES.md"
-      issue: "Contains the later pagination additions, confirming documentation drift between phase notes."
-  missing:
-    - "Synchronize the Phase 09 native notes with the pagination contract."
-    - "Clarify which native-notes document is canonical and update UAT references if needed."
-  debug_session: ".planning/debug/native-chat-pagination-contract.md"
+  artifacts: []
+  missing: []
