@@ -188,17 +188,28 @@ export function countUnreadMessages(
   ).length;
 }
 
+// Snippets are measured in Unicode code points, not UTF-16 code units.
+// `.length`/`.slice()` operate on UTF-16 units, so an astral character
+// (most emoji are a surrogate pair) counts as 2 and a naive slice can cut
+// a pair in half, producing an invalid lone surrogate. Array.from(body)
+// iterates by code point, so a surrogate pair is always kept whole. The
+// ellipsis is a single code point (U+2026, "…"), so a truncated snippet is
+// at most 95 body code points + 1 ellipsis code point = 96 code points.
+const MAX_SNIPPET_CODE_POINTS = 96;
+const SNIPPET_ELLIPSIS = "…";
+
 export function getMessageSnippet(message: ChatMessageState): string {
   if (message.deletedAt) {
     return "Message deleted";
   }
 
   const body = message.body.trim();
-  if (body.length <= 96) {
+  const codePoints = Array.from(body);
+  if (codePoints.length <= MAX_SNIPPET_CODE_POINTS) {
     return body;
   }
 
-  return `${body.slice(0, 95)}...`;
+  return `${codePoints.slice(0, MAX_SNIPPET_CODE_POINTS - 1).join("")}${SNIPPET_ELLIPSIS}`;
 }
 
 export function toReplyPreview(
