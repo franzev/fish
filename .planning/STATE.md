@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: Gap closure required for CLOAD-01 and CLOAD-06
-stopped_at: Completed 10-05-PLAN.md
-last_updated: "2026-07-10T22:45:18.311Z"
+status: verifying
+stopped_at: Completed 10-06-PLAN.md
+last_updated: "2026-07-10T23:11:36.448Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 29
-  completed_plans: 29
+  total_plans: 30
+  completed_plans: 30
   percent: 100
 ---
 
@@ -24,14 +24,14 @@ See: .planning/PROJECT.md
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
-- **Current focus:** Phase 10 — chat-message-loading-optimization verification
+- **Current focus:** Phase 10 — chat-message-loading-optimization
 
 ## Current Position
 
-Phase: 10 (chat-message-loading-optimization) — VERIFICATION GAPS
-Plan: 5 of 5
-Status: Gap closure required for CLOAD-01 and CLOAD-06
-Next planned: Run `$gsd-plan-phase 10 --gaps` to plan the two blocking fixes.
+Phase: 10 (chat-message-loading-optimization) — VERIFYING
+Plan: 6 of 6
+Status: Phase complete — ready for verification
+Next planned: Run `$gsd-verify-work 10` and repeat the corrected skeleton UAT check.
 
 Progress: [██████████] 100%
 
@@ -50,7 +50,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
 | 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Needs UAT |
-| 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Gaps found |
+| 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Ready for verification |
 
 ## Archived Milestones
 
@@ -115,6 +115,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: The pagination-feedback reserved height (104px, --size-pagination-slot) is sized to exactly fit the tallest existing state (the two-row loading skeleton), with the shorter error/button states vertically centered within it. — Closes WR-07: a single reserved-height data-testid=load-older-slot wrapper now hosts skeleton/error/button so the transcript below never shifts between states.
 - [Phase 09-19]: Deleted the local hasOlderLoadError useState and callback-identity reset block in use-load-older-messages.ts entirely rather than re-keying the reset to conversationId. — Once the older-page failure flag became store state (pagination.hasLoadError) read via a conversationId-scoped selector, there was no local state left to reset -- deleting is strictly simpler and matches the plan's own Task 2 action text.
 - [Phase 09-19]: The IntersectionObserver test mock's intersectingTargets set is deliberately never cleared by disconnect()/unobserve(). — Element visibility belongs to DOM geometry, not to any one observer instance's subscription lifecycle; clearing it on disconnect (the plan's own first-offered example) empirically made a disconnect-then-re-observe regression test pass identically whether the underlying atomic-commit fix was present or reverted -- verified with a throwaway test before landing the final version.
+- [Phase 10]: Reuse one bounded newest-window hydration helper for no-confirmed-row recovery and oversized-gap resets. — Keeps reconnect recovery bounded and prevents hydration metadata paths from diverging.
+- [Phase 10]: Scope reaction reads by conversation and retained message ids in 25-id batches. — Preserves caller-session RLS while bounding SSR work to the rendered newest window.
 
 ### Todos / open questions
 
@@ -152,6 +154,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P16 | 36min | 3 tasks | 4 files |
 | Phase 09 P19 | 18min | 3 tasks | 11 files |
 | Phase 10 P05 | 7min | 2 tasks | 7 files |
+| Phase 10 P06 | 5 min | 2 tasks | 4 files |
 
 ### Quick Tasks Completed
 
@@ -194,10 +197,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T22:15:51.870Z
+**Last session:** 2026-07-10T23:11:01.726Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 10-05-PLAN.md
+- **Stopped at:** Completed 10-06-PLAN.md
 - **Next action:** Run `$gsd-verify-work 10` and repeat the corrected skeleton UAT check.
 
 ---
