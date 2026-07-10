@@ -68,6 +68,14 @@ export function useChatRealtime({
   const seenFirstSubscribeRef = useRef<Set<ReconnectChannelKey>>(new Set());
   const backfillInFlightRef = useRef<Promise<void> | null>(null);
 
+  // A new conversation's first subscribes must read as first connects, not
+  // reconnects, and its backfill lock must not carry over from whatever
+  // conversation was open before — reset both per conversation id (WR-05).
+  useEffect(() => {
+    seenFirstSubscribeRef.current = new Set();
+    backfillInFlightRef.current = null;
+  }, [chat.conversationId]);
+
   const handleReconnected = useCallback(
     (channelKey: ReconnectChannelKey) => {
       if (!seenFirstSubscribeRef.current.has(channelKey)) {
@@ -89,7 +97,7 @@ export function useChatRealtime({
 
   useEffect(() => {
     setRealtimeStatus(chat.conversationId, "connecting");
-    return subscribeToConversationMessages(
+    const unsubscribe = subscribeToConversationMessages(
       chat.conversationId,
       (message) => {
         dispatchChatEvent({ type: "mergeRemoteMessage", message });
@@ -102,6 +110,17 @@ export function useChatRealtime({
         setRealtimeStatus(chat.conversationId, "disconnected");
       }
     );
+
+    // Only the message channel owns connected/disconnected/idle status
+    // (reads/reactions never call setRealtimeStatus), so resetting to idle
+    // here cannot falsely disconnect another surface. Unmounting or
+    // switching conversations must return this conversation's status to
+    // idle so the next mount starts from an ordinary first connect instead
+    // of stale "connected" read as a reconnect (WR-05).
+    return () => {
+      unsubscribe();
+      setRealtimeStatus(chat.conversationId, "idle");
+    };
   }, [
     chat.conversationId,
     dispatchChatEvent,
@@ -114,18 +133,16 @@ export function useChatRealtime({
     return subscribeToConversationReadStates(
       chat.conversationId,
       (readState) => {
-        dispatchChatEvent({
-          type: "mergeReadState",
-          conversationId: chat.conversationId,
-          readState,
-        });
+        // Single dispatch path: mergeReadState (the store action) already
+        // routes through one dispatchChatEvent call. A second direct
+        // dispatch here duplicated every read-state store transition (WR-06).
         mergeReadState(readState);
       },
       () => {
         handleReconnected("reads");
       }
     );
-  }, [chat.conversationId, dispatchChatEvent, handleReconnected, mergeReadState]);
+  }, [chat.conversationId, handleReconnected, mergeReadState]);
 
   useEffect(() => {
     return subscribeToConversationReactionChanges(
