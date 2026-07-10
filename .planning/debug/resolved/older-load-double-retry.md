@@ -1,8 +1,8 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Older-page load failure in /channels/[id] fires TWO identical automatic requests (same keyset cursor, ~0.4-1.0s apart) before the error region settles; expected exactly ONE automatic attempt then manual retry. 5 of 7 instrumented Playwright runs."
 created: 2026-07-10T19:20:00Z
-updated: 2026-07-10T19:35:00Z
+updated: 2026-07-10T21:33:50Z
 ---
 
 ## Current Focus
