@@ -1,5 +1,5 @@
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
-import type { ChatMessageState } from "@fish/core/chat-state";
+import type { ChatConversationId, ChatMessageState } from "@fish/core/chat-state";
 import { mergeChatMessage } from "../chat-state";
 import {
   useCallback,
@@ -116,7 +116,13 @@ export function useChatMessages({
   const messageIdsRef = useRef<string[]>([]);
   const refreshingMessageIdsRef = useRef<Set<string>>(new Set());
   const lastMessageRefreshAtRef = useRef<Map<string, number>>(new Map());
-  const isLoadingOlderRef = useRef(false);
+  // Per-conversation in-flight lock. A single hook-wide boolean let an
+  // in-flight load in conversation A block conversation B's first load (and
+  // A's own reset silently unlock B) once the mounted client switched
+  // conversations mid-request (WR-01).
+  const loadingOlderConversationsRef = useRef<Set<ChatConversationId>>(
+    new Set()
+  );
   const initialMessages = useMemo(
     () => chat.messages.map(toLocalMessage),
     [chat.messages]
@@ -225,39 +231,48 @@ export function useChatMessages({
   // already running is a no-op, and returns a resolved promise so callers
   // (Plan 04) can restore scroll position only once the prepend has landed.
   const loadOlderMessages = useCallback(async (): Promise<LoadOlderMessagesOutcome> => {
-    if (!loadOlderMessagesAction || !hasMoreOlder || isLoadingOlderRef.current) {
+    // Captured once so a late-settling request always reads/writes the
+    // conversation it was started for, even if `chat.conversationId` (and
+    // this closure) has since been replaced by a switch to another one.
+    const requestConversationId = chat.conversationId;
+
+    if (
+      !loadOlderMessagesAction ||
+      !hasMoreOlder ||
+      loadingOlderConversationsRef.current.has(requestConversationId)
+    ) {
       return "skipped";
     }
 
-    isLoadingOlderRef.current = true;
-    requestOlderMessages(chat.conversationId);
+    loadingOlderConversationsRef.current.add(requestConversationId);
+    requestOlderMessages(requestConversationId);
 
     try {
       const cursor = selectOldestCursorForConversation(
         chatStore.getState(),
-        chat.conversationId
+        requestConversationId
       );
 
       const result = await loadOlderMessagesAction({
-        conversationId: chat.conversationId,
+        conversationId: requestConversationId,
         cursor,
       }).catch(() => null);
 
       if (result?.status === "sent" && result.messages) {
         const oldestRow = result.messages[0];
         applyOlderPage(
-          chat.conversationId,
+          requestConversationId,
           result.messages,
           result.hasMoreOlder ?? false,
           oldestRow ? { createdAt: oldestRow.createdAt, id: oldestRow.id } : cursor
         );
         return "loaded";
       } else {
-        markOlderPageFailed(chat.conversationId);
+        markOlderPageFailed(requestConversationId);
         return "failed";
       }
     } finally {
-      isLoadingOlderRef.current = false;
+      loadingOlderConversationsRef.current.delete(requestConversationId);
     }
   }, [
     applyOlderPage,
