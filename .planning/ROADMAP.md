@@ -73,7 +73,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
-**Plans**: 4 plans
+**Plans**: 6 plans (4 complete, 2 gap-closure)
 **Wave 1**
 
 - [x] 09-01-PLAN.md — portable chat-state core, fixture vectors, dependency boundary tests, and web helper shim
@@ -86,6 +86,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 09-03-PLAN.md — web-only Zustand adapter, narrow selectors, hook integration, and release gates
+
+**Wave 4** *(gap closure; blocked on the completed Phase 09 implementation)*
+
+- [ ] 09-05-PLAN.md — obtain real authenticated two-session realtime evidence for the inconclusive new-message UAT gap
+- [ ] 09-06-PLAN.md — synchronize the canonical Phase 09 native notes with the current pagination contract and align UAT documentation references
 
 ### Phase 10: Chat Message Loading Optimization
 
