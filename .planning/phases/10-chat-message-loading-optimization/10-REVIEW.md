@@ -1,6 +1,6 @@
 ---
-status: issues_found
 phase: 10-chat-message-loading-optimization
+reviewed: 2026-07-10T23:47:07Z
 depth: standard
 files_reviewed: 30
 files_reviewed_list:
@@ -35,46 +35,74 @@ files_reviewed_list:
   - "packages/core/src/chat-state/selectors.ts"
   - "packages/core/src/chat-state/types.ts"
 findings:
-  critical: 0
-  blocker: 0
-  warning: 1
+  critical: 1
+  warning: 0
   info: 0
   total: 1
-reviewed_at: "2026-07-10T23:17:17Z"
-diff_base: 50ff7a4021c6ab0c1985a4d5fa3d9c0d8596e357
+status: issues_found
 ---
 
 # Phase 10: Code Review Report
 
+**Reviewed:** 2026-07-10T23:47:07Z
+**Depth:** standard
+**Files Reviewed:** 30
+**Status:** issues_found
+
+## Narrative Findings (AI reviewer)
+
 ## Summary
 
-Phase 10's bounded message reads, composite keyset pagination, retained-window reaction enrichment, reducer deduplication, scroll-anchor restoration, skeleton geometry, and authoritative reconnect cursor selection are internally consistent and covered by focused regressions. Plan 10-06 closes both warnings from the preceding review: empty/client-only transcripts now hydrate a bounded newest window, optimistic tails no longer become server cursors, and initial reaction reads are restricted to the retained 40-message window.
+The new promise-identity check correctly prevents conversation A's late backfill completion from clearing conversation B's active lock, and the VR-01 regression proves that ownership sequence. The bounded queries, composite cursor ordering, reducer deduplication, and reset-window path remain intact.
 
-One reconnect-coalescing race remains when a mounted client changes conversations while an earlier conversation's backfill is still pending. No critical security or authorization issue was found. Pagination/backfill reads remain input-validated, bounded, caller-session Supabase selects protected by RLS.
+One conversation-switch race remains at the callback boundary. Supabase channel removal is asynchronous, but callbacks from the old subscription are not generation-guarded. A queued A `SUBSCRIBED` callback can therefore mutate the shared first-subscribe tracker or start an A recovery after those refs have been reset for B.
 
-## Warnings
+## Critical Issues
 
-### WR-01 — A stale conversation's completion can clear the active conversation's reconnect lock
+### CR-01: A stale channel callback can claim the new conversation's reconnect tracker and lock
 
-**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:105-106`, `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:135-138`, `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:154-168`; existing switch coverage at `apps/web/app/(authenticated)/chat/chat-client.test.tsx:1813-1861` verifies stale older-page isolation but does not exercise overlapping reconnect backfills.
+**File:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:135-173,176-256`
 
-`backfillInFlightRef` is shared by the mounted hook. On a conversation change, the effect assigns it `null`, allowing the new conversation to start its own backfill. The old promise is not cancelled or generation-guarded, however, and its unconditional `.finally(() => { backfillInFlightRef.current = null; })` still runs. If conversation B has installed a new in-flight promise before conversation A settles, A's `finally` erases B's lock. A second B channel resubscribe can then launch a duplicate backfill while B's first recovery read is still running.
+**Issue:** The conversation-change effect resets `seenFirstSubscribeRef` and `backfillInFlightRef`, but the three old subscription callbacks close over A's `handleReconnected` and have no active-generation or teardown guard. Cleanup calls `removeChannel` indirectly through `unsubscribe`, and that removal is intentionally fire-and-forget in `realtime.ts:91-99`; it cannot revoke an already queued status callback synchronously.
 
-**Impact:** During a quick conversation switch combined with reconnect churn, the intended one-backfill-across-three-channels guarantee can be broken. This adds duplicate bounded reads and permits two reset/merge chains for the same new conversation to race. The reducer prevents duplicate message rows, but it does not prevent redundant network work or out-of-order hydration metadata commits.
+After switching A to B, one stale A `SUBSCRIBED` callback can run against B's freshly reset shared refs. If it runs before B's initial callback, it consumes the `messages` first-subscribe slot, causing B's ordinary initial `SUBSCRIBED` to be treated as a reconnect. If it runs after B's initial callback, it can start A's captured `applyGapBackfill`, place that A promise in the shared lock, and suppress B's genuine recovery callbacks until A settles. The new identity guard only controls which promise may release the lock; it does not control which stale callback may acquire it.
 
-**Recommendation:** Store the created promise in a local variable and clear the ref only when it still points to that same promise (or use a conversation generation token). Add a regression that starts a deferred backfill for A, switches to B, starts a deferred backfill for B, resolves A, then emits another B channel resubscribe and proves B still has exactly one in-flight recovery.
+This violates the phase contract that each conversation skips its own first callback and that the active conversation owns its recovery. It can issue a bounded read for the conversation the user has already left and can delay a required B gap backfill, leaving B temporarily missing messages after reconnect.
 
-## Scope and Verification
+**Fix:** Reject callbacks from torn-down subscription generations before they call `handleReconnected`. For example, keep an `active` boolean inside each subscription effect, set it to `false` before unsubscribe in cleanup, and guard every status callback; alternatively pass a generation token into `handleReconnected` and compare it with the current conversation generation. Preserve the promise-identity release check. Extend the VR-01 test by invoking the captured A status callback after rerendering B, then prove it neither consumes B's first-subscribe slot nor starts/blocks a recovery:
 
-- Reviewed all 30 explicitly scoped files at standard depth against `AGENTS.md`, `docs/ui-ux-agent-guidelines.md`, CLOAD-01 through CLOAD-06, the Phase 10 protocol/plan artifacts, and the 10-06 gap-closure contract.
-- Traced SSR N+1 windowing, reaction batching, cursor validation and PostgREST filters, older-page lifecycle/error gating, reconnect recovery/reset, store hydration, deduplication, read markers, scroll restoration, skeleton accessibility, and route action wiring.
-- Focused Vitest run passed: 6 files, 141 tests (`actions`, `chat-client`, `use-stick-to-bottom`, `chat-store`, Supabase core, and chat-state fixtures).
-- `pnpm typecheck` passed across configured workspace packages.
-- `pnpm lint` passed.
-- No source code was modified. The unrelated uncommitted `apps/web/components/chat/index.ts` export edit and untracked Phase 9 security report were preserved and not attributed to Phase 10.
+```tsx
+let active = true;
+const unsubscribe = subscribeToConversationMessages(
+  chat.conversationId,
+  onMessage,
+  () => {
+    if (!active) return;
+    setRealtimeStatus(chat.conversationId, "connected");
+    handleReconnected("messages");
+  },
+  onDisconnected
+);
+
+return () => {
+  active = false;
+  unsubscribe();
+  setRealtimeStatus(chat.conversationId, "idle");
+};
+```
+
+Apply the equivalent active-generation guard to reads and reactions so any old channel cannot consume their shared first-subscribe entries either.
+
+## Scope Notes
+
+- Reviewed the 30 Phase 10 source/test/protocol files at standard depth, plus `AGENTS.md`, `docs/ui-ux-agent-guidelines.md`, and Plan 10-07 artifacts as governing context.
+- The new reconnect test reliably covers stale promise completion and active-owner release, but it never invokes A's captured status callback after the rerender, so it cannot detect CR-01.
+- Initial, older-page, gap-backfill, and newest-reset message reads remain bounded. Composite `(created_at, id)` ordering and canonical reducer merge/dedup behavior remain consistent.
+- No authorization bypass, unbounded active reconnect path, raw-hex/token violation, or user-facing design-rule regression was found.
+- The user's unrelated uncommitted `apps/web/components/chat/index.ts` change was reviewed in place and not modified.
 
 ---
 
-_Reviewed: 2026-07-10T23:17:17Z_  
-_Reviewer: gsd-code-reviewer_  
-_Completion: REVIEW_COMPLETE_
+_Reviewed: 2026-07-10T23:47:07Z_
+_Reviewer: gsd-code-reviewer_
+_Depth: standard_
