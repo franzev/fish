@@ -160,6 +160,8 @@ describe("chat-state fixture vectors", () => {
       "hydratePreservesUnresolvedSend",
       "hydrateWindowPreservesUnresolvedSend",
       "monotonicSentIgnoresLateFailure",
+      "snippetLongAscii",
+      "snippetEmojiBoundary",
     ]);
 
     for (const fixture of cases) {

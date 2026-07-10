@@ -1855,5 +1855,63 @@
         }
       }
     }
+  },
+  {
+    "name": "snippetLongAscii",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-120",
+          "conversationId": "conversation-12",
+          "senderId": "coach-12",
+          "senderRole": "coach",
+          "body": "Please send a short recap of today so I can share it with the whole team before we start again on",
+          "clientRequestId": "request-120",
+          "createdAt": "2026-07-10T09:30:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedSelectors": {
+      "snippet": {
+        "conversationId": "conversation-12",
+        "messageId": "message-120",
+        "expected": "Please send a short recap of today so I can share it with the whole team before we start again …"
+      }
+    }
+  },
+  {
+    "name": "snippetEmojiBoundary",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "mergeRemoteMessage",
+        "message": {
+          "id": "message-130",
+          "conversationId": "conversation-13",
+          "senderId": "coach-13",
+          "senderRole": "coach",
+          "body": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy😀zzzzz",
+          "clientRequestId": "request-130",
+          "createdAt": "2026-07-10T09:31:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      }
+    ],
+    "expectedSelectors": {
+      "snippet": {
+        "conversationId": "conversation-13",
+        "messageId": "message-130",
+        "expected": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy😀…"
+      }
+    }
   }
 ]
