@@ -150,6 +150,25 @@ describe("AppShell", () => {
     expect(logoutButtonSource).toContain('variant="ghost"');
   });
 
+  it("gives the logo link a centered 56px accessible target (WR-09)", () => {
+    render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Content
+      </AppShell>
+    );
+
+    const logo = screen.getByRole("link", { name: "FISH home" });
+    expect(logo.className).toContain("min-h-control");
+    expect(logo.className).toContain("min-w-control");
+    expect(logo.className).toContain("items-center");
+    expect(logo.className).toContain("justify-center");
+  });
+
+  it("WR-09: app-shell.tsx source contains no stale /chat route reference", () => {
+    const shellSource = readFileSync(resolve(__dirname, "./app-shell.tsx"), "utf-8");
+    expect(shellSource).not.toMatch(/\/chat/);
+  });
+
   it("renders labeled client navigation without the unvalidated Progress tab", () => {
     pathname = "/channels/22222222-2222-4222-8222-222222222222";
 
