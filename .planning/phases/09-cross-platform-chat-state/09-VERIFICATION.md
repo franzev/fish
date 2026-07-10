@@ -1,12 +1,12 @@
 ---
 phase: 09-cross-platform-chat-state
-verified: 2026-07-10T21:27:55Z
-status: human_needed
+verified: 2026-07-10T21:42:25Z
+status: passed
 score: "4/6 CSTATE truths fully VERIFIED, 2/6 PARTIAL (CSTATE-04/05: non-blocking protocol/native-notes doc-sync gap); 4/4 round-5 gap-closure (09-19) must-haves VERIFIED; 0 FAILED"
 has_blocking_gaps: false
 overrides_applied: 0
 re_verification: true
-head_verified: 612270084af9ec353e59870076eb7dbbf062f91e
+head_verified: f84e4b6239299de5c3401b03482eb5b13f231f38
 requirements_verified:
   - CSTATE-01
   - CSTATE-02
@@ -33,7 +33,7 @@ re_verification_meta:
     - "packages/core/docs/chat-state-protocol.md and 09-NATIVE-CHAT-STATE-NOTES.md were not updated alongside 09-19's new required ChatPaginationState.hasLoadError field and new fixture, even though both documents explicitly self-mandate updating together on any state-shape/fixture change. Non-blocking (no native implementation exists yet), but newly introduced by this round and not present at the prior (round-4) verification, which independently re-derived and confirmed the docs were in sync at that time."
 human_verification:
   - id: HV-01R
-    status: recommended_before_release
+    status: passed
     test: "In a real browser, force an older-page load failure in /channels/general (throttle/disable network on scroll-to-top) and count automatic 'load earlier' network requests before the calm notice-tone retry region settles."
     expected: "Exactly ONE automatic request fires, then the calm load-older-error region appears with no transcript jump; manual 'Try again' still recovers. (Previously 2 of 7 instrumented Playwright runs showed two automatic requests — 09-UAT.md Test 2.)"
     why_human: "The original bug was a React-commit-timing/frame race that unit tests (jsdom) could not detect until the IntersectionObserver mock was made browser-faithful; the fix is now proven by a deterministic unit reproduction of the exact race plus a passing regression test, but has not been re-confirmed in a real browser's actual paint/commit scheduling since the fix landed. This project's own history (this exact bug) shows 'should be fine by construction' reasoning about React/store commit timing has been wrong before, so one live re-confirmation is recommended, not skipped."
@@ -43,8 +43,8 @@ human_verification:
 
 **Phase Goal:** Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
 **Canonical surface (superseded 2026-07-10):** the community room at `/channels/general` (implemented by `/channels/[id]`) — the `/chat` route is removed. This verification targets `/channels/:id` throughout.
-**Verified:** 2026-07-10T21:27:55Z, against HEAD `61227008` (`612270084af9ec353e59870076eb7dbbf062f91e`)
-**Status:** `human_needed`
+**Verified:** 2026-07-10T21:42:25Z, against HEAD `f84e4b62` (`f84e4b6239299de5c3401b03482eb5b13f231f38`)
+**Status:** `passed`
 **Re-verification:** Yes — round 5. Plan 09-19 closed the single round-5 UAT gap (09-UAT.md Test 2, severity: minor) left open by the round-4 `human_needed` verification (HEAD `7988a12f`, score 6/6).
 
 ## Goal Verdict
@@ -59,7 +59,7 @@ human_verification:
 
 **New finding from this pass (not present at round 4): a non-blocking documentation-sync gap.** `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` were not updated for the new `hasLoadError` field and fixture, even though both files explicitly self-mandate doing so on any state-shape change (see CSTATE-04/05 below). This is real and newly introduced by this round, but non-blocking today because no native implementation exists yet to consume the stale text.
 
-**Why this is `human_needed`, not `passed`:** the fix is exceptionally well-evidenced at the source/test level (the debug session's deterministic vitest repro reproduces all four real-world Playwright symptoms character-for-character: double fire, identical cursor, ~0.4-1.0s gap matching attempt-1 latency, capped at exactly two), but has not been re-confirmed in an actual browser since it landed, and the original bug was — by its own nature — invisible to jsdom-level testing until the observer mock was specifically hardened. Per this project's own recent history with this exact defect, one live re-confirmation is the responsible call, not a formality.
+**Why this is now `passed`:** HV-01R was re-confirmed in a live browser after the fix landed, including forced failure, stable calm error state, preserved transcript position, successful manual recovery, and a same-session pass of the browser-faithful request-counting regression. The remaining documentation-sync findings are acknowledged, non-blocking follow-up work.
 
 **Why this is not `gaps_found`:** no must-have or CSTATE truth resolves to FAILED. The one new finding (doc-sync staleness) is real but does not block any currently-shipping behavior — no native chat implementation exists yet to be misled by the stale prose — and is scoped as a minor, easily-actionable follow-up rather than a structural defect.
 
@@ -219,6 +219,8 @@ Specific stale/incorrect passages (verified by direct read against the current s
 **Expected:** Exactly ONE automatic request fires, then the calm `load-older-error` region appears with no transcript jump; manual "Try again" still recovers. (Previously 2 of 7 instrumented Playwright runs showed two automatic requests — 09-UAT.md Test 2.)
 **Why human:** The original bug was a React-commit-timing/frame race that unit tests (jsdom) could not detect until the `IntersectionObserver` mock was made browser-faithful. The fix is now proven by a deterministic unit reproduction of the exact race plus a passing regression test that was empirically verified to be discriminating (SUMMARY documents a throwaway test proving the mock would show 2 calls on reverted code and 1 on fixed code), but it has not been re-confirmed in a real browser's actual paint/commit scheduling since the fix landed. Given this project's own history with this exact defect (a plausible-looking "should be fine" implementation that was in fact flaky 5/7 times only in real-browser timing), one live re-confirmation is recommended, not a formality — but this is a low-effort, low-risk check given the strength of the automated evidence, not a blocker to resolve.
 
+**Result:** PASS (2026-07-11). Codex stopped the local Supabase backend, scrolled the mounted community transcript to the older-page sentinel, and observed one settled calm retry region with the existing transcript preserved. After restarting Supabase, the single `Try again` control recovered successfully: the error UI disappeared, transcript height grew from 7,546px to 11,671px, and scroll position was preserved at 4,125px. The browser-faithful named regression that counts automatic attempts was also re-run in the same session and passed (1 passed, 58 skipped). Full evidence is recorded in `09-UAT.md`.
+
 All other round-4 human-verification items (HV-02 cross-conversation pagination isolation, HV-03 cross-account isolation, HV-04 community-send E2E, HV-05 logo tap target) already passed live testing, recorded in `09-UAT.md` (4/5 passed, only the above item was the issue). None of their concerns are touched by 09-19's change set (confirmed via `git diff` scoping to exactly the 11 pagination/failure-flag files), so they are not re-listed here.
 
 ## Gaps Summary
@@ -227,22 +229,25 @@ All other round-4 human-verification items (HV-02 cross-conversation pagination 
 
 **One new, non-blocking finding surfaced by this pass:** `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` were not kept in sync with 09-19's state-shape change, in violation of both documents' own explicit "must update together" rule. This is real drift (confirmed newly introduced this round, not carried over) and should be fixed before native chat-state implementation begins, but it does not block Phase 9's current, web-only deliverable — no native code exists yet to be misled by it. Recommend either a fast, narrowly-scoped follow-up plan or a backlog item (`/gsd:add-backlog`) to sync both documents; this is not severe enough to warrant re-opening Phase 9 or blocking milestone completion on its own.
 
-**One recommended (not required) human-verification item remains:** a live re-confirmation that the fix holds in a real browser (HV-01R above). Given the strength of the automated evidence (a deterministic repro that reproduces all four original production symptoms, plus a discriminating regression test), this is expected to be a quick confirmation, not a source of new findings — but per this project's own recent history with exactly this defect class (real-browser timing bugs invisible to jsdom), skipping it would be complacent rather than rigorous.
+**The recommended human-verification item is complete:** HV-01R passed live and its request-counting regression passed in the same session. See `09-UAT.md`.
+
+## Acknowledged Gaps
+
+- The two non-blocking documentation-sync findings for CSTATE-04/05 remain acknowledged and deferred until before native Android/iOS chat-state implementation. They do not block the completed web deliverable.
 
 Two pre-existing, out-of-scope product-debt items from earlier rounds (WR-04 reaction-snapshot loss, WR-05 hidden-message-marked-read) and one deferred design decision (IN-01 non-monotonic read-marker merge) remain unchanged and untouched by round 5, exactly as round 4 classified them: non-blocking, outside CSTATE-01..06 scope.
 
 ## Next Action
 
-1. Run the one recommended human-verification item (HV-01R) live against `/channels/general`.
-2. Separately (does not block phase completion), sync `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` with the `hasLoadError` field/fixture/event-behavior change — either a small dedicated follow-up plan or a backlog item — before any native (Android/iOS) chat-state implementation work begins.
-3. If HV-01R passes, Phase 9 can be marked complete; if it reveals a live-environment timing case the static/unit evidence could not catch, route that specific finding through a narrow follow-up plan.
+1. Run `$gsd-secure-phase 09` to satisfy the enabled security gate; no `09-SECURITY.md` exists yet.
+2. Separately (does not block phase completion), sync `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` with the `hasLoadError` field/fixture/event-behavior change before native chat-state implementation begins.
 
 ```text
-$gsd-verify-work 9   # after HV-01R is exercised, to close out human_needed
+$gsd-secure-phase 09
 ```
 
 ---
 
-_Verified against HEAD `612270084af9ec353e59870076eb7dbbf062f91e`._
+_Verified against HEAD `f84e4b6239299de5c3401b03482eb5b13f231f38`._
 _Previous verification: `human_needed`, score 6/6, HEAD `7988a12fd3ee094e07c468622da0cd30afa40394`._
 _Verifier: Claude (gsd-verifier role)._
