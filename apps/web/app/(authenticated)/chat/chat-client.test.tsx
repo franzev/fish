@@ -2052,4 +2052,153 @@ describe("ChatClient", () => {
     expect(within(errorSlot).getByTestId("load-older-error")).toBeInTheDocument();
     expect(idleSlot.className).toContain("min-h-pagination-slot");
   });
+
+  it("keeps a pending optimistic row through a reconnect-reset hydrateWindow, then marks it failed on a later send failure (WR-02)", async () => {
+    type SendResult = { status: "notice"; values: unknown; notice: string };
+    let resolveSend: (value: SendResult) => void = () => undefined;
+    const sendMessageAction = vi.fn(
+      () =>
+        new Promise<SendResult>((resolve) => {
+          resolveSend = resolve;
+        })
+    );
+    const backfillMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      needsReset: true,
+    });
+    const loadNewestMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      // A bounded "newest window" reset that omits the still-in-flight
+      // optimistic send — exactly the shape a genuine reconnect reset
+      // returns while a send is pending.
+      messages: chat.messages,
+      readStates: chat.readStates,
+      hasMoreOlder: true,
+      oldestCursor: { createdAt: "2026-07-05T00:00:00.000Z", id: "message-1" },
+    });
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={sendMessageAction}
+        backfillMessagesAction={backfillMessagesAction}
+        loadNewestMessagesAction={loadNewestMessagesAction}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Still sending this." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    const log = screen.getByRole("log", { name: "Conversation messages" });
+    expect(
+      await within(log).findByText("Still sending this.")
+    ).toBeInTheDocument();
+
+    const messagesStatusCallback = latestSubscribeStatusCallback(":messages");
+
+    // First SUBSCRIBED is the ordinary first connect — recorded, no backfill.
+    act(() => {
+      messagesStatusCallback("SUBSCRIBED");
+    });
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+
+    // Second SUBSCRIBED is a genuine reconnect: bounded backfill ->
+    // needsReset -> loadNewestMessagesAction -> hydrateWindow with a window
+    // that omits the still-pending send. hasMoreOlder flips true (from the
+    // fixture's unset/false default) only once that hydrateWindow has
+    // actually landed, so the button appearing proves the async chain
+    // completed without guessing at microtask timing.
+    act(() => {
+      messagesStatusCallback("SUBSCRIBED");
+    });
+    expect(
+      await screen.findByRole("button", { name: "Load earlier messages" })
+    ).toBeInTheDocument();
+
+    // The pending row survives the reconnect-reset hydrateWindow even though
+    // the bounded window it merged in does not include it.
+    expect(within(log).getByText("Still sending this.")).toBeInTheDocument();
+
+    await act(async () => {
+      resolveSend({
+        status: "notice",
+        values: {},
+        notice: "That did not send yet. Keep this open and try again.",
+      });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByLabelText("Message")).toHaveValue("Still sending this.");
+    const failedRow = within(log)
+      .getByText("Still sending this.")
+      .closest("li") as HTMLElement;
+    expect(within(failedRow).getByText("Not sent yet")).toBeInTheDocument();
+  });
+
+  it("keeps a realtime-confirmed sent row sent when the original send action later settles as a failure (WR-03)", async () => {
+    type SendResult = { status: "notice"; values: unknown; notice: string };
+    let resolveSend: (value: SendResult) => void = () => undefined;
+    const sendMessageAction = vi.fn(
+      () =>
+        new Promise<SendResult>((resolve) => {
+          resolveSend = resolve;
+        })
+    );
+
+    render(<ChatClient chat={chat} sendMessageAction={sendMessageAction} />);
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Confirmed before the failure." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    const log = screen.getByRole("log", { name: "Conversation messages" });
+    expect(
+      await within(log).findByText("Confirmed before the failure.")
+    ).toBeInTheDocument();
+
+    const firstCall = sendMessageAction.mock.calls[0] as unknown[];
+    const clientRequestId = (firstCall[0] as { clientRequestId: string })
+      .clientRequestId;
+
+    // A realtime INSERT confirms the send before the original action
+    // settles — the same clientRequestId marks the optimistic row sent.
+    act(() => {
+      realtimeMock.messageHandlers[0]?.({
+        new: {
+          id: "message-confirmed",
+          conversation_id: chat.conversationId,
+          sender_id: chat.currentUserId,
+          sender_role: "client",
+          body: "Confirmed before the failure.",
+          client_request_id: clientRequestId,
+          created_at: "2026-07-05T00:05:00.000Z",
+        },
+      });
+    });
+
+    expect(await screen.findByLabelText("Sent")).toBeInTheDocument();
+
+    // The original send action settles as a failure AFTER the realtime
+    // confirmation already marked it sent — the monotonic guard must ignore
+    // this stale failure (WR-03).
+    await act(async () => {
+      resolveSend({
+        status: "notice",
+        values: {},
+        notice: "That did not send yet. Keep this open and try again.",
+      });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByLabelText("Sent")).toBeInTheDocument();
+    const sentRow = within(log)
+      .getByText("Confirmed before the failure.")
+      .closest("li") as HTMLElement;
+    expect(within(sentRow).queryByText("Not sent yet")).toBeNull();
+  });
 });
