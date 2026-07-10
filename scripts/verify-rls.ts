@@ -129,7 +129,7 @@ async function checkEscalationRejected(): Promise<void> {
 
   const { error: safeUpdateError } = await supabase
     .from("profiles")
-    .update({ display_name: "Alex Rivera" })
+    .update({ display_name: "Franz Eva" })
     .eq("id", ownId);
   checkNoRecursion("DB-04 safe-field update", safeUpdateError);
   report("DB-04 safe-field update (display_name) succeeds", !safeUpdateError, safeUpdateError?.message);

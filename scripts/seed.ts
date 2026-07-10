@@ -25,7 +25,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 const coach = {
   email: "coach@fish.dev",
   password: "fish-coach-dev",
-  displayName: "Coach Dana",
+  displayName: "Patty Cake",
 };
 
 // A second coach, promoted but never assigned any clients (04-01 Task 1) — the
@@ -38,7 +38,7 @@ const coach2 = {
 };
 
 const clients = [
-  { email: "client1@fish.dev", password: "fish-client-dev", displayName: "Alex Rivera", level: "A2" },
+  { email: "client1@fish.dev", password: "fish-client-dev", displayName: "Franz Eva", level: "A2" },
   { email: "client2@fish.dev", password: "fish-client-dev", displayName: "Sam Okafor", level: "B1" },
   { email: "client3@fish.dev", password: "fish-client-dev", displayName: "Priya Nair", level: "A2" },
 ];
@@ -650,7 +650,7 @@ async function seedCommunityStressMessages(
   extraIds: string[],
 ): Promise<void> {
   const participants = [
-    { id: coachId, role: "coach", name: "Coach Dana" },
+    { id: coachId, role: "coach", name: "Patty Cake" },
     { id: coach2Id, role: "coach", name: "Coach Jordan" },
     { id: clientIds[0], role: "client", name: "Alex" },
     { id: clientIds[1], role: "client", name: "Sam" },
