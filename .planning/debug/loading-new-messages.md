@@ -2,7 +2,7 @@
 status: diagnosed
 trigger: "User reported verbatim: \"loading new messages is broken\" during UAT Test 1"
 created: 2026-07-10T00:00:00+08:00
-updated: 2026-07-10T00:36:00+08:00
+updated: 2026-07-10T10:02:24+08:00
 ---
 
 ## Current Focus
@@ -80,3 +80,138 @@ root_cause: Not established for the current checkout. The historical anon realti
 fix: None; diagnose-only mode and no current failure reproduced.
 verification: Focused ChatClient/actions/store/core tests passed; useStickToBottom and realtime insertion tests passed; live Supabase/browser verification unavailable.
 files_changed: []
+
+## Live reproduction protocol
+
+This protocol is the remaining D-09/D-13/D-14 evidence gate. It observes the
+current browser, Supabase, route, store, and rendering path without changing
+product behavior. Until both attempts below are complete, `root_cause: not established`.
+
+### Scope and evidence safety
+
+- Use only synthetic message text unique to this run, for example
+  `realtime-check-YYYYMMDD-HHMMSS`. Do not copy real conversation content.
+- Redact access tokens, refresh tokens, JWTs, `Authorization` values, cookies,
+  passwords, and token-bearing request URLs before adding evidence here. Record
+  an exposed token as `[REDACTED]`, not a partial token.
+- Use the seeded account identities below, but obtain their local-only passwords
+  from `apps/web/e2e/chat-send.spec.ts` (client) and `scripts/seed.ts` (coach).
+  Never copy the passwords into this log.
+- Do not edit `realtime.ts`, hooks, the Zustand store, route behavior, any
+  Supabase/server boundary, or other production code in this plan. A failed or
+  incomplete reproduction remains evidence, not permission to remediate.
+
+### Deterministic local setup
+
+From the repository root, prepare the current local stack in this order:
+
+1. Run `pnpm supabase:start` and wait for the local Supabase services to be
+   healthy. Record any startup failure as an observation.
+2. Run `pnpm seed` so the local client/coach membership, conversation, and
+   messages match the current checkout.
+3. Run `pnpm dev` and use exactly `http://localhost:3001`. Do not substitute
+   `127.0.0.1`, another hostname, or another port because the auth cookies are
+   host-scoped and the project pins this origin.
+4. Open two independent browser contexts, not two tabs sharing one cookie jar:
+   - **Receiver:** `client1@fish.dev` (`client` role)
+   - **Sender:** `coach@fish.dev` (`coach` role)
+5. In each context, sign in and navigate explicitly through
+   `http://localhost:3001/chat`. Record the final redirected URL, visible
+   conversation/channel label, authenticated role label, and actual
+   conversation id before treating the two contexts as valid. A route mismatch,
+   missing auth session, missing membership, or unavailable local service is an
+   observation to record, not a root cause.
+
+### Capture before sending
+
+In both contexts, open DevTools before the synthetic send:
+
+1. In **Network**, enable preserved logs, select **WS**, open the Supabase
+   Realtime socket, and retain its Messages/Frames view.
+2. In **Console**, enable preserved logs. In the regular Network panel, also
+   preserve the sender's chat write request and response status.
+3. From the WebSocket join topics/frames, record the actual conversation id and
+   the three channel names expected from the current boundary:
+   `conversation:<conversationId>:messages`,
+   `conversation:<conversationId>:reads`, and
+   `conversation:<conversationId>:reactions`.
+4. For each channel and each context, record every observable transition among
+   `SUBSCRIBED`, `CHANNEL_ERROR`, `TIMED_OUT`, and `CLOSED`, with timestamps and
+   any redacted payload. If DevTools exposes only raw `phx_join`/`phx_reply`,
+   heartbeat, error, or close frames rather than callback status names, record
+   those raw frame types and explicitly write `callback status not exposed`.
+   Do not translate a frame into a callback status by assumption.
+5. Record raw WebSocket error/close event code, reason, topic, and payload when
+   exposed. If no such details are exposed, write `none exposed`; do not leave
+   the field blank.
+
+### Two send/receive attempts
+
+**Attempt 1 — current authenticated sessions**
+
+1. After all three channel joins have been captured, send one unique synthetic
+   message through the coach UI.
+2. Record the click/request timestamp, request URL boundary (without tokens),
+   HTTP result, redacted response/error, and the sender's visible message state.
+3. In the client context, wait without refreshing. Record whether the exact
+   synthetic text appears in the DOM, how many matching rows exist, whether the
+   transcript moved, whether the `New messages` indicator appeared, and whether
+   scroll/layout state changed unexpectedly.
+
+**Attempt 2 — fresh receiver restoration**
+
+1. Reload only the receiver through `/chat`, then again record the final URL,
+   conversation identity, role, and all three channel joins/status evidence.
+2. Send a second unique synthetic message from the still-authenticated coach
+   context.
+3. Repeat the sender request and receiver DOM/count/indicator/scroll capture
+   without refreshing the receiver after the send.
+
+### Evidence record
+
+Complete one row per attempt; use `none exposed` or `callback status not exposed`
+where applicable rather than guessing.
+
+| Field | Attempt 1 | Attempt 2 (fresh receiver load) |
+|---|---|---|
+| Capture start/end timestamps and timezone | pending | pending |
+| Receiver identity and role label | `client1@fish.dev` / client | `client1@fish.dev` / client |
+| Sender identity and role label | `coach@fish.dev` / coach | `coach@fish.dev` / coach |
+| Receiver final URL after `/chat` | pending | pending |
+| Sender final URL after `/chat` | pending | pending |
+| Visible conversation/channel label | pending | pending |
+| Actual conversation id | pending | pending |
+| Messages channel name and initial evidence | pending | pending |
+| Messages status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | pending | pending |
+| Reads channel name and initial evidence | pending | pending |
+| Reads status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | pending | pending |
+| Reactions channel name and initial evidence | pending | pending |
+| Reactions status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | pending | pending |
+| Raw WebSocket error/close evidence | pending | pending |
+| Synthetic message text | pending | pending |
+| Sender action/request timestamp and result | pending | pending |
+| Sender-visible message state | pending | pending |
+| Receiver-visible DOM result and timestamp | pending | pending |
+| Receiver matching-row count / duplicate count | pending | pending |
+| Transcript movement / `New messages` indicator | pending | pending |
+| Scroll or layout change | pending | pending |
+| Capture limitations | pending | pending |
+
+### Classification rule
+
+- **reproduced:** delivery fails and the capture contains a direct, repeatable
+  boundary signal identifying where the current path failed.
+- **not reproduced:** the receiver renders each synthetic message exactly once
+  without refresh and the capture contains no failure signal.
+- **inconclusive:** authentication, services, route identity, membership, the
+  WebSocket/request capture, or either attempt cannot be completed; also use
+  this classification when delivery fails without a boundary signal.
+
+Append the classification and the evidence supporting it after the table. A
+route mismatch, missing auth session, or missing service may explain why the
+test could not run, but it must not be promoted to an auth, realtime, route,
+store, or rendering root cause without a direct and repeatable failure boundary.
+If the outcome is not reproduced or inconclusive, keep
+`root_cause: not established`. If a repeatable failure is reproduced, preserve
+the redacted evidence for a separate follow-up fix plan; do not implement or
+speculate about the fix here.
