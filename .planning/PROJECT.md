@@ -8,6 +8,8 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 
 **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
 
+**In progress:** v1.2 Cross-platform Chat State Foundation — Phase 9 (portable chat-state machine + Zustand web adapter, 11/11 plans, re-verified 6/6 CSTATE requirements on 2026-07-10 after gap-closure round 2) and Phase 10 (bounded message loading) are both execution-complete; `/channels/general` is the canonical community chat surface (the `/chat` route was removed). Outstanding: manual UAT for Phase 9 (`09-UAT.md`, status diagnosed) and milestone audit.
+
 What works today:
 - Monochrome design system: `light-dark()` oklch token ladder, WCAG-AA contrast-tested, five kit components (Button, Input, Card, Progress, Alert), `/kit` demo page as the visual contract in both themes.
 - Full auth loop: signup (always client) → verification email → login → persistent session → logout → password recovery; all screens Enter-submittable, calm non-enumerating copy.
@@ -141,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-06 after removing unvalidated learning-flow implementations*
+*Last updated: 2026-07-10 after Phase 9 gap-closure round 2 execution and re-verification (6/6 CSTATE requirements)*
