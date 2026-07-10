@@ -1959,4 +1959,97 @@ describe("ChatClient", () => {
       screen.queryByRole("status", { name: "Coach Dana is typing" })
     ).toBeNull();
   });
+
+  it("resets hasConnected per conversation so B's first connect never reads as a reconnect (WR-06)", async () => {
+    const { rerender } = render(
+      <ChatClient chat={chat} sendMessageAction={vi.fn()} />
+    );
+
+    act(() => {
+      latestSubscribeStatusCallback(":messages")("SUBSCRIBED");
+    });
+    expect(
+      selectRealtimeStatusForConversation(chatStore.getState(), chat.conversationId)
+    ).toBe("connected");
+
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    await waitFor(() =>
+      expect(
+        selectRealtimeStatusForConversation(chatStore.getState(), nextConversationId)
+      ).toBe("connecting")
+    );
+    // B's ordinary first "connecting" must never read as a reconnect just
+    // because A happened to be connected before the switch.
+    expect(screen.queryByRole("status", { name: "Reconnecting…" })).toBeNull();
+    expect(screen.queryByText("Reconnecting…")).toBeNull();
+  });
+
+  it("keeps the same reserved-height load-older-slot across idle, loading, and error states (WR-07)", async () => {
+    type DeferredLoadOlderResult =
+      | {
+          status: "sent";
+          values: unknown;
+          messages: never[];
+          hasMoreOlder: boolean;
+        }
+      | { status: "notice"; values: unknown; notice: string };
+    let resolveLoad: (value: DeferredLoadOlderResult) => void = () => undefined;
+    const loadOlderMessagesAction = vi.fn(
+      () =>
+        new Promise<DeferredLoadOlderResult>((resolve) => {
+          resolveLoad = resolve;
+        })
+    );
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const idleSlot = screen.getByTestId("load-older-slot");
+    expect(
+      within(idleSlot).getByRole("button", { name: "Load earlier messages" })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(idleSlot).getByRole("button", { name: "Load earlier messages" })
+    );
+
+    const loadingSlot = await screen.findByTestId("load-older-slot");
+    expect(loadingSlot).toBe(idleSlot);
+    expect(
+      within(loadingSlot).getByTestId("load-older-skeleton")
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      resolveLoad({
+        status: "notice",
+        values: {},
+        notice: "Earlier messages did not load.",
+      });
+      await Promise.resolve();
+    });
+
+    const errorSlot = await screen.findByTestId("load-older-slot");
+    expect(errorSlot).toBe(idleSlot);
+    expect(within(errorSlot).getByTestId("load-older-error")).toBeInTheDocument();
+    expect(idleSlot.className).toContain("min-h-pagination-slot");
+  });
 });

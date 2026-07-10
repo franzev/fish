@@ -168,9 +168,22 @@ export function ChatClient({
   // reconnect (states.md: reassure, never alarm). Derived during render (the
   // React-documented "adjusting state when a prop changes" pattern) rather
   // than an effect, so a setState-in-effect cascade never fires.
+  const [previousConversationId, setPreviousConversationId] = useState(
+    chat.conversationId
+  );
   const [previousRealtimeStatus, setPreviousRealtimeStatus] = useState(realtimeStatus);
   const [hasConnected, setHasConnected] = useState(realtimeStatus === "connected");
-  if (realtimeStatus !== previousRealtimeStatus) {
+  if (chat.conversationId !== previousConversationId) {
+    // A mounted client switching conversations must start the new one from
+    // a clean first-connect: hasConnected (and the previousRealtimeStatus
+    // baseline it is compared against) are scoped to the conversation they
+    // were observed in, or the old conversation's prior "connected" would
+    // make the new one's ordinary first "connecting" read as a reconnect
+    // (WR-06).
+    setPreviousConversationId(chat.conversationId);
+    setPreviousRealtimeStatus(realtimeStatus);
+    setHasConnected(realtimeStatus === "connected");
+  } else if (realtimeStatus !== previousRealtimeStatus) {
     setPreviousRealtimeStatus(realtimeStatus);
     if (realtimeStatus === "connected") {
       setHasConnected(true);
@@ -290,43 +303,50 @@ export function ChatClient({
             className="h-3xs w-full"
           />
         )}
-        {isLoadingOlder && (
+        {(hasMoreOlder || hasOlderLoadError) && (
           <div
-            className="flex flex-col gap-xs pb-md"
-            aria-hidden="true"
-            data-testid="load-older-skeleton"
+            data-testid="load-older-slot"
+            className="flex min-h-pagination-slot flex-col justify-center gap-xs pb-md"
           >
-            <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
-            <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
-          </div>
-        )}
-        {hasOlderLoadError && !isLoadingOlder && (
-          <div
-            className="flex items-center gap-xs pb-md"
-            data-testid="load-older-error"
-          >
-            <Alert tone="notice" className="min-w-0 flex-1">
-              Couldn&apos;t load earlier messages. Try again.
-            </Alert>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => void loadOlderAndPreserveScroll()}
-            >
-              Try again
-            </Button>
-          </div>
-        )}
-        {hasMoreOlder && !hasOlderLoadError && (
-          <div className="flex justify-center pb-md">
-            <Button
-              type="button"
-              variant="ghost"
-              loading={isLoadingOlder}
-              onClick={() => void loadOlderAndPreserveScroll()}
-            >
-              Load earlier messages
-            </Button>
+            {isLoadingOlder ? (
+              <div
+                className="flex flex-col gap-xs"
+                aria-hidden="true"
+                data-testid="load-older-skeleton"
+              >
+                <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
+                <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
+              </div>
+            ) : hasOlderLoadError ? (
+              <div
+                className="flex items-center gap-xs"
+                data-testid="load-older-error"
+              >
+                <Alert tone="notice" className="min-w-0 flex-1">
+                  Couldn&apos;t load earlier messages. Try again.
+                </Alert>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => void loadOlderAndPreserveScroll()}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : (
+              hasMoreOlder && (
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    loading={isLoadingOlder}
+                    onClick={() => void loadOlderAndPreserveScroll()}
+                  >
+                    Load earlier messages
+                  </Button>
+                </div>
+              )
+            )}
           </div>
         )}
         {filteredMessages.length === 0 && !participantTyping ? (
