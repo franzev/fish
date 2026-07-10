@@ -46,6 +46,7 @@ type SupabaseResponse<T> = {
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";
 const reactionPageSize = 1000;
+const reactionMessageBatchSize = 25;
 // Bounded newest-message window for the initial SSR load (CLOAD-01). One
 // reusable page size keeps the initial fetch and every later "load earlier"
 // page (Plan 10-02 actions.ts) consistent.
@@ -86,29 +87,48 @@ function isSignedOutAuthError(error: {
 
 async function fetchConversationReactions(
   client: AppSupabaseClient,
-  conversationId: string
+  conversationId: string,
+  messageIds: string[]
 ): Promise<{ data: MessageReactionRow[]; error: SupabaseResponse<unknown>["error"] }> {
   const rows: MessageReactionRow[] = [];
 
-  for (let from = 0;; from += reactionPageSize) {
-    const { data, error } = (await client
-      .from("message_reactions")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .range(from, from + reactionPageSize - 1)) as {
-      data: MessageReactionRow[] | null;
-      error: SupabaseResponse<unknown>["error"];
-    };
+  if (messageIds.length === 0) {
+    return { data: rows, error: null };
+  }
 
-    if (error) {
-      return { data: rows, error };
-    }
+  for (
+    let batchStart = 0;
+    batchStart < messageIds.length;
+    batchStart += reactionMessageBatchSize
+  ) {
+    const batchIds = messageIds.slice(
+      batchStart,
+      batchStart + reactionMessageBatchSize
+    );
 
-    rows.push(...(data ?? []));
-    if ((data ?? []).length < reactionPageSize) {
-      return { data: rows, error: null };
+    for (let from = 0;; from += reactionPageSize) {
+      const { data, error } = (await client
+        .from("message_reactions")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .in("message_id", batchIds)
+        .range(from, from + reactionPageSize - 1)) as {
+        data: MessageReactionRow[] | null;
+        error: SupabaseResponse<unknown>["error"];
+      };
+
+      if (error) {
+        return { data: rows, error };
+      }
+
+      rows.push(...(data ?? []));
+      if ((data ?? []).length < reactionPageSize) {
+        break;
+      }
     }
   }
+
+  return { data: rows, error: null };
 }
 
 async function safely<T>(
@@ -774,7 +794,11 @@ class SupabaseChatRepository implements ChatRepository {
       }
 
       const { data: reactions, error: reactionError } =
-        await fetchConversationReactions(this.client, conversation.id);
+        await fetchConversationReactions(
+          this.client,
+          conversation.id,
+          messages.map((message) => message.id)
+        );
 
       if (reactionError) {
         return serviceFailure(

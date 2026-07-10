@@ -215,6 +215,7 @@ describe("Supabase service registry", () => {
         title: "general",
       });
       expect(result.data?.subtitle).toBeUndefined();
+      expect(client.from).not.toHaveBeenCalledWith("message_reactions");
     }
   });
 
