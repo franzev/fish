@@ -10,7 +10,7 @@ test("client can send a chat message from the browser", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/home$/);
 
-  await page.goto("/chat");
+  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
   await page.getByRole("textbox", { name: "Message", exact: true }).fill(body);
   await page.getByRole("button", { name: "Send message" }).click();
 

@@ -110,11 +110,11 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const navItems = getNavItems(role);
-  /* Chat is the one immersive surface: the thread owns the pane edge-to-edge
-     and scrolls internally, so the shell locks to the viewport here. Every
-     other screen keeps the centered reading column (D-10). */
-  const immersive =
-    isActivePath(pathname, "/channels") || isActivePath(pathname, "/chat");
+  /* Channels is the one immersive surface: the thread owns the pane
+     edge-to-edge and scrolls internally, so the shell locks to the viewport
+     here. Every other screen keeps the centered reading column (D-10). The
+     `/chat` route was removed 2026-07-10 (community room supersedes it). */
+  const immersive = isActivePath(pathname, "/channels");
 
   return (
     <div
