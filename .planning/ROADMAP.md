@@ -73,7 +73,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
-**Plans**: 6 plans (4 complete, 2 gap-closure)
+**Plans**: 11 plans (6 complete, 5 gap-closure round 2 from the 2026-07-10 re-verification)
 **Wave 1**
 
 - [x] 09-01-PLAN.md — portable chat-state core, fixture vectors, dependency boundary tests, and web helper shim
@@ -91,6 +91,20 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 09-05-PLAN.md — obtain real authenticated two-session realtime evidence for the inconclusive new-message UAT gap
 - [x] 09-06-PLAN.md — synchronize the canonical Phase 09 native notes with the current pagination contract and align UAT documentation references
+
+**Wave 5** *(gap closure round 2; blocked on the 2026-07-10 re-verification `gaps_found`)*
+
+- [ ] 09-07-PLAN.md — isolate the chat store by authenticated user; clear on soft logout with a cross-account regression test (CR-01 blocker)
+- [ ] 09-08-PLAN.md — remove the `/chat` route and add dated CSTATE-02/06 + D-09 supersede notes for the community-room target
+- [ ] 09-09-PLAN.md — draft-safe send-failure recovery: conditional reducer restore and removal of the composer clobber (WR-01 blocker)
+
+**Wave 6** *(blocked on Wave 5)*
+
+- [ ] 09-10-PLAN.md — reset realtime lifecycle/reconnect refs per conversation and dispatch each read payload once (WR-05, WR-06)
+
+**Wave 7** *(blocked on Wave 6)*
+
+- [ ] 09-11-PLAN.md — community grouping predicate (avatar/time reappear), truthful offline copy, and 56px touch-safe actions (WR-02, WR-03, WR-04)
 
 ### Phase 10: Chat Message Loading Optimization
 
@@ -122,7 +136,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 6/6 | Complete   | 2026-07-10 |
+| 9. Cross-platform Chat State | v1.2 | 6/11 | Gap closure (round 2) | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
