@@ -2,17 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-current_phase: 09
-current_phase_name: cross-platform-chat-state
 status: executing
-stopped_at: Completed 09-13-PLAN.md
-last_updated: "2026-07-10T08:25:16.869Z"
+stopped_at: Completed 09-14-PLAN.md
+last_updated: "2026-07-10T08:49:02.487Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 26
-  completed_plans: 22
+  completed_plans: 23
   percent: 60
 ---
 
@@ -31,11 +29,11 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 2 of 18
+Plan: 3 of 18
 Status: Ready to execute
 Next planned: Re-run Phase 09 UAT Test 2 at `/channels/general`, then complete the milestone audit.
 
-Progress: [██████████] 100%
+Progress: [█████████░] 88%
 
 ## Milestone v1.1 Phases
 
@@ -104,6 +102,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09-13]: Reused mergeChatMessage for hydrate-preserve reconciliation instead of a bespoke function — Keeps dedup/supersede semantics identical across every message-touching event (same primitive olderPageLoaded already uses).
 - [Phase 09-13]: markMessageFailed is now monotonic: a late failure is ignored once a message's localStatus is already sent — Closes WR-03 — prevents a stale failure callback from downgrading a realtime-confirmed or authoritative send.
 - [Phase 09-13]: getMessageSnippet now counts Unicode code points via Array.from instead of UTF-16 .length/.slice() — Closes WR-10 — guarantees a truncated snippet never exceeds 96 code points and never splits a surrogate pair (emoji).
+- [Phase 09-14]: cacheOwnerUserId is a module-level let, not a ChatStoreState field, so it can never surface in getState() or trip the authority-boundary test's forbidden-key list — CR-01 fix must not weaken the store's auth-free guarantee while adding identity-partitioning
+- [Phase 09-14]: ensureChatStoreOwner never purges on a null-to-X first adoption (only X-to-Y where X differs from Y) — So server-hydrated state surviving a guard mount/re-render is never mistaken for stale cross-account leftovers
+- [Phase 09-14]: ChatIdentityGuard reads no role/permission data and makes no authorization decision; it is a purge trigger only — RLS/Edge Functions remain the sole authority (D-05, D-08)
+- [Phase 09-14]: A failed signOut preserves state and shows guidance instead of half-completing the clear+navigate sequence — Closes the repudiation gap where a failed sign-out was previously treated as success (CR-01)
 
 ### Todos / open questions
 
@@ -134,6 +136,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P11 | 6min | 3 tasks | 5 files |
 | Phase 09 P12 | 12min | 2 tasks | 4 files |
 | Phase 09 P13 | 25min | 3 tasks | 6 files |
+| Phase 09 P14 | 20min | 3 tasks | 10 files |
 
 ### Quick Tasks Completed
 
@@ -176,10 +179,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T08:25:16.863Z
+**Last session:** 2026-07-10T08:49:02.483Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-13-PLAN.md
+- **Stopped at:** Completed 09-14-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
