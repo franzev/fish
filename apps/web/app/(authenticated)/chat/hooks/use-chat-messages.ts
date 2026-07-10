@@ -51,6 +51,8 @@ export interface LoadOlderMessagesActionState extends RefreshMessagesActionState
   readStates?: ClientChatData["readStates"];
 }
 
+export type LoadOlderMessagesOutcome = "loaded" | "failed" | "skipped";
+
 const refreshMessageCooldownMs = 2_000;
 
 export function toLocalMessage(message: ClientChatMessage): LocalMessage {
@@ -222,9 +224,9 @@ export function useChatMessages({
   // (same idiom as refreshingMessageIdsRef) so a second call while a load is
   // already running is a no-op, and returns a resolved promise so callers
   // (Plan 04) can restore scroll position only once the prepend has landed.
-  const loadOlderMessages = useCallback(async (): Promise<void> => {
+  const loadOlderMessages = useCallback(async (): Promise<LoadOlderMessagesOutcome> => {
     if (!loadOlderMessagesAction || !hasMoreOlder || isLoadingOlderRef.current) {
-      return;
+      return "skipped";
     }
 
     isLoadingOlderRef.current = true;
@@ -249,8 +251,10 @@ export function useChatMessages({
           result.hasMoreOlder ?? false,
           oldestRow ? { createdAt: oldestRow.createdAt, id: oldestRow.id } : cursor
         );
+        return "loaded";
       } else {
         markOlderPageFailed(chat.conversationId);
+        return "failed";
       }
     } finally {
       isLoadingOlderRef.current = false;

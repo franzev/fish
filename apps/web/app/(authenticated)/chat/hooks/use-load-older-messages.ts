@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, type RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
+import type { LoadOlderMessagesOutcome } from "./use-chat-messages";
 
 interface UseLoadOlderMessagesOptions {
   viewportRef: RefObject<HTMLDivElement | null>;
   sentinelRef: RefObject<HTMLDivElement | null>;
   hasMoreOlder: boolean;
   isLoadingOlder: boolean;
-  /** Plan 10-03's Promise-returning loadOlderMessages. */
-  onLoadOlder: () => Promise<void>;
+  /** Reports whether the older-page request loaded, failed, or was skipped. */
+  onLoadOlder: () => Promise<LoadOlderMessagesOutcome>;
 }
 
 /** Sentinel-triggered "load earlier" with reading-position preservation
@@ -24,29 +25,38 @@ export function useLoadOlderMessages({
   isLoadingOlder,
   onLoadOlder,
 }: UseLoadOlderMessagesOptions) {
+  const [hasOlderLoadError, setHasOlderLoadError] = useState(false);
+  const [previousOnLoadOlder, setPreviousOnLoadOlder] = useState(
+    () => onLoadOlder
+  );
+  if (previousOnLoadOlder !== onLoadOlder) {
+    setPreviousOnLoadOlder(() => onLoadOlder);
+    setHasOlderLoadError(false);
+  }
+
   const loadOlderAndPreserveScroll = useCallback(async (): Promise<void> => {
     const viewport = viewportRef.current;
     const previousScrollHeight = viewport?.scrollHeight ?? 0;
     const previousScrollTop = viewport?.scrollTop ?? 0;
 
-    await onLoadOlder();
+    const outcome = await onLoadOlder();
 
-    if (!viewport) {
-      return;
+    if (viewport) {
+      // Restore instantly (no animated scroll) once the prepend has painted —
+      // overflow-anchor:none (globals.css) keeps the browser's own scroll
+      // anchoring from fighting this manual restore. Focus is never moved.
+      requestAnimationFrame(() => {
+        viewport.scrollTop =
+          viewport.scrollHeight - previousScrollHeight + previousScrollTop;
+      });
     }
 
-    // Restore instantly (no animated scroll) once the prepend has painted —
-    // overflow-anchor:none (globals.css) keeps the browser's own scroll
-    // anchoring from fighting this manual restore. Focus is never moved.
-    requestAnimationFrame(() => {
-      viewport.scrollTop =
-        viewport.scrollHeight - previousScrollHeight + previousScrollTop;
-    });
+    setHasOlderLoadError(outcome === "failed");
   }, [onLoadOlder, viewportRef]);
 
   useEffect(() => {
     const node = sentinelRef.current;
-    if (!node || !hasMoreOlder || isLoadingOlder) {
+    if (!node || !hasMoreOlder || isLoadingOlder || hasOlderLoadError) {
       return;
     }
 
@@ -61,7 +71,13 @@ export function useLoadOlderMessages({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMoreOlder, isLoadingOlder, loadOlderAndPreserveScroll, sentinelRef]);
+  }, [
+    hasMoreOlder,
+    hasOlderLoadError,
+    isLoadingOlder,
+    loadOlderAndPreserveScroll,
+    sentinelRef,
+  ]);
 
-  return { loadOlderAndPreserveScroll };
+  return { hasOlderLoadError, loadOlderAndPreserveScroll };
 }

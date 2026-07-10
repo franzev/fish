@@ -1311,6 +1311,113 @@ describe("ChatClient", () => {
     expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps automatic load earlier available after a successful page when more history remains", async () => {
+    const loadOlderMessagesAction = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: "sent",
+        values: {},
+        messages: [
+          {
+            ...chat.messages[0],
+            id: "message-0",
+            body: "The first older page.",
+            clientRequestId: "seed-0",
+            createdAt: "2026-07-04T00:00:00.000Z",
+          },
+        ],
+        hasMoreOlder: true,
+      })
+      .mockResolvedValueOnce({
+        status: "sent",
+        values: {},
+        messages: [
+          {
+            ...chat.messages[0],
+            id: "message-before-0",
+            body: "The next older page.",
+            clientRequestId: "seed-before-0",
+            createdAt: "2026-07-03T00:00:00.000Z",
+          },
+        ],
+        hasMoreOlder: false,
+      });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    let sentinel = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+    expect(await screen.findByText("The first older page.")).toBeInTheDocument();
+
+    sentinel = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText("The next older page.")).toBeInTheDocument();
+  });
+
+  it("resets the load earlier failure gate when the conversation changes", async () => {
+    const loadOlderMessagesAction = vi.fn().mockResolvedValue({
+      status: "notice",
+      values: {},
+      notice: "Earlier messages did not load.",
+    });
+    const { rerender } = render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    let sentinel = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1));
+
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          hasMoreOlder: true,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    sentinel = await screen.findByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(2);
+    expect(loadOlderMessagesAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({ conversationId: nextConversationId })
+    );
+  });
+
   it("drives the same wrapped scroll-preserving callback from the button as the sentinel", async () => {
     const loadOlderMessagesAction = vi.fn().mockResolvedValue({
       status: "sent",
