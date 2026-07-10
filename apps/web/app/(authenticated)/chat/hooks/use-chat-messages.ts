@@ -298,27 +298,7 @@ export function useChatMessages({
       return;
     }
 
-    const currentMessages = selectMessagesForConversation(
-      chatStore.getState(),
-      chat.conversationId
-    );
-    const newestMessage = currentMessages[currentMessages.length - 1];
-
-    if (!newestMessage) {
-      return;
-    }
-
-    const result = await backfillMessagesAction({
-      conversationId: chat.conversationId,
-      afterCreatedAt: newestMessage.createdAt,
-      afterMessageId: newestMessage.id,
-    }).catch(() => null);
-
-    if (!result || result.status !== "sent") {
-      return;
-    }
-
-    if (result.needsReset) {
+    const hydrateNewestWindow = async (): Promise<void> => {
       if (!loadNewestMessagesAction) {
         return;
       }
@@ -336,7 +316,38 @@ export function useChatMessages({
           resetResult.oldestCursor ?? null
         );
       }
+    };
 
+    const currentMessages = selectMessagesForConversation(
+      chatStore.getState(),
+      chat.conversationId
+    );
+    let newestConfirmedMessage: ChatMessageState | undefined;
+    for (let index = currentMessages.length - 1; index >= 0; index -= 1) {
+      const candidate = currentMessages[index];
+      if (candidate?.localStatus === "sent") {
+        newestConfirmedMessage = candidate;
+        break;
+      }
+    }
+
+    if (!newestConfirmedMessage) {
+      await hydrateNewestWindow();
+      return;
+    }
+
+    const result = await backfillMessagesAction({
+      conversationId: chat.conversationId,
+      afterCreatedAt: newestConfirmedMessage.createdAt,
+      afterMessageId: newestConfirmedMessage.id,
+    }).catch(() => null);
+
+    if (!result || result.status !== "sent") {
+      return;
+    }
+
+    if (result.needsReset) {
+      await hydrateNewestWindow();
       return;
     }
 
