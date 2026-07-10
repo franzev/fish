@@ -133,7 +133,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
 **Depends on**: Phase 8, Phase 9
 **Requirements**: CLOAD-01, CLOAD-02, CLOAD-03, CLOAD-04, CLOAD-05, CLOAD-06
-**Plans**: 6/6 plans executed
+**Plans**: 6/7 plans executed
 
 **Wave 1** *(parallel — no shared files)*
 
@@ -155,6 +155,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Wave 5** *(verification gap closure; blocked on Wave 4 completion)*
 
 - [x] 10-06-PLAN.md — use only server-confirmed reconnect cursors, recover no-confirmed transcripts from the bounded newest window, and scope initial reactions to retained message ids
+
+**Wave 6** *(gap closure; blocked on Wave 5 completion)*
+
+- [ ] 10-07-PLAN.md — make the reconnect lock conversation-owned and prove overlapping A→B recoveries cannot release the active conversation's lock
 
 ## Progress
 
