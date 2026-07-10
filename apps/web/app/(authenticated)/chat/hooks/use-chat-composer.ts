@@ -122,14 +122,14 @@ export function useChatComposer({
 
     if (result.status !== "sent" || !result.message) {
       setNotice(result.notice ?? "That did not send yet. Keep this open and try again.");
+      // The reducer owns draft restoration on failure (restores the failed
+      // body only when nothing newer was typed) — do not clear here, or a
+      // delayed failure could wipe a draft the user already started.
       markMessageFailed(
         chat.conversationId,
         clientRequestId,
         result.notice ?? "Not sent yet"
       );
-      if (clearComposer) {
-        setDraft(chat.conversationId, "");
-      }
       return;
     }
 

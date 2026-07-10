@@ -627,7 +627,7 @@ describe("ChatClient", () => {
     expect(sendMessageAction).toHaveBeenCalledTimes(2);
   });
 
-  it("clears the composer and offers retry when send fails", async () => {
+  it("restores the draft and offers retry when send fails", async () => {
     const sendMessageAction = vi.fn().mockResolvedValue({
       status: "notice",
       values: {},
@@ -644,9 +644,62 @@ describe("ChatClient", () => {
     expect(
       await screen.findByText("That did not send yet. Keep this open and try again.")
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Message")).toHaveValue("");
-    expect(screen.getByText("Please keep this draft.")).toBeInTheDocument();
+    // The portable reducer restores the failed body to the composer draft
+    // (nothing newer was typed) — the hook must not clobber that restore.
+    // The restored draft and the failed bubble now share the same text, so
+    // scope the bubble assertion to the log (the composer lives outside it).
+    expect(screen.getByLabelText("Message")).toHaveValue("Please keep this draft.");
+    const log = screen.getByRole("log", { name: "Conversation messages" });
+    expect(within(log).getByText("Please keep this draft.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
+
+  it("preserves a newer draft when a delayed send failure arrives", async () => {
+    type SendResult = {
+      status: "notice";
+      values: unknown;
+      notice: string;
+    };
+    let resolveSend: (value: SendResult) => void = () => undefined;
+    const sendMessageAction = vi.fn(
+      () =>
+        new Promise<SendResult>((resolve) => {
+          resolveSend = resolve;
+        })
+    );
+
+    render(<ChatClient chat={chat} sendMessageAction={sendMessageAction} />);
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "First message." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    expect(await screen.findByText("First message.")).toBeInTheDocument();
+    // Eager pre-send clear still applies while the send is pending.
+    expect(screen.getByLabelText("Message")).toHaveValue("");
+
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Second message." },
+    });
+
+    await act(async () => {
+      resolveSend({
+        status: "notice",
+        values: {},
+        notice: "That did not send yet. Keep this open and try again.",
+      });
+      await Promise.resolve();
+    });
+
+    expect(
+      await screen.findByText("That did not send yet. Keep this open and try again.")
+    ).toBeInTheDocument();
+    // The newer draft survives — the delayed failure must not overwrite it.
+    expect(screen.getByLabelText("Message")).toHaveValue("Second message.");
+
+    const failedRow = screen.getByText("First message.").closest("li") as HTMLElement;
+    expect(within(failedRow).getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("shows one compact sent status on the latest outgoing message only", () => {
