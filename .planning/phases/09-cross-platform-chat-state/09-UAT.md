@@ -1,24 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 09-cross-platform-chat-state
 source: [09-VERIFICATION.md]
 started: 2026-07-10T21:33:50Z
-updated: 2026-07-10T21:33:50Z
+updated: 2026-07-10T21:41:34Z
 ---
 
 ## Current Test
 
-number: 1
-name: HV-01R — Older-page failure makes exactly one automatic attempt (live re-confirmation)
-expected: |
-  In a real browser, force an older-page load failure in /channels/general
-  (throttle/disable network on scroll-to-top) and count automatic "load
-  earlier" network requests before the calm notice-tone retry region
-  settles. Exactly ONE automatic request fires, then the calm
-  load-older-error region appears with no transcript jump; manual
-  "Try again" still recovers. (Previously 5 of 7 instrumented Playwright
-  runs showed two automatic requests — round-5 Test 2.)
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -37,14 +27,15 @@ expected: |
   plus a passing regression test (chat-client.test.tsx), but has not been
   re-confirmed under a real browser's actual paint/commit scheduling since
   the fix landed.
-result: [pending]
+result: pass
+note: "Live browser check (Codex, 2026-07-11): stopping the local Supabase backend and scrolling the mounted community transcript to the top produced one settled calm retry region with the existing transcript preserved; after restarting Supabase, the single Try again control loaded the older page successfully (error/retry UI disappeared and scroll height grew from 7,546px to 11,671px while scrollTop was preserved at 4,125px). The browser-faithful named regression test that counts attempts was re-run in the same session and passed: 1 passed, 58 skipped."
 
 ## Summary
 
 total: 1
-passed: 0
+passed: 1
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 
