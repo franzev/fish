@@ -7,6 +7,7 @@ export * from "./emoji-picker";
 export * from "./empty-state";
 export * from "./message-body";
 export * from "./message-meta";
+export * from "./message-row";
 export { MessageStatus } from "./message-status";
 export * from "./quoted-message";
 export * from "./reactions";

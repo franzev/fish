@@ -12,6 +12,8 @@ import {
   getBubbleRadiusClasses,
   MessageBody,
   MessageMeta,
+  CommunityMessageRowLayout,
+  MessageRowsSkeleton,
   MessageStatus,
   QuotedMessage,
   Reactions,
@@ -292,6 +294,7 @@ export function ChatClient({
         >
           <div
             role="log"
+            aria-busy={isLoadingOlder || undefined}
             aria-label={
               isCommunity ? "Community messages" : "Conversation messages"
             }
@@ -308,17 +311,15 @@ export function ChatClient({
         {(hasMoreOlder || hasOlderLoadError) && (
           <div
             data-testid="load-older-slot"
-            className="flex min-h-pagination-slot flex-col justify-center gap-xs pb-md"
+            className="flex h-pagination-slot flex-col justify-center gap-xs pb-md"
           >
             {isLoadingOlder ? (
-              <div
-                className="flex flex-col gap-xs"
-                aria-hidden="true"
-                data-testid="load-older-skeleton"
-              >
-                <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
-                <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
-              </div>
+              <>
+                <MessageRowsSkeleton />
+                <span role="status" className="sr-only">
+                  Loading earlier messages
+                </span>
+              </>
             ) : hasOlderLoadError ? (
               <div
                 className="flex items-center gap-xs"
@@ -341,7 +342,6 @@ export function ChatClient({
                   <Button
                     type="button"
                     variant="ghost"
-                    loading={isLoadingOlder}
                     onClick={() => void loadOlderAndPreserveScroll()}
                   >
                     Load earlier messages
@@ -419,64 +419,8 @@ export function ChatClient({
               const showMessageActions =
                 message.localStatus === "sent" && !message.deletedAt;
 
-              return (
-                <Fragment key={message.clientRequestId}>
-                {dayDividerLabel && (
-                  <li role="separator" className="mt-md flex items-center gap-xs">
-                    <span aria-hidden="true" className="h-px flex-1 bg-border" />
-                    <span
-                      suppressHydrationWarning
-                      className="text-ui-2xs font-medium text-muted"
-                    >
-                      {dayDividerLabel}
-                    </span>
-                    <span aria-hidden="true" className="h-px flex-1 bg-border" />
-                  </li>
-                )}
-                <li
-                  className={cn(
-                    "group relative flex",
-                    isCommunity
-                      ? cn(
-                          // Feed rows touch (no between-row gap); the breathing
-                          // room lives inside the row as padding, so the hover
-                          // highlight covers the whole message. A new author
-                          // block gets balanced breathing room; same-author
-                          // lines stay compact so the block reads as one.
-                          "-mx-md items-start gap-md px-md py-2xs transition-colors hover:bg-surface",
-                          index > 0 && startsCommunityGroup && "py-sm"
-                        )
-                      : cn(
-                          "items-end",
-                          index > 0 && (groupedWithPrevious ? "mt-3xs" : "mt-md"),
-                          !mine && "gap-md",
-                          mine ? "justify-end" : "justify-start"
-                        )
-                  )}
-                >
-                  {(isCommunity || !mine) &&
-                    (showParticipantAvatar ? (
-                      <Avatar
-                        name={getMessageAuthorName(message)}
-                        size="sm"
-                        /* With a reply preview above, the avatar drops to sit
-                           beside the author header — the preview row belongs
-                           to the quoted message, not this one. */
-                        className={cn(
-                          isCommunity && replyMessage && "mt-lg"
-                        )}
-                      />
-                    ) : (
-                      <div aria-hidden="true" className="size-8 shrink-0" />
-                    ))}
-                  <div
-                    className={cn(
-                      "flex flex-col",
-                      isCommunity
-                        ? "min-w-0 flex-1 items-start"
-                        : cn("max-w-message", mine && "items-end")
-                    )}
-                  >
+              const rowContent = (
+                <>
                     {isCommunity && replyMessage && (
                       <div className="relative mb-2xs flex items-center gap-2xs self-stretch text-ui-xs text-muted">
                         {/* L-connector: stem on avatar centre, arm into preview row. */}
@@ -615,7 +559,76 @@ export function ChatClient({
                         </>
                       )}
                     </div>
-                  </div>
+                </>
+              );
+
+              const communityAvatarSlot = showParticipantAvatar ? (
+                <Avatar
+                  name={getMessageAuthorName(message)}
+                  size="sm"
+                  /* With a reply preview above, the avatar drops to sit
+                     beside the author header — the preview row belongs
+                     to the quoted message, not this one. */
+                  className={cn(replyMessage && "mt-lg")}
+                />
+              ) : (
+                <div aria-hidden="true" className="size-8 shrink-0" />
+              );
+
+              return (
+                <Fragment key={message.clientRequestId}>
+                {dayDividerLabel && (
+                  <li role="separator" className="mt-md flex items-center gap-xs">
+                    <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                    <span
+                      suppressHydrationWarning
+                      className="text-ui-2xs font-medium text-muted"
+                    >
+                      {dayDividerLabel}
+                    </span>
+                    <span aria-hidden="true" className="h-px flex-1 bg-border" />
+                  </li>
+                )}
+                <li
+                  className={cn(
+                    !isCommunity && "group relative flex items-end",
+                    !isCommunity &&
+                      index > 0 &&
+                      (groupedWithPrevious ? "mt-3xs" : "mt-md"),
+                    !isCommunity && !mine && "gap-md",
+                    !isCommunity && (mine ? "justify-end" : "justify-start")
+                  )}
+                >
+                  {isCommunity ? (
+                    <CommunityMessageRowLayout
+                      avatarSlot={communityAvatarSlot}
+                      startsGroup={startsCommunityGroup}
+                      hasPrecedingRow={index > 0}
+                      interactive
+                    >
+                      {rowContent}
+                    </CommunityMessageRowLayout>
+                  ) : (
+                    <>
+                      {!mine &&
+                        (showParticipantAvatar ? (
+                          <Avatar
+                            name={getMessageAuthorName(message)}
+                            size="sm"
+                          />
+                        ) : (
+                          <div aria-hidden="true" className="size-8 shrink-0" />
+                        ))}
+                      <div
+                        className={cn(
+                          "flex max-w-message flex-col",
+                          mine && "items-end"
+                        )}
+                      >
+                        {rowContent}
+                      </div>
+                    </>
+                  )}
                 </li>
                 </Fragment>
               );

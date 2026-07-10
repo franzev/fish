@@ -103,7 +103,7 @@
      the tallest state (the two-row loading skeleton) so idle / loading /
      failure / retry-success never change the region's height and the
      transcript below never shifts (layout-stability contract, STATE.md). */
-  --size-pagination-slot: 104px;
+  --size-pagination-slot: 112px;
 
   /* ---- Spacing scale: intent tokens only, no one-off numeric utilities ---- */
   --spacing-3xs: 2px;             /* hairline separation */
