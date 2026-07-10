@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-10-PLAN.md
-last_updated: "2026-07-10T05:15:00.750Z"
+stopped_at: Completed 09-11-PLAN.md
+last_updated: "2026-07-10T05:33:53.893Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 19
-  completed_plans: 19
-  percent: 60
+  completed_plans: 20
+  percent: 80
 ---
 
 # Project State: FISH
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Ready to execute
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
@@ -94,6 +94,9 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: CSTATE-02/CSTATE-06 (REQUIREMENTS.md), D-09 (09-CONTEXT.md), and the Phase 9 goal (ROADMAP.md) now carry dated 2026-07-10 supersede notes pointing at the community room /channels/general. — Notes are additive blockquotes; original requirement/decision/goal wording is preserved so history stays auditable, and re-verification measures the shipped surface instead of the removed 1-on-1 route.
 - [Phase 09]: Plan 09-09: markMessageFailed restores composer.draft from the failed body only when the draft is empty; a non-empty (newer) draft is never overwritten, and use-chat-composer.ts no longer clears the draft after a failure (closes WR-01).
 - [Phase 09]: Plan 09-10: message-subscription cleanup resets realtime status to idle and resets seenFirstSubscribeRef/backfillInFlightRef per conversationId; read-state payloads dispatch once via mergeReadState only. — Closes WR-05 (stale connected status mislabels a revisit as reconnecting) and WR-06 (duplicate mergeReadState dispatch) from the Phase 09 code review.
+- [Phase 09-11]: Grouping predicate compares same sender, same calendar day, and a documented 5-minute gap (MESSAGE_GROUP_GAP_MS), replacing the senderId-only comparison. — Closes WR-02: a same-sender run was suppressing avatar/MessageMeta indefinitely, the user's missing avatar/time UAT report.
+- [Phase 09-11]: Offline banner copy changed to 'You're offline. Reconnect, then try again.' with a states.md note that no offline queue exists. — The prior copy promised an automatic queued send (WR-03) that was never built; a failed send stays a manual Retry.
+- [Phase 09-11]: Message-action controls resized from size-10 (40px) to min-h-control/min-w-control (56px), with a pointer-coarse: reveal alongside hover/focus-within. — The 56px floor (AGENTS.md) is non-negotiable and supersedes the sketch reference's compact hover-only bar (WR-04); touch/coarse pointers need a reveal path that does not depend on hover.
 
 ### Todos / open questions
 
@@ -121,6 +124,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P08 | 8min | 2 tasks | 7 files |
 | Phase 09 P09 | 9min | 2 tasks | 7 files |
 | Phase 09 P10 | 18min | 2 tasks | 2 files |
+| Phase 09 P11 | 6min | 3 tasks | 5 files |
 
 ### Quick Tasks Completed
 
@@ -159,10 +163,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T05:15:00.745Z
+**Last session:** 2026-07-10T05:33:53.886Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-10-PLAN.md
+- **Stopped at:** Completed 09-11-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
