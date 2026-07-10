@@ -1,9 +1,22 @@
-# Native Chat State Notes (Phase 10 — Pagination)
+# Native Chat State Notes (Phase 10 — Pagination History)
 
-These notes extend `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`
-with the keyset-pagination contract from `packages/core/docs/chat-state-protocol.md`. They are
-architecture guidance only. This phase does not modify Android or iOS production chat flows, does
-not add native chat screens, and does not block web delivery on native implementation.
+This file is a supplementary Phase 10 pagination delta and historical record. It captures why and
+how keyset pagination extended the portable contract, but it is not an independently maintained
+native contract and must not be treated as a second canonical source.
+
+The canonical current documentation pair is:
+
+- `packages/core/docs/chat-state-protocol.md` — the canonical human-readable platform-neutral
+  protocol.
+- `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md` — the canonical
+  current Android/iOS architecture companion.
+
+Future implementers should start with that pair. Any event, state, selector, or fixture change
+updates the canonical pair together; this file remains supplementary history. The details below
+record the Phase 10 pagination addition and retain its parity rationale.
+
+These notes are architecture guidance only. Phase 10 did not modify Android or iOS production chat
+flows, add native chat screens, or block web delivery on native implementation.
 
 Native clients receive the same `ChatEvent`, `ChatState`, fixture names, state shape, and selector
 expectations. They should implement the reducer behavior idiomatically in Kotlin or Swift and
