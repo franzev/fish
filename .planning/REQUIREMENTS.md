@@ -59,6 +59,8 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 - [x] **CSTATE-05**: Android and iOS architecture notes map the shared chat-state event contract to native containers (Android `ViewModel` + `StateFlow`, iOS observable model) without importing web state libraries or blocking web delivery on native implementation.
 - [x] **CSTATE-06**: Existing chat behavior remains unchanged: no extra client choices or conversation picker, no new user-facing primary action, no lost drafts, no duplicate optimistic messages, no layout shift regression, and `pnpm build`, `pnpm lint`, `pnpm typecheck`, and focused chat tests pass.
 
+> **Supersede note (2026-07-10):** The canonical chat surface is now the community room at `/channels/general` — the `/chat` route was removed (see 09-08-PLAN.md, VERIFICATION Gap 4). CSTATE-02's "current one-assigned-conversation experience" and CSTATE-06's "existing chat behavior" / "no new user-facing primary action" are now interpreted against the community-room experience, not the removed 1-on-1 route. Phase 09 re-verification targets `/channels/:id`, not `/chat`.
+
 ### Chat Message Loading (CLOAD)
 
 - [x] **CLOAD-01**: Opening the chat renders the newest messages from a bounded initial window (no full-history fetch) — minimal time-to-first-message on load and refresh

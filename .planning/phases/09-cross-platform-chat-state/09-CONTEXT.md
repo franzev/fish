@@ -34,6 +34,8 @@ Deliver an internal chat-state architecture foundation that keeps the current on
 - **D-07:** Zustand should be introduced after hook boundaries are clear. The web store may hold messages/read states by `conversationId`, drafts, reply/edit targets, local pending/failed send metadata, realtime connection status, and lightweight cached conversation summaries.
 - **D-08:** Zustand must not store auth/session truth, role permissions, coach-client assignment decisions, direct Supabase clients, service-role data, or any security-sensitive decision that belongs to RLS/Edge Functions/server actions.
 - **D-09:** The existing `ChatClient` route must keep the same visible behavior: one assigned conversation, one primary send action, calm notices, no conversation picker, no extra menus, no lost drafts, no duplicate optimistic messages, and no layout shift regression.
+
+  > **Supersede note (2026-07-10):** D-09's "one assigned conversation" visible-behavior target is superseded by the community-room experience at `/channels/general`; the `/chat` route is removed. The no-lost-draft, no-duplicate-optimistic-message, and no-layout-shift guarantees in D-09 still apply, now scoped to the community room.
 - **D-10:** If package dependencies change, add `zustand` only to `apps/web/package.json` via pnpm. Do not add Redux/Jotai or a second client state library.
 
 ### Native readiness

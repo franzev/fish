@@ -71,6 +71,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 ### Phase 9: Cross-platform Chat State
 
 **Goal**: Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
+
+> **Supersede note (2026-07-10):** The canonical chat surface for Phase 9 is the community room at `/channels/general` (the `/chat` route was removed); any "assigned conversation" phrasing above is superseded accordingly, and re-verification targets `/channels/:id`.
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
 **Plans**: 11 plans (6 complete, 5 gap-closure round 2 from the 2026-07-10 re-verification)
