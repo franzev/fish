@@ -1,19 +1,20 @@
 ---
 phase: 09-cross-platform-chat-state
-verified: 2026-07-10T10:20:39Z
+verified: 2026-07-10T21:27:55Z
 status: human_needed
-score: "6/6 requirements verified at source/test level; 0 partial; 0 failed"
-re_verification: true
-head_verified: 7988a12fd3ee094e07c468622da0cd30afa40394
+score: "4/6 CSTATE truths fully VERIFIED, 2/6 PARTIAL (CSTATE-04/05: non-blocking protocol/native-notes doc-sync gap); 4/4 round-5 gap-closure (09-19) must-haves VERIFIED; 0 FAILED"
+has_blocking_gaps: false
 overrides_applied: 0
+re_verification: true
+head_verified: 612270084af9ec353e59870076eb7dbbf062f91e
 requirements_verified:
   - CSTATE-01
   - CSTATE-02
   - CSTATE-03
+  - CSTATE-06
+requirements_partial:
   - CSTATE-04
   - CSTATE-05
-  - CSTATE-06
-requirements_partial: []
 requirements_failed: []
 security_enforcement: enabled
 security_block_on: high
@@ -21,252 +22,227 @@ security_audit: absent_no_09_SECURITY_md
 schema_drift: false
 codebase_drift: non_blocking_warning
 re_verification_meta:
-  previous_status: gaps_found
-  previous_score: "2/6 requirements fully verified; 3 partial; 1 failed"
-  previous_head: e74c5980c49a244f4c6ed8e6885131f8ceefe951
+  previous_status: human_needed
+  previous_score: "6/6 requirements verified at source/test level; 0 partial; 0 failed"
+  previous_head: 7988a12fd3ee094e07c468622da0cd30afa40394
   gaps_closed:
-    - "WR-02: hydrateConversation/hydrateWindow deleted unresolved local sends (closed by 09-13)"
-    - "WR-03: a late transport failure could downgrade an already-sent message (closed by 09-13)"
-    - "WR-10: getMessageSnippet could exceed 96 units and emit a lone surrogate (closed by 09-13)"
-    - "CR-01: module-singleton chat cache was not bound to verified auth identity; failed signOut treated as success (closed by 09-14)"
-    - "WR-01: an in-flight older-load in conversation A could gate/error/scroll-corrupt conversation B after a switch (closed by 09-15)"
-    - "WR-06: participant typing/recording/hasConnected bled across a live conversation switch (closed by 09-16)"
-    - "WR-07: pagination loading/failure states swapped in differently-sized regions, shifting the transcript (closed by 09-16)"
-    - "WR-08: the community send E2E asserted an incompatible status image and used .last(), which could hide a duplicate (closed by 09-17)"
-    - "WR-09: the app-shell logo tap target was 32/40px, below the 56px floor; a stale /chat comment remained (closed by 09-18)"
+    - "09-UAT.md round-5 Test 2 (severity: minor): a failed older-page load in /channels/:id fired TWO identical automatic requests instead of exactly one, because the one-automatic-attempt gate was split across two state systems (store isLoadingOlder vs. hook-local hasOlderLoadError) committing in separate renders (closed by 09-19)."
   gaps_remaining: []
   regressions_found: []
+  new_findings:
+    - "packages/core/docs/chat-state-protocol.md and 09-NATIVE-CHAT-STATE-NOTES.md were not updated alongside 09-19's new required ChatPaginationState.hasLoadError field and new fixture, even though both documents explicitly self-mandate updating together on any state-shape/fixture change. Non-blocking (no native implementation exists yet), but newly introduced by this round and not present at the prior (round-4) verification, which independently re-derived and confirmed the docs were in sync at that time."
 human_verification:
-  - id: HV-01
+  - id: HV-01R
     status: recommended_before_release
-    test: "Force an older-page failure in /channels/general (throttle/disable network), confirm the calm notice-tone retry region appears with no transcript jump, then retry successfully."
-    expected: "One automatic attempt only, a stable-height retry region (no layout shift), and successful manual recovery. Now backed by chat-client.test.tsx's WR-07 same-DOM-node geometry test and the pre-existing 09-12 retry-storm tests; jsdom cannot measure real pixel height."
-  - id: HV-02
-    status: recommended_before_release
-    test: "Start an older-page load in conversation A, switch to conversation B before A settles, then let A settle as both a failure and a success."
-    expected: "A cannot gate B, write B's error state, suppress B's first sentinel load, or inject A's page into B. Now backed by two dedicated deferred-switch regression tests in chat-client.test.tsx (09-15); only the literal scrollTop write into the live viewport is unautomatable in jsdom (the write is gated by the same generation-token check proven by the automated tests)."
-  - id: HV-03
-    status: recommended_before_release
-    test: "Sign in as account A in one tab, then (without using the Log out button) sign in as account B in a second tab / same tab after expiry. Separately, force signOut() to fail (e.g. offline) and confirm the account is not signed out."
-    expected: "B never sees A's draft/pending/failed rows; a failed sign-out preserves A's state and shows calm retry guidance instead of navigating. Now backed by chat-store.test.ts's ownership block, chat-identity-guard.test.tsx (prop-change, SIGNED_OUT, cross-identity vs. same-user TOKEN_REFRESHED, unmount-unsubscribe), and logout-button.test.tsx's failure-path test — all exercising the real store/guard/hook, only the genuine two-tab browser session is unautomatable here."
-  - id: HV-04
-    status: required_before_release
-    test: "Run `apps/web/e2e/chat-send.spec.ts` against a live dev server with seeded Supabase (`npx playwright test e2e/chat-send.spec.ts`)."
-    expected: "The rewritten spec (reload-persistence + exact-count, no .last(), no incompatible status-image assertion) passes end to end. `playwright test --list` confirms the spec is discoverable and structurally valid (verified in this pass), but it has not been executed against a live server/database since being rewritten in 09-17 — this remains the one genuinely unverified round-4 claim."
-  - id: HV-05
-    status: optional_low_risk
-    test: "Visually confirm the app-shell logo link is a comfortably large, centered 56px tap target on the rendered community shell."
-    expected: "The logo sits in a 56px x 56px centered box. Low risk: app-shell.test.tsx asserts the exact `min-h-control`/`min-w-control`/`items-center`/`justify-center` classes, which reuse the same `--size-control` token already shipped and visually confirmed for message actions (Plan 09-11)."
+    test: "In a real browser, force an older-page load failure in /channels/general (throttle/disable network on scroll-to-top) and count automatic 'load earlier' network requests before the calm notice-tone retry region settles."
+    expected: "Exactly ONE automatic request fires, then the calm load-older-error region appears with no transcript jump; manual 'Try again' still recovers. (Previously 2 of 7 instrumented Playwright runs showed two automatic requests — 09-UAT.md Test 2.)"
+    why_human: "The original bug was a React-commit-timing/frame race that unit tests (jsdom) could not detect until the IntersectionObserver mock was made browser-faithful; the fix is now proven by a deterministic unit reproduction of the exact race plus a passing regression test, but has not been re-confirmed in a real browser's actual paint/commit scheduling since the fix landed. This project's own history (this exact bug) shows 'should be fine by construction' reasoning about React/store commit timing has been wrong before, so one live re-confirmation is recommended, not skipped."
 ---
 
-# Phase 9: Cross-platform Chat State Verification (Re-verification, round 4)
+# Phase 9: Cross-platform Chat State Verification (Re-verification, round 5)
 
 **Phase Goal:** Extract chat state into a portable, test-vector-backed state machine and refactor the web chat route so Zustand coordinates shared web surfaces without becoming the source of truth; Android and iOS receive the same event/result contract for native ViewModel/observable implementations later.
-**Canonical surface (superseded 2026-07-10):** the community room at `/channels/general` (implemented by `/channels/[id]`) — the `/chat` route is removed. This verification targets `/channels/:id` throughout, per the dated supersede notes in ROADMAP.md, REQUIREMENTS.md, and 09-CONTEXT.md.
-**Verified:** 2026-07-10T10:20:39Z, against HEAD `7988a12f`
+**Canonical surface (superseded 2026-07-10):** the community room at `/channels/general` (implemented by `/channels/[id]`) — the `/chat` route is removed. This verification targets `/channels/:id` throughout.
+**Verified:** 2026-07-10T21:27:55Z, against HEAD `61227008` (`612270084af9ec353e59870076eb7dbbf062f91e`)
 **Status:** `human_needed`
-**Re-verification:** Yes — round 4 (plans 09-13..09-18) closed all 8 blocking gaps + WR-10 from the prior `gaps_found` report (HEAD `e74c5980`, score 2/6).
+**Re-verification:** Yes — round 5. Plan 09-19 closed the single round-5 UAT gap (09-UAT.md Test 2, severity: minor) left open by the round-4 `human_needed` verification (HEAD `7988a12f`, score 6/6).
 
 ## Goal Verdict
 
-**Source-provable defects: all closed.** Every blocking gap identified by the prior verification (CR-01, WR-01, WR-02, WR-03, WR-06, WR-07, WR-08, WR-09, WR-10) was independently re-verified in this pass by reading the actual current source (not the SUMMARYs' prose) and by re-running the automated gates myself rather than trusting the reported numbers:
+**The one open defect is closed at the source/test level, independently re-derived and re-run in this pass — not accepted on SUMMARY narrative.** 09-UAT.md's round-5 live UAT found 4/5 items passing and one minor issue: a failed older-page load fired two automatic requests instead of one. Plan 09-19 traced this to a genuine root cause (confirmed by a prior diagnose-only debug session, `.planning/debug/older-load-double-retry.md`) — the failure flag and the loading flag committed in two separate React renders, leaving a gap-commit window where a still-intersecting sentinel could re-arm the `IntersectionObserver` and fire a second identical request. The fix moves the flag into the portable reducer's pagination state so both fields commit atomically in one store update. I independently verified this holds by:
 
-- Full web suite: **493/493 passing, 61 files** (`pnpm --filter @fish/web test`, run directly in this verification).
-- Targeted round-4 files: **119/119 passing, 7 files** (`chat-state-boundary`, `chat-store`, `chat-identity-guard`, `logout-button`, `app-shell`, `chat-client`, `chat-state-fixtures`).
-- `pnpm typecheck`: clean across `packages/core`, `packages/supabase`, `apps/web`.
-- `pnpm build`: clean; route table confirms `/channels/[id]` present, no `/chat` route.
-- `pnpm lint`: clean, 0 errors/warnings.
-- `playwright test --list e2e/chat-send.spec.ts`: 1 test discovered, structurally valid.
-- The five-code-point-snippet fixtures (`snippetLongAscii`, `snippetEmojiBoundary`) were independently re-derived in Python outside the test framework and match the shipped `getMessageSnippet` rule exactly (97-code-point ASCII body -> 96-code-point result; a 100-code-point body with an emoji straddling the old UTF-16 cut point at index 94 truncates to a whole emoji + single-character ellipsis, no lone surrogate).
+- Reading every one of the 11 files 09-19 touched directly (not the SUMMARY's prose) and confirming the diff does exactly what the plan and SUMMARY claim, with no scope creep.
+- Re-deriving the causal mechanism myself from the reducer/store/hook source (see "Round-5 Gap Closure Verification" below) and confirming the atomic single-`set()`-call property that eliminates the race.
+- Independently re-running the targeted automated gates myself: `pnpm --filter @fish/core typecheck` (clean), `pnpm --filter @fish/web typecheck` (clean), `vitest run chat-state-fixtures chat-store chat-client` (103/103), `chat-client.test.tsx` isolated (59/59), `chat-state-boundary` (1/1, confirms CSTATE-01 unaffected), and both new-mechanism named tests individually (`makes exactly one automatic load earlier attempt after a failure` and `leaves pagination retryable when an older page fails to load`, both pass).
+- Confirming all 5 task/plan commits (`d6e60276`, `db9ffe15`, `2a51a109`, `231c98ce`, `61227008`) exist in `git log` and the working tree is clean (no leftover throwaway files).
+- Running `gsd-sdk query verify.artifacts` against 09-19-PLAN.md's declared artifacts: 4/4 exist, substantive, no stub markers.
 
-**Why this is `human_needed`, not `passed`:** all six CSTATE requirements now hold at the source/test level, but five checks remain that this sandbox cannot perform (no dev server, no live browser, no seeded Supabase, per this verification's own constraints) — most importantly, `chat-send.spec.ts` (HV-04) has never actually been executed end-to-end since its WR-08 rewrite; only static/list-mode validity was confirmed. Per the verification decision tree, any phase with outstanding human-verification items is `human_needed` even when every automated truth passes.
+**New finding from this pass (not present at round 4): a non-blocking documentation-sync gap.** `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` were not updated for the new `hasLoadError` field and fixture, even though both files explicitly self-mandate doing so on any state-shape change (see CSTATE-04/05 below). This is real and newly introduced by this round, but non-blocking today because no native implementation exists yet to consume the stale text.
 
-**Why this is not `gaps_found`:** no must-have resolves to FAILED. Every previously-FAILED or PARTIAL truth from the prior verification now has direct, current-source and passing-test evidence, detailed below.
+**Why this is `human_needed`, not `passed`:** the fix is exceptionally well-evidenced at the source/test level (the debug session's deterministic vitest repro reproduces all four real-world Playwright symptoms character-for-character: double fire, identical cursor, ~0.4-1.0s gap matching attempt-1 latency, capped at exactly two), but has not been re-confirmed in an actual browser since it landed, and the original bug was — by its own nature — invisible to jsdom-level testing until the observer mock was specifically hardened. Per this project's own recent history with this exact defect, one live re-confirmation is the responsible call, not a formality.
 
-## Requirement Traceability
+**Why this is not `gaps_found`:** no must-have or CSTATE truth resolves to FAILED. The one new finding (doc-sync staleness) is real but does not block any currently-shipping behavior — no native chat implementation exists yet to be misled by the stale prose — and is scoped as a minor, easily-actionable follow-up rather than a structural defect.
 
-| Requirement | Owning plans | Result | Current-source evidence |
+## Round-5 Gap Closure Must-Haves (09-19-PLAN.md)
+
+Full 3-level verification (exists, substantive, wired) on every must-have this gap-closure plan declared, per re-verification-mode rules.
+
+### Truths
+
+| # | Truth | Status | Evidence |
 |---|---|---|---|
-| CSTATE-01 | 09-01, 09-13 | **VERIFIED** | `packages/core/src/chat-state/{types,reducer,selectors,index}.ts` remains the portable implementation; `apps/web/tests/chat-state-boundary.test.ts` (re-run, passing) rejects React/Next/Zustand/Supabase/browser-global/web-alias/Swift/Kotlin tokens across every file in the directory, including the 09-13 reducer/selector edits. |
-| CSTATE-02 | 09-02, 09-08, 09-12, 09-15, 09-16 | **VERIFIED** | Five focused hooks still back `ChatClient`; `/chat` route absent (`ls apps/web/app/(authenticated)/chat/` has no `page.tsx`), canonical route is `/channels/[id]` (confirmed in the `pnpm build` route table). Preservation now holds under an in-flight A-to-B older-load switch (`use-chat-messages.ts:119-284`, `use-load-older-messages.ts:37-92`, two new regression tests) and unresolved-send hydration (`reducer.ts:237-251`, two new fixture vectors). |
-| CSTATE-03 | 09-03, 09-07, 09-10, 09-14, 09-15 | **VERIFIED** | Zustand remains web-only, reducer-backed, conversation-keyed, authority-boundary clean (`chat-store.ts` "chat store authority boundary" test re-run, passing). The module singleton is now bound to verified auth identity via `ensureChatStoreOwner`/`cacheOwnerUserId` (`chat-store.ts:263-293`) and `ChatIdentityGuard` (`chat-identity-guard.tsx`), and `useLogout` branches on `signOut().ok` (`use-logout.ts:26-38`). |
-| CSTATE-04 | 09-01, 09-04, 09-06, 09-09, 09-13 | **VERIFIED** | 23 JSON vectors (up from 18) replay; the canonical protocol document (`packages/core/docs/chat-state-protocol.md`) now states the exact 96-Unicode-code-point rule, the surrogate-safety guarantee, and the monotonic/hydrate-preserve clauses (`:63,74,105-110,152-156`) — independently re-derived and confirmed correct in this verification, not merely grep-matched. |
-| CSTATE-05 | 09-04, 09-06, 09-09, 09-13 | **VERIFIED** | `09-NATIVE-CHAT-STATE-NOTES.md` maps all 15 events and all 23 fixtures (up from 18) to Android `ViewModel`/`StateFlow` and iOS observable state, mirrors the three hardened contract clauses (`:76-90`), and continues to exclude web libraries and production native implementation (`:23-41`). |
-| CSTATE-06 | 09-01..03, 09-05, 09-07..18 | **VERIFIED** (source/test level) | No-lost-draft (WR-02), monotonic send status (WR-03), account isolation (CR-01), pagination-race isolation (WR-01), conversation-scoped transient reset (WR-06), invariant pagination geometry (WR-07), and `pnpm build`/`lint`/`typecheck`/focused-tests all hold, independently re-run in this pass. The one CSTATE-06 sub-clause not fully closed is the community send E2E's live execution (HV-04) — the spec is now logically correct and discoverable but has not been run against a live server. |
+| 1 | A failed older-page load makes exactly one automatic attempt, then waits calmly for manual retry | VERIFIED | New test `chat-client.test.tsx:1453` ("makes exactly one automatic load earlier attempt after a failure (browser-faithful observer)") independently re-run: PASS. Uses `setSentinelIntersecting` (browser-faithful auto-fire-on-observe) to reproduce exactly the re-attachment window the old code fell into; asserts `loadOlderMessagesAction` called exactly once. |
+| 2 | The older-page failure flag and `isLoadingOlder=false` land in the same commit (one store update), so the `IntersectionObserver` never re-attaches during a gap render | VERIFIED | `reducer.ts:212-219` (`olderPageLoadFailed` case) sets `isLoadingOlder: false` and `hasLoadError: true` in ONE returned object literal. `chat-store.ts:119-126` (`dispatchChatEvent`) shows this reaches the store via exactly one `set()` call — not two separate updates. Confirmed by direct read, not inference from comments. |
+| 3 | The failure flag is per-conversation state in the store; switching conversations shows that conversation's own (fresh) flag with no callback-identity reset | VERIFIED | `selectHasLoadErrorForConversation` (`chat-selectors.ts:85-92`) reads `pagination.hasLoadError` scoped by `conversationId`, falling back to `false` via `getConversation`'s per-conversation default (`reducer.ts:344-357`) for any conversation never touched. `use-load-older-messages.ts` diff confirms the old `previousOnLoadOlder`/`setHasOlderLoadError` identity-reset block (7 lines) was deleted outright — `grep -c "useState" use-load-older-messages.ts` = 0. Pre-existing test `chat-client.test.tsx:1636` ("resets the load earlier failure gate when the conversation changes") re-run as part of the full-file 59/59 pass, unmodified by this plan (confirmed via `git diff`), still green. |
+| 4 | A browser-faithful IO mock that auto-delivers an initial observation on `observe()` proves exactly one automatic attempt after a failure | VERIFIED | `apps/web/tests/intersection-observer.ts:31,54-115` adds `intersectingTargets` + `setSentinelIntersecting` + auto-fire-on-`observe()`/already-observed delivery. Deliberately NOT cleared on `disconnect()` (documented in code comments and SUMMARY key-decisions) — verified this design choice is load-bearing: if `intersectingTargets` were cleared on `disconnect()`, the new regression test could not discriminate fixed code from reverted code (SUMMARY documents this was empirically checked with a throwaway test before shipping). |
 
-No CSTATE requirement is orphaned; all six IDs occur in plan frontmatter (18/18 plans, cross-referenced against REQUIREMENTS.md) and are accounted for above. REQUIREMENTS.md's CSTATE-01..06 checkboxes and the supersede note (community room, `/channels/general`) match the implementation.
+### Artifacts
 
-## Round-4 Gap Closure Verification
+| Artifact | Expected | Status | Details |
+|---|---|---|---|
+| `packages/core/src/chat-state/reducer.ts` | `olderPageLoadFailed` sets `hasLoadError=true` atomically with `isLoadingOlder=false`; other cases clear it | VERIFIED | Read directly (lines 29-34, 152-158, 161-177, 179-197, 199-220). `grep -c "hasLoadError"` = 6 (>= plan's required 4). `gsd-sdk query verify.artifacts`: exists, no issues, passed. |
+| `apps/web/app/(authenticated)/chat/store/chat-selectors.ts` | `selectHasLoadErrorForConversation` | VERIFIED | Read directly (lines 85-92), mirrors `selectIsLoadingOlderForConversation` exactly as the plan specified. `gsd-sdk query verify.artifacts`: passed. |
+| `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts` | Reads failure flag from store-backed prop; local `useState` + identity-reset block removed | VERIFIED | Read directly + diffed against pre-plan HEAD. `hasLoadError` is now a required prop (line 13); zero `useState` calls remain; observer effect guard/deps use the prop (lines 101, 117). `gsd-sdk query verify.artifacts`: passed. |
+| `apps/web/tests/intersection-observer.ts` | `setSentinelIntersecting` + auto-fire-on-`observe()` | VERIFIED | Read directly (lines 31, 91-115, 124-126). `gsd-sdk query verify.artifacts`: passed. |
 
-Each of the 8 blocking gaps (+ WR-10) from the prior `gaps_found` report, re-verified against current source and passing tests — not against the SUMMARY narratives.
+### Key Links
+
+| From | To | Via | Status | Details |
+|---|---|---|---|---|
+| `reducer` `olderPageLoadFailed` | `pagination.hasLoadError` | single reducer update alongside `isLoadingOlder=false` | WIRED | Manually verified by direct read: `reducer.ts:212-219` — `hasLoadError: true` and `isLoadingOlder: false` are two keys of the SAME returned object literal, one `updateConversation` call, one `set()` in the store. (`gsd-sdk query verify.key-links` reported "Source file not found" for both this project's links — a tool parsing limitation treating the semantic `from`/`to` labels as literal file paths, not a code issue; verified manually instead with line-level evidence.) |
+| `use-load-older-messages` observer guard | `selectHasLoadErrorForConversation` | `hasLoadError` prop threaded from `use-chat-messages`/`chat-client` | WIRED | Full chain confirmed by direct read: `chat-selectors.ts:85-92` (selector) → `use-chat-messages.ts:111-113,414` (store read + return) → `chat-client.tsx:117,164` (destructure + pass-through) → `use-load-older-messages.ts:40,101,117` (prop, guard, deps). `grep -rn "useLoadOlderMessages"` confirms `chat-client.tsx` is the only call site, and it passes `hasLoadError` correctly — no orphaned or partial wiring. |
+
+## Round-5 Gap Closure Verification (09-UAT.md Test 2)
 
 | Finding | Plan | Disposition | Current-source evidence |
 |---|---|---|---|
-| CR-01 account-transition cache isolation | 09-14 | **CLOSED** | `chat-store.ts:263-293` adds module-level `cacheOwnerUserId` + `ensureChatStoreOwner(userId)`, purging on any identity change, reset by `clearChatStore()`. `chat-identity-guard.tsx` mounts in `layout.tsx:32` with `profile.userId`, purges on `SIGNED_OUT` and cross-identity auth events, preserves same-user `TOKEN_REFRESHED`. `use-logout.ts:26-38` branches on `signOut().ok`, preserving state and showing `"We couldn't sign you out just now..."` (Alert `tone="notice"` in `logout-button.tsx`, `text-notice` row in `user-menu.tsx`) on failure — never clears/navigates on failure. 10 tests across `chat-store.test.ts` (ownership block), `chat-identity-guard.test.tsx` (4 tests), `logout-button.test.tsx` (failure path), all passing. |
-| WR-01 older-load conversation race | 09-15 | **CLOSED** | `use-chat-messages.ts:123` replaces the hook-wide boolean with `loadingOlderConversationsRef: Set<ChatConversationId>`; `loadOlderMessages` captures `requestConversationId` once (`:237`) and locks/dispatches only that id. `use-load-older-messages.ts:44,70,83` adds `latestOnLoadOlderRef` generation-token guard, checked both after the await and inside the rescheduled `requestAnimationFrame`, with `cancelAnimationFrame` on switch/unmount (`:47-56`). Two new deferred A-to-B tests (`chat-client.test.tsx:1522,1607`) prove B's first load is not suppressed and A's late failure/success cannot corrupt B. |
-| WR-02 hydration deletes unresolved sends | 09-13, 09-16 | **CLOSED** | `reducer.ts:237-251` (`mergeHydratedMessages`) preserves any `pending`/`sending`/`failed` row not reconciled by the incoming snapshot, folding it through `mergeChatMessage`, used by both `hydrateConversation` (`:53`) and `hydrateWindow` (`:149`). Two new fixture vectors (`hydratePreservesUnresolvedSend`, `hydrateWindowPreservesUnresolvedSend`) plus a web-layer regression (`chat-client.test.tsx:2056`, reconnect-reset `hydrateWindow` that omits the pending row) all pass. |
-| WR-03 late failure downgrades sent | 09-13, 09-16 | **CLOSED** | `reducer.ts:264-272`: `markMessageFailed` early-returns the conversation unchanged when the matched row's `localStatus === "sent"`. Fixture `monotonicSentIgnoresLateFailure` and web regression `chat-client.test.tsx:2142` (realtime-confirms sent, then the original send action settles as a failure) both pass, leaving the row `"sent"` with no `"Not sent yet"`. |
-| WR-04 bare update erases reactions | — | **Unchanged — confirmed still non-blocking phase debt** | `selectors.ts` `mergeChatMessage`/`areReactionsEqual` untouched by round 4. Carried forward from the prior verification's disposition (pre-dates the extraction, outside the formal CSTATE fixture minimum); not assigned to any round-4 plan, not required by any CSTATE-01..06 wording. |
-| WR-05 hidden message marked read | — | **Unchanged — confirmed still non-blocking phase debt** | Same disposition as WR-04: a pre-existing read-receipt policy issue, preserved (not introduced) by Phase 9, outside round-4 scope. |
-| WR-06 stale conversation transients | 09-16 | **CLOSED** | `use-chat-realtime.ts:78-115`: `previousConversationId` render-time reset of `participantTyping`/`participantRecording`/`localRecording`, plus an effect keyed on `chat.conversationId` clearing `localTypingRef` and the three pending timeout refs. `chat-client.tsx:171-192` adds the matching `hasConnected`/`previousRealtimeStatus` per-conversation reset. Two new tests (`chat-client.test.tsx:1925,1963`) prove A's typing indicator and A's `hasConnected` do not bleed into B. |
-| WR-07 pagination feedback layout shift | 09-16 | **CLOSED (structurally; pixel-level confirmation is HV-01)** | `chat-client.tsx:305-331` consolidates loading/error/idle states into one `data-testid="load-older-slot"` wrapper with class `min-h-pagination-slot`, backed by new tokens `--size-pagination-slot`/`--spacing-pagination-slot` (104px, `globals.css:106,124`) — token-based, no raw numeric utility. Test at `chat-client.test.tsx:2001` proves the SAME DOM node persists (`loadingSlot === idleSlot === errorSlot`) across idle/loading/error, carrying the invariant class throughout. jsdom cannot measure real pixel height (see HV-01). |
-| WR-08 lifecycle contract/E2E contradiction | 09-17 | **CLOSED (structurally; live execution is HV-04)** | `e2e/chat-send.spec.ts:23,36` asserts `toHaveCount(1)` before AND after `page.reload()` (line 32); the incompatible `Sent\|Delivered\|Read` status-image assertion and every `.last(` usage are gone (grep-confirmed, 0 matches). `playwright test --list` discovers exactly 1 test. Not yet run against a live server/seeded Supabase since the rewrite (HV-04). |
-| WR-09 shell logo below 56px | 09-18 | **CLOSED** | `app-shell.tsx:132-153`: logo `Link` className now includes `min-h-control min-w-control` + `items-center justify-center` (reusing the `--size-control` 56px token already used for message actions) and `aria-label="FISH home"`. `grep -c "/chat" app-shell.tsx` returns 0. Two tests (`app-shell.test.tsx`) assert the exact classes and the no-`/chat` source invariant; both pass. |
-| WR-10 malformed/overlong snippet | 09-13 | **CLOSED** | `selectors.ts:191-213`: `getMessageSnippet` now measures via `Array.from(body)` (Unicode code points), truncates to 95 code points + one `"…"` (U+2026), max 96 code points total, never splitting a surrogate pair. Independently re-derived in Python in this verification (see Goal Verdict) and confirmed exactly correct for both a 97-code-point ASCII body and a 100-code-point body with an emoji straddling the old cut point. Two new fixtures (`snippetLongAscii`, `snippetEmojiBoundary`) pass. |
-| IN-01 stale read state moves markers backward | — | **Unchanged — confirmed still deferred, non-blocking** | `selectors.ts:50-66` `mergeReadState` still wholesale-replaces by user id (no monotonic ordering). Untouched by round 4; carried forward from the prior verification as explicitly deferred product debt, not a CSTATE-01..06 must-have. |
+| UAT-Test-2: failed older-page load fires two automatic attempts instead of one (severity: minor) | 09-19 | **CLOSED** | Root cause (`.planning/debug/older-load-double-retry.md`, deterministic repro): `markOlderPageFailed`'s store commit (`isLoadingOlder→false`) landed one React commit before the hook-local `setHasOlderLoadError(true)`, opening a gap render where the observer guard's `!isLoadingOlder && !hasOlderLoadError` passed and re-attached over a still-intersecting sentinel. Fix: `hasLoadError` is now `ChatPaginationState`-resident, set in the SAME reducer update/`set()` call as `isLoadingOlder=false` (`reducer.ts:212-219`), read via `selectHasLoadErrorForConversation`, with the hook's local state and identity-reset block deleted. New regression test (`chat-client.test.tsx:1453`) using a browser-faithful auto-firing IO mock proves exactly one call to `loadOlderMessagesAction`. All pre-existing pagination/WR-01 tests (bounded-retry, calm affordance, manual retry, conversation-reset, WR-01 x2) re-run unmodified (confirmed via `git diff`) and still pass (59/59 in `chat-client.test.tsx`). |
 
-**No regressions found.** All fixtures present before round 4 (18 of the current 23 vectors, including `markMessageFailedPreservesNewerDraft` and `olderPageLifecycle`) are unchanged and still pass. All 17 previously-passing task commits from rounds 1-3 remain intact; all 17 round-4 task commits (`edbbbe87` through `c306c50d`) were independently confirmed present in `git log` in this pass.
+**No regressions found.** `git diff 1871d3fe..HEAD -- <changed files>` shows the change set is exactly the 11 files the plan and SUMMARY declare (528 insertions, 103 deletions) — additive/targeted, no unrelated file touched, no existing test body modified (only one new test + one new import line added to `chat-client.test.tsx`).
 
 ## Observable Truths (goal-backward, CSTATE-01..06)
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | Chat state merge/status/read/snippet logic is portable (no React/Next/Zustand/Supabase/browser/Swift/Kotlin deps) | VERIFIED | `chat-state-boundary.test.ts` passing; `packages/core/src/chat-state/*` read directly. |
-| 2 | The web chat route is split into focused hooks and preserves the community-room experience across conversation-mount changes | VERIFIED | `use-chat-messages.ts`, `use-load-older-messages.ts`, `use-chat-realtime.ts` read directly; WR-01/WR-06 regression tests passing. |
-| 3 | Zustand is a thin, auth-free, identity-bound web cache/coordination layer | VERIFIED | `chat-store.ts` authority-boundary test + ownership block passing; `ensureChatStoreOwner`/`ChatIdentityGuard` read directly. |
-| 4 | Cross-platform JSON fixtures + protocol doc define hydrate/send/confirm/fail/merge/read-state events with expected results | VERIFIED | 23/23 fixtures replay and pass; protocol doc content independently re-derived and confirmed correct. |
-| 5 | Android/iOS architecture notes map the shared contract without native production implementation | VERIFIED | `09-NATIVE-CHAT-STATE-NOTES.md` read directly; scope-boundary section confirms no native chat screens touched. |
-| 6 | Existing chat behavior is unchanged: no lost drafts, no duplicate optimistic messages, no layout shift, gates pass | VERIFIED (source/test) | WR-02/WR-03/WR-07 closures + `pnpm build`/`lint`/`typecheck`/tests all independently re-run passing in this verification. |
+| 1 | Chat state merge/status/read/snippet logic is portable (no React/Next/Zustand/Supabase/browser/Swift/Kotlin deps) | VERIFIED (regression-checked) | Untouched by 09-19. `pnpm --filter @fish/web exec vitest run chat-state-boundary` independently re-run: 1/1 pass. |
+| 2 | The web chat route is split into focused hooks and preserves the community-room experience across conversation-mount changes | VERIFIED | The one remaining known behavioral gap (double automatic retry after an older-page failure) is now closed; see Round-5 Gap Closure above. `/chat` route confirmed absent (`ls` on `chat/` shows no `page.tsx`), `/channels/[id]/page.tsx` confirmed present. |
+| 3 | Zustand is a thin, auth-free, identity-bound web cache/coordination layer | VERIFIED | `chat-store.test.ts`'s "keeps pagination as plain client-cache values with no auth/role/assignment/token authority" test was extended by 09-19 to assert the pagination key-set is EXACTLY `{hasLoadError, hasMoreOlder, isLoadingOlder, oldestLoadedCursor}` (a closed-set assertion) and checked against a forbidden-key list (`session`, `auth`, `token`, etc.) — independently re-run, passes. `hasLoadError` is confirmed a plain cache boolean, not an authority field. |
+| 4 | Cross-platform JSON fixtures + protocol doc define hydrate/send/confirm/fail/merge/read-state events and expected results | **PARTIAL** | Fixtures: VERIFIED — 24/24 fixtures (up from 23) replay correctly (`chat-state-fixtures.test.ts`, independently re-run, pass); new `olderPageRetryClearsError` fixture correctly encodes `[olderMessagesRequested, olderPageLoadFailed, olderMessagesRequested] → {isLoadingOlder:true, hasLoadError:false}`, and `olderPageLifecycle`'s terminal state correctly asserts `hasLoadError:true`. Protocol doc: **NOT updated** — see "Anti-Patterns / New Finding" below. The doc's own "Contract Ownership" section requires it be updated together with any state-shape/fixture change; it was not. |
+| 5 | Android/iOS architecture notes map the shared contract without native production implementation | **PARTIAL** | Scope boundary intact (no native chat screens touched — unaffected by 09-19). Contract mapping: **NOT updated** for the new `hasLoadError` field/fixture/event-behavior change — same gap as CSTATE-04, mirrored in this file. See below. |
+| 6 | Existing chat behavior is unchanged: no lost drafts, no duplicate optimistic messages, no layout shift, no duplicate automatic requests, gates pass | VERIFIED | The round-5 UAT gap (duplicate automatic older-page request) is closed with strong evidence (see above). `pnpm --filter @fish/core typecheck` and `pnpm --filter @fish/web typecheck` independently re-run clean. Targeted vitest (103/103) and isolated `chat-client.test.tsx` (59/59) independently re-run clean. `pnpm build`/`pnpm lint`/full 499-test suite reported passing by the orchestrator's post-merge gate run at this exact HEAD (not re-run here to avoid a redundant full-suite pass; targeted re-runs above corroborate). |
 
-**Score:** 6/6 truths verified at the source/test level. See Human Verification for the live-environment items still outstanding.
+**Score:** 4/6 truths fully VERIFIED; 2/6 (CSTATE-04, CSTATE-05) PARTIAL due to a newly-introduced, non-blocking documentation-sync gap (see below) — not a regression in behavior, fixtures, or tests.
 
 ## Required Artifacts
 
+Round-5-touched artifacts (full verification, see "Round-5 Gap Closure Must-Haves" above for detail). Round-1..4 artifacts (regression-checked only, per re-verification rules — unchanged by this plan, confirmed via `git diff` scoping to exactly the 11 files below):
+
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `packages/core/src/chat-state/reducer.ts` | Hydrate-preserve + monotonic status guard | VERIFIED | Read directly; `mergeHydratedMessages` (237-251), monotonic guard (264-272). |
-| `packages/core/src/chat-state/selectors.ts` | Code-point-safe `getMessageSnippet` | VERIFIED | Read directly; `MAX_SNIPPET_CODE_POINTS=96` (198), `Array.from` truncation (206-212). Math independently re-derived. |
-| `packages/core/src/chat-state/fixtures/chat-state-vectors.json` | 23 vectors incl. 5 new WR-02/03/10 vectors | VERIFIED | Counted via `python3 -c "json.load(...)"`: 23 entries, names match plan spec exactly. |
-| `packages/core/docs/chat-state-protocol.md` | Updated hydrate/markMessageFailed/snippet contract | VERIFIED | grep + full-context read confirms code-point/monotonic/hydrate-preserve wording; 5 new fixture names listed. |
-| `.../09-NATIVE-CHAT-STATE-NOTES.md` | Native parity notes mirroring 3 hardened clauses | VERIFIED | Read directly; 15 events, 23 fixtures, 3 clauses all present. |
-| `apps/web/app/(authenticated)/chat/store/chat-store.ts` | `ensureChatStoreOwner` cache-partition fingerprint | VERIFIED | Read directly (263-293); module-level, not in `ChatStoreState`. |
-| `apps/web/components/auth/chat-identity-guard.tsx` | Purge-on-identity-change client guard | VERIFIED | Read directly (55 lines); mounted in `layout.tsx:32`. |
-| `apps/web/lib/auth/use-logout.ts` | `signOut().ok` branch, calm notice on failure | VERIFIED | Read directly (18-41); notice rendered in both consumers. |
-| `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts` | Per-conversation older-load lock | VERIFIED | Read directly; `loadingOlderConversationsRef: Set` (123), captured `requestConversationId` (237). |
-| `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts` | Generation-token stale-completion guard + rAF cancel | VERIFIED | Read directly (37-92); `latestOnLoadOlderRef`, `pendingRafRef` with `cancelAnimationFrame`. |
-| `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts` | Conversation-scoped transient reset | VERIFIED | Read directly (71-115); render-time state reset + effect-based ref/timer reset. |
-| `apps/web/app/(authenticated)/chat/chat-client.tsx` | `hasConnected` reset + invariant pagination slot | VERIFIED | Read directly (171-192, 305-331); `data-testid="load-older-slot"`, `min-h-pagination-slot`. |
-| `apps/web/app/globals.css` | `--size-pagination-slot`/`--spacing-pagination-slot` tokens | VERIFIED | grep confirms lines 106, 124; no raw numeric utility used. |
-| `apps/web/e2e/chat-send.spec.ts` | Reload-persistence + exact-count community send smoke | VERIFIED (structurally) | Read directly; `toHaveCount(1)` x2, `page.reload()`, no `.last(`, no status-image assertion. `playwright --list` confirms 1 discoverable test. Live-run pending (HV-04). |
-| `apps/web/components/shell/app-shell.tsx` | 56px logo target, no stale `/chat` text | VERIFIED | Read directly (132-153); `grep -c "/chat"` = 0. |
-| `apps/web/app/(authenticated)/chat/page.tsx` | Intentionally absent (route removed) | VERIFIED (absence) | `ls` confirms no `page.tsx` in `chat/`; `/channels/[id]` is the build's route. |
-
-## Key Link Verification
-
-| From | To | Via | Status | Details |
-|---|---|---|---|---|
-| `reducer.ts` hydrateConversation/hydrateWindow | `mergeChatMessage` (selectors.ts) | `mergeHydratedMessages` preserve-then-merge | WIRED | Read directly; both cases call the shared helper (53, 149). |
-| `layout.tsx` | `ChatIdentityGuard` | server-verified `profile.userId` prop | WIRED | `layout.tsx:32`, confirmed by direct read; `chat-identity-guard.test.tsx` exercises the real component. |
-| `ChatIdentityGuard` | `ensureChatStoreOwner` / `clearChatStore` | prop-change effect + `onAuthStateChange` listener | WIRED | `chat-identity-guard.tsx:29-51`, both effects confirmed present and tested. |
-| `useLogout` | `clearChatStore` + `router.push` | only on `signOut().ok === true` | WIRED | `use-logout.ts:26-38`; failure path takes neither action (tested). |
-| `use-load-older-messages` `loadOlderAndPreserveScroll` | `onLoadOlder` identity | `latestOnLoadOlderRef` generation-token comparison | WIRED | `use-load-older-messages.ts:59,70,83`; guard present at both the post-await check and inside the rAF callback. |
-| `use-chat-messages` `loadOlderMessages` | per-conversation in-flight `Set` | `chat.conversationId` capture | WIRED | `use-chat-messages.ts:237-247`; keyed guard/add/delete confirmed. |
-| `use-chat-realtime` render-time derivation | `participantTyping`/`participantRecording`/`localRecording`/`localTypingRef` | `previousConversationId` comparison | WIRED | `use-chat-realtime.ts:78-115`; state reset in render body, ref/timer reset in effect (react-hooks/refs compliant). |
-| `chat-client.tsx` pagination feedback | reserved-height slot | single `data-testid="load-older-slot"` wrapper | WIRED | `chat-client.tsx:305-331`; same-DOM-node test passing. |
-| `channels/[id]/page.tsx` | `ChatClient` | real send/read/refresh/pagination server actions | WIRED | `page.tsx` imports 10 actions from `../../chat/actions`; `actions.ts` issues real `supabase.from("messages").select(...)` queries (not static/hollow). |
-| `app-shell.tsx` logo `Link` | `--size-control` (56px) token | `min-h-control`/`min-w-control` utilities | WIRED | `app-shell.tsx:135`; token reused from Plan 09-11's message-action pattern. |
-| `e2e/chat-send.spec.ts` send | reload persistence assertion | `page.reload()` then exact-count | WIRED (structurally) | Read directly; not yet executed live (HV-04). |
+| `packages/core/src/chat-state/types.ts` | `ChatPaginationState.hasLoadError: boolean` (required) | VERIFIED | Read directly (lines 59-68), documented with a comment explaining the atomic-commit rationale. |
+| `packages/core/src/chat-state/reducer.ts` | Atomic `hasLoadError` commit | VERIFIED | See Round-5 Gap Closure Must-Haves. |
+| `packages/core/src/chat-state/fixtures/chat-state-vectors.json` | 24 vectors incl. new `olderPageRetryClearsError`; `hasLoadError` threaded through all pagination objects | VERIFIED | Counted via `python3 -c "json.load(...)"`: 24 fixtures, `hasLoadError` appears 29 times (27 existing pagination occurrences + 2 in the new fixture), matching plan spec exactly. |
+| `apps/web/tests/chat-state-fixtures.test.ts` | `olderPageRetryClearsError` in exact-order fixture list | VERIFIED | `git diff` shows a single-line addition; independently re-run, passes. |
+| `apps/web/app/(authenticated)/chat/store/chat-store.test.ts` | pagination-keys + failure-retryable assertions include `hasLoadError` | VERIFIED | Read directly (lines 118-123, 385-416); independently re-run via named test, passes. |
+| `apps/web/app/(authenticated)/chat/store/chat-selectors.ts` | `selectHasLoadErrorForConversation` | VERIFIED | See Round-5 Gap Closure Must-Haves. |
+| `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts` | Returns store-backed `hasLoadError` | VERIFIED | Read directly (lines 18, 111-113, 414); `git diff` shows exactly 5 additive lines, no other change. |
+| `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts` | Reads flag as prop; local state removed | VERIFIED | See Round-5 Gap Closure Must-Haves. |
+| `apps/web/app/(authenticated)/chat/chat-client.tsx` | Threads `hasLoadError` into the hook call | VERIFIED | Read directly (lines 117, 164); `git diff` shows exactly 2 additive lines. |
+| `apps/web/tests/intersection-observer.ts` | Browser-faithful auto-fire mock | VERIFIED | See Round-5 Gap Closure Must-Haves. |
+| `apps/web/app/(authenticated)/chat/chat-client.test.tsx` | New exactly-one-attempt regression test | VERIFIED | See Round-5 Gap Closure Must-Haves. |
+| `packages/core/docs/chat-state-protocol.md` | Should describe the new `hasLoadError` field/behavior per the doc's own "must update together" rule | **STALE** | Lines 42-46 (pagination shape), 75 ("Nothing else changes" — now false), 77 (`olderPageLoadFailed` row omits `hasLoadError=true`) are factually out of date. See Anti-Patterns below. |
+| `.../09-NATIVE-CHAT-STATE-NOTES.md` | Should mirror the protocol doc's `hasLoadError` update | **STALE** | Lines 54-57 (pagination shape), 66-74 (fixture list — 23 of 24 listed), 118-119 ("clears only the loading flag" — now false), 121-123 (no `hasLoadError` mapping guidance). See Anti-Patterns below. |
+| `apps/web/app/(authenticated)/chat/page.tsx` | Intentionally absent (route removed) | VERIFIED (absence) | `find` confirms no `page.tsx` in `chat/`; `channels/[id]/page.tsx` confirmed present. Unchanged by this round. |
 
 ## Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 |---|---|---|---|---|
-| `ChatClient` message log | `messages` (from `useChatMessages`) | `chatStore` populated by `hydrateWindow(chat.conversationId, initialMessages, ...)`, where `chat` is server-loaded via `getChatPageData()` → real `supabase.from("messages").select("*")` queries in `actions.ts` | Yes | FLOWING |
-| `ChatIdentityGuard` purge trigger | `session.user.id` | Real `createBrowserSupabaseClient().auth.onAuthStateChange` subscription (mocked only at the Supabase-client boundary in tests, not the guard logic) | Yes | FLOWING |
-| `chat-store.ts` `cacheOwnerUserId` | verified `userId` | Passed from `layout.tsx`'s server-verified `getAuthenticatedShellProfile()`, not client-supplied | Yes | FLOWING (server-authoritative input) |
+| `ChatClient` `load-older-error` region | `hasOlderLoadError` (from `useLoadOlderMessages`) | `useChatMessages`'s `hasLoadError` ← `selectHasLoadErrorForConversation(chatStore, conversationId)` ← real `dispatchChatEvent({type:"olderPageLoadFailed"})` triggered by a real `loadOlderMessagesAction` server-action result (`use-chat-messages.ts:265-277`, non-"sent" status branch) | Yes | FLOWING — not a hardcoded/static prop; the flag is driven end-to-end by a real async server-action result through the real reducer. |
 
-No hollow props or hardcoded-empty data paths found in the round-4-touched artifacts.
+No hollow props or hardcoded-empty data paths found in the round-5-touched artifacts.
 
 ## Behavioral Spot-Checks (independently re-run in this verification)
 
 | Behavior | Command | Result | Status |
 |---|---|---|---|
-| Full web suite passes | `pnpm --filter @fish/web test` | 493/493 passing, 61 files | PASS |
-| Round-4-touched files pass in isolation | `pnpm --filter @fish/web test chat-state-boundary chat-store chat-identity-guard logout-button app-shell chat-client chat-state-fixtures` | 119/119 passing, 7 files | PASS |
-| Workspace typecheck | `pnpm typecheck` | Clean (core, supabase, web) | PASS |
-| Production build | `pnpm build` | Clean; `/channels/[id]` present, `/chat` absent, 17 routes | PASS |
-| Lint | `pnpm lint` | Clean, 0 errors/warnings | PASS |
-| E2E spec discovery | `npx playwright test --list e2e/chat-send.spec.ts` | 1 test discovered: "client sends a message and it persists as exactly one row after reload" | PASS (discovery only — not executed) |
-| Snippet truncation math (independent re-derivation) | `python3` code-point recomputation of `snippetLongAscii`/`snippetEmojiBoundary` | 97-cp body → 96-cp result; 100-cp body with emoji at code-point index 94 → whole emoji preserved, no lone surrogate | PASS |
-| Task commit provenance | `git log -1 <hash>` for all 17 round-4 commits | All 17 found | PASS |
+| Core package typechecks | `pnpm --filter @fish/core typecheck` | Clean | PASS |
+| Web package typechecks | `pnpm --filter @fish/web typecheck` | Clean | PASS |
+| Round-5-touched suites pass | `pnpm --filter @fish/web exec vitest run chat-state-fixtures chat-store chat-client` | 103/103 passing, 3 files | PASS |
+| `chat-client.test.tsx` in isolation | `pnpm --filter @fish/web exec vitest run chat-client.test.tsx` | 59/59 passing | PASS |
+| CSTATE-01 portability boundary (regression) | `pnpm --filter @fish/web exec vitest run chat-state-boundary` | 1/1 passing | PASS |
+| New one-attempt regression test (named) | `vitest run chat-client -t "makes exactly one automatic load earlier attempt after a failure"` | 1 passed, 58 skipped | PASS |
+| Pagination-retryable regression test (named) | `vitest run chat-store -t "leaves pagination retryable when an older page fails to load"` | 1 passed, 17 skipped | PASS |
+| `hasLoadError` present in reducer (acceptance criterion) | `grep -c "hasLoadError" reducer.ts` | 6 (>= 4 required) | PASS |
+| No local `useState` left in the hook (acceptance criterion) | `grep -c "useState" use-load-older-messages.ts` | 0 | PASS |
+| `/chat` route absent, `/channels/[id]` present | `find ... -iname page.tsx` | `chat/page.tsx`: none; `channels/[id]/page.tsx`: present | PASS |
+| Task/plan commits exist | `git log -1 <hash>` x5 | All 5 found (`d6e60276`, `db9ffe15`, `2a51a109`, `231c98ce`, `61227008`) | PASS |
+| No leftover throwaway test file | `find apps/web/tests -name "_tmp-verify-mock*"` | None found | PASS |
+| Working tree clean | `git status --short` | Empty | PASS |
+| Declared artifacts exist/substantive | `gsd-sdk query verify.artifacts 09-19-PLAN.md` | 4/4 passed, 0 issues | PASS |
+| Task/plan commits valid (tool cross-check) | `gsd-sdk query verify.commits <5 hashes>` | `all_valid: true` | PASS |
+
+`pnpm build`, `pnpm lint`, and the full 499-test web suite were not re-run in this pass (per the "run the full suite at most once" constraint) — the orchestrator's post-merge gate run at this exact HEAD is the source for those three, and the targeted re-runs above (typecheck x2, 103/103 targeted tests, 59/59 isolated file, named-test runs) independently corroborate no regression.
 
 ## Probe Execution
 
-SKIPPED (no runnable entry points) — no `scripts/*/tests/probe-*.sh` convention or phase-declared probes exist in this repository; confirmed via `find` and a grep of round-4 PLAN/SUMMARY files.
+SKIPPED (no runnable entry points) — no `scripts/*/tests/probe-*.sh` convention or phase-declared probes exist in this repository; confirmed via `find` and a grep of the 09-19 PLAN/SUMMARY files (unchanged from round 4).
 
 ## Requirements Coverage
 
 | Requirement | Source Plans | Description | Status | Evidence |
 |---|---|---|---|---|
-| CSTATE-01 | 09-01, 09-13 | Portable core module, zero platform deps | SATISFIED | Boundary test passing; source read directly. |
-| CSTATE-02 | 09-02, 09-08, 09-12, 09-15, 09-16 | Focused hooks, community-room behavior preserved | SATISFIED | WR-01/WR-06 closures verified; `/chat` route confirmed absent. |
-| CSTATE-03 | 09-03, 09-07, 09-10, 09-14, 09-15 | Web-only, auth-free, identity-bound Zustand adapter | SATISFIED | CR-01 closure verified; authority-boundary test passing. |
-| CSTATE-04 | 09-01, 09-04, 09-06, 09-09, 09-13 | JSON fixtures + protocol doc | SATISFIED | 23/23 fixtures pass; protocol doc content independently confirmed correct. |
-| CSTATE-05 | 09-04, 09-06, 09-09, 09-13 | Android/iOS architecture notes | SATISFIED | Native notes read directly; scope boundary intact. |
-| CSTATE-06 | 09-01..03, 09-05, 09-07..18 | Unchanged behavior + all gates pass | SATISFIED (source/test); live E2E run (HV-04) outstanding | Gates independently re-run and passing; E2E spec structurally correct but unexecuted live. |
+| CSTATE-01 | 09-01, 09-13 | Portable core module, zero platform deps | SATISFIED | Regression-checked, unaffected by 09-19; boundary test passes. |
+| CSTATE-02 | 09-02, 09-08, 09-12, 09-15, 09-16, 09-19 | Focused hooks, community-room behavior preserved | SATISFIED | The last known behavioral gap (double automatic retry) is closed; `/chat` route confirmed absent. |
+| CSTATE-03 | 09-03, 09-07, 09-10, 09-14, 09-15, 09-19 | Web-only, auth-free, identity-bound Zustand adapter | SATISFIED | Authority-boundary test extended and re-verified; `hasLoadError` confirmed a plain cache field, not authority. |
+| CSTATE-04 | 09-01, 09-04, 09-06, 09-09, 09-13, 09-19 | JSON fixtures + protocol doc | **PARTIAL** | Fixtures fully updated/correct (24/24 replay). Protocol doc not updated for the new field/event-behavior — self-mandated sync rule violated. Non-blocking (no native code depends on it yet). |
+| CSTATE-05 | 09-04, 09-06, 09-09, 09-13, 09-19 | Android/iOS architecture notes | **PARTIAL** | Same gap as CSTATE-04, mirrored in the native-notes file. Scope boundary (no native chat implementation) itself remains intact. |
+| CSTATE-06 | 09-01..03, 09-05, 09-07..19 | Unchanged behavior + all gates pass | SATISFIED | Round-5 UAT gap closed; typecheck/targeted-test gates independently re-run clean; build/lint/full-suite reported clean by the orchestrator at this HEAD. |
 
-No orphaned requirements: all 6 CSTATE IDs are declared across the 18 phase-09 plans (cross-checked against REQUIREMENTS.md's "Cross-platform Chat State (CSTATE)" section, including its 2026-07-10 supersede note).
+No orphaned requirements: 09-19-PLAN.md declares `requirements: [CSTATE-02, CSTATE-06]`, both pre-existing IDs already accounted for in REQUIREMENTS.md's CSTATE section; all 6 CSTATE IDs remain traceable across the (now 19) phase-09 plans.
 
 ## Anti-Patterns Found
 
-None in the round-4-touched files. Explicitly scanned for `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER`/"coming soon"/"not yet implemented" across all 11 round-4 source files (`reducer.ts`, `selectors.ts`, `chat-store.ts`, `chat-identity-guard.tsx`, `use-logout.ts`, `use-chat-messages.ts`, `use-load-older-messages.ts`, `use-chat-realtime.ts`, `chat-client.tsx`, `app-shell.tsx`, `e2e/chat-send.spec.ts`) — zero matches. No `.skip(`/`.todo(`/`xit(`/`xdescribe(` in any phase-09 test file.
+**Debt markers / placeholders:** None in the 11 round-5-touched files. `grep -n -E "TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER"` and case-insensitive "coming soon|will be here|not yet implemented|not available": zero matches (the one `/coming soon/i` hit in `chat-client.test.tsx` is a negative assertion — `expect(screen.queryByText(/coming soon/i)).toBeNull()` — testing that placeholder copy is absent, not placeholder code itself). No `.skip(`/`.todo(`/`xit(`/`xdescribe(` in any touched test file.
 
-**Informational (non-blocking):**
-- No `.planning/phases/09-cross-platform-chat-state/09-SECURITY.md` exists, unlike Phases 04/07/08 (which each produced one). `.planning/config.json` has `security_enforcement: true`, `security_block_on: "high"`. CR-01 was a genuine high-severity information-disclosure finding; it is now closed and tested (see above), but the phase never produced the formal security artifact the project's own convention would suggest. Recommend backfilling a retroactive `09-SECURITY.md` documenting the CR-01 finding and its closure, but this is a documentation/process gap, not a code defect — it does not block the phase goal.
-- ROADMAP.md's Phase 9 entry still reads "**Plans**: 13/18 plans executed" even though all 18 plans have `[x]` checkboxes and matching SUMMARY.md files (confirmed: 18 PLAN.md, 18 SUMMARY.md). This is the same STATE-tooling undercounting bug the executor already logged in `deferred-items.md` during 09-10 — a bookkeeping artifact, not a verification gap.
-- `09-UAT.md` (dated before round 3/4) still shows Test 2 as an open "issue" for the older-message retry storm. That defect was closed by Plan 09-12 (confirmed by the prior verification and unchanged by this pass) and the file was never refreshed afterward — stale documentation, not a current defect.
-- WR-04 (reaction snapshot loss on bare remote update) and WR-05 (hidden message counted read) and IN-01 (non-monotonic read-marker merge) remain present and unchanged, exactly as the prior verification found them. They pre-date the Phase 9 extraction and are outside the CSTATE-01..06 must-have scope; carrying forward the prior verification's non-blocking/deferred classification since round 4 was not scoped to touch reaction or read-marker logic.
+**⚠️ WARNING (new finding, non-blocking) — cross-platform contract documentation drift:**
+
+`packages/core/docs/chat-state-protocol.md` and `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md` were not updated when 09-19 added a new required `ChatPaginationState.hasLoadError` field and a new fixture (`olderPageRetryClearsError`), even though **both files explicitly self-mandate this**:
+
+- `chat-state-protocol.md:24-29` ("Contract Ownership"): *"Any change to the portable event union, state shape, selector behavior, or fixture cases must update this protocol and that Phase 09 native companion together."*
+- `09-NATIVE-CHAT-STATE-NOTES.md:20-21` (same section): *"Any event, state, selector, or fixture change must update both documents together."*
+
+Specific stale/incorrect passages (verified by direct read against the current source):
+
+| File | Line(s) | Issue |
+|---|---|---|
+| `chat-state-protocol.md` | 42-46 | `ChatPaginationState` described with only 3 fields (`oldestLoadedCursor`, `hasMoreOlder`, `isLoadingOlder`); the actual type now has 4 required fields. |
+| `chat-state-protocol.md` | 75 | `olderMessagesRequested` — *"Set `pagination.isLoadingOlder` to `true`. Nothing else changes."* Now factually wrong: it also clears `hasLoadError` to `false` in the same update. |
+| `chat-state-protocol.md` | 77 | `olderPageLoadFailed` — omits that this event now also sets `hasLoadError: true`. This is the single most consequential omission: a native implementer following this doc literally would not build the atomic-commit flag this whole gap-closure round exists to establish, and could reproduce the identical "two automatic attempts" bug independently on Android/iOS. |
+| `09-NATIVE-CHAT-STATE-NOTES.md` | 54-57 | Same 3-field (not 4-field) `ChatPaginationState` description. |
+| `09-NATIVE-CHAT-STATE-NOTES.md` | 66-74 | Fixture-name list has 23 entries; the current source has 24 (`olderPageRetryClearsError` missing). |
+| `09-NATIVE-CHAT-STATE-NOTES.md` | 118-119 | *"on failure, dispatch `olderPageLoadFailed`. The failure event clears only the loading flag..."* — now false. |
+| `09-NATIVE-CHAT-STATE-NOTES.md` | 121-123 | Recommended `StateFlow` mapping guidance lists `isLoadingOlder`/`hasMoreOlder` but gives no mapping guidance for the new `hasLoadError`. |
+
+**Why this matters and why it's non-blocking:** this is real drift, newly introduced by this specific round (the round-4 verification independently re-derived and confirmed these same two documents were in sync at that time), and it's the same *class* of failure — state tracked in two places that can silently diverge — as the bug this round just fixed, except at the documentation layer. It is non-blocking today only because no Android/iOS chat implementation exists yet to be misled by it (confirmed unchanged: `09-NATIVE-CHAT-STATE-NOTES.md`'s "Scope Boundary" section still correctly states no native chat screens are touched). This should be closed before any native chat-state implementation work begins. Recommend a small, fast follow-up (add `hasLoadError` to both documents' state-shape sections, correct the three event-behavior rows/prose, and add the missing fixture name + a fourth "hardened contract clause" entry) — likely well under an hour of focused work, not a new planning round.
+
+**Informational (non-blocking, carried forward, unchanged since round 4):**
+- No `.planning/phases/09-cross-platform-chat-state/09-SECURITY.md` exists. `.planning/config.json` has `security_enforcement: true`, `security_block_on: "high"`. The CR-01 finding this would have documented is closed and tested; this is a process/documentation gap only, unrelated to 09-19.
+- `ROADMAP.md`'s Phase 9 entry still reads "**Plans**: 13/18 plans executed" even though 19 plans now exist with `[x]` checkboxes (confirmed: 19 PLAN.md, 19 SUMMARY.md as of this HEAD). Same known STATE-tooling undercounting bug flagged at round 4, still unfixed, not a phase defect.
+- `ROADMAP.md` line 34 and `STATE.md` line 52 still tag Phase 9 "(needs UAT)" / "Needs UAT" even though the round-5 UAT round (09-UAT.md) is complete and its one gap is now closed — expected to be updated as a downstream step once this verification report lands, not a defect in the code itself.
 
 ## Human Verification Required
 
-### 1. Older-page failure/retry — no transcript layout shift (HV-01)
+### 1. Older-page failure — exactly one automatic attempt, re-confirmed live (HV-01R)
 
-**Test:** In a real browser, force an older-page load failure in `/channels/general` (e.g. throttle/disable network on scroll-to-top), confirm the calm notice-tone retry region appears with no jump in the message transcript, then retry successfully.
-**Expected:** One automatic attempt, a stable-height retry region, successful manual recovery.
-**Why human:** jsdom cannot compute real CSS layout/pixel height. The automated test proves the structural invariant (one persistent DOM node with a fixed-height class across idle/loading/error), which is strong evidence but not a substitute for an on-screen pixel check.
+**Test:** In a real browser, force an older-page load failure in `/channels/general` (throttle/disable network on scroll-to-top) and count automatic "load earlier" network requests before the calm notice-tone retry region settles.
+**Expected:** Exactly ONE automatic request fires, then the calm `load-older-error` region appears with no transcript jump; manual "Try again" still recovers. (Previously 2 of 7 instrumented Playwright runs showed two automatic requests — 09-UAT.md Test 2.)
+**Why human:** The original bug was a React-commit-timing/frame race that unit tests (jsdom) could not detect until the `IntersectionObserver` mock was made browser-faithful. The fix is now proven by a deterministic unit reproduction of the exact race plus a passing regression test that was empirically verified to be discriminating (SUMMARY documents a throwaway test proving the mock would show 2 calls on reverted code and 1 on fixed code), but it has not been re-confirmed in a real browser's actual paint/commit scheduling since the fix landed. Given this project's own history with this exact defect (a plausible-looking "should be fine" implementation that was in fact flaky 5/7 times only in real-browser timing), one live re-confirmation is recommended, not a formality — but this is a low-effort, low-risk check given the strength of the automated evidence, not a blocker to resolve.
 
-### 2. A-to-B pagination switch — scroll never corrupted (HV-02)
-
-**Test:** In a real browser, start an older-page load in one conversation, switch to another before it settles, and let it resolve as both success and failure.
-**Expected:** The switched-away request never writes scroll position or error state into the new conversation.
-**Why human:** jsdom's `scrollTop`/`scrollHeight` are inert (always 0), so the scrollTop-write suppression itself cannot be independently observed automatically, even though the guarding logic is code-identical to the automatically-proven error-state suppression.
-
-### 3. Cross-account chat cache isolation + failed sign-out (HV-03)
-
-**Test:** Sign in as account A, then sign in as account B in a second tab/session without using the Log out button; separately, force `signOut()` to fail and confirm the account stays signed in with calm guidance.
-**Expected:** B never sees A's local draft/pending/failed rows; a failed sign-out preserves state and shows retry guidance without navigating.
-**Why human:** genuine multi-tab/cross-session auth-state propagation cannot be fully simulated in a component test, even though every individual code path (identity-change purge, `SIGNED_OUT`, cross-identity events, same-user preserve, failed-signOut branch) is unit-tested against the real store/guard/hook.
-
-### 4. Community send E2E — live execution (HV-04)
-
-**Test:** Run `npx playwright test e2e/chat-send.spec.ts` against a live dev server with seeded Supabase.
-**Expected:** The rewritten spec passes: exactly one row after send, exactly one row after reload, no failure copy present.
-**Why human:** this sandbox has no dev server or seeded Supabase available (per this verification's own constraints). This is the single round-4 claim with the least independent confirmation — `playwright --list` proves the spec compiles and is discoverable, but it has never actually been run since the WR-08 rewrite.
-
-### 5. Logo tap-target visual check (HV-05, optional/low-risk)
-
-**Test:** Visually confirm the app-shell logo is a comfortably-sized, centered 56px tap target on the rendered community shell.
-**Expected:** No visually cramped or off-center logo target.
-**Why human:** cosmetic/visual confirmation; low risk since the change reuses the exact `--size-control` token already shipped and confirmed for message actions.
+All other round-4 human-verification items (HV-02 cross-conversation pagination isolation, HV-03 cross-account isolation, HV-04 community-send E2E, HV-05 logo tap target) already passed live testing, recorded in `09-UAT.md` (4/5 passed, only the above item was the issue). None of their concerns are touched by 09-19's change set (confirmed via `git diff` scoping to exactly the 11 pagination/failure-flag files), so they are not re-listed here.
 
 ## Gaps Summary
 
-No blocking gaps remain. All 8 previously-blocking gaps (CR-01, WR-01, WR-02, WR-03, WR-06, WR-07, WR-08, WR-09) plus WR-10 (recorded as a parity sub-gap of the same blocking cluster) are closed at the source level, independently re-verified against current code and passing tests in this pass — not accepted on the SUMMARY narratives alone. The full automated gate set (493 tests, typecheck, build, lint) was re-run directly rather than trusted from prior reports, and all previously-passing fixtures/tests remain green (no regressions).
+**No blocking gaps.** The single round-5 UAT gap (a failed older-page load firing two automatic attempts instead of one) is closed with strong, independently-re-derived source and test evidence — the fix is a genuine architectural correction (moving a one-shot gate from split hook-local/store state into one atomically-committed store field), not a superficial patch, and the new regression test was empirically verified during development to actually discriminate fixed code from the reverted bug.
 
-The phase is not `passed` only because five checks require a live browser/dev-server/seeded-Supabase environment this verification sandbox cannot access, per its own constraints — most materially, the rewritten community send E2E spec (HV-04) has not yet been executed end-to-end. Four of the five human-verification items (HV-01, HV-02, HV-03, HV-05) are now backed by strong, specific automated regression coverage that did not exist in the prior `gaps_found` pass; they are recommended confirmations, not blind trust requests. HV-04 is the one item this verification recommends treating as required before considering Phase 9 fully released, since it is the only round-4 claim with zero live-execution evidence.
+**One new, non-blocking finding surfaced by this pass:** `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` were not kept in sync with 09-19's state-shape change, in violation of both documents' own explicit "must update together" rule. This is real drift (confirmed newly introduced this round, not carried over) and should be fixed before native chat-state implementation begins, but it does not block Phase 9's current, web-only deliverable — no native code exists yet to be misled by it. Recommend either a fast, narrowly-scoped follow-up plan or a backlog item (`/gsd:add-backlog`) to sync both documents; this is not severe enough to warrant re-opening Phase 9 or blocking milestone completion on its own.
 
-Two pre-existing, out-of-scope product-debt items (WR-04 reaction-snapshot loss, WR-05 hidden-message-marked-read) and one deferred design decision (IN-01 non-monotonic read-marker merge) remain unchanged from the prior verification's own non-blocking/deferred classification; round 4 was not scoped to address them and neither is a CSTATE-01..06 must-have.
+**One recommended (not required) human-verification item remains:** a live re-confirmation that the fix holds in a real browser (HV-01R above). Given the strength of the automated evidence (a deterministic repro that reproduces all four original production symptoms, plus a discriminating regression test), this is expected to be a quick confirmation, not a source of new findings — but per this project's own recent history with exactly this defect class (real-browser timing bugs invisible to jsdom), skipping it would be complacent rather than rigorous.
+
+Two pre-existing, out-of-scope product-debt items from earlier rounds (WR-04 reaction-snapshot loss, WR-05 hidden-message-marked-read) and one deferred design decision (IN-01 non-monotonic read-marker merge) remain unchanged and untouched by round 5, exactly as round 4 classified them: non-blocking, outside CSTATE-01..06 scope.
 
 ## Next Action
 
-Run the five human-verification items above (HV-01..HV-05), prioritizing HV-04 (live Playwright execution). If they pass, Phase 9 can be marked complete; if HV-04 reveals a live-environment defect the static spec review could not catch (e.g. a selector mismatch against the real rendered DOM), route that specific finding through a narrow follow-up plan rather than reopening the whole phase.
+1. Run the one recommended human-verification item (HV-01R) live against `/channels/general`.
+2. Separately (does not block phase completion), sync `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` with the `hasLoadError` field/fixture/event-behavior change — either a small dedicated follow-up plan or a backlog item — before any native (Android/iOS) chat-state implementation work begins.
+3. If HV-01R passes, Phase 9 can be marked complete; if it reveals a live-environment timing case the static/unit evidence could not catch, route that specific finding through a narrow follow-up plan.
 
 ```text
-$gsd-verify-work 9   # after HV-01..HV-05 are exercised, to close out human_needed
+$gsd-verify-work 9   # after HV-01R is exercised, to close out human_needed
 ```
 
 ---
 
-_Verified against HEAD `7988a12fd3ee094e07c468622da0cd30afa40394`._
-_Previous verification: `gaps_found`, score 2/6, HEAD `e74c5980c49a244f4c6ed8e6885131f8ceefe951`._
+_Verified against HEAD `612270084af9ec353e59870076eb7dbbf062f91e`._
+_Previous verification: `human_needed`, score 6/6, HEAD `7988a12fd3ee094e07c468622da0cd30afa40394`._
 _Verifier: Claude (gsd-verifier role)._
