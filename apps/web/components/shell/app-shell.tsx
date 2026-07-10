@@ -113,8 +113,7 @@ export function AppShell({
   const navItems = getNavItems(role);
   /* Channels is the one immersive surface: the thread owns the pane
      edge-to-edge and scrolls internally, so the shell locks to the viewport
-     here. Every other screen keeps the centered reading column (D-10). The
-     `/chat` route was removed 2026-07-10 (community room supersedes it). */
+     here. Every other screen keeps the centered reading column (D-10). */
   const immersive = isActivePath(pathname, "/channels");
 
   return (
@@ -134,7 +133,8 @@ export function AppShell({
       <header className="flex shrink-0 items-center gap-md border-b border-border bg-surface px-page py-md md:py-sm">
         <Link
           href={role === "coach" ? "/coach" : "/home"}
-          className="shrink-0"
+          aria-label="FISH home"
+          className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center"
         >
           <Image
             src="/logo.svg"
@@ -170,7 +170,7 @@ export function AppShell({
         )}
       >
         {/* Single-channel milestone: the column lists only `# general`, so it
-            appears just on the immersive channel/chat surface where it orients
+            appears just on the immersive channel surface where it orients
             the reader — never as a browsable menu on other screens. */}
         {immersive && (
           <aside className="hidden w-channel-col shrink-0 flex-col border-r border-border bg-surface px-sm py-page md:flex">
