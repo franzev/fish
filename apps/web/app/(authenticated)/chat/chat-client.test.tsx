@@ -6,6 +6,10 @@ import type { ClientChatData } from "@/lib/services";
 import { triggerIntersection } from "@/tests/intersection-observer";
 import { ChatClient } from "./chat-client";
 import { chatStore, resetChatStoreForTests } from "./store/chat-store";
+import {
+  selectReadStatesForConversation,
+  selectRealtimeStatusForConversation,
+} from "./store/chat-selectors";
 
 const realtimeMock = vi.hoisted(() => {
   const messageHandlers: Array<(payload: { new: unknown }) => void> = [];
@@ -97,6 +101,30 @@ const chat: ClientChatData = {
     sessions: [],
   },
 };
+
+// Every realtime channel shares one mocked `channel` object, and
+// `channel.subscribe`/`client.channel` mock call history accumulates across
+// every test in this file (no clearMocks). Search from the end so a test
+// captures the connection-status callback from its own latest subscribe
+// call, not an earlier test's.
+function latestSubscribeStatusCallback(
+  channelSuffix: string
+): (status: string) => void {
+  const channelCalls = realtimeMock.client.channel.mock.calls;
+  for (let index = channelCalls.length - 1; index >= 0; index -= 1) {
+    const channelName = channelCalls[index]?.[0];
+    if (typeof channelName === "string" && channelName.endsWith(channelSuffix)) {
+      const callback = realtimeMock.channel.subscribe.mock.calls[index]?.[0];
+      if (typeof callback === "function") {
+        return callback as (status: string) => void;
+      }
+    }
+  }
+
+  throw new Error(
+    `No subscribe callback captured for channel suffix "${channelSuffix}"`
+  );
+}
 
 describe("ChatClient hook boundaries", () => {
   const chatClientSource = readFileSync(
@@ -1333,5 +1361,64 @@ describe("ChatClient", () => {
     expect(
       screen.getByText("You're offline. Messages will send when you're back.")
     ).toBeInTheDocument();
+  });
+
+  it("resets realtime status to idle on unmount so a revisit is not mislabeled as reconnecting", () => {
+    const { unmount } = render(
+      <ChatClient chat={chat} sendMessageAction={vi.fn()} />
+    );
+
+    act(() => {
+      latestSubscribeStatusCallback(":messages")("SUBSCRIBED");
+    });
+
+    expect(
+      selectRealtimeStatusForConversation(chatStore.getState(), chat.conversationId)
+    ).toBe("connected");
+
+    unmount();
+
+    expect(
+      selectRealtimeStatusForConversation(chatStore.getState(), chat.conversationId)
+    ).toBe("idle");
+
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    // An ordinary first connect on this fresh mount must never read as a
+    // reconnect, even though the conversation genuinely connected before.
+    expect(screen.queryByText("Reconnecting…")).toBeNull();
+  });
+
+  it("dispatches exactly one store transition per realtime read-state payload", () => {
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    let transitionCount = 0;
+    const unsubscribe = chatStore.subscribe(() => {
+      transitionCount += 1;
+    });
+
+    act(() => {
+      realtimeMock.readHandlers[0]?.({
+        new: {
+          user_id: "coach-1",
+          last_delivered_message_id: "message-1",
+          delivered_at: "2026-07-05T00:02:00.000Z",
+          last_read_message_id: "message-1",
+          read_at: "2026-07-05T00:03:00.000Z",
+        },
+      });
+    });
+
+    unsubscribe();
+
+    expect(transitionCount).toBe(1);
+    expect(
+      selectReadStatesForConversation(chatStore.getState(), chat.conversationId).find(
+        (readState) => readState.userId === "coach-1"
+      )
+    ).toMatchObject({
+      lastReadMessageId: "message-1",
+      readAt: "2026-07-05T00:03:00.000Z",
+    });
   });
 });
