@@ -11,6 +11,7 @@ import {
   clearChatStore,
   createChatHydrationKey,
   createChatStore,
+  ensureChatStoreOwner,
   resetChatStoreForTests,
   type ChatStoreState,
 } from "./chat-store";
@@ -470,6 +471,107 @@ describe("clearChatStore", () => {
     expect(
       selectComposerForConversation(chatStore.getState(), otherConversationId).draft
     ).toBe("");
+  });
+});
+
+describe("ensureChatStoreOwner (CR-01 cache-partition fingerprint)", () => {
+  // Operates on the real singleton (mirrors "clearChatStore" above), so a
+  // leftover owner/seed here must never bleed into other describe blocks.
+  afterEach(() => {
+    resetChatStoreForTests();
+  });
+
+  it("adopts the first owner on a fresh store without purging existing state", () => {
+    chatStore.getState().setDraft(conversationId, "Server-hydrated draft");
+
+    ensureChatStoreOwner("account-a");
+
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("Server-hydrated draft");
+  });
+
+  it("preserves state across repeated calls for the same identity", () => {
+    ensureChatStoreOwner("account-a");
+    chatStore.getState().setDraft(conversationId, "Account A's draft");
+
+    ensureChatStoreOwner("account-a");
+
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("Account A's draft");
+  });
+
+  it("purges the draft/pending rows when the verified identity changes, and adopts the new owner", () => {
+    ensureChatStoreOwner("account-a");
+    chatStore.getState().setDraft(conversationId, "Account A's draft");
+    chatStore.getState().sendOptimisticMessage({
+      id: "local-request-owner",
+      conversationId,
+      senderId: "account-a",
+      senderRole: "client",
+      body: "Account A's pending send.",
+      clientRequestId: "request-owner",
+      createdAt: "2026-07-06T04:08:00.000Z",
+      editedAt: null,
+      deletedAt: null,
+      replyToMessageId: null,
+      reactions: [],
+    });
+
+    ensureChatStoreOwner("account-b");
+
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("");
+    expect(
+      selectMessagesForConversation(chatStore.getState(), conversationId)
+    ).toEqual([]);
+
+    // Now owned by B: a same-identity call must not purge B's own draft.
+    chatStore.getState().setDraft(conversationId, "Account B's draft");
+    ensureChatStoreOwner("account-b");
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("Account B's draft");
+  });
+
+  it("forgets the owner on clearChatStore so a later call for a different id re-adopts instead of re-purging", () => {
+    ensureChatStoreOwner("account-a");
+    clearChatStore();
+
+    // If clearChatStore had NOT reset the fingerprint, this call (a
+    // different id than the forgotten "account-a") would see a stale
+    // mismatch and purge again, wiping the state seeded just below.
+    chatStore.getState().setDraft(conversationId, "Seeded after explicit clear");
+    ensureChatStoreOwner("account-b");
+
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("Seeded after explicit clear");
+  });
+
+  it("never introduces an auth/role/assignment/service-role authority key on getState()", () => {
+    ensureChatStoreOwner("account-a");
+
+    const state = chatStore.getState();
+    const forbiddenKeys = [
+      "session",
+      "auth",
+      "currentUser",
+      "currentUserId",
+      "currentUserRole",
+      "rolePermissions",
+      "assignment",
+      "assignedCoach",
+      "supabase",
+      "serviceRole",
+      "serviceRoleKey",
+    ];
+
+    for (const key of forbiddenKeys) {
+      expect(state).not.toHaveProperty(key);
+    }
   });
 });
 
