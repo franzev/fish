@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { clearChatStore } from "@/app/(authenticated)/chat/store/chat-store";
 import { signOut } from "@/lib/auth/browser";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,6 +23,11 @@ export function LogoutButton({ className }: LogoutButtonProps = {}) {
   async function handleLogout() {
     setLoading(true);
     await signOut();
+    // Logout is a soft `router.push` (no full reload), so the module-global
+    // chat store survives. Clear it here so a different account signing in
+    // on the same tab never inherits this account's draft, pending/failed
+    // local messages, or hydration keys (closes CR-01).
+    clearChatStore();
     router.push("/login");
   }
 
