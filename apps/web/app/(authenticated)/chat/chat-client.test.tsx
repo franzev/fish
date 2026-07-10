@@ -2343,6 +2343,128 @@ describe("ChatClient", () => {
     );
   });
 
+  it("keeps conversation B's reconnect lock when conversation A settles late (VR-01)", async () => {
+    type BackfillResult = {
+      status: "sent";
+      values: unknown;
+      messages: ClientChatData["messages"];
+      needsReset: false;
+    };
+
+    const resolvers: Array<(value: BackfillResult) => void> = [];
+    const boundedSuccess: BackfillResult = {
+      status: "sent",
+      values: {},
+      messages: [],
+      needsReset: false,
+    };
+    const backfillMessagesAction = vi.fn(() => {
+      if (resolvers.length >= 2) {
+        return Promise.resolve(boundedSuccess);
+      }
+
+      return new Promise<BackfillResult>((resolve) => {
+        resolvers.push(resolve);
+      });
+    });
+
+    const { rerender } = render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        backfillMessagesAction={backfillMessagesAction}
+      />
+    );
+
+    const messagesStatusCallbackA = latestSubscribeStatusCallback(":messages");
+    act(() => {
+      messagesStatusCallbackA("SUBSCRIBED");
+    });
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+
+    act(() => {
+      messagesStatusCallbackA("SUBSCRIBED");
+    });
+    await waitFor(() => expect(backfillMessagesAction).toHaveBeenCalledTimes(1));
+    expect(backfillMessagesAction).toHaveBeenNthCalledWith(1, {
+      conversationId: chat.conversationId,
+      afterCreatedAt: chat.messages[0].createdAt,
+      afterMessageId: chat.messages[0].id,
+    });
+
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    const channelCallCountBeforeSwitch = realtimeMock.client.channel.mock.calls.length;
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+        backfillMessagesAction={backfillMessagesAction}
+      />
+    );
+
+    await waitFor(() =>
+      expect(realtimeMock.client.channel.mock.calls.length).toBeGreaterThan(
+        channelCallCountBeforeSwitch
+      )
+    );
+    const messagesStatusCallbackB = latestSubscribeStatusCallback(":messages");
+    act(() => {
+      messagesStatusCallbackB("SUBSCRIBED");
+    });
+    expect(backfillMessagesAction).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      messagesStatusCallbackB("SUBSCRIBED");
+    });
+    await waitFor(() => expect(backfillMessagesAction).toHaveBeenCalledTimes(2));
+    expect(backfillMessagesAction).toHaveBeenNthCalledWith(2, {
+      conversationId: nextConversationId,
+      afterCreatedAt: chat.messages[0].createdAt,
+      afterMessageId: chat.messages[0].id,
+    });
+
+    await act(async () => {
+      resolvers[0]?.(boundedSuccess);
+      await Promise.resolve();
+    });
+
+    act(() => {
+      messagesStatusCallbackB("SUBSCRIBED");
+    });
+    expect(backfillMessagesAction).toHaveBeenCalledTimes(2);
+    expect(
+      backfillMessagesAction.mock.calls.filter(
+        ([input]) =>
+          (input as { conversationId: string }).conversationId ===
+          nextConversationId
+      )
+    ).toHaveLength(1);
+
+    await act(async () => {
+      resolvers[1]?.(boundedSuccess);
+      await Promise.resolve();
+    });
+
+    act(() => {
+      messagesStatusCallbackB("SUBSCRIBED");
+    });
+    await waitFor(() => expect(backfillMessagesAction).toHaveBeenCalledTimes(3));
+    expect(
+      backfillMessagesAction.mock.calls.filter(
+        ([input]) =>
+          (input as { conversationId: string }).conversationId ===
+          nextConversationId
+      )
+    ).toHaveLength(2);
+  });
+
   it("keeps a pending optimistic row through a reconnect-reset hydrateWindow, then marks it failed on a later send failure (WR-02)", async () => {
     type SendResult = { status: "notice"; values: unknown; notice: string };
     let resolveSend: (value: SendResult) => void = () => undefined;
