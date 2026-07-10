@@ -42,15 +42,18 @@ export function applyChatEvents(state: ChatState, events: ChatEvent[]): ChatStat
 
 export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
   switch (event.type) {
-    case "hydrateConversation":
+    case "hydrateConversation": {
+      const conversation = getConversation(state, event.conversationId);
+      const incoming = event.messages.map((message) =>
+        normalizeMessage(message, "sent")
+      );
       return setConversation(state, {
-        ...getConversation(state, event.conversationId),
+        ...conversation,
         conversationId: event.conversationId,
-        messages: event.messages
-          .map((message) => normalizeMessage(message, "sent"))
-          .sort(compareChatMessages),
+        messages: mergeHydratedMessages(conversation.messages, incoming),
         readStates: event.readStates,
       });
+    }
 
     case "draftChanged":
       return updateConversation(state, event.conversationId, (conversation) => ({
@@ -135,13 +138,15 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
         composer: { ...emptyComposer },
       }));
 
-    case "hydrateWindow":
+    case "hydrateWindow": {
+      const conversation = getConversation(state, event.conversationId);
+      const incoming = event.messages.map((message) =>
+        normalizeMessage(message, "sent")
+      );
       return setConversation(state, {
-        ...getConversation(state, event.conversationId),
+        ...conversation,
         conversationId: event.conversationId,
-        messages: event.messages
-          .map((message) => normalizeMessage(message, "sent"))
-          .sort(compareChatMessages),
+        messages: mergeHydratedMessages(conversation.messages, incoming),
         readStates: event.readStates,
         pagination: {
           oldestLoadedCursor: event.oldestCursor,
@@ -149,6 +154,7 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
           isLoadingOlder: false,
         },
       });
+    }
 
     case "olderMessagesRequested":
       return updateConversation(state, event.conversationId, (conversation) => {
@@ -219,6 +225,31 @@ function mergeMessage(
   });
 }
 
+// A hydrate/reconnect snapshot is authoritative for everything it reports,
+// but it cannot know about a local send the server hasn't accepted (or the
+// client hasn't retried) yet. Dropping that row would delete the only copy
+// of its body, leaving a later failure with nothing left to restore into
+// the composer (WR-02). Preserve unresolved local rows, then fold the
+// authoritative snapshot on top through the same merge primitive
+// olderPageLoaded uses, so a matching authoritative row (by id or
+// clientRequestId) always supersedes the local placeholder instead of
+// duplicating it.
+function mergeHydratedMessages(
+  existingMessages: ChatMessageState[],
+  incomingMessages: ChatMessageState[]
+): ChatMessageState[] {
+  const unresolved = existingMessages.filter(
+    (message) =>
+      message.localStatus === "pending" ||
+      message.localStatus === "sending" ||
+      message.localStatus === "failed"
+  );
+
+  return incomingMessages
+    .reduce((current, message) => mergeChatMessage(current, message), unresolved)
+    .sort(compareChatMessages);
+}
+
 function markMessageFailed(
   state: ChatState,
   conversationId: ChatConversationId,
@@ -229,6 +260,17 @@ function markMessageFailed(
     const failedMessage = conversation.messages.find(
       (message) => message.clientRequestId === clientRequestId
     );
+
+    // Monotonic status guard: once a message is confirmed "sent" (by the
+    // authoritative send response or a realtime/hydrate reconciliation), a
+    // later-arriving failure for the same clientRequestId must never
+    // downgrade it back to "failed" — the message really did go out. Without
+    // this guard a stale failure callback racing behind a faster
+    // confirmation could relabel a delivered message as failed (WR-03).
+    if (failedMessage?.localStatus === "sent") {
+      return conversation;
+    }
+
     // Only restore the failed body when nothing newer was typed while the
     // send was pending. A non-empty draft is a newer edit typed during the
     // in-flight send and must survive a (possibly delayed) failure
