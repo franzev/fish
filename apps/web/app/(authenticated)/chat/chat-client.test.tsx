@@ -1278,6 +1278,39 @@ describe("ChatClient", () => {
     expect(screen.getAllByText("How did practice feel today?")).toHaveLength(1);
   });
 
+  it("bounds automatic load earlier retries after a failure while the sentinel stays visible", async () => {
+    const loadOlderMessagesAction = vi.fn().mockResolvedValue({
+      status: "notice",
+      values: {},
+      notice: "Earlier messages did not load.",
+    });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const sentinel = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("load-older-skeleton")).toBeNull()
+    );
+
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
+  });
+
   it("drives the same wrapped scroll-preserving callback from the button as the sentinel", async () => {
     const loadOlderMessagesAction = vi.fn().mockResolvedValue({
       status: "sent",
