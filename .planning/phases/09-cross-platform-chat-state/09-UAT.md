@@ -19,7 +19,7 @@ reported: "loading new messages is broken"
 severity: major
 
 ### 2. Native notes readability
-expected: Read `packages/core/docs/chat-state-protocol.md` and `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`; confirm a future Android/iOS implementer can understand the event contract, fixture replay path, native state-container mapping, and scope boundary.
+expected: Read the canonical pair — `packages/core/docs/chat-state-protocol.md` and `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md` — and confirm a future Android/iOS implementer can understand the event contract, fixture replay path, native state-container mapping, and scope boundary. `.planning/phases/10-chat-message-loading-optimization/10-NATIVE-CHAT-STATE-NOTES.md` is supplementary Phase 10 pagination history only, not a second canonical contract.
 result: issue
 reported: "The protocol includes pagination events and fixture cases that the native notes do not list or map, so the future native implementation contract is incomplete."
 severity: major

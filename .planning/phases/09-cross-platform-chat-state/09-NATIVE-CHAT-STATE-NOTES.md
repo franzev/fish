@@ -1,15 +1,24 @@
 # Native Chat State Notes
 
-These notes describe how Android and iOS should later implement the chat-state
-contract from `packages/core/docs/chat-state-protocol.md`. They are architecture
-guidance only. This phase does not modify Android or iOS production chat flows,
-does not add native chat screens, and does not block web delivery on native
-implementation.
+These notes are the canonical current Android/iOS architecture companion for
+the chat-state contract in `packages/core/docs/chat-state-protocol.md`. They are
+architecture guidance only. This phase does not modify Android or iOS
+production chat flows, does not add native chat screens, and does not block web
+delivery on native implementation.
 
 Native clients receive the same `ChatEvent`, `ChatState`, fixture names, state
 shape, and selector expectations. They should implement the reducer behavior
 idiomatically in Kotlin or Swift and verify it against
 `packages/core/src/chat-state/fixtures/chat-state-vectors.json`.
+
+## Contract Ownership
+
+The TypeScript types, reducer, and selectors in
+`packages/core/src/chat-state`, together with the JSON vectors, are the
+executable parity contract. `packages/core/docs/chat-state-protocol.md` is the
+canonical human-readable platform-neutral explanation, and this file is the
+canonical current native mapping. Any event, state, selector, or fixture change
+must update both documents together.
 
 ## Scope Boundary
 
@@ -36,23 +45,31 @@ holder over authorized data.
 Native implementations should mirror these protocol concepts:
 
 - `ChatState`: conversations keyed by conversation id.
-- `ChatConversationState`: messages, read states, composer state, and realtime
-  connection status for one conversation.
+- `ChatConversationState`: messages, read states, composer state, realtime
+  connection status, and pagination state for one conversation.
 - `ChatMessageState`: ids, sender identity, body, `clientRequestId`,
   timestamps, reply target, reactions, local send status, and failure reason.
 - `ChatReadState`: delivered/read markers and timestamps for a user.
 - `ChatComposerState`: draft, reply target, and edit target.
+- `ChatPaginationState`: `oldestLoadedCursor` (the oldest loaded message's
+  `{ createdAt, id }` keyset cursor, or `null` before a window is loaded),
+  `hasMoreOlder`, and `isLoadingOlder`. Every conversation starts with a
+  well-formed default: no cursor, no known older page, and no load in progress.
 - `ChatEvent`: the event union applied to state.
 
 The current event names are `hydrateConversation`, `draftChanged`,
 `sendOptimisticMessage`, `confirmSentMessage`, `markMessageFailed`,
 `mergeRemoteMessage`, `mergeReadState`, `setReplyTarget`, `setEditTarget`,
-`setRealtimeStatus`, and `clearComposer`.
+`setRealtimeStatus`, `clearComposer`, `hydrateWindow`,
+`olderMessagesRequested`, `olderPageLoaded`, and `olderPageLoadFailed`.
 
 The current fixture cases are `hydrateConversation`, `sendOptimisticMessage`,
 `confirmSentMessage`, `markMessageFailed`, `mergeRemoteMessage`,
 `duplicateClientRequestIdReconciliation`, `mergeReadState`, `unreadCount`,
-`deletedMessageSnippet`, and `replyPreview`.
+`deletedMessageSnippet`, `replyPreview`, `hydrateWindow`, `olderPageLoaded`,
+`olderPageDuplicateReconciliation`, `gapBackfillOutOfOrder`,
+`olderPageLifecycle`, `deliveredMarkerOutsideWindow`, and
+`readMarkerOutsideWindow`.
 
 ## Android Mapping
 
@@ -62,17 +79,26 @@ small wrapper such as `StateFlow<ChatUiState>`.
 
 Recommended responsibilities:
 
-- Load authorized conversation data from the native repository layer, then
-  dispatch `hydrateConversation`.
+- Load the authorized bounded newest-message window from the native repository
+  layer, then dispatch `hydrateWindow` with `hasMoreOlder` and the next
+  `oldestCursor`. Keep `hydrateConversation` for full-snapshot compatibility
+  where that existing event is explicitly required.
+- Before an older-page request, dispatch `olderMessagesRequested`; on success,
+  dispatch `olderPageLoaded` with the rows, `hasMoreOlder`, and next
+  `oldestCursor`; on failure, dispatch `olderPageLoadFailed`. The failure event
+  clears only the loading flag, preserving the cursor and retry path.
 - Expose `StateFlow` values for message rows, composer state, unread count,
-  reply preview, outgoing status, and connection status.
+  reply preview, outgoing status, connection status, and pagination loading
+  state. Map `isLoadingOlder` to a quiet loading affordance and
+  `hasMoreOlder` to whether a native load-earlier trigger is available.
 - Apply `ChatEvent` values through a pure reducer function before updating the
   `MutableStateFlow`.
-- Use repository/service calls for sends, read-state writes, refreshes, and
-  realtime subscriptions; the `ViewModel` should not decide membership or
-  persistence authority.
+- Use repository/service calls for sends, read-state writes, refreshes,
+  older-page fetches, and realtime subscriptions; the `ViewModel` should not
+  decide membership or persistence authority.
 - Preserve `clientRequestId` reconciliation for optimistic sends, retries, and
-  realtime confirmation.
+  realtime confirmation. `olderPageLoaded` must use the same merge rule so a
+  page overlap or a page racing a live insert cannot create a duplicate.
 
 Kotlin implementation sketch:
 
@@ -110,10 +136,16 @@ Recommended responsibilities:
 
 - Store `ChatState` in an `Observable` model.
 - Provide derived properties for message rows, composer state, unread count,
-  reply preview, outgoing status, and realtime status.
-- Apply `ChatEvent` values through a pure reducer before publishing changes.
+  reply preview, outgoing status, realtime status, and pagination
+  (`hasMoreOlder` and `isLoadingOlder`).
+- Apply `ChatEvent` values through a pure reducer before publishing changes,
+  including `hydrateWindow`, `olderMessagesRequested`, `olderPageLoaded`, and
+  `olderPageLoadFailed`.
+- Dispatch `olderMessagesRequested` before the service call, then
+  `olderPageLoaded` or `olderPageLoadFailed` from its result. Keep cursor,
+  loading, and retry behavior identical to the portable contract.
 - Call service/repository functions for sends, read-state writes, refreshes,
-  and realtime subscriptions.
+  older-page fetches, and realtime subscriptions.
 - Keep auth, membership, assignment, writes, persistence, and durable read-state
   authority outside the observable model.
 
@@ -152,6 +184,12 @@ convenience. Native implementations need parity for:
 - unread count excluding the current user's own messages
 - deleted-message snippet text
 - reply preview author label and snippet
+- a read or delivered marker id that is set but absent from the currently
+  loaded newest-anchored window is strictly older than that window and marks no
+  loaded message. Evaluate read and delivered markers independently: an
+  out-of-window read marker must not suppress a still-in-window delivered
+  marker. Until the real read marker is loaded, unread count conservatively
+  includes every loaded message from the other participant.
 
 These rules keep future native screens aligned with the current one assigned
 conversation behavior without adding conversation pickers, menus, or new client
@@ -163,5 +201,6 @@ Future native implementation can proceed after the web/core contract is stable.
 It should start with native fixture replay tests, then add a `ViewModel` or
 observable model behind the existing native design tokens and calm chat UI
 patterns. Production Android/iOS chat screens, generated shared-code pipelines,
-offline queues, notifications, attachments, and multi-conversation surfaces are
-outside this phase.
+generated TypeScript consumption, native pagination UI, offline queues,
+notifications, attachments, and multi-conversation surfaces are outside this
+phase.
