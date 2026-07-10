@@ -32,7 +32,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 ### v1.2 Cross-platform Chat State Foundation
 
 - [x] **Phase 9: Cross-platform Chat State** - Chat state rules become portable and test-vector-backed; web adopts Zustand only as the React adapter for shared chat surfaces while Android/iOS get the same event contract to implement natively. (needs UAT) (completed 2026-07-10)
-- [x] **Phase 10: Chat Message Loading Optimization** - Conversations open near-instantly on a bounded newest-messages window; older history loads via cursor-based load-more and infinite scroll with reading position preserved; realtime messages merge in place with no duplicates, full reloads, or layout shift. (completed 2026-07-10)
+- [ ] **Phase 10: Chat Message Loading Optimization** - Conversations open near-instantly on a bounded newest-messages window; older history loads via cursor-based load-more and infinite scroll with reading position preserved; realtime messages merge in place with no duplicates, full reloads, or layout shift. (gap closure planned)
 
 ## Phase Details
 
@@ -133,7 +133,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
 **Depends on**: Phase 8, Phase 9
 **Requirements**: CLOAD-01, CLOAD-02, CLOAD-03, CLOAD-04, CLOAD-05, CLOAD-06
-**Plans**: 4 plans
+**Plans**: 4/5 plans executed
 
 **Wave 1** *(parallel — no shared files)*
 
@@ -148,6 +148,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 10-04-PLAN.md — IntersectionObserver sentinel + manual scroll-anchor restore, stick-to-bottom prepend fix, quiet "load earlier" affordance, calm skeleton/offline states, CSS (skeleton pulse + overflow-anchor)
 
+**Wave 4** *(gap closure; blocked on Wave 3 completion)*
+
+- [ ] 10-05-PLAN.md — replace visible loading copy and generic bars with a two-row, final-layout-matched message skeleton in a fixed semantic pagination slot
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -159,7 +163,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 | 9. Cross-platform Chat State | v1.2 | 19/19 | Complete   | 2026-07-10 |
-| 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
+| 10. Chat Message Loading Optimization | v1.2 | 4/5 | In Progress|  |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*
