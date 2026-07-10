@@ -19,10 +19,12 @@ interface UserMenuProps {
    D-09: the bar stays zero-primary; this menu adds no primary-styled Button.
    Log out routes through the shared useLogout hook so clearChatStore() (CR-01)
    always runs before the redirect, whether triggered here or from the
-   Profile "Sign out" row. Base UI Menu supplies roving focus, Escape/outside
-   dismiss, and focus return for free. */
+   Profile "Sign out" row. A failed sign-out (CR-01) never clears state or
+   navigates -- it surfaces the hook's calm notice-tone guidance as a
+   non-interactive row instead. Base UI Menu supplies roving focus,
+   Escape/outside dismiss, and focus return for free. */
 export function UserMenu({ displayName, role }: UserMenuProps) {
-  const { logout } = useLogout();
+  const { logout, notice } = useLogout();
 
   return (
     <Menu.Root>
@@ -48,6 +50,9 @@ export function UserMenu({ displayName, role }: UserMenuProps) {
               <IconLogout size={20} stroke={1.75} aria-hidden="true" />
               Log out
             </Menu.Item>
+            {notice && (
+              <p className="px-sm py-2xs text-ui-sm text-notice">{notice}</p>
+            )}
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

@@ -1,8 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ServiceResult } from "@/lib/services";
 
 const { signOutMock, pushMock } = vi.hoisted(() => ({
-  signOutMock: vi.fn(async () => ({ ok: true, data: undefined })),
+  signOutMock: vi.fn(
+    async (): Promise<ServiceResult<void>> => ({ ok: true, data: undefined })
+  ),
   pushMock: vi.fn(),
 }));
 
@@ -23,6 +26,7 @@ import {
   selectMessagesForConversation,
 } from "@/app/(authenticated)/chat/store/chat-selectors";
 import { generalChannelId } from "@/lib/channels";
+import { ServiceError } from "@/lib/services";
 import { LogoutButton } from "./logout-button";
 
 describe("LogoutButton", () => {
@@ -64,5 +68,29 @@ describe("LogoutButton", () => {
     expect(
       selectMessagesForConversation(chatStore.getState(), generalChannelId)
     ).toEqual([]);
+  });
+
+  it("preserves account A's chat state and shows a calm retry notice when signOut fails, without navigating (CR-01)", async () => {
+    signOutMock.mockResolvedValueOnce({
+      ok: false,
+      error: new ServiceError({ code: "network", message: "Offline" }),
+    });
+    chatStore
+      .getState()
+      .setDraft(generalChannelId, "Account A's unsent draft");
+
+    render(<LogoutButton />);
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
+    await screen.findByText(
+      "We couldn't sign you out just now. Check your connection and try again."
+    );
+
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(
+      selectComposerForConversation(chatStore.getState(), generalChannelId)
+        .draft
+    ).toBe("Account A's unsent draft");
   });
 });

@@ -10,17 +10,32 @@ import { useState } from "react";
    calm/frictionless and sessions are cheap to re-establish (UI-SPEC).
    clearChatStore() must run after signOut() and before the soft
    router.push, or a different account signing in on the same tab could
-   inherit this account's draft/pending messages (CR-01). */
+   inherit this account's draft/pending messages (CR-01). A FAILED signOut
+   (result.ok === false) must never clear or navigate either -- half
+   completing the transition would silently drop this account's draft with
+   no way back, so failure preserves the current account's state and
+   surfaces a calm retry notice instead (CR-01). */
 export function useLogout() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function logout() {
+    setNotice(null);
     setLoading(true);
-    await signOut();
+    const result = await signOut();
+
+    if (!result.ok) {
+      setLoading(false);
+      setNotice(
+        "We couldn't sign you out just now. Check your connection and try again."
+      );
+      return;
+    }
+
     clearChatStore();
     router.push("/login");
   }
 
-  return { logout, loading };
+  return { logout, loading, notice };
 }
