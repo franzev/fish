@@ -606,6 +606,50 @@ describe("pagination, backfill, and reset-window actions", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("accepts a Postgres offset-format cursor (created_at with +00:00, not Z)", async () => {
+    // Regression: supabase-js/PostgREST serialise timestamptz as
+    // "2026-07-05T00:05:00.000000+00:00", never with a "Z" suffix. Zod 4's
+    // z.iso.datetime() rejects offsets by default, which silently failed the
+    // keyset cursor live and surfaced "Couldn't load earlier messages."
+    mockSignedIn();
+    const rows = [2, 1, 0].map((position) => paginationMessageRow(position));
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+    });
+
+    const result = await loadOlderMessagesAction({
+      conversationId: validInput.conversationId,
+      cursor: {
+        createdAt: "2026-07-05T00:05:00.000000+00:00",
+        id: "22222222-2222-4222-8222-222222222222",
+      },
+    });
+
+    expect(result.status).toBe("sent");
+    expect(fromMock).toHaveBeenCalled();
+  });
+
+  it("accepts a Postgres offset-format afterCreatedAt during backfill", async () => {
+    mockSignedIn();
+    const rows = [0, 1, 2].map((position) => paginationMessageRow(position));
+    stubChatTables({
+      messages: rows,
+      message_reactions: [],
+      profiles: [{ id: "client-1", display_name: "Franz Fish" }],
+    });
+
+    const result = await backfillMessagesAction({
+      conversationId: validInput.conversationId,
+      afterCreatedAt: "2026-07-04T23:59:00.000000+00:00",
+      afterMessageId: "33333333-3333-4333-8333-333333333333",
+    });
+
+    expect(result.status).toBe("sent");
+    expect(fromMock).toHaveBeenCalled();
+  });
+
   it("sets needsReset true when more than the bound of newer messages exist during backfill", async () => {
     mockSignedIn();
     const rows = Array.from({ length: 41 }, (_, index) => paginationMessageRow(index));

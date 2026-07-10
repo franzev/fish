@@ -50,7 +50,11 @@ const refreshConversationSchema = z.strictObject({
 });
 
 const chatCursorInputSchema = z.strictObject({
-  createdAt: z.iso.datetime(),
+  // Postgres/PostgREST serialises timestamptz with a numeric offset
+  // ("2026-07-10T02:18:36.332408+00:00"), not a "Z" suffix. Zod 4's
+  // z.iso.datetime() rejects offsets by default, which silently failed the
+  // keyset cursor and surfaced "Couldn't load earlier messages."
+  createdAt: z.iso.datetime({ offset: true }),
   id: z.string().uuid(),
 });
 
@@ -62,7 +66,8 @@ const loadOlderMessagesSchema = z.strictObject({
 
 const backfillMessagesSchema = z.strictObject({
   conversationId: z.string().uuid(),
-  afterCreatedAt: z.iso.datetime(),
+  // Same offset-timestamp reason as chatCursorInputSchema.createdAt above.
+  afterCreatedAt: z.iso.datetime({ offset: true }),
   afterMessageId: z.string().uuid(),
   limit: z.number().int().positive().max(100).optional(),
 });
