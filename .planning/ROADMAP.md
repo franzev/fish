@@ -124,6 +124,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 09-16-PLAN.md — chat-client conversation-scoped realtime/hasConnected reset (WR-06) + invariant pagination-feedback geometry (WR-07) + WR-02/WR-03 web regressions
 
+**Wave 11** *(gap closure round 5; blocked on the 2026-07-10 UAT Test 2 minor gap — older-load double automatic attempt)*
+
+- [ ] 09-19-PLAN.md — commit the older-page failure flag atomically into per-conversation pagination state (store-backed hasLoadError) so a failed load fires exactly one automatic attempt; browser-faithful IO test + contract vectors (UAT Test 2)
+
 ### Phase 10: Chat Message Loading Optimization
 
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
