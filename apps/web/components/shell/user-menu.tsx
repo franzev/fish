@@ -16,7 +16,7 @@ interface UserMenuProps {
 
 /* Consolidates the header's account actions behind one quiet trigger — the
    display name — instead of a name link plus a standalone Log out button.
-   D-09: the bar stays zero-primary; this menu adds no Button variant="primary".
+   D-09: the bar stays zero-primary; this menu adds no primary-styled Button.
    Log out routes through the shared useLogout hook so clearChatStore() (CR-01)
    always runs before the redirect, whether triggered here or from the
    Profile "Sign out" row. Base UI Menu supplies roving focus, Escape/outside

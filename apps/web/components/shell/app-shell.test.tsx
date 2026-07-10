@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -26,19 +26,21 @@ describe("AppShell", () => {
     delete document.documentElement.dataset.timeFormat;
   });
 
-  it("renders the muted display name (D-09) and the logout button", () => {
+  it("renders the muted display name (D-09) as the menu trigger, with Log out reachable via the menu", () => {
     render(
       <AppShell displayName="Alex Rivera" role="client">
         Content
       </AppShell>
     );
 
-    const names = screen.getAllByText("Alex Rivera");
-    expect(names.length).toBeGreaterThan(0);
-    expect(names.every((name) => name.className.includes("text-muted"))).toBe(
-      true
-    );
-    expect(screen.getAllByRole("button", { name: "Log out" }).length).toBeGreaterThan(0);
+    const trigger = screen.getByRole("button", {
+      name: "Account menu for Alex Rivera",
+    });
+    expect(trigger.className).toContain("text-muted");
+    expect(screen.queryByRole("button", { name: "Log out" })).not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument();
   });
 
   it("renders one centered content column with max-w-content and mx-auto (D-10)", () => {
@@ -79,7 +81,7 @@ describe("AppShell", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Community" })
+      screen.getByRole("heading", { name: "Channels" })
     ).toBeInTheDocument();
 
     const channelNav = screen.getByRole("navigation", { name: "Channels" });
@@ -99,7 +101,7 @@ describe("AppShell", () => {
     );
 
     expect(
-      screen.queryByRole("heading", { name: "Community" })
+      screen.queryByRole("heading", { name: "Channels" })
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("navigation", { name: "Channels" })
@@ -130,14 +132,19 @@ describe("AppShell", () => {
     });
   });
 
-  it("D-09/SHEL-01: zero variant=\"primary\" across app-shell.tsx + logout-button.tsx, and variant=\"ghost\" is present", () => {
+  it("D-09/SHEL-01: zero variant=\"primary\" across app-shell.tsx + user-menu.tsx + logout-button.tsx, and variant=\"ghost\" is present", () => {
     const shellSource = readFileSync(resolve(__dirname, "./app-shell.tsx"), "utf-8");
+    const userMenuSource = readFileSync(
+      resolve(__dirname, "./user-menu.tsx"),
+      "utf-8"
+    );
     const logoutButtonSource = readFileSync(
       resolve(__dirname, "../auth/logout-button.tsx"),
       "utf-8"
     );
     const primaryMatches =
       (shellSource.match(/variant="primary"/g) ?? []).length +
+      (userMenuSource.match(/variant="primary"/g) ?? []).length +
       (logoutButtonSource.match(/variant="primary"/g) ?? []).length;
     expect(primaryMatches).toBe(0);
     expect(logoutButtonSource).toContain('variant="ghost"');
@@ -184,24 +191,35 @@ describe("AppShell", () => {
     );
   });
 
-  it("links the client display name to /profile so it doubles as the profile entry point", () => {
+  it("opens a menu with a Profile link to /profile for the client display name trigger", () => {
     render(
       <AppShell displayName="Alex Rivera" role="client">
         Content
       </AppShell>
     );
 
-    const nameLink = screen.getByRole("link", { name: "Alex Rivera" });
-    expect(nameLink).toHaveAttribute("href", "/profile");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Account menu for Alex Rivera" })
+    );
+
+    const profileLink = screen.getByRole("menuitem", { name: "Profile" });
+    expect(profileLink).toHaveAttribute("href", "/profile");
   });
 
-  it("does not link the coach display name, since coaches have no /profile view", () => {
+  it("opens a menu with Log out and no Profile item for the coach display name trigger, since coaches have no /profile view", () => {
     render(
       <AppShell displayName="Coach Dana" role="coach">
         Content
       </AppShell>
     );
 
-    expect(screen.queryByRole("link", { name: "Coach Dana" })).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Account menu for Coach Dana" })
+    );
+
+    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Profile" })
+    ).not.toBeInTheDocument();
   });
 });

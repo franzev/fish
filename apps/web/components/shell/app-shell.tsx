@@ -1,7 +1,7 @@
 "use client";
 
-import { LogoutButton } from "@/components/auth/logout-button";
 import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
+import { UserMenu } from "@/components/shell/user-menu";
 import { generalChannelHref } from "@/lib/channels";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@fish/core/roles";
@@ -101,7 +101,8 @@ function NavLinks({
 
 /* Sketch 001/007: labeled navigation, top bar on wider web and bottom nav on
    mobile. Progress stays out until a coach validates that tracking technique.
-   Logout remains ghost, so the shell adds no primary action. */
+   Account actions (Profile, Log out) live behind the UserMenu trigger, so
+   the shell adds no primary action. */
 export function AppShell({
   displayName,
   role,
@@ -147,7 +148,7 @@ export function AppShell({
             alt="FISH"
             width={40}
             height={40}
-            className="hidden rounded-control border-2 border-foreground md:block"
+            className="hidden rounded-control md:block"
           />
         </Link>
         <nav
@@ -157,19 +158,7 @@ export function AppShell({
           <NavLinks items={navItems} pathname={pathname} placement="top" />
         </nav>
         <div className="hidden flex-1 md:block" aria-hidden="true" />
-        {role === "client" ? (
-          <Link
-            href="/profile"
-            className="min-w-0 flex-1 truncate rounded-control text-ui-sm text-muted underline-offset-2 hover:text-foreground hover:underline md:max-w-48 md:flex-none"
-          >
-            {displayName}
-          </Link>
-        ) : (
-          <span className="min-w-0 flex-1 truncate text-ui-sm text-muted md:max-w-48 md:flex-none">
-            {displayName}
-          </span>
-        )}
-        <LogoutButton className="shrink-0" />
+        <UserMenu displayName={displayName} role={role} />
       </header>
 
       <main
@@ -186,7 +175,7 @@ export function AppShell({
         {immersive && (
           <aside className="hidden w-channel-col shrink-0 flex-col border-r border-border bg-surface px-sm py-page md:flex">
             <h2 className="px-xs pb-sm text-ui-2xs font-sans font-medium uppercase tracking-wide text-muted">
-              Community
+              Channels
             </h2>
             <nav aria-label="Channels" className="flex flex-col gap-3xs">
               <Link
