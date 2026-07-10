@@ -3,8 +3,11 @@ import { authRedirects } from "@/lib/auth/redirects";
 import { getChatPageData } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 import {
+  backfillMessagesAction,
   deleteMessageAction,
   editMessageAction,
+  loadNewestMessagesAction,
+  loadOlderMessagesAction,
   markReadStateAction,
   refreshConversationAction,
   refreshMessagesAction,
@@ -41,6 +44,9 @@ export default async function ChannelPage() {
       markReadStateAction={markReadStateAction}
       refreshMessagesAction={refreshMessagesAction}
       refreshConversationAction={refreshConversationAction}
+      loadOlderMessagesAction={loadOlderMessagesAction}
+      backfillMessagesAction={backfillMessagesAction}
+      loadNewestMessagesAction={loadNewestMessagesAction}
     />
   );
 }

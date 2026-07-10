@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
+import { triggerIntersection } from "@/tests/intersection-observer";
 import { ChatClient } from "./chat-client";
 import { chatStore, resetChatStoreForTests } from "./store/chat-store";
 
@@ -1126,5 +1127,158 @@ describe("ChatClient", () => {
     });
 
     expect(await screen.findByText("Nice work today.")).toBeInTheDocument();
+  });
+
+  it("shows the quiet Load earlier messages button only when hasMoreOlder is true", () => {
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Load earlier messages" })
+    ).toBeInTheDocument();
+  });
+
+  it("hides the Load earlier messages button when hasMoreOlder is false", () => {
+    render(
+      <ChatClient chat={{ ...chat, hasMoreOlder: false }} sendMessageAction={vi.fn()} />
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Load earlier messages" })
+    ).toBeNull();
+  });
+
+  it("auto-loads older history when the sentinel intersects, through the scroll-preserving path", async () => {
+    const loadOlderMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [
+        {
+          id: "message-0",
+          conversationId: chat.conversationId,
+          senderId: "coach-1",
+          senderRole: "coach",
+          body: "An older message from before.",
+          clientRequestId: "seed-0",
+          createdAt: "2026-07-04T00:00:00.000Z",
+          editedAt: null,
+          deletedAt: null,
+          replyToMessageId: null,
+          reactions: [],
+        },
+      ],
+      hasMoreOlder: false,
+    });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const sentinel = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinel, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText("An older message from before.")
+    ).toBeInTheDocument();
+    // No duplicate: the existing seeded message still renders exactly once.
+    expect(screen.getAllByText("How did practice feel today?")).toHaveLength(1);
+  });
+
+  it("drives the same wrapped scroll-preserving callback from the button as the sentinel", async () => {
+    const loadOlderMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [
+        {
+          id: "message-0",
+          conversationId: chat.conversationId,
+          senderId: "coach-1",
+          senderRole: "coach",
+          body: "Loaded via the button.",
+          clientRequestId: "seed-0",
+          createdAt: "2026-07-04T00:00:00.000Z",
+          editedAt: null,
+          deletedAt: null,
+          replyToMessageId: null,
+          reactions: [],
+        },
+      ],
+      hasMoreOlder: false,
+    });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Load earlier messages" }));
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Loaded via the button.")).toBeInTheDocument();
+  });
+
+  it("shows fixed-height skeleton rows while an older page loads, and removes them after", async () => {
+    type LoadOlderResult = {
+      status: "sent";
+      values: unknown;
+      messages: never[];
+      hasMoreOlder: boolean;
+    };
+    let resolveLoad: (value: LoadOlderResult) => void = () => undefined;
+    const loadOlderMessagesAction = vi.fn(
+      () =>
+        new Promise<LoadOlderResult>((resolve) => {
+          resolveLoad = resolve;
+        })
+    );
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Load earlier messages" }));
+
+    expect(await screen.findByTestId("load-older-skeleton")).toBeInTheDocument();
+
+    await act(async () => {
+      resolveLoad({ status: "sent", values: {}, messages: [], hasMoreOlder: false });
+      await Promise.resolve();
+    });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("load-older-skeleton")).toBeNull()
+    );
+  });
+
+  it("shows a calm notice-tone offline state (never an error tone) when the realtime status is disconnected", () => {
+    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+
+    act(() => {
+      chatStore.getState().setRealtimeStatus(chat.conversationId, "disconnected");
+    });
+
+    expect(
+      screen.getByText("You're offline. Messages will send when you're back.")
+    ).toBeInTheDocument();
   });
 });

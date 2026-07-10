@@ -19,6 +19,7 @@ import {
   TypingIndicator,
 } from "@/components/chat";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area/scroll-area";
 import {
   getMessageSnippet,
@@ -34,13 +35,15 @@ import {
   IconX,
   IconMessageReply,
 } from "@tabler/icons-react";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import type { SendMessageActionState } from "./actions";
 import { useChatComposer } from "./hooks/use-chat-composer";
+import type { LoadOlderMessagesActionState } from "./hooks/use-chat-messages";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { useChatPresence } from "./hooks/use-chat-presence";
 import { useChatReadState } from "./hooks/use-chat-read-state";
 import { useChatRealtime } from "./hooks/use-chat-realtime";
+import { useLoadOlderMessages } from "./hooks/use-load-older-messages";
 import { useStickToBottom } from "./hooks/use-stick-to-bottom";
 import { useChatStore } from "./store/chat-store";
 import {
@@ -74,6 +77,9 @@ interface ChatClientProps {
     messages?: ClientChatMessage[];
     readStates?: ClientChatReadState[];
   }>;
+  loadOlderMessagesAction?: (input: unknown) => Promise<LoadOlderMessagesActionState>;
+  backfillMessagesAction?: (input: unknown) => Promise<LoadOlderMessagesActionState>;
+  loadNewestMessagesAction?: (input: unknown) => Promise<LoadOlderMessagesActionState>;
 }
 
 function visibleMessageBody(message: ClientChatMessage): string {
@@ -89,18 +95,32 @@ export function ChatClient({
   markReadStateAction,
   refreshMessagesAction,
   refreshConversationAction,
+  loadOlderMessagesAction,
+  backfillMessagesAction,
+  loadNewestMessagesAction,
 }: ChatClientProps) {
   useChatStore((state) => selectComposerForConversation(state, chat.conversationId));
   useChatStore((state) => selectReadStatesForConversation(state, chat.conversationId));
-  useChatStore((state) =>
+  const realtimeStatus = useChatStore((state) =>
     selectRealtimeStatusForConversation(state, chat.conversationId)
   );
-  const { messages, setMessages, refreshMessages, refreshConversation } =
-    useChatMessages({
-      chat,
-      refreshMessagesAction,
-      refreshConversationAction,
-    });
+  const {
+    messages,
+    setMessages,
+    refreshMessages,
+    refreshConversation,
+    applyGapBackfill,
+    loadOlderMessages,
+    hasMoreOlder,
+    isLoadingOlder,
+  } = useChatMessages({
+    chat,
+    refreshMessagesAction,
+    refreshConversationAction,
+    loadOlderMessagesAction,
+    backfillMessagesAction,
+    loadNewestMessagesAction,
+  });
   const { mergeReadState, participantReadState } = useChatReadState({
     chat,
     messages,
@@ -124,6 +144,7 @@ export function ChatClient({
     mergeReadState,
     refreshMessages,
     refreshConversation,
+    applyGapBackfill,
   });
   const { presenceStatus } = useChatPresence({ chat, timeFormatPref });
   // Full messages array (not filteredMessages): search filtering must never
@@ -132,6 +153,30 @@ export function ChatClient({
     messages,
     currentUserId: chat.currentUserId,
   });
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const { loadOlderAndPreserveScroll } = useLoadOlderMessages({
+    viewportRef,
+    sentinelRef,
+    hasMoreOlder,
+    isLoadingOlder,
+    onLoadOlder: loadOlderMessages,
+  });
+  // "Reconnecting…" is only calm/true once the conversation has genuinely
+  // connected before — the very first mount also passes through
+  // "connecting", and that ordinary initial load must never read as a
+  // reconnect (states.md: reassure, never alarm). Derived during render (the
+  // React-documented "adjusting state when a prop changes" pattern) rather
+  // than an effect, so a setState-in-effect cascade never fires.
+  const [previousRealtimeStatus, setPreviousRealtimeStatus] = useState(realtimeStatus);
+  const [hasConnected, setHasConnected] = useState(realtimeStatus === "connected");
+  if (realtimeStatus !== previousRealtimeStatus) {
+    setPreviousRealtimeStatus(realtimeStatus);
+    if (realtimeStatus === "connected") {
+      setHasConnected(true);
+    }
+  }
+  const isReconnecting = realtimeStatus === "connecting" && hasConnected;
+  const isOffline = realtimeStatus === "disconnected";
   const {
     draft,
     notice,
@@ -227,7 +272,7 @@ export function ChatClient({
         <ScrollArea
           className="flex-1"
           viewportRef={viewportRef}
-          viewportClassName="px-md py-md"
+          viewportClassName="chat-log-viewport px-md py-md"
         >
           <div
             role="log"
@@ -236,6 +281,36 @@ export function ChatClient({
             }
             className="flex min-h-full flex-col"
           >
+        {hasMoreOlder && (
+          <div
+            ref={sentinelRef}
+            aria-hidden="true"
+            data-testid="load-older-sentinel"
+            className="h-3xs w-full"
+          />
+        )}
+        {isLoadingOlder && (
+          <div
+            className="flex flex-col gap-xs pb-md"
+            aria-hidden="true"
+            data-testid="load-older-skeleton"
+          >
+            <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
+            <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
+          </div>
+        )}
+        {hasMoreOlder && (
+          <div className="flex justify-center pb-md">
+            <Button
+              type="button"
+              variant="ghost"
+              loading={isLoadingOlder}
+              onClick={() => void loadOlderAndPreserveScroll()}
+            >
+              Load earlier messages
+            </Button>
+          </div>
+        )}
         {filteredMessages.length === 0 && !participantTyping ? (
           <div className="flex flex-1 items-center justify-center text-center text-copy text-body">
             {search
@@ -518,7 +593,21 @@ export function ChatClient({
             New messages
           </button>
         )}
+        {!showNewMessages && isReconnecting && (
+          <div
+            role="status"
+            className="absolute inset-x-0 bottom-sm mx-auto inline-flex min-h-control w-fit items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-muted shadow-popover"
+          >
+            Reconnecting…
+          </div>
+        )}
       </div>
+
+      {isOffline && (
+        <Alert tone="notice" className="mx-md mb-xs">
+          You&apos;re offline. Messages will send when you&apos;re back.
+        </Alert>
+      )}
 
       {notice && (
         <Alert tone="notice" className="mx-md mb-xs">
@@ -569,19 +658,21 @@ export function ChatClient({
         </div>
       )}
 
-      <Composer
-        channelName={chat.channelName}
-        draft={draft}
-        canSend={canSend}
-        onDraftChange={handleDraftChange}
-        onSend={() => {
-          scrollToBottom();
-          void handleSend();
-        }}
-        onKeyDown={handleComposerKeyDown}
-        onBlur={stopLocalTyping}
-        onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
-      />
+      <div className={cn(isOffline && "opacity-60")}>
+        <Composer
+          channelName={chat.channelName}
+          draft={draft}
+          canSend={canSend}
+          onDraftChange={handleDraftChange}
+          onSend={() => {
+            scrollToBottom();
+            void handleSend();
+          }}
+          onKeyDown={handleComposerKeyDown}
+          onBlur={stopLocalTyping}
+          onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
+        />
+      </div>
     </section>
   );
 }

@@ -159,6 +159,7 @@
   --duration-typing-delay-long: 300ms;
   --duration-reaction: 180ms;
   --duration-progress: 500ms;
+  --duration-skeleton: 1400ms;
 
   /* ---- Elevation (D-06): a token, not a dark: branch ----
      Soft shadow in light; dark relies on the surface lightness-step
@@ -340,4 +341,31 @@
 
 @utility transition-progress {
   transition-property: width;
+}
+
+/* Chat: "load earlier" skeleton rows. Opacity-only pulse — never a shimmer
+   sweep (states.md calm rule) — while a bounded older page loads. The
+   existing global reduced-motion clamp above already sets
+   animation-iteration-count:1, which stops the infinite loop from
+   flickering; no per-animation guard needed here. */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@utility animate-skeleton-pulse {
+  animation: skeleton-pulse var(--duration-skeleton) ease-in-out infinite;
+}
+
+/* Chat log viewport: the manual scrollHeight-diff restore in
+   use-load-older-messages.ts owns scroll position after a prepend. Native
+   scroll anchoring (Chromium/Firefox) would otherwise fight that restore by
+   also trying to compensate for the content growing above the viewport. */
+.chat-log-viewport {
+  overflow-anchor: none;
 }

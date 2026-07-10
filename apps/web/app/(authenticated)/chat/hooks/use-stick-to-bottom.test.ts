@@ -1,5 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
-import { createElement } from "react";
+import { createElement, useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { useStickToBottom } from "./use-stick-to-bottom";
 import type { LocalMessage } from "./use-chat-messages";
@@ -43,7 +43,12 @@ interface HarnessProps {
 
 function Harness({ messages, currentUserId }: HarnessProps) {
   const state = useStickToBottom({ messages, currentUserId });
-  stateHolder.current = state;
+  // Reporting into the module-level holder happens in an effect (outside
+  // render) so the test can read the latest hook return value after each
+  // render/rerender without the harness needing its own exposed state.
+  useEffect(() => {
+    stateHolder.current = state;
+  });
   return createElement("div", { ref: state.viewportRef });
 }
 
