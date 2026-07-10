@@ -36,61 +36,45 @@ files_reviewed_list:
   - "packages/core/src/chat-state/types.ts"
 findings:
   critical: 0
-  warning: 2
+  blocker: 0
+  warning: 1
   info: 0
-  total: 2
-reviewed_at: "2026-07-10T22:21:05Z"
-diff_base: e1ba19d1940d839b4c714da8959e9d7e330c532c
+  total: 1
+reviewed_at: "2026-07-10T23:17:17Z"
+diff_base: 50ff7a4021c6ab0c1985a4d5fa3d9c0d8596e357
 ---
 
 # Phase 10: Code Review Report
 
 ## Summary
 
-The message keyset queries, reducer deduplication, per-conversation older-page lock, one-attempt failure gate, scroll restoration, calm loading UI, and accessibility semantics are internally consistent and well covered. The phase is not clean, however: reconnect recovery assumes that the last local row is an authoritative server cursor, and the bounded SSR message query still downloads every reaction in the conversation. Both defects become user-visible as conversations grow or reconnect at an empty/optimistic boundary.
+Phase 10's bounded message reads, composite keyset pagination, retained-window reaction enrichment, reducer deduplication, scroll-anchor restoration, skeleton geometry, and authoritative reconnect cursor selection are internally consistent and covered by focused regressions. Plan 10-06 closes both warnings from the preceding review: empty/client-only transcripts now hydrate a bounded newest window, optimistic tails no longer become server cursors, and initial reaction reads are restricted to the retained 40-message window.
 
-No critical security or authorization issue was found in the reviewed changes. The new read actions validate input and continue to rely on authenticated Supabase reads protected by RLS.
+One reconnect-coalescing race remains when a mounted client changes conversations while an earlier conversation's backfill is still pending. No critical security or authorization issue was found. Pagination/backfill reads remain input-validated, bounded, caller-session Supabase selects protected by RLS.
 
 ## Warnings
 
-### WR-01 — Reconnect backfill can skip missed messages when no authoritative server cursor exists
+### WR-01 — A stale conversation's completion can clear the active conversation's reconnect lock
 
-**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts:301-315`; `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts:27-30`; `apps/web/app/(authenticated)/chat/actions.ts:67-73`; `apps/web/app/(authenticated)/chat/chat-client.test.tsx:2346-2410`.
+**Evidence:** `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:105-106`, `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:135-138`, `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts:154-168`; existing switch coverage at `apps/web/app/(authenticated)/chat/chat-client.test.tsx:1813-1861` verifies stale older-page isolation but does not exercise overlapping reconnect backfills.
 
-`applyGapBackfill` takes the last element of the complete local message array and uses its `createdAt`/`id` as the server keyset marker. There are two unsafe states:
+`backfillInFlightRef` is shared by the mounted hook. On a conversation change, the effect assigns it `null`, allowing the new conversation to start its own backfill. The old promise is not cancelled or generation-guarded, however, and its unconditional `.finally(() => { backfillInFlightRef.current = null; })` still runs. If conversation B has installed a new in-flight promise before conversation A settles, A's `finally` erases B's lock. A second B channel resubscribe can then launch a duplicate backfill while B's first recovery read is still running.
 
-- If the transcript was empty before disconnect and its first messages arrived during the gap, line 307 returns without calling either backfill or `loadNewestMessagesAction`, so those messages remain absent until another independent refresh or page reload.
-- The array also contains local `pending`, `sending`, and `failed` rows. If one is last, its client-generated timestamp/id is not an authoritative row ordering key. A syntactically valid UUID can make the query start after a local timestamp newer than the missed server messages; a non-UUID fallback is rejected by `backfillMessagesSchema`. In either case the bounded catch-up can silently return no messages.
+**Impact:** During a quick conversation switch combined with reconnect churn, the intended one-backfill-across-three-channels guarantee can be broken. This adds duplicate bounded reads and permits two reset/merge chains for the same new conversation to race. The reducer prevents duplicate message rows, but it does not prevent redundant network work or out-of-order hydration metadata commits.
 
-The pending-send reconnect test does not cover this behavior: it mocks `backfillMessagesAction` to return `needsReset: true` regardless of the marker and never asserts which row supplied `afterCreatedAt`/`afterMessageId`.
-
-**Impact:** A user can reconnect and never see messages sent while they were offline, especially in a newly empty conversation or while their own send is unresolved.
-
-**Recommendation:** Search backward for the newest authoritative `localStatus === "sent"` server row and use only that row as the keyset marker. If no authoritative marker exists, call the already-bounded `loadNewestMessagesAction` and hydrate that window instead of returning. Add hook/component regressions for (1) empty transcript → missed message → reconnect and (2) authoritative row followed by an optimistic/failed local row → reconnect; assert the exact action input as well as the merged result.
-
-### WR-02 — The bounded SSR window still fetches the conversation's complete reaction history
-
-**Evidence:** `apps/web/lib/services/supabase/core.ts:713-743`; `apps/web/lib/services/supabase/core.ts:776-787`; `apps/web/lib/services/supabase/core.ts:87-111`; `apps/web/lib/services/supabase/core.test.ts:268-338`.
-
-The new initial message query correctly limits the result to 41 rows and keeps 40. Immediately afterward, however, `fetchConversationReactions` filters only by `conversation_id` and paginates until every reaction row in the conversation has been downloaded. `toClientChatMessage` then uses only reactions belonging to the 40 retained messages, so reactions for every older unloaded message are pure overhead. The later page actions already show the bounded shape at `actions.ts:316-363`: query reactions only for the returned message ids in small batches.
-
-The long-conversation test proves only that `result.data.messages` has length 40. Its chain stub returns a prebuilt empty reaction array and does not assert that the reaction query is restricted to the retained message ids, so it cannot detect this unbounded side query.
-
-**Impact:** Initial SSR latency, memory, and transferred rows still grow with total conversation history (and can require multiple 1,000-row round trips), partially defeating the phase's bounded-loading objective.
-
-**Recommendation:** Change `fetchConversationReactions` to accept the 40 retained message ids and filter with batched `.in("message_id", ids)` queries, or consolidate it with the bounded `addReactionAggregates` pattern used by pagination actions. Add a core service test that records query-builder calls and proves reactions are restricted to the retained window, including a history with reactions on an excluded 41st message.
+**Recommendation:** Store the created promise in a local variable and clear the ref only when it still points to that same promise (or use a conversation generation token). Add a regression that starts a deferred backfill for A, switches to B, starts a deferred backfill for B, resolves A, then emits another B channel resubscribe and proves B still has exactly one in-flight recovery.
 
 ## Scope and Verification
 
-- Reviewed all 30 explicitly scoped files at standard depth against `AGENTS.md`, `docs/ui-ux-agent-guidelines.md`, the portable chat-state protocol, and Phase 10's bounded-pagination/UI contracts.
-- Traced SSR window loading, composite cursor validation/querying, older-page request/error transitions, reconnect backfill/reset behavior, reducer deduplication, realtime coalescing, prepend scroll restoration, IntersectionObserver retry gating, skeleton geometry, reduced motion, focus behavior, and accessible busy/status semantics.
-- Focused Vitest run passed: 6 files, 139 tests (`actions`, `chat-client`, `use-stick-to-bottom`, `chat-store`, Supabase core, and chat-state fixtures).
-- `pnpm typecheck` passed across the configured workspace packages.
+- Reviewed all 30 explicitly scoped files at standard depth against `AGENTS.md`, `docs/ui-ux-agent-guidelines.md`, CLOAD-01 through CLOAD-06, the Phase 10 protocol/plan artifacts, and the 10-06 gap-closure contract.
+- Traced SSR N+1 windowing, reaction batching, cursor validation and PostgREST filters, older-page lifecycle/error gating, reconnect recovery/reset, store hydration, deduplication, read markers, scroll restoration, skeleton accessibility, and route action wiring.
+- Focused Vitest run passed: 6 files, 141 tests (`actions`, `chat-client`, `use-stick-to-bottom`, `chat-store`, Supabase core, and chat-state fixtures).
+- `pnpm typecheck` passed across configured workspace packages.
 - `pnpm lint` passed.
-- No source code was modified. The pre-existing uncommitted `.planning/config.json` change was preserved.
+- No source code was modified. The unrelated uncommitted `apps/web/components/chat/index.ts` export edit and untracked Phase 9 security report were preserved and not attributed to Phase 10.
 
 ---
 
-_Reviewed: 2026-07-10T22:21:05Z_
-_Reviewer: gsd-code-reviewer_
+_Reviewed: 2026-07-10T23:17:17Z_  
+_Reviewer: gsd-code-reviewer_  
 _Completion: REVIEW_COMPLETE_
