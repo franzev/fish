@@ -2,18 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-current_phase: 09
-current_phase_name: cross-platform-chat-state
 status: executing
-stopped_at: Completed 09-05-PLAN.md
-last_updated: "2026-07-10T03:42:41.869Z"
+stopped_at: Completed 09-07-PLAN.md
+last_updated: "2026-07-10T04:26:15.805Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 15
-  percent: 80
+  completed_phases: 3
+  total_plans: 19
+  completed_plans: 16
+  percent: 60
 ---
 
 # Project State: FISH
@@ -31,11 +29,11 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 6 of 6
+Plan: 2 of 11
 Status: Ready to execute
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
-Progress: [██████████] 100%
+Progress: [████████░░] 84%
 
 ## Milestone v1.1 Phases
 
@@ -90,6 +88,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: Overall live realtime capture is inconclusive because raw WebSocket frames, callback status transitions, and sender HTTP response status were unavailable. — The protocol requires an inconclusive result when transport/request capture cannot be completed.
 - [Phase 09]: Functional message delivery was not reproduced as failing; both independent-session messages rendered exactly once without receiver refresh. — Database rows and receiver DOM counts confirmed both sends, including after fresh receiver restoration.
 - [Phase 09]: Missing community avatar and timestamp are separate presentation behavior, not a delivery root cause. — Same-sender grouping suppresses avatar and MessageMeta without a time-gap cutoff; layout changes remain separate scoped work.
+- [Phase 09]: resetChatStoreForTests() now delegates to clearChatStore() so the test reset path and the real sign-out clear path are provably the same code. — Prevents drift between what tests reset and what production logout actually clears (closes CR-01).
+- [Phase 09]: clearChatStore() is called after signOut() and before router.push('/login') inside LogoutButton.handleLogout. — Ensures no stale conversation slice is readable by the next signed-in account once the soft navigation to /login completes.
 
 ### Todos / open questions
 
@@ -113,6 +113,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 10 P03 | 17min | 3 tasks | 6 files |
 | Phase 10 P04 | 12min | 3 tasks | 9 files |
 | Phase 09 P05 | 23min | 2 tasks | 1 files |
+| Phase 09 P07 | 7min | 2 tasks | 4 files |
 
 ### Quick Tasks Completed
 
@@ -151,10 +152,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T02:27:28.687Z
+**Last session:** 2026-07-10T04:26:15.801Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-05-PLAN.md
+- **Stopped at:** Completed 09-07-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
