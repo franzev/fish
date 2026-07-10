@@ -155,7 +155,7 @@ export function ChatClient({
     currentUserId: chat.currentUserId,
   });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const { loadOlderAndPreserveScroll } = useLoadOlderMessages({
+  const { hasOlderLoadError, loadOlderAndPreserveScroll } = useLoadOlderMessages({
     viewportRef,
     sentinelRef,
     hasMoreOlder,
@@ -300,7 +300,24 @@ export function ChatClient({
             <div className="h-2xl w-full max-w-message rounded-control bg-surface-2 animate-skeleton-pulse" />
           </div>
         )}
-        {hasMoreOlder && (
+        {hasOlderLoadError && !isLoadingOlder && (
+          <div
+            className="flex items-center gap-xs pb-md"
+            data-testid="load-older-error"
+          >
+            <Alert tone="notice" className="min-w-0 flex-1">
+              Couldn&apos;t load earlier messages. Try again.
+            </Alert>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void loadOlderAndPreserveScroll()}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
+        {hasMoreOlder && !hasOlderLoadError && (
           <div className="flex justify-center pb-md">
             <Button
               type="button"
