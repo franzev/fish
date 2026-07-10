@@ -84,7 +84,16 @@ blocked: 0
   reason: "User reported: (verified by Claude via instrumented Playwright) two identical automatic older-page requests fired (same keyset cursor, ~0.4-1.0s apart) in 5 of 7 runs before the error state settled; expected exactly one automatic attempt"
   severity: minor
   test: 2
-  root_cause: ""     # Filled by diagnosis
-  artifacts: []      # Filled by diagnosis
-  missing: []        # Filled by diagnosis
-  debug_session: ""  # Filled by diagnosis
+  root_cause: "The one-automatic-attempt gate is split across two state systems that commit in separate renders: on failure, the store's isLoadingOlder=false (markOlderPageFailed, flushed via useSyncExternalStore) commits before the awaiting caller's local setHasOlderLoadError(true), so for one commit the observer guard (hasMoreOlder && !isLoadingOlder && !hasOlderLoadError) passes, re-attaching the IntersectionObserver over the still-intersecting sentinel, whose initial observation fires the second identical-cursor request. Bounded at two because the error flag is set before attempt 2 settles."
+  artifacts:
+    - path: "apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts"
+      issue: "error flag set one commit after the store's failure update (lines 64/91); observer guard re-attaches in the gap commit (line 96)"
+    - path: "apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts"
+      issue: "markOlderPageFailed commits isLoadingOlder=false in a separate render from the caller's error flag (line 271)"
+    - path: "apps/web/tests/intersection-observer.ts"
+      issue: "mock never auto-fires on observe(), so existing bounded-retry tests cannot see the re-attachment window (coverage hole)"
+  missing:
+    - "Move the failure flag into store pagination state (hasLoadError set in the same reducer update that clears isLoadingOlder); read it via selector in useLoadOlderMessages"
+    - "Key the lines 29-35 error reset to conversationId instead of callback identity (defense-in-depth)"
+    - "Extend the IO test mock to auto-deliver an initial observation for an intersecting sentinel and assert exactly one automatic attempt after failure"
+  debug_session: ".planning/debug/older-load-double-retry.md"
