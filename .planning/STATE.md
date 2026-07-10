@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-09-PLAN.md
-last_updated: "2026-07-10T04:51:25.245Z"
+stopped_at: Completed 09-10-PLAN.md
+last_updated: "2026-07-10T05:15:00.750Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
   percent: 60
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 4 of 11
+Plan: 10 of 11
 Status: Ready to execute
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Milestone v1.1 Phases
 
@@ -93,6 +93,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09]: Removed the /chat route file (kept shared chat internals under chat/ as a module folder); narrowed app-shell.tsx immersive check to /channels only. — channels/[id]/page.tsx already imports from ../../chat/*, so relocating internals would be unnecessary churn; deleting only the dead route resolves the VERIFICATION Gap 4 route-scope drift.
 - [Phase 09]: CSTATE-02/CSTATE-06 (REQUIREMENTS.md), D-09 (09-CONTEXT.md), and the Phase 9 goal (ROADMAP.md) now carry dated 2026-07-10 supersede notes pointing at the community room /channels/general. — Notes are additive blockquotes; original requirement/decision/goal wording is preserved so history stays auditable, and re-verification measures the shipped surface instead of the removed 1-on-1 route.
 - [Phase 09]: Plan 09-09: markMessageFailed restores composer.draft from the failed body only when the draft is empty; a non-empty (newer) draft is never overwritten, and use-chat-composer.ts no longer clears the draft after a failure (closes WR-01).
+- [Phase 09]: Plan 09-10: message-subscription cleanup resets realtime status to idle and resets seenFirstSubscribeRef/backfillInFlightRef per conversationId; read-state payloads dispatch once via mergeReadState only. — Closes WR-05 (stale connected status mislabels a revisit as reconnecting) and WR-06 (duplicate mergeReadState dispatch) from the Phase 09 code review.
 
 ### Todos / open questions
 
@@ -119,6 +120,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P07 | 7min | 2 tasks | 4 files |
 | Phase 09 P08 | 8min | 2 tasks | 7 files |
 | Phase 09 P09 | 9min | 2 tasks | 7 files |
+| Phase 09 P10 | 18min | 2 tasks | 2 files |
 
 ### Quick Tasks Completed
 
@@ -157,10 +159,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T04:51:25.241Z
+**Last session:** 2026-07-10T05:15:00.745Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-09-PLAN.md
+- **Stopped at:** Completed 09-10-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---

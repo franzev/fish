@@ -102,7 +102,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Wave 6** *(blocked on Wave 5)*
 
-- [ ] 09-10-PLAN.md — reset realtime lifecycle/reconnect refs per conversation and dispatch each read payload once (WR-05, WR-06)
+- [x] 09-10-PLAN.md — reset realtime lifecycle/reconnect refs per conversation and dispatch each read payload once (WR-05, WR-06)
 
 **Wave 7** *(blocked on Wave 6)*
 
@@ -138,7 +138,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 9/11 | In Progress|  |
+| 9. Cross-platform Chat State | v1.2 | 10/11 | In Progress|  |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
