@@ -162,6 +162,7 @@ describe("chat-state fixture vectors", () => {
       "monotonicSentIgnoresLateFailure",
       "snippetLongAscii",
       "snippetEmojiBoundary",
+      "olderPageRetryClearsError",
     ]);
 
     for (const fixture of cases) {

@@ -119,7 +119,7 @@ describe("chat store authority boundary", () => {
 
     expect(pagination).toBeDefined();
     expect(Object.keys(pagination ?? {}).sort()).toEqual(
-      ["hasMoreOlder", "isLoadingOlder", "oldestLoadedCursor"].sort()
+      ["hasLoadError", "hasMoreOlder", "isLoadingOlder", "oldestLoadedCursor"].sort()
     );
     expect(selectHasMoreOlderForConversation(state, conversationId)).toBe(false);
     expect(selectIsLoadingOlderForConversation(state, conversationId)).toBe(false);
@@ -401,6 +401,18 @@ describe("chat store actions", () => {
     expect(selectHasMoreOlderForConversation(store.getState(), conversationId)).toBe(
       true
     );
+    // hasLoadError commits in the SAME update as isLoadingOlder=false (no
+    // selectHasLoadErrorForConversation yet — Task 2 adds it — so this reads
+    // the raw pagination slice instead of importing a not-yet-existing symbol).
+    expect(
+      selectConversationState(store.getState(), conversationId)?.pagination.hasLoadError
+    ).toBe(true);
+
+    // A fresh request atomically clears the error so retry starts clean.
+    store.getState().requestOlderMessages(conversationId);
+    expect(
+      selectConversationState(store.getState(), conversationId)?.pagination.hasLoadError
+    ).toBe(false);
   });
 });
 

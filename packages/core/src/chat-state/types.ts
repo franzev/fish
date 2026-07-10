@@ -60,6 +60,11 @@ export interface ChatPaginationState {
   oldestLoadedCursor: ChatMessageCursor | null;
   hasMoreOlder: boolean;
   isLoadingOlder: boolean;
+  /** Set atomically with isLoadingOlder=false on olderPageLoadFailed so the
+   *  observer guard in use-load-older-messages.ts never sees a commit where
+   *  loading is false but the failure hasn't landed yet (the one-automatic-
+   *  attempt gate; see .planning/debug/older-load-double-retry.md). */
+  hasLoadError: boolean;
 }
 
 export interface ChatConversationState {

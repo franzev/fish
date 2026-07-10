@@ -30,6 +30,7 @@ const defaultPagination: ChatPaginationState = {
   oldestLoadedCursor: null,
   hasMoreOlder: false,
   isLoadingOlder: false,
+  hasLoadError: false,
 };
 
 export function createEmptyChatState(): ChatState {
@@ -152,6 +153,7 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
           oldestLoadedCursor: event.oldestCursor,
           hasMoreOlder: event.hasMoreOlder,
           isLoadingOlder: false,
+          hasLoadError: false,
         },
       });
     }
@@ -164,7 +166,13 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
 
         return {
           ...conversation,
-          pagination: { ...conversation.pagination, isLoadingOlder: true },
+          // A new request atomically clears any prior failure so a retry
+          // starts from a clean pagination-feedback state.
+          pagination: {
+            ...conversation.pagination,
+            isLoadingOlder: true,
+            hasLoadError: false,
+          },
         };
       });
 
@@ -183,6 +191,7 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
             oldestLoadedCursor: event.oldestCursor,
             hasMoreOlder: event.hasMoreOlder,
             isLoadingOlder: false,
+            hasLoadError: false,
           },
         };
       });
@@ -195,9 +204,18 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
 
         // hasMoreOlder/oldestLoadedCursor are left untouched so a retry
         // (dispatching olderMessagesRequested again) is still possible.
+        // hasLoadError commits in this SAME update, atomically with
+        // isLoadingOlder=false, so there is no intermediate render where
+        // loading is false but the failure hasn't landed yet — that gap
+        // was what let the IntersectionObserver re-attach and fire a
+        // second automatic request (older-load-double-retry.md).
         return {
           ...conversation,
-          pagination: { ...conversation.pagination, isLoadingOlder: false },
+          pagination: {
+            ...conversation.pagination,
+            isLoadingOlder: false,
+            hasLoadError: true,
+          },
         };
       });
   }

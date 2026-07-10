@@ -1,7 +1,9 @@
 [
   {
     "name": "hydrateConversation",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "hydrateConversation",
@@ -93,11 +95,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -105,7 +110,9 @@
   },
   {
     "name": "sendOptimisticMessage",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "sendOptimisticMessage",
@@ -166,11 +173,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -204,11 +214,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -258,11 +271,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -296,11 +312,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -340,11 +359,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -378,11 +400,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -422,11 +447,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -434,7 +462,9 @@
   },
   {
     "name": "mergeRemoteMessage",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "mergeRemoteMessage",
@@ -479,11 +509,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -517,11 +550,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -587,11 +623,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -618,11 +657,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -659,11 +701,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -671,7 +716,9 @@
   },
   {
     "name": "unreadCount",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "hydrateConversation",
@@ -752,7 +799,9 @@
   },
   {
     "name": "deletedMessageSnippet",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "mergeRemoteMessage",
@@ -781,7 +830,9 @@
   },
   {
     "name": "replyPreview",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "mergeRemoteMessage",
@@ -817,7 +868,9 @@
   },
   {
     "name": "hydrateWindow",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "hydrateWindow",
@@ -852,7 +905,10 @@
         ],
         "readStates": [],
         "hasMoreOlder": true,
-        "oldestCursor": { "createdAt": "2026-07-09T10:00:00.000Z", "id": "message-20" }
+        "oldestCursor": {
+          "createdAt": "2026-07-09T10:00:00.000Z",
+          "id": "message-20"
+        }
       }
     ],
     "expectedState": {
@@ -895,11 +951,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T10:00:00.000Z", "id": "message-20" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T10:00:00.000Z",
+              "id": "message-20"
+            },
             "hasMoreOlder": true,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -933,11 +995,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T11:01:00.000Z", "id": "message-31" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T11:01:00.000Z",
+              "id": "message-31"
+            },
             "hasMoreOlder": true,
-            "isLoadingOlder": true
+            "isLoadingOlder": true,
+            "hasLoadError": false
           }
         }
       }
@@ -962,7 +1030,10 @@
           }
         ],
         "hasMoreOlder": false,
-        "oldestCursor": { "createdAt": "2026-07-09T11:00:00.000Z", "id": "message-30" }
+        "oldestCursor": {
+          "createdAt": "2026-07-09T11:00:00.000Z",
+          "id": "message-30"
+        }
       }
     ],
     "expectedState": {
@@ -1005,11 +1076,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T11:00:00.000Z", "id": "message-30" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T11:00:00.000Z",
+              "id": "message-30"
+            },
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1071,11 +1148,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T12:02:00.000Z", "id": "message-45" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T12:02:00.000Z",
+              "id": "message-45"
+            },
             "hasMoreOlder": true,
-            "isLoadingOlder": true
+            "isLoadingOlder": true,
+            "hasLoadError": false
           }
         }
       }
@@ -1126,7 +1209,10 @@
           }
         ],
         "hasMoreOlder": false,
-        "oldestCursor": { "createdAt": "2026-07-09T12:01:00.000Z", "id": "message-44" }
+        "oldestCursor": {
+          "createdAt": "2026-07-09T12:01:00.000Z",
+          "id": "message-44"
+        }
       }
     ],
     "expectedState": {
@@ -1197,11 +1283,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T12:01:00.000Z", "id": "message-44" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T12:01:00.000Z",
+              "id": "message-44"
+            },
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1235,11 +1327,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T13:00:00.000Z", "id": "message-50" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T13:00:00.000Z",
+              "id": "message-50"
+            },
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1348,11 +1446,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T13:00:00.000Z", "id": "message-50" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T13:00:00.000Z",
+              "id": "message-50"
+            },
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1386,11 +1490,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T14:00:00.000Z", "id": "message-60" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "id": "message-60"
+            },
             "hasMoreOlder": true,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1431,11 +1541,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-09T14:00:00.000Z", "id": "message-60" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "id": "message-60"
+            },
             "hasMoreOlder": true,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": true
           }
         }
       }
@@ -1443,7 +1559,9 @@
   },
   {
     "name": "deliveredMarkerOutsideWindow",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "hydrateConversation",
@@ -1498,7 +1616,9 @@
   },
   {
     "name": "readMarkerOutsideWindow",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "hydrateConversation",
@@ -1598,11 +1718,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1648,11 +1771,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1686,11 +1812,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1716,7 +1845,10 @@
         ],
         "readStates": [],
         "hasMoreOlder": true,
-        "oldestCursor": { "createdAt": "2026-07-10T09:09:00.000Z", "id": "message-102" }
+        "oldestCursor": {
+          "createdAt": "2026-07-10T09:09:00.000Z",
+          "id": "message-102"
+        }
       },
       {
         "type": "markMessageFailed",
@@ -1766,11 +1898,17 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
-            "oldestLoadedCursor": { "createdAt": "2026-07-10T09:09:00.000Z", "id": "message-102" },
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-10T09:09:00.000Z",
+              "id": "message-102"
+            },
             "hasMoreOlder": true,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1778,7 +1916,9 @@
   },
   {
     "name": "monotonicSentIgnoresLateFailure",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "sendOptimisticMessage",
@@ -1846,11 +1986,14 @@
             "replyTargetId": null,
             "editTargetId": null
           },
-          "realtime": { "status": "idle" },
+          "realtime": {
+            "status": "idle"
+          },
           "pagination": {
             "oldestLoadedCursor": null,
             "hasMoreOlder": false,
-            "isLoadingOlder": false
+            "isLoadingOlder": false,
+            "hasLoadError": false
           }
         }
       }
@@ -1858,7 +2001,9 @@
   },
   {
     "name": "snippetLongAscii",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "mergeRemoteMessage",
@@ -1887,7 +2032,9 @@
   },
   {
     "name": "snippetEmojiBoundary",
-    "initialState": { "conversations": {} },
+    "initialState": {
+      "conversations": {}
+    },
     "events": [
       {
         "type": "mergeRemoteMessage",
@@ -1911,6 +2058,105 @@
         "conversationId": "conversation-13",
         "messageId": "message-130",
         "expected": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy😀…"
+      }
+    }
+  },
+  {
+    "name": "olderPageRetryClearsError",
+    "initialState": {
+      "conversations": {
+        "conversation-6": {
+          "conversationId": "conversation-6",
+          "messages": [
+            {
+              "id": "message-60",
+              "conversationId": "conversation-6",
+              "senderId": "client-6",
+              "senderRole": "client",
+              "body": "Currently loaded message.",
+              "clientRequestId": "request-60",
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": {
+            "status": "idle"
+          },
+          "pagination": {
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "id": "message-60"
+            },
+            "hasMoreOlder": true,
+            "isLoadingOlder": false,
+            "hasLoadError": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "olderMessagesRequested",
+        "conversationId": "conversation-6"
+      },
+      {
+        "type": "olderPageLoadFailed",
+        "conversationId": "conversation-6"
+      },
+      {
+        "type": "olderMessagesRequested",
+        "conversationId": "conversation-6"
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-6": {
+          "conversationId": "conversation-6",
+          "messages": [
+            {
+              "id": "message-60",
+              "conversationId": "conversation-6",
+              "senderId": "client-6",
+              "senderRole": "client",
+              "body": "Currently loaded message.",
+              "clientRequestId": "request-60",
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": {
+            "status": "idle"
+          },
+          "pagination": {
+            "oldestLoadedCursor": {
+              "createdAt": "2026-07-09T14:00:00.000Z",
+              "id": "message-60"
+            },
+            "hasMoreOlder": true,
+            "isLoadingOlder": true,
+            "hasLoadError": false
+          }
+        }
       }
     }
   }
