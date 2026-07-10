@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
-import { triggerIntersection } from "@/tests/intersection-observer";
+import { setSentinelIntersecting, triggerIntersection } from "@/tests/intersection-observer";
 import { ChatClient } from "./chat-client";
 import { chatStore, resetChatStoreForTests } from "./store/chat-store";
 import {
@@ -1446,6 +1446,47 @@ describe("ChatClient", () => {
       triggerIntersection(sentinel, true);
       await Promise.resolve();
     });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("makes exactly one automatic load earlier attempt after a failure (browser-faithful observer)", async () => {
+    // Exercises the gap-commit re-attachment window this suite could not
+    // previously see: triggerIntersection() only fires when a test asks it
+    // to, but a real browser delivers an observation the instant an OBSERVED
+    // element becomes visible (or an already-visible element starts being
+    // observed) — including for an observer the failure-guard re-attaches
+    // moments after the store's isLoadingOlder flips back to false. The
+    // pre-fix code (isLoadingOlder and the failure flag committing in
+    // separate renders) re-attached in that gap and this mock would have
+    // shown 2 calls; the fix (both fields in one reducer update) shows 1.
+    // See .planning/debug/older-load-double-retry.md.
+    const loadOlderMessagesAction = vi.fn().mockResolvedValue({
+      status: "notice",
+      values: {},
+      notice: "Earlier messages did not load.",
+    });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    // The sentinel does not exist before render, so the observe()-time
+    // auto-fire alone cannot start attempt 1 — the mount effect already
+    // called observe() on it. Marking it intersecting AFTER render uses the
+    // already-observed delivery path instead, exactly like a real browser
+    // firing the callback the instant an observed element becomes visible.
+    const sentinel = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      setSentinelIntersecting(sentinel, true);
+      await Promise.resolve();
+    });
+
+    await screen.findByTestId("load-older-error");
 
     expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
   });
