@@ -1503,6 +1503,181 @@ describe("ChatClient", () => {
     );
   });
 
+  it("does not let an in-flight load earlier request from conversation A suppress B's first load, and drops A's failure after the switch (WR-01)", async () => {
+    type DeferredLoadOlderResult =
+      | {
+          status: "sent";
+          values: unknown;
+          messages: ClientChatData["messages"];
+          hasMoreOlder: boolean;
+        }
+      | { status: "notice"; values: unknown; notice: string };
+
+    const resolvers: Array<(value: DeferredLoadOlderResult) => void> = [];
+    const loadOlderMessagesAction = vi.fn(
+      () =>
+        new Promise<DeferredLoadOlderResult>((resolve) => {
+          resolvers.push(resolve);
+        })
+    );
+
+    const { rerender } = render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const sentinelA = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinelA, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
+    expect(loadOlderMessagesAction).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ conversationId: chat.conversationId })
+    );
+
+    // Switch the SAME mounted client to conversation B while A's request is
+    // still unsettled.
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          hasMoreOlder: true,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const sentinelB = await screen.findByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinelB, true);
+      await Promise.resolve();
+    });
+
+    // B's first sentinel load was NOT suppressed by A's in-flight lock.
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(2);
+    expect(loadOlderMessagesAction).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ conversationId: nextConversationId })
+    );
+
+    // Settle A (the first call) as a failure AFTER the switch to B.
+    await act(async () => {
+      resolvers[0]?.({
+        status: "notice",
+        values: {},
+        notice: "Earlier messages did not load.",
+      });
+      await Promise.resolve();
+    });
+
+    // A's failure did not write B's error state, and B's messages are intact.
+    expect(screen.queryByTestId("load-older-error")).toBeNull();
+    expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
+  });
+
+  it("does not merge a deferred conversation-A page into B's transcript after the switch (WR-01)", async () => {
+    type DeferredLoadOlderResult =
+      | {
+          status: "sent";
+          values: unknown;
+          messages: ClientChatData["messages"];
+          hasMoreOlder: boolean;
+        }
+      | { status: "notice"; values: unknown; notice: string };
+
+    const resolvers: Array<(value: DeferredLoadOlderResult) => void> = [];
+    const loadOlderMessagesAction = vi.fn(
+      () =>
+        new Promise<DeferredLoadOlderResult>((resolve) => {
+          resolvers.push(resolve);
+        })
+    );
+
+    const { rerender } = render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const sentinelA = screen.getByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinelA, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
+
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          hasMoreOlder: true,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    const sentinelB = await screen.findByTestId("load-older-sentinel");
+    await act(async () => {
+      triggerIntersection(sentinelB, true);
+      await Promise.resolve();
+    });
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(2);
+
+    // Settle A (the first call) as a SUCCESS, after the switch to B, with a
+    // page body that only A should ever show.
+    await act(async () => {
+      resolvers[0]?.({
+        status: "sent",
+        values: {},
+        messages: [
+          {
+            id: "message-a-only",
+            conversationId: chat.conversationId,
+            senderId: "coach-1",
+            senderRole: "coach",
+            body: "An A-only older message.",
+            clientRequestId: "seed-a-only",
+            createdAt: "2026-07-04T00:00:00.000Z",
+            editedAt: null,
+            deletedAt: null,
+            replyToMessageId: null,
+            reactions: [],
+          },
+        ],
+        hasMoreOlder: false,
+      });
+      await Promise.resolve();
+    });
+
+    // A's page never lands in B's transcript; B's own state is unaffected.
+    expect(screen.queryByText("An A-only older message.")).toBeNull();
+    expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
+  });
+
   it("drives the same wrapped scroll-preserving callback from the button as the sentinel", async () => {
     const loadOlderMessagesAction = vi.fn().mockResolvedValue({
       status: "sent",
