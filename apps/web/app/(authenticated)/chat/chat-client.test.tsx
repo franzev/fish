@@ -1358,9 +1358,93 @@ describe("ChatClient", () => {
       chatStore.getState().setRealtimeStatus(chat.conversationId, "disconnected");
     });
 
-    expect(
-      screen.getByText("You're offline. Messages will send when you're back.")
-    ).toBeInTheDocument();
+    // Truthful copy only (WR-03): no offline queue exists, so the banner
+    // must never promise an automatic or background send.
+    const banner = screen.getByText(/Reconnect, then try again\./);
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).not.toMatch(/will send when you're back/i);
+  });
+
+  it("re-shows the author name and avatar on a same-sender community message after the grouping gap", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      messages: [
+        {
+          ...chat.messages[0],
+          id: "message-1",
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "First message in the run.",
+          clientRequestId: "seed-1",
+          createdAt: "2026-07-05T10:00:00.000Z",
+        },
+        {
+          ...chat.messages[0],
+          id: "message-2",
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          // 10 minutes later — outside MESSAGE_GROUP_GAP_MS (5 min), so this
+          // starts a fresh group even though the sender did not change.
+          body: "Second message after the gap.",
+          clientRequestId: "seed-2",
+          createdAt: "2026-07-05T10:10:00.000Z",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    // Both rows show the author's name (MessageMeta) and an avatar — the
+    // gap ends the group, so identity/time are not suppressed on the later
+    // same-sender message (closes WR-02).
+    expect(screen.getAllByText("Sam Okafor").length).toBeGreaterThanOrEqual(2);
+    const secondRow = screen
+      .getByText("Second message after the gap.")
+      .closest("li") as HTMLElement;
+    expect(within(secondRow).getByText("Sam Okafor")).toBeInTheDocument();
+    // Avatar initials ("SO") render again too — identity is not suppressed.
+    expect(within(secondRow).getByText("SO")).toBeInTheDocument();
+  });
+
+  it("sizes revealed message-action controls to the 56px touch floor, not the old 40px size", async () => {
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          messages: [
+            {
+              ...chat.messages[0],
+              senderId: "client-1",
+              senderRole: "client",
+              body: "A sent message with actions.",
+              clientRequestId: "seed-actions",
+            },
+          ],
+        }}
+        sendMessageAction={vi.fn()}
+        editMessageAction={vi.fn()}
+        deleteMessageAction={vi.fn()}
+      />
+    );
+
+    const reply = screen.getByRole("button", { name: "Reply to message" });
+    const react = screen.getByRole("button", { name: "Add a reaction" });
+    const edit = screen.getByRole("button", { name: "Edit message" });
+    const remove = screen.getByRole("button", { name: "Delete message" });
+
+    for (const action of [reply, react, edit, remove]) {
+      expect(action.className).toContain("min-h-control");
+      expect(action.className).toContain("min-w-control");
+      expect(action.className).not.toContain("size-10");
+    }
   });
 
   it("resets realtime status to idle on unmount so a revisit is not mislabeled as reconnecting", () => {
