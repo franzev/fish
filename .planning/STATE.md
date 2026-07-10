@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: executing
-stopped_at: Completed 10-06-PLAN.md
-last_updated: "2026-07-10T23:32:04.437Z"
+status: verifying
+stopped_at: Completed 10-07-PLAN.md
+last_updated: "2026-07-10T23:41:59.648Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 30
-  completed_plans: 30
+  total_plans: 31
+  completed_plans: 31
   percent: 100
 ---
 
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 10 (chat-message-loading-optimization) — VERIFYING
-Plan: 6 of 6
-Status: Ready to execute
+Plan: 7 of 7
+Status: Ready for verification
 Next planned: Run `$gsd-verify-work 10` and repeat the corrected skeleton UAT check.
 
 Progress: [██████████] 100%
@@ -117,6 +117,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09-19]: The IntersectionObserver test mock's intersectingTargets set is deliberately never cleared by disconnect()/unobserve(). — Element visibility belongs to DOM geometry, not to any one observer instance's subscription lifecycle; clearing it on disconnect (the plan's own first-offered example) empirically made a disconnect-then-re-observe regression test pass identically whether the underlying atomic-commit fix was present or reverted -- verified with a throwaway test before landing the final version.
 - [Phase 10]: Reuse one bounded newest-window hydration helper for no-confirmed-row recovery and oversized-gap resets. — Keeps reconnect recovery bounded and prevents hydration metadata paths from diverging.
 - [Phase 10]: Scope reaction reads by conversation and retained message ids in 25-id batches. — Preserves caller-session RLS while bounding SSR work to the rendered newest window.
+- [Phase 10]: A reconnect backfill promise clears the shared lock only while it remains the exact stored owner; conversation switches still reset the slot so the new conversation starts independently. — Closes VR-01 without changing bounded reads, first-subscribe suppression, or authority boundaries.
 
 ### Todos / open questions
 
@@ -155,6 +156,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P19 | 18min | 3 tasks | 11 files |
 | Phase 10 P05 | 7min | 2 tasks | 7 files |
 | Phase 10 P06 | 5 min | 2 tasks | 4 files |
+| Phase 10 P07 | 4 min | 1 tasks | 2 files |
 
 ### Quick Tasks Completed
 
@@ -197,11 +199,12 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T23:11:01.726Z
+**Last session:** 2026-07-10T23:41:59.644Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 10-06-PLAN.md
+- **Stopped at:** Completed 10-07-PLAN.md
 - **Next action:** Run `$gsd-verify-work 10` and repeat the corrected skeleton UAT check.
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
+
