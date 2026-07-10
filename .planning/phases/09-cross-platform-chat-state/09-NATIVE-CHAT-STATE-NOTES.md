@@ -64,8 +64,8 @@ The current event names are `hydrateConversation`, `draftChanged`,
 `olderMessagesRequested`, `olderPageLoaded`, and `olderPageLoadFailed`.
 
 The current fixture cases are `hydrateConversation`, `sendOptimisticMessage`,
-`confirmSentMessage`, `markMessageFailed`, `mergeRemoteMessage`,
-`duplicateClientRequestIdReconciliation`, `mergeReadState`, `unreadCount`,
+`confirmSentMessage`, `markMessageFailed`, `markMessageFailedPreservesNewerDraft`,
+`mergeRemoteMessage`, `duplicateClientRequestIdReconciliation`, `mergeReadState`, `unreadCount`,
 `deletedMessageSnippet`, `replyPreview`, `hydrateWindow`, `olderPageLoaded`,
 `olderPageDuplicateReconciliation`, `gapBackfillOutOfOrder`,
 `olderPageLifecycle`, `deliveredMarkerOutsideWindow`, and

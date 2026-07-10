@@ -229,6 +229,11 @@ function markMessageFailed(
     const failedMessage = conversation.messages.find(
       (message) => message.clientRequestId === clientRequestId
     );
+    // Only restore the failed body when nothing newer was typed while the
+    // send was pending. A non-empty draft is a newer edit typed during the
+    // in-flight send and must survive a (possibly delayed) failure
+    // untouched — no lost drafts (CSTATE-06).
+    const shouldRestoreDraft = conversation.composer.draft.length === 0;
 
     return {
       ...conversation,
@@ -243,7 +248,9 @@ function markMessageFailed(
       ),
       composer: {
         ...conversation.composer,
-        draft: failedMessage?.body ?? conversation.composer.draft,
+        draft: shouldRestoreDraft
+          ? failedMessage?.body ?? conversation.composer.draft
+          : conversation.composer.draft,
       },
     };
   });

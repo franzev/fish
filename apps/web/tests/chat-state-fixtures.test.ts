@@ -143,6 +143,7 @@ describe("chat-state fixture vectors", () => {
       "sendOptimisticMessage",
       "confirmSentMessage",
       "markMessageFailed",
+      "markMessageFailedPreservesNewerDraft",
       "mergeRemoteMessage",
       "duplicateClientRequestIdReconciliation",
       "mergeReadState",

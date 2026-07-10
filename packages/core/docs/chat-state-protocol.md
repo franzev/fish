@@ -64,7 +64,7 @@ Every adapter must be able to apply the current `ChatEvent` names:
 | `draftChanged` | Update only the local composer draft for the conversation. |
 | `sendOptimisticMessage` | Merge a local outgoing message, normalize missing nullable fields, and mark it `sending`. Repeated `clientRequestId` values reconcile to one message. |
 | `confirmSentMessage` | Merge the server-confirmed message, reconcile by `id`, incoming `clientRequestId`, or `localRequestId`, strip failure metadata, and mark it `sent`. |
-| `markMessageFailed` | Mark the matching `clientRequestId` as `failed`, keep the failed body visible, set the optional failure reason, and restore that body to the composer draft. |
+| `markMessageFailed` | Mark the matching `clientRequestId` as `failed`, keep the failed body visible, and set the optional failure reason. Restore that body to the composer draft only when the draft is currently empty; a non-empty draft is a newer edit typed while the send was pending and is preserved untouched, never overwritten by the failed body. |
 | `mergeRemoteMessage` | Merge a message received from refresh or realtime, reconcile by id/request id, strip failure metadata, and mark it `sent`. |
 | `mergeReadState` | Upsert a user's read-state row by `userId`. |
 | `setReplyTarget` | Set or clear the local reply target id. |
@@ -131,6 +131,7 @@ The current fixture case names are:
 - `sendOptimisticMessage`
 - `confirmSentMessage`
 - `markMessageFailed`
+- `markMessageFailedPreservesNewerDraft`
 - `mergeRemoteMessage`
 - `duplicateClientRequestIdReconciliation`
 - `mergeReadState`

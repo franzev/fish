@@ -351,6 +351,88 @@
     }
   },
   {
+    "name": "markMessageFailedPreservesNewerDraft",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-3",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "This should stay visible.",
+              "clientRequestId": "request-3",
+              "createdAt": "2026-07-06T04:06:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "A newer thought.",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "markMessageFailed",
+        "conversationId": "conversation-1",
+        "clientRequestId": "request-3",
+        "reason": "Try sending again."
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "local-request-3",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "This should stay visible.",
+              "clientRequestId": "request-3",
+              "createdAt": "2026-07-06T04:06:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "failed",
+              "failureReason": "Try sending again."
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "A newer thought.",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
     "name": "mergeRemoteMessage",
     "initialState": { "conversations": {} },
     "events": [
