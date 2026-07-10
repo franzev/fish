@@ -2,15 +2,15 @@
 status: diagnosed
 trigger: "User reported verbatim: \"loading new messages is broken\" during UAT Test 1"
 created: 2026-07-10T00:00:00+08:00
-updated: 2026-07-10T10:02:24+08:00
+updated: 2026-07-10T10:26:00+08:00
 ---
 
 ## Current Focus
 
-hypothesis: No current message-loading failure is established. The route/UAT contract is stale relative to the current channel implementation, while the tested store → render path and the historical realtime defect's fix are both intact.
-test: Compare the UAT expectation with /chat route rendering, record focused test and typecheck results, and identify what live evidence is still required to distinguish a stale report from an environment-specific realtime failure.
-expecting: Route rendering contradicts UAT and all local runtime-path tests pass, so return investigation inconclusive with explicit remaining live-environment possibilities; only a browser/Supabase reproduction can confirm a current realtime defect.
-next_action: None; diagnose-only investigation complete.
+hypothesis: No current message-delivery failure is established. Two independent authenticated sessions rendered both synthetic messages exactly once without receiver refresh, including after fresh receiver restoration, but the controlled browser surfaces did not expose the raw WebSocket/request evidence required for a conclusive protocol result.
+test: Record the two authenticated send/receive attempts, exact route and backing conversation identities, database rows, receiver DOM/count/scroll results, capture limitations, and the separate avatar/timestamp presentation observation.
+expecting: Functional delivery remains not reproduced, while the overall protocol classification is inconclusive because raw WebSocket frames, callback status transitions, and HTTP response status were not exposed.
+next_action: No delivery remediation in this plan. Scope the avatar/timestamp grouping behavior separately if a presentation change is desired.
 
 ## Symptoms
 
@@ -74,18 +74,29 @@ started: Discovered during UAT after the phase 09 refactor; exact onset not othe
   found: All three package typechecks completed successfully. The root `pnpm typecheck` invocation itself produced no output and did not complete in the polling window, so it was terminated; the direct equivalent checks passed.
   implication: There is no compile-time error in the current chat loading path; this does not replace live websocket verification.
 
+- timestamp: 2026-07-10T10:16:05+08:00 through 2026-07-10T10:18:36+08:00
+  checked: two independent authenticated browser sessions using the seeded client receiver and coach sender, including a second attempt after navigating the receiver afresh through `/chat`
+  found: Both synthetic coach messages were persisted in the backing conversation and rendered exactly once in the client DOM without a post-send refresh. The receiver remained pinned to the bottom, showed no `New messages` indicator, and had no unexpected scroll or layout shift. No realtime failure signal was observed, but the browser-control surfaces did not expose raw WebSocket frames, subscription callback statuses, or the sender HTTP response status.
+  implication: The functional delivery failure was not reproduced. The protocol result remains inconclusive because its required WebSocket/request capture could not be completed, so no auth, realtime, route, store, or rendering delivery root cause is established.
+
+- timestamp: 2026-07-10T10:18:36+08:00
+  checked: receiver DOM rows for both synthetic messages and the current community-row grouping logic in `chat-client.tsx`
+  found: Neither synthetic row contained an avatar image or `<time>` element. `groupedWithPrevious` compares only adjacent `senderId` values, and community avatars plus `MessageMeta` render only when a group starts (or a reply restates its author). There is no elapsed-time cutoff, so consecutive same-sender rows can suppress avatar and timestamp indefinitely.
+  implication: Missing avatar/time is a separate presentation behavior, not evidence of a realtime delivery failure. Any grouping/layout change belongs in separately scoped work; this diagnostic plan does not edit production code.
+
 ## Resolution
 
-root_cause: Not established for the current checkout. The historical anon realtime defect is already addressed by subscribeAfterAuth, and the current local reducer/render tests pass; the Phase 09 UAT also targets an assigned direct conversation while /chat currently renders the fixed general community channel.
-fix: None; diagnose-only mode and no current failure reproduced.
-verification: Focused ChatClient/actions/store/core tests passed; useStickToBottom and realtime insertion tests passed; live Supabase/browser verification unavailable.
-files_changed: []
+root_cause: Not established. The functional delivery failure was not reproduced: both independent-session messages rendered exactly once without receiver refresh, including after fresh receiver restoration. The required raw WebSocket/request capture was not exposed, so the overall protocol classification is inconclusive.
+fix: None. No production code or delivery boundary changed; the missing avatar/timestamp observation is deferred as separate presentation work.
+verification: Focused ChatClient/actions/store/core tests and direct package typechecks passed. Local Supabase, seed, and web startup succeeded; both authenticated live attempts delivered exactly once with no receiver refresh, duplicate, indicator, or unexpected scroll/layout change. Raw WebSocket frames, subscription callback transitions, and sender HTTP response status were not exposed.
+files_changed: [`.planning/debug/loading-new-messages.md` (evidence only)]
 
 ## Live reproduction protocol
 
 This protocol is the remaining D-09/D-13/D-14 evidence gate. It observes the
 current browser, Supabase, route, store, and rendering path without changing
-product behavior. Until both attempts below are complete, `root_cause: not established`.
+product behavior. The completed attempts and final `root_cause: not established`
+classification are recorded below.
 
 ### Scope and evidence safety
 
@@ -174,28 +185,55 @@ where applicable rather than guessing.
 
 | Field | Attempt 1 | Attempt 2 (fresh receiver load) |
 |---|---|---|
-| Capture start/end timestamps and timezone | pending | pending |
-| Receiver identity and role label | `client1@fish.dev` / client | `client1@fish.dev` / client |
-| Sender identity and role label | `coach@fish.dev` / coach | `coach@fish.dev` / coach |
-| Receiver final URL after `/chat` | pending | pending |
-| Sender final URL after `/chat` | pending | pending |
-| Visible conversation/channel label | pending | pending |
-| Actual conversation id | pending | pending |
-| Messages channel name and initial evidence | pending | pending |
-| Messages status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | pending | pending |
-| Reads channel name and initial evidence | pending | pending |
-| Reads status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | pending | pending |
-| Reactions channel name and initial evidence | pending | pending |
-| Reactions status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | pending | pending |
-| Raw WebSocket error/close evidence | pending | pending |
-| Synthetic message text | pending | pending |
-| Sender action/request timestamp and result | pending | pending |
-| Sender-visible message state | pending | pending |
-| Receiver-visible DOM result and timestamp | pending | pending |
-| Receiver matching-row count / duplicate count | pending | pending |
-| Transcript movement / `New messages` indicator | pending | pending |
-| Scroll or layout change | pending | pending |
-| Capture limitations | pending | pending |
+| Capture start/end timestamps and timezone | `2026-07-10T02:16:05.389Z` → `2026-07-10T02:17:04.688Z` (UTC; Asia/Manila UTC+8). The end is the delayed observation time, not delivery latency. | `2026-07-10T02:17:16.816Z` → `2026-07-10T02:18:36.513Z` (UTC; Asia/Manila UTC+8). |
+| Receiver identity and role label | `client1@fish.dev` / client; visible identity `Alex Rivera` | `client1@fish.dev` / client; visible identity `Alex Rivera` |
+| Sender identity and role label | `coach@fish.dev` / coach; visible identity `Coach Dana` | `coach@fish.dev` / coach; visible identity `Coach Dana` |
+| Receiver final URL after `/chat` | `http://localhost:3001/channels/22222222-2222-4222-8222-222222222222` | `http://localhost:3001/channels/22222222-2222-4222-8222-222222222222` after navigating afresh through `/chat`; Attempt 1 message present on the fresh SSR load |
+| Sender final URL after `/chat` | `http://localhost:3001/channels/22222222-2222-4222-8222-222222222222` | `http://localhost:3001/channels/22222222-2222-4222-8222-222222222222` |
+| Visible conversation/channel label | `# general`; route channel id `22222222-2222-4222-8222-222222222222` | `# general`; route channel id `22222222-2222-4222-8222-222222222222` |
+| Actual conversation id | `11111111-1111-4111-8111-111111111111`, confirmed by the persisted message row; distinct from the route channel id | `11111111-1111-4111-8111-111111111111`, confirmed by the persisted message row; distinct from the route channel id |
+| Messages channel name and initial evidence | `conversation:11111111-1111-4111-8111-111111111111:messages`; exact name derived from the confirmed backing conversation id and current `realtime.ts`; raw join frame not exposed | Same exact channel name; raw join frame not exposed after fresh receiver restoration |
+| Messages status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | callback status not exposed in either context; receiver console showed none of these status/error strings, and sender status capture was unavailable after its controlled tab closed | callback status not exposed in either context; receiver and sender consoles showed none of these status/error strings |
+| Reads channel name and initial evidence | `conversation:11111111-1111-4111-8111-111111111111:reads`; exact name derived from the confirmed backing conversation id and current `realtime.ts`; raw join frame not exposed | Same exact channel name; raw join frame not exposed after fresh receiver restoration |
+| Reads status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | callback status not exposed in either context; receiver console showed none of these status/error strings, and sender status capture was unavailable after its controlled tab closed | callback status not exposed in either context; receiver and sender consoles showed none of these status/error strings |
+| Reactions channel name and initial evidence | `conversation:11111111-1111-4111-8111-111111111111:reactions`; exact name derived from the confirmed backing conversation id and current `realtime.ts`; raw join frame not exposed | Same exact channel name; raw join frame not exposed after fresh receiver restoration |
+| Reactions status sequence (`SUBSCRIBED` / `CHANNEL_ERROR` / `TIMED_OUT` / `CLOSED`) | callback status not exposed in either context; receiver console showed none of these status/error strings, and sender status capture was unavailable after its controlled tab closed | callback status not exposed in either context; receiver and sender consoles showed none of these status/error strings |
+| Raw WebSocket error/close evidence | none exposed; no raw frame, close code/reason, topic, or payload was available through the browser-control surface | none exposed; no raw frame, close code/reason, topic, or payload was available through the browser-control surface. Local Realtime logs showed database-event/channel counters and no error lines or explicit subscription-error payload. |
+| Synthetic message text | `realtime-check-20260710-1016-a1` | `realtime-check-20260710-1018-a2` |
+| Sender action/request timestamp and result | Coach composer submitted at `2026-07-10T02:16:41.158Z`; HTTP status/response not exposed. Database row created at `2026-07-10 02:16:41.713779+00` with sender `28804486-83e7-410e-bcdb-8c80cd3b4b6b`, confirmed conversation id, and client request id `2077582a-ec87-40e4-9d0e-7cc39941d8f2`. | Coach composer submitted at `2026-07-10T02:18:35.531Z`; HTTP status/response not exposed. Database row created at `2026-07-10 02:18:36.332408+00` with the same sender/conversation and client request id `969f3e13-2be5-4ba7-b129-1fdefd4a89d9`. |
+| Sender-visible message state | Immediate sender-row capture unavailable because the Chrome-controlled tab closed after send; database persistence plus the independent receiver DOM confirm completion | Exact sender text row count `1`; sender console contained two non-failing `Realtime send()` REST-fallback warnings for broadcast behavior, with no observed delivery failure |
+| Receiver-visible DOM result and timestamp | Exact synthetic text appeared without refresh; observed at `2026-07-10T02:17:04.688Z`. Row contained the message and Reply/Add reaction actions, but no avatar image and no `<time>`. | Exact synthetic text appeared without refresh; observed at `2026-07-10T02:18:36.513Z`. Row again contained no avatar image and no `<time>`. |
+| Receiver matching-row count / duplicate count | matching rows `1`; duplicates `0` | matching rows `1`; duplicates `0` |
+| Transcript movement / `New messages` indicator | Stayed pinned to bottom; before `scrollTop/scrollHeight/clientHeight = 7068.5/7554/486`, after `7108.5/7594/486`; indicator count `0` | Fresh baseline `7050/7536/486`; after send `7090/7576/486`; stayed pinned; indicator count `0` |
+| Scroll or layout change | Expected 40px transcript growth only; no unexpected scroll or layout shift | Expected 40px transcript growth only; no unexpected scroll or layout shift |
+| Capture limitations | Raw WebSocket frames, callback status transitions, and sender HTTP response status were not exposed. Receiver observation was delayed by browser-controller recovery and must not be treated as network latency. | Raw WebSocket frames, callback status transitions, and sender HTTP response status were not exposed. Console and local Realtime logs are absence-of-observed-error evidence only, not proof of a particular channel status. |
+
+### Live classification
+
+classification: inconclusive
+
+functional_delivery_failure: not reproduced. Both synthetic messages rendered
+exactly once in the independent receiver session without a post-send refresh,
+including after navigating the receiver afresh through `/chat`. No failure
+signal, duplicate, unexpected scroll/layout shift, or `New messages` indicator
+was observed.
+
+classification_basis: The protocol requires `inconclusive` when its
+WebSocket/request capture cannot be completed. The controlled browser surfaces
+did not expose raw WebSocket frames, callback status transitions, or the sender
+HTTP response status. Database persistence and DOM delivery establish the
+functional outcome, but they do not establish the missing protocol boundaries.
+
+root_cause: not established. Do not promote the route/channel-id distinction,
+absence of console errors, REST-fallback broadcast warnings, or avatar/time
+grouping behavior to an auth, realtime, route, store, or rendering delivery
+root cause.
+
+presentation_observation: The two received rows had no avatar or `<time>`.
+Current community grouping suppresses both for consecutive messages from the
+same sender without a time-gap cutoff. This is separate from delivery and is
+deferred to separately scoped layout work; no production code changes belong
+to this plan.
 
 ### Classification rule
 
