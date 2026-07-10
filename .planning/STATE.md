@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-status: executing
-stopped_at: Completed 10-03-PLAN.md (pagination/reconnect brain wired into Zustand store + hooks); ready for 10-04
-last_updated: "2026-07-09T23:36:34.720Z"
-last_activity: 2026-07-09
+status: verifying
+stopped_at: Completed 10-04-PLAN.md (pagination/reconnect UI wired into ChatClient); Phase 10 all 4 plans complete, ready for phase verification
+last_updated: "2026-07-10T00:04:57.207Z"
+last_activity: 2026-07-10
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 12
-  percent: 60
+  completed_plans: 13
+  percent: 80
 ---
 
 # Project State: FISH
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md
 
 Phase: 10 (chat-message-loading-optimization) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
 
 Progress: [██████████] 100%
@@ -83,6 +83,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 10]: Plan 10-02 bounds the SSR message query (getAssignedConversation) to a 40+1 keyset window and adds loadOlderMessagesAction, backfillMessagesAction, and loadNewestMessagesAction as direct-select reads that never post to chat-command. — Closes the review-flagged gap where Plan 03's reconnect reset fallback would otherwise need an unbounded refetch, while keeping the AGENTS.md read/write API boundary intact.
 - [Phase 10]: Plan 10-03's useChatRealtime keeps applyGapBackfill as an optional prop that falls back to the existing required refreshConversation when unset, rather than a hard rename — chat-client.tsx (Plan 04's UI-wiring scope) still only passes refreshConversation; the fallback lets the bounded reconnect path activate the moment a page injects backfillMessagesAction into useChatMessages, with zero breakage before Plan 04 wires the UI
 - [Phase 10]: Reconnect coalescing tracks first-subscribe PER realtime channel (a Set keyed by channel identity), not one shared boolean, since messages/reads/reactions each fire their own initial post-mount SUBSCRIBED — closes the cross-AI review's HIGH-severity gap; only a channel's second-or-later SUBSCRIBED is eligible to backfill, and all three share one in-flight lock so a simultaneous reconnect produces exactly one bounded backfill instead of three full refetches
+- [Phase 10]: Plan 10-04 gates the 'Reconnecting…' pill on a genuine prior connect (previous-status render-time comparison, not a ref-read or setState-in-effect), so an ordinary initial chat load never reads as a reconnect. — Avoids react-hooks/refs and react-hooks/set-state-in-effect lint failures while keeping the first-load experience calm per states.md.
+- [Phase 10]: loadOlderAndPreserveScroll is the single wrapped callback both the IntersectionObserver sentinel and the 'Load earlier messages' button call; the raw Promise-returning loadOlderMessages is never called directly from the UI. — Guarantees neither trigger path can bypass the manual scrollHeight-diff restore (CLOAD-04).
 
 ### Todos / open questions
 
@@ -104,6 +106,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 10 P01 | 21min | 3 tasks | 7 files |
 | Phase 10 P02 | 18min | 2 tasks | 5 files |
 | Phase 10 P03 | 17min | 3 tasks | 6 files |
+| Phase 10 P04 | 12min | 3 tasks | 9 files |
 
 ### Quick Tasks Completed
 
@@ -142,10 +145,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-09T23:36:34.715Z
+**Last session:** 2026-07-10T00:04:57.202Z
 
-- **Last activity:** 2026-07-09
-- **Stopped at:** Completed 10-03-PLAN.md (pagination/reconnect brain wired into Zustand store + hooks); ready for 10-04
+- **Last activity:** 2026-07-10
+- **Stopped at:** Completed 10-04-PLAN.md (pagination/reconnect UI wired into ChatClient); Phase 10 all 4 plans complete, ready for phase verification
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---

@@ -64,7 +64,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 - [x] **CLOAD-01**: Opening the chat renders the newest messages from a bounded initial window (no full-history fetch) — minimal time-to-first-message on load and refresh
 - [x] **CLOAD-02**: New incoming messages arrive through the realtime channel and merge into the loaded list in place — never a full reload or history refetch
 - [x] **CLOAD-03**: Older history loads on demand via cursor-based (keyset) pagination — a calm "load earlier" affordance plus auto-load as the user scrolls up (infinite scroll)
-- [ ] **CLOAD-04**: Loading older messages preserves the reading position — no scroll jump and no layout shift; newest-message anchoring on send/receive is unchanged
+- [x] **CLOAD-04**: Loading older messages preserves the reading position — no scroll jump and no layout shift; newest-message anchoring on send/receive is unchanged
 - [x] **CLOAD-05**: The merged list never shows duplicate messages across optimistic sends, realtime inserts, and paginated fetches — deduplicated by message id and `clientRequestId`
 - [x] **CLOAD-06**: History stays gap-free and correctly ordered across offline/reconnect — messages missed while disconnected are backfilled on resubscribe, and read-state behavior stays consistent with pagination
 
@@ -110,7 +110,7 @@ Deferred to a future milestone. Each needs an explicit coach-validation decision
 | CLOAD-01 | Phase 10 — Chat Message Loading Optimization | Complete |
 | CLOAD-02 | Phase 10 — Chat Message Loading Optimization | Complete |
 | CLOAD-03 | Phase 10 — Chat Message Loading Optimization | Complete |
-| CLOAD-04 | Phase 10 — Chat Message Loading Optimization | Pending |
+| CLOAD-04 | Phase 10 — Chat Message Loading Optimization | Complete |
 | CLOAD-05 | Phase 10 — Chat Message Loading Optimization | Complete |
 | CLOAD-06 | Phase 10 — Chat Message Loading Optimization | Complete |
 | XC-01 | All shipped phases | Complete |
