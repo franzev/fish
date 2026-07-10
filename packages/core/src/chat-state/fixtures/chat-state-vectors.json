@@ -1569,5 +1569,291 @@
         "expected": 2
       }
     }
+  },
+  {
+    "name": "hydratePreservesUnresolvedSend",
+    "initialState": {
+      "conversations": {
+        "conversation-9": {
+          "conversationId": "conversation-9",
+          "messages": [
+            {
+              "id": "local-request-90",
+              "conversationId": "conversation-9",
+              "senderId": "client-9",
+              "senderRole": "client",
+              "body": "Waiting on the server.",
+              "clientRequestId": "request-90",
+              "createdAt": "2026-07-10T09:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "hydrateConversation",
+        "conversationId": "conversation-9",
+        "messages": [],
+        "readStates": []
+      },
+      {
+        "type": "markMessageFailed",
+        "conversationId": "conversation-9",
+        "clientRequestId": "request-90",
+        "reason": "Try sending again."
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-9": {
+          "conversationId": "conversation-9",
+          "messages": [
+            {
+              "id": "local-request-90",
+              "conversationId": "conversation-9",
+              "senderId": "client-9",
+              "senderRole": "client",
+              "body": "Waiting on the server.",
+              "clientRequestId": "request-90",
+              "createdAt": "2026-07-10T09:00:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "failed",
+              "failureReason": "Try sending again."
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "Waiting on the server.",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "hydrateWindowPreservesUnresolvedSend",
+    "initialState": {
+      "conversations": {
+        "conversation-10": {
+          "conversationId": "conversation-10",
+          "messages": [
+            {
+              "id": "local-request-101",
+              "conversationId": "conversation-10",
+              "senderId": "client-10",
+              "senderRole": "client",
+              "body": "Reconnect should not drop this.",
+              "clientRequestId": "request-101",
+              "createdAt": "2026-07-10T09:10:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sending"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "hydrateWindow",
+        "conversationId": "conversation-10",
+        "messages": [
+          {
+            "id": "message-102",
+            "conversationId": "conversation-10",
+            "senderId": "coach-10",
+            "senderRole": "coach",
+            "body": "Welcome back.",
+            "clientRequestId": "request-102",
+            "createdAt": "2026-07-10T09:09:00.000Z",
+            "editedAt": null,
+            "deletedAt": null,
+            "replyToMessageId": null,
+            "reactions": []
+          }
+        ],
+        "readStates": [],
+        "hasMoreOlder": true,
+        "oldestCursor": { "createdAt": "2026-07-10T09:09:00.000Z", "id": "message-102" }
+      },
+      {
+        "type": "markMessageFailed",
+        "conversationId": "conversation-10",
+        "clientRequestId": "request-101",
+        "reason": "Try sending again."
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-10": {
+          "conversationId": "conversation-10",
+          "messages": [
+            {
+              "id": "message-102",
+              "conversationId": "conversation-10",
+              "senderId": "coach-10",
+              "senderRole": "coach",
+              "body": "Welcome back.",
+              "clientRequestId": "request-102",
+              "createdAt": "2026-07-10T09:09:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            },
+            {
+              "id": "local-request-101",
+              "conversationId": "conversation-10",
+              "senderId": "client-10",
+              "senderRole": "client",
+              "body": "Reconnect should not drop this.",
+              "clientRequestId": "request-101",
+              "createdAt": "2026-07-10T09:10:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "failed",
+              "failureReason": "Try sending again."
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "Reconnect should not drop this.",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": { "createdAt": "2026-07-10T09:09:00.000Z", "id": "message-102" },
+            "hasMoreOlder": true,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "monotonicSentIgnoresLateFailure",
+    "initialState": { "conversations": {} },
+    "events": [
+      {
+        "type": "sendOptimisticMessage",
+        "message": {
+          "id": "local-request-110",
+          "conversationId": "conversation-11",
+          "senderId": "client-11",
+          "senderRole": "client",
+          "body": "Sending my update now.",
+          "clientRequestId": "request-110",
+          "createdAt": "2026-07-10T09:20:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      },
+      {
+        "type": "confirmSentMessage",
+        "localRequestId": "request-110",
+        "message": {
+          "id": "message-110",
+          "conversationId": "conversation-11",
+          "senderId": "client-11",
+          "senderRole": "client",
+          "body": "Sending my update now.",
+          "clientRequestId": "request-110",
+          "createdAt": "2026-07-10T09:20:00.000Z",
+          "editedAt": null,
+          "deletedAt": null,
+          "replyToMessageId": null,
+          "reactions": []
+        }
+      },
+      {
+        "type": "markMessageFailed",
+        "conversationId": "conversation-11",
+        "clientRequestId": "request-110",
+        "reason": "Late failure should be ignored."
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-11": {
+          "conversationId": "conversation-11",
+          "messages": [
+            {
+              "id": "message-110",
+              "conversationId": "conversation-11",
+              "senderId": "client-11",
+              "senderRole": "client",
+              "body": "Sending my update now.",
+              "clientRequestId": "request-110",
+              "createdAt": "2026-07-10T09:20:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": { "status": "idle" },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false
+          }
+        }
+      }
+    }
   }
 ]

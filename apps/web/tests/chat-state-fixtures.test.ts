@@ -157,6 +157,9 @@ describe("chat-state fixture vectors", () => {
       "olderPageLifecycle",
       "deliveredMarkerOutsideWindow",
       "readMarkerOutsideWindow",
+      "hydratePreservesUnresolvedSend",
+      "hydrateWindowPreservesUnresolvedSend",
+      "monotonicSentIgnoresLateFailure",
     ]);
 
     for (const fixture of cases) {
