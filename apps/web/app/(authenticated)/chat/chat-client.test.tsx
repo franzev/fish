@@ -1311,6 +1311,91 @@ describe("ChatClient", () => {
     expect(loadOlderMessagesAction).toHaveBeenCalledTimes(1);
   });
 
+  it("shows a calm notice-tone load earlier failure affordance without a duplicate action", async () => {
+    const loadOlderMessagesAction = vi.fn().mockResolvedValue({
+      status: "notice",
+      values: {},
+      notice: "Earlier messages did not load.",
+    });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    await act(async () => {
+      triggerIntersection(screen.getByTestId("load-older-sentinel"), true);
+      await Promise.resolve();
+    });
+
+    const error = await screen.findByTestId("load-older-error");
+    expect(error).toHaveTextContent("Couldn't load earlier messages. Try again.");
+    expect(screen.queryByTestId("load-older-skeleton")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Load earlier messages" })
+    ).toBeNull();
+
+    const retry = within(error).getByRole("button", { name: "Try again" });
+    expect(retry).toHaveClass("min-h-control");
+    expect(retry.className).toContain("bg-transparent");
+    expect(retry.className).not.toContain("bg-primary");
+
+    const alert = within(error)
+      .getByText("Couldn't load earlier messages. Try again.")
+      .closest("div");
+    expect(alert).toHaveClass("border-border-strong");
+    expect(alert).not.toHaveClass("border-error", "border-2");
+  });
+
+  it("retries load earlier manually and clears the notice when earlier history loads", async () => {
+    const loadOlderMessagesAction = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: "notice",
+        values: {},
+        notice: "Earlier messages did not load.",
+      })
+      .mockResolvedValueOnce({
+        status: "sent",
+        values: {},
+        messages: [
+          {
+            ...chat.messages[0],
+            id: "message-0",
+            body: "Earlier history recovered.",
+            clientRequestId: "seed-0",
+            createdAt: "2026-07-04T00:00:00.000Z",
+          },
+        ],
+        hasMoreOlder: false,
+      });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, hasMoreOlder: true }}
+        sendMessageAction={vi.fn()}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+      />
+    );
+
+    await act(async () => {
+      triggerIntersection(screen.getByTestId("load-older-sentinel"), true);
+      await Promise.resolve();
+    });
+
+    const error = await screen.findByTestId("load-older-error");
+    fireEvent.click(within(error).getByRole("button", { name: "Try again" }));
+
+    expect(loadOlderMessagesAction).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText("Earlier history recovered.")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByTestId("load-older-error")).toBeNull()
+    );
+  });
+
   it("keeps automatic load earlier available after a successful page when more history remains", async () => {
     const loadOlderMessagesAction = vi
       .fn()
