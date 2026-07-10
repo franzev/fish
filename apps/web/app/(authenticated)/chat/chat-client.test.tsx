@@ -2429,6 +2429,128 @@ describe("ChatClient", () => {
     expect(within(failedRow).getByText("Not sent yet")).toBeInTheDocument();
   });
 
+  it("hydrates the bounded newest window on reconnect when the transcript is empty", async () => {
+    const backfillMessagesAction = vi.fn();
+    const recoveredMessage = {
+      ...chat.messages[0],
+      id: "message-recovered",
+      body: "Recovered from the bounded window.",
+      clientRequestId: "seed-recovered",
+      createdAt: "2026-07-05T00:05:00.000Z",
+    };
+    const loadNewestMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [recoveredMessage],
+      readStates: chat.readStates,
+      hasMoreOlder: false,
+      oldestCursor: {
+        createdAt: recoveredMessage.createdAt,
+        id: recoveredMessage.id,
+      },
+    });
+
+    render(
+      <ChatClient
+        chat={{ ...chat, messages: [] }}
+        sendMessageAction={vi.fn()}
+        backfillMessagesAction={backfillMessagesAction}
+        loadNewestMessagesAction={loadNewestMessagesAction}
+      />
+    );
+
+    const messagesStatusCallback = latestSubscribeStatusCallback(":messages");
+    act(() => {
+      messagesStatusCallback("SUBSCRIBED");
+    });
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+    expect(loadNewestMessagesAction).not.toHaveBeenCalled();
+
+    act(() => {
+      messagesStatusCallback("SUBSCRIBED");
+    });
+
+    expect(
+      await screen.findByText("Recovered from the bounded window.")
+    ).toBeInTheDocument();
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+    expect(loadNewestMessagesAction).toHaveBeenCalledTimes(1);
+    expect(loadNewestMessagesAction).toHaveBeenCalledWith({
+      conversationId: chat.conversationId,
+    });
+  });
+
+  it("backfills reconnects from the newest sent row when optimistic rows trail it", async () => {
+    const backfillMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [],
+      needsReset: false,
+    });
+    const loadNewestMessagesAction = vi.fn();
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        backfillMessagesAction={backfillMessagesAction}
+        loadNewestMessagesAction={loadNewestMessagesAction}
+      />
+    );
+
+    act(() => {
+      chatStore.getState().sendOptimisticMessage({
+        ...chat.messages[0],
+        id: "optimistic-pending",
+        senderId: chat.currentUserId,
+        senderRole: chat.currentUserRole,
+        body: "Still pending.",
+        clientRequestId: "optimistic-pending-request",
+        createdAt: "2026-07-05T00:06:00.000Z",
+        localStatus: "pending",
+      });
+      chatStore.getState().sendOptimisticMessage({
+        ...chat.messages[0],
+        id: "optimistic-failed",
+        senderId: chat.currentUserId,
+        senderRole: chat.currentUserRole,
+        body: "Already failed.",
+        clientRequestId: "optimistic-failed-request",
+        createdAt: "2026-07-05T00:07:00.000Z",
+        localStatus: "pending",
+      });
+      chatStore
+        .getState()
+        .markMessageFailed(
+          chat.conversationId,
+          "optimistic-failed-request",
+          "Not sent"
+        );
+    });
+
+    const log = screen.getByRole("log", { name: "Conversation messages" });
+    expect(within(log).getByText("Still pending.")).toBeInTheDocument();
+    expect(within(log).getByText("Already failed.")).toBeInTheDocument();
+
+    const messagesStatusCallback = latestSubscribeStatusCallback(":messages");
+    act(() => {
+      messagesStatusCallback("SUBSCRIBED");
+    });
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+
+    act(() => {
+      messagesStatusCallback("SUBSCRIBED");
+    });
+
+    await waitFor(() => expect(backfillMessagesAction).toHaveBeenCalledTimes(1));
+    expect(backfillMessagesAction).toHaveBeenCalledWith({
+      conversationId: chat.conversationId,
+      afterCreatedAt: chat.messages[0].createdAt,
+      afterMessageId: chat.messages[0].id,
+    });
+    expect(loadNewestMessagesAction).not.toHaveBeenCalled();
+  });
+
   it("keeps a realtime-confirmed sent row sent when the original send action later settles as a failure (WR-03)", async () => {
     type SendResult = { status: "notice"; values: unknown; notice: string };
     let resolveSend: (value: SendResult) => void = () => undefined;
