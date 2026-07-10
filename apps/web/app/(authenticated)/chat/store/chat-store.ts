@@ -260,6 +260,15 @@ export function useChatStore<T>(selector: (state: ChatStoreState) => T): T {
   return useStore(chatStore, selector);
 }
 
-export function resetChatStoreForTests() {
+// Full singleton reset for production sign-out (CR-01): logout is a soft
+// `router.push`, so the JS module and this Zustand singleton survive across
+// accounts in the same tab. A full replace (not a merge) empties every
+// conversation's composer draft, pending/failed local messages, read state,
+// and hydration key so the next signed-in account starts clean.
+export function clearChatStore(): void {
   chatStore.setState(createChatStoreState(chatStore.setState), true);
+}
+
+export function resetChatStoreForTests() {
+  clearChatStore();
 }

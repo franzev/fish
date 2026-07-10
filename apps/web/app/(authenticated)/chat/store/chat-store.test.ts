@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type {
   ChatMessageState,
   ChatReadState,
   RealtimeConnectionState,
 } from "@fish/core/chat-state";
 import {
+  chatStore,
+  clearChatStore,
   createChatHydrationKey,
   createChatStore,
   resetChatStoreForTests,
@@ -398,6 +400,76 @@ describe("chat store actions", () => {
     expect(selectHasMoreOlderForConversation(store.getState(), conversationId)).toBe(
       true
     );
+  });
+});
+
+describe("clearChatStore", () => {
+  // Operates on the real singleton (not createChatStore()), so a leftover
+  // seed here must never bleed into other describe blocks in this file.
+  afterEach(() => {
+    resetChatStoreForTests();
+  });
+
+  it("empties conversations and hydration keys after a draft, a pending send, and a hydration key are seeded", () => {
+    const hydrationKey = createChatHydrationKey([baseMessage], [baseReadState]);
+    chatStore
+      .getState()
+      .hydrateConversation(conversationId, [baseMessage], [baseReadState], hydrationKey);
+    chatStore.getState().setDraft(conversationId, "Account A's unsent draft");
+    chatStore.getState().sendOptimisticMessage({
+      id: "local-request-clear",
+      conversationId,
+      senderId: "client-1",
+      senderRole: "client",
+      body: "Pending before clear.",
+      clientRequestId: "request-clear",
+      createdAt: "2026-07-06T04:06:00.000Z",
+      editedAt: null,
+      deletedAt: null,
+      replyToMessageId: null,
+      reactions: [],
+    });
+
+    // Sanity check: the seed actually landed before clearChatStore() runs.
+    expect(
+      selectMessagesForConversation(chatStore.getState(), conversationId).length
+    ).toBeGreaterThan(0);
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("Account A's unsent draft");
+    expect(
+      selectHydrationKeyForConversation(chatStore.getState(), conversationId)
+    ).toBe(hydrationKey);
+
+    clearChatStore();
+
+    expect(Object.keys(chatStore.getState().conversations)).toHaveLength(0);
+    expect(Object.keys(chatStore.getState().hydrationKeys)).toHaveLength(0);
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("");
+    expect(
+      selectMessagesForConversation(chatStore.getState(), conversationId)
+    ).toEqual([]);
+    expect(
+      selectHydrationKeyForConversation(chatStore.getState(), conversationId)
+    ).toBeNull();
+  });
+
+  it("clears every conversation in one call, not just the one that was checked", () => {
+    const otherConversationId = "conversation-clear-other";
+    chatStore.getState().setDraft(conversationId, "Draft in the fixed conversation");
+    chatStore.getState().setDraft(otherConversationId, "Draft in another conversation");
+
+    clearChatStore();
+
+    expect(Object.keys(chatStore.getState().conversations)).toHaveLength(0);
+    expect(
+      selectComposerForConversation(chatStore.getState(), conversationId).draft
+    ).toBe("");
+    expect(
+      selectComposerForConversation(chatStore.getState(), otherConversationId).draft
+    ).toBe("");
   });
 });
 
