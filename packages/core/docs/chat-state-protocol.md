@@ -60,18 +60,18 @@ Every adapter must be able to apply the current `ChatEvent` names:
 
 | Event | Required behavior |
 |-------|-------------------|
-| `hydrateConversation` | Replace a conversation's message/read snapshot, normalize messages to `sent`, sort by `createdAt` then `id`, and create default composer/realtime state when absent. |
+| `hydrateConversation` | Replace a conversation's message/read snapshot with the incoming authoritative data, normalize incoming messages to `sent`, and sort by `createdAt` then `id` — but preserve any existing message whose `localStatus` is `pending`, `sending`, or `failed` and that no incoming row reconciles (no incoming row shares its `id` or `clientRequestId`). Preserved rows are folded in through `mergeChatMessage`, so a matching incoming row always supersedes the local placeholder instead of duplicating it. Create default composer/realtime state when absent. |
 | `draftChanged` | Update only the local composer draft for the conversation. |
 | `sendOptimisticMessage` | Merge a local outgoing message, normalize missing nullable fields, and mark it `sending`. Repeated `clientRequestId` values reconcile to one message. |
 | `confirmSentMessage` | Merge the server-confirmed message, reconcile by `id`, incoming `clientRequestId`, or `localRequestId`, strip failure metadata, and mark it `sent`. |
-| `markMessageFailed` | Mark the matching `clientRequestId` as `failed`, keep the failed body visible, and set the optional failure reason. Restore that body to the composer draft only when the draft is currently empty; a non-empty draft is a newer edit typed while the send was pending and is preserved untouched, never overwritten by the failed body. |
+| `markMessageFailed` | Mark the matching `clientRequestId` as `failed`, keep the failed body visible, and set the optional failure reason — but only when the matched row's `localStatus` is not already `sent`. A message already confirmed `sent` (by the authoritative send response, a realtime confirmation, or a later hydrate reconciliation) is monotonic: a late failure for that `clientRequestId` is ignored entirely — no status change, no failure reason, no draft restore. For `pending`/`sending`/`failed` rows, restore the failed body to the composer draft only when the draft is currently empty; a non-empty draft is a newer edit typed while the send was pending and is preserved untouched, never overwritten by the failed body. |
 | `mergeRemoteMessage` | Merge a message received from refresh or realtime, reconcile by id/request id, strip failure metadata, and mark it `sent`. |
 | `mergeReadState` | Upsert a user's read-state row by `userId`. |
 | `setReplyTarget` | Set or clear the local reply target id. |
 | `setEditTarget` | Set or clear the local edit target id. |
 | `setRealtimeStatus` | Set the local realtime connection status for the conversation. |
 | `clearComposer` | Reset the local draft, reply target, and edit target to empty values. |
-| `hydrateWindow` | Replace a conversation's message/read snapshot exactly like `hydrateConversation` (normalize to `sent`, sort by `createdAt` then `id`), and additionally set `pagination` to the provided `hasMoreOlder`/`oldestCursor` with `isLoadingOlder` reset to `false`. |
+| `hydrateWindow` | Replace a conversation's message/read snapshot exactly like `hydrateConversation`, including the same unresolved-local-send preservation rule (normalize incoming to `sent`, sort by `createdAt` then `id`, keep unreconciled `pending`/`sending`/`failed` rows), and additionally set `pagination` to the provided `hasMoreOlder`/`oldestCursor` with `isLoadingOlder` reset to `false`. |
 | `olderMessagesRequested` | Set `pagination.isLoadingOlder` to `true`. Nothing else changes. |
 | `olderPageLoaded` | Merge each message in an older page through the same `mergeChatMessage` primitive used by every other message-touching event (dedup by `id`/`clientRequestId`, re-sort), then set `pagination.oldestLoadedCursor`/`hasMoreOlder` from the event and reset `isLoadingOlder` to `false`. Re-delivering a message that is already loaded (page overlap, or a page racing a live insert) produces no duplicate. |
 | `olderPageLoadFailed` | Reset `pagination.isLoadingOlder` to `false`. `hasMoreOlder` and `oldestLoadedCursor` are left untouched so a retry (dispatching `olderMessagesRequested` again) is still possible. |
@@ -103,7 +103,11 @@ Adapters must preserve these selector expectations:
   other-participant message as unread until pagination loads back far
   enough to locate the real read marker.
 - `getMessageSnippet` returns `Message deleted` for deleted messages, trims body
-  text, and truncates long snippets to the shared 96-character rule.
+  text, and measures length in Unicode code points, never UTF-16 code units.
+  A trimmed body of 96 or fewer code points is returned unchanged. A longer
+  body truncates to its first 95 code points followed by a single-character
+  ellipsis (U+2026, `…`), never splitting a surrogate pair, so the final
+  result is always at most 96 code points.
 - `toReplyPreview` returns the message id, the current-user or participant
   author label, and the snippet.
 
@@ -145,14 +149,21 @@ The current fixture case names are:
 - `olderPageLifecycle`
 - `deliveredMarkerOutsideWindow`
 - `readMarkerOutsideWindow`
+- `hydratePreservesUnresolvedSend`
+- `hydrateWindowPreservesUnresolvedSend`
+- `monotonicSentIgnoresLateFailure`
+- `snippetLongAscii`
+- `snippetEmojiBoundary`
 
 These fixtures prove parity for hydrate/send/confirm/fail/merge/read behavior,
 unread derivation, deleted-message snippets, reply previews, keyset
 pagination (initial window, older-page load, page/live-insert duplicate
 reconciliation, request/failure lifecycle), out-of-order/duplicate reconnect
-backfill, and the out-of-window read/delivered marker rule. They use
-synthetic ids and copy only; credentials, JWTs, service-role keys, and seeded
-account passwords do not belong in fixture data.
+backfill, the out-of-window read/delivered marker rule, hydrate/reconnect
+preservation of unresolved local sends, monotonic send-status transitions,
+and code-point-safe (surrogate-pair-safe) message snippet truncation. They
+use synthetic ids and copy only; credentials, JWTs, service-role keys, and
+seeded account passwords do not belong in fixture data.
 
 ## Adapter Rules
 

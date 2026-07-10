@@ -68,8 +68,38 @@ The current fixture cases are `hydrateConversation`, `sendOptimisticMessage`,
 `mergeRemoteMessage`, `duplicateClientRequestIdReconciliation`, `mergeReadState`, `unreadCount`,
 `deletedMessageSnippet`, `replyPreview`, `hydrateWindow`, `olderPageLoaded`,
 `olderPageDuplicateReconciliation`, `gapBackfillOutOfOrder`,
-`olderPageLifecycle`, `deliveredMarkerOutsideWindow`, and
-`readMarkerOutsideWindow`.
+`olderPageLifecycle`, `deliveredMarkerOutsideWindow`,
+`readMarkerOutsideWindow`, `hydratePreservesUnresolvedSend`,
+`hydrateWindowPreservesUnresolvedSend`, `monotonicSentIgnoresLateFailure`,
+`snippetLongAscii`, and `snippetEmojiBoundary`.
+
+Three contract clauses were hardened after the initial 18-fixture set and
+must be mirrored exactly by native implementations:
+
+1. **Hydrate/reconnect preserves unresolved local sends.** `hydrateConversation`
+   and `hydrateWindow` replace the message snapshot with the incoming
+   authoritative data, but they must first preserve any existing message
+   whose local status is `pending`, `sending`, or `failed` and that no
+   incoming row reconciles (no incoming row shares its id or
+   `clientRequestId`). Preserved rows are folded into the incoming snapshot
+   through the same merge-by-id/clientRequestId rule used elsewhere, so a
+   matching incoming row always supersedes the local placeholder instead of
+   duplicating it. Dropping an unresolved row on hydrate would delete the
+   only copy of its body, leaving a later failure with nothing to restore
+   into the composer draft.
+2. **Send status is monotonic.** `markMessageFailed` must ignore a late
+   failure for a `clientRequestId` whose row is already `sent` (confirmed by
+   the authoritative send response, a realtime confirmation, or a later
+   hydrate reconciliation): no status change, no failure reason, no draft
+   restore. Only `pending`/`sending`/`failed` rows may transition to
+   `failed`, and the empty-draft-only body-restore rule still applies to
+   those.
+3. **Message snippets are measured in Unicode code points, never UTF-16 code
+   units.** A trimmed body of 96 or fewer code points is returned unchanged.
+   A longer body truncates to its first 95 code points followed by a
+   single-character ellipsis (U+2026, "…"), never splitting a surrogate
+   pair (most emoji are a two-unit surrogate pair in UTF-16 but one code
+   point), so the final result is always at most 96 code points.
 
 ## Android Mapping
 
@@ -183,6 +213,11 @@ convenience. Native implementations need parity for:
 - outgoing status derived from participant delivered/read markers
 - unread count excluding the current user's own messages
 - deleted-message snippet text
+- message snippet truncation measured in Unicode code points, never UTF-16
+  code units: a body of 96 or fewer code points is unchanged; a longer body
+  truncates to its first 95 code points plus a single-character ellipsis
+  (U+2026), never splitting a surrogate pair, for a final result of at most
+  96 code points
 - reply preview author label and snippet
 - a read or delivered marker id that is set but absent from the currently
   loaded newest-anchored window is strictly older than that window and marks no
