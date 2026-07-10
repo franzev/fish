@@ -385,7 +385,9 @@ describe("ChatClient", () => {
 
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
-    const row = screen.getByText("A second author starts here.").closest("li");
+    const row = screen
+      .getByText("A second author starts here.")
+      .closest('[data-layout="community-message-row"]');
     expect(row).toHaveClass("py-sm");
     expect(row).not.toHaveClass("pt-sm");
   });
@@ -1894,11 +1896,11 @@ describe("ChatClient", () => {
     expect(await screen.findByText("Loaded via the button.")).toBeInTheDocument();
   });
 
-  it("shows fixed-height skeleton rows while an older page loads, and removes them after", async () => {
+  it("renders a shared two-row message skeleton as the only older-page loading treatment", async () => {
     type LoadOlderResult = {
       status: "sent";
       values: unknown;
-      messages: never[];
+      messages: ClientChatData["messages"];
       hasMoreOlder: boolean;
     };
     let resolveLoad: (value: LoadOlderResult) => void = () => undefined;
@@ -1909,9 +1911,43 @@ describe("ChatClient", () => {
         })
     );
 
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      hasMoreOlder: true,
+      messages: [
+        chat.messages[0],
+        {
+          ...chat.messages[0],
+          id: "message-2",
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "A new author row.",
+          clientRequestId: "seed-author",
+          createdAt: "2026-07-05T00:01:00.000Z",
+        },
+        {
+          ...chat.messages[0],
+          id: "message-3",
+          senderId: "client-2",
+          senderRole: "client",
+          senderDisplayName: "Sam Okafor",
+          body: "A continuation row.",
+          clientRequestId: "seed-continuation",
+          createdAt: "2026-07-05T00:02:00.000Z",
+        },
+      ],
+      participantPresence: undefined,
+    };
+
     render(
       <ChatClient
-        chat={{ ...chat, hasMoreOlder: true }}
+        chat={communityChat}
         sendMessageAction={vi.fn()}
         loadOlderMessagesAction={loadOlderMessagesAction}
       />
@@ -1919,16 +1955,95 @@ describe("ChatClient", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Load earlier messages" }));
 
-    expect(await screen.findByTestId("load-older-skeleton")).toBeInTheDocument();
+    const slot = await screen.findByTestId("load-older-slot");
+    const skeleton = within(slot).getByTestId("load-older-skeleton");
+    const skeletonRows = skeleton.querySelectorAll(
+      '[data-layout="community-message-row"]'
+    );
+    expect(skeletonRows).toHaveLength(2);
+
+    const authorRow = within(slot).getByTestId("skeleton-row-author");
+    const continuationRow = within(slot).getByTestId(
+      "skeleton-row-continuation"
+    );
+    expect(within(authorRow).getByTestId("skeleton-avatar")).toHaveClass(
+      "size-8",
+      "rounded-pill"
+    );
+    expect(within(authorRow).getByTestId("skeleton-author")).toBeInTheDocument();
+    expect(
+      within(authorRow).getByTestId("skeleton-timestamp")
+    ).toBeInTheDocument();
+    expect(within(authorRow).getAllByTestId("skeleton-content")).toHaveLength(1);
+    expect(
+      within(continuationRow).getByTestId("skeleton-avatar-spacer")
+    ).toHaveClass("size-8", "shrink-0");
+    expect(
+      within(continuationRow).getAllByTestId("skeleton-content")
+    ).toHaveLength(1);
+    expect(within(slot).getAllByTestId("skeleton-content")).toHaveLength(2);
+
+    const finalAuthorRow = screen
+      .getByText("A new author row.")
+      .closest('[data-layout="community-message-row"]') as HTMLElement;
+    const finalContinuationRow = screen
+      .getByText("A continuation row.")
+      .closest('[data-layout="community-message-row"]') as HTMLElement;
+    expect(authorRow).toHaveClass("gap-md", "px-md", "py-sm");
+    expect(finalAuthorRow).toHaveClass("gap-md", "px-md", "py-sm");
+    expect(continuationRow).toHaveClass("gap-md", "px-md", "py-2xs");
+    expect(finalContinuationRow).toHaveClass("gap-md", "px-md", "py-2xs");
+    expect(continuationRow.firstElementChild).toHaveClass("size-8", "shrink-0");
+    expect(finalContinuationRow.firstElementChild).toHaveClass(
+      "size-8",
+      "shrink-0"
+    );
+    expect(continuationRow.lastElementChild).toHaveClass("min-w-0", "flex-1");
+    expect(finalContinuationRow.lastElementChild).toHaveClass(
+      "min-w-0",
+      "flex-1"
+    );
+
+    expect(within(slot).queryByRole("button", { name: "Load earlier messages" })).toBeNull();
+    expect(within(slot).queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(within(slot).queryByRole("alert")).toBeNull();
+    expect(slot.querySelector(".animate-spin")).toBeNull();
+    const loadingStatus = within(slot).getByRole("status");
+    expect(loadingStatus).toHaveTextContent("Loading earlier messages");
+    expect(loadingStatus).toHaveClass("sr-only");
+    expect(screen.getAllByText(/^Loading/)).toEqual([loadingStatus]);
+    expect(screen.queryByText("Loading messages")).toBeNull();
+    expect(screen.queryByText("Please wait")).toBeNull();
+    const log = screen.getByRole("log", { name: "Community messages" });
+    expect(log).toHaveAttribute("aria-busy", "true");
+    expect(skeleton).toHaveAttribute("aria-hidden", "true");
 
     await act(async () => {
-      resolveLoad({ status: "sent", values: {}, messages: [], hasMoreOlder: false });
+      resolveLoad({
+        status: "sent",
+        values: {},
+        messages: [
+          {
+            ...chat.messages[0],
+            id: "message-older",
+            conversationId: communityChat.conversationId,
+            body: "An earlier message.",
+            clientRequestId: "seed-older",
+            createdAt: "2026-07-04T00:00:00.000Z",
+          },
+        ],
+        hasMoreOlder: false,
+      });
       await Promise.resolve();
     });
 
-    await waitFor(() =>
-      expect(screen.queryByTestId("load-older-skeleton")).toBeNull()
-    );
+    await waitFor(() => expect(screen.queryByTestId("load-older-skeleton")).toBeNull());
+    expect(screen.queryByRole("status", { name: "Loading earlier messages" })).toBeNull();
+    expect(log).not.toHaveAttribute("aria-busy");
+    const prependedMessage = screen.getByText("An earlier message.");
+    expect(document.activeElement).not.toBe(log);
+    expect(document.activeElement).not.toBe(loadingStatus);
+    expect(document.activeElement).not.toBe(prependedMessage);
   });
 
   it("shows a calm notice-tone offline state (never an error tone) when the realtime status is disconnected", () => {
@@ -2188,6 +2303,8 @@ describe("ChatClient", () => {
     );
 
     const idleSlot = screen.getByTestId("load-older-slot");
+    expect(idleSlot).toHaveClass("h-pagination-slot");
+    expect(idleSlot).not.toHaveClass("min-h-pagination-slot");
     expect(
       within(idleSlot).getByRole("button", { name: "Load earlier messages" })
     ).toBeInTheDocument();
@@ -2198,6 +2315,8 @@ describe("ChatClient", () => {
 
     const loadingSlot = await screen.findByTestId("load-older-slot");
     expect(loadingSlot).toBe(idleSlot);
+    expect(loadingSlot).toHaveClass("h-pagination-slot");
+    expect(loadingSlot).not.toHaveClass("min-h-pagination-slot");
     expect(
       within(loadingSlot).getByTestId("load-older-skeleton")
     ).toBeInTheDocument();
@@ -2214,7 +2333,14 @@ describe("ChatClient", () => {
     const errorSlot = await screen.findByTestId("load-older-slot");
     expect(errorSlot).toBe(idleSlot);
     expect(within(errorSlot).getByTestId("load-older-error")).toBeInTheDocument();
-    expect(idleSlot.className).toContain("min-h-pagination-slot");
+    expect(errorSlot).toHaveClass("h-pagination-slot");
+    expect(errorSlot).not.toHaveClass("min-h-pagination-slot");
+
+    const globalsSource = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+    expect(globalsSource).toContain("--size-pagination-slot: 112px");
+    expect(globalsSource).toContain(
+      "--spacing-pagination-slot: var(--size-pagination-slot)"
+    );
   });
 
   it("keeps a pending optimistic row through a reconnect-reset hydrateWindow, then marks it failed on a later send failure (WR-02)", async () => {
