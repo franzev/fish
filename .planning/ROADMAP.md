@@ -122,7 +122,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Wave 10** *(gap closure round 4; blocked on Wave 9: 09-13 + 09-15)*
 
-- [ ] 09-16-PLAN.md — chat-client conversation-scoped realtime/hasConnected reset (WR-06) + invariant pagination-feedback geometry (WR-07) + WR-02/WR-03 web regressions
+- [x] 09-16-PLAN.md — chat-client conversation-scoped realtime/hasConnected reset (WR-06) + invariant pagination-feedback geometry (WR-07) + WR-02/WR-03 web regressions
 
 ### Phase 10: Chat Message Loading Optimization
 
@@ -154,7 +154,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 17/18 | In Progress|  |
+| 9. Cross-platform Chat State | v1.2 | 18/18 | Complete   | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---

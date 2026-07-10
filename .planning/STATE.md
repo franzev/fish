@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
 status: executing
-stopped_at: Completed 09-18-PLAN.md
-last_updated: "2026-07-10T09:33:07.952Z"
+stopped_at: Completed 09-16-PLAN.md
+last_updated: "2026-07-10T10:08:30.506Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 26
-  completed_plans: 26
-  percent: 60
+  completed_plans: 27
+  percent: 80
 ---
 
 # Project State: FISH
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md
 ## Current Position
 
 Phase: 09 (cross-platform-chat-state) — EXECUTING
-Plan: 6 of 18
+Plan: 7 of 18
 Status: Ready to execute
 Next planned: Re-run Phase 09 UAT Test 2 at `/channels/general`, then complete the milestone audit.
 
@@ -110,6 +110,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09-15]: The stale-completion generation-token ref (latestOnLoadOlderRef) is written only inside a useEffect keyed on onLoadOlder, never in the render body. — eslint-plugin-react-hooks 7.1.1 recommended config (via eslint-config-next 16.2.9) enforces the refs rule (error, Recommended preset) against any ref access during render; reads stay inside useCallback/rAF callback bodies, matching this codebase existing effect-write pattern for a value that must stay visible to a stale async closure.
 - [Phase 09]: Plan 09-17: Community send smoke rewritten to prove send + reload-persistence + dedup with exact-count assertions instead of a per-message Sent/Delivered/Read status tick. — Closes WR-08 — the community feed intentionally does not render per-message status ticks (calm, one-thing, feed idiom), and .last() could never prove deduplication; reload + toHaveCount(1) proves both Supabase persistence and no duplicate.
 - [Phase 09]: Plan 09-18: app-shell logo Link aria-label is a static "FISH home" regardless of role (client -> /home, coach -> /coach); min-h-control/min-w-control 56px target closes WR-09. — Both /home and /coach are the landing screen for their role, so a static label keeps the accessible name deterministic and simple rather than branching copy for a brand-mark link.
+- [Phase 09]: localTypingRef and the three pending typing/recording timeout refs reset inside the existing [chat.conversationId]-keyed effect, not the render-time block, because the project's react-hooks/refs ESLint rule (error severity) forbids ref access during render. — localTypingRef is never read during rendering (only inside event-handler-triggered callbacks), so a post-commit effect reset satisfies the WR-06 behavioral intent without breaking pnpm lint.
+- [Phase 09]: The pagination-feedback reserved height (104px, --size-pagination-slot) is sized to exactly fit the tallest existing state (the two-row loading skeleton), with the shorter error/button states vertically centered within it. — Closes WR-07: a single reserved-height data-testid=load-older-slot wrapper now hosts skeleton/error/button so the transcript below never shifts between states.
 
 ### Todos / open questions
 
@@ -144,6 +146,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P15 | 15min | 3 tasks | 3 files |
 | Phase 09 P17 | 5min | 1 tasks | 1 files |
 | Phase 09 P18 | 6min | 2 tasks | 2 files |
+| Phase 09 P16 | 36min | 3 tasks | 4 files |
 
 ### Quick Tasks Completed
 
@@ -186,10 +189,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T09:33:07.948Z
+**Last session:** 2026-07-10T10:08:30.501Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-18-PLAN.md
+- **Stopped at:** Completed 09-16-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
