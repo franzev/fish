@@ -75,7 +75,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 > **Supersede note (2026-07-10):** The canonical chat surface for Phase 9 is the community room at `/channels/general` (the `/chat` route was removed); any "assigned conversation" phrasing above is superseded accordingly, and re-verification targets `/channels/:id`.
 **Depends on**: Phase 8
 **Requirements**: CSTATE-01, CSTATE-02, CSTATE-03, CSTATE-04, CSTATE-05, CSTATE-06
-**Plans**: 12 plans (6 complete, 5 gap-closure round 2, 1 gap-closure round 3 from the 2026-07-10 UAT)
+**Plans**: 18 plans (6 complete, 5 gap-closure round 2, 1 gap-closure round 3 from the 2026-07-10 UAT, 6 gap-closure round 4 from the 2026-07-10 re-verification)
 **Wave 1**
 
 - [x] 09-01-PLAN.md — portable chat-state core, fixture vectors, dependency boundary tests, and web helper shim
@@ -112,6 +112,18 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 09-12-PLAN.md — bound the older-page-load sentinel auto-retry and add a calm notice-tone failure affordance so a failed "load earlier" no longer becomes a silent unbounded retry storm (UAT Test 2 blocker)
 
+**Wave 9** *(gap closure round 4; blocked on the 2026-07-10 re-verification `gaps_found` — 8 blocking gaps)*
+
+- [ ] 09-13-PLAN.md — portable contract hardening: preserve unresolved sends through hydration (WR-02), monotonic send status (WR-03), grapheme/surrogate-safe <=96 snippet (WR-10) + fixtures/protocol/native-notes sync
+- [ ] 09-14-PLAN.md — bind the chat cache to verified auth identity: purge on identity change/sign-out/expiry, honor signOut().ok with calm retry (CR-01)
+- [ ] 09-15-PLAN.md — older-page pagination conversation/generation ownership: per-conversation in-flight lock + stale-completion/rAF guards (WR-01)
+- [ ] 09-17-PLAN.md — community send lifecycle E2E repair: reload-persistence + exactly-one-row, no `.last()` (WR-08)
+- [ ] 09-18-PLAN.md — app-shell 56px logo target + stale `/chat` comment cleanup (WR-09)
+
+**Wave 10** *(gap closure round 4; blocked on Wave 9: 09-13 + 09-15)*
+
+- [ ] 09-16-PLAN.md — chat-client conversation-scoped realtime/hasConnected reset (WR-06) + invariant pagination-feedback geometry (WR-07) + WR-02/WR-03 web regressions
+
 ### Phase 10: Chat Message Loading Optimization
 
 **Goal**: Opening a conversation renders the newest messages near-instantly from a bounded initial window; older history arrives through cursor-based "load earlier" and infinite scroll with reading position preserved; realtime messages merge into the loaded list in place — no full reloads, no duplicate messages, no layout shift — and history stays gap-free and correctly ordered across offline/reconnect edge cases.
@@ -142,7 +154,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 12/12 | Complete   | 2026-07-10 |
+| 9. Cross-platform Chat State | v1.2 | 12/18 | Gap closure round 4 planned | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
