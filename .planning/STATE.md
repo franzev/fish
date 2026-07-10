@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
-current_phase: 10
-current_phase_name: Chat Message Loading Optimization
 status: executing
-stopped_at: Completed 09-11-PLAN.md
-last_updated: "2026-07-10T05:43:51.321Z"
+stopped_at: Completed 09-12-PLAN.md
+last_updated: "2026-07-10T06:31:10.000Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 19
+  total_plans: 20
   completed_plans: 20
   percent: 80
+current_phase: 10
+current_phase_name: Chat Message Loading Optimization
 ---
 
 # Project State: FISH
 
-**Last updated:** 2026-07-07
+**Last updated:** 2026-07-10
 
 ## Project Reference
 
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md
 
 ## Current Position
 
-Phase: 10 — Chat Message Loading Optimization
-Plan: Not started
-Status: Ready to execute
-Next planned: Phase 10 (chat-message-loading-optimization) — 4 plans in 3 waves, verified by plan-checker, ready for /gsd-execute-phase 10.
+Phase: 09 (cross-platform-chat-state) — COMPLETE
+Plan: 12 of 12
+Status: Phase complete — ready for verification
+Next planned: Re-run Phase 09 UAT Test 2 at `/channels/general`, then complete the milestone audit.
 
 Progress: [██████████] 100%
 
@@ -52,7 +52,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
 | 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Needs UAT |
-| 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Planned (4 plans, ready to execute) |
+| 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Complete (4/4 plans) |
 
 ## Archived Milestones
 
@@ -99,6 +99,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09-11]: Grouping predicate compares same sender, same calendar day, and a documented 5-minute gap (MESSAGE_GROUP_GAP_MS), replacing the senderId-only comparison. — Closes WR-02: a same-sender run was suppressing avatar/MessageMeta indefinitely, the user's missing avatar/time UAT report.
 - [Phase 09-11]: Offline banner copy changed to 'You're offline. Reconnect, then try again.' with a states.md note that no offline queue exists. — The prior copy promised an automatic queued send (WR-03) that was never built; a failed send stays a manual Retry.
 - [Phase 09-11]: Message-action controls resized from size-10 (40px) to min-h-control/min-w-control (56px), with a pointer-coarse: reveal alongside hover/focus-within. — The 56px floor (AGENTS.md) is non-negotiable and supersedes the sketch reference's compact hover-only bar (WR-04); touch/coarse pointers need a reveal path that does not depend on hover.
+- [Phase 09]: Older-message auto-loading stops after one failed visible-sentinel request; manual retry stays available. — The web hook owns retry timing while the portable reducer remains retryable and unchanged.
+- [Phase 09]: Conversation changes reset the older-load failure gate through a render-time callback-identity comparison. — This preserves the planned reset behavior without violating react-hooks/set-state-in-effect.
 
 ### Todos / open questions
 
@@ -127,6 +129,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P09 | 9min | 2 tasks | 7 files |
 | Phase 09 P10 | 18min | 2 tasks | 2 files |
 | Phase 09 P11 | 6min | 3 tasks | 5 files |
+| Phase 09 P12 | 12min | 2 tasks | 4 files |
 
 ### Quick Tasks Completed
 
@@ -167,10 +170,10 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T05:33:53.886Z
+**Last session:** 2026-07-10T06:31:09.995Z
 
-- **Last activity:** 2026-07-10 - Completed quick task 260710-jht: renamed seeded users to Franz Eva and Patty Cake (seed file + local DB)
-- **Stopped at:** Completed 09-11-PLAN.md
+- **Last activity:** 2026-07-10
+- **Stopped at:** Completed 09-12-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---

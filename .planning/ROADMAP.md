@@ -110,7 +110,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Wave 8** *(gap closure round 3; blocked on the 2026-07-10 UAT Test 2 blocker)*
 
-- [ ] 09-12-PLAN.md — bound the older-page-load sentinel auto-retry and add a calm notice-tone failure affordance so a failed "load earlier" no longer becomes a silent unbounded retry storm (UAT Test 2 blocker)
+- [x] 09-12-PLAN.md — bound the older-page-load sentinel auto-retry and add a calm notice-tone failure affordance so a failed "load earlier" no longer becomes a silent unbounded retry storm (UAT Test 2 blocker)
 
 ### Phase 10: Chat Message Loading Optimization
 
@@ -142,7 +142,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 11/12 | Gap closure round 3 | 2026-07-10 |
+| 9. Cross-platform Chat State | v1.2 | 12/12 | Complete   | 2026-07-10 |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
