@@ -143,7 +143,9 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260706-rsd | Remove stale color wording and retire unvalidated learning-flow implementations | 2026-07-06 | f099a9e | [260706-rsd-remove-stale-color-language-and-re](./quick/260706-rsd-remove-stale-color-language-and-re/) |
 | 260708-doh | Fix getServerSnapshot caching infinite loop in chat-store useChatStore | 2026-07-08 | d56fc795 | [260708-doh-fix-getserversnapshot-caching-infinite-l](./quick/260708-doh-fix-getserversnapshot-caching-infinite-l/) |
 | 260708-du5 | Redesign chat UI from 1-on-1 messaging to community-room (Discord-like) experience | 2026-07-08 | 4e9d52c4 | [260708-du5-redesign-chat-ui-from-1-on-1-messaging-t](./quick/260708-du5-redesign-chat-ui-from-1-on-1-messaging-t/) |
+| 260710-jff | Username click opens Profile/Logout menu; remove header Logout button | 2026-07-10 | 9ccd40d4 | [260710-jff-the-username-when-clicked-should-pop-up-](./quick/260710-jff-the-username-when-clicked-should-pop-up-/) |
 | 260708-eoo | Port Discord community-chat idioms into ChatClient using existing FISH design tokens only | 2026-07-08 | cb088b0a | [260708-eoo-port-discord-community-chat-idioms-into-](./quick/260708-eoo-port-discord-community-chat-idioms-into-/) |
+| 260710-jht | Rename seeded users: Alex Rivera → Franz Eva, Coach Dana → Patty Cake (seed file + local DB) | 2026-07-10 | a4a554a4 | [260710-jht-update-seed-data-names-change-alex-river](./quick/260710-jht-update-seed-data-names-change-alex-river/) |
 | 260708-exm | Replace inline message action rows with hover-revealed action bar following the community design reference | 2026-07-08 | a8df0c45 | [260708-exm-replace-inline-message-action-rows-with-](./quick/260708-exm-replace-inline-message-action-rows-with-/) |
 | 260708-knl | Align community reply preview with the reference — avatar on header row, spline from avatar into preview | 2026-07-08 | 0146deba | [260708-knl-align-community-reply-preview-with-the-r](./quick/260708-knl-align-community-reply-preview-with-the-r/) |
 | 260708-mjs | Remove the card/box wrapping the chat thread and restyle message reaction counters to match the Discord reference | 2026-07-08 | 4261f40c | [260708-mjs-remove-the-card-box-wrapping-the-chat-th](./quick/260708-mjs-remove-the-card-box-wrapping-the-chat-th/) |
@@ -167,7 +169,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Last session:** 2026-07-10T05:33:53.886Z
 
-- **Last activity:** 2026-07-10
+- **Last activity:** 2026-07-10 - Completed quick task 260710-jht: renamed seeded users to Franz Eva and Patty Cake (seed file + local DB)
 - **Stopped at:** Completed 09-11-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
