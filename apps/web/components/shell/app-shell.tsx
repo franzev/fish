@@ -139,16 +139,8 @@ export function AppShell({
           <Image
             src="/logo.svg"
             alt="FISH"
-            width={32}
-            height={32}
-            className="md:hidden"
-          />
-          <Image
-            src="/logo.svg"
-            alt="FISH"
             width={40}
             height={40}
-            className="hidden rounded-control md:block"
           />
         </Link>
         <nav
