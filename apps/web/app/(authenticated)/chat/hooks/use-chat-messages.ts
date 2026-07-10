@@ -15,6 +15,7 @@ import {
   useChatStore,
 } from "../store/chat-store";
 import {
+  selectHasLoadErrorForConversation,
   selectHasMoreOlderForConversation,
   selectHydrationKeyForConversation,
   selectIsLoadingOlderForConversation,
@@ -106,6 +107,9 @@ export function useChatMessages({
   );
   const isLoadingOlder = useChatStore((state) =>
     selectIsLoadingOlderForConversation(state, chat.conversationId)
+  );
+  const hasLoadError = useChatStore((state) =>
+    selectHasLoadErrorForConversation(state, chat.conversationId)
   );
   const hydrateConversation = useChatStore((state) => state.hydrateConversation);
   const hydrateWindow = useChatStore((state) => state.hydrateWindow);
@@ -407,5 +411,6 @@ export function useChatMessages({
     applyGapBackfill,
     hasMoreOlder,
     isLoadingOlder,
+    hasLoadError,
   };
 }

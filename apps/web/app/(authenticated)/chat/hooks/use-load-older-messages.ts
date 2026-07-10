@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { LoadOlderMessagesOutcome } from "./use-chat-messages";
 
 interface UseLoadOlderMessagesOptions {
@@ -8,6 +8,9 @@ interface UseLoadOlderMessagesOptions {
   sentinelRef: RefObject<HTMLDivElement | null>;
   hasMoreOlder: boolean;
   isLoadingOlder: boolean;
+  /** Per-conversation store state (pagination.hasLoadError), committed
+   *  atomically with isLoadingOlder=false on olderPageLoadFailed. */
+  hasLoadError: boolean;
   /** Reports whether the older-page request loaded, failed, or was skipped. */
   onLoadOlder: () => Promise<LoadOlderMessagesOutcome>;
 }
@@ -17,23 +20,26 @@ interface UseLoadOlderMessagesOptions {
  *  callback — both the IntersectionObserver sentinel below and the
  *  component's "Load earlier" button must call this same callback, never
  *  the raw `onLoadOlder`, or the button path would bypass the scroll
- *  restore (review HIGH 10-04). */
+ *  restore (review HIGH 10-04).
+ *
+ *  The failure flag (`hasLoadError`) is per-conversation store state, read
+ *  as a prop rather than owned locally. It commits in the SAME reducer
+ *  update that clears isLoadingOlder, so there is no longer an
+ *  intermediate render where loading is false but the failure hasn't
+ *  landed yet — that gap previously let the observer effect below
+ *  re-attach over a still-intersecting sentinel and fire a second
+ *  automatic request. Because the flag is already scoped by
+ *  conversationId in the store, a conversation switch shows the new
+ *  conversation's own (fresh) flag for free — no callback-identity reset
+ *  block is needed (see .planning/debug/older-load-double-retry.md). */
 export function useLoadOlderMessages({
   viewportRef,
   sentinelRef,
   hasMoreOlder,
   isLoadingOlder,
+  hasLoadError,
   onLoadOlder,
 }: UseLoadOlderMessagesOptions) {
-  const [hasOlderLoadError, setHasOlderLoadError] = useState(false);
-  const [previousOnLoadOlder, setPreviousOnLoadOlder] = useState(
-    () => onLoadOlder
-  );
-  if (previousOnLoadOlder !== onLoadOlder) {
-    setPreviousOnLoadOlder(() => onLoadOlder);
-    setHasOlderLoadError(false);
-  }
-
   // Generation token: onLoadOlder is recreated per conversation (its
   // useCallback identity is keyed on conversationId in use-chat-messages).
   // A completion that resolves after the identity has moved on belongs to a
@@ -61,12 +67,13 @@ export function useLoadOlderMessages({
     const previousScrollHeight = viewport?.scrollHeight ?? 0;
     const previousScrollTop = viewport?.scrollTop ?? 0;
 
-    const outcome = await onLoadOlder();
+    await onLoadOlder();
 
     // The conversation may have switched (a new onLoadOlder identity) while
     // this request was in flight. A stale completion must never restore
-    // scroll or set error state into whatever conversation is now mounted —
-    // drop it silently.
+    // scroll into whatever conversation is now mounted — drop it silently.
+    // (The failure flag itself is store state scoped to the conversation
+    // the request was made for, so it never needs this guard.)
     if (latestOnLoadOlderRef.current !== requestCallback) {
       return;
     }
@@ -87,13 +94,11 @@ export function useLoadOlderMessages({
           viewport.scrollHeight - previousScrollHeight + previousScrollTop;
       });
     }
-
-    setHasOlderLoadError(outcome === "failed");
   }, [onLoadOlder, viewportRef]);
 
   useEffect(() => {
     const node = sentinelRef.current;
-    if (!node || !hasMoreOlder || isLoadingOlder || hasOlderLoadError) {
+    if (!node || !hasMoreOlder || isLoadingOlder || hasLoadError) {
       return;
     }
 
@@ -109,12 +114,12 @@ export function useLoadOlderMessages({
     observer.observe(node);
     return () => observer.disconnect();
   }, [
+    hasLoadError,
     hasMoreOlder,
-    hasOlderLoadError,
     isLoadingOlder,
     loadOlderAndPreserveScroll,
     sentinelRef,
   ]);
 
-  return { hasOlderLoadError, loadOlderAndPreserveScroll };
+  return { hasOlderLoadError: hasLoadError, loadOlderAndPreserveScroll };
 }

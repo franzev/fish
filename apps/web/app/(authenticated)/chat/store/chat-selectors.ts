@@ -82,6 +82,15 @@ export function selectIsLoadingOlderForConversation(
   );
 }
 
+export function selectHasLoadErrorForConversation(
+  state: Pick<ChatStoreState, "conversations">,
+  conversationId: ChatConversationId
+): boolean {
+  return (
+    selectConversationState(state, conversationId)?.pagination.hasLoadError ?? false
+  );
+}
+
 export function selectOldestCursorForConversation(
   state: Pick<ChatStoreState, "conversations">,
   conversationId: ChatConversationId

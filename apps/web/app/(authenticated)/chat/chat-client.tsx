@@ -114,6 +114,7 @@ export function ChatClient({
     loadOlderMessages,
     hasMoreOlder,
     isLoadingOlder,
+    hasLoadError,
   } = useChatMessages({
     chat,
     refreshMessagesAction,
@@ -160,6 +161,7 @@ export function ChatClient({
     sentinelRef,
     hasMoreOlder,
     isLoadingOlder,
+    hasLoadError,
     onLoadOlder: loadOlderMessages,
   });
   // "Reconnecting…" is only calm/true once the conversation has genuinely
