@@ -24,9 +24,11 @@ dead ends**:
 
 - **Loading** — a soft **skeleton** of what's coming (not a blank screen or a spinner-of-doom); the
   pulse respects `prefers-reduced-motion` (via the theme).
-- **Offline** — a calm `--notice`-tone banner: "You're offline. Messages will send when you're back."
+- **Offline** — a calm `--notice`-tone banner: "You're offline. Reconnect, then try again."
   De-emphasise **only the composer** (it can't send yet); keep the **message transcript at full opacity**
   so past coach instructions stay AA-legible for an audience that re-reads. Never an alarming red failure.
+  No offline queue exists — a failed send stays a real, manual **Retry** action; the copy must never
+  promise automatic or background delivery.
 - **Reconnecting** — a quiet "Reconnecting…" in muted tone.
 
 ## Anti-patterns

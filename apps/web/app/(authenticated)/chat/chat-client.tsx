@@ -25,6 +25,7 @@ import {
   getMessageSnippet,
   getOutgoingMessageStatus,
 } from "./chat-state";
+import { belongsToSameMessageGroup } from "./message-grouping";
 import { cn } from "@/lib/utils";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import {
@@ -325,10 +326,13 @@ export function ChatClient({
               const mine = message.senderId === chat.currentUserId;
               const previous = filteredMessages[index - 1];
               const next = filteredMessages[index + 1];
-              const groupedWithPrevious = Boolean(
-                previous && previous.senderId === message.senderId
+              // Same sender alone used to group a run indefinitely (WR-02):
+              // the shared predicate also requires the same calendar day and
+              // a short gap, so identity/time reappear on a long run.
+              const groupedWithPrevious = belongsToSameMessageGroup(previous, message);
+              const groupedWithNext = Boolean(
+                next && belongsToSameMessageGroup(message, next)
               );
-              const groupedWithNext = Boolean(next && next.senderId === message.senderId);
               const connectedBubbleRadius = getBubbleRadiusClasses({
                 mine,
                 groupedWithPrevious,
@@ -492,22 +496,28 @@ export function ChatClient({
                       /* Reference idiom: rows stay clean at rest; actions
                          surface in a compact bar on row hover. Revealed via
                          opacity (not display) so keyboard focus still reaches
-                         the buttons, with focus-within keeping it visible. */
+                         the buttons, with focus-within keeping it visible.
+                         pointer-coarse also reveals it unconditionally (WR-04):
+                         touch/coarse pointers have no hover, so the bar must
+                         not depend on it to be reachable. Each control is
+                         min-h-control/min-w-control (56px) — the compact
+                         hover-only 40px bar violated the non-negotiable
+                         tap-target floor. */
                       <div
-                        className="pointer-events-none absolute -top-sm right-md flex items-center gap-3xs rounded-control border border-border bg-surface p-3xs opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100"
+                        className="pointer-events-none absolute -top-sm right-md flex items-center gap-3xs rounded-control border border-border bg-surface p-3xs opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100"
                       >
                         <button
                           type="button"
                           aria-label="Reply to message"
                           onClick={() => startReplyingToMessage(message)}
-                          className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                         >
                           <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
                         </button>
                         <EmojiPickerButton
                           label="Add a reaction"
                           onSelect={(emoji) => void handleToggleReaction(message, emoji)}
-                          className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                         >
                           <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
                         </EmojiPickerButton>
@@ -517,7 +527,7 @@ export function ChatClient({
                               type="button"
                               aria-label="Edit message"
                               onClick={() => startEditingMessage(message)}
-                              className="inline-flex size-10 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
                             >
                               <IconPencil size={18} stroke={1.75} aria-hidden="true" />
                             </button>
@@ -525,7 +535,7 @@ export function ChatClient({
                               type="button"
                               aria-label="Delete message"
                               onClick={() => void handleDeleteMessage(message)}
-                              className="inline-flex size-10 items-center justify-center rounded-control text-notice hover:bg-surface-2"
+                              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-notice hover:bg-surface-2"
                             >
                               <IconTrash size={18} stroke={1.75} aria-hidden="true" />
                             </button>
@@ -605,7 +615,7 @@ export function ChatClient({
 
       {isOffline && (
         <Alert tone="notice" className="mx-md mb-xs">
-          You&apos;re offline. Messages will send when you&apos;re back.
+          You&apos;re offline. Reconnect, then try again.
         </Alert>
       )}
 
