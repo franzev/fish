@@ -98,7 +98,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - [x] 09-07-PLAN.md — isolate the chat store by authenticated user; clear on soft logout with a cross-account regression test (CR-01 blocker)
 - [x] 09-08-PLAN.md — remove the `/chat` route and add dated CSTATE-02/06 + D-09 supersede notes for the community-room target
-- [ ] 09-09-PLAN.md — draft-safe send-failure recovery: conditional reducer restore and removal of the composer clobber (WR-01 blocker)
+- [x] 09-09-PLAN.md — draft-safe send-failure recovery: conditional reducer restore and removal of the composer clobber (WR-01 blocker)
 
 **Wave 6** *(blocked on Wave 5)*
 
@@ -138,7 +138,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 8/11 | In Progress|  |
+| 9. Cross-platform Chat State | v1.2 | 9/11 | In Progress|  |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
