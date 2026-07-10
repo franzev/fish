@@ -2358,7 +2358,10 @@ describe("ChatClient", () => {
       messages: [],
       needsReset: false,
     };
-    const backfillMessagesAction = vi.fn(() => {
+    const backfillMessagesAction = vi.fn((input: unknown) => {
+      expect(input).toEqual(
+        expect.objectContaining({ conversationId: expect.any(String) })
+      );
       if (resolvers.length >= 2) {
         return Promise.resolve(boundedSuccess);
       }

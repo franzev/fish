@@ -163,9 +163,12 @@ export function useChatRealtime({
       }
 
       const backfill = applyGapBackfill ?? refreshConversation;
-      backfillInFlightRef.current = backfill().finally(() => {
-        backfillInFlightRef.current = null;
+      const ownedBackfillPromise: Promise<void> = backfill().finally(() => {
+        if (backfillInFlightRef.current === ownedBackfillPromise) {
+          backfillInFlightRef.current = null;
+        }
       });
+      backfillInFlightRef.current = ownedBackfillPromise;
     },
     [applyGapBackfill, refreshConversation]
   );
