@@ -118,7 +118,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [x] 09-14-PLAN.md — bind the chat cache to verified auth identity: purge on identity change/sign-out/expiry, honor signOut().ok with calm retry (CR-01)
 - [x] 09-15-PLAN.md — older-page pagination conversation/generation ownership: per-conversation in-flight lock + stale-completion/rAF guards (WR-01)
 - [x] 09-17-PLAN.md — community send lifecycle E2E repair: reload-persistence + exactly-one-row, no `.last()` (WR-08)
-- [ ] 09-18-PLAN.md — app-shell 56px logo target + stale `/chat` comment cleanup (WR-09)
+- [x] 09-18-PLAN.md — app-shell 56px logo target + stale `/chat` comment cleanup (WR-09)
 
 **Wave 10** *(gap closure round 4; blocked on Wave 9: 09-13 + 09-15)*
 
@@ -154,7 +154,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 4. Client Profiles | v1.1 | 3/3 | Complete | 2026-07-05 |
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
-| 9. Cross-platform Chat State | v1.2 | 16/18 | In Progress|  |
+| 9. Cross-platform Chat State | v1.2 | 17/18 | In Progress|  |
 | 10. Chat Message Loading Optimization | v1.2 | 4/4 | Complete   | 2026-07-10 |
 
 ---
