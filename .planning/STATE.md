@@ -5,15 +5,15 @@ milestone_name: Cross-platform Chat State Foundation
 current_phase: 09
 current_phase_name: cross-platform-chat-state
 status: executing
-stopped_at: Completed 09-12-PLAN.md
-last_updated: "2026-07-10T07:53:02.792Z"
+stopped_at: Completed 09-13-PLAN.md
+last_updated: "2026-07-10T08:25:16.869Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
-  percent: 80
+  completed_phases: 3
+  total_plans: 26
+  completed_plans: 22
+  percent: 60
 ---
 
 # Project State: FISH
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md
 
 ## Current Position
 
-Phase: 09 (cross-platform-chat-state) — COMPLETE
-Plan: 12 of 12
+Phase: 09 (cross-platform-chat-state) — EXECUTING
+Plan: 2 of 18
 Status: Ready to execute
 Next planned: Re-run Phase 09 UAT Test 2 at `/channels/general`, then complete the milestone audit.
 
@@ -101,6 +101,9 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 09-11]: Message-action controls resized from size-10 (40px) to min-h-control/min-w-control (56px), with a pointer-coarse: reveal alongside hover/focus-within. — The 56px floor (AGENTS.md) is non-negotiable and supersedes the sketch reference's compact hover-only bar (WR-04); touch/coarse pointers need a reveal path that does not depend on hover.
 - [Phase 09]: Older-message auto-loading stops after one failed visible-sentinel request; manual retry stays available. — The web hook owns retry timing while the portable reducer remains retryable and unchanged.
 - [Phase 09]: Conversation changes reset the older-load failure gate through a render-time callback-identity comparison. — This preserves the planned reset behavior without violating react-hooks/set-state-in-effect.
+- [Phase 09-13]: Reused mergeChatMessage for hydrate-preserve reconciliation instead of a bespoke function — Keeps dedup/supersede semantics identical across every message-touching event (same primitive olderPageLoaded already uses).
+- [Phase 09-13]: markMessageFailed is now monotonic: a late failure is ignored once a message's localStatus is already sent — Closes WR-03 — prevents a stale failure callback from downgrading a realtime-confirmed or authoritative send.
+- [Phase 09-13]: getMessageSnippet now counts Unicode code points via Array.from instead of UTF-16 .length/.slice() — Closes WR-10 — guarantees a truncated snippet never exceeds 96 code points and never splits a surrogate pair (emoji).
 
 ### Todos / open questions
 
@@ -130,6 +133,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | Phase 09 P10 | 18min | 2 tasks | 2 files |
 | Phase 09 P11 | 6min | 3 tasks | 5 files |
 | Phase 09 P12 | 12min | 2 tasks | 4 files |
+| Phase 09 P13 | 25min | 3 tasks | 6 files |
 
 ### Quick Tasks Completed
 
@@ -170,10 +174,12 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ## Session Continuity
 
-**Last session:** 2026-07-10T06:31:09.995Z
+**Resume file:** None
+
+**Last session:** 2026-07-10T08:25:16.863Z
 
 - **Last activity:** 2026-07-10
-- **Stopped at:** Completed 09-12-PLAN.md
+- **Stopped at:** Completed 09-13-PLAN.md
 - **Next action:** Run `$gsd-verify-work 09` to complete the visual calm and native docs readability checks.
 
 ---
