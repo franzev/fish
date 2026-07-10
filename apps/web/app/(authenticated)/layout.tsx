@@ -1,3 +1,4 @@
+import { ChatIdentityGuard } from "@/components/auth/chat-identity-guard";
 import { AppShell } from "@/components/shell/app-shell";
 import { authRedirects } from "@/lib/auth/redirects";
 import { getAuthenticatedShellProfile } from "@/lib/auth/server";
@@ -27,17 +28,20 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <AppShell
-      displayName={profile.displayName}
-      role={profile.role}
-      preferences={{
-        themePref: profile.themePref,
-        textSizePref: profile.textSizePref,
-        reducedMotionPref: profile.reducedMotionPref,
-        timeFormatPref: profile.timeFormatPref,
-      }}
-    >
-      {children}
-    </AppShell>
+    <>
+      <ChatIdentityGuard userId={profile.userId} />
+      <AppShell
+        displayName={profile.displayName}
+        role={profile.role}
+        preferences={{
+          themePref: profile.themePref,
+          textSizePref: profile.textSizePref,
+          reducedMotionPref: profile.reducedMotionPref,
+          timeFormatPref: profile.timeFormatPref,
+        }}
+      >
+        {children}
+      </AppShell>
+    </>
   );
 }
