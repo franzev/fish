@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 09-cross-platform-chat-state
 source: [09-07-SUMMARY.md, 09-08-SUMMARY.md, 09-09-SUMMARY.md, 09-10-SUMMARY.md, 09-11-SUMMARY.md, 09-VERIFICATION.md]
 started: 2026-07-10T05:49:32Z
-updated: 2026-07-10T06:05:00Z
+updated: 2026-07-10T06:02:01Z
 ---
 
 ## Current Test
@@ -99,5 +99,18 @@ blocked: 0
   reason: "User reported: loading earlier messages breaks the app"
   severity: blocker
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "Unbounded retry loop: olderPageLoadFailed intentionally leaves hasMoreOlder/oldestLoadedCursor retryable at the state layer, but the IntersectionObserver effect in use-load-older-messages.ts re-fires immediately once isLoadingOlder resets to false because the sentinel is still visible. No delay/backoff/retry cap exists, and no visible error affordance distinguishes the resulting stuck retry loop from normal loading."
+  artifacts:
+    - path: "apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts"
+      issue: "IntersectionObserver effect (lines 47-64) re-observes the still-visible sentinel immediately after isLoadingOlder flips back to false, with no gate on a prior failure."
+    - path: "apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts"
+      issue: "loadOlderMessages (lines 225-265) swallows fetch rejections and dispatches markOlderPageFailed with no delay, backoff, or retry counter."
+    - path: "packages/core/src/chat-state/reducer.ts"
+      issue: "olderPageLoadFailed (lines 184-196) leaves pagination retryable by design; correct at the state layer but nothing above it gates when a retry happens."
+    - path: "apps/web/app/(authenticated)/chat/chat-client.tsx"
+      issue: "No visible error affordance for a failed older-page load (lines 285-314) — only the loading skeleton flickers, so a retry storm is invisible except as an unresponsive top-of-list."
+  missing:
+    - "Bound the retry: pause/disconnect the sentinel observer after a failure until a user-initiated retry, or add a capped backoff."
+    - "Add a calm-tone visible failure affordance for a stuck older-page load, distinct from the loading skeleton."
+    - "Add a component-level test (chat-client.test.tsx or a new use-load-older-messages.test.ts) that mocks loadOlderMessagesAction to reject/return status: notice with the sentinel still intersecting, asserting the action is not called an unbounded number of times."
+  debug_session: ".planning/debug/loading-earlier-messages-retry-storm.md"
