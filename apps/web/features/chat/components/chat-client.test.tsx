@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
 import { setSentinelIntersecting, triggerIntersection } from "@/tests/intersection-observer";
 import { ChatClient } from "./chat-client";
-import { chatStore, resetChatStoreForTests } from "./store/chat-store";
+import { chatStore, resetChatStoreForTests } from "@/features/chat/model/store";
 import {
   selectMessagesForConversation,
   selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
-} from "./store/chat-selectors";
+} from "@/features/chat/model/store";
 
 const realtimeMock = vi.hoisted(() => {
   const messageHandlers: Array<(payload: { new: unknown }) => void> = [];
@@ -129,31 +129,31 @@ function latestSubscribeStatusCallback(
 
 describe("ChatClient hook boundaries", () => {
   const chatClientSource = readFileSync(
-    join(process.cwd(), "app/(authenticated)/chat/chat-client.tsx"),
+    join(process.cwd(), "features/chat/components/chat-client.tsx"),
     "utf8"
   );
 
   it("delegates message and read-state behavior to focused hooks", () => {
-    expect(chatClientSource).toContain(`from "./hooks/use-chat-messages"`);
+    expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-messages`);
     expect(chatClientSource).toContain("useChatMessages(");
-    expect(chatClientSource).toContain(`from "./hooks/use-chat-read-state"`);
+    expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-read-state`);
     expect(chatClientSource).toContain("useChatReadState(");
   });
 
   it("delegates realtime and presence behavior to focused hooks", () => {
-    expect(chatClientSource).toContain(`from "./hooks/use-chat-realtime"`);
+    expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-realtime`);
     expect(chatClientSource).toContain("useChatRealtime(");
-    expect(chatClientSource).toContain(`from "./hooks/use-chat-presence"`);
+    expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-presence`);
     expect(chatClientSource).toContain("useChatPresence(");
   });
 
   it("delegates composer command behavior to a focused hook", () => {
-    expect(chatClientSource).toContain(`from "./hooks/use-chat-composer"`);
+    expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-composer`);
     expect(chatClientSource).toContain("useChatComposer(");
   });
 
   it("wires the rendering shell to narrow chat store selectors", () => {
-    expect(chatClientSource).toContain(`from "./store/chat-selectors"`);
+    expect(chatClientSource).toContain(`@/features/chat/model/store`);
     expect(chatClientSource).toContain("selectComposerForConversation");
     expect(chatClientSource).toContain("selectReadStatesForConversation");
     expect(chatClientSource).not.toContain("useChatStore()");
@@ -167,7 +167,7 @@ describe("ChatClient hook boundaries", () => {
       "use-chat-composer.ts",
     ].map((fileName) =>
       readFileSync(
-        join(process.cwd(), `app/(authenticated)/chat/hooks/${fileName}`),
+        join(process.cwd(), `features/chat/hooks/${fileName}`),
         "utf8"
       )
     );
@@ -184,7 +184,7 @@ describe("ChatClient hook boundaries", () => {
     const useChatRealtimeSource = readFileSync(
       join(
         process.cwd(),
-        "app/(authenticated)/chat/hooks/use-chat-realtime.ts"
+        "features/chat/hooks/use-chat-realtime.ts"
       ),
       "utf8"
     );

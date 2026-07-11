@@ -2,7 +2,7 @@
 
 import { SettingsRow } from "@/components/profile/settings-row";
 import { Button } from "@/components/ui/button";
-import { acceptConsentAction } from "@/app/(authenticated)/profile/edit/actions";
+import { acceptConsentAction } from "@/features/profile/server/actions";
 import { useState } from "react";
 
 // Bumped only when the terms/privacy agreement materially changes.

@@ -1,6 +1,6 @@
 "use client";
 
-import { clearChatStore } from "@/app/(authenticated)/chat/store/chat-store";
+import { clearChatStore } from "@/features/chat/model/store";
 import { signOut } from "@/lib/auth/browser";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

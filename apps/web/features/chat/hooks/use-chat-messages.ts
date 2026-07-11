@@ -1,6 +1,6 @@
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
 import type { ChatConversationId, ChatMessageState } from "@fish/core/chat-state";
-import { mergeChatMessage } from "../chat-state";
+import { mergeChatMessage } from "@/features/chat/model/chat-state";
 import {
   useCallback,
   useEffect,
@@ -13,7 +13,7 @@ import {
   chatStore,
   createChatHydrationKey,
   useChatStore,
-} from "../store/chat-store";
+} from "@/features/chat/model/store";
 import {
   selectHasLoadErrorForConversation,
   selectHasMoreOlderForConversation,
@@ -22,7 +22,7 @@ import {
   selectMessagesForConversation,
   selectOldestCursorForConversation,
   selectReadStatesForConversation,
-} from "../store/chat-selectors";
+} from "@/features/chat/model/store";
 
 export type LocalStatus = "pending" | "sending" | "sent" | "failed";
 

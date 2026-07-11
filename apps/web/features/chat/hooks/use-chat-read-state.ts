@@ -5,18 +5,18 @@ import type {
 import {
   countUnreadMessages,
   mergeReadState as mergeChatReadState,
-} from "../chat-state";
+} from "@/features/chat/model/chat-state";
 import { toLocalMessage, type LocalMessage } from "./use-chat-messages";
 import { useCallback, useEffect, useMemo } from "react";
 import {
   chatStore,
   createChatHydrationKey,
   useChatStore,
-} from "../store/chat-store";
+} from "@/features/chat/model/store";
 import {
   selectHydrationKeyForConversation,
   selectReadStatesForConversation,
-} from "../store/chat-selectors";
+} from "@/features/chat/model/store";
 
 export interface MarkReadStateActionState {
   status: "sent" | "notice";

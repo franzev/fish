@@ -25,8 +25,8 @@ vi.mock("@/lib/services/supabase/browser", () => ({
 import {
   chatStore,
   resetChatStoreForTests,
-} from "@/app/(authenticated)/chat/store/chat-store";
-import { selectComposerForConversation } from "@/app/(authenticated)/chat/store/chat-selectors";
+} from "@/features/chat/model/store";
+import { selectComposerForConversation } from "@/features/chat/model/store";
 import { generalChannelId } from "@/lib/channels";
 import { ChatIdentityGuard } from "./chat-identity-guard";
 

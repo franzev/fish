@@ -19,15 +19,15 @@ import {
   Reactions,
   SearchFilterPopover,
   TypingIndicator,
-} from "@/components/chat";
+} from "./visual";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area/scroll-area";
 import {
   getMessageSnippet,
   getOutgoingMessageStatus,
-} from "./chat-state";
-import { belongsToSameMessageGroup } from "./message-grouping";
+} from "@/features/chat/model/chat-state";
+import { belongsToSameMessageGroup } from "@/features/chat/model/message-grouping";
 import { cn } from "@/lib/utils";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import {
@@ -39,23 +39,23 @@ import {
   IconMessageReply,
 } from "@tabler/icons-react";
 import { Fragment, useMemo, useRef, useState } from "react";
-import type { SendMessageActionState } from "./actions";
-import { useChatComposer } from "./hooks/use-chat-composer";
-import type { LoadOlderMessagesActionState } from "./hooks/use-chat-messages";
-import { useChatMessages } from "./hooks/use-chat-messages";
-import { useChatPresence } from "./hooks/use-chat-presence";
-import { useChatReadState } from "./hooks/use-chat-read-state";
-import { useChatRealtime } from "./hooks/use-chat-realtime";
-import { useLoadOlderMessages } from "./hooks/use-load-older-messages";
-import { useStickToBottom } from "./hooks/use-stick-to-bottom";
-import { useChatStore } from "./store/chat-store";
+import type { SendMessageActionState } from "@/features/chat/contracts";
+import { useChatComposer } from "@/features/chat/hooks/use-chat-composer";
+import type { LoadOlderMessagesActionState } from "@/features/chat/hooks/use-chat-messages";
+import { useChatMessages } from "@/features/chat/hooks/use-chat-messages";
+import { useChatPresence } from "@/features/chat/hooks/use-chat-presence";
+import { useChatReadState } from "@/features/chat/hooks/use-chat-read-state";
+import { useChatRealtime } from "@/features/chat/hooks/use-chat-realtime";
+import { useLoadOlderMessages } from "@/features/chat/hooks/use-load-older-messages";
+import { useStickToBottom } from "@/features/chat/hooks/use-stick-to-bottom";
+import { useChatStore } from "@/features/chat/model/store";
 import {
   selectComposerForConversation,
   selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
-} from "./store/chat-selectors";
+} from "@/features/chat/model/store";
 
-interface ChatClientProps {
+export interface ChatClientProps {
   chat: ClientChatData;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;

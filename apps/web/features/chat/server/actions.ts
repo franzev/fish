@@ -1,6 +1,10 @@
 "use server";
 
 import type { ClientChatMessage, ClientChatReadState } from "@/lib/services";
+import type {
+  MarkReadStateActionState,
+  SendMessageActionState,
+} from "@/features/chat/contracts";
 import { getPublicEnv } from "@/lib/services/env";
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
 import { chatLimits } from "@fish/core/chat";
@@ -121,26 +125,6 @@ type ChatCommand =
       messageId: string;
       emoji: string;
     };
-
-export interface SendMessageActionState {
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  message?: ClientChatMessage;
-}
-
-export interface MarkReadStateActionState {
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  readState?: {
-    userId: string;
-    lastDeliveredMessageId: string | null;
-    deliveredAt: string | null;
-    lastReadMessageId: string | null;
-    readAt: string | null;
-  };
-}
 
 function toClientChatMessage(row: MessageResponseRow): ClientChatMessage {
   return {

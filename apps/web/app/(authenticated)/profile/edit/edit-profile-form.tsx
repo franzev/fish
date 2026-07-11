@@ -8,7 +8,7 @@ import {
   updateProfileAction,
   type EditProfileState,
   type EditProfileValues,
-} from "./actions";
+} from "@/features/profile/server/actions";
 
 // Locale/timezone never change during a session, so the external store never
 // emits -- subscribe is a no-op that returns an empty unsubscribe.

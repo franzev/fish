@@ -5,7 +5,7 @@ import { ConsentRow } from "./consent-row";
 const { acceptConsentActionMock } = vi.hoisted(() => ({
   acceptConsentActionMock: vi.fn(async () => undefined),
 }));
-vi.mock("@/app/(authenticated)/profile/edit/actions", () => ({
+vi.mock("@/features/profile/server/actions", () => ({
   acceptConsentAction: acceptConsentActionMock,
 }));
 

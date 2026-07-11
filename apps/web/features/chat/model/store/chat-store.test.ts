@@ -60,7 +60,7 @@ function getStoreState(): ChatStoreState {
 describe("chat store authority boundary", () => {
   it("keeps Zustand web-only and reducer-backed", () => {
     const source = readFileSync(
-      join(process.cwd(), "app/(authenticated)/chat/store/chat-store.ts"),
+      join(process.cwd(), "features/chat/model/store/chat-store.ts"),
       "utf8"
     );
 

@@ -15,10 +15,13 @@ import {
   subscribeToConversationReadStates,
   subscribeToConversationTyping,
   subscribeToConversationVoiceRecording,
-} from "../realtime";
+} from "@/features/chat/model/realtime";
 import type { LocalMessage } from "./use-chat-messages";
-import { chatStore, useChatStore } from "../store/chat-store";
-import { selectMessagesForConversation } from "../store/chat-selectors";
+import {
+  chatStore,
+  selectMessagesForConversation,
+  useChatStore,
+} from "@/features/chat/model/store";
 import type { ClientChatMessage } from "@/lib/services";
 
 // Supabase postgres_changes payloads carry only the raw messages row — no

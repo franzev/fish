@@ -1,5 +1,5 @@
 import { A11yPrefs } from "@/components/profile/a11y-prefs";
-import { Avatar } from "@/components/chat/avatar/avatar";
+import { Avatar } from "@/components/chat";
 import { CoachCard } from "@/components/profile/coach-card";
 import { ConsentRow } from "@/components/profile/consent-row";
 import { LogoutButton } from "@/components/auth/logout-button";

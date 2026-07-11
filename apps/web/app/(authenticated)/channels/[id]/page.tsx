@@ -1,7 +1,4 @@
-import { EmptyState } from "@/components/chat";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getChatPageData } from "@/lib/auth/server";
-import { redirect } from "next/navigation";
+import { ChatClient, EmptyState } from "@/features/chat";
 import {
   backfillMessagesAction,
   deleteMessageAction,
@@ -13,8 +10,10 @@ import {
   refreshMessagesAction,
   sendMessageAction,
   toggleReactionAction,
-} from "../../chat/actions";
-import { ChatClient } from "../../chat/chat-client";
+} from "@/features/chat/server";
+import { authRedirects } from "@/lib/auth/redirects";
+import { getChatPageData } from "@/lib/auth/server";
+import { redirect } from "next/navigation";
 
 // Single-channel milestone: [id] is accepted for URL stability, but the only
 // channel is `general`, resolved through the existing demo-community data path.

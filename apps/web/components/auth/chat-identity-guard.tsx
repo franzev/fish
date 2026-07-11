@@ -3,8 +3,8 @@
 import {
   clearChatStore,
   ensureChatStoreOwner,
-} from "@/app/(authenticated)/chat/store/chat-store";
-import { createBrowserSupabaseClient } from "@/lib/services/supabase/browser";
+} from "@/features/chat/model/store";
+import { subscribeToChatSessionChanges } from "@/lib/auth/chat-session-listener";
 import { useEffect } from "react";
 
 interface ChatIdentityGuardProps {
@@ -31,10 +31,7 @@ export function ChatIdentityGuard({ userId }: ChatIdentityGuardProps) {
   }, [userId]);
 
   useEffect(() => {
-    const client = createBrowserSupabaseClient();
-    const {
-      data: { subscription },
-    } = client.auth.onAuthStateChange((event, session) => {
+    return subscribeToChatSessionChanges((event, session) => {
       if (event === "SIGNED_OUT") {
         clearChatStore();
         return;
@@ -45,9 +42,6 @@ export function ChatIdentityGuard({ userId }: ChatIdentityGuardProps) {
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   return null;

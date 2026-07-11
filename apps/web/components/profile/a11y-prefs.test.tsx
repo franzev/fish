@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const { updatePrefsActionMock } = vi.hoisted(() => ({
   updatePrefsActionMock: vi.fn(async () => undefined),
 }));
-vi.mock("@/app/(authenticated)/profile/edit/actions", () => ({
+vi.mock("@/features/profile/server/actions", () => ({
   updatePrefsAction: updatePrefsActionMock,
 }));
 

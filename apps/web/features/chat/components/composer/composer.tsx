@@ -1,6 +1,6 @@
 "use client";
 
-import { EmojiPickerButton } from "@/components/chat/emoji-picker";
+import { EmojiPickerButton } from "../emoji-picker";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {

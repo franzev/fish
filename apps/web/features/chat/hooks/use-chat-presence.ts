@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   derivePresenceSnapshot,
   formatPresenceStatus,
-} from "../presence";
+} from "@/features/chat/model/presence";
 import {
   startPresenceSession,
   subscribeToParticipantPresence,
-} from "../realtime";
+} from "@/features/chat/model/realtime";
 
 interface UseChatPresenceOptions {
   chat: ClientChatData;

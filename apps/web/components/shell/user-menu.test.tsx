@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
 import {
   chatStore,
   resetChatStoreForTests,
-} from "@/app/(authenticated)/chat/store/chat-store";
+} from "@/features/chat/model/store";
 import { UserMenu } from "./user-menu";
 
 describe("UserMenu", () => {

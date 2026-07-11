@@ -21,7 +21,8 @@ function collectTsxFiles(dir: string): string[] {
 describe("service abstraction boundary", () => {
   it("keeps TSX files from importing Supabase clients or package contracts directly", () => {
     const root = process.cwd();
-    const forbiddenImport = /from\s+["'](?:@supabase\/|@fish\/supabase|@\/lib\/supabase)/;
+    const forbiddenImport =
+      /from\s+["'](?:@supabase\/|@fish\/supabase|@\/lib\/(?:services\/supabase|supabase))/;
     const offenders = collectTsxFiles(root)
       .filter((file) => forbiddenImport.test(readFileSync(file, "utf-8")))
       .map((file) => relative(root, file));

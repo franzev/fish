@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import {
   updatePrefsAction,
   type UpdatePrefsInput,
-} from "@/app/(authenticated)/profile/edit/actions";
+} from "@/features/profile/server/actions";
 
 type ThemePref = "light" | "dark" | null;
 type TextSizePref = "default" | "large" | "larger" | null;

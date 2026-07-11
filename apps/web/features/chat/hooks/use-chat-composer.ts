@@ -1,10 +1,9 @@
 import type { ClientChatData } from "@/lib/services";
 import { chatLimits } from "@fish/core/chat";
 import { useMemo, useState, type KeyboardEvent } from "react";
-import type { SendMessageActionState } from "../actions";
+import type { SendMessageActionState } from "@/features/chat/contracts";
 import type { LocalMessage } from "./use-chat-messages";
-import { useChatStore } from "../store/chat-store";
-import { selectComposerForConversation } from "../store/chat-selectors";
+import { useChatStore, selectComposerForConversation } from "@/features/chat/model/store";
 
 interface UseChatComposerOptions {
   chat: ClientChatData;
