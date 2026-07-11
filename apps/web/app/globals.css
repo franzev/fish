@@ -124,6 +124,20 @@
   --spacing-control: var(--size-control);
   --spacing-pagination-slot: var(--size-pagination-slot);
   --spacing-skeleton-text: var(--text-ui-sm);
+  --spacing-skeleton-word-8: 8%;
+  --spacing-skeleton-word-9: 9%;
+  --spacing-skeleton-word-10: 10%;
+  --spacing-skeleton-word-12: 12%;
+  --spacing-skeleton-word-13: 13%;
+  --spacing-skeleton-word-14: 14%;
+  --spacing-skeleton-word-15: 15%;
+  --spacing-skeleton-word-18: 18%;
+  --spacing-skeleton-word-19: 19%;
+  --spacing-skeleton-word-20: 20%;
+  --spacing-skeleton-word-23: 23%;
+  --spacing-skeleton-word-24: 24%;
+  --spacing-skeleton-word-27: 27%;
+  --spacing-skeleton-word-29: 29%;
   --spacing-field-message: 22px;
   --spacing-badge: 20px;
   /* Reply spline: gap-md + half sm avatar — anchors the L-stem on avatar centre. */
