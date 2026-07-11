@@ -279,6 +279,17 @@ async function seedChatConversations(
     .upsert(demoReadRows, { onConflict: "conversation_id,user_id" });
   if (demoReadStateError) throw demoReadStateError;
 
+  const { error: channelMemberError } = await supabase
+    .from("channel_members")
+    .upsert(
+      demoReadRows.map((row) => ({
+        channel_id: generalChannelId,
+        user_id: row.user_id,
+      })),
+      { onConflict: "channel_id,user_id" },
+    );
+  if (channelMemberError) throw channelMemberError;
+
   return directConversations;
 }
 
@@ -395,6 +406,122 @@ async function seedDirectMessages(
   }
 
   console.log(`Seeded ${totalSeeded} direct messages across ${directConversations.length} 1-on-1 conversations.`);
+}
+
+/** Adds an idempotent image-only message for checking the three-image gallery locally. */
+async function seedThreeImageMessage(
+  directConversations: DirectConversation[],
+  clientId: string,
+): Promise<void> {
+  const direct = directConversations.find((conversation) => conversation.clientId === clientId);
+  if (!direct) return;
+
+  const { data: message, error: messageError } = await supabase
+    .from("messages")
+    .upsert(
+      {
+        conversation_id: direct.conversationId,
+        sender_id: clientId,
+        sender_role: "client",
+        body: "",
+        client_request_id: "seed-dm-three-image-gallery",
+      },
+      { onConflict: "conversation_id,client_request_id" },
+    )
+    .select("id")
+    .single();
+  if (messageError || !message) throw messageError;
+
+  const fixtures = [
+    "UklGRhIAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==",
+    "UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA",
+    "UklGRkoAAABXRUJQVlA4ID4AAADQAgCdASoBAAEALmk0mk0iIiIiIgBoSygABc6zbAAA/v56QAAAAA==",
+  ].map((fixture) => Buffer.from(fixture, "base64"));
+
+  const attachments = [];
+  for (let index = 0; index < fixtures.length; index += 1) {
+    const imageNumber = index + 1;
+    const image = fixtures[index]!;
+    const rootPath = `${direct.conversationId}/seed-three-image-gallery/${imageNumber}`;
+    const displayPath = `${rootPath}/display.webp`;
+    const thumbnailPath = `${rootPath}/thumbnail.webp`;
+
+    for (const path of [displayPath, thumbnailPath]) {
+      const { error: uploadError } = await supabase.storage
+        .from("chat-images")
+        .upload(path, image, { contentType: "image/webp", upsert: true });
+      if (uploadError) throw uploadError;
+    }
+
+    attachments.push({
+      id: `33000000-0000-4000-8000-${String(imageNumber).padStart(12, "0")}`,
+      conversation_id: direct.conversationId,
+      message_id: message.id,
+      uploader_id: clientId,
+      kind: "image",
+      status: "ready",
+      client_upload_id: `seed-three-image-gallery-${imageNumber}`,
+      position: index,
+      staging_path: `${rootPath}/staging.webp`,
+      display_path: displayPath,
+      thumbnail_path: thumbnailPath,
+      original_name: `gallery-sample-${imageNumber}.webp`,
+      source_mime_type: "image/webp",
+      stored_mime_type: "image/webp",
+      source_byte_size: image.byteLength,
+      stored_byte_size: image.byteLength,
+      width: 1,
+      height: 1,
+      expires_at: "2126-01-01T00:00:00.000Z",
+    });
+  }
+
+  const { error: attachmentError } = await supabase
+    .from("message_attachments")
+    .upsert(attachments, { onConflict: "uploader_id,client_upload_id" });
+  if (attachmentError) throw attachmentError;
+
+  console.log("Seeded a three-image gallery message in the first client conversation.");
+}
+
+/** Stable fixtures used by chat-search integration and Playwright coverage. */
+async function seedSearchFilterMessages(
+  coachId: string,
+  clientId: string,
+): Promise<void> {
+  const { data: clientProfile, error: profileError } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", clientId)
+    .single();
+  if (profileError || !clientProfile) throw profileError;
+
+  const { error } = await supabase.from("messages").upsert(
+    [
+      {
+        id: "90000000-0000-4000-8000-000000000001",
+        conversation_id: demoCommunityConversationId,
+        sender_id: coachId,
+        sender_role: "coach",
+        body: `Search target https://example.com @${clientProfile.username}`,
+        client_request_id: "search-filter-fixture-1",
+        pinned_at: "2026-07-11T10:00:00.000Z",
+        pinned_by: coachId,
+        created_at: "2026-07-11T10:00:00.000Z",
+      },
+      {
+        id: "90000000-0000-4000-8000-000000000002",
+        conversation_id: demoCommunityConversationId,
+        sender_id: clientId,
+        sender_role: "client",
+        body: "Search target plain",
+        client_request_id: "search-filter-fixture-2",
+        created_at: "2026-07-12T10:00:00.000Z",
+      },
+    ],
+    { onConflict: "id" },
+  );
+  if (error) throw error;
 }
 
 /**
@@ -1030,6 +1157,8 @@ async function main(): Promise<void> {
     sam: clientIds[1],
     priya: clientIds[2],
   });
+  await seedThreeImageMessage(directConversations, clientIds[0]);
+  await seedSearchFilterMessages(coachId, clientIds[0]);
   await seedCommunityMessages(coachId, coach2Id, clientIds, extraIds);
   await seedCommunityStressMessages(coachId, coach2Id, clientIds, extraIds);
 
