@@ -1,3 +1,5 @@
+import "client-only";
+
 import { createBrowserSupabaseClient } from "@/lib/services/supabase/browser";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 

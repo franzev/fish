@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
 import { getCurrentProfile } from "./profile-loaders";
 import type { ChatPageData } from "./types";

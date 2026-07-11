@@ -1,3 +1,5 @@
+import "client-only";
+
 import { createBrowserSupabaseServices } from "@/lib/services/supabase/browser";
 import type { ServiceError, ServiceResult } from "@/lib/services";
 

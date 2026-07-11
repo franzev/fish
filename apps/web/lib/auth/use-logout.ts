@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { clearChatStore } from "@/features/chat/model/store";
 import { signOut } from "@/lib/auth/browser";
 import { useRouter } from "next/navigation";

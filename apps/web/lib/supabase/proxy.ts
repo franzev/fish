@@ -1,3 +1,5 @@
+import "server-only";
+
 import { refreshSupabaseSession } from "@/lib/services/supabase/proxy";
 import { type NextRequest } from "next/server";
 

@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
 import type { SupabaseServices } from "@/lib/services";
 import { ServiceError } from "@/lib/services";

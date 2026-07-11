@@ -1,3 +1,5 @@
+import "server-only";
+
 /** Stable facade for server-side auth and role-scoped data loaders. */
 export {
   getAuthenticatedShellProfile,

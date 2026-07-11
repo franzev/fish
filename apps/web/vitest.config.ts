@@ -6,7 +6,17 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     // Mirror tsconfig's "@/*" -> "./*" path alias.
-    alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },
+    alias: {
+      "@": fileURLToPath(new URL(".", import.meta.url)),
+      // Next.js replaces these marker packages at build time. Tests use
+      // inert aliases while the static boundary suite verifies direction.
+      "server-only": fileURLToPath(
+        new URL("./tests/module-markers/server-only.ts", import.meta.url)
+      ),
+      "client-only": fileURLToPath(
+        new URL("./tests/module-markers/client-only.ts", import.meta.url)
+      ),
+    },
   },
   test: {
     environment: "jsdom",

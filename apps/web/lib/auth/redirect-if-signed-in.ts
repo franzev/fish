@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createClient } from "@/lib/supabase/server";
 import { authRedirects } from "@fish/supabase/auth";
 import { redirect } from "next/navigation";
