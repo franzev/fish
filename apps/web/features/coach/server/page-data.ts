@@ -3,10 +3,16 @@ import "server-only";
 import { getServerServices } from "@/lib/services/runtime/server";
 import { getCurrentProfile } from "@/features/auth/server/page-data";
 import type { CoachClientDetailData, CoachHomeData } from "@/features/auth/contracts";
+import type { AppServices } from "@/lib/services";
 
-export async function getCoachHomeData(): Promise<CoachHomeData | null> {
-  const services = await getServerServices();
-  const profile = await getCurrentProfile(services);
+export async function getCoachHomeData(
+  injected?: AppServices
+): Promise<CoachHomeData | null> {
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile({
+    auth: services.auth,
+    profiles: services.database.profiles,
+  });
 
   if (!profile) {
     return null;
@@ -38,10 +44,14 @@ const UUID_RE =
    no distinguishable error, so a coach cannot enumerate client UUIDs
    (T-04-02). */
 export async function getCoachClientDetailData(
-  clientId: string
+  clientId: string,
+  injected?: AppServices
 ): Promise<CoachClientDetailData | null> {
-  const services = await getServerServices();
-  const profile = await getCurrentProfile(services);
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile({
+    auth: services.auth,
+    profiles: services.database.profiles,
+  });
 
   if (!profile) {
     return null;
@@ -80,7 +90,7 @@ export async function getCoachClientDetailData(
   return {
     role: profile.role,
     client: {
-      displayName: nameResult.data.display_name,
+      displayName: nameResult.data.displayName,
       goal: clientProfileResult.data.goal ?? "",
       level: clientProfileResult.data.level ?? null,
     },

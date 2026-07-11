@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Suspense } from "react";
-import { ExpiredLinkContent } from "./expired-link-content";
+import { ExpiredLinkContent } from "./_components/expired-link-content";
 
 export default function ExpiredLinkPage() {
   return (

@@ -6,8 +6,7 @@ import { supabaseChatRealtimeService } from "../supabase/chat-realtime";
 
 let services: AppServices | null = null;
 
-export function getBrowserServices(overrides?: AppServices): AppServices {
-  if (overrides) return overrides;
+export function getBrowserServices(): AppServices {
   services ??= createBrowserSupabaseServices();
   return services;
 }

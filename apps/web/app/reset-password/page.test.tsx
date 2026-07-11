@@ -12,10 +12,8 @@ const { updatePasswordMock } = vi.hoisted(() => ({
   updatePasswordMock: vi.fn(),
 }));
 vi.mock("@/features/auth", () => ({
-  getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
-    error.details?.supabaseCode,
-  getAuthErrorName: (error: { details?: { supabaseName?: string } }) =>
-    error.details?.supabaseName,
+  getAuthFailureReason: (error: { details?: { reason?: string } }) =>
+    error.details?.reason,
   updatePassword: updatePasswordMock,
 }));
 
@@ -27,7 +25,13 @@ describe("ResetPasswordPage", () => {
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./reset-password-form.tsx"), "utf-8");
+    const source = readFileSync(
+      resolve(
+        __dirname,
+        "./_components/reset-password-form/reset-password-form.tsx"
+      ),
+      "utf-8"
+    );
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");
@@ -72,7 +76,7 @@ describe("ResetPasswordPage", () => {
       error: {
         code: "auth",
         message: "New password should be different from the old password.",
-        details: { supabaseCode: "same_password" },
+        details: { reason: "samePassword" },
       },
     });
     render(<ResetPasswordPage />);
@@ -99,7 +103,7 @@ describe("ResetPasswordPage", () => {
       error: {
         code: "auth",
         message: "Auth session missing!",
-        details: { supabaseName: "AuthSessionMissingError" },
+        details: { reason: "sessionMissing" },
       },
     });
     render(<ResetPasswordPage />);
@@ -120,7 +124,7 @@ describe("ResetPasswordPage", () => {
       error: {
         code: "auth",
         message: "Password should be at least 8 characters.",
-        details: { supabaseCode: "weak_password" },
+        details: { reason: "weakPassword" },
       },
     });
     render(<ResetPasswordPage />);

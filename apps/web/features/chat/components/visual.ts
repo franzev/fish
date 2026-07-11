@@ -1,11 +1,11 @@
 /** Reusable visual contracts for the chat feature. */
 export * from "./avatar";
-export * from "./bubble";
-export * from "./composer/composer";
+export * from "./composer";
 export * from "./emoji-picker";
 export * from "./empty-state";
 export * from "./message-body";
 export * from "./message-meta";
+export { getBubbleRadiusClasses } from "./message-presentation";
 export * from "./message-row";
 export { MessageStatus } from "./message-status";
 export * from "./quoted-message";

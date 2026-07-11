@@ -1,8 +1,11 @@
 import {
+  mapInfrastructureError,
   normalizeServiceError,
   serviceFailure,
   type ServiceResult,
 } from "@/lib/services/errors";
+
+export const mapSupabaseError = mapInfrastructureError;
 
 export type SupabaseResponse<T> = {
   data: T | null;

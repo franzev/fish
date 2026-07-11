@@ -1,3 +1,2 @@
-/** Stable entry point for the responsibility-focused Supabase service registry. */
-export { createSupabaseServices } from "./core";
-export type * from "./types";
+/** Infrastructure-only factory. Application code imports app-owned contracts. */
+export * from "./core";

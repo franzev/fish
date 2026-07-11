@@ -1,24 +1,91 @@
 import {
-  mapSupabaseError,
   serviceFailure,
   serviceSuccess,
   type ServiceResult,
 } from "@/lib/services/errors";
 import type { ClientProfileRow, CoachClientRow, ProfileRow } from "@fish/supabase";
-import { safely, type SupabaseResponse } from "./shared";
+import {
+  mapSupabaseError,
+  safely,
+  type SupabaseResponse,
+} from "./shared";
 import type {
-  AppSupabaseClient,
+  ClientProfile,
   ClientProfileRepository,
-  ClientProfileSafeFields,
+  ClientProfileUpdate,
+  CoachAssignment,
   CoachClientListItem,
   CoachClientRepository,
+  Profile,
   ProfileRepository,
-} from "./types";
+} from "../contracts";
+import type { AppSupabaseClient } from "./types";
+
+function toProfile(row: ProfileRow): Profile {
+  return {
+    id: row.id,
+    displayName: row.display_name,
+    email: row.email,
+    role: row.role,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toClientProfile(row: ClientProfileRow): ClientProfile {
+  return {
+    id: row.id,
+    goal: row.goal,
+    locale: row.locale,
+    timezone: row.timezone,
+    level: row.level,
+    themePref: row.theme_pref,
+    textSizePref: row.text_size_pref,
+    reducedMotionPref: row.reduced_motion_pref,
+    timeFormatPref: row.time_format_pref,
+    consented: row.consented,
+    consentedAt: row.consented_at,
+    consentVersion: row.consent_version,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toClientProfileRowUpdate(
+  fields: ClientProfileUpdate
+): Partial<ClientProfileRow> {
+  return {
+    ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
+    ...(fields.locale !== undefined ? { locale: fields.locale } : {}),
+    ...(fields.timezone !== undefined ? { timezone: fields.timezone } : {}),
+    ...(fields.themePref !== undefined
+      ? { theme_pref: fields.themePref }
+      : {}),
+    ...(fields.textSizePref !== undefined
+      ? { text_size_pref: fields.textSizePref }
+      : {}),
+    ...(fields.reducedMotionPref !== undefined
+      ? { reduced_motion_pref: fields.reducedMotionPref }
+      : {}),
+    ...(fields.timeFormatPref !== undefined
+      ? { time_format_pref: fields.timeFormatPref }
+      : {}),
+    ...(fields.consented !== undefined
+      ? { consented: fields.consented }
+      : {}),
+    ...(fields.consentedAt !== undefined
+      ? { consented_at: fields.consentedAt }
+      : {}),
+    ...(fields.consentVersion !== undefined
+      ? { consent_version: fields.consentVersion }
+      : {}),
+  };
+}
 
 export class SupabaseProfileRepository implements ProfileRepository {
   constructor(private readonly client: AppSupabaseClient) {}
 
-  async findById(id: string): Promise<ServiceResult<ProfileRow | null>> {
+  async findById(id: string): Promise<ServiceResult<Profile | null>> {
     return safely("profiles.findById", async () => {
       const { data, error } = (await this.client
         .from("profiles")
@@ -37,13 +104,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
         );
       }
 
-      return serviceSuccess(data);
+      return serviceSuccess(data ? toProfile(data) : null);
     });
   }
 
   async findRoleById(
     id: string
-  ): Promise<ServiceResult<Pick<ProfileRow, "role"> | null>> {
+  ): Promise<ServiceResult<Pick<Profile, "role"> | null>> {
     return safely("profiles.findRoleById", async () => {
       const { data, error } = (await this.client
         .from("profiles")
@@ -62,13 +129,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
         );
       }
 
-      return serviceSuccess(data);
+      return serviceSuccess(data ? { role: data.role } : null);
     });
   }
 
   async findDisplayNameById(
     id: string
-  ): Promise<ServiceResult<Pick<ProfileRow, "display_name"> | null>> {
+  ): Promise<ServiceResult<Pick<Profile, "displayName"> | null>> {
     return safely("profiles.findDisplayNameById", async () => {
       const { data, error } = (await this.client
         .from("profiles")
@@ -87,7 +154,9 @@ export class SupabaseProfileRepository implements ProfileRepository {
         );
       }
 
-      return serviceSuccess(data);
+      return serviceSuccess(
+        data ? { displayName: data.display_name } : null
+      );
     });
   }
 
@@ -120,7 +189,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 export class SupabaseClientProfileRepository implements ClientProfileRepository {
   constructor(private readonly client: AppSupabaseClient) {}
 
-  async findById(id: string): Promise<ServiceResult<ClientProfileRow | null>> {
+  async findById(id: string): Promise<ServiceResult<ClientProfile | null>> {
     return safely("clientProfiles.findById", async () => {
       const { data, error } = (await this.client
         .from("client_profiles")
@@ -139,13 +208,13 @@ export class SupabaseClientProfileRepository implements ClientProfileRepository 
         );
       }
 
-      return serviceSuccess(data);
+      return serviceSuccess(data ? toClientProfile(data) : null);
     });
   }
 
   async findByIdForCoach(
     id: string
-  ): Promise<ServiceResult<ClientProfileRow | null>> {
+  ): Promise<ServiceResult<ClientProfile | null>> {
     // Same query as findById -- RLS ("coach reads assigned client's
     // client_profile", 0007) does the coach scoping; an unassigned coach's
     // SELECT returns zero rows, not an error (default-deny, no leak, D-11).
@@ -167,18 +236,18 @@ export class SupabaseClientProfileRepository implements ClientProfileRepository 
         );
       }
 
-      return serviceSuccess(data);
+      return serviceSuccess(data ? toClientProfile(data) : null);
     });
   }
 
   async updateSafeFields(
     id: string,
-    fields: ClientProfileSafeFields
+    fields: ClientProfileUpdate
   ): Promise<ServiceResult<void>> {
     return safely("clientProfiles.updateSafeFields", async () => {
       const { error } = await this.client
         .from("client_profiles")
-        .update(fields)
+        .update(toClientProfileRowUpdate(fields))
         .eq("id", id);
 
       if (error) {
@@ -210,7 +279,7 @@ export class SupabaseCoachClientRepository implements CoachClientRepository {
 
   async findAssignmentForClient(
     clientId: string
-  ): Promise<ServiceResult<Pick<CoachClientRow, "coach_id"> | null>> {
+  ): Promise<ServiceResult<CoachAssignment | null>> {
     return safely("coachClients.findAssignmentForClient", async () => {
       const { data, error } = (await this.client
         .from("coach_clients")
@@ -229,7 +298,7 @@ export class SupabaseCoachClientRepository implements CoachClientRepository {
         );
       }
 
-      return serviceSuccess(data);
+      return serviceSuccess(data ? { coachId: data.coach_id } : null);
     });
   }
 

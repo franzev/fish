@@ -164,12 +164,12 @@ describe("acceptConsentAction", () => {
       "client-1",
       expect.objectContaining({
         consented: true,
-        consent_version: "2026-07",
-        consented_at: expect.any(String),
+        consentVersion: "2026-07",
+        consentedAt: expect.any(String),
       })
     );
     const [, fields] = updateSafeFieldsMock.mock.calls[0];
-    expect(Number.isNaN(Date.parse(fields.consented_at))).toBe(false);
+    expect(Number.isNaN(Date.parse(fields.consentedAt))).toBe(false);
   });
 
   it("does not write consent when the user is not signed in", async () => {
@@ -202,10 +202,10 @@ describe("updatePrefsAction", () => {
     });
 
     expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
-      theme_pref: "dark",
-      text_size_pref: "larger",
-      reduced_motion_pref: true,
-      time_format_pref: "24h",
+      themePref: "dark",
+      textSizePref: "larger",
+      reducedMotionPref: true,
+      timeFormatPref: "24h",
     });
   });
 
@@ -224,10 +224,10 @@ describe("updatePrefsAction", () => {
     });
 
     expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
-      theme_pref: null,
-      text_size_pref: "default",
-      reduced_motion_pref: null,
-      time_format_pref: null,
+      themePref: null,
+      textSizePref: "default",
+      reducedMotionPref: null,
+      timeFormatPref: null,
     });
   });
 });

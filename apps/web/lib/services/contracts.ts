@@ -13,11 +13,16 @@ export interface AuthSession {
   user: AuthUser;
 }
 
-export type EmailTokenKind = "email" | "signup" | "invite" | "magiclink" | "recovery" | "email_change";
+export type EmailTokenKind =
+  | "email"
+  | "signup"
+  | "invite"
+  | "magicLink"
+  | "recovery"
+  | "emailChange";
 
 export interface AuthService {
   getCurrentUser(): Promise<ServiceResult<AuthUser | null>>;
-  getAccessToken(): Promise<ServiceResult<string | null>>;
   exchangeCode(code: string): Promise<ServiceResult<void>>;
   verifyEmailToken(tokenHash: string, kind: EmailTokenKind): Promise<ServiceResult<void>>;
   subscribe(callback: (event: AuthSessionEvent, session: AuthSession | null) => void): () => void;
@@ -31,33 +36,66 @@ export interface AuthService {
   signOut(): Promise<ServiceResult<void>>;
 }
 
-export interface ProfileRecord { id: string; display_name: string; email: string; role: string; created_at: string; updated_at: string }
-export interface CoachClientRecord { coach_id: string; client_id: string; assigned_at: string }
-export interface ClientProfileRecord {
-  id: string; goal: string; locale: string | null; timezone: string | null; level: string | null;
-  theme_pref: string | null; text_size_pref: string | null; reduced_motion_pref: boolean | null;
-  time_format_pref: string | null; consented: boolean; consented_at: string | null;
-  consent_version: string | null; created_at: string; updated_at: string;
+export interface Profile {
+  id: string;
+  displayName: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type ClientProfileSafeFields = Partial<Pick<ClientProfileRecord,
-  "goal" | "locale" | "timezone" | "theme_pref" | "text_size_pref" |
-  "reduced_motion_pref" | "time_format_pref" | "consented" | "consented_at" | "consent_version">>;
+export interface CoachAssignment {
+  coachId: string;
+}
+
+export interface ClientProfile {
+  id: string;
+  goal: string;
+  locale: string | null;
+  timezone: string | null;
+  level: string | null;
+  themePref: string | null;
+  textSizePref: string | null;
+  reducedMotionPref: boolean | null;
+  timeFormatPref: string | null;
+  consented: boolean;
+  consentedAt: string | null;
+  consentVersion: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ClientProfileUpdate = Partial<
+  Pick<
+    ClientProfile,
+    | "goal"
+    | "locale"
+    | "timezone"
+    | "themePref"
+    | "textSizePref"
+    | "reducedMotionPref"
+    | "timeFormatPref"
+    | "consented"
+    | "consentedAt"
+    | "consentVersion"
+  >
+>;
 
 export interface ProfileRepository {
-  findById(id: string): Promise<ServiceResult<ProfileRecord | null>>;
-  findRoleById(id: string): Promise<ServiceResult<Pick<ProfileRecord, "role"> | null>>;
-  findDisplayNameById(id: string): Promise<ServiceResult<Pick<ProfileRecord, "display_name"> | null>>;
+  findById(id: string): Promise<ServiceResult<Profile | null>>;
+  findRoleById(id: string): Promise<ServiceResult<Pick<Profile, "role"> | null>>;
+  findDisplayNameById(id: string): Promise<ServiceResult<Pick<Profile, "displayName"> | null>>;
   updateDisplayName(id: string, displayName: string): Promise<ServiceResult<void>>;
 }
 export interface ClientProfileRepository {
-  findById(id: string): Promise<ServiceResult<ClientProfileRecord | null>>;
-  findByIdForCoach(id: string): Promise<ServiceResult<ClientProfileRecord | null>>;
-  updateSafeFields(id: string, fields: ClientProfileSafeFields): Promise<ServiceResult<void>>;
+  findById(id: string): Promise<ServiceResult<ClientProfile | null>>;
+  findByIdForCoach(id: string): Promise<ServiceResult<ClientProfile | null>>;
+  updateSafeFields(id: string, fields: ClientProfileUpdate): Promise<ServiceResult<void>>;
 }
 export interface CoachClientListItem { id: string; displayName: string; email: string }
 export interface CoachClientRepository {
-  findAssignmentForClient(clientId: string): Promise<ServiceResult<Pick<CoachClientRecord, "coach_id"> | null>>;
+  findAssignmentForClient(clientId: string): Promise<ServiceResult<CoachAssignment | null>>;
   listAssignedClients(): Promise<ServiceResult<CoachClientListItem[]>>;
 }
 
@@ -88,6 +126,116 @@ export interface DatabaseServices {
 }
 export interface AppServices { auth: AuthService; database: DatabaseServices }
 
+export interface SendMessageInput {
+  conversationId: string;
+  body: string;
+  clientRequestId: string;
+  replyToMessageId?: string | null;
+}
+
+export interface EditMessageInput {
+  messageId: string;
+  body: string;
+}
+
+export interface DeleteMessageInput {
+  messageId: string;
+}
+
+export interface ToggleReactionInput {
+  messageId: string;
+  emoji: string;
+}
+
+export type ChatMessageCommand =
+  | ({ kind: "edit" } & EditMessageInput)
+  | ({ kind: "delete" } & DeleteMessageInput)
+  | ({ kind: "toggleReaction" } & ToggleReactionInput);
+
+export interface MarkReadStateInput {
+  conversationId: string;
+  lastDeliveredMessageId: string | null;
+  lastReadMessageId: string | null;
+}
+
+export interface RefreshMessagesInput {
+  messageIds: string[];
+}
+
+export interface ConversationInput {
+  conversationId: string;
+}
+
+export interface LoadOlderMessagesInput extends ConversationInput {
+  cursor?: { createdAt: string; id: string } | null;
+  limit?: number;
+}
+
+export interface BackfillMessagesInput extends ConversationInput {
+  afterCreatedAt: string;
+  afterMessageId: string;
+  limit?: number;
+}
+
+export interface LoadNewestMessagesInput extends ConversationInput {
+  limit?: number;
+}
+
+export type ChatOperationResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; notice: string };
+
+export interface ChatCommandService {
+  sendMessage(input: SendMessageInput): Promise<ChatOperationResult<ClientChatMessage>>;
+  executeMessageCommand(
+    command: ChatMessageCommand
+  ): Promise<ChatOperationResult<ClientChatMessage>>;
+  markReadState(
+    input: MarkReadStateInput
+  ): Promise<ChatOperationResult<ClientChatReadState>>;
+  refreshMessages(
+    input: RefreshMessagesInput
+  ): Promise<ChatOperationResult<ClientChatMessage[]>>;
+  refreshConversation(
+    input: ConversationInput
+  ): Promise<
+    ChatOperationResult<{
+      messages: ClientChatMessage[];
+      readStates: ClientChatReadState[];
+    }>
+  >;
+  loadOlderMessages(
+    input: LoadOlderMessagesInput
+  ): Promise<
+    ChatOperationResult<{
+      messages: ClientChatMessage[];
+      hasMoreOlder: boolean;
+    }>
+  >;
+  backfillMessages(
+    input: BackfillMessagesInput
+  ): Promise<
+    ChatOperationResult<{
+      messages: ClientChatMessage[];
+      needsReset: boolean;
+    }>
+  >;
+  loadNewestMessages(
+    input: LoadNewestMessagesInput
+  ): Promise<
+    ChatOperationResult<{
+      messages: ClientChatMessage[];
+      readStates: ClientChatReadState[];
+      hasMoreOlder: boolean;
+      oldestCursor: { createdAt: string; id: string } | null;
+    }>
+  >;
+}
+
+export interface ServerServices extends AppServices {
+  chatCommands: ChatCommandService;
+}
+
 export interface ConversationTypingController { sendTyping(typing: boolean): void; unsubscribe(): void }
 export interface ConversationRecordingController { sendRecording(recording: boolean): void; unsubscribe(): void }
 export interface PresenceSessionController { markActive(): void; stop(): void }
@@ -99,9 +247,4 @@ export interface ChatRealtimeService {
   subscribeToTyping(conversationId: string, currentUserId: string, onChange: (typing: boolean) => void): ConversationTypingController;
   subscribeToRecording(conversationId: string, currentUserId: string, onChange: (recording: boolean) => void): ConversationRecordingController;
   startPresenceSession(currentUserId: string): PresenceSessionController;
-}
-
-export interface CommandTransportService {
-  post(functionName: "send-message" | "chat-command", accessToken: string, body: unknown): Promise<Response>;
-  isLocallyUnavailable(response: Response | null): boolean;
 }

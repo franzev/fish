@@ -28,7 +28,13 @@ describe("ExpiredLinkPage", () => {
   it("contains useSearchParams and a Suspense wrapper (source gate)", () => {
     const source = [
       readFileSync(resolve(__dirname, "./page.tsx"), "utf-8"),
-      readFileSync(resolve(__dirname, "./expired-link-content.tsx"), "utf-8"),
+      readFileSync(
+        resolve(
+          __dirname,
+          "./_components/expired-link-content/expired-link-content.tsx"
+        ),
+        "utf-8"
+      ),
     ].join("\n");
     expect(source).toContain("useSearchParams");
     expect(source).toContain("Suspense");
@@ -40,7 +46,13 @@ describe("ExpiredLinkPage", () => {
   });
 
   it("renders exactly one primary Button (source grep + RTL role query)", () => {
-    const source = readFileSync(resolve(__dirname, "./expired-link-content.tsx"), "utf-8");
+    const source = readFileSync(
+      resolve(
+        __dirname,
+        "./_components/expired-link-content/expired-link-content.tsx"
+      ),
+      "utf-8"
+    );
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");

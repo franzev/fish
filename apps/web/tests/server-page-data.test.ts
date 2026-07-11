@@ -29,7 +29,7 @@ function signedInAsCoach() {
   getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "coach-1" } });
   findProfileByIdMock.mockResolvedValue({
     ok: true,
-    data: { role: "coach", display_name: "Jamie Coach" },
+    data: { role: "coach", displayName: "Jamie Coach" },
   });
 }
 
@@ -86,15 +86,15 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
     getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "client-1" } });
     findProfileByIdMock.mockResolvedValue({
       ok: true,
-      data: { role: "client", display_name: "Alex Rivera" },
+      data: { role: "client", displayName: "Alex Rivera" },
     });
     findClientProfileByIdMock.mockResolvedValue({
       ok: true,
       data: {
-        theme_pref: "dark",
-        text_size_pref: "larger",
-        reduced_motion_pref: true,
-        time_format_pref: "24h",
+        themePref: "dark",
+        textSizePref: "larger",
+        reducedMotionPref: true,
+        timeFormatPref: "24h",
       },
     });
 
@@ -114,7 +114,7 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
     getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "coach-1" } });
     findProfileByIdMock.mockResolvedValue({
       ok: true,
-      data: { role: "coach", display_name: "Jamie Coach" },
+      data: { role: "coach", displayName: "Jamie Coach" },
     });
 
     await expect(getAuthenticatedShellProfile()).resolves.toMatchObject({

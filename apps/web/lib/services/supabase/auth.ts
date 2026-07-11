@@ -1,10 +1,9 @@
 import {
-  mapSupabaseError,
   serviceFailure,
   serviceSuccess,
   type ServiceResult,
 } from "@/lib/services/errors";
-import { safely } from "./shared";
+import { mapSupabaseError, safely } from "./shared";
 import type { AuthSessionEvent, AuthService, AuthUser, EmailTokenKind } from "../contracts";
 import type { AppSupabaseClient } from "./types";
 
@@ -79,16 +78,6 @@ export class SupabaseAuthServiceImpl implements AuthService {
     });
   }
 
-  async getAccessToken(): Promise<ServiceResult<string | null>> {
-    return safely("auth.getAccessToken", async () => {
-      const { data, error } = await this.client.auth.getSession();
-      if (error) {
-        return serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not read the session.", operation: "auth.getAccessToken", recoverable: true }));
-      }
-      return serviceSuccess(data.session?.access_token ?? null);
-    });
-  }
-
   async exchangeCode(code: string): Promise<ServiceResult<void>> {
     return safely("auth.exchangeCode", async () => {
       const { error } = await this.client.auth.exchangeCodeForSession(code);
@@ -100,7 +89,13 @@ export class SupabaseAuthServiceImpl implements AuthService {
 
   async verifyEmailToken(tokenHash: string, kind: EmailTokenKind): Promise<ServiceResult<void>> {
     return safely("auth.verifyEmailToken", async () => {
-      const { error } = await this.client.auth.verifyOtp({ token_hash: tokenHash, type: kind });
+      const type =
+        kind === "magicLink"
+          ? "magiclink"
+          : kind === "emailChange"
+            ? "email_change"
+            : kind;
+      const { error } = await this.client.auth.verifyOtp({ token_hash: tokenHash, type });
       return error
         ? serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not verify this link.", operation: "auth.verifyEmailToken", recoverable: true }))
         : serviceSuccess(undefined);

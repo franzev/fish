@@ -1,7 +1,11 @@
 import "server-only";
 
 import { getServerServices } from "@/lib/services/runtime/server";
-import type { AppServices } from "@/lib/services";
+import type {
+  AppServices,
+  AuthService,
+  ProfileRepository,
+} from "@/lib/services";
 import { ServiceError } from "@/lib/services";
 import { authRedirects } from "../redirects";
 import { isUserRole } from "@fish/core/roles";
@@ -16,9 +20,12 @@ import {
 } from "../contracts";
 
 export async function getCurrentProfile(
-  services: AppServices
+  dependencies: {
+    auth: AuthService;
+    profiles: ProfileRepository;
+  }
 ): Promise<CurrentProfile | null> {
-  const userResult = await services.auth.getCurrentUser();
+  const userResult = await dependencies.auth.getCurrentUser();
   if (!userResult.ok) {
     throw userResult.error;
   }
@@ -27,7 +34,7 @@ export async function getCurrentProfile(
     return null;
   }
 
-  const profileResult = await services.database.profiles.findById(
+  const profileResult = await dependencies.profiles.findById(
     userResult.data.id
   );
   if (!profileResult.ok) {
@@ -50,13 +57,19 @@ export async function getCurrentProfile(
   return {
     userId: userResult.data.id,
     role: profileResult.data.role,
-    displayName: profileResult.data.display_name,
+    displayName: profileResult.data.displayName,
   };
 }
 
-export async function getRootRedirectPath(): Promise<string> {
-  const services = await getServerServices();
-  const profile = await getCurrentProfile(services);
+function currentProfileDependencies(services: AppServices) {
+  return { auth: services.auth, profiles: services.database.profiles };
+}
+
+export async function getRootRedirectPath(
+  injected?: AppServices
+): Promise<string> {
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile(currentProfileDependencies(services));
 
   if (!profile) {
     return authRedirects.signedOut;
@@ -67,9 +80,11 @@ export async function getRootRedirectPath(): Promise<string> {
     : authRedirects.clientHome;
 }
 
-export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShellProfile | null> {
-  const services = await getServerServices();
-  const profile = await getCurrentProfile(services);
+export async function getAuthenticatedShellProfile(
+  injected?: AppServices
+): Promise<AuthenticatedShellProfile | null> {
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile(currentProfileDependencies(services));
 
   if (!profile) {
     return null;
@@ -94,18 +109,20 @@ export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShell
 
   return {
     ...profile,
-    themePref: toThemePref(clientProfileResult.data?.theme_pref ?? null),
-    textSizePref: toTextSizePref(clientProfileResult.data?.text_size_pref ?? null),
-    reducedMotionPref: clientProfileResult.data?.reduced_motion_pref ?? null,
+    themePref: toThemePref(clientProfileResult.data?.themePref ?? null),
+    textSizePref: toTextSizePref(clientProfileResult.data?.textSizePref ?? null),
+    reducedMotionPref: clientProfileResult.data?.reducedMotionPref ?? null,
     timeFormatPref: toTimeFormatPref(
-      clientProfileResult.data?.time_format_pref ?? null
+      clientProfileResult.data?.timeFormatPref ?? null
     ),
   };
 }
 
-export async function getClientHomeData(): Promise<ClientHomeData | null> {
-  const services = await getServerServices();
-  const profile = await getCurrentProfile(services);
+export async function getClientHomeData(
+  injected?: AppServices
+): Promise<ClientHomeData | null> {
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile(currentProfileDependencies(services));
 
   if (!profile) {
     return null;
@@ -120,12 +137,12 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
 
   if (assignmentResult.data) {
     const coachResult = await services.database.profiles.findDisplayNameById(
-      assignmentResult.data.coach_id
+      assignmentResult.data.coachId
     );
     if (!coachResult.ok) {
       throw coachResult.error;
     }
-    coachName = coachResult.data?.display_name ?? null;
+    coachName = coachResult.data?.displayName ?? null;
   }
 
   return {
@@ -139,9 +156,11 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
    coach landing on /profile redirects away, same wrong-door discipline as
    every other page). This throws on any ServiceResult failure via the same
    idiom getClientHomeData/getCoachHomeData already use. */
-export async function getProfileData(): Promise<ProfileData | null> {
-  const services = await getServerServices();
-  const profile = await getCurrentProfile(services);
+export async function getProfileData(
+  injected?: AppServices
+): Promise<ProfileData | null> {
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile(currentProfileDependencies(services));
 
   if (!profile) {
     return null;
@@ -165,12 +184,12 @@ export async function getProfileData(): Promise<ProfileData | null> {
 
   if (assignmentResult.data) {
     const coachResult = await services.database.profiles.findDisplayNameById(
-      assignmentResult.data.coach_id
+      assignmentResult.data.coachId
     );
     if (!coachResult.ok) {
       throw coachResult.error;
     }
-    coachName = coachResult.data?.display_name ?? null;
+    coachName = coachResult.data?.displayName ?? null;
   }
 
   return {
@@ -180,13 +199,13 @@ export async function getProfileData(): Promise<ProfileData | null> {
     locale: clientProfile?.locale ?? null,
     timezone: clientProfile?.timezone ?? null,
     level: clientProfile?.level ?? null,
-    themePref: toThemePref(clientProfile?.theme_pref ?? null),
-    textSizePref: toTextSizePref(clientProfile?.text_size_pref ?? null),
-    reducedMotionPref: clientProfile?.reduced_motion_pref ?? null,
-    timeFormatPref: toTimeFormatPref(clientProfile?.time_format_pref ?? null),
+    themePref: toThemePref(clientProfile?.themePref ?? null),
+    textSizePref: toTextSizePref(clientProfile?.textSizePref ?? null),
+    reducedMotionPref: clientProfile?.reducedMotionPref ?? null,
+    timeFormatPref: toTimeFormatPref(clientProfile?.timeFormatPref ?? null),
     consented: clientProfile?.consented ?? false,
-    consentedAt: clientProfile?.consented_at ?? null,
-    consentVersion: clientProfile?.consent_version ?? null,
+    consentedAt: clientProfile?.consentedAt ?? null,
+    consentVersion: clientProfile?.consentVersion ?? null,
     coachName,
   };
 }

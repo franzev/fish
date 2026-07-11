@@ -8,20 +8,3 @@ export interface MutableCookieStore {
   getAll(): Array<{ name: string; value: string }>;
   set(name: string, value: string, options?: CookieOptions): void;
 }
-
-export type {
-  AppServices,
-  AuthService as SupabaseAuthService,
-  ChatRepository,
-  ClientChatData,
-  ClientChatMessage,
-  ClientChatPresenceSession,
-  ClientChatReadState,
-  ClientProfileRecord as ClientProfileRow,
-  ClientProfileRepository,
-  ClientProfileSafeFields,
-  CoachClientListItem,
-  CoachClientRepository,
-  DatabaseServices as SupabaseDatabaseService,
-  ProfileRepository,
-} from "../contracts";

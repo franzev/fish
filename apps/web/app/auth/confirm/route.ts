@@ -1,4 +1,5 @@
 import type { EmailTokenKind } from "@/lib/services";
+import { verifyEmailLink } from "@/features/auth/server/auth-use-cases";
 import { getServerServices } from "@/lib/services/runtime/server";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -12,8 +13,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const rawType = searchParams.get("type");
-  const supportedTypes: EmailTokenKind[] = ["email", "signup", "invite", "magiclink", "recovery", "email_change"];
-  const type = supportedTypes.includes(rawType as EmailTokenKind) ? rawType as EmailTokenKind : null;
+  const tokenKinds: Record<string, EmailTokenKind> = {
+    email: "email",
+    signup: "signup",
+    invite: "invite",
+    magiclink: "magicLink",
+    recovery: "recovery",
+    email_change: "emailChange",
+  };
+  const type = rawType ? tokenKinds[rawType] ?? null : null;
   // D-08: land signed-in at /home. Only same-origin relative paths are
   // honored — `new URL(next, base)` would let an absolute ("https://evil"),
   // protocol-relative ("//evil"), or backslash ("/\evil") value override the
@@ -28,8 +36,7 @@ export async function GET(request: NextRequest) {
 
   if (token_hash && type) {
     const services = await getServerServices();
-    const result = await services.auth.verifyEmailToken(token_hash, type);
-    if (result.ok) {
+    if (await verifyEmailLink(token_hash, type, services.auth)) {
       return NextResponse.redirect(new URL(next, request.url));
     }
   }

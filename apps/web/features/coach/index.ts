@@ -1,2 +1,1 @@
-export { ClientList } from "./components/client-list";
-export type { Client } from "./components/client-list";
+export * from "./components/client-list";

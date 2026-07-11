@@ -18,14 +18,26 @@ describe("ForgotPasswordPage", () => {
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./forgot-password-form.tsx"), "utf-8");
+    const source = readFileSync(
+      resolve(
+        __dirname,
+        "./_components/forgot-password-form/forgot-password-form.tsx"
+      ),
+      "utf-8"
+    );
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");
   });
 
   it("does not smuggle next=/reset-password through a redirectTo query string", () => {
-    const source = readFileSync(resolve(__dirname, "./forgot-password-form.tsx"), "utf-8");
+    const source = readFileSync(
+      resolve(
+        __dirname,
+        "./_components/forgot-password-form/forgot-password-form.tsx"
+      ),
+      "utf-8"
+    );
     expect(source).not.toContain("next=/reset-password");
   });
 

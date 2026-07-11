@@ -26,7 +26,13 @@ describe("CheckInboxPage", () => {
   it("contains useSearchParams and a Suspense wrapper (source gate)", () => {
     const source = [
       readFileSync(resolve(__dirname, "./page.tsx"), "utf-8"),
-      readFileSync(resolve(__dirname, "./check-inbox-content.tsx"), "utf-8"),
+      readFileSync(
+        resolve(
+          __dirname,
+          "./_components/check-inbox-content/check-inbox-content.tsx"
+        ),
+        "utf-8"
+      ),
     ].join("\n");
     expect(source).toContain("useSearchParams");
     expect(source).toContain("Suspense");
@@ -47,7 +53,13 @@ describe("CheckInboxPage", () => {
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./check-inbox-content.tsx"), "utf-8");
+    const source = readFileSync(
+      resolve(
+        __dirname,
+        "./_components/check-inbox-content/check-inbox-content.tsx"
+      ),
+      "utf-8"
+    );
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");

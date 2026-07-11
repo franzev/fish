@@ -1,7 +1,7 @@
 import { authRedirects } from "@/features/auth/redirects";
 import { getProfileData } from "@/features/profile/server";
 import { redirect } from "next/navigation";
-import { EditProfileForm } from "./edit-profile-form";
+import { EditProfileForm } from "./_components/edit-profile-form";
 
 /* Server Component -- same wrong-door guard as /profile. Prefills the form
    from the same getProfileData() read Task 1 built. A hard refresh re-runs

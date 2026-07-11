@@ -25,6 +25,7 @@ vi.mock("@/lib/services/supabase/server", () => ({
   }),
   createServerSupabaseClient: async () => ({
     auth: {
+      getSession: getSessionMock,
       getUser: async () => {
         const result = await getCurrentUserMock();
         return { data: { user: result.ok ? result.data : null }, error: result.ok ? null : result.error };
@@ -138,6 +139,10 @@ describe("sendMessageAction", () => {
 
   it("returns a calm notice when signed out", async () => {
     getCurrentUserMock.mockResolvedValueOnce({ ok: true, data: null });
+    getSessionMock.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
 
     const result = await sendMessageAction(validInput);
 

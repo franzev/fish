@@ -1,5 +1,5 @@
 import { generalChannelId, generalChannelName, generalChannelSlug } from "@/lib/channels";
-import { mapSupabaseError, serviceFailure, serviceSuccess, type ServiceResult } from "@/lib/services/errors";
+import { serviceFailure, serviceSuccess, type ServiceResult } from "@/lib/services/errors";
 import type {
   ConversationRow,
   MessageReactionRow,
@@ -8,13 +8,13 @@ import type {
   PresenceSessionRow,
   ProfileRow,
 } from "@fish/supabase";
-import { safely, type SupabaseResponse } from "./shared";
+import { mapSupabaseError, safely, type SupabaseResponse } from "./shared";
 import type {
-  AppSupabaseClient,
   ChatRepository,
   ClientChatData,
   ClientChatMessage,
-} from "./types";
+} from "../contracts";
+import type { AppSupabaseClient } from "./types";
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";

@@ -5,15 +5,15 @@ import {
   SupabaseProfileRepository,
 } from "./profile-repositories";
 import type {
-  AppSupabaseClient,
   ChatRepository,
   ClientProfileRepository,
   CoachClientRepository,
+  DatabaseServices,
   ProfileRepository,
-  SupabaseDatabaseService,
-} from "./types";
+} from "../contracts";
+import type { AppSupabaseClient } from "./types";
 
-export class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
+export class SupabaseDatabaseServiceImpl implements DatabaseServices {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;

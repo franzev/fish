@@ -7,6 +7,15 @@ export type ServiceErrorCode =
   | "storage"
   | "unknown";
 
+export type ServiceFailureReason =
+  | "emailNotConfirmed"
+  | "userAlreadyExists"
+  | "samePassword"
+  | "sessionMissing"
+  | "weakPassword"
+  | "validationFailed"
+  | "providerUnavailable";
+
 export interface ServiceErrorInput {
   code: ServiceErrorCode;
   message: string;
@@ -98,7 +107,7 @@ export function normalizeServiceError(
   });
 }
 
-export function mapSupabaseError(
+export function mapInfrastructureError(
   error:
     | { message?: string; code?: string; name?: string; status?: number }
     | null
@@ -107,14 +116,26 @@ export function mapSupabaseError(
     fallbackMessage: string;
   }
 ): ServiceError {
+  const reasonByCode: Record<string, ServiceFailureReason> = {
+    email_not_confirmed: "emailNotConfirmed",
+    user_already_exists: "userAlreadyExists",
+    same_password: "samePassword",
+    session_not_found: "sessionMissing",
+    weak_password: "weakPassword",
+    validation_failed: "validationFailed",
+    provider_disabled: "providerUnavailable",
+  };
+  const reason =
+    (error?.code ? reasonByCode[error.code] : undefined) ??
+    (error?.name === "AuthSessionMissingError" ? "sessionMissing" : undefined);
+
   return new ServiceError({
     code: input.code,
     message: error?.message ?? input.fallbackMessage,
     operation: input.operation,
     recoverable: input.recoverable,
     details: {
-      ...(error?.code ? { supabaseCode: error.code } : {}),
-      ...(error?.name ? { supabaseName: error.name } : {}),
+      ...(reason ? { reason } : {}),
       ...(error?.status ? { status: error.status } : {}),
     },
     cause: error,

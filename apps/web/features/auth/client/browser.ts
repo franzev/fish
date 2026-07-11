@@ -1,16 +1,16 @@
 import "client-only";
 
 import { getBrowserServices } from "@/lib/services/runtime/browser";
-import type { ServiceError, ServiceResult } from "@/lib/services";
+import type {
+  ServiceError,
+  ServiceFailureReason,
+  ServiceResult,
+} from "@/lib/services";
 
-export function getAuthErrorCode(error: ServiceError): string | undefined {
-  const code = error.details?.supabaseCode;
-  return typeof code === "string" ? code : undefined;
-}
-
-export function getAuthErrorName(error: ServiceError): string | undefined {
-  const name = error.details?.supabaseName;
-  return typeof name === "string" ? name : undefined;
+export function getAuthFailureReason(
+  error: ServiceError
+): ServiceFailureReason | undefined {
+  return error.details?.reason as ServiceFailureReason | undefined;
 }
 
 function browserAuth() {

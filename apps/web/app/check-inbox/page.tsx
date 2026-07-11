@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Suspense } from "react";
-import { CheckInboxContent } from "./check-inbox-content";
+import { CheckInboxContent } from "./_components/check-inbox-content";
 
 export default function CheckInboxPage() {
   return (

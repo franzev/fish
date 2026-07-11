@@ -59,7 +59,17 @@ describe("Supabase service registry", () => {
       data: undefined,
     });
     await expect(services.database.profiles.findById("profile-1")).resolves.toEqual(
-      { ok: true, data: profile }
+      {
+        ok: true,
+        data: {
+          id: "profile-1",
+          role: "client",
+          displayName: "Franz Fish",
+          email: "franz@example.com",
+          createdAt: "2026-07-04T00:00:00Z",
+          updatedAt: "2026-07-04T00:00:00Z",
+        },
+      }
     );
     expect(Object.keys(services).sort()).toEqual(["auth", "database"]);
   });
@@ -86,7 +96,7 @@ describe("Supabase service registry", () => {
     if (!result.ok) {
       expect(result.error.code).toBe("database");
       expect(result.error.operation).toBe("profiles.findById");
-      expect(result.error.details).toEqual({ supabaseCode: "42501" });
+      expect(result.error.details).toEqual({});
     }
   });
 
@@ -495,7 +505,7 @@ describe("Supabase service registry", () => {
       expect(result.error.code).toBe("auth");
       expect(result.error.operation).toBe("auth.signInWithGoogle");
       expect(result.error.details).toEqual({
-        supabaseCode: "provider_disabled",
+        reason: "providerUnavailable",
       });
     }
   });

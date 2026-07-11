@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { cn } from "@/lib/utils";
-import { getBubbleRadiusClasses } from "../bubble/bubble";
+import { getBubbleRadiusClasses } from "../message-presentation";
 import { MessageBody } from "./message-body";
 
 const meta = {

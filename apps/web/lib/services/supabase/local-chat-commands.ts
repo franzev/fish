@@ -1,33 +1,28 @@
-import type { ClientChatMessage, ClientChatReadState } from "@/lib/services";
 import type {
-  MarkReadStateActionState,
-  SendMessageActionState,
-} from "@/features/chat/contracts";
+  BackfillMessagesInput,
+  ChatMessageCommand,
+  ChatOperationResult,
+  ClientChatMessage,
+  ClientChatReadState,
+  ConversationInput,
+  LoadNewestMessagesInput,
+  LoadOlderMessagesInput,
+  MarkReadStateInput,
+  RefreshMessagesInput,
+  SendMessageInput,
+} from "../contracts";
 import { createServerSupabaseClient } from "./server";
 import {
   chatOlderPageSize,
+  mapChatErrorNotice,
+  type MessageResponseRow,
+  type ReadStateResponseRow,
   reactionPageSize,
   saveNotice,
   sendNotice,
-} from "@/features/chat/server/constants";
-import { mapChatErrorNotice } from "@/features/chat/server/edge-transport";
-import {
   toClientChatMessage,
   toClientReadState,
-  type ChatCommand,
-  type MessageResponseRow,
-  type ReadStateResponseRow,
-} from "@/features/chat/server/response-mapping";
-import {
-  backfillMessagesSchema,
-  loadNewestMessagesSchema,
-  loadOlderMessagesSchema,
-  markReadStateSchema,
-  refreshConversationSchema,
-  refreshMessagesSchema,
-  sendMessageSchema,
-} from "@/features/chat/server/schemas";
-import { z } from "zod";
+} from "./chat-mapping";
 
 async function getLocalFallbackContext(): Promise<{
   client: Awaited<ReturnType<typeof createServerSupabaseClient>>;
@@ -174,11 +169,11 @@ export async function toClientChatMessagesWithSenders(
 }
 
 export async function sendMessageViaLocalRpc(
-  values: z.infer<typeof sendMessageSchema>
-): Promise<SendMessageActionState> {
+  values: SendMessageInput
+): Promise<ChatOperationResult<ClientChatMessage>> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const { data, error } = await context.client.rpc("send_chat_message", {
@@ -189,36 +184,27 @@ export async function sendMessageViaLocalRpc(
   });
 
   if (error || !data) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(error, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
-  return {
-    status: "sent",
-    values,
-    message: toClientChatMessage(data as MessageResponseRow),
-  };
+  return { ok: true, data: toClientChatMessage(data as MessageResponseRow) };
 }
 
 export async function commandMessageViaLocalRpc(
-  values: unknown,
-  command: ChatCommand
-): Promise<SendMessageActionState> {
+  command: ChatMessageCommand
+): Promise<ChatOperationResult<ClientChatMessage>> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: saveNotice };
+    return { ok: false, notice: saveNotice };
   }
 
   const rpcCall =
-    command.action === "edit-message"
+    command.kind === "edit"
       ? context.client.rpc("edit_chat_message", {
           p_message_id: command.messageId,
           p_body: command.body,
         })
-      : command.action === "delete-message"
+      : command.kind === "delete"
         ? context.client.rpc("delete_chat_message", {
             p_message_id: command.messageId,
           })
@@ -230,30 +216,22 @@ export async function commandMessageViaLocalRpc(
   const { data, error } = await rpcCall;
 
   if (error || !data) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(error, saveNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(error, saveNotice) };
   }
 
   const [message] = await addReactionAggregates(context, [
     data as MessageResponseRow,
   ]);
 
-  return {
-    status: "sent",
-    values,
-    message: toClientChatMessage(message),
-  };
+  return { ok: true, data: toClientChatMessage(message) };
 }
 
 export async function markReadStateViaLocalRpc(
-  values: z.infer<typeof markReadStateSchema>
-): Promise<MarkReadStateActionState> {
+  values: MarkReadStateInput
+): Promise<ChatOperationResult<ClientChatReadState>> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const { data, error } = await context.client.rpc("mark_chat_read_state", {
@@ -263,31 +241,18 @@ export async function markReadStateViaLocalRpc(
   });
 
   if (error || !data) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(error, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
-  return {
-    status: "sent",
-    values,
-    readState: toClientReadState(data as ReadStateResponseRow),
-  };
+  return { ok: true, data: toClientReadState(data as ReadStateResponseRow) };
 }
 
 export async function refreshMessagesViaLocalRpc(
-  values: z.infer<typeof refreshMessagesSchema>
-): Promise<{
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  messages?: ClientChatMessage[];
-}> {
+  values: RefreshMessagesInput
+): Promise<ChatOperationResult<ClientChatMessage[]>> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const ids = Array.from(new Set(values.messageIds));
@@ -297,11 +262,7 @@ export async function refreshMessagesViaLocalRpc(
     .in("id", ids);
 
   if (error || !data) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(error, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
   const messages = await addReactionAggregates(
@@ -310,25 +271,20 @@ export async function refreshMessagesViaLocalRpc(
   );
   const messagesWithSenders = await addSenderDisplayNames(context, messages);
 
-  return {
-    status: "sent",
-    values,
-    messages: messagesWithSenders.map(toClientChatMessage),
-  };
+  return { ok: true, data: messagesWithSenders.map(toClientChatMessage) };
 }
 
 export async function refreshConversationViaLocalRpc(
-  values: z.infer<typeof refreshConversationSchema>
-): Promise<{
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  messages?: ClientChatMessage[];
-  readStates?: ClientChatReadState[];
-}> {
+  values: ConversationInput
+): Promise<
+  ChatOperationResult<{
+    messages: ClientChatMessage[];
+    readStates: ClientChatReadState[];
+  }>
+> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const { data: messageRows, error: messageError } = await context.client
@@ -339,11 +295,7 @@ export async function refreshConversationViaLocalRpc(
     .order("id", { ascending: true });
 
   if (messageError || !messageRows) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(messageError, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(messageError, sendNotice) };
   }
 
   const { data: readRows, error: readError } = await context.client
@@ -352,11 +304,7 @@ export async function refreshConversationViaLocalRpc(
     .eq("conversation_id", values.conversationId);
 
   if (readError || !readRows) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(readError, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(readError, sendNotice) };
   }
 
   const messages = await addReactionAggregates(
@@ -366,25 +314,25 @@ export async function refreshConversationViaLocalRpc(
   const messagesWithSenders = await addSenderDisplayNames(context, messages);
 
   return {
-    status: "sent",
-    values,
+    ok: true,
+    data: {
     messages: messagesWithSenders.map(toClientChatMessage),
     readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
+    },
   };
 }
 
 export async function loadOlderMessagesViaLocalRpc(
-  values: z.infer<typeof loadOlderMessagesSchema>
-): Promise<{
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  messages?: ClientChatMessage[];
-  hasMoreOlder?: boolean;
-}> {
+  values: LoadOlderMessagesInput
+): Promise<
+  ChatOperationResult<{
+    messages: ClientChatMessage[];
+    hasMoreOlder: boolean;
+  }>
+> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const size = Math.min(values.limit ?? chatOlderPageSize, 100);
@@ -407,11 +355,7 @@ export async function loadOlderMessagesViaLocalRpc(
   const { data, error } = await query;
 
   if (error || !data) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(error, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
   const rows = data as MessageResponseRow[];
@@ -424,25 +368,22 @@ export async function loadOlderMessagesViaLocalRpc(
   const withSenders = await addSenderDisplayNames(context, enriched);
 
   return {
-    status: "sent",
-    values,
-    messages: withSenders.map(toClientChatMessage),
-    hasMoreOlder,
+    ok: true,
+    data: { messages: withSenders.map(toClientChatMessage), hasMoreOlder },
   };
 }
 
 export async function backfillMessagesViaLocalRpc(
-  values: z.infer<typeof backfillMessagesSchema>
-): Promise<{
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  messages?: ClientChatMessage[];
-  needsReset?: boolean;
-}> {
+  values: BackfillMessagesInput
+): Promise<
+  ChatOperationResult<{
+    messages: ClientChatMessage[];
+    needsReset: boolean;
+  }>
+> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const size = Math.min(values.limit ?? chatOlderPageSize, 100);
@@ -459,11 +400,7 @@ export async function backfillMessagesViaLocalRpc(
     .limit(size + 1);
 
   if (error || !data) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(error, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
   const rows = data as MessageResponseRow[];
@@ -476,27 +413,24 @@ export async function backfillMessagesViaLocalRpc(
   const withSenders = await addSenderDisplayNames(context, enriched);
 
   return {
-    status: "sent",
-    values,
-    messages: withSenders.map(toClientChatMessage),
-    needsReset,
+    ok: true,
+    data: { messages: withSenders.map(toClientChatMessage), needsReset },
   };
 }
 
 export async function loadNewestMessagesViaLocalRpc(
-  values: z.infer<typeof loadNewestMessagesSchema>
-): Promise<{
-  status: "sent" | "notice";
-  values: unknown;
-  notice?: string;
-  messages?: ClientChatMessage[];
-  readStates?: ClientChatReadState[];
-  hasMoreOlder?: boolean;
-  oldestCursor?: { createdAt: string; id: string } | null;
-}> {
+  values: LoadNewestMessagesInput
+): Promise<
+  ChatOperationResult<{
+    messages: ClientChatMessage[];
+    readStates: ClientChatReadState[];
+    hasMoreOlder: boolean;
+    oldestCursor: { createdAt: string; id: string } | null;
+  }>
+> {
   const context = await getLocalFallbackContext();
   if (!context) {
-    return { status: "notice", values, notice: sendNotice };
+    return { ok: false, notice: sendNotice };
   }
 
   const size = Math.min(values.limit ?? chatOlderPageSize, 100);
@@ -510,11 +444,7 @@ export async function loadNewestMessagesViaLocalRpc(
     .limit(size + 1);
 
   if (messageError || !messageRows) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(messageError, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(messageError, sendNotice) };
   }
 
   const { data: readRows, error: readError } = await context.client
@@ -523,11 +453,7 @@ export async function loadNewestMessagesViaLocalRpc(
     .eq("conversation_id", values.conversationId);
 
   if (readError || !readRows) {
-    return {
-      status: "notice",
-      values,
-      notice: mapChatErrorNotice(readError, sendNotice),
-    };
+    return { ok: false, notice: mapChatErrorNotice(readError, sendNotice) };
   }
 
   const rows = messageRows as MessageResponseRow[];
@@ -542,11 +468,12 @@ export async function loadNewestMessagesViaLocalRpc(
   const withSenders = await addSenderDisplayNames(context, enriched);
 
   return {
-    status: "sent",
-    values,
-    messages: withSenders.map(toClientChatMessage),
-    readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
-    hasMoreOlder,
-    oldestCursor,
+    ok: true,
+    data: {
+      messages: withSenders.map(toClientChatMessage),
+      readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
+      hasMoreOlder,
+      oldestCursor,
+    },
   };
 }

@@ -1,19 +1,41 @@
 import "server-only";
 
-import type { AppServices, CommandTransportService } from "../contracts";
-import { createServerSupabaseServices } from "../supabase/server";
-export * from "../supabase/local-chat-commands";
-import { isLocalBackendUnavailable, postBackendCommand } from "../supabase/edge-function-transport";
+import type {
+  ChatCommandService,
+  ServerServices,
+} from "../contracts";
+import { SupabaseChatCommandService } from "../supabase/chat-command-service";
+import {
+  createServerSupabaseClient,
+  createServerSupabaseServices,
+} from "../supabase/server";
 
-const commandTransport: CommandTransportService = {
-  post: postBackendCommand,
-  isLocallyUnavailable: isLocalBackendUnavailable,
-};
+function lazyChatCommands(): ChatCommandService {
+  async function adapter() {
+    return new SupabaseChatCommandService(await createServerSupabaseClient());
+  }
 
-export async function getServerServices(overrides?: AppServices): Promise<AppServices> {
-  return overrides ?? createServerSupabaseServices();
+  return {
+    sendMessage: async (input) => (await adapter()).sendMessage(input),
+    executeMessageCommand: async (command) =>
+      (await adapter()).executeMessageCommand(command),
+    markReadState: async (input) => (await adapter()).markReadState(input),
+    refreshMessages: async (input) => (await adapter()).refreshMessages(input),
+    refreshConversation: async (input) =>
+      (await adapter()).refreshConversation(input),
+    loadOlderMessages: async (input) =>
+      (await adapter()).loadOlderMessages(input),
+    backfillMessages: async (input) =>
+      (await adapter()).backfillMessages(input),
+    loadNewestMessages: async (input) =>
+      (await adapter()).loadNewestMessages(input),
+  };
 }
 
-export function getCommandTransport(override?: CommandTransportService): CommandTransportService {
-  return override ?? commandTransport;
+export async function getServerServices(): Promise<ServerServices> {
+  const services = await createServerSupabaseServices();
+  return {
+    ...services,
+    chatCommands: lazyChatCommands(),
+  };
 }
