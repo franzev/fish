@@ -1,6 +1,10 @@
+---
+last_mapped_commit: ffc0af5c4a67160e838b07ffa6e26652f9ca337d
+---
+
 # Technology Stack
 
-**Analysis Date:** 2026-07-02
+**Analysis Date:** 2026-07-11
 
 ## Languages
 
@@ -10,6 +14,7 @@
 **Secondary:**
 - JavaScript (ESM) - Configuration files (`.mjs`)
 - CSS - Design tokens and utilities (`apps/web/app/globals.css`)
+- Deno/TypeScript - Supabase Edge Functions (`supabase/functions/`)
 
 ## Runtime
 
@@ -17,6 +22,7 @@
 - Node.js (version not explicitly specified; inferred from pnpm 11.7.0 compatibility)
 - pnpm 11.7.0 (specified in `package.json` as packageManager)
 - Supports: JavaScript/TypeScript execution on Node for development, builds, and Supabase Edge Functions
+- Deno runtime for Supabase Edge Functions (serverless TypeScript/JavaScript execution)
 
 **Package Manager:**
 - pnpm 11.7.0 (with pnpm workspaces)
@@ -54,7 +60,7 @@
 - `@types/node` 22.10.7 - Node.js type definitions for Next.js
 
 **Shared Packages:**
-- `@fish/core` - Product domain types (roles, chat contracts) - workspace package
+- `@fish/core` - Product domain types (roles, chat contracts, chat-state reducer) - workspace package
 - `@fish/supabase` - Supabase auth and database types - workspace package
 
 **Infrastructure:**
@@ -65,7 +71,8 @@
 **Environment:**
 - Supabase project ID: `fish` (defined in `supabase/config.toml`)
 - Environment variables: Not yet defined in `.env` files (Web app has no `.env*` files present)
-- Recommended env vars for Supabase: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (standard for client-side Supabase libraries, but not yet integrated)
+- Recommended env vars for Supabase: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY` (client-side)
+- Edge Function env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY` (fallback order in functions)
 
 **Build:**
 - `apps/web/next.config.mjs` - Minimal Next.js config (no custom plugins)
@@ -80,11 +87,12 @@
 - pnpm 11.7.0+
 - TypeScript 5.7.3 (installed globally or via pnpm)
 - ESLint for linting
+- Deno (for local Edge Functions development via Supabase CLI)
 
 **Production:**
-- **Web:** Node.js runtime or static export (Next.js deployment target not explicitly specified; Edge Runtime required for Supabase Edge Functions)
-- **Backend:** Supabase-managed infrastructure (PostgreSQL database, authentication, Edge Functions runtime)
+- **Web:** Node.js runtime or static export (Next.js deployment target not explicitly specified; Vercel or self-hosted Node.js)
+- **Backend:** Supabase-managed infrastructure (PostgreSQL database, authentication with JWT, Edge Functions runtime on Deno)
 
 ---
 
-*Stack analysis: 2026-07-02*
+*Stack analysis: 2026-07-11*

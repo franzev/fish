@@ -1,6 +1,10 @@
+---
+last_mapped_commit: ffc0af5c4a67160e838b07ffa6e26652f9ca337d
+---
+
 # Coding Conventions
 
-**Analysis Date:** 2026-07-02
+**Analysis Date:** 2026-07-11
 
 ## Naming Patterns
 
@@ -9,6 +13,7 @@
 - Utilities: lowercase with hyphens (`utils.ts`)
 - Index files: `index.ts` for barrel exports
 - Type definition files: `.ts` extension; types exported inline, not in separate `.d.ts` files (except `next-env.d.ts` auto-generated)
+- Edge Functions: `index.ts` in handler directory (e.g., `supabase/functions/send-message/index.ts`)
 
 **Functions:**
 - Named exports: camelCase (`cn`, `Card`, `Progress`, `Button`, `Input`)
@@ -17,16 +22,18 @@
 - React hooks use `use*` named exports and live near the route/component they coordinate when the state is route-specific
 - Utility functions use camelCase (`cn`)
 - Type guard functions: `isUserRole` (verb-subject pattern)
+- Helper functions in Edge Functions: camelCase (`calmError`, `readJson`, `rpc`, `getCaller`)
 
 **Variables:**
-- Local variables: camelCase (`clamped`, `inputId`, `autoId`)
-- Constants (non-exported): camelCase (`jsonHeaders`, `lexend`, `fraunces`)
+- Local variables: camelCase (`clamped`, `inputId`, `autoId`, `incoming`, `existing`)
+- Constants (non-exported): camelCase (`jsonHeaders`, `lexend`, `fraunces`, `chatLimits`)
 - Exported constants: camelCase, marked `as const` where appropriate (`userRoles`, `chatLimits`, `authRedirects`)
 
 **Types:**
 - Interfaces: PascalCase, prefixed with purpose (`ButtonProps`, `InputProps`, `ProgressProps`, `ChatMessage`, `ChatParticipant`, `SendMessageCommand`)
 - Type aliases: PascalCase (`UserRole`, `ConversationId`, `MessageId`, `UserId`, `Variant`)
 - Record/discriminated unions: PascalCase (`Record<Variant, string>`)
+- Discriminated union types: `ChatEvent` union with `type` field for discrimination
 - Import type syntax: `import type` for types-only imports to ensure tree-shaking
 
 ## Code Style
@@ -64,18 +71,42 @@
 - Packages use workspace imports: `@fish/core`, `@fish/supabase`, resolved via pnpm workspaces
 - Edge Functions: relative imports from shared packages (e.g., `../../../packages/core/src`)
 
+**Export Patterns:**
+- Barrel files re-export submodules: `export * from "./module"`
+- Examples: `packages/core/src/index.ts` exports `./chat`, `./chat-state`, `./roles`
+
 ## Error Handling
 
-**Patterns:**
-- Validation errors returned as HTTP responses with status codes (e.g., `400`, `405`)
-- Error messages are calm and instructive, never alarming (design rule enforced)
-- Error response format: `{ error: "Plain-language guidance" }` (JSON)
-- Type narrowing with guards: `isUserRole()` guard function for discriminating type-safe values
+**Response Format:**
+- JSON responses with `content-type: application/json; charset=utf-8` header
+- Error responses: `{ error: "Plain-language message" }` with HTTP status code
+- Success responses: `{ message: data }` or domain-specific keys like `{ readState: data }`
+
+**Validation & Error Messages:**
+- Errors use plain, calm language — never alarming or technical jargon
+- Status codes: 400 (validation), 401 (auth), 403 (permission), 404 (not found), 405 (method), 409 (conflict), 500 (server)
+- Examples from `supabase/functions/send-message/index.ts`:
+  - `400`: "Add a message before sending." (empty message)
+  - `400`: "This message is a little long. Try sending it in two parts." (exceeds 4000 char limit)
+  - `405`: "Send messages with a post request." (wrong HTTP method)
+  - `401`: "That did not send yet. Keep this open and try again." (auth failure)
+
+**Type Narrowing:**
+- Use type guards (`isUserRole()`) to discriminate union types
+- Discriminated union pattern for event handling: check `event.type` before accessing type-specific fields
+- Example from `packages/core/src/chat-state/reducer.ts`:
+  ```typescript
+  switch (event.type) {
+    case "hydrateConversation": { /* type-specific logic */ }
+    case "draftChanged": { /* type-specific logic */ }
+  }
+  ```
 
 **Input Validation:**
 - Client-side: HTML5 attributes + prop-based hints (`hint`, `notice` on `Input`)
 - Server-side: explicit checks on parsed input before processing (Edge Functions)
 - Null/undefined handling: nullish coalescing (`??`) for fallbacks; early returns for invalid cases
+- Example: trim strings and validate presence before processing
 
 ## Logging
 
@@ -83,6 +114,7 @@
 
 **Patterns:**
 - Minimal logging in product code (not yet implemented; Supabase Edge Functions do not log)
+- Error logging in Edge Functions: `console.error()` with context object, e.g., `{ status, hasSupabaseUrl, hasApiKey }`
 - Console output used for development debugging only
 - No structured logging framework in place
 
@@ -93,37 +125,45 @@
 - Design decisions and product constraints should be documented
 - Non-obvious heuristics and calculations
 - Warnings about neurodivergent audience impact (e.g., "most ND screens have one big action")
+- Edge cases in state management logic
 
 **JSDoc/TSDoc:**
 - Used sparingly; only on public exports and complex props
 - Format: `/** Single-line summary. */` for simple cases
 - No `@param`, `@returns` tags (types are explicit in code)
-- Example from `Button`:
+- Multi-line comments explain implementation intent and edge cases
+- Example from `packages/core/src/chat-state/types.ts`:
   ```typescript
-  /** Full-width is the default — most ND screens have one big action. */
-  fullWidth?: boolean;
+  /** Display name resolved at fetch time. Command/realtime payloads often
+   *  omit it — merges must not let a null overwrite a known name. */
+  senderDisplayName?: string | null;
   ```
 
 **Inline Comments:**
 - Prefix with reasoning: "// The ONE action on a screen. Use at most one primary per view."
 - Mark variants with context for maintainers
+- Example from pagination: "// The marker id is set but not present among the currently loaded messages..."
 
 ## Function Design
 
 **Size:** 
 - Utility functions: 1–5 lines (e.g., `cn()`)
 - React components: 10–50 lines (small, single responsibility)
-- Edge Functions: 30–40 lines (validation + response)
+- Edge Functions: 30–50 lines including validation, with helper functions extracted
+- Reducer/selector functions: 20–60 lines (complex state logic)
 
 **Parameters:**
 - React components: receive props object (typed interface extending `HTMLAttributes` or similar)
 - Utilities: variadic where appropriate (e.g., `cn(...inputs)`)
 - Commands/payloads: typed objects (e.g., `SendMessageCommand`)
+- Helper functions: focused, single purpose (e.g., `calmError(error, status)`)
 
 **Return Values:**
 - React components: JSX element
 - Utilities: transformed value (string for `cn`, boolean for type guards)
 - Edge Functions: `Response` object with JSON body and status code
+- Reducer functions: new state object or reference to existing state (avoid mutation)
+- Selectors: computed value or filtered data
 
 ## Module Design
 
@@ -133,10 +173,12 @@
 - Route-local hooks: `export function useFeatureName(...)`; pass server actions and realtime callbacks in as dependencies when the hook coordinates command behavior
 - Utilities: `export function utils(...)`
 - Index files use barrel pattern: `export * from "./module"`
+- Type exports: `export type` or `export interface`
 
 **Barrel Files:**
-- `packages/core/src/index.ts`: re-exports `chat` and `roles`
-- `packages/supabase/src/index.ts`: re-exports `auth` and `database.types`
+- `packages/core/src/index.ts`: re-exports `./chat`, `./chat-state`, `./roles`
+- `packages/core/src/chat-state/index.ts`: re-exports `./types`, `./selectors`, `./reducer`
+- `packages/supabase/src/index.ts`: re-exports `./auth`, `./database.types`
 - `apps/web/components/ui/`: no index file; imports directly from component file
 
 **Component Props:**
@@ -183,13 +225,20 @@ className={cn(
 **`packages/core`:**
 - Pure TypeScript types and constants — no dependencies on Supabase or React
 - Shared between web and Edge Functions
-- Examples: `UserRole`, `ChatMessage`, `chatLimits`, type guards
+- Examples: `UserRole`, `ChatMessage`, `chatLimits`, `ChatEvent`, type guards, reducer, selectors
 
 **`packages/supabase`:**
 - Supabase-specific contracts (auth, database types, redirects)
 - Depends on `@fish/core`
 - Exported types: `FishAuthClaims`, `authRedirects`
 
+**Chat State as Contract:**
+- `packages/core/src/chat-state/` is the platform-neutral contract for local chat state
+- Reducer (`reduceChatState`) applies events to state
+- Selectors (`mergeChatMessage`, `getOutgoingMessageStatus`, etc.) compute derived values
+- Test vectors in `fixtures/chat-state-vectors.json` are executable parity tests for the protocol
+- No React, browser APIs, or Supabase client required — enables reuse on native platforms
+
 ---
 
-*Convention analysis: 2026-07-02*
+*Convention analysis: 2026-07-11*

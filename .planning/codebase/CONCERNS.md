@@ -1,196 +1,199 @@
+---
+last_mapped_commit: ffc0af5c4a67160e838b07ffa6e26652f9ca337d
+---
+
 # Codebase Concerns
 
-**Analysis Date:** 2026-07-02
+**Analysis Date:** 2026-07-11
 
 ## Tech Debt
 
-**Incomplete product foundation:**
-- Issue: Core features foundational to the product are not yet implemented. The codebase is in early-stage setup, with only a design system landing page, type contracts, and a stub Edge Function. Chat functionality, auth flows, client profiles, onboarding, and tracker engine are missing.
-- Files: `apps/web/app/page.tsx` (design system demo only), `supabase/functions/send-message/index.ts` (stub, no actual message persistence), `packages/core/src/`, `packages/supabase/src/` (types only, no implementations)
-- Impact: Product is not usable by real users. Coach-first validation cannot proceed until these foundations exist.
-- Fix approach: Follow the build order in AGENTS.md strictly: 1) Auth + roles, 2) Client profiles, 3) Onboarding (data-driven), 4) Tracker engine, 5) 1-on-1 chat. Implement each layer before moving to next.
+**Incomplete product foundation (legacy concern):**
+- Issue: Core features foundational to the product were not yet implemented as of 2026-07-02. The codebase is now substantially further along with chat features, auth, and sophisticated state management, but work remains on learning features (tracker engine, coaching tools).
+- Files: Auth context exists; chat schema created; Edge Functions partially implemented
+- Impact: Product is usable by early users for 1-on-1 and community chat. Tracker/coaching features still missing.
+- Fix approach: Follow roadmap phases in `.planning/phases/` — phases 04–10 completed; roadmap extends beyond v1.2.
 
-**Supabase Edge Function is a pass-through stub:**
-- Issue: `supabase/functions/send-message/index.ts` validates the message body and limits but does NOT persist to the database, does NOT authenticate the user, and does NOT trigger any side effects (e.g., coach notifications).
-- Files: `supabase/functions/send-message/index.ts`
-- Impact: Calling this function does nothing. End-to-end chat is blocked.
-- Fix approach: Implement the real function: verify JWT claims (extract userId/role), validate conversationId exists and user has access, persist ChatMessage to messages table, trigger coach notification, return created message with server timestamp.
+**Pagination retry logic lacks backoff and error visibility:**
+- Issue: `.planning/debug/loading-earlier-messages-retry-storm.md` diagnosed an unbounded retry loop. When `loadOlderMessagesAction` fails, `use-load-older-messages.ts` re-attaches an `IntersectionObserver` immediately. Since the sentinel (top-of-list) remains visible, the observer callback fires again, re-triggering the load with no delay, backoff cap, or retry counter. No visible error affordance exists for a stuck older-page load — only the loading skeleton flickers.
+- Files: `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts` (47–64), `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts` (225–265), `packages/core/src/chat-state/reducer.ts` (184–196)
+- Impact: A failed older-message load can create a tight retry loop that hammers the server and leaves the UI flickering. User reads this as "the app breaks."
+- Fix approach: Add a bounded backoff (e.g., exponential delay with max attempts, e.g., 3 tries then stop) in `use-load-older-messages.ts`. Disconnect the observer after a failure until the user manually retries (or add a distinct error affordance + retry button in `chat-client.tsx`, separate from the loading skeleton). Add a component-level test that mocks `loadOlderMessagesAction` to reject, observes the sentinel remains visible, and asserts the action is not called an unbounded number of times.
 
-**Database types have no implementation:**
-- Issue: `packages/supabase/src/database.types.ts` defines the schema contract but there is no `supabase/migrations/` directory and no actual database schema created. The RLS policies, table definitions, and functions do not exist.
-- Files: `packages/supabase/src/database.types.ts`, missing `supabase/migrations/`
-- Impact: Any attempt to read or write from Supabase will fail. Database does not exist.
-- Fix approach: Create `supabase/migrations/` directory. Use `supabase migration create init` to scaffold initial schema. Define tables: `profiles`, `conversations`, `messages`. Add RLS policies to enforce coach-client relationships.
+**Chat message merge equality comparisons are extensive:**
+- Issue: `packages/core/src/chat-state/selectors.ts` contains complex deep-equality checks for messages and read states (`areChatMessagesEqual`, `areReactionsEqual`, `areReadStatesEqual`). Any missed field in a comparison can cause stale state to survive a merge, leading to stale UI or missed updates.
+- Files: `packages/core/src/chat-state/selectors.ts` (68–112)
+- Impact: A missed field in equality comparison (e.g., a new optional field added to `ChatMessageState` that is not in the equality check) can cause the reducer to skip an update when it should commit. Messages appear to freeze or revert to stale values.
+- Fix approach: Unit test each equality function with a comprehensive suite of mutation cases (e.g., toggling each field to a different value and asserting the result is `false`). Consider a generic deep-equality utility to reduce manual comparison logic. Document why `senderDisplayName` is treated specially (server ACKs omit it; client retains known values).
 
-**No authentication layer in web app:**
-- Issue: `apps/web/` has no auth middleware, no protected routes, no Supabase client initialization, and no way to know who the user is. The home page is a static design system demo, not a login or onboarding screen.
-- Files: `apps/web/app/`, missing auth context/provider, missing route middleware
-- Impact: Cannot build client/coach experiences or protect sensitive data.
-- Fix approach: Add Supabase client setup in `apps/web/lib/supabase.ts`. Create auth context (`apps/web/context/auth.tsx`) and middleware (`apps/web/middleware.ts`). Redirect unauthenticated users to `/login` or sign-up. Implement redirects per `authRedirects` in `packages/supabase/src/auth.ts`.
-
-**No test suite exists:**
-- Issue: No test files (jest, vitest, or other framework). No `jest.config` or test configuration. Codebase cannot verify correctness of business logic (chat limits, role checks, form validation).
-- Files: No test files found. No test runner config.
-- Impact: Changes are unverified. Regressions will ship to production undetected. Design system components and validation logic are untested.
-- Fix approach: Add vitest to `apps/web/` and `packages/core/`. Write unit tests for: `cn()` utility, Button/Input/Card/Progress components, chat limits, role validation, message length checks. Add integration tests for Edge Functions (mock Deno environment or use Supabase emulator).
+**Edge Functions verify JWT via HTTP fetch fallback:**
+- Issue: `supabase/functions/send-message/index.ts` (67–79) and `supabase/functions/chat-command/index.ts` (56–82) call `/auth/v1/user` via fetch to verify the caller. This is a fallback for environments where Supabase's built-in auth context is not available (e.g., local Deno). If Supabase's auth or the function's JWT verification becomes misconfigured, this fallback may succeed when it should fail, or vice versa.
+- Files: `supabase/functions/send-message/index.ts` (67–79), `supabase/functions/chat-command/index.ts` (56–82)
+- Impact: Auth boundary unclear. If the `/auth/v1/user` endpoint changes or is redirected, the function may not receive the correct caller ID, leading to authorization bypass or incorrect user attribution.
+- Fix approach: Document the auth fallback strategy (e.g., "local Deno does not expose Supabase auth context; production may use built-in Deno context instead"). Add logging that records which auth path was used (built-in vs. fallback). Consider raising an error in production if the fallback is triggered unexpectedly.
 
 ## Known Bugs
 
-**No open bugs identified in code comments or patterns.** Codebase is too early-stage to have bugs; it has missing features instead.
+**Loading newer messages inconclusive (phase 10 investigation):**
+- Issue: `.planning/debug/loading-new-messages.md` documents an inconclusive investigation. User reported "loading new messages is broken" during UAT, but functional delivery was not reproduced in two independent browser sessions. Both synthetic messages rendered exactly once without refresh, including after receiver restoration. However, raw WebSocket frames, callback status transitions, and HTTP response statuses were not exposed, so the protocol classification remains inconclusive.
+- Files: `apps/web/app/(authenticated)/chat/` (route, ChatClient, hooks, store)
+- Current mitigation: Functional delivery tests pass locally. The issue may be stale UAT report, environment-specific (live Supabase), or related to avatar/timestamp grouping (separate presentation concern).
+- Recommendations: Reproduce with WebSocket/request capture exposed (e.g., browser DevTools or Supabase realtime logs). If a real delivery failure exists, it likely involves auth state, realtime subscriptions, route/channel mismatch, or store hydration.
+
+**Stale subscription callbacks retained reconnect ownership (phase 10 resolved):**
+- Issue: `.planning/debug/knowledge-base.md` records a resolved bug: subscription effect generations had no synchronous callback-ownership revocation. When a user switched conversations, stale callback handlers from the previous conversation's unsubscribe could remain authoritative, reassigning state refs already belonging to the new conversation.
+- Files: `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts`, `apps/web/app/(authenticated)/chat/chat-client.test.tsx`
+- Fix applied: Added effect-local active guards to messages, reads, and reactions callbacks; revoked ownership before unsubscribe; retained promise-identity settlement.
+- Residual risk: Ensure any future subscription cleanup (e.g., realtime channel removal, auth logout) also revokes callback ownership synchronously. Test conversation switch and logout flows end-to-end.
 
 ## Security Considerations
 
-**Edge Function JWT verification is incomplete:**
-- Risk: `supabase/functions/send-message/index.ts` does not extract the JWT claims or validate user ownership of the conversation. An authenticated user could send messages on behalf of another user or in conversations they don't belong to.
-- Files: `supabase/functions/send-message/index.ts` (lines 7–14)
-- Current mitigation: Supabase's `verify_jwt = true` in `supabase/config.toml` ensures the function rejects unauthenticated requests, but does not enforce authorization at the function level.
-- Recommendations: Extract JWT claims from `request.headers.get("authorization")` or use Supabase's `auth` context (available in Deno Edge Functions). Verify userId from JWT matches senderId. Query the conversations table and confirm the user is either clientId or coachId. Reject if authorization check fails.
+**Edge Function JWT verification is incomplete (historical):**
+- Risk: `supabase/functions/send-message/index.ts` does not extract JWT claims or validate user ownership of the conversation at the function level. An authenticated user could send messages on behalf of another user.
+- Files: `supabase/functions/send-message/index.ts` (24–125)
+- Current mitigation: Supabase's `verify_jwt = true` in `supabase/config.toml` (lines 30–31) ensures the function rejects unauthenticated requests. The underlying `/auth/v1/user` call (line 67) extracts the caller's identity. The `/rpc/send_chat_message` RPC (line 81) delegates authorization to database RLS policies.
+- Recommendations: Document the auth delegation explicitly. Add a comment in the function explaining: "JWT verification is delegated to Supabase's `verify_jwt` gate; caller identity is extracted via `/auth/v1/user`; authorization (conversation membership) is enforced at the RLS level in the `send_chat_message` RPC."
 
-**No RLS policies exist yet:**
-- Risk: Once the database is created, Supabase RLS policies must protect sensitive data. Without them, a coach can read all clients' messages, a client can see other clients' conversations, etc.
-- Files: Missing `supabase/migrations/` (RLS policies not defined)
-- Current mitigation: None. Database does not exist yet.
-- Recommendations: Every table (profiles, conversations, messages) must have RLS policies. Coaches can only read conversations where they are coachId. Clients can only read their own profile and conversations. Messages are filtered by conversation membership. Use Supabase's policy editor or migration SQL.
+**No RLS policies documented in scope (schema exists):**
+- Risk: Database RLS policies control who can read/write messages and read states. If policies are missing or misconfigured, a coach can read all clients' messages, a client can see other clients' conversations, etc.
+- Files: `packages/supabase/src/database.types.ts` (generated from schema), `supabase/migrations/` (outside scope but critical)
+- Current mitigation: Schema tables exist (messages, conversations, message_reads, message_reactions) per `database.types.ts`. RLS policies are defined in migrations (outside current scope).
+- Recommendations: Add a `supabase/migrations/README.md` documenting the RLS strategy for each table. Verify that `messages`, `conversations`, and `message_reads` tables all have policies preventing cross-conversation/cross-role access.
 
-**Auth state not synchronized between web and Supabase:**
-- Risk: If Supabase auth is set up but `apps/web/` doesn't check session state on load, users might be logged in on Supabase but the web app shows them as signed-out, or vice versa. This can lead to UI/backend mismatch and failed requests.
-- Files: `apps/web/` (no auth context yet), missing `middleware.ts`
-- Current mitigation: None. Auth is not yet implemented.
-- Recommendations: On app load, call `supabase.auth.getSession()` in a root-level effect or middleware. If session exists, initialize auth context and redirect to home page (client or coach). If not, redirect to sign-up.
+**Auth state not synchronized between web and Supabase (session handling):**
+- Risk: If the web app and Supabase auth become out of sync (e.g., token expires but session context doesn't refresh), users may see stale auth state or failed requests with no clear error.
+- Files: Auth context exists (outside scoped paths); Supabase client initialization expected in `apps/web/lib/` (outside current scope)
+- Current mitigation: Session restore is handled on app load (code exists outside scope). Logout likely clears both web and Supabase state.
+- Recommendations: Add a synchronized session listener that re-fetches user profile and role on auth state changes. Log auth state transitions for debugging.
 
-**Secrets management not documented:**
-- Risk: Supabase API keys, signing keys, and JWT secrets must not be checked into git. If they leak, attackers can impersonate users.
-- Files: `.env` files (not readable per forbidden_files, but should exist)
-- Current mitigation: `.env.local` and `.env.production` should be in `.gitignore` (check current `.gitignore`).
-- Recommendations: Ensure `.env*` files are in `.gitignore`. Use `.env.example` to document required vars (names only, no values). In CI/CD, inject secrets via environment variables, not committed files.
+**Secrets management not verified in scope:**
+- Risk: Supabase API keys, signing keys, and JWT secrets must not be checked into git.
+- Files: `.env` files (not readable per forbidden_files); `.gitignore` should exclude `*.env*`
+- Current mitigation: `.env.local` and `.env.production` should be in `.gitignore` (verify with `git check-ignore`).
+- Recommendations: Ensure `.env*` files are in `.gitignore`. Use `.env.example` to document required var names (not values). In CI/CD, inject secrets via environment variables, not committed files.
 
 ## Performance Bottlenecks
 
-**No identified bottlenecks yet** — codebase is too small and early-stage. Once chat and tracker features are added, monitor:
-- Message query time: As conversation history grows, paginate messages and lazy-load.
-- Real-time performance: Supabase Realtime can become slow with many subscribers; limit subscriptions to active conversations.
-- Image uploads: Client profile avatars and tracker screenshots should be resized before upload to Supabase Storage.
+**Message equality comparisons on every merge:**
+- Issue: `mergeChatMessage` calls `areChatMessagesEqual` for every incoming message to check if state changed (selectors.ts:42). The equality function iterates through all message fields including reactions. With thousands of messages in history, this could add measurable overhead during batch merges (e.g., pagination load, reconnect backfill).
+- Files: `packages/core/src/chat-state/selectors.ts` (16–48, 68–88), `packages/core/src/chat-state/reducer.ts` (224–244)
+- Impact: Not yet measured; likely negligible for single-message updates. Becomes a concern if pagination loads 50+ messages at once and each calls the full equality check.
+- Improvement path: Profile message merge perf with realistic data volumes. If equality check is a bottleneck, consider shallow equality (id + timestamp only), or cache the last-merged state to avoid recomputation.
+
+**Realtime reconnect may backfill stale messages:**
+- Issue: When realtime reconnects after a network hiccup, the app may re-hydrate the full conversation history. If the reconnect delay is long, the backfilled messages may be slightly older than the last known newest message, causing duplicates or out-of-order display.
+- Files: `apps/web/app/(authenticated)/chat/` (realtime hooks, store actions — outside scope but relevant to merged state)
+- Improvement path: Implement a `lastKnownMessageId` checkpoint so reconnect backfill can start from "last known + 1" rather than re-fetching the entire history. Document the exact backfill boundaries in comments.
+
+**No indexed queries for conversation participants:**
+- Issue: `supabase/functions/chat-command/index.ts` (302–335) fetches all messages in a conversation to render the conversation view. If a conversation has thousands of messages, this query could slow down.
+- Files: `supabase/functions/chat-command/index.ts` (302–335)
+- Improvement path: Already uses pagination (no `limit` in the query shown, but context suggests pagination exists elsewhere). Document any cursor-based pagination strategy. Add a database index on `messages.conversation_id` if not present. Consider a cursor-based `limit=50` strategy for the initial hydration.
 
 ## Fragile Areas
 
-**Design system relies on Tailwind v4 CSS-first approach:**
-- Files: `apps/web/app/globals.css` (defines `@theme`), `tailwind.config.js` must NOT exist
-- Why fragile: Tailwind v4 uses CSS-first config (no JS config file). If a developer accidentally creates `tailwind.config.js`, the build breaks silently. The postcss plugin must match the tailwind version exactly or colors won't apply.
-- Safe modification: Keep design tokens only in `globals.css` under `@theme`. Document in ARCHITECTURE.md that v4 config is CSS-first. Ensure `tailwindcss` and `@tailwindcss/postcss` are on the same version (currently both ^4.3.1 in `apps/web/package.json`). If upgrading Tailwind, test the entire UI in dev mode before merging.
-- Test coverage: Home page renders all design tokens (colors, buttons, inputs, progress). Add a test that compares rendered styles against expected color values.
+**Chat state reducer merges complex message reconciliation logic:**
+- Files: `packages/core/src/chat-state/reducer.ts` (entire file, especially 224–377)
+- Why fragile: The reducer handles multiple message states (pending, sending, sent, failed) and must reconcile optimistic sends, retries, server ACKs, and realtime updates. The `mergeHydratedMessages` function (255–269) specifically preserves unresolved local sends during a reconnect snapshot, then merges the server snapshot on top. Any mistake in merge order or deduplication logic can cause:
+  - Duplicate messages (same message rendered twice)
+  - Lost messages (optimistic send dropped during merge)
+  - Out-of-order display (sort comparator bug)
+  - Stale state (equality check misses a field)
+- Safe modification: Add extensive test coverage for all combinations: optimistic send + server ACK (success), optimistic send + server rejection + local retry, optimistic send + reconnect before ACK (preserve local), server ACK while user is typing (don't restore draft). Use fixtures from `packages/core/src/chat-state/fixtures/chat-state-vectors.json` and add new vectors for edge cases. Document the merge strategy in comments referencing the test file.
+- Test coverage: `packages/core/src/chat-state/` has fixtures and tests (outside scope), but the gap from earlier concerns is whether failure cases are tested.
 
-**UI components have no fallback for missing props:**
-- Files: `apps/web/components/ui/input.tsx` (label required), `apps/web/components/ui/button.tsx` (no disabled state tested), `apps/web/components/ui/card.tsx`, `apps/web/components/ui/progress.tsx`
-- Why fragile: If a developer forgets to pass `label` to Input, TypeScript will catch it, but there's no runtime guard. Button's disabled state uses CSS opacity; unclear if it works on all browsers. Progress clamping is hardcoded inline.
-- Safe modification: Test all components with edge cases (empty strings, missing props, min/max values). For Input, make label optional if ever needed, but prefer required for accessibility. Extract Progress clamping to a util function. Add visual tests in the home page for all variants.
+**Pagination cursor logic with optional fields:**
+- Files: `packages/core/src/chat-state/types.ts` (53–68), `packages/core/src/chat-state/reducer.ts` (179–197)
+- Why fragile: `ChatMessageCursor` has `createdAt` and `id` fields. The pagination state tracks `oldestLoadedCursor` (null if no older messages yet) and `hasMoreOlder`. If the cursor becomes null but `hasMoreOlder` is true, a later load attempt might re-fetch duplicates or skip a page. If the sort comparator (selectors.ts:8–13) incorrectly orders messages with the same `createdAt`, pagination boundaries may overlap.
+- Safe modification: Add tests that exercise cursor boundaries, including messages with identical `createdAt` timestamps (millisecond precision matters). Verify the sort comparator is stable (same timestamp + ID always produces the same order). Document the cursor invariant: "After a successful load, `oldestLoadedCursor` is the message at the boundary of the loaded range; `hasMoreOlder` is true iff there are unpaginated messages older than the cursor."
 
-**Chat limits are hard-coded:**
-- Files: `packages/core/src/chat.ts` (chatLimits object), `supabase/functions/send-message/index.ts` (uses chatLimits.messageBodyMaxLength)
-- Why fragile: If the limit needs to change, both files must update. If the Edge Function is updated but packages/core is not rebuilt, they fall out of sync.
-- Safe modification: Define limits in `packages/core/` and export from there (already correct). Ensure the build step (`pnpm build`) typechecks packages/core before web build. Document the limit in a comment explaining why 4000 chars was chosen.
+**Edge Function error handling uses string matching:**
+- Files: `supabase/functions/send-message/index.ts` (96–122), `supabase/functions/chat-command/index.ts` (160–188)
+- Why fragile: Error classification relies on `.toLowerCase().includes()` pattern matching. If Supabase's RPC error messages change, the mapping will silently fail and return the generic 500 error instead of a specific calm error. Users see "that did not send yet" instead of "the message was too long" and cannot understand the issue.
+- Safe modification: Implement proper error code mapping. Ask Supabase to return a structured error code (not just a message). Parse the code and dispatch to the correct calm error. Add a test that mocks different error messages and verifies the correct calm error is returned. Document the expected error messages in comments referencing the RPC signatures.
 
-**Database schema is not yet created:**
-- Files: `packages/supabase/src/database.types.ts` (types only), missing `supabase/migrations/`
-- Why fragile: Once created, schema changes require migrations. Breaking changes (renaming columns, deleting tables) must be coordinated across web and Edge Functions. Without a migration system in place, deployments will be chaotic.
-- Safe modification: Use Supabase CLI migrations from the start. Every schema change goes through `supabase migration create [name]` and is version-controlled. Document the migration step in STRUCTURE.md. Before any release, test migrations on a staging database.
+**Database types are generated (not hand-written):**
+- Files: `packages/supabase/src/database.generated.ts` (630 lines, auto-generated), `packages/supabase/src/database.types.ts` (hand-written re-export)
+- Why fragile: `database.generated.ts` is regenerated from the Supabase schema via `supabase gen types`. If a developer changes the schema in migration but forgets to regenerate the types, TypeScript type definitions are stale. If a developer manually edits `database.generated.ts`, the next regeneration will overwrite the changes.
+- Safe modification: Add a CI check that runs `supabase gen types` and verifies `database.generated.ts` matches the schema. Document the regeneration step in `.planning/DEVELOPMENT.md` or similar. Never manually edit `database.generated.ts` — all changes go through migrations and regeneration.
 
 ## Scaling Limits
 
 **Real-time messaging relies on Supabase Realtime:**
-- Current capacity: Unknown — Supabase Realtime scales horizontally, but free tier has limits.
-- Limit: If thousands of clients and coaches are chatting simultaneously, Realtime subscriptions may become expensive or slow.
-- Scaling path: Implement message pagination (load last N messages on conversation open, then fetch newer on scroll). Use Realtime subscriptions only for new messages, not entire history. Consider batching notifications (send digest rather than per-message).
+- Current capacity: Unknown — Supabase Realtime scales horizontally; free tier has rate limits.
+- Limit: If thousands of clients and coaches chat simultaneously, Realtime subscriptions may slow down or become expensive. Reaction updates (toggling emoji per message) create additional broadcast overhead.
+- Scaling path: Implement message pagination (load last N on open, fetch newer on scroll or poll). Use Realtime subscriptions only for new messages and reactions to already-loaded messages, not entire history. Batch notifications if needed (e.g., "3 new messages" digest instead of per-message push).
 
-**No CDN for static assets:**
+**No CDN for static assets (outside scoped paths):**
 - Current capacity: Default Next.js deployment uses Vercel's global CDN (if deployed there).
 - Limit: Images and fonts are served from a single region if not using Vercel or another CDN.
-- Scaling path: Ensure images are optimized via Next.js `Image` component (already in use in home page). Use Supabase Storage with a CDN for user uploads. Preload fonts via `<link rel="preload">` in layout.
+- Scaling path: Ensure images are optimized via Next.js `Image` component. Use Supabase Storage with a CDN for user uploads. Preload fonts via `<link rel="preload">` in layout.
 
 **Database row limits:**
 - Current capacity: Supabase PostgreSQL instances scale, but free tier has limits on storage and connection count.
-- Limit: Not tested yet. Once chat history grows (thousands of conversations, millions of messages), query performance may degrade.
-- Scaling path: Implement indexes on `conversations.clientId` and `messages.conversationId`. Archive old conversations to a separate table. Use connection pooling.
+- Limit: Not tested. Once chat history grows (millions of messages across thousands of conversations), query performance may degrade.
+- Scaling path: Implement indexes on `conversations.clientId`, `messages.conversation_id`, `message_reads.conversation_id`. Archive old conversations to a separate table if needed. Use connection pooling.
 
 ## Dependencies at Risk
 
 **Tailwind CSS v4 is new:**
 - Risk: Tailwind v4 was released recently. CSS-first config is a breaking change from v3. Plugins and third-party integrations may lag. Upgrading to a newer v4.x minor release could break the CSS-first config.
 - Impact: Design tokens won't render. UI breaks. Team gets blocked.
-- Migration plan: Before upgrading Tailwind, test in a branch. Ensure `@tailwindcss/postcss` is updated together. Check for breaking changes in release notes. Run full visual regression test on all screens.
+- Migration plan: Before upgrading Tailwind, test in a branch. Ensure `@tailwindcss/postcss` is updated together (same version). Check for breaking changes in release notes. Run full visual regression test on all screens.
 
 **Next.js 16.2 is stable but actively changing:**
 - Risk: Next.js updates frequently. Version 16.2 is current but not long-term. Breaking changes in App Router patterns, Image component behavior, or font loading could force rewrites.
 - Impact: Build might fail. Components might not render correctly after upgrade.
-- Migration plan: Keep Next.js on LTS versions when possible. Before upgrading minor versions, test locally. Pin minor versions in `package.json` (currently "16.2.9", which is good).
+- Migration plan: Keep Next.js on stable versions when possible. Before upgrading minor versions, test locally. Pin minor versions in `package.json` (currently "16.2.9", which is good).
 
 **React 19 is new:**
-- Risk: React 19 just shipped. useId, forwardRef, and other patterns used in components may have subtle changes. Server Components behavior could differ from React 18 patterns.
+- Risk: React 19 just shipped. `useId`, `forwardRef`, and other patterns used in components may have subtle changes. Server Components behavior could differ from React 18 patterns.
 - Impact: Component behavior might break. Form state might behave unexpectedly.
 - Migration plan: Monitor React release notes. Test thoroughly after any React upgrade. If issues arise, consider staying on React 18 until 19.x.1 or later (more stable).
 
-**Supabase JavaScript client is not yet integrated:**
-- Risk: `packages/supabase/src/auth.ts` and `database.types.ts` define contracts but the actual Supabase client (`@supabase/supabase-js`) is not listed in any `package.json`. When it's added, it introduces a large dependency tree.
-- Impact: Auth and database features cannot be built. Package size increases.
-- Migration plan: Add `@supabase/supabase-js` to `apps/web/` and `packages/supabase/` when building auth. Lock to a major version. Test client initialization and basic operations.
+**Supabase JavaScript client integration:**
+- Risk: `packages/supabase/src/auth.ts` and `database.types.ts` define contracts but the actual Supabase client (`@supabase/supabase-js`) is expected to exist in `apps/web/package.json` (outside scope). If it's missing or locked to an old version, auth and database features don't work.
+- Impact: Auth and database features are broken. Package size increases if version is bloated.
+- Migration plan: Verify Supabase client is present and up-to-date in `apps/web/package.json`. Lock to a major version (e.g., `^3.0.0`). Test client initialization and basic operations after any Supabase version upgrade.
 
-## Missing Critical Features
-
-**No authentication system:**
-- Problem: Users cannot sign up, log in, or authenticate. No session management.
-- Blocks: Everything. All features depend on knowing who the user is.
-- Priority: **CRITICAL — build first.**
-
-**No client or coach profiles:**
-- Problem: User metadata (display name, role, avatar) has a type contract but no UI, no API, no storage.
-- Blocks: Personalization, onboarding, coach-client assignment.
-- Priority: **HIGH — build second.**
-
-**No onboarding:**
-- Problem: New clients cannot fill out an assessment. Coaches cannot be assigned.
-- Blocks: Coach-first validation. Product is not usable by end users.
-- Priority: **HIGH — build third (data-driven form pattern).**
+## Missing Critical Features (Legacy)
 
 **No tracker engine:**
-- Problem: Trackers are not rendered from configs. Templates are hard-coded (not implemented yet).
-- Blocks: Learning feature validation. Core product value is missing.
-- Priority: **HIGH — build fourth (configurable, not template-specific).**
-
-**No 1-on-1 chat UI:**
-- Problem: Edge Function stub exists but there's no web UI, no message history, no Realtime subscription, no typing indicators.
-- Blocks: Coach-client communication (the core use case).
-- Priority: **HIGH — build fifth.**
+- Problem: Trackers (habit tracking, learning progress) are not rendered from configs. Templates are hard-coded (not implemented).
+- Blocks: Learning feature validation. Core product value.
+- Priority: **HIGH — in later phases beyond v1.2**
 
 **No community or gamification:**
-- Problem: Not planned yet. AGENTS.md explicitly says not to build this before foundations.
+- Problem: Not planned yet. AGENTS.md explicitly says not to build before foundations.
 - Blocks: Stretch features.
-- Priority: **LOW — wait until chat and tracker are validated and working.**
+- Priority: **LOW — wait until chat and tracker are validated**
 
 ## Test Coverage Gaps
 
-**No tests for UI components:**
-- What's not tested: Button variants (primary, secondary, ghost), Input states (error/notice/hint), Card styling, Progress clamping and animation.
-- Files: `apps/web/components/ui/`, `apps/web/app/page.tsx`
-- Risk: A small CSS change to a component could break all screens. A refactor of Input logic could lose the autoId or notice styling.
-- Priority: **MEDIUM — add vitest + React Testing Library after foundations are built. Start with Button and Input.**
+**No tests for older-message pagination failure case:**
+- What's not tested: `loadOlderMessagesAction` rejecting or returning `status: "notice"` with the sentinel still visible. The retry behavior and user affordance for a stuck load.
+- Files: `apps/web/app/(authenticated)/chat/hooks/use-load-older-messages.ts`, `apps/web/app/(authenticated)/chat/chat-client.test.tsx`
+- Risk: A failed older-message load can create an unbounded retry loop (as diagnosed in `.planning/debug/loading-earlier-messages-retry-storm.md`), and there's no test to catch regressions.
+- Priority: **HIGH — block fix until test is added**
 
-**No tests for core types and logic:**
-- What's not tested: `isUserRole()` role validation, `chatLimits` enforcement, message length validation logic (currently in Edge Function only).
-- Files: `packages/core/src/`
-- Risk: A bug in role checking or message validation could ship undetected.
-- Priority: **MEDIUM — add vitest to packages/core and test all exported functions.**
+**Limited message merge edge-case coverage:**
+- What's not tested: All combinations of message state transitions (optimistic + ACK, optimistic + rejection + retry, optimistic + reconnect before ACK, server update while drafting, etc.). Equality function coverage for all message fields.
+- Files: `packages/core/src/chat-state/`
+- Risk: A missed field in equality comparison or a wrong merge order can cause duplicates, lost messages, or stale state.
+- Priority: **MEDIUM — add comprehensive merge test suite**
 
 **No integration tests for Edge Functions:**
-- What's not tested: send-message function: missing conversationId, body > limit, invalid JWT, user not in conversation, successful message save.
-- Files: `supabase/functions/send-message/index.ts`
-- Risk: The function doesn't actually work yet; once implemented, regressions are invisible.
-- Priority: **HIGH — after function is implemented, add Deno/Supabase emulator tests.**
+- What's not tested: `send-message` and `chat-command` functions end-to-end. Testing variations: missing conversationId, body > limit, invalid JWT, user not in conversation, successful message save with reaction enrichment.
+- Files: `supabase/functions/send-message/index.ts`, `supabase/functions/chat-command/index.ts`
+- Risk: Edge Functions don't actually work until tested. Regressions are invisible.
+- Priority: **MEDIUM — use Supabase CLI local emulator or Deno test runner**
 
-**No E2E tests:**
-- What's not tested: Full user journeys (sign up → onboarding → send message → receive notification).
-- Files: N/A (no E2E framework set up)
-- Risk: Product feels broken in production even if unit tests pass.
-- Priority: **MEDIUM — add Playwright or Cypress after chat UI is built. Focus on critical flows (auth, chat send/receive).**
+**No E2E tests for auth flows:**
+- What's not tested: Full auth journeys (sign up → verify email → set password → login). Edge cases (expired link, already verified, wrong password, token refresh).
+- Files: Auth routes (outside scope)
+- Risk: Auth feels broken in production even if unit tests pass.
+- Priority: **MEDIUM — add Playwright or Cypress after chat is stable**
 
 ---
 
-*Concerns audit: 2026-07-02*
+*Concerns audit: 2026-07-11*
