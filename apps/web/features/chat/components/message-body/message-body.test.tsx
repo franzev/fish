@@ -12,6 +12,28 @@ describe("MessageBody", () => {
     expect(whitespaceContainer).toBeEmptyDOMElement();
   });
 
+  it("renders a standalone emoji at display size", () => {
+    const { container, rerender } = render(<MessageBody body="😀" />);
+    expect(container.firstElementChild).toHaveClass("text-display");
+
+    rerender(<MessageBody body="  👩🏽‍💻  " />);
+    expect(container.firstElementChild).toHaveClass("text-display");
+
+    rerender(<MessageBody body="🇵🇭" />);
+    expect(container.firstElementChild).toHaveClass("text-display");
+  });
+
+  it("keeps text and multiple-emoji messages at the normal message size", () => {
+    const { container, rerender } = render(<MessageBody body="Hello 😀" />);
+    expect(container.firstElementChild).not.toHaveClass("text-display");
+
+    rerender(<MessageBody body="😀 😀" />);
+    expect(container.firstElementChild).not.toHaveClass("text-display");
+
+    rerender(<MessageBody body="1" />);
+    expect(container.firstElementChild).not.toHaveClass("text-display");
+  });
+
   it("renders bold text as <strong>", () => {
     render(<MessageBody body="This is **bold** text." />);
     const strong = screen.getByText("bold");

@@ -61,6 +61,11 @@ const HEADING_RE = /^(#{1,3})\s+(.*)$/;
 const BLOCKQUOTE_RE = /^>\s?(.*)$/;
 const LIST_ITEM_RE = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
 
+// A standalone emoji gets the same visual emphasis it carries in conversation.
+// Keep this deliberately stricter than `\p{Emoji}`: that property also matches
+// ordinary digits and symbols unless they are part of an emoji sequence.
+const EMOJI_ONLY_RE = /^\s*(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?)*)\s*$/u;
+
 function isListItemLine(line: string): boolean {
   return LIST_ITEM_RE.test(line);
 }
@@ -364,9 +369,16 @@ export function MessageBody({ body, mine, className }: MessageBodyProps) {
   }
 
   const blocks = tokenize(body);
+  const isEmojiOnly = EMOJI_ONLY_RE.test(body);
 
   return (
-    <div className={cn("flex flex-col break-words [&>*:first-child]:mt-0", className)}>
+    <div
+      className={cn(
+        "flex flex-col break-words [&>*:first-child]:mt-0",
+        isEmojiOnly && "text-display",
+        className
+      )}
+    >
       {blocks.map((block, index) => renderBlock(block, `b${index}`, mine))}
     </div>
   );
