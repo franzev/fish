@@ -7,33 +7,73 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
+      channel_members: {
+        Row: {
+          channel_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_members_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channels_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           consent_version: string | null
@@ -126,33 +166,6 @@ export type Database = {
           },
         ]
       }
-      profiles: {
-        Row: {
-          created_at: string
-          display_name: string
-          email: string
-          id: string
-          role: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          display_name?: string
-          email?: string
-          id: string
-          role?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          display_name?: string
-          email?: string
-          id?: string
-          role?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       conversations: {
         Row: {
           client_id: string
@@ -186,65 +199,6 @@ export type Database = {
           {
             foreignKeyName: "conversations_coach_id_fkey"
             columns: ["coach_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      message_reads: {
-        Row: {
-          conversation_id: string
-          delivered_at: string | null
-          id: string
-          last_delivered_message_id: string | null
-          last_read_message_id: string | null
-          read_at: string
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          delivered_at?: string | null
-          id?: string
-          last_delivered_message_id?: string | null
-          last_read_message_id?: string | null
-          read_at?: string
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          delivered_at?: string | null
-          id?: string
-          last_delivered_message_id?: string | null
-          last_read_message_id?: string | null
-          read_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "message_reads_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_reads_last_delivered_message_id_fkey"
-            columns: ["last_delivered_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_reads_last_read_message_id_fkey"
-            columns: ["last_read_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_reads_user_id_fkey"
-            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -348,6 +302,85 @@ export type Database = {
           },
         ]
       }
+      message_embeds: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message_id: string
+          url: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_id: string
+          url: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_embeds_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_embeds_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_mentions: {
+        Row: {
+          conversation_id: string
+          mentioned_user_id: string
+          message_id: string
+        }
+        Insert: {
+          conversation_id: string
+          mentioned_user_id: string
+          message_id: string
+        }
+        Update: {
+          conversation_id?: string
+          mentioned_user_id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_mentions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_mentions_mentioned_user_id_fkey"
+            columns: ["mentioned_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_mentions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           conversation_id: string
@@ -400,6 +433,65 @@ export type Database = {
           },
         ]
       }
+      message_reads: {
+        Row: {
+          conversation_id: string
+          delivered_at: string | null
+          id: string
+          last_delivered_message_id: string | null
+          last_read_message_id: string | null
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          delivered_at?: string | null
+          id?: string
+          last_delivered_message_id?: string | null
+          last_read_message_id?: string | null
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          delivered_at?: string | null
+          id?: string
+          last_delivered_message_id?: string | null
+          last_read_message_id?: string | null
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_last_delivered_message_id_fkey"
+            columns: ["last_delivered_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_last_read_message_id_fkey"
+            columns: ["last_read_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
@@ -409,18 +501,22 @@ export type Database = {
           deleted_at: string | null
           edited_at: string | null
           id: string
+          pinned_at: string | null
+          pinned_by: string | null
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
         }
         Insert: {
-          body: string
+          body?: string
           client_request_id: string
           conversation_id: string
           created_at?: string
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          pinned_at?: string | null
+          pinned_by?: string | null
           reply_to_message_id?: string | null
           sender_id: string
           sender_role: string
@@ -433,6 +529,8 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          pinned_at?: string | null
+          pinned_by?: string | null
           reply_to_message_id?: string | null
           sender_id?: string
           sender_role?: string
@@ -443,6 +541,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -496,19 +601,57 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          role: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          email?: string
+          id: string
+          role?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string
+          id?: string
+          role?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      send_chat_message: {
+      count_chat_messages: {
         Args: {
-          p_attachment_ids?: string[]
-          p_body: string
-          p_client_request_id: string
+          p_author_types?: string[]
+          p_channel_ids?: string[]
+          p_content_kinds?: string[]
           p_conversation_id: string
-          p_reply_to_message_id?: string | null
+          p_dates?: Json
+          p_mentioned_user_ids?: string[]
+          p_pinned?: boolean
+          p_query?: string
+          p_sender_ids?: string[]
         }
+        Returns: number
+      }
+      delete_chat_message: {
+        Args: { p_message_id: string }
         Returns: {
           body: string
           client_request_id: string
@@ -517,9 +660,73 @@ export type Database = {
           deleted_at: string | null
           edited_at: string | null
           id: string
+          pinned_at: string | null
+          pinned_by: string | null
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edit_chat_message: {
+        Args: { p_body: string; p_message_id: string }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      expire_unattached_chat_images: {
+        Args: never
+        Returns: {
+          client_upload_id: string
+          conversation_id: string
+          created_at: string
+          display_path: string | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
+          id: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          uploader_id: string
+          width: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "message_attachments"
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       initialize_chat_image_upload: {
@@ -530,66 +737,42 @@ export type Database = {
           p_source_byte_size: number
           p_source_mime_type: string
         }
-        Returns: Database["public"]["Tables"]["message_attachments"]["Row"]
-      }
-      edit_chat_message: {
-        Args: {
-          p_body: string
-          p_message_id: string
-        }
         Returns: {
-          body: string
-          client_request_id: string
+          client_upload_id: string
           conversation_id: string
           created_at: string
-          deleted_at: string | null
-          edited_at: string | null
+          display_path: string | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
           id: string
-          reply_to_message_id: string | null
-          sender_id: string
-          sender_role: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          uploader_id: string
+          width: number | null
         }
-      }
-      delete_chat_message: {
-        Args: {
-          p_message_id: string
-        }
-        Returns: {
-          body: string
-          client_request_id: string
-          conversation_id: string
-          created_at: string
-          deleted_at: string | null
-          edited_at: string | null
-          id: string
-          reply_to_message_id: string | null
-          sender_id: string
-          sender_role: string
-        }
-      }
-      toggle_message_reaction: {
-        Args: {
-          p_emoji: string
-          p_message_id: string
-        }
-        Returns: {
-          body: string
-          client_request_id: string
-          conversation_id: string
-          created_at: string
-          deleted_at: string | null
-          edited_at: string | null
-          id: string
-          reply_to_message_id: string | null
-          sender_id: string
-          sender_role: string
+        SetofOptions: {
+          from: "*"
+          to: "message_attachments"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       mark_chat_read_state: {
         Args: {
           p_conversation_id: string
-          p_last_delivered_message_id?: string | null
-          p_last_read_message_id?: string | null
+          p_last_delivered_message_id?: string
+          p_last_read_message_id?: string
         }
         Returns: {
           conversation_id: string
@@ -597,8 +780,104 @@ export type Database = {
           id: string
           last_delivered_message_id: string | null
           last_read_message_id: string | null
-          read_at: string
+          read_at: string | null
           user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "message_reads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      search_chat_messages: {
+        Args: {
+          p_author_types?: string[]
+          p_before_created_at?: string
+          p_before_id?: string
+          p_channel_ids?: string[]
+          p_content_kinds?: string[]
+          p_conversation_id: string
+          p_dates?: Json
+          p_limit?: number
+          p_mentioned_user_ids?: string[]
+          p_offset?: number
+          p_pinned?: boolean
+          p_query?: string
+          p_sender_ids?: string[]
+          p_sort_direction?: string
+        }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      send_chat_message: {
+        Args: {
+          p_attachment_ids?: string[]
+          p_body: string
+          p_client_request_id: string
+          p_conversation_id: string
+          p_reply_to_message_id?: string
+        }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      toggle_message_reaction: {
+        Args: { p_emoji: string; p_message_id: string }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
     }
@@ -729,9 +1008,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
