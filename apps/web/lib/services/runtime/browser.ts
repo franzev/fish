@@ -1,8 +1,8 @@
 import "client-only";
 
-import type { AppServices } from "../contracts";
+import type { AppServices, ChatRealtimeService } from "../contracts";
 import { createBrowserSupabaseServices } from "../supabase/browser";
-export * from "../supabase/chat-realtime";
+import { supabaseChatRealtimeService } from "../supabase/chat-realtime";
 
 let services: AppServices | null = null;
 
@@ -10,4 +10,8 @@ export function getBrowserServices(overrides?: AppServices): AppServices {
   if (overrides) return overrides;
   services ??= createBrowserSupabaseServices();
   return services;
+}
+
+export function getChatRealtimeService(override?: ChatRealtimeService): ChatRealtimeService {
+  return override ?? supabaseChatRealtimeService;
 }

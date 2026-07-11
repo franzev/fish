@@ -87,3 +87,21 @@ export interface DatabaseServices {
   chat: ChatRepository;
 }
 export interface AppServices { auth: AuthService; database: DatabaseServices }
+
+export interface ConversationTypingController { sendTyping(typing: boolean): void; unsubscribe(): void }
+export interface ConversationRecordingController { sendRecording(recording: boolean): void; unsubscribe(): void }
+export interface PresenceSessionController { markActive(): void; stop(): void }
+export interface ChatRealtimeService {
+  subscribeToMessages(conversationId: string, onMessage: (message: ClientChatMessage) => void, onReconnected?: () => void, onDisconnected?: () => void): () => void;
+  subscribeToReadStates(conversationId: string, onReadState: (state: ClientChatReadState) => void, onReconnected?: () => void): () => void;
+  subscribeToReactionChanges(conversationId: string, onReactionChange: (messageId: string) => void, onReconnected?: () => void): () => void;
+  subscribeToParticipantPresence(participantId: string, onPresence: (session: ClientChatPresenceSession, event: "INSERT" | "UPDATE" | "DELETE") => void): () => void;
+  subscribeToTyping(conversationId: string, currentUserId: string, onChange: (typing: boolean) => void): ConversationTypingController;
+  subscribeToRecording(conversationId: string, currentUserId: string, onChange: (recording: boolean) => void): ConversationRecordingController;
+  startPresenceSession(currentUserId: string): PresenceSessionController;
+}
+
+export interface CommandTransportService {
+  post(functionName: "send-message" | "chat-command", accessToken: string, body: unknown): Promise<Response>;
+  isLocallyUnavailable(response: Response | null): boolean;
+}

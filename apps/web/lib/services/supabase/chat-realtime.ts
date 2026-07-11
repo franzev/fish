@@ -3,6 +3,7 @@ import type {
   ClientChatPresenceSession,
   ClientChatReadState,
 } from "@/lib/services";
+import type { ChatRealtimeService } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
 import type { AppSupabaseClient } from "./types";
 import type { MessageReadRow, MessageRow } from "@fish/supabase";
@@ -466,3 +467,13 @@ export function startPresenceSession(
     },
   };
 }
+
+export const supabaseChatRealtimeService: ChatRealtimeService = {
+  subscribeToMessages: subscribeToConversationMessages,
+  subscribeToReadStates: subscribeToConversationReadStates,
+  subscribeToReactionChanges: subscribeToConversationReactionChanges,
+  subscribeToParticipantPresence,
+  subscribeToTyping: subscribeToConversationTyping,
+  subscribeToRecording: subscribeToConversationVoiceRecording,
+  startPresenceSession,
+};

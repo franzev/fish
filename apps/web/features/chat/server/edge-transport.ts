@@ -1,4 +1,4 @@
-import { getServerServices, isLocalBackendUnavailable, postBackendCommand } from "@/lib/services/runtime/server";
+import { getCommandTransport, getServerServices } from "@/lib/services/runtime/server";
 import { sendNotice } from "./constants";
 
 export async function getAccessToken(): Promise<string | null> {
@@ -11,11 +11,11 @@ export async function postEdgeFunction(
   accessToken: string,
   body: unknown
 ): Promise<Response> {
-  return postBackendCommand(functionName, accessToken, body);
+  return getCommandTransport().post(functionName, accessToken, body);
 }
 
 export function isLocalEdgeUnavailable(response: Response | null): boolean {
-  return isLocalBackendUnavailable(response);
+  return getCommandTransport().isLocallyUnavailable(response);
 }
 
 export function mapChatErrorNotice(
