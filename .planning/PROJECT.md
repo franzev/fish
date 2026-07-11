@@ -8,7 +8,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 
 **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
 
-**In progress:** v1.2 Cross-platform Chat State Foundation — Phase 9 (portable chat-state machine + Zustand web adapter, 11/11 plans, re-verified 6/6 CSTATE requirements on 2026-07-10 after gap-closure round 2) and Phase 10 (bounded message loading) are both execution-complete; `/channels/general` is the canonical community chat surface (the `/chat` route was removed). Outstanding: manual UAT for Phase 9 (`09-UAT.md`, status diagnosed) and milestone audit.
+**In progress:** v1.2 Cross-platform Chat State Foundation — all phases complete. Phase 9 (portable chat-state machine + Zustand web adapter, re-verified 6/6 CSTATE requirements, UAT complete) and Phase 10 (bounded message loading, verified passed 2026-07-11: 6/6 CLOAD requirements, UAT 5/5, CR-01 stale-callback gap closed by c404b0cd); `/channels/general` is the canonical community chat surface (the `/chat` route was removed). Outstanding: milestone audit and the Phase 9 security review (`09-SECURITY.md`, 1 open threat).
 
 What works today:
 - Monochrome design system: `light-dark()` oklch token ladder, WCAG-AA contrast-tested, five kit components (Button, Input, Card, Progress, Alert), `/kit` demo page as the visual contract in both themes.
@@ -68,6 +68,7 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ Role-aware landing screens: client home greets by first name and names the real assigned coach; calm assigned-state empty state — v1.0 (Phase 3)
 - ✓ Coach home lists the coach's assigned clients (seeded), alphabetical with quiet emails, rows inert — v1.0 (Phase 3)
 - ✓ Chat data boundary: one assigned coach-client conversation, member-scoped RLS reads, RPC-only idempotent sends, immutable messages, read-state ownership, seeded conversations, and generated Supabase chat row aliases — v1.1 (Phase 7)
+- ✓ Bounded chat message loading: 40-message newest window on open, cursor-based older-history pagination with reading position preserved, in-place realtime merges with no duplicates or layout shift, and coalesced bounded reconnect recovery with stale-callback revocation — v1.2 (Phase 10, CLOAD-01..06)
 
 ### Active
 
@@ -124,6 +125,7 @@ Deferred past v1.1 (in the build order, just not this milestone):
 | Authenticated shell carries zero primary actions (Logout is ghost) | The shell must never compete with page content — widens the "at most one primary per view" rule | ✓ Good — Phase 3 shell ships with no primary button |
 | Each protected page re-checks role server-side (getUser + profiles.role) | Server Components re-execute per navigation; the shared layout can't know which leaf route it wraps | ✓ Good — wrong-door guards verified live in Phase 3 UAT |
 | RLS is the sole authorization boundary for reads (no manual id filtering) | Direct Supabase reads under RLS per AGENTS.md; policies (`is_coach_of`/`is_client_of`) carry the whole burden | ✓ Good — `pnpm verify:rls` passes 8/8 live assertions |
+| Realtime lifecycle callbacks are revoked per effect (`active` flag) so a removed conversation's queued callbacks are inert | Async channel removal leaves stale callbacks callable; guarding entry (not just promise exit) is the only way to protect the active conversation's reconnect state | ✓ Good — CR-01 closed at c404b0cd; regression proves stale A callbacks can't corrupt B's first-subscribe slots or recovery lock |
 
 ## Evolution
 
@@ -143,4 +145,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-10 after Phase 9 gap-closure round 2 execution and re-verification (6/6 CSTATE requirements)*
+*Last updated: 2026-07-11 after Phase 10 verification passed (6/6 CLOAD requirements) — all v1.2 phases complete*

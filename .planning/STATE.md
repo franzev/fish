@@ -2,13 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Cross-platform Chat State Foundation
+current_phase: 10
 status: verifying
 stopped_at: Completed 10-07-PLAN.md
-last_updated: "2026-07-10T23:41:59.648Z"
-last_activity: 2026-07-10
+last_updated: "2026-07-11T00:28:37.591Z"
+last_activity: 2026-07-11
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 31
   completed_plans: 31
   percent: 100
@@ -16,22 +17,22 @@ progress:
 
 # Project State: FISH
 
-**Last updated:** 2026-07-10
+**Last updated:** 2026-07-11
 
 ## Project Reference
 
-See: .planning/PROJECT.md
+See: .planning/PROJECT.md (updated 2026-07-11)
 
 - **Core value:** A calm, choice-free experience: the coach assigns, the app presents, and nothing on screen competes for the client's attention.
 - **Shipped:** v1.0 Monochrome Foundations (2026-07-04) — design system + auth foundation + role-aware home; verified closeout, 28/28 requirements.
-- **Current focus:** Phase 10 — chat-message-loading-optimization
+- **Current focus:** Milestone v1.2 complete — ready for milestone audit/completion
 
 ## Current Position
 
-Phase: 10 (chat-message-loading-optimization) — VERIFYING
-Plan: 7 of 7
-Status: Ready for verification
-Next planned: Run `$gsd-verify-work 10` and repeat the corrected skeleton UAT check.
+Phase: 10 (chat-message-loading-optimization) — COMPLETE (verified passed 2026-07-11; UAT 5/5)
+Plan: 7 of 7 complete
+Status: Milestone v1.2 — all phases complete
+Next planned: `/gsd-complete-milestone v1.2` (resolve the Phase 9 open security threat first or acknowledge it)
 
 Progress: [██████████] 100%
 
@@ -49,8 +50,8 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Needs UAT |
-| 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Ready for verification |
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Complete (UAT complete 2026-07-10; security review: 1 open threat) |
+| 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Complete (verified passed 2026-07-11; UAT 5/5) |
 
 ## Archived Milestones
 
@@ -118,6 +119,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 - [Phase 10]: Reuse one bounded newest-window hydration helper for no-confirmed-row recovery and oversized-gap resets. — Keeps reconnect recovery bounded and prevents hydration metadata paths from diverging.
 - [Phase 10]: Scope reaction reads by conversation and retained message ids in 25-id batches. — Preserves caller-session RLS while bounding SSR work to the rendered newest window.
 - [Phase 10]: A reconnect backfill promise clears the shared lock only while it remains the exact stored owner; conversation switches still reset the slot so the new conversation starts independently. — Closes VR-01 without changing bounded reads, first-subscribe suppression, or authority boundaries.
+- [Phase 10]: Every realtime subscription effect carries a per-effect `active` revocation flag; payload and status callbacks return before touching realtime status, seenFirstSubscribeRef, or backfillInFlightRef once their effect cleans up. — Closes CR-01 (c404b0cd): async removeChannel leaves stale callbacks callable, so callback entry must be guarded, not just promise-settlement exit; regression proves stale A callbacks after an A-to-B switch are fully inert.
 
 ### Todos / open questions
 
@@ -126,7 +128,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ### Blockers
 
-- None.
+- None blocking. Concern before milestone completion: [Phase 9] `09-SECURITY.md` reports `threats_open: 1` (status issues_found) and the file is uncommitted — resolve via `/gsd-secure-phase 9` or acknowledge during the milestone audit.
 
 ### Performance Metrics
 
@@ -199,12 +201,11 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 **Resume file:** None
 
-**Last session:** 2026-07-10T23:41:59.644Z
+**Last session:** 2026-07-11
 
-- **Last activity:** 2026-07-10
-- **Stopped at:** Completed 10-07-PLAN.md
-- **Next action:** Run `$gsd-verify-work 10` and repeat the corrected skeleton UAT check.
+- **Last activity:** 2026-07-11
+- **Stopped at:** Phase 10 verified passed and marked complete — milestone v1.2 all phases done
+- **Next action:** `/gsd-complete-milestone v1.2` (review Phase 9 open security threat first)
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*
-

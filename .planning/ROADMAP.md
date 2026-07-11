@@ -171,7 +171,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 7. Chat Schema | v1.1 | 1/1 | Complete | 2026-07-05 |
 | 8. Real Chat Route + send-message Edge Function | v1.1 | 1/1 | Complete | 2026-07-06 |
 | 9. Cross-platform Chat State | v1.2 | 19/19 | Complete   | 2026-07-10 |
-| 10. Chat Message Loading Optimization | v1.2 | 7/7 | Complete   | 2026-07-10 |
+| 10. Chat Message Loading Optimization | v1.2 | 7/7 | Complete    | 2026-07-10 |
 
 ---
 *Roadmap created: 2026-07-02 · v1.0 archived: 2026-07-04 · v1.1 re-scoped: 2026-07-06 · v1.2 opened: 2026-07-07*
