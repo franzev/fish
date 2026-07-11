@@ -179,7 +179,7 @@ describe("chat-state fixture vectors", () => {
     }
   });
 
-  // The protocol doc and the Phase 09 native companion declare an
+  // The protocol doc and its native companion declare an
   // update-together rule with the executable contract. Enforce it here so a
   // new fixture or pagination field cannot land without both canonical docs
   // naming it (T-09-06-01).
@@ -187,10 +187,7 @@ describe("chat-state fixture vectors", () => {
     const repoRoot = join(__dirname, "..", "..", "..");
     const canonicalDocs = [
       join(repoRoot, "packages/core/docs/chat-state-protocol.md"),
-      join(
-        repoRoot,
-        ".planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md"
-      ),
+      join(repoRoot, "packages/core/docs/native-chat-state-notes.md"),
     ].map((path) => ({ path, text: readFileSync(path, "utf8") }));
 
     const fixtureNames = (fixtures as FixtureCase[]).map((item) => item.name);

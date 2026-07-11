@@ -21,10 +21,10 @@ The TypeScript types, reducer, and selectors in
 executable parity contract. This file is the canonical human-readable,
 platform-neutral explanation of that contract.
 
-`.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`
-is the canonical current Android/iOS architecture companion. Any change to the
+`packages/core/docs/native-chat-state-notes.md` is the canonical current
+Android/iOS architecture companion. Any change to the
 portable event union, state shape, selector behavior, or fixture cases must
-update this protocol and that Phase 09 native companion together. Native
+update this protocol and that native companion together. Native
 implementations replay the JSON vectors idiomatically; they do not consume
 generated TypeScript or import web state libraries.
 
