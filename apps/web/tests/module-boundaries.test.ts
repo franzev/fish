@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { basename, dirname, join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const webRoot = process.cwd();
@@ -36,6 +36,7 @@ function relativePaths(paths: string[], root = webRoot): string[] {
 
 describe("module boundaries", () => {
   it("keeps feature-only directories out of the App Router tree", () => {
+    const appRoot = join(webRoot, "app");
     const routeFiles = new Set([
       "default.tsx",
       "error.tsx",
@@ -46,7 +47,14 @@ describe("module boundaries", () => {
       "route.ts",
       "template.tsx",
     ]);
-    const offenders = collectDirectories(join(webRoot, "app")).filter((dir) => {
+    const offenders = collectDirectories(appRoot).filter((dir) => {
+      const isPrivateImplementation = relative(appRoot, dir)
+        .split(sep)
+        .some((segment) => segment.startsWith("_"));
+      if (isPrivateImplementation) {
+        return false;
+      }
+
       const directSources = readdirSync(dir).filter((entry) =>
         /\.(?:ts|tsx)$/.test(entry) &&
         !/\.(?:test|stories)\.(?:ts|tsx)$/.test(entry)
@@ -97,13 +105,59 @@ describe("module boundaries", () => {
     const offenders = stories.filter(
       (file) =>
         !file.startsWith("components/") &&
-        !file.startsWith("features/chat/components/")
+        !/^features\/[^/]+\/components\//.test(file)
     );
 
     expect(offenders).toEqual([]);
-    expect(stories.some((file) => file.startsWith("features/chat/components/"))).toBe(
-      true
+    expect(stories.some((file) => /^features\/[^/]+\/components\//.test(file))).toBe(true);
+  });
+
+  it("colocates every story with its corresponding component", () => {
+    const sourceFiles = collectSourceFiles(webRoot);
+    const sourceFileSet = new Set(sourceFiles);
+    const stories = sourceFiles.filter((file) =>
+      /\.stories\.(?:ts|tsx)$/.test(file)
     );
+    const offenders = stories.filter((story) => {
+      const componentBase = story.replace(/\.stories\.(?:ts|tsx)$/, "");
+      return ![`${componentBase}.ts`, `${componentBase}.tsx`].some((file) =>
+        sourceFileSet.has(file)
+      );
+    });
+
+    expect(relativePaths(offenders)).toEqual([]);
+  });
+
+  it("keeps every component implementation in a same-named folder", () => {
+    const offenders = collectSourceFiles(webRoot).filter((file) => {
+      const segments = relative(webRoot, file).split(sep);
+      return (
+        segments.some(
+          (segment) => segment === "components" || segment === "_components"
+        ) &&
+        file.endsWith(".tsx") &&
+        !/\.(?:test|stories)\.tsx$/.test(file) &&
+        basename(file, ".tsx") !== basename(dirname(file))
+      );
+    });
+
+    expect(relativePaths(offenders)).toEqual([]);
+  });
+
+  it("gives every component folder an index entry point", () => {
+    const offenders = collectSourceFiles(webRoot).filter((file) => {
+      const segments = relative(webRoot, file).split(sep);
+      return (
+        segments.some(
+          (segment) => segment === "components" || segment === "_components"
+        ) &&
+        file.endsWith(".tsx") &&
+        !/\.(?:test|stories)\.tsx$/.test(file) &&
+        !existsSync(join(dirname(file), "index.ts"))
+      );
+    });
+
+    expect(relativePaths(offenders)).toEqual([]);
   });
 
   it("keeps the core chat state free of framework and provider dependencies", () => {
