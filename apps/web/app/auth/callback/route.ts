@@ -1,5 +1,5 @@
 import { authRedirects } from "@/features/auth/redirects";
-import { createClient } from "@/lib/supabase/server";
+import { getServerServices } from "@/lib/services/runtime/server";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -11,27 +11,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(fallbackUrl);
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
+  const services = await getServerServices();
+  const exchange = await services.auth.exchangeCode(code);
+  if (!exchange.ok) {
     return NextResponse.redirect(fallbackUrl);
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userResult = await services.auth.getCurrentUser();
+  const user = userResult.ok ? userResult.data : null;
 
   let destination: string = authRedirects.clientHome;
 
   if (user?.id) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.role === "coach") {
+    const profile = await services.database.profiles.findRoleById(user.id);
+    if (profile.ok && profile.data?.role === "coach") {
       destination = authRedirects.coachHome;
     }
   }

@@ -9,7 +9,8 @@ import {
   type EnvSource,
 } from "../env";
 import { createSupabaseServices } from "./core";
-import type { AppSupabaseClient, SupabaseServices } from "./types";
+import type { AppServices } from "../contracts";
+import type { AppSupabaseClient } from "./types";
 
 export interface BrowserSupabaseClientDeps {
   env?: AppPublicEnv | EnvSource;
@@ -39,6 +40,6 @@ export function createBrowserSupabaseClient(
 
 export function createBrowserSupabaseServices(
   deps: BrowserSupabaseClientDeps = {}
-): SupabaseServices {
+): AppServices {
   return createSupabaseServices(createBrowserSupabaseClient(deps));
 }

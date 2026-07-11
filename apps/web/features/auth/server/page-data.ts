@@ -1,7 +1,7 @@
 import "server-only";
 
-import { createServerSupabaseServices } from "@/lib/services/supabase/server";
-import type { SupabaseServices } from "@/lib/services";
+import { getServerServices } from "@/lib/services/runtime/server";
+import type { AppServices } from "@/lib/services";
 import { ServiceError } from "@/lib/services";
 import { authRedirects } from "../redirects";
 import { isUserRole } from "@fish/core/roles";
@@ -16,7 +16,7 @@ import {
 } from "../contracts";
 
 export async function getCurrentProfile(
-  services: SupabaseServices
+  services: AppServices
 ): Promise<CurrentProfile | null> {
   const userResult = await services.auth.getCurrentUser();
   if (!userResult.ok) {
@@ -55,7 +55,7 @@ export async function getCurrentProfile(
 }
 
 export async function getRootRedirectPath(): Promise<string> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {
@@ -68,7 +68,7 @@ export async function getRootRedirectPath(): Promise<string> {
 }
 
 export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShellProfile | null> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {
@@ -104,7 +104,7 @@ export async function getAuthenticatedShellProfile(): Promise<AuthenticatedShell
 }
 
 export async function getClientHomeData(): Promise<ClientHomeData | null> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {
@@ -140,7 +140,7 @@ export async function getClientHomeData(): Promise<ClientHomeData | null> {
    every other page). This throws on any ServiceResult failure via the same
    idiom getClientHomeData/getCoachHomeData already use. */
 export async function getProfileData(): Promise<ProfileData | null> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {

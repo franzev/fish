@@ -9,17 +9,11 @@ const authMock = vi.hoisted(() => ({
   unsubscribe: vi.fn(),
 }));
 
-vi.mock("@/lib/services/supabase/browser", () => ({
-  createBrowserSupabaseClient: () => ({
-    auth: {
-      onAuthStateChange: (callback: AuthCallback) => {
-        authMock.callback = callback;
-        return {
-          data: { subscription: { unsubscribe: authMock.unsubscribe } },
-        };
-      },
-    },
-  }),
+vi.mock("@/lib/services/runtime/browser", () => ({
+  getBrowserServices: () => ({ auth: { subscribe: (callback: AuthCallback) => {
+    authMock.callback = callback;
+    return authMock.unsubscribe;
+  } } }),
 }));
 
 import {

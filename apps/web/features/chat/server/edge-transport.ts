@@ -1,25 +1,9 @@
-import { createServerSupabaseServices } from "@/lib/services/supabase/server";
-import { getPublicEnv } from "@/lib/services/env";
+import { getServerServices, isLocalBackendUnavailable, postBackendCommand } from "@/lib/services/runtime/server";
 import { sendNotice } from "./constants";
 
-const localEdgeTimeoutMs = 1_500;
-
 export async function getAccessToken(): Promise<string | null> {
-  const services = await createServerSupabaseServices();
-  const userResult = await services.auth.getCurrentUser();
-
-  if (!userResult.ok || !userResult.data) {
-    return null;
-  }
-
-  const { data: sessionData, error: sessionError } =
-    await services.client.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
-  if (sessionError || !accessToken) {
-    return null;
-  }
-
-  return accessToken;
+  const result = await (await getServerServices()).auth.getAccessToken();
+  return result.ok ? result.data : null;
 }
 
 export async function postEdgeFunction(
@@ -27,42 +11,11 @@ export async function postEdgeFunction(
   accessToken: string,
   body: unknown
 ): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = isLocalSupabaseUrl()
-    ? setTimeout(() => controller.abort(), localEdgeTimeoutMs)
-    : null;
-
-  try {
-    return await fetch(`${getPublicEnv().supabaseUrl}/functions/v1/${functionName}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-  } finally {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-  }
-}
-
-function isLocalSupabaseUrl(): boolean {
-  try {
-    const hostname = new URL(getPublicEnv().supabaseUrl).hostname;
-    return hostname === "127.0.0.1" || hostname === "localhost";
-  } catch {
-    return false;
-  }
+  return postBackendCommand(functionName, accessToken, body);
 }
 
 export function isLocalEdgeUnavailable(response: Response | null): boolean {
-  return (
-    isLocalSupabaseUrl() &&
-    (!response || [404, 502, 503, 504].includes(response.status))
-  );
+  return isLocalBackendUnavailable(response);
 }
 
 export function mapChatErrorNotice(

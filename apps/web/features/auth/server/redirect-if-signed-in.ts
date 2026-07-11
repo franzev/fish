@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { getServerServices } from "@/lib/services/runtime/server";
 import { authRedirects } from "../redirects";
 import { redirect } from "next/navigation";
 
@@ -11,20 +11,16 @@ import { redirect } from "next/navigation";
    apps/web/lib/supabase/server.ts's hard rule comment. No try/catch:
    redirect() throws by design and must propagate to halt rendering. */
 export async function redirectIfSignedIn(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const services = await getServerServices();
+  const userResult = await services.auth.getCurrentUser();
+  const user = userResult.ok ? userResult.data : null;
 
   if (!user) {
     return;
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const profileResult = await services.database.profiles.findRoleById(user.id);
+  const profile = profileResult.ok ? profileResult.data : null;
 
   redirect(
     profile?.role === "coach"

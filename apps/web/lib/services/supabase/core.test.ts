@@ -36,8 +36,6 @@ describe("Supabase service registry", () => {
       created_at: "2026-07-04T00:00:00Z",
       updated_at: "2026-07-04T00:00:00Z",
     };
-    const bucket = { upload: vi.fn() };
-    const channel = { subscribe: vi.fn() };
     const client = {
       auth: {
         getUser: vi.fn(async () => ({
@@ -48,8 +46,6 @@ describe("Supabase service registry", () => {
         signOut: vi.fn(async () => ({ error: null })),
       },
       from: vi.fn(() => createQueryResult(profile)),
-      storage: { from: vi.fn(() => bucket) },
-      channel: vi.fn(() => channel),
     } as unknown as AppSupabaseClient;
 
     const services = createSupabaseServices(client);
@@ -65,9 +61,7 @@ describe("Supabase service registry", () => {
     await expect(services.database.profiles.findById("profile-1")).resolves.toEqual(
       { ok: true, data: profile }
     );
-    expect(services.storage.from("avatars")).toBe(bucket);
-    expect(services.realtime.channel("room:1")).toBe(channel);
-    expect(services.client).toBe(client);
+    expect(Object.keys(services).sort()).toEqual(["auth", "database"]);
   });
 
   it("maps Supabase database failures into centralized service failures", async () => {

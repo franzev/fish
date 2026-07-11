@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import { type EmailOtpType } from "@supabase/supabase-js";
+import type { EmailTokenKind } from "@/lib/services";
+import { getServerServices } from "@/lib/services/runtime/server";
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
@@ -11,7 +11,9 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
+  const rawType = searchParams.get("type");
+  const supportedTypes: EmailTokenKind[] = ["email", "signup", "invite", "magiclink", "recovery", "email_change"];
+  const type = supportedTypes.includes(rawType as EmailTokenKind) ? rawType as EmailTokenKind : null;
   // D-08: land signed-in at /home. Only same-origin relative paths are
   // honored — `new URL(next, base)` would let an absolute ("https://evil"),
   // protocol-relative ("//evil"), or backslash ("/\evil") value override the
@@ -25,9 +27,9 @@ export async function GET(request: NextRequest) {
       : "/home";
 
   if (token_hash && type) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
-    if (!error) {
+    const services = await getServerServices();
+    const result = await services.auth.verifyEmailToken(token_hash, type);
+    if (result.ok) {
       return NextResponse.redirect(new URL(next, request.url));
     }
   }

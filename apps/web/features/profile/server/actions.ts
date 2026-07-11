@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseServices } from "@/lib/services/supabase/server";
+import { getServerServices } from "@/lib/services/runtime/server";
 import type { ClientProfileSafeFields } from "@/lib/services";
 import { editProfileSchema } from "../validation";
 import { redirect } from "next/navigation";
@@ -33,7 +33,7 @@ export async function updateProfileAction(
   prevState: EditProfileState,
   formData: FormData
 ): Promise<EditProfileState> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const userResult = await services.auth.getCurrentUser();
 
   const rawValues: EditProfileValues = {
@@ -95,7 +95,7 @@ export async function updateProfileAction(
    schema, since it's acknowledged independently of editing display
    name/goal. */
 export async function acceptConsentAction(version: string): Promise<void> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const userResult = await services.auth.getCurrentUser();
 
   if (!userResult.ok || !userResult.data) {
@@ -128,7 +128,7 @@ export interface UpdatePrefsInput {
    write-through). Re-verifies getUser() the same way updateProfileAction
    does (T-04-05): Server Actions are directly POST-reachable. */
 export async function updatePrefsAction(input: UpdatePrefsInput): Promise<void> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const userResult = await services.auth.getCurrentUser();
 
   if (!userResult.ok || !userResult.data) {

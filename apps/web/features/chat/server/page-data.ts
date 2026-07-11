@@ -1,11 +1,11 @@
 import "server-only";
 
-import { createServerSupabaseServices } from "@/lib/services/supabase/server";
+import { getServerServices } from "@/lib/services/runtime/server";
 import { getCurrentProfile } from "@/features/auth/server/page-data";
 import type { ChatPageData } from "@/features/auth/contracts";
 
 export async function getChatPageData(): Promise<ChatPageData | null> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {

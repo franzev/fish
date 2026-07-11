@@ -1,6 +1,6 @@
 import "client-only";
 
-import { createBrowserSupabaseServices } from "@/lib/services/supabase/browser";
+import { getBrowserServices } from "@/lib/services/runtime/browser";
 import type { ServiceError, ServiceResult } from "@/lib/services";
 
 export function getAuthErrorCode(error: ServiceError): string | undefined {
@@ -14,7 +14,7 @@ export function getAuthErrorName(error: ServiceError): string | undefined {
 }
 
 function browserAuth() {
-  return createBrowserSupabaseServices().auth;
+  return getBrowserServices().auth;
 }
 
 export async function signInWithPassword(input: {

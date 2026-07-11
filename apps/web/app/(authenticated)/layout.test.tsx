@@ -27,14 +27,8 @@ vi.mock("@/features/auth/client/browser", () => ({
 // ChatIdentityGuard (CR-01) now mounts alongside AppShell and calls this on
 // mount -- mock it so the real Supabase browser client (and its required
 // env vars) is never constructed in this unit test.
-vi.mock("@/lib/services/supabase/browser", () => ({
-  createBrowserSupabaseClient: () => ({
-    auth: {
-      onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: () => {} } },
-      }),
-    },
-  }),
+vi.mock("@/lib/services/runtime/browser", () => ({
+  getBrowserServices: () => ({ auth: { subscribe: () => () => {} } }),
 }));
 
 import AuthenticatedLayout from "./layout";

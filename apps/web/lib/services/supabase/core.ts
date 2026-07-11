@@ -1,10 +1,7 @@
 import { SupabaseAuthServiceImpl } from "./auth";
-import {
-  SupabaseDatabaseServiceImpl,
-  SupabaseRealtimeServiceImpl,
-  SupabaseStorageServiceImpl,
-} from "./runtime-services";
-import type { AppSupabaseClient, SupabaseServices } from "./types";
+import { SupabaseDatabaseServiceImpl } from "./runtime-services";
+import type { AppServices } from "../contracts";
+import type { AppSupabaseClient } from "./types";
 
 /**
  * One factory builds the cohesive Supabase registry for every runtime. This is
@@ -13,12 +10,9 @@ import type { AppSupabaseClient, SupabaseServices } from "./types";
  */
 export function createSupabaseServices(
   client: AppSupabaseClient
-): SupabaseServices {
+): AppServices {
   return {
-    client,
     auth: new SupabaseAuthServiceImpl(client),
     database: new SupabaseDatabaseServiceImpl(client),
-    storage: new SupabaseStorageServiceImpl(client),
-    realtime: new SupabaseRealtimeServiceImpl(client),
   };
 }

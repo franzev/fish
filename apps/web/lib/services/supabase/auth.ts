@@ -5,8 +5,8 @@ import {
   type ServiceResult,
 } from "@/lib/services/errors";
 import { safely } from "./shared";
-import type { AppSupabaseClient, SupabaseAuthService } from "./types";
-import type { User } from "@supabase/supabase-js";
+import type { AuthSessionEvent, AuthService, AuthUser, EmailTokenKind } from "../contracts";
+import type { AppSupabaseClient } from "./types";
 
 function isAuthSessionMissingError(error: {
   message?: string;
@@ -40,10 +40,24 @@ function isSignedOutAuthError(error: {
         message.includes("already used")))
   );
 }
-export class SupabaseAuthServiceImpl implements SupabaseAuthService {
-  constructor(readonly client: AppSupabaseClient) {}
+const eventMap = {
+  INITIAL_SESSION: "INITIAL_SESSION",
+  SIGNED_IN: "SIGNED_IN",
+  SIGNED_OUT: "SIGNED_OUT",
+  TOKEN_REFRESHED: "TOKEN_REFRESHED",
+  USER_UPDATED: "USER_UPDATED",
+  PASSWORD_RECOVERY: "PASSWORD_RECOVERY",
+  MFA_CHALLENGE_VERIFIED: "MFA_CHALLENGE_VERIFIED",
+} as const;
 
-  async getCurrentUser(): Promise<ServiceResult<User | null>> {
+function toAuthUser(user: { id: string; email?: string | null }): AuthUser {
+  return { id: user.id, email: user.email ?? null };
+}
+
+export class SupabaseAuthServiceImpl implements AuthService {
+  constructor(private readonly client: AppSupabaseClient) {}
+
+  async getCurrentUser(): Promise<ServiceResult<AuthUser | null>> {
     return safely("auth.getCurrentUser", async () => {
       const { data, error } = await this.client.auth.getUser();
       if (error) {
@@ -61,8 +75,43 @@ export class SupabaseAuthServiceImpl implements SupabaseAuthService {
         );
       }
 
-      return serviceSuccess(data.user);
+      return serviceSuccess(data.user ? toAuthUser(data.user) : null);
     });
+  }
+
+  async getAccessToken(): Promise<ServiceResult<string | null>> {
+    return safely("auth.getAccessToken", async () => {
+      const { data, error } = await this.client.auth.getSession();
+      if (error) {
+        return serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not read the session.", operation: "auth.getAccessToken", recoverable: true }));
+      }
+      return serviceSuccess(data.session?.access_token ?? null);
+    });
+  }
+
+  async exchangeCode(code: string): Promise<ServiceResult<void>> {
+    return safely("auth.exchangeCode", async () => {
+      const { error } = await this.client.auth.exchangeCodeForSession(code);
+      return error
+        ? serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not complete sign in.", operation: "auth.exchangeCode", recoverable: true }))
+        : serviceSuccess(undefined);
+    });
+  }
+
+  async verifyEmailToken(tokenHash: string, kind: EmailTokenKind): Promise<ServiceResult<void>> {
+    return safely("auth.verifyEmailToken", async () => {
+      const { error } = await this.client.auth.verifyOtp({ token_hash: tokenHash, type: kind });
+      return error
+        ? serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not verify this link.", operation: "auth.verifyEmailToken", recoverable: true }))
+        : serviceSuccess(undefined);
+    });
+  }
+
+  subscribe(callback: (event: AuthSessionEvent, session: { user: AuthUser } | null) => void): () => void {
+    const { data: { subscription } } = this.client.auth.onAuthStateChange((event, session) => {
+      callback(eventMap[event], session ? { user: toAuthUser(session.user) } : null);
+    });
+    return () => subscription.unsubscribe();
   }
 
   async refreshSessionClaims(): Promise<ServiceResult<void>> {

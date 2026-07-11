@@ -1,15 +1,10 @@
 import "client-only";
 
-import { createBrowserSupabaseClient } from "@/lib/services/supabase/browser";
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import type { AuthSession, AuthSessionEvent } from "@/lib/services";
+import { getBrowserServices } from "@/lib/services/runtime/browser";
 
 export function subscribeToChatSessionChanges(
-  callback: (event: AuthChangeEvent, session: Session | null) => void
+  callback: (event: AuthSessionEvent, session: AuthSession | null) => void
 ): () => void {
-  const client = createBrowserSupabaseClient();
-  const {
-    data: { subscription },
-  } = client.auth.onAuthStateChange(callback);
-
-  return () => subscription.unsubscribe();
+  return getBrowserServices().auth.subscribe(callback);
 }

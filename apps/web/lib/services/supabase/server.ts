@@ -10,11 +10,11 @@ import {
   type EnvSource,
 } from "../env";
 import { createSupabaseServices } from "./core";
+import type { AppServices } from "../contracts";
 import type {
   AppSupabaseClient,
   CookieToSet,
   MutableCookieStore,
-  SupabaseServices,
 } from "./types";
 
 export interface ServerSupabaseClientDeps {
@@ -70,7 +70,7 @@ export function createServerSupabaseClientFromCookies(
 export function createServerSupabaseServicesFromCookies(
   cookieStore: MutableCookieStore,
   deps: ServerSupabaseClientDeps = {}
-): SupabaseServices {
+): AppServices {
   return createSupabaseServices(
     createServerSupabaseClientFromCookies(cookieStore, deps)
   );
@@ -84,6 +84,6 @@ export async function createServerSupabaseClient(
 
 export async function createServerSupabaseServices(
   deps: ServerSupabaseClientDeps = {}
-): Promise<SupabaseServices> {
+): Promise<AppServices> {
   return createSupabaseServices(await createServerSupabaseClient(deps));
 }

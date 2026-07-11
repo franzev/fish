@@ -16,16 +16,16 @@ function queueSingle(table: string, value: unknown) {
   singleQueues[table].push(value);
 }
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: { getUser: getUserMock },
-    from: (table: string) => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => (singleQueues[table] ?? []).shift(),
-        }),
-      }),
-    }),
+vi.mock("@/lib/services/runtime/server", () => ({
+  getServerServices: async () => ({
+    auth: { getCurrentUser: async () => {
+      const result = await getUserMock();
+      return { ok: true, data: result.data.user };
+    } },
+    database: { profiles: { findRoleById: async () => {
+      const result = (singleQueues.profiles ?? []).shift() as { data: unknown } | undefined;
+      return { ok: true, data: result?.data ?? null };
+    } } },
   }),
 }));
 

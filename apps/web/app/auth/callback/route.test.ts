@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
-const { createClientMock } = vi.hoisted(() => ({
-  createClientMock: vi.fn(),
+const { getServerServicesMock } = vi.hoisted(() => ({
+  getServerServicesMock: vi.fn(),
 }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: createClientMock,
+vi.mock("@/lib/services/runtime/server", () => ({
+  getServerServices: getServerServicesMock,
 }));
 
 import { GET } from "./route";
@@ -25,22 +25,10 @@ function createSupabaseClient({
 } = {}) {
   return {
     auth: {
-      exchangeCodeForSession: vi.fn(async () => ({ error: exchangeError })),
-      getUser: vi.fn(async () => ({
-        data: { user: userId ? { id: userId } : null },
-        error: null,
-      })),
+      exchangeCode: vi.fn(async () => exchangeError ? { ok: false, error: exchangeError } : { ok: true, data: undefined }),
+      getCurrentUser: vi.fn(async () => ({ ok: true, data: userId ? { id: userId } : null })),
     },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          maybeSingle: vi.fn(async () => ({
-            data: role ? { role } : null,
-            error: null,
-          })),
-        })),
-      })),
-    })),
+    database: { profiles: { findRoleById: vi.fn(async () => ({ ok: true, data: role ? { role } : null })) } },
   };
 }
 
@@ -55,23 +43,23 @@ describe("OAuth callback route", () => {
     );
 
     expect(response.headers.get("location")).toBe("http://localhost:3001/login");
-    expect(createClientMock).not.toHaveBeenCalled();
+    expect(getServerServicesMock).not.toHaveBeenCalled();
   });
 
   it("exchanges the code and routes client profiles to /home", async () => {
     const supabase = createSupabaseClient({ role: "client" });
-    createClientMock.mockResolvedValueOnce(supabase);
+    getServerServicesMock.mockResolvedValueOnce(supabase);
 
     const response = await GET(
       request("http://localhost:3001/auth/callback?code=abc")
     );
 
-    expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith("abc");
+    expect(supabase.auth.exchangeCode).toHaveBeenCalledWith("abc");
     expect(response.headers.get("location")).toBe("http://localhost:3001/home");
   });
 
   it("routes coach profiles to /coach", async () => {
-    createClientMock.mockResolvedValueOnce(
+    getServerServicesMock.mockResolvedValueOnce(
       createSupabaseClient({ role: "coach" })
     );
 
@@ -83,7 +71,7 @@ describe("OAuth callback route", () => {
   });
 
   it("redirects to login when the code exchange fails", async () => {
-    createClientMock.mockResolvedValueOnce(
+    getServerServicesMock.mockResolvedValueOnce(
       createSupabaseClient({ exchangeError: { message: "invalid code" } })
     );
 

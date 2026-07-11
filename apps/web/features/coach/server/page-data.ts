@@ -1,11 +1,11 @@
 import "server-only";
 
-import { createServerSupabaseServices } from "@/lib/services/supabase/server";
+import { getServerServices } from "@/lib/services/runtime/server";
 import { getCurrentProfile } from "@/features/auth/server/page-data";
 import type { CoachClientDetailData, CoachHomeData } from "@/features/auth/contracts";
 
 export async function getCoachHomeData(): Promise<CoachHomeData | null> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {
@@ -40,7 +40,7 @@ const UUID_RE =
 export async function getCoachClientDetailData(
   clientId: string
 ): Promise<CoachClientDetailData | null> {
-  const services = await createServerSupabaseServices();
+  const services = await getServerServices();
   const profile = await getCurrentProfile(services);
 
   if (!profile) {

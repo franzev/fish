@@ -11,8 +11,6 @@ import type {
   CoachClientRepository,
   ProfileRepository,
   SupabaseDatabaseService,
-  SupabaseRealtimeService,
-  SupabaseStorageService,
 } from "./types";
 
 export class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
@@ -26,24 +24,5 @@ export class SupabaseDatabaseServiceImpl implements SupabaseDatabaseService {
     this.coachClients = new SupabaseCoachClientRepository(client);
     this.clientProfiles = new SupabaseClientProfileRepository(client);
     this.chat = new SupabaseChatRepository(client);
-  }
-}
-
-export class SupabaseStorageServiceImpl implements SupabaseStorageService {
-  constructor(readonly client: AppSupabaseClient) {}
-
-  from(bucket: string): ReturnType<AppSupabaseClient["storage"]["from"]> {
-    return this.client.storage.from(bucket);
-  }
-}
-
-export class SupabaseRealtimeServiceImpl implements SupabaseRealtimeService {
-  constructor(readonly client: AppSupabaseClient) {}
-
-  channel(
-    topic: string,
-    options?: Parameters<AppSupabaseClient["channel"]>[1]
-  ): ReturnType<AppSupabaseClient["channel"]> {
-    return this.client.channel(topic, options);
   }
 }

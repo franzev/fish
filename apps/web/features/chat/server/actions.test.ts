@@ -12,8 +12,26 @@ vi.mock("@/lib/services/env", () => ({
 
 vi.mock("@/lib/services/supabase/server", () => ({
   createServerSupabaseServices: async () => ({
-    auth: { getCurrentUser: getCurrentUserMock },
-    client: { auth: { getSession: getSessionMock }, rpc: rpcMock, from: fromMock },
+    auth: {
+      getCurrentUser: getCurrentUserMock,
+      getAccessToken: async () => {
+        const result = await getSessionMock();
+        if (!result) return { ok: true, data: null };
+        return result.error
+          ? { ok: false, error: result.error }
+          : { ok: true, data: result.data.session?.access_token ?? null };
+      },
+    },
+  }),
+  createServerSupabaseClient: async () => ({
+    auth: {
+      getUser: async () => {
+        const result = await getCurrentUserMock();
+        return { data: { user: result.ok ? result.data : null }, error: result.ok ? null : result.error };
+      },
+    },
+    rpc: rpcMock,
+    from: fromMock,
   }),
 }));
 
