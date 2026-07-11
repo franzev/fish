@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "concurrently --kill-others-on-fail --names web,functions \"next dev -p 3001\" \"supabase functions serve --workdir ../..\"",
     "build": "next build",
     "start": "next start",
     "storybook": "storybook dev -p 6006 --no-open",
@@ -21,6 +21,7 @@
     "@supabase/ssr": "0.12.0",
     "@supabase/supabase-js": "2.110.0",
     "@tabler/icons-react": "^3.44.0",
+    "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "client-only": "0.0.1",
     "clsx": "2.1.1",
@@ -30,6 +31,7 @@
     "react-dom": "19.2.7",
     "server-only": "0.0.1",
     "tailwind-merge": "2.6.0",
+    "tus-js-client": "^4.3.1",
     "unicode-emoji-json": "^0.9.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
@@ -48,6 +50,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "@vitest/browser-playwright": "4.1.9",
+    "concurrently": "^10.0.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.9",
     "jsdom": "^29.1.1",
