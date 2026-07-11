@@ -53,8 +53,10 @@ Native implementations should mirror these protocol concepts:
 - `ChatComposerState`: draft, reply target, and edit target.
 - `ChatPaginationState`: `oldestLoadedCursor` (the oldest loaded message's
   `{ createdAt, id }` keyset cursor, or `null` before a window is loaded),
-  `hasMoreOlder`, and `isLoadingOlder`. Every conversation starts with a
-  well-formed default: no cursor, no known older page, and no load in progress.
+  `hasMoreOlder`, `isLoadingOlder`, and `hasLoadError` (whether the most
+  recent older-page request failed; a new request clears it atomically).
+  Every conversation starts with a well-formed default: no cursor, no known
+  older page, no load in progress, and no load error.
 - `ChatEvent`: the event union applied to state.
 
 The current event names are `hydrateConversation`, `draftChanged`,
@@ -71,7 +73,7 @@ The current fixture cases are `hydrateConversation`, `sendOptimisticMessage`,
 `olderPageLifecycle`, `deliveredMarkerOutsideWindow`,
 `readMarkerOutsideWindow`, `hydratePreservesUnresolvedSend`,
 `hydrateWindowPreservesUnresolvedSend`, `monotonicSentIgnoresLateFailure`,
-`snippetLongAscii`, and `snippetEmojiBoundary`.
+`snippetLongAscii`, `snippetEmojiBoundary`, and `olderPageRetryClearsError`.
 
 Three contract clauses were hardened after the initial 18-fixture set and
 must be mirrored exactly by native implementations:
@@ -113,13 +115,20 @@ Recommended responsibilities:
   layer, then dispatch `hydrateWindow` with `hasMoreOlder` and the next
   `oldestCursor`. Keep `hydrateConversation` for full-snapshot compatibility
   where that existing event is explicitly required.
-- Before an older-page request, dispatch `olderMessagesRequested`; on success,
-  dispatch `olderPageLoaded` with the rows, `hasMoreOlder`, and next
-  `oldestCursor`; on failure, dispatch `olderPageLoadFailed`. The failure event
-  clears only the loading flag, preserving the cursor and retry path.
+- Before an older-page request, dispatch `olderMessagesRequested` (it also
+  atomically clears `hasLoadError`, so a retry starts from a clean
+  pagination-feedback state); on success, dispatch `olderPageLoaded` with the
+  rows, `hasMoreOlder`, and next `oldestCursor`; on failure, dispatch
+  `olderPageLoadFailed`. The failure event atomically clears the loading flag
+  and sets `hasLoadError` in the same state update — never as two separate
+  emissions, or an auto-load trigger can observe the gap and fire a duplicate
+  request — while preserving the cursor and retry path. The
+  `olderPageRetryClearsError` fixture proves this failure-then-retry
+  lifecycle.
 - Expose `StateFlow` values for message rows, composer state, unread count,
   reply preview, outgoing status, connection status, and pagination loading
-  state. Map `isLoadingOlder` to a quiet loading affordance and
+  state. Map `isLoadingOlder` to a quiet loading affordance, `hasLoadError`
+  to a calm manual-retry affordance (never an automatic retry loop), and
   `hasMoreOlder` to whether a native load-earlier trigger is available.
 - Apply `ChatEvent` values through a pure reducer function before updating the
   `MutableStateFlow`.
@@ -167,13 +176,15 @@ Recommended responsibilities:
 - Store `ChatState` in an `Observable` model.
 - Provide derived properties for message rows, composer state, unread count,
   reply preview, outgoing status, realtime status, and pagination
-  (`hasMoreOlder` and `isLoadingOlder`).
+  (`hasMoreOlder`, `isLoadingOlder`, and `hasLoadError`).
 - Apply `ChatEvent` values through a pure reducer before publishing changes,
   including `hydrateWindow`, `olderMessagesRequested`, `olderPageLoaded`, and
   `olderPageLoadFailed`.
 - Dispatch `olderMessagesRequested` before the service call, then
   `olderPageLoaded` or `olderPageLoadFailed` from its result. Keep cursor,
-  loading, and retry behavior identical to the portable contract.
+  loading, `hasLoadError`, and retry behavior identical to the portable
+  contract: failure sets `hasLoadError` atomically with clearing the loading
+  flag, and the next request clears it.
 - Call service/repository functions for sends, read-state writes, refreshes,
   older-page fetches, and realtime subscriptions.
 - Keep auth, membership, assignment, writes, persistence, and durable read-state

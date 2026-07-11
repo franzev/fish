@@ -1,8 +1,8 @@
 ---
 phase: 09
 slug: cross-platform-chat-state
-status: issues_found
-threats_open: 1
+status: verified
+threats_open: 0
 asvs_level: 1
 created: 2026-07-11
 ---
@@ -62,7 +62,7 @@ Plan-specific context is included for repeated IDs so all 77 authored rows remai
 | T-09-05-04 | Repudiation | Debug classification | mitigate | Both attempts record timestamps, routes, channels, results and capture limitations (`loading-new-messages.md:186-209`). | closed |
 | T-09-05-05 | Elevation of privilege | Realtime diagnosis | mitigate | Result remains `inconclusive`, root cause not established, and no auth/membership fix inferred (`loading-new-messages.md:213-227`). | closed |
 | T-09-SC (09-05) | Tampering | Package installs | accept | Diagnostic plan installed no package; recorded as AR-09-05-SC. | closed |
-| T-09-06-01 | Tampering | Protocol/fixture documentation | mitigate | **Gap:** executable contract added required `hasLoadError` (`types.ts:67`) and `olderPageRetryClearsError` (`chat-state-vectors.json:2065`), but both canonical docs omit them despite their update-together rule (`chat-state-protocol.md:24-29`; `09-NATIVE-CHAT-STATE-NOTES.md:14-21`). | open |
+| T-09-06-01 | Tampering | Protocol/fixture documentation | mitigate | Remediated 2026-07-11: both canonical docs now document `hasLoadError` (field, default, atomic set-on-failure/clear-on-retry semantics) and the `olderPageRetryClearsError` fixture (`chat-state-protocol.md` state shape, event table, and fixture list; `09-NATIVE-CHAT-STATE-NOTES.md` shared contract, Android, and iOS mappings). A new exact-name doc-sync test enforces the update-together rule: every fixture name and pagination field must appear in both docs (`apps/web/tests/chat-state-fixtures.test.ts`, "keeps the canonical protocol and native docs in sync with the executable contract"). Full web suite 61 files / 504 tests passed. | closed |
 | T-09-06-02 | Repudiation | Canonical ownership | mitigate | Ownership/pointer chain exists in protocol, Phase 09 notes, Phase 10 notes and UAT (`chat-state-protocol.md:16-29`; `09-NATIVE-CHAT-STATE-NOTES.md:14-21`; `10-NATIVE-CHAT-STATE-NOTES.md:5-18`; `09-UAT.md:26-31`). | closed |
 | T-09-06-03 | Elevation of privilege | Native guidance | mitigate | Native guidance keeps auth/membership/assignment/writes/persistence/durable reads outside adapters (`09-NATIVE-CHAT-STATE-NOTES.md:38-39,179-181`). | closed |
 | T-09-06-04 | Information disclosure | Docs/fixtures | mitigate | Protocol expressly prohibits credentials/JWTs/service-role keys/seeded passwords (`chat-state-protocol.md:165-166`); fixtures are synthetic. | closed |
@@ -165,11 +165,13 @@ None. The `## Threat Flags` sections in summaries 09-02, 09-03, and 09-04 explic
 
 ## Open Threat Detail
 
-### T-09-06-01 — Canonical protocol/native documentation drift
+None. All 77 threats are closed.
 
-The executable contract now requires `ChatPaginationState.hasLoadError` and includes the `olderPageRetryClearsError` vector, but the canonical human-readable protocol and native companion omit both. This directly violates their own update-together control. The existing Phase 09 verification independently identified the same documentation-sync gap.
+### T-09-06-01 — Canonical protocol/native documentation drift (resolved 2026-07-11)
 
-Expected remediation: update both `packages/core/docs/chat-state-protocol.md` and `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md` to document `hasLoadError`, its atomic failure/retry semantics, and the `olderPageRetryClearsError` fixture, then add/extend exact-name documentation assertions and rerun this audit.
+The executable contract required `ChatPaginationState.hasLoadError` and included the `olderPageRetryClearsError` vector, but the canonical human-readable protocol and native companion omitted both, violating their own update-together control.
+
+Remediation applied exactly as specified: both `packages/core/docs/chat-state-protocol.md` and `09-NATIVE-CHAT-STATE-NOTES.md` now document `hasLoadError` (state-shape field with default, `olderMessagesRequested` atomic clear, `olderPageLoaded` reset, `olderPageLoadFailed` atomic set alongside `isLoadingOlder: false`) and list the `olderPageRetryClearsError` fixture. Exact-name documentation assertions were added (`apps/web/tests/chat-state-fixtures.test.ts`): every fixture name in `chat-state-vectors.json` and every pagination field must appear verbatim in both canonical docs, so a future contract change cannot land without updating them together. Focused fixture suite 27/27 and full web suite 61 files / 504 tests passed on 2026-07-11.
 
 ---
 
@@ -179,6 +181,7 @@ Expected remediation: update both `packages/core/docs/chat-state-protocol.md` an
 |------------|---------------|--------|------|--------|
 | 2026-07-11 | 77 | 76 | 1 | Codex / gsd-security-auditor |
 | 2026-07-11 | 77 | 76 | 1 | Codex / gsd-security-auditor (T-09-06-01 re-audit) |
+| 2026-07-11 | 77 | 77 | 0 | Claude (T-09-06-01 remediation: docs synced + exact-name doc-sync test added; 61 files / 504 tests passed) |
 
 ---
 
@@ -186,7 +189,7 @@ Expected remediation: update both `packages/core/docs/chat-state-protocol.md` an
 
 - [x] All threats have a disposition (mitigate / accept / transfer)
 - [x] Accepted risks documented in Accepted Risks Log
-- [ ] `threats_open: 0` confirmed
-- [ ] `status: verified` set in frontmatter
+- [x] `threats_open: 0` confirmed
+- [x] `status: verified` set in frontmatter
 
-**Approval:** pending remediation of T-09-06-01
+**Approval:** T-09-06-01 remediated and closed 2026-07-11; all 77 threats closed.

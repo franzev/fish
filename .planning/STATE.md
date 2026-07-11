@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 Phase: 10 (chat-message-loading-optimization) — COMPLETE (verified passed 2026-07-11; UAT 5/5)
 Plan: 7 of 7 complete
 Status: Milestone v1.2 — all phases complete
-Next planned: `/gsd-complete-milestone v1.2` (resolve the Phase 9 open security threat first or acknowledge it)
+Next planned: `/gsd-complete-milestone v1.2`
 
 Progress: [██████████] 100%
 
@@ -50,7 +50,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 | Phase | Name | Depends on | Requirements | Status |
 |-------|------|------------|--------------|--------|
-| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Complete (UAT complete 2026-07-10; security review: 1 open threat) |
+| 9 | Cross-platform Chat State | Phase 8 | CSTATE-01..06 | Complete (UAT complete 2026-07-10; security verified 2026-07-11, 77/77 threats closed) |
 | 10 | Chat Message Loading Optimization | Phase 8, Phase 9 | CLOAD-01..06 | Complete (verified passed 2026-07-11; UAT 5/5) |
 
 ## Archived Milestones
@@ -128,7 +128,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 ### Blockers
 
-- None blocking. Concern before milestone completion: [Phase 9] `09-SECURITY.md` reports `threats_open: 1` (status issues_found) and the file is uncommitted — resolve via `/gsd-secure-phase 9` or acknowledge during the milestone audit.
+- None. (The Phase 9 security concern T-09-06-01 — canonical protocol/native doc drift on `hasLoadError`/`olderPageRetryClearsError` — was remediated 2026-07-11: docs synced, exact-name doc-sync test added, security review now verified with 77/77 threats closed.)
 
 ### Performance Metrics
 
@@ -205,7 +205,7 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 
 - **Last activity:** 2026-07-11
 - **Stopped at:** Phase 10 verified passed and marked complete — milestone v1.2 all phases done
-- **Next action:** `/gsd-complete-milestone v1.2` (review Phase 9 open security threat first)
+- **Next action:** `/gsd-complete-milestone v1.2` (Phase 9 security review verified 2026-07-11 — nothing outstanding)
 
 ---
 *State initialized: 2026-07-02 at roadmap creation. v1.1 re-scoped: 2026-07-06.*

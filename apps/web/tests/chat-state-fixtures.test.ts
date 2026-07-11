@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import fixtures from "../../../packages/core/src/chat-state/fixtures/chat-state-vectors.json";
 
@@ -174,6 +176,35 @@ describe("chat-state fixture vectors", () => {
         })
       );
       expect(fixture.expectedState ?? fixture.expectedSelectors).toBeDefined();
+    }
+  });
+
+  // The protocol doc and the Phase 09 native companion declare an
+  // update-together rule with the executable contract. Enforce it here so a
+  // new fixture or pagination field cannot land without both canonical docs
+  // naming it (T-09-06-01).
+  it("keeps the canonical protocol and native docs in sync with the executable contract", () => {
+    const repoRoot = join(__dirname, "..", "..", "..");
+    const canonicalDocs = [
+      join(repoRoot, "packages/core/docs/chat-state-protocol.md"),
+      join(
+        repoRoot,
+        ".planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md"
+      ),
+    ].map((path) => ({ path, text: readFileSync(path, "utf8") }));
+
+    const fixtureNames = (fixtures as FixtureCase[]).map((item) => item.name);
+    const paginationFields = [
+      "oldestLoadedCursor",
+      "hasMoreOlder",
+      "isLoadingOlder",
+      "hasLoadError",
+    ];
+
+    for (const doc of canonicalDocs) {
+      for (const name of [...fixtureNames, ...paginationFields]) {
+        expect(doc.text, `${doc.path} must document "${name}"`).toContain(name);
+      }
     }
   });
 

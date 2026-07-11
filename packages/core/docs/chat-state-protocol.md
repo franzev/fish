@@ -41,9 +41,11 @@ generated TypeScript or import web state libraries.
   `"connected"`, or `"disconnected"`.
 - `ChatConversationState.pagination`: `oldestLoadedCursor` (the oldest loaded
   message's `{ createdAt, id }` keyset cursor, or `null` before any window is
-  loaded), `hasMoreOlder`, and `isLoadingOlder`. Every conversation gets a
-  well-formed default (`{ oldestLoadedCursor: null, hasMoreOlder: false,
-  isLoadingOlder: false }`).
+  loaded), `hasMoreOlder`, `isLoadingOlder`, and `hasLoadError` (whether the
+  most recent older-page request failed; cleared atomically when a new request
+  starts). Every conversation gets a well-formed default
+  (`{ oldestLoadedCursor: null, hasMoreOlder: false, isLoadingOlder: false,
+  hasLoadError: false }`).
 
 `ChatMessageState` carries the message id, conversation id, sender id and role,
 body, `clientRequestId`, timestamps, reply target, reactions, local status, and
@@ -72,9 +74,9 @@ Every adapter must be able to apply the current `ChatEvent` names:
 | `setRealtimeStatus` | Set the local realtime connection status for the conversation. |
 | `clearComposer` | Reset the local draft, reply target, and edit target to empty values. |
 | `hydrateWindow` | Replace a conversation's message/read snapshot exactly like `hydrateConversation`, including the same unresolved-local-send preservation rule (normalize incoming to `sent`, sort by `createdAt` then `id`, keep unreconciled `pending`/`sending`/`failed` rows), and additionally set `pagination` to the provided `hasMoreOlder`/`oldestCursor` with `isLoadingOlder` reset to `false`. |
-| `olderMessagesRequested` | Set `pagination.isLoadingOlder` to `true`. Nothing else changes. |
-| `olderPageLoaded` | Merge each message in an older page through the same `mergeChatMessage` primitive used by every other message-touching event (dedup by `id`/`clientRequestId`, re-sort), then set `pagination.oldestLoadedCursor`/`hasMoreOlder` from the event and reset `isLoadingOlder` to `false`. Re-delivering a message that is already loaded (page overlap, or a page racing a live insert) produces no duplicate. |
-| `olderPageLoadFailed` | Reset `pagination.isLoadingOlder` to `false`. `hasMoreOlder` and `oldestLoadedCursor` are left untouched so a retry (dispatching `olderMessagesRequested` again) is still possible. |
+| `olderMessagesRequested` | Set `pagination.isLoadingOlder` to `true` and atomically clear `hasLoadError`, so a retry always starts from a clean pagination-feedback state. A request dispatched while `isLoadingOlder` is already `true` is ignored. Nothing else changes. |
+| `olderPageLoaded` | Merge each message in an older page through the same `mergeChatMessage` primitive used by every other message-touching event (dedup by `id`/`clientRequestId`, re-sort), then set `pagination.oldestLoadedCursor`/`hasMoreOlder` from the event and reset `isLoadingOlder` and `hasLoadError` to `false`. Re-delivering a message that is already loaded (page overlap, or a page racing a live insert) produces no duplicate. |
+| `olderPageLoadFailed` | Atomically — in the same state update — reset `pagination.isLoadingOlder` to `false` and set `hasLoadError` to `true`. No intermediate state may exist where loading has stopped but the failure has not landed, or an auto-load trigger can observe the gap and fire a second automatic request. Ignored when no older-page load is in flight. `hasMoreOlder` and `oldestLoadedCursor` are left untouched so a retry (dispatching `olderMessagesRequested` again) is still possible. |
 
 `ChatResult` is the portable reducer result envelope: it contains the next
 `state` and the `event` that produced it. Adapters may expose richer platform
@@ -154,11 +156,13 @@ The current fixture case names are:
 - `monotonicSentIgnoresLateFailure`
 - `snippetLongAscii`
 - `snippetEmojiBoundary`
+- `olderPageRetryClearsError`
 
 These fixtures prove parity for hydrate/send/confirm/fail/merge/read behavior,
 unread derivation, deleted-message snippets, reply previews, keyset
 pagination (initial window, older-page load, page/live-insert duplicate
-reconciliation, request/failure lifecycle), out-of-order/duplicate reconnect
+reconciliation, request/failure/retry lifecycle including the atomic
+`hasLoadError` set-on-failure and clear-on-retry rule), out-of-order/duplicate reconnect
 backfill, the out-of-window read/delivered marker rule, hydrate/reconnect
 preservation of unresolved local sends, monotonic send-status transitions,
 and code-point-safe (surrogate-pair-safe) message snippet truncation. They
