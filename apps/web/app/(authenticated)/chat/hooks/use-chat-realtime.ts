@@ -174,10 +174,15 @@ export function useChatRealtime({
   );
 
   useEffect(() => {
+    let active = true;
     setRealtimeStatus(chat.conversationId, "connecting");
     const unsubscribe = subscribeToConversationMessages(
       chat.conversationId,
       (message) => {
+        if (!active) {
+          return;
+        }
+
         const senderDisplayName = resolveRealtimeSenderName(
           message,
           chat.conversationId,
@@ -198,10 +203,18 @@ export function useChatRealtime({
         }
       },
       () => {
+        if (!active) {
+          return;
+        }
+
         setRealtimeStatus(chat.conversationId, "connected");
         handleReconnected("messages");
       },
       () => {
+        if (!active) {
+          return;
+        }
+
         setRealtimeStatus(chat.conversationId, "disconnected");
       }
     );
@@ -213,6 +226,7 @@ export function useChatRealtime({
     // idle so the next mount starts from an ordinary first connect instead
     // of stale "connected" read as a reconnect (WR-05).
     return () => {
+      active = false;
       unsubscribe();
       setRealtimeStatus(chat.conversationId, "idle");
     };
@@ -229,30 +243,58 @@ export function useChatRealtime({
   ]);
 
   useEffect(() => {
-    return subscribeToConversationReadStates(
+    let active = true;
+    const unsubscribe = subscribeToConversationReadStates(
       chat.conversationId,
       (readState) => {
+        if (!active) {
+          return;
+        }
+
         // Single dispatch path: mergeReadState (the store action) already
         // routes through one dispatchChatEvent call. A second direct
         // dispatch here duplicated every read-state store transition (WR-06).
         mergeReadState(readState);
       },
       () => {
+        if (!active) {
+          return;
+        }
+
         handleReconnected("reads");
       }
     );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [chat.conversationId, handleReconnected, mergeReadState]);
 
   useEffect(() => {
-    return subscribeToConversationReactionChanges(
+    let active = true;
+    const unsubscribe = subscribeToConversationReactionChanges(
       chat.conversationId,
       (messageId) => {
+        if (!active) {
+          return;
+        }
+
         void refreshMessages([messageId]);
       },
       () => {
+        if (!active) {
+          return;
+        }
+
         handleReconnected("reactions");
       }
     );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [chat.conversationId, handleReconnected, refreshMessages]);
 
   useEffect(() => {

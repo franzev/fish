@@ -7,6 +7,7 @@ import { setSentinelIntersecting, triggerIntersection } from "@/tests/intersecti
 import { ChatClient } from "./chat-client";
 import { chatStore, resetChatStoreForTests } from "./store/chat-store";
 import {
+  selectMessagesForConversation,
   selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
 } from "./store/chat-selectors";
@@ -2380,8 +2381,12 @@ describe("ChatClient", () => {
     );
 
     const messagesStatusCallbackA = latestSubscribeStatusCallback(":messages");
+    const readsStatusCallbackA = latestSubscribeStatusCallback(":reads");
+    const reactionsStatusCallbackA = latestSubscribeStatusCallback(":reactions");
     act(() => {
       messagesStatusCallbackA("SUBSCRIBED");
+      readsStatusCallbackA("SUBSCRIBED");
+      reactionsStatusCallbackA("SUBSCRIBED");
     });
     expect(backfillMessagesAction).not.toHaveBeenCalled();
 
@@ -2418,13 +2423,19 @@ describe("ChatClient", () => {
       )
     );
     const messagesStatusCallbackB = latestSubscribeStatusCallback(":messages");
+    const readsStatusCallbackB = latestSubscribeStatusCallback(":reads");
+    const reactionsStatusCallbackB = latestSubscribeStatusCallback(":reactions");
     act(() => {
       messagesStatusCallbackB("SUBSCRIBED");
+      readsStatusCallbackB("SUBSCRIBED");
+      reactionsStatusCallbackB("SUBSCRIBED");
     });
     expect(backfillMessagesAction).toHaveBeenCalledTimes(1);
 
     act(() => {
       messagesStatusCallbackB("SUBSCRIBED");
+      readsStatusCallbackB("SUBSCRIBED");
+      reactionsStatusCallbackB("SUBSCRIBED");
     });
     await waitFor(() => expect(backfillMessagesAction).toHaveBeenCalledTimes(2));
     expect(backfillMessagesAction).toHaveBeenNthCalledWith(2, {
@@ -2439,6 +2450,9 @@ describe("ChatClient", () => {
     });
 
     act(() => {
+      messagesStatusCallbackA("SUBSCRIBED");
+      readsStatusCallbackA("SUBSCRIBED");
+      reactionsStatusCallbackA("SUBSCRIBED");
       messagesStatusCallbackB("SUBSCRIBED");
     });
     expect(backfillMessagesAction).toHaveBeenCalledTimes(2);
@@ -2456,7 +2470,7 @@ describe("ChatClient", () => {
     });
 
     act(() => {
-      messagesStatusCallbackB("SUBSCRIBED");
+      reactionsStatusCallbackB("SUBSCRIBED");
     });
     await waitFor(() => expect(backfillMessagesAction).toHaveBeenCalledTimes(3));
     expect(
@@ -2466,6 +2480,133 @@ describe("ChatClient", () => {
           nextConversationId
       )
     ).toHaveLength(2);
+  });
+
+  it("revokes every conversation A realtime callback before conversation B owns reconnect state", async () => {
+    const backfillMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [],
+      needsReset: false,
+    });
+    const refreshMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [],
+    });
+
+    const { rerender } = render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        backfillMessagesAction={backfillMessagesAction}
+        refreshMessagesAction={refreshMessagesAction}
+      />
+    );
+
+    const staleMessagesStatus = latestSubscribeStatusCallback(":messages");
+    const staleReadsStatus = latestSubscribeStatusCallback(":reads");
+    const staleReactionsStatus = latestSubscribeStatusCallback(":reactions");
+    const staleMessage = realtimeMock.messageHandlers.at(-1);
+    const staleRead = realtimeMock.readHandlers.at(-1);
+    const staleReaction = realtimeMock.reactionHandlers.at(-1);
+
+    const nextConversationId = "22222222-2222-4222-8222-222222222222";
+    const channelCallCountBeforeSwitch = realtimeMock.client.channel.mock.calls.length;
+    rerender(
+      <ChatClient
+        chat={{
+          ...chat,
+          conversationId: nextConversationId,
+          messages: chat.messages.map((message) => ({
+            ...message,
+            conversationId: nextConversationId,
+          })),
+        }}
+        sendMessageAction={vi.fn()}
+        backfillMessagesAction={backfillMessagesAction}
+        refreshMessagesAction={refreshMessagesAction}
+      />
+    );
+
+    await waitFor(() =>
+      expect(realtimeMock.client.channel.mock.calls.length).toBeGreaterThan(
+        channelCallCountBeforeSwitch
+      )
+    );
+    expect(
+      selectRealtimeStatusForConversation(chatStore.getState(), chat.conversationId)
+    ).toBe("idle");
+
+    act(() => {
+      staleMessagesStatus("SUBSCRIBED");
+      staleMessagesStatus("CHANNEL_ERROR");
+      staleReadsStatus("SUBSCRIBED");
+      staleReactionsStatus("SUBSCRIBED");
+      staleMessage?.({
+        new: {
+          id: "stale-message-a",
+          conversation_id: chat.conversationId,
+          sender_id: "coach-1",
+          sender_role: "coach",
+          body: "A stale conversation A message.",
+          client_request_id: "stale-a",
+          created_at: "2026-07-05T00:10:00.000Z",
+        },
+      });
+      staleRead?.({
+        new: {
+          user_id: "coach-1",
+          last_delivered_message_id: "stale-message-a",
+          delivered_at: "2026-07-05T00:10:01.000Z",
+          last_read_message_id: "stale-message-a",
+          read_at: "2026-07-05T00:10:02.000Z",
+        },
+      });
+      staleReaction?.({
+        eventType: "INSERT",
+        new: {
+          message_id: "message-1",
+          conversation_id: chat.conversationId,
+        },
+        old: {},
+      });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(
+      selectRealtimeStatusForConversation(chatStore.getState(), chat.conversationId)
+    ).toBe("idle");
+    expect(
+      selectMessagesForConversation(chatStore.getState(), chat.conversationId)
+    ).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "stale-message-a" }),
+      ])
+    );
+    expect(
+      selectReadStatesForConversation(chatStore.getState(), chat.conversationId).find(
+        (readState) => readState.userId === "coach-1"
+      )
+    ).toMatchObject({ lastReadMessageId: null });
+    expect(refreshMessagesAction).not.toHaveBeenCalled();
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+
+    const messagesStatusB = latestSubscribeStatusCallback(":messages");
+    const readsStatusB = latestSubscribeStatusCallback(":reads");
+    const reactionsStatusB = latestSubscribeStatusCallback(":reactions");
+    act(() => {
+      messagesStatusB("SUBSCRIBED");
+      readsStatusB("SUBSCRIBED");
+      reactionsStatusB("SUBSCRIBED");
+    });
+
+    expect(backfillMessagesAction).not.toHaveBeenCalled();
+    expect(
+      selectRealtimeStatusForConversation(chatStore.getState(), nextConversationId)
+    ).toBe("connected");
   });
 
   it("keeps a pending optimistic row through a reconnect-reset hydrateWindow, then marks it failed on a later send failure (WR-02)", async () => {
