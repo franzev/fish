@@ -48,6 +48,14 @@ See `.planning/PROJECT.md` for current product context and durable decisions.
 
 None.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260711-en2 | Reorganize and refactor the project to follow modern Next.js App Router and React best practices while preserving all existing behavior; improve folder organization, colocation, component decomposition, reuse, import consistency, dead-code cleanup, and lean Storybook coverage; verify build, typecheck, lint, and all tests. | 2026-07-11 | f645dfb0 | [260711-en2-reorganize-and-refactor-the-project-to-f](./quick/260711-en2-reorganize-and-refactor-the-project-to-f/) |
+
+Last activity: 2026-07-11 - Completed quick task 260711-en2: Reorganize and refactor the project to follow modern Next.js App Router and React best practices while preserving all existing behavior.
+
 ---
 
 Planning execution logs, quick-task ledgers, debug sessions, and per-plan
