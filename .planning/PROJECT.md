@@ -90,11 +90,10 @@ Deferred (in the build order, just not scheduled):
 
 ## Context
 
-- Brownfield: `.planning/codebase/` maps the current state. Key findings: no Supabase client integrated anywhere, no `supabase/migrations/` (database doesn't exist), no auth layer, Edge Function is a pass-through stub, no tests.
 - Web stack: Next.js 16.2.9, React 19.2.7, Tailwind CSS v4.3.1 (CSS-first `@theme` — **never** create `tailwind.config.js`; keep `tailwindcss` and `@tailwindcss/postcss` on the same version).
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
-- **Current state (2026-07-11):** v1.2 shipped. Chat state lives in `@fish/core/chat-state` (portable reducer + 17 fixture vectors) with a web-only Zustand adapter; the canonical chat surface is the community room at `/channels/:id` (the 1-on-1 `/chat` route was removed 2026-07-10, with dated supersede notes on CSTATE-02/06 and D-09). Message loading is bounded (40+1 keyset SSR window, cursor-based load-earlier, coalesced reconnect backfill). The product is web-only; Android/iOS get the same event contract for future native implementations. The unvalidated learning-flow implementations remain removed. The `.planning/codebase/` maps lag the current code — refresh via `/gsd-map-codebase` before relying on them.
+- **Current state (2026-07-11):** v1.2 shipped. Chat state lives in `@fish/core/chat-state` (portable reducer + 17 fixture vectors) with a web-only Zustand adapter; the canonical chat surface is the community room at `/channels/:id` (the 1-on-1 `/chat` route was removed 2026-07-10, with dated supersede notes on CSTATE-02/06 and D-09). Message loading is bounded (40+1 keyset SSR window, cursor-based load-earlier, coalesced reconnect backfill). The product is web-only; Android/iOS get the same event contract for future native implementations. The unvalidated learning-flow implementations remain removed.
 
 ## Constraints
 

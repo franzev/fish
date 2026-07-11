@@ -20,6 +20,22 @@
 
 ---
 
+## v1.1 The Coaching Loop Foundation (Shipped: 2026-07-06)
+
+**Delivered:** Safe client profiles and real persisted coach-client chat on a database-owned command path and idempotent `send-message` Edge Function.
+
+**Phases completed:** 3 phases (4, 7–8)
+**Requirements:** Profile and chat requirements satisfied; the final requirement snapshot is preserved in `milestones/v1.2-REQUIREMENTS.md`.
+**Closeout:** Closed informally during the 2026-07-06 re-scope; implementation and validation history remains recoverable from Git.
+
+**Key accomplishments:**
+
+- Client-owned profile editing with database-frozen protected fields, accessibility preferences, consent fields, and a read-only coach detail view
+- Member-scoped chat schema with RLS, immutable messages, per-member read state, deterministic ordering, and idempotent database sends
+- Persisted web chat with optimistic sending, draft-safe recovery, realtime updates, presence, and typing indicators
+
+---
+
 ## v1.0 Monochrome Foundations (Shipped: 2026-07-04)
 
 **Delivered:** The complete monochrome foundation — a dual-theme design system provable on `/kit`, a full email/password auth loop on a hardened RLS-protected schema, and role-aware routing that lands each person on their correct calm home.
