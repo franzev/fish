@@ -46,12 +46,9 @@ listeners, and hooks import `client-only`. Server Actions remain explicit
 `"use server"` RPC boundaries so Client Components can invoke them without
 pulling their implementation dependencies into the browser graph.
 
-The former `apps/web/lib/auth/*`, `apps/web/lib/validation/profile`, and moved
-`apps/web/components/{auth,profile,coach}` paths remain as documented, small
-compatibility re-export facades. New route and feature code imports the owning
-feature entry point directly. These facades preserve existing public and test
-contracts while callers migrate; client-safe barrels never re-export poisoned
-server entries.
+Routes and shared components import the owning feature entry points directly.
+Client-safe barrels never re-export poisoned server entries, and the app does
+not retain legacy re-export files for internal paths.
 
 Supabase access is wrapped by repositories in
 `apps/web/lib/services/supabase/`, with separate browser, server, and proxy
