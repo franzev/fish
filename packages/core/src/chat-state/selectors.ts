@@ -38,6 +38,12 @@ export function mergeChatMessage<T extends ChatMessageState>(
     // row without the resolved display name — keep the name we already know
     // instead of falling back to the anonymous placeholder.
     senderDisplayName: incoming.senderDisplayName ?? existing.senderDisplayName,
+    // Command acknowledgements return the bare message row, so their mapped
+    // attachment list is empty. Keep the ready optimistic attachments (and
+    // their signed URLs) until an enriched repository/realtime payload arrives.
+    images: (incoming.images?.length ?? 0) > 0
+      ? incoming.images
+      : existing.images,
   };
   if (areChatMessagesEqual(existing, merged)) {
     return current;
@@ -83,8 +89,19 @@ function areChatMessagesEqual(
     (left.replyToMessageId ?? null) === (right.replyToMessageId ?? null) &&
     (left.localStatus ?? null) === (right.localStatus ?? null) &&
     (left.failureReason ?? null) === (right.failureReason ?? null) &&
-    areReactionsEqual(left.reactions ?? [], right.reactions ?? [])
+    areReactionsEqual(left.reactions ?? [], right.reactions ?? []) &&
+    areImagesEqual(left.images ?? [], right.images ?? [])
   );
+}
+
+function areImagesEqual(
+  left: NonNullable<ChatMessageState["images"]>,
+  right: NonNullable<ChatMessageState["images"]>
+): boolean {
+  return left.length === right.length && left.every((image, index) => {
+    const other = right[index];
+    return image.id === other?.id && image.thumbnailUrl === other.thumbnailUrl && image.displayUrl === other.displayUrl;
+  });
 }
 
 function areReactionsEqual(
@@ -204,6 +221,13 @@ export function getMessageSnippet(message: ChatMessageState): string {
   }
 
   const body = message.body.trim();
+  if (!body && (message.images?.length ?? 0) > 0) {
+    const attachments = message.images ?? [];
+    if (attachments.length === 1) return attachments[0]?.kind === "file" ? "File" : "Image";
+    return attachments.every((attachment) => attachment.kind !== "file")
+      ? `${attachments.length} images`
+      : `${attachments.length} files`;
+  }
   const codePoints = Array.from(body);
   if (codePoints.length <= MAX_SNIPPET_CODE_POINTS) {
     return body;

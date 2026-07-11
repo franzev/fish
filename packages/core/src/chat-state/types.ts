@@ -26,6 +26,20 @@ export interface ChatMessageState {
    *  omit it — merges must not let a null overwrite a known name. */
   senderDisplayName?: string | null;
   body: string;
+  images?: Array<{
+    id: string;
+    status: "ready";
+    kind?: "image" | "file";
+    originalName: string;
+    mimeType?: string;
+    byteSize?: number;
+    width?: number;
+    height?: number;
+    thumbnailPath?: string;
+    displayPath: string;
+    thumbnailUrl?: string;
+    displayUrl?: string;
+  }>;
   clientRequestId: string;
   createdAt: string;
   editedAt?: string | null;
