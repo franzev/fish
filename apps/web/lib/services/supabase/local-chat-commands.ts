@@ -157,6 +157,61 @@ async function addSenderDisplayNames(
   }));
 }
 
+async function addImageAttachments(
+  context: NonNullable<Awaited<ReturnType<typeof getLocalFallbackContext>>>,
+  messages: MessageResponseRow[]
+): Promise<MessageResponseRow[]> {
+  const messageIds = messages.map((message) => message.id);
+  if (messageIds.length === 0) return messages;
+
+  let response;
+  try {
+    response = await context.client
+      .from("message_attachments")
+      .select("id, message_id, kind, original_name, stored_mime_type, stored_byte_size, width, height, thumbnail_path, display_path, position, status")
+      .in("message_id", messageIds)
+      .eq("status", "ready")
+      .order("position", { ascending: true });
+  } catch {
+    return messages.map((message) => ({ ...message, images: [] }));
+  }
+  const { data, error } = response;
+  if (error || !data) return messages.map((message) => ({ ...message, images: [] }));
+
+  const paths = data.flatMap((image) =>
+    [image.thumbnail_path, image.display_path].filter((path): path is string => Boolean(path))
+  );
+  const signed = paths.length > 0
+    ? await context.client.storage.from("chat-images").createSignedUrls(paths, 15 * 60)
+    : { data: [], error: null };
+  const urls = new Map(
+    (signed.data ?? []).flatMap((item) =>
+      item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : []
+    )
+  );
+  const byMessage = new Map<string, NonNullable<MessageResponseRow["images"]>>();
+  for (const image of data) {
+    if (!image.message_id || !image.display_path || !image.stored_mime_type || !image.stored_byte_size) continue;
+    const images = byMessage.get(image.message_id) ?? [];
+    images.push({
+      id: image.id,
+      status: "ready",
+      kind: image.kind as "image" | "file",
+      original_name: image.original_name,
+      stored_mime_type: image.stored_mime_type,
+      stored_byte_size: image.stored_byte_size,
+      width: image.width,
+      height: image.height,
+      thumbnail_path: image.thumbnail_path,
+      display_path: image.display_path,
+      thumbnail_url: image.thumbnail_path ? urls.get(image.thumbnail_path) : undefined,
+      display_url: urls.get(image.display_path),
+    });
+    byMessage.set(image.message_id, images);
+  }
+  return messages.map((message) => ({ ...message, images: byMessage.get(message.id) ?? [] }));
+}
+
 export async function toClientChatMessagesWithSenders(
   messages: MessageResponseRow[]
 ): Promise<ClientChatMessage[]> {
@@ -164,8 +219,10 @@ export async function toClientChatMessagesWithSenders(
   const namedMessages = context
     ? await addSenderDisplayNames(context, messages)
     : messages;
-
-  return namedMessages.map(toClientChatMessage);
+  const enrichedMessages = context
+    ? await addImageAttachments(context, namedMessages)
+    : namedMessages;
+  return enrichedMessages.map(toClientChatMessage);
 }
 
 export async function sendMessageViaLocalRpc(
@@ -181,13 +238,15 @@ export async function sendMessageViaLocalRpc(
     p_body: values.body,
     p_client_request_id: values.clientRequestId,
     p_reply_to_message_id: values.replyToMessageId ?? null,
+    ...(values.attachmentIds?.length ? { p_attachment_ids: values.attachmentIds } : {}),
   });
 
   if (error || !data) {
     return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
-  return { ok: true, data: toClientChatMessage(data as MessageResponseRow) };
+  const [message] = await toClientChatMessagesWithSenders([data as MessageResponseRow]);
+  return { ok: true, data: message };
 }
 
 export async function commandMessageViaLocalRpc(
@@ -223,7 +282,8 @@ export async function commandMessageViaLocalRpc(
     data as MessageResponseRow,
   ]);
 
-  return { ok: true, data: toClientChatMessage(message) };
+  const [mapped] = await toClientChatMessagesWithSenders([message]);
+  return { ok: true, data: mapped };
 }
 
 export async function markReadStateViaLocalRpc(
@@ -271,7 +331,7 @@ export async function refreshMessagesViaLocalRpc(
   );
   const messagesWithSenders = await addSenderDisplayNames(context, messages);
 
-  return { ok: true, data: messagesWithSenders.map(toClientChatMessage) };
+  return { ok: true, data: await toClientChatMessagesWithSenders(messagesWithSenders) };
 }
 
 export async function refreshConversationViaLocalRpc(
@@ -316,7 +376,7 @@ export async function refreshConversationViaLocalRpc(
   return {
     ok: true,
     data: {
-    messages: messagesWithSenders.map(toClientChatMessage),
+    messages: await toClientChatMessagesWithSenders(messagesWithSenders),
     readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
     },
   };
@@ -369,7 +429,7 @@ export async function loadOlderMessagesViaLocalRpc(
 
   return {
     ok: true,
-    data: { messages: withSenders.map(toClientChatMessage), hasMoreOlder },
+    data: { messages: await toClientChatMessagesWithSenders(withSenders), hasMoreOlder },
   };
 }
 
@@ -414,7 +474,7 @@ export async function backfillMessagesViaLocalRpc(
 
   return {
     ok: true,
-    data: { messages: withSenders.map(toClientChatMessage), needsReset },
+    data: { messages: await toClientChatMessagesWithSenders(withSenders), needsReset },
   };
 }
 
@@ -470,7 +530,7 @@ export async function loadNewestMessagesViaLocalRpc(
   return {
     ok: true,
     data: {
-      messages: withSenders.map(toClientChatMessage),
+      messages: await toClientChatMessagesWithSenders(withSenders),
       readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
       hasMoreOlder,
       oldestCursor,

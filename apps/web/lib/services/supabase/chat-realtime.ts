@@ -122,6 +122,7 @@ function toClientChatMessage(row: MessageRow): ClientChatMessage | null {
     deletedAt: "deleted_at" in row ? row.deleted_at ?? null : null,
     replyToMessageId: "reply_to_message_id" in row ? row.reply_to_message_id ?? null : null,
     reactions: [],
+    images: [],
   };
 }
 

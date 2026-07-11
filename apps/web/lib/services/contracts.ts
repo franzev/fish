@@ -100,11 +100,18 @@ export interface CoachClientRepository {
 }
 
 export interface ClientChatReaction { emoji: string; count: number; byMe: boolean }
+export interface ClientChatAttachment {
+  id: string; status: "ready"; kind?: "image" | "file"; originalName: string;
+  mimeType?: string; byteSize?: number; width?: number; height?: number;
+  thumbnailPath?: string; displayPath: string; thumbnailUrl?: string; displayUrl?: string;
+}
+export type ClientChatImage = ClientChatAttachment;
 export interface ClientChatMessage {
   id: string; conversationId: string; senderId: string; senderRole: "client" | "coach";
   senderDisplayName?: string | null; body: string; clientRequestId: string; createdAt: string;
   editedAt?: string | null; deletedAt?: string | null; replyToMessageId?: string | null;
   reactions?: ClientChatReaction[];
+  images?: ClientChatImage[];
 }
 export interface ClientChatParticipant { id: string; displayName: string; role: "client" | "coach" }
 export interface ClientChatReadState { userId: string; lastDeliveredMessageId: string | null; deliveredAt: string | null; lastReadMessageId: string | null; readAt: string | null }
@@ -126,11 +133,38 @@ export interface DatabaseServices {
 }
 export interface AppServices { auth: AuthService; database: DatabaseServices }
 
+export interface ChatImageUploadAuthorization {
+  attachmentId: string;
+  bucket: string;
+  objectPath: string;
+  uploadToken: string;
+  uploadMimeType: string;
+  tusEndpoint: string;
+  signedUploadUrl: string;
+}
+export interface ReadyChatImageUpload {
+  attachment: ClientChatAttachment;
+  urls: Array<{ path: string; signedUrl: string }>;
+}
+export interface ChatImageService {
+  initialize(input: {
+    conversationId: string;
+    clientUploadId: string;
+    originalName: string;
+    sourceMimeType: string;
+    sourceByteSize: number;
+  }): Promise<ChatImageUploadAuthorization>;
+  complete(attachmentId: string): Promise<ReadyChatImageUpload>;
+  cancel(attachmentId: string): Promise<void>;
+  refreshUrls(attachmentIds: string[]): Promise<Array<{ path: string; signedUrl: string }>>;
+}
+
 export interface SendMessageInput {
   conversationId: string;
   body: string;
   clientRequestId: string;
   replyToMessageId?: string | null;
+  attachmentIds?: string[];
 }
 
 export interface EditMessageInput {

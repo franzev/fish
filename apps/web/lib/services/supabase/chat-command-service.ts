@@ -14,7 +14,6 @@ import type {
 } from "../contracts";
 import {
   sendNotice,
-  toClientChatMessage,
   toClientReadState,
   type MessageResponseRow,
   type ReadStateResponseRow,
@@ -83,6 +82,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
             conversationId: input.conversationId,
             body: input.body,
             clientRequestId: input.clientRequestId,
+            ...(input.attachmentIds?.length ? { attachmentIds: input.attachmentIds } : {}),
           }
     );
     if (!edge) return sendMessageViaLocalRpc(input);
@@ -100,10 +100,8 @@ export class SupabaseChatCommandService implements ChatCommandService {
             : sendNotice,
       };
     }
-    return {
-      ok: true,
-      data: toClientChatMessage(message as MessageResponseRow),
-    };
+    const [mapped] = await toClientChatMessagesWithSenders([message as MessageResponseRow]);
+    return { ok: true, data: mapped };
   }
 
   async executeMessageCommand(
@@ -139,10 +137,8 @@ export class SupabaseChatCommandService implements ChatCommandService {
             : sendNotice,
       };
     }
-    return {
-      ok: true,
-      data: toClientChatMessage(message as MessageResponseRow),
-    };
+    const [mapped] = await toClientChatMessagesWithSenders([message as MessageResponseRow]);
+    return { ok: true, data: mapped };
   }
 
   async markReadState(

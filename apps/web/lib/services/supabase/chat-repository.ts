@@ -2,6 +2,7 @@ import { generalChannelId, generalChannelName, generalChannelSlug } from "@/lib/
 import { serviceFailure, serviceSuccess, type ServiceResult } from "@/lib/services/errors";
 import type {
   ConversationRow,
+  MessageAttachmentRow,
   MessageReactionRow,
   MessageReadRow,
   MessageRow,
@@ -287,6 +288,40 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
 
+      const messageIds = messages.map((message) => message.id);
+      const { data: attachmentRows, error: attachmentError } = messageIds.length > 0
+        ? (await this.client
+            .from("message_attachments")
+            .select("*")
+            .in("message_id", messageIds)
+            .eq("status", "ready")
+            .order("position", { ascending: true })) as {
+            data: MessageAttachmentRow[] | null;
+            error: SupabaseResponse<unknown>["error"];
+          }
+        : { data: [] as MessageAttachmentRow[], error: null };
+      if (attachmentError) {
+        return serviceFailure(
+          mapSupabaseError(attachmentError, {
+            code: "database",
+            fallbackMessage: "Could not load message images.",
+            operation: "chat.getAssignedConversation.attachments",
+            recoverable: true,
+          })
+        );
+      }
+      const imagePaths = (attachmentRows ?? []).flatMap((image) =>
+        [image.thumbnail_path, image.display_path].filter((path): path is string => Boolean(path))
+      );
+      const signedImages = imagePaths.length > 0
+        ? await this.client.storage.from("chat-images").createSignedUrls(imagePaths, 15 * 60)
+        : { data: [], error: null };
+      const imageUrls = new Map(
+        (signedImages.data ?? []).flatMap((item) =>
+          item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : []
+        )
+      );
+
       const { data: readStates, error: readStateError } = (await this.client
         .from("message_reads")
         .select("*")
@@ -347,7 +382,14 @@ export class SupabaseChatRepository implements ChatRepository {
           role: participantRole,
         },
         messages: messages.map((message) =>
-          toClientChatMessage(message, reactions, userId, senderDisplayNames)
+          toClientChatMessage(
+            message,
+            reactions,
+            userId,
+            senderDisplayNames,
+            (attachmentRows ?? []).filter((image) => image.message_id === message.id),
+            imageUrls
+          )
         ),
         readStates: (readStates ?? []).map(toClientChatReadState),
         participantPresence: {
@@ -365,7 +407,9 @@ function toClientChatMessage(
   row: MessageRow,
   reactions: MessageReactionRow[] = [],
   currentUserId = "",
-  senderDisplayNames: Map<string, string> = new Map()
+  senderDisplayNames: Map<string, string> = new Map(),
+  images: MessageAttachmentRow[] = [],
+  imageUrls: Map<string, string> = new Map()
 ): ClientChatMessage {
   const reactionCounts = new Map<string, { count: number; byMe: boolean }>();
 
@@ -401,6 +445,24 @@ function toClientChatMessage(
       count: reaction.count,
       byMe: reaction.byMe,
     })),
+    images: images.flatMap((image) =>
+      image.display_path && image.stored_mime_type && image.stored_byte_size
+        ? [{
+            id: image.id,
+            status: "ready" as const,
+            kind: image.kind as "image" | "file",
+            originalName: image.original_name,
+            mimeType: image.stored_mime_type,
+            byteSize: image.stored_byte_size,
+            width: image.width ?? undefined,
+            height: image.height ?? undefined,
+            thumbnailPath: image.thumbnail_path ?? undefined,
+            displayPath: image.display_path,
+            thumbnailUrl: image.thumbnail_path ? imageUrls.get(image.thumbnail_path) : undefined,
+            displayUrl: imageUrls.get(image.display_path),
+          }]
+        : []
+    ),
   };
 }
 

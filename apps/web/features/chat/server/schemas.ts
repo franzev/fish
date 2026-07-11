@@ -3,9 +3,12 @@ import { z } from "zod";
 
 export const sendMessageSchema = z.strictObject({
   conversationId: z.string().uuid(),
-  body: z.string().trim().min(1).max(chatLimits.messageBodyMaxLength),
+  body: z.string().trim().max(chatLimits.messageBodyMaxLength),
   clientRequestId: z.string().trim().min(1).max(120),
   replyToMessageId: z.string().trim().min(1).nullable().optional(),
+  attachmentIds: z.array(z.string().uuid()).max(chatLimits.imageMaxCount).optional(),
+}).refine((value) => value.body.length > 0 || (value.attachmentIds?.length ?? 0) > 0, {
+  message: "Message content is required",
 });
 
 export const editMessageSchema = z.strictObject({

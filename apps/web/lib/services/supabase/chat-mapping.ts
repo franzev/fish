@@ -29,6 +29,22 @@ export interface MessageResponseRow {
     by_me?: boolean;
     byMe?: boolean;
   }>;
+  images?: ImageResponseRow[];
+}
+
+export interface ImageResponseRow {
+  id: string;
+  status: "ready";
+  kind: "image" | "file";
+  original_name: string;
+  stored_mime_type: string;
+  stored_byte_size: number;
+  width: number | null;
+  height: number | null;
+  thumbnail_path: string | null;
+  display_path: string;
+  thumbnail_url?: string;
+  display_url?: string;
 }
 
 export interface ReadStateResponseRow {
@@ -59,6 +75,20 @@ export function toClientChatMessage(
       emoji: reaction.emoji,
       count: reaction.count,
       byMe: reaction.byMe ?? reaction.by_me ?? false,
+    })),
+    images: (row.images ?? []).map((image) => ({
+      id: image.id,
+      status: "ready",
+      kind: image.kind,
+      originalName: image.original_name,
+      mimeType: image.stored_mime_type,
+      byteSize: image.stored_byte_size,
+      width: image.width ?? undefined,
+      height: image.height ?? undefined,
+      thumbnailPath: image.thumbnail_path ?? undefined,
+      displayPath: image.display_path,
+      thumbnailUrl: image.thumbnail_url,
+      displayUrl: image.display_url,
     })),
   };
 }
