@@ -1,4 +1,8 @@
-import type { ClientChatMessage, ClientChatReadState } from "@/lib/services";
+import type {
+  ChatSearchInput,
+  ClientChatMessage,
+  ClientChatReadState,
+} from "@/lib/services";
 
 export interface SendMessageActionState {
   status: "sent" | "notice";
@@ -12,4 +16,13 @@ export interface MarkReadStateActionState {
   values: unknown;
   notice?: string;
   readState?: ClientChatReadState;
+}
+
+export interface ChatSearchActionState {
+  status: "sent" | "notice";
+  values: ChatSearchInput | unknown;
+  notice?: string;
+  messages?: ClientChatMessage[];
+  nextCursor?: { createdAt: string; id: string } | null;
+  totalCount?: number;
 }

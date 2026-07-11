@@ -110,10 +110,17 @@ export interface ClientChatMessage {
   id: string; conversationId: string; senderId: string; senderRole: "client" | "coach";
   senderDisplayName?: string | null; body: string; clientRequestId: string; createdAt: string;
   editedAt?: string | null; deletedAt?: string | null; replyToMessageId?: string | null;
+  pinnedAt?: string | null; pinnedBy?: string | null;
   reactions?: ClientChatReaction[];
   images?: ClientChatImage[];
 }
 export interface ClientChatParticipant { id: string; displayName: string; role: "client" | "coach" }
+export interface ClientChatSearchMember {
+  id: string; displayName: string; username: string; avatarUrl?: string;
+}
+export interface ClientChatSearchChannel {
+  id: string; name: string; slug: string; conversationId: string;
+}
 export interface ClientChatReadState { userId: string; lastDeliveredMessageId: string | null; deliveredAt: string | null; lastReadMessageId: string | null; readAt: string | null }
 export interface ClientChatPresenceSession { id: string; userId: string; activeAt: string; lastHeartbeatAt: string; endedAt: string | null }
 export interface ClientChatPresence { sessions: ClientChatPresenceSession[]; lastSeenAt: string | null }
@@ -122,14 +129,39 @@ export interface ClientChatData {
   channelName?: string; title?: string; subtitle?: string; currentUserId: string;
   currentUserRole: "client" | "coach"; currentUserDisplayName: string; participant: ClientChatParticipant;
   messages: ClientChatMessage[]; readStates?: ClientChatReadState[]; participantPresence?: ClientChatPresence;
+  searchMembers?: ClientChatSearchMember[]; searchChannels?: ClientChatSearchChannel[];
   hasMoreOlder?: boolean; oldestCursor?: { createdAt: string; id: string } | null;
 }
 export interface ChatRepository { getAssignedConversation(): Promise<ServiceResult<ClientChatData | null>> }
+export interface ChatSearchResult {
+  messages: ClientChatMessage[];
+  nextCursor: { createdAt: string; id: string } | null;
+  totalCount: number;
+}
+export interface ChatSearchInput {
+  conversationId: string;
+  text: string;
+  senderIds: string[];
+  mentionedUserIds: string[];
+  channelIds: string[];
+  contentKinds: Array<"image" | "video" | "link" | "file" | "embed">;
+  authorTypes: Array<"client" | "coach">;
+  pinned: boolean | null;
+  dates: Array<{ operator: "before" | "after" | "during"; date: string; timeZone: string }>;
+  cursor?: { createdAt: string; id: string } | null;
+  offset?: number;
+  sortDirection?: "asc" | "desc";
+  limit?: number;
+}
+export interface ChatSearchRepository {
+  search(input: ChatSearchInput): Promise<ChatOperationResult<ChatSearchResult>>;
+}
 export interface DatabaseServices {
   profiles: ProfileRepository;
   coachClients: CoachClientRepository;
   clientProfiles: ClientProfileRepository;
   chat: ChatRepository;
+  chatSearch: ChatSearchRepository;
 }
 export interface AppServices { auth: AuthService; database: DatabaseServices }
 

@@ -51,6 +51,8 @@ const chatCursorInputSchema = z.strictObject({
 export const loadOlderMessagesSchema = z.strictObject({
   conversationId: z.string().uuid(),
   cursor: chatCursorInputSchema.nullable().optional(),
+  offset: z.number().int().nonnegative().max(1_000_000).optional(),
+  sortDirection: z.enum(["asc", "desc"]).optional(),
   limit: z.number().int().positive().max(100).optional(),
 });
 
@@ -64,5 +66,29 @@ export const backfillMessagesSchema = z.strictObject({
 
 export const loadNewestMessagesSchema = z.strictObject({
   conversationId: z.string().uuid(),
+  limit: z.number().int().positive().max(100).optional(),
+});
+
+const searchDateSchema = z.strictObject({
+  operator: z.enum(["before", "after", "during"]),
+  date: z.iso.date(),
+  timeZone: z.string().trim().min(1).max(100),
+});
+
+export const searchChatMessagesSchema = z.strictObject({
+  conversationId: z.string().uuid(),
+  text: z.string().trim().max(4000),
+  senderIds: z.array(z.string().uuid()).max(100),
+  mentionedUserIds: z.array(z.string().uuid()).max(100),
+  channelIds: z.array(z.string().uuid()).max(100),
+  contentKinds: z
+    .array(z.enum(["image", "video", "link", "file", "embed"]))
+    .max(5),
+  authorTypes: z.array(z.enum(["client", "coach"])).max(2),
+  pinned: z.boolean().nullable(),
+  dates: z.array(searchDateSchema).max(10),
+  cursor: chatCursorInputSchema.nullable().optional(),
+  offset: z.number().int().nonnegative().max(1_000_000).optional(),
+  sortDirection: z.enum(["asc", "desc"]).optional(),
   limit: z.number().int().positive().max(100).optional(),
 });
