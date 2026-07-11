@@ -53,8 +53,9 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260711-en2 | Reorganize and refactor the project to follow modern Next.js App Router and React best practices while preserving all existing behavior; improve folder organization, colocation, component decomposition, reuse, import consistency, dead-code cleanup, and lean Storybook coverage; verify build, typecheck, lint, and all tests. | 2026-07-11 | f645dfb0 | [260711-en2-reorganize-and-refactor-the-project-to-f](./quick/260711-en2-reorganize-and-refactor-the-project-to-f/) |
+| 260711-gxf | Refactor the Next.js web folder structure to consistent feature ownership and hardened server-client boundaries while preserving 100% existing functionality | 2026-07-11 | c88b44c8 | [260711-gxf-refactor-the-next-js-web-folder-structur](./quick/260711-gxf-refactor-the-next-js-web-folder-structur/) |
 
-Last activity: 2026-07-11 - Completed quick task 260711-en2: Reorganize and refactor the project to follow modern Next.js App Router and React best practices while preserving all existing behavior.
+Last activity: 2026-07-11 - Completed quick task 260711-gxf: Refactor the Next.js web folder structure to consistent feature ownership and hardened server-client boundaries while preserving 100% existing functionality.
 
 ---
 
