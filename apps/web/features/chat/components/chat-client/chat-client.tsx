@@ -22,8 +22,6 @@ import { ChatComposerSurface } from "../chat-composer-surface";
 import { ChatMessageList } from "../chat-message-list";
 import { visibleMessageBody } from "../message-presentation";
 import {
-  selectComposerForConversation,
-  selectReadStatesForConversation,
   selectRealtimeStatusForConversation,
 } from "@/features/chat/model/store";
 
@@ -70,8 +68,6 @@ export function ChatClient({
   backfillMessagesAction,
   loadNewestMessagesAction,
 }: ChatClientProps) {
-  useChatStore((state) => selectComposerForConversation(state, chat.conversationId));
-  useChatStore((state) => selectReadStatesForConversation(state, chat.conversationId));
   const realtimeStatus = useChatStore((state) =>
     selectRealtimeStatusForConversation(state, chat.conversationId)
   );
@@ -242,30 +238,38 @@ export function ChatClient({
       />
 
       <ChatMessageList
-        viewportRef={viewportRef}
-        sentinelRef={sentinelRef}
-        hasMoreOlder={hasMoreOlder}
-        hasOlderLoadError={hasOlderLoadError}
-        isLoadingOlder={isLoadingOlder}
-        loadOlderAndPreserveScroll={loadOlderAndPreserveScroll}
-        filteredMessages={filteredMessages}
-        messages={messages}
-        participantTyping={participantTyping}
-        search={search}
-        isCommunity={isCommunity}
-        activityName={activityName}
-        chat={chat}
-        participantReadState={participantReadState}
-        latestMineRequestId={latestMineRequestId}
-        getMessageAuthorName={getMessageAuthorName}
-        startReplyingToMessage={startReplyingToMessage}
-        handleToggleReaction={handleToggleReaction}
-        startEditingMessage={startEditingMessage}
-        handleDeleteMessage={handleDeleteMessage}
-        sendWithRequestId={sendWithRequestId}
-        showNewMessages={showNewMessages}
-        scrollToBottom={scrollToBottom}
-        isReconnecting={isReconnecting}
+        viewport={{
+          ref: viewportRef,
+          showNewMessages,
+          scrollToBottom,
+          isReconnecting,
+        }}
+        pagination={{
+          sentinelRef,
+          hasMore: hasMoreOlder,
+          hasError: hasOlderLoadError,
+          loading: isLoadingOlder,
+          load: loadOlderAndPreserveScroll,
+        }}
+        transcript={{
+          visibleMessages: filteredMessages,
+          allMessages: messages,
+          participantTyping,
+          search,
+          isCommunity,
+          activityName,
+          chat,
+          participantReadState,
+          latestMineRequestId,
+          getAuthorName: getMessageAuthorName,
+        }}
+        actions={{
+          reply: startReplyingToMessage,
+          toggleReaction: handleToggleReaction,
+          edit: startEditingMessage,
+          delete: handleDeleteMessage,
+          retry: sendWithRequestId,
+        }}
       />
 
       <ChatComposerSurface

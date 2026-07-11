@@ -155,10 +155,11 @@ describe("ChatClient hook boundaries", () => {
     expect(chatClientSource).toContain("useChatComposer(");
   });
 
-  it("wires the rendering shell to narrow chat store selectors", () => {
+  it("keeps the rendering shell subscribed only to state it consumes", () => {
     expect(chatClientSource).toContain(`@/features/chat/model/store`);
-    expect(chatClientSource).toContain("selectComposerForConversation");
-    expect(chatClientSource).toContain("selectReadStatesForConversation");
+    expect(chatClientSource).toContain("selectRealtimeStatusForConversation");
+    expect(chatClientSource).not.toContain("selectComposerForConversation");
+    expect(chatClientSource).not.toContain("selectReadStatesForConversation");
     expect(chatClientSource).not.toContain("useChatStore()");
   });
 
