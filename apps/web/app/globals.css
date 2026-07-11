@@ -138,6 +138,10 @@
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
   --spacing-chat-container-demo: 720px;
+  --spacing-chat-image-preview: 88px;
+  --spacing-chat-image-max-height: 480px;
+  --aspect-chat-gallery: 4 / 3;
+  --spacing-chat-image-thumb: 240px;
   --spacing-motion-enter: 6px;
   --spacing-motion-typing: 4px;
 
@@ -153,6 +157,8 @@
   --container-search-header: 180px; /* compact always-visible chat header search field */
   --container-search-pop: 340px;    /* chat quick-filter popover panel */
   --container-filters-dialog: 384px; /* centered Filters dialog on md+ */
+  --container-chat-image: 320px;
+  --container-image-viewer: 1120px;
 
   /* ---- Focus and motion ---- */
   --focus-outline-width: 2px;
