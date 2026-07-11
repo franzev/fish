@@ -28,7 +28,6 @@ interface ChatMessageListProps {
     visibleMessages: LocalMessage[];
     allMessages: LocalMessage[];
     participantTyping: boolean;
-    search: string;
     isCommunity: boolean;
     activityName: string;
     chat: ClientChatData;
@@ -51,7 +50,6 @@ export function ChatMessageList({
     visibleMessages,
     allMessages,
     participantTyping,
-    search,
     isCommunity,
     activityName,
     chat,
@@ -59,6 +57,9 @@ export function ChatMessageList({
     latestMineRequestId,
     getAuthorName,
   } = transcript;
+  const emptyMessage = isCommunity
+    ? "No messages yet. Say hello to the community."
+    : "No messages yet.";
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
@@ -84,11 +85,7 @@ export function ChatMessageList({
           />
           {visibleMessages.length === 0 && !participantTyping ? (
             <div className="flex flex-1 items-center justify-center text-center text-copy text-body">
-              {search
-                ? "No messages match"
-                : isCommunity
-                  ? "No messages yet. Say hello to the community."
-                  : "No messages yet."}
+              {emptyMessage}
             </div>
           ) : (
             <ol className="flex flex-col">

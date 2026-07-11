@@ -203,6 +203,7 @@ describe("ChatClient hook boundaries", () => {
 
 describe("ChatClient", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/channels/general");
     resetChatStoreForTests();
     realtimeMock.messageHandlers.length = 0;
     realtimeMock.messageUpdateHandlers.length = 0;
@@ -329,6 +330,273 @@ describe("ChatClient", () => {
     // The search field is always visible in the header now — no popover to
     // open before typing.
     expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
+  });
+
+  it("waits for explicit submission and renders results beside the unchanged transcript", async () => {
+    const olderResult = {
+      ...chat.messages[0],
+      id: "77777777-7777-4777-8777-777777777777",
+      body: "A result from before the loaded window",
+      clientRequestId: "search-result-1",
+      createdAt: "2026-06-01T00:00:00.000Z",
+    };
+    const searchMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [olderResult],
+      nextCursor: null,
+      totalCount: 1,
+    });
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+    fireEvent.change(screen.getByRole("combobox", { name: "Search messages" }), {
+      target: { value: "before loaded" },
+    });
+    expect(searchMessagesAction).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("option", { name: "Search for before loaded" }));
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+    expect(searchMessagesAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: chat.conversationId,
+        text: "before loaded",
+        senderIds: [],
+        dates: [],
+      })
+    );
+    await waitFor(() =>
+      expect(screen.getByText("A result from before the loaded window")).toBeInTheDocument()
+    );
+    expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
+    const resultHeading = screen.getByRole("heading", { name: "1 Result" });
+    const resultHeaderRow = resultHeading.parentElement;
+    expect(resultHeaderRow).toContainElement(screen.getByRole("button", { name: "Filters" }));
+    expect(resultHeaderRow).toContainElement(screen.getByRole("button", { name: "Sort" }));
+    expect(selectMessagesForConversation(chatStore.getState(), chat.conversationId))
+      .toHaveLength(1);
+    expect(window.location.search).toBe("?search=before+loaded");
+  });
+
+  it("restores a committed search, page, and sort from the URL after refresh", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/channels/general?search=practice&page=2&sort=asc"
+    );
+    const searchMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [chat.messages[0]],
+      nextCursor: null,
+      totalCount: 30,
+    });
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+    expect(searchMessagesAction).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "practice", offset: 25, sortDirection: "asc" })
+    );
+    expect(screen.getByRole("combobox", { name: "Search messages" })).toHaveValue("practice");
+    expect(screen.getByRole("button", { name: "2", current: "page" })).toBeInTheDocument();
+  });
+
+  it("shows the number of committed structured filters in the header", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/channels/general?search=from%3A+coach_dana"
+    );
+    const searchMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [chat.messages[0]],
+      nextCursor: null,
+      totalCount: 1,
+    });
+
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          searchMembers: [{
+            id: "coach-1",
+            displayName: "Coach Dana",
+            username: "coach_dana",
+          }],
+        }}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: "Filters (1)" })).toBeInTheDocument();
+  });
+
+  it("paginates the committed search even when an unsubmitted draft is present", async () => {
+    const searchMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [chat.messages[0]],
+      nextCursor: null,
+      totalCount: 100,
+    });
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+    const input = screen.getByRole("combobox", { name: "Search messages" });
+    fireEvent.change(input, { target: { value: "practice" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(input, { target: { value: "unsubmitted" } });
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(2));
+    expect(searchMessagesAction.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ text: "practice", offset: 25 })
+    );
+    expect(window.location.search).toBe("?search=practice&page=2");
+  });
+
+  it("shows a calm searching state instead of skeletons or a false empty message", async () => {
+    const searchMessagesAction = vi.fn(
+      () => new Promise<never>(() => undefined)
+    );
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+    fireEvent.change(screen.getByRole("combobox", { name: "Search messages" }), {
+      target: { value: "older history" },
+    });
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search messages" }), { key: "Enter" });
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("No messages match this search.")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Searching" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "" })).toHaveTextContent("Searching messages…");
+    expect(screen.queryByTestId("load-older-skeleton")).toBeNull();
+  });
+
+  it("keeps existing results and pagination stable while refreshing", async () => {
+    let resolveRefresh: ((value: {
+      status: "sent";
+      values: Record<string, never>;
+      messages: typeof chat.messages;
+      nextCursor: null;
+      totalCount: number;
+    }) => void) | undefined;
+    const searchMessagesAction = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: "sent",
+        values: {},
+        messages: chat.messages,
+        nextCursor: null,
+        totalCount: 100,
+      })
+      .mockImplementationOnce(
+        () => new Promise((resolve) => { resolveRefresh = resolve; })
+      );
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+    const input = screen.getByRole("combobox", { name: "Search messages" });
+    fireEvent.change(input, { target: { value: "practice" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => expect(screen.getByRole("heading", { name: "100 Results" })).toBeInTheDocument());
+    const pagination = screen.getByRole("navigation", { name: "Search result pages" });
+    fireEvent.click(within(pagination).getByRole("button", { name: "2" }));
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(2));
+
+    expect(within(screen.getByLabelText("Search results")).getByText("How did practice feel today?")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Search result pages" })).toBe(pagination);
+    expect(within(pagination).getByRole("button", { name: "1", current: "page" })).toBeInTheDocument();
+    expect(screen.queryByTestId("load-older-skeleton")).toBeNull();
+    expect(screen.getByRole("heading", { name: "100 Results" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Search results")).toHaveAttribute("aria-busy", "true");
+
+    await act(async () => {
+      resolveRefresh?.({
+        status: "sent",
+        values: {},
+        messages: chat.messages,
+        nextCursor: null,
+        totalCount: 100,
+      });
+    });
+    await waitFor(() => expect(within(pagination).getByRole("button", { name: "2", current: "page" })).toBeInTheDocument());
+  });
+
+  it("recovers from a rejected search action without leaving a false empty state", async () => {
+    const searchMessagesAction = vi.fn().mockRejectedValue(new Error("network down"));
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+    fireEvent.change(screen.getByRole("combobox", { name: "Search messages" }), {
+      target: { value: "practice" },
+    });
+    fireEvent.click(screen.getByRole("option", { name: "Search for practice" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Search is not available yet. Try again.")
+      ).toBeInTheDocument()
+    );
+    expect(screen.queryByText("No messages match")).toBeNull();
+    expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
+  });
+
+  it("submits only the latest typed query", async () => {
+    const searchMessagesAction = vi.fn().mockResolvedValue({ status: "sent", values: {}, messages: [], nextCursor: null, totalCount: 0 });
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+    const input = screen.getByRole("combobox", { name: "Search messages" });
+    fireEvent.change(input, { target: { value: "p" } });
+    fireEvent.change(input, { target: { value: "practice" } });
+    expect(searchMessagesAction).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+    expect(searchMessagesAction.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ text: "practice" })
+    );
   });
 
   it("renders community rows as a left-aligned feed without direct-message bubbles", () => {

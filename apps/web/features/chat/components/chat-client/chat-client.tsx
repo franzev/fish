@@ -1,17 +1,34 @@
 "use client";
 
 import type {
+  ChatSearchInput,
   ClientChatData,
   ClientChatMessage,
   ClientChatReadState,
 } from "@/lib/services";
 import { useTimeFormatPreference } from "@/lib/prefs/time-format";
-import { useMemo, useRef, useState } from "react";
-import type { SendMessageActionState } from "@/features/chat/contracts";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  ChatSearchActionState,
+  SendMessageActionState,
+} from "@/features/chat/contracts";
+import {
+  createChatSearchUrl,
+  criteriaFromQuery,
+  parseChatSearchQuery,
+  readChatSearchUrlState,
+  type ChatFilterCriterion,
+} from "@/features/chat/model/search";
 import { useChatComposer } from "@/features/chat/hooks/use-chat-composer";
 import { useChatImageUploads } from "@/features/chat/hooks/use-chat-image-uploads";
-import type { LoadOlderMessagesActionState } from "@/features/chat/hooks/use-chat-messages";
-import { useChatMessages } from "@/features/chat/hooks/use-chat-messages";
+import type {
+  LoadOlderMessagesActionState,
+  LocalMessage,
+} from "@/features/chat/hooks/use-chat-messages";
+import {
+  toLocalMessage,
+  useChatMessages,
+} from "@/features/chat/hooks/use-chat-messages";
 import { useChatPresence } from "@/features/chat/hooks/use-chat-presence";
 import { useChatReadState } from "@/features/chat/hooks/use-chat-read-state";
 import { useChatRealtime } from "@/features/chat/hooks/use-chat-realtime";
@@ -21,14 +38,46 @@ import { useChatStore } from "@/features/chat/model/store";
 import { ChatHeader } from "../chat-header";
 import { ChatComposerSurface } from "../chat-composer-surface";
 import { ChatMessageList } from "../chat-message-list";
-import { visibleMessageBody } from "../message-presentation";
+import { FiltersDialog } from "../search-filters";
+import { SearchResultsSidebar } from "../search-results";
 import {
   selectRealtimeStatusForConversation,
 } from "@/features/chat/model/store";
 
+const searchPageSize = 25;
+const emptySearchMembers: NonNullable<ClientChatData["searchMembers"]> = [];
+const emptySearchChannels: NonNullable<ClientChatData["searchChannels"]> = [];
+
+type SearchNavigationMode = "push" | "replace" | null;
+
+function createSearchRequest(
+  conversationId: string,
+  query: string,
+  criteria: ChatFilterCriterion[],
+  page: number,
+  sortDirection: "asc" | "desc"
+): ChatSearchInput {
+  return {
+    conversationId,
+    text: parseChatSearchQuery(query).text,
+    senderIds: criteria.flatMap((item) => item.kind === "from" ? [item.member.id] : []),
+    mentionedUserIds: criteria.flatMap((item) => item.kind === "mentions" ? [item.member.id] : []),
+    channelIds: criteria.flatMap((item) => item.kind === "in" ? [item.channel.id] : []),
+    contentKinds: criteria.flatMap((item) => item.kind === "has" ? [item.contentKind] : []),
+    authorTypes: criteria.flatMap((item) => item.kind === "author" ? [item.authorType] : []),
+    pinned: criteria.find((item): item is Extract<ChatFilterCriterion, { kind: "pinned" }> => item.kind === "pinned")?.value ?? null,
+    dates: criteria.flatMap((item) => item.kind === "date" ? [{ operator: item.operator, date: item.date, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }] : []),
+    cursor: null,
+    offset: (page - 1) * searchPageSize,
+    sortDirection,
+    limit: searchPageSize,
+  };
+}
+
 export interface ChatClientProps {
   chat: ClientChatData;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
+  searchMessagesAction?: (input: unknown) => Promise<ChatSearchActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   toggleReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
@@ -59,6 +108,7 @@ export interface ChatClientProps {
 export function ChatClient({
   chat,
   sendMessageAction,
+  searchMessagesAction,
   editMessageAction,
   deleteMessageAction,
   toggleReactionAction,
@@ -96,6 +146,21 @@ export function ChatClient({
     markReadStateAction,
   });
   const [search, setSearch] = useState("");
+  const [searchCriteria, setSearchCriteria] = useState<ChatFilterCriterion[]>([]);
+  const [committedSearch, setCommittedSearch] = useState("");
+  const [committedSearchCriteria, setCommittedSearchCriteria] = useState<ChatFilterCriterion[]>([]);
+  const [searchResults, setSearchResults] = useState<LocalMessage[]>([]);
+  const [searchTotalCount, setSearchTotalCount] = useState(0);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchSort, setSearchSort] = useState<"asc" | "desc">("desc");
+  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchNotice, setSearchNotice] = useState<string | null>(null);
+  const searchSequenceRef = useRef(0);
+  const restoredUrlRef = useRef<string | null>(null);
+  const searchMembers = chat.searchMembers ?? emptySearchMembers;
+  const searchChannels = chat.searchChannels ?? emptySearchChannels;
   const timeFormatPref = useTimeFormatPreference();
   const isCommunity = chat.kind === "community";
   const chatTitle = chat.title ?? chat.participant.displayName;
@@ -206,16 +271,124 @@ export function ChatClient({
     }
     return memberIds.size;
   }, [chat.currentUserId, chat.readStates, messages]);
-  const filteredMessages = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) {
-      return messages;
+  const updateSearchUrl = useCallback((
+    query: string,
+    page: number,
+    sortDirection: "asc" | "desc",
+    mode: Exclude<SearchNavigationMode, null>
+  ) => {
+    const nextUrl = createChatSearchUrl(window.location.href, {
+      query,
+      page,
+      sortDirection,
+    });
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl !== currentUrl) {
+      window.history[mode === "push" ? "pushState" : "replaceState"](null, "", nextUrl);
     }
+    restoredUrlRef.current = window.location.href;
+  }, []);
 
-    return messages.filter((message) =>
-      visibleMessageBody(message).toLowerCase().includes(query)
-    );
-  }, [messages, search]);
+  const runSearch = useCallback(async (
+    query: string,
+    criteria: ChatFilterCriterion[],
+    page = 1,
+    sortDirection: "asc" | "desc" = "desc",
+    navigationMode: SearchNavigationMode = "push"
+  ) => {
+    const sequence = ++searchSequenceRef.current;
+    setCommittedSearch(query);
+    setCommittedSearchCriteria(criteria);
+    setSearchResultsOpen(true);
+    setIsSearching(true);
+    setSearchNotice(null);
+    if (navigationMode) updateSearchUrl(query, page, sortDirection, navigationMode);
+    if (!searchMessagesAction) {
+      setIsSearching(false);
+      setSearchNotice("Search is not available yet. Try again.");
+      return;
+    }
+    try {
+      let resolvedPage = page;
+      let result = await searchMessagesAction(
+        createSearchRequest(chat.conversationId, query, criteria, page, sortDirection)
+      );
+      if (sequence !== searchSequenceRef.current) return;
+      if (result.status === "sent") {
+        const totalCount = result.totalCount ?? 0;
+        const lastPage = Math.max(1, Math.ceil(totalCount / searchPageSize));
+        if (page > lastPage) {
+          resolvedPage = lastPage;
+          result = await searchMessagesAction(
+            createSearchRequest(chat.conversationId, query, criteria, lastPage, sortDirection)
+          );
+          if (sequence !== searchSequenceRef.current) return;
+          updateSearchUrl(query, lastPage, sortDirection, "replace");
+        }
+        setSearchResults((result.messages ?? []).map(toLocalMessage));
+        setSearchTotalCount(result.totalCount ?? 0);
+        setSearchPage(resolvedPage);
+        setSearchSort(sortDirection);
+      } else {
+        setSearchResults([]);
+        setSearchTotalCount(0);
+        setSearchNotice(result.notice ?? "Search is not available yet. Try again.");
+      }
+    } catch {
+      if (sequence !== searchSequenceRef.current) return;
+      setSearchResults([]);
+      setSearchTotalCount(0);
+      setSearchNotice("Search is not available yet. Try again.");
+    } finally {
+      if (sequence === searchSequenceRef.current) setIsSearching(false);
+    }
+  }, [chat.conversationId, searchMessagesAction, updateSearchUrl]);
+
+  useEffect(() => {
+    const restoreSearchFromUrl = () => {
+      if (restoredUrlRef.current === window.location.href) return;
+      restoredUrlRef.current = window.location.href;
+      const urlState = readChatSearchUrlState(window.location.search);
+      if (!urlState) {
+        if (new URLSearchParams(window.location.search).has("search")) {
+          const nextUrl = createChatSearchUrl(window.location.href, null);
+          window.history.replaceState(null, "", nextUrl);
+          restoredUrlRef.current = window.location.href;
+        }
+        searchSequenceRef.current += 1;
+        setSearch("");
+        setSearchCriteria([]);
+        setCommittedSearch("");
+        setCommittedSearchCriteria([]);
+        setSearchResultsOpen(false);
+        setIsSearching(false);
+        return;
+      }
+
+      const criteria = criteriaFromQuery(urlState.query, searchMembers, searchChannels);
+      const text = parseChatSearchQuery(urlState.query).text;
+      if (!text && criteria.length === 0) {
+        const nextUrl = createChatSearchUrl(window.location.href, null);
+        window.history.replaceState(null, "", nextUrl);
+        restoredUrlRef.current = window.location.href;
+        return;
+      }
+
+      setSearch(urlState.query);
+      setSearchCriteria(criteria);
+      void runSearch(
+        urlState.query,
+        criteria,
+        urlState.page,
+        urlState.sortDirection,
+        null
+      );
+    };
+
+    restoreSearchFromUrl();
+    window.addEventListener("popstate", restoreSearchFromUrl);
+    return () => window.removeEventListener("popstate", restoreSearchFromUrl);
+  }, [runSearch, searchChannels, searchMembers]);
   const latestMineRequestId = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
@@ -241,7 +414,16 @@ export function ChatClient({
         showOnlineDot={presenceStatus.showOnlineDot}
         search={search}
         onSearchChange={setSearch}
+        criteria={searchCriteria}
+        onCriteriaChange={setSearchCriteria}
+        members={searchMembers}
+        channels={searchChannels}
+        onSearchSubmit={(query, criteria) => void runSearch(query, criteria, 1, searchSort)}
+        onOpenFilters={() => setFiltersOpen(true)}
       />
+
+      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
       <ChatMessageList
         viewport={{
@@ -258,10 +440,9 @@ export function ChatClient({
           load: loadOlderAndPreserveScroll,
         }}
         transcript={{
-          visibleMessages: filteredMessages,
+          visibleMessages: messages,
           allMessages: messages,
           participantTyping,
-          search,
           isCommunity,
           activityName,
           chat,
@@ -299,6 +480,44 @@ export function ChatClient({
         addImages={imageUploads.addFiles}
         removeImage={imageUploads.remove}
         retryImage={imageUploads.retry}
+      />
+      </div>
+      {searchResultsOpen && <SearchResultsSidebar
+        messages={searchResults}
+        totalCount={searchTotalCount}
+        page={searchPage}
+        pageSize={searchPageSize}
+        sortDirection={searchSort}
+        filterCount={committedSearchCriteria.length}
+        isSearching={isSearching}
+        notice={searchNotice}
+        currentUserId={chat.currentUserId}
+        members={searchMembers}
+        channels={searchChannels}
+        onClose={() => {
+          setSearchResultsOpen(false);
+          const nextUrl = createChatSearchUrl(window.location.href, null);
+          window.history.replaceState(null, "", nextUrl);
+          restoredUrlRef.current = window.location.href;
+        }}
+        onOpenFilters={() => setFiltersOpen(true)}
+        onSortChange={(direction) => void runSearch(committedSearch, committedSearchCriteria, 1, direction)}
+        onPageChange={(page) => void runSearch(committedSearch, committedSearchCriteria, page, searchSort)}
+      />}
+      </div>
+      <FiltersDialog
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        query={search}
+        criteria={searchCriteria}
+        members={searchMembers}
+        channels={searchChannels}
+        onApply={(query, criteria) => {
+          setSearch(query);
+          setSearchCriteria(criteria);
+          setFiltersOpen(false);
+          void runSearch(query, criteria, 1, searchSort);
+        }}
       />
     </section>
   );

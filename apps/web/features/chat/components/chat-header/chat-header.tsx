@@ -1,4 +1,9 @@
 import { SearchFilterPopover } from "../search-filters";
+import type {
+  ChatFilterCriterion,
+  ChatSearchChannel,
+  ChatSearchMember,
+} from "@/features/chat/model/search";
 
 interface ChatHeaderProps {
   chatTitle: string;
@@ -9,6 +14,12 @@ interface ChatHeaderProps {
   showOnlineDot: boolean;
   search: string;
   onSearchChange: (value: string) => void;
+  criteria: ChatFilterCriterion[];
+  onCriteriaChange: (criteria: ChatFilterCriterion[]) => void;
+  members: ChatSearchMember[];
+  channels: ChatSearchChannel[];
+  onSearchSubmit: (query: string, criteria: ChatFilterCriterion[]) => void;
+  onOpenFilters: () => void;
 }
 
 export function ChatHeader({
@@ -20,6 +31,12 @@ export function ChatHeader({
   showOnlineDot,
   search,
   onSearchChange,
+  criteria,
+  onCriteriaChange,
+  members,
+  channels,
+  onSearchSubmit,
+  onOpenFilters,
 }: ChatHeaderProps) {
   return (
     <div className="border-b border-border bg-surface px-md">
@@ -42,7 +59,16 @@ export function ChatHeader({
             </span>
           </span>
         </div>
-        <SearchFilterPopover value={search} onValueChange={onSearchChange} />
+        <SearchFilterPopover
+          value={search}
+          onValueChange={onSearchChange}
+          criteria={criteria}
+          onCriteriaChange={onCriteriaChange}
+          members={members}
+          channels={channels}
+          onSubmit={onSearchSubmit}
+          onOpenFilters={onOpenFilters}
+        />
       </div>
     </div>
   );

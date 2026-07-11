@@ -9,6 +9,7 @@ import {
   refreshConversationAction,
   refreshMessagesAction,
   sendMessageAction,
+  searchChatMessagesAction,
   toggleReactionAction,
 } from "@/features/chat/server";
 import { authRedirects } from "@/features/auth/redirects";
@@ -37,6 +38,7 @@ export default async function ChannelPage() {
     <ChatClient
       chat={data.chat}
       sendMessageAction={sendMessageAction}
+      searchMessagesAction={searchChatMessagesAction}
       editMessageAction={editMessageAction}
       deleteMessageAction={deleteMessageAction}
       toggleReactionAction={toggleReactionAction}

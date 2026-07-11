@@ -2,6 +2,7 @@
 
 import { getServerServices } from "@/lib/services/runtime/server";
 import type {
+  ChatSearchActionState,
   MarkReadStateActionState,
   SendMessageActionState,
 } from "@/features/chat/contracts";
@@ -10,12 +11,42 @@ import type {
   ClientChatReadState,
 } from "@/lib/services";
 import { createChatActionHandlers } from "./action-handlers";
+import { searchChatMessagesSchema } from "./schemas";
 
 export type * from "@/features/chat/contracts";
 
 async function handlers() {
   const { chatCommands } = await getServerServices();
   return createChatActionHandlers(chatCommands);
+}
+
+export async function searchChatMessagesAction(
+  input: unknown
+): Promise<ChatSearchActionState> {
+  const parsed = searchChatMessagesSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "notice",
+      values: input,
+      notice: "Those filters need a quick check before searching.",
+    };
+  }
+
+  const { database } = await getServerServices();
+  const result = await database.chatSearch.search(parsed.data);
+  return result.ok
+    ? {
+        status: "sent",
+        values: parsed.data,
+        messages: result.data.messages,
+        nextCursor: result.data.nextCursor,
+        totalCount: result.data.totalCount,
+      }
+    : {
+        status: "notice",
+        values: parsed.data,
+        notice: result.notice,
+      };
 }
 
 export async function sendMessageAction(
