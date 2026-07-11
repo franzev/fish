@@ -251,6 +251,103 @@ export type Database = {
           },
         ]
       }
+      message_attachments: {
+        Row: {
+          client_upload_id: string
+          conversation_id: string
+          created_at: string
+          display_path: string | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
+          id: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          uploader_id: string
+          width: number | null
+        }
+        Insert: {
+          client_upload_id: string
+          conversation_id: string
+          created_at?: string
+          display_path?: string | null
+          expires_at?: string
+          failure_code?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          message_id?: string | null
+          original_name: string
+          position?: number | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status?: string
+          stored_byte_size?: number | null
+          stored_mime_type?: string | null
+          thumbnail_path?: string | null
+          updated_at?: string
+          uploader_id: string
+          width?: number | null
+        }
+        Update: {
+          client_upload_id?: string
+          conversation_id?: string
+          created_at?: string
+          display_path?: string | null
+          expires_at?: string
+          failure_code?: string | null
+          height?: number | null
+          id?: string
+          kind?: string
+          message_id?: string | null
+          original_name?: string
+          position?: number | null
+          source_byte_size?: number
+          source_mime_type?: string
+          staging_path?: string
+          status?: string
+          stored_byte_size?: number | null
+          stored_mime_type?: string | null
+          thumbnail_path?: string | null
+          updated_at?: string
+          uploader_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_attachments_uploader_id_fkey"
+            columns: ["uploader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           conversation_id: string
@@ -406,6 +503,7 @@ export type Database = {
     Functions: {
       send_chat_message: {
         Args: {
+          p_attachment_ids?: string[]
           p_body: string
           p_client_request_id: string
           p_conversation_id: string
@@ -423,6 +521,16 @@ export type Database = {
           sender_id: string
           sender_role: string
         }
+      }
+      initialize_chat_image_upload: {
+        Args: {
+          p_client_upload_id: string
+          p_conversation_id: string
+          p_original_name: string
+          p_source_byte_size: number
+          p_source_mime_type: string
+        }
+        Returns: Database["public"]["Tables"]["message_attachments"]["Row"]
       }
       edit_chat_message: {
         Args: {

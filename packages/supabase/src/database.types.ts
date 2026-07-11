@@ -13,6 +13,8 @@ export type CoachClientRow = Database["public"]["Tables"]["coach_clients"]["Row"
 export type ClientProfileRow = Database["public"]["Tables"]["client_profiles"]["Row"];
 export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+export type MessageAttachmentRow =
+  Database["public"]["Tables"]["message_attachments"]["Row"];
 export type MessageReadRow = Database["public"]["Tables"]["message_reads"]["Row"];
 export type MessageReactionRow =
   Database["public"]["Tables"]["message_reactions"]["Row"];
