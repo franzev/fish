@@ -18,6 +18,7 @@ import {
   type CurrentProfile,
   type ProfileData,
 } from "../contracts";
+import { cache } from "react";
 
 export async function getCurrentProfile(
   dependencies: {
@@ -80,7 +81,7 @@ export async function getRootRedirectPath(
     : authRedirects.clientHome;
 }
 
-export async function getAuthenticatedShellProfile(
+async function getAuthenticatedShellProfileUncached(
   injected?: AppServices
 ): Promise<AuthenticatedShellProfile | null> {
   const services = injected ?? (await getServerServices());
@@ -116,6 +117,18 @@ export async function getAuthenticatedShellProfile(
       clientProfileResult.data?.timeFormatPref ?? null
     ),
   };
+}
+
+const getCachedAuthenticatedShellProfile = cache(() =>
+  getAuthenticatedShellProfileUncached()
+);
+
+export function getAuthenticatedShellProfile(
+  injected?: AppServices
+): Promise<AuthenticatedShellProfile | null> {
+  return injected
+    ? getAuthenticatedShellProfileUncached(injected)
+    : getCachedAuthenticatedShellProfile();
 }
 
 export async function getClientHomeData(
