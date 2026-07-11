@@ -79,6 +79,44 @@ implementation details.
 - Keep accessibility floor: visible keyboard focus, `prefers-reduced-motion` respected (both already set in web `globals.css`).
 - Keep shared product contracts in `packages/core`; keep Supabase auth/database contracts in `packages/supabase`.
 
+### Component folder structure (non-negotiable)
+
+Every React component implementation must live in its own same-named folder.
+This applies to shared, feature-owned, and route-local components.
+
+- Use `components/component-name/component-name.tsx` for shared and
+  feature-owned components.
+- Use `_components/component-name/component-name.tsx` for components private
+  to an App Router route segment.
+- Colocate the component's tests, stories, and private helpers in that folder.
+- Every component folder must contain an `index.ts` entry point. When it
+  exposes the component's complete public surface, use
+  `export * from "./component-name"`.
+- Grouping folders may contain component folders, helpers, and barrels, but
+  never loose component implementation `.tsx` files.
+- The folder name and implementation filename must match in kebab-case.
+- Next.js special route files such as `page.tsx`, `layout.tsx`, `loading.tsx`,
+  `error.tsx`, and `not-found.tsx`, plus framework configuration files such as
+  Storybook `preview.tsx`, are exempt.
+- Before completing structural work, run the module-boundary test and verify
+  that there are zero loose component implementations and zero component
+  folders without an `index.ts`.
+
+### Exports and barrels
+
+- When a barrel or forwarding module is intended to expose a source module's
+  complete public surface, use `export * from "..."` (or the type-only
+  equivalent, `export type * from "..."`) instead of maintaining a one-by-one
+  export list. This applies across the entire repository, including feature,
+  UI, runtime, and package entry points.
+- Use explicit named re-exports only when they enforce an intentional public
+  API subset, preserve a client/server boundary, rename a symbol, resolve an
+  export-name collision, maintain a compatibility surface, or shield generated
+  or provider-specific internals.
+- Whenever exports are added, removed, or renamed in a source module, check
+  every barrel and forwarding layer in that path so public entry points cannot
+  silently drift out of sync.
+
 ## API boundary
 
 - Use Supabase directly for simple authorized reads protected by RLS.
