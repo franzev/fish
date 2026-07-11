@@ -10,23 +10,24 @@ Node/Express API.
 
 ```text
 Browser
-  -> Next.js App Router
-     -> server components and server actions
-     -> Supabase service/repository boundary
+  -> Next.js App Router (routes, components, use cases)
+     -> FISH-owned ports and DTOs
+     -> browser/server/proxy composition roots
+     -> Supabase adapters
         -> Auth
         -> Postgres + RLS + RPCs
         -> Realtime
         -> Edge Functions
 
-apps/web -> packages/supabase -> packages/core
-         -> packages/core
+apps/web application -> packages/core
+apps/web infrastructure -> packages/supabase -> packages/core
 ```
 
 - `apps/web` owns routes, server composition, React UI, and the web chat adapter.
 - `packages/core` owns backend-neutral roles, transport contracts, and the pure
   chat-state reducer.
-- `packages/supabase` owns generated database types, row aliases, and
-  Supabase-specific auth contracts.
+- `packages/supabase` owns generated database types and row aliases used only
+  by infrastructure and operational code.
 - `supabase` owns schema evolution, authorization policies, command RPCs,
   Realtime configuration, and Edge Functions.
 
@@ -50,9 +51,17 @@ Routes and shared components import the owning feature entry points directly.
 Client-safe barrels never re-export poisoned server entries, and the app does
 not retain legacy re-export files for internal paths.
 
-Supabase access is wrapped by repositories in
-`apps/web/lib/services/supabase/`, with separate browser, server, and proxy
-factories. UI components do not construct low-level Supabase clients.
+Application-owned interfaces and DTOs live in `apps/web/lib/services/contracts.ts`.
+Routes, features, hooks, and components depend on these capabilities rather
+than SDK clients or generated database rows. Concrete adapters live only in
+`apps/web/lib/services/supabase/`; table names, RPCs, bearer-token transport,
+Realtime channels, provider payload mapping, and cookie mechanics stay there.
+
+`apps/web/lib/services/runtime/` contains the browser and server composition
+roots. These are the only application modules that select concrete adapters.
+They return narrow FISH-owned interfaces and accept structural overrides for
+tests, so use cases can be exercised with small fakes. Proxy session refresh is
+an infrastructure entry operation because it owns SDK cookie synchronization.
 
 Reusable primitives live in `apps/web/components/ui`; domain components live
 beside chat, profile, coach, and home features. Tailwind CSS v4 tokens and
@@ -114,6 +123,8 @@ types are committed in `packages/supabase/src/database.generated.ts`.
 
 ## Architectural guardrails
 
+- Dependency direction is application -> ports <- adapters; provider packages
+  and generated rows never appear in application contracts.
 - Simple authorized reads use repositories over RLS-protected Supabase access.
 - Sensitive writes use actions, Edge Functions, and database RPCs.
 - `packages/core` must not import React, Next.js, Zustand, or Supabase.
@@ -122,6 +133,9 @@ types are committed in `packages/supabase/src/database.generated.ts`.
 - User-facing learning features require manual coach validation before implementation.
 - Tailwind v4 remains CSS-first; keep `tailwindcss` and
   `@tailwindcss/postcss` on the same version.
+- `tests/service-boundary.test.ts` scans production `.ts` and `.tsx` files and
+  rejects provider imports, raw-client factories, SDK types, and client escape
+  hatches outside the adapter/composition allow-list.
 
 For detailed generated maps, see `../.planning/codebase/`. Those files should
 be regenerated after meaningful architecture changes.

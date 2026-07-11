@@ -24,7 +24,7 @@ export interface EditProfileState {
    sufficient (T-04-05). zod-validates, then splits the write: display name
    goes to profiles (existing own-profile RLS policy), the rest to
    client_profiles (0007's safe-column grant) -- routed through the
-   repository/ServiceResult layer, never a raw services.client.from(...)
+   repository/ServiceResult layer, never a raw database query
    call, so error handling stays consistent with the rest of the app. The
    coach-owned protected field is deliberately never named here -- the DB
    grant + trigger (0007) are the load-bearing freeze; the zod schema (which

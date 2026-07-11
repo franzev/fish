@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 /* D-06 default-deny: every route inside this (authenticated) group requires
    a session. getUser() is the only server-verified read (never
-   getSession() — see apps/web/lib/supabase/server.ts's hard rule comment).
+   untrusted client session data).
    The public allowlist (/login, /signup, /forgot-password, /reset-password,
    /check-inbox, /expired-link, /auth/confirm, /kit) is enforced
    structurally — those routes live OUTSIDE this group, so this guard never
