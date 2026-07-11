@@ -1,4 +1,4 @@
-import { Avatar } from "@/components/chat";
+import { Avatar } from "@/features/chat";
 import { IconChevronRight } from "@tabler/icons-react";
 
 interface CoachCardProps {

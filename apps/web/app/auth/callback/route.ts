@@ -1,4 +1,4 @@
-import { authRedirects } from "@/lib/auth/redirects";
+import { authRedirects } from "@/features/auth/redirects";
 import { createClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 

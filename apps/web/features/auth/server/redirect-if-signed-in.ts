@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import { authRedirects } from "@fish/supabase/auth";
+import { authRedirects } from "../redirects";
 import { redirect } from "next/navigation";
 
 /* Inverse of the (authenticated) layout guard: that layout redirects a

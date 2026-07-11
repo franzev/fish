@@ -1,5 +1,5 @@
 import { A11yPrefs, CoachCard, ConsentRow, SettingsRow } from "@/features/profile";
-import { Avatar } from "@/components/chat";
+import { Avatar } from "@/features/chat";
 import { LogoutButton } from "@/features/auth";
 import { Card } from "@/components/ui/card";
 import { authRedirects } from "@/features/auth/redirects";
