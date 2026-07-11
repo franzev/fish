@@ -39,7 +39,7 @@ Last activity: 2026-07-11 — v1.2 milestone completed and archived
 | Version | Name | Shipped | Archive |
 |---------|------|---------|---------|
 | v1.0 | Monochrome Foundations | 2026-07-04 | milestones/v1.0-ROADMAP.md · v1.0-REQUIREMENTS.md · v1.0-MILESTONE-AUDIT.md · v1.0-phases/ |
-| v1.1 | The Coaching Loop Foundation | 2026-07-06 | informal close during re-scope — requirements inside milestones/v1.2-REQUIREMENTS.md; phase dirs 04/07/08 still in .planning/phases/ |
+| v1.1 | The Coaching Loop Foundation | 2026-07-06 | informal close during re-scope — requirements inside milestones/v1.2-REQUIREMENTS.md; phases in milestones/v1.1-phases/ |
 | v1.2 | Cross-platform Chat State Foundation | 2026-07-11 | milestones/v1.2-ROADMAP.md · v1.2-REQUIREMENTS.md · v1.2-MILESTONE-AUDIT.md · v1.2-phases/ |
 
 ## Accumulated Context

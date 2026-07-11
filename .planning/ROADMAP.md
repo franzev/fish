@@ -31,7 +31,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) · 
 
 Removed 2026-07-06: the previously built learning-flow engines are no longer part of this milestone or the active product.
 
-Closed informally during the 2026-07-06 re-scope (no dedicated v1.1 archive or tag). Phase directories remain in `.planning/phases/`; full v1.1 phase details are in [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) and requirements in [milestones/v1.2-REQUIREMENTS.md](milestones/v1.2-REQUIREMENTS.md).
+Closed informally during the 2026-07-06 re-scope (no dedicated v1.1 archive or tag). Phase directories archived in `milestones/v1.1-phases/`; full v1.1 phase details are in [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) and requirements in [milestones/v1.2-REQUIREMENTS.md](milestones/v1.2-REQUIREMENTS.md).
 
 </details>
 
