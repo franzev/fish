@@ -231,6 +231,10 @@ describe("Supabase service registry", () => {
       profiles: [
         { id: "user-1", role: "client", display_name: "Franz Fish" },
         { id: "coach-1", role: "coach", display_name: "Coach Dana" },
+        [
+          { id: "user-1", display_name: "Franz Fish", username: "franz" },
+          { id: "coach-1", display_name: "Coach Dana", username: "coach_dana" },
+        ],
       ],
       conversations: [
         null,

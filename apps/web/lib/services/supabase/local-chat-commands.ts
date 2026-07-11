@@ -237,7 +237,9 @@ export async function sendMessageViaLocalRpc(
     p_conversation_id: values.conversationId,
     p_body: values.body,
     p_client_request_id: values.clientRequestId,
-    p_reply_to_message_id: values.replyToMessageId ?? null,
+    ...(values.replyToMessageId
+      ? { p_reply_to_message_id: values.replyToMessageId }
+      : {}),
     ...(values.attachmentIds?.length ? { p_attachment_ids: values.attachmentIds } : {}),
   });
 
@@ -296,8 +298,12 @@ export async function markReadStateViaLocalRpc(
 
   const { data, error } = await context.client.rpc("mark_chat_read_state", {
     p_conversation_id: values.conversationId,
-    p_last_delivered_message_id: values.lastDeliveredMessageId,
-    p_last_read_message_id: values.lastReadMessageId,
+    ...(values.lastDeliveredMessageId
+      ? { p_last_delivered_message_id: values.lastDeliveredMessageId }
+      : {}),
+    ...(values.lastReadMessageId
+      ? { p_last_read_message_id: values.lastReadMessageId }
+      : {}),
   });
 
   if (error || !data) {

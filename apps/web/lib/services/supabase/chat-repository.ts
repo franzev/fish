@@ -364,6 +364,79 @@ export class SupabaseChatRepository implements ChatRepository {
 
       const participantRole = participant.role === "client" ? "client" : "coach";
 
+      const { data: availableChannels, error: availableChannelsError } =
+        (await this.client
+          .from("channels")
+          .select("id, name, slug, conversation_id")
+          .order("name")) as {
+          data: Array<{
+            id: string;
+            name: string;
+            slug: string;
+            conversation_id: string;
+          }> | null;
+          error: SupabaseResponse<unknown>["error"];
+        };
+      if (availableChannelsError) {
+        return serviceFailure(
+          mapSupabaseError(availableChannelsError, {
+            code: "database",
+            fallbackMessage: "Could not load channels.",
+            operation: "chat.getAssignedConversation.searchChannels",
+            recoverable: true,
+          })
+        );
+      }
+      const { data: channelMemberRows, error: channelMemberError } =
+        isDemoCommunity
+          ? (await this.client
+              .from("channel_members")
+              .select("user_id")
+              .eq("channel_id", generalChannelId)) as {
+              data: Array<{ user_id: string }> | null;
+              error: SupabaseResponse<unknown>["error"];
+            }
+          : { data: [], error: null };
+      if (channelMemberError) {
+        return serviceFailure(
+          mapSupabaseError(channelMemberError, {
+            code: "database",
+            fallbackMessage: "Could not load channel members.",
+            operation: "chat.getAssignedConversation.channelMembers",
+            recoverable: true,
+          })
+        );
+      }
+      const searchMemberIds = isDemoCommunity
+        ? Array.from(new Set((channelMemberRows ?? []).map((row) => row.user_id)))
+        : Array.from(new Set([userId, participant.id]));
+      const { data: searchMemberProfiles, error: searchMemberError } =
+        searchMemberIds.length > 0
+          ? (await this.client
+              .from("profiles")
+              .select("id, display_name, username")
+              .in("id", searchMemberIds)
+              .order("display_name")) as {
+              data: Array<{
+                id: string;
+                display_name: string;
+                username: string;
+              }> | null;
+              error: SupabaseResponse<unknown>["error"];
+            }
+          : { data: [], error: null };
+
+      if (searchMemberError) {
+        return serviceFailure(
+          mapSupabaseError(searchMemberError, {
+            code: "database",
+            fallbackMessage: "Could not load channel members.",
+            operation: "chat.getAssignedConversation.searchMembers",
+            recoverable: true,
+          })
+        );
+      }
+
       return serviceSuccess({
         conversationId: conversation.id,
         kind: isDemoCommunity ? "community" : "direct",
@@ -396,6 +469,17 @@ export class SupabaseChatRepository implements ChatRepository {
           sessions: (presenceSessions ?? []).map(toClientPresenceSession),
           lastSeenAt: getLastSeenAt(presenceSessions ?? []),
         },
+        searchMembers: (searchMemberProfiles ?? []).map((member) => ({
+          id: member.id,
+          displayName: member.display_name,
+          username: member.username,
+        })),
+        searchChannels: (availableChannels ?? []).map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          slug: channel.slug,
+          conversationId: channel.conversation_id,
+        })),
         hasMoreOlder,
         oldestCursor,
       });
@@ -440,6 +524,8 @@ function toClientChatMessage(
     editedAt: row.edited_at,
     deletedAt: row.deleted_at,
     replyToMessageId: row.reply_to_message_id,
+    pinnedAt: row.pinned_at,
+    pinnedBy: row.pinned_by,
     reactions: Array.from(reactionCounts.entries()).map(([emoji, reaction]) => ({
       emoji,
       count: reaction.count,

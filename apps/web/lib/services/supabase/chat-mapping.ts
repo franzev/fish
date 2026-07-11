@@ -23,6 +23,8 @@ export interface MessageResponseRow {
   edited_at?: string | null;
   deleted_at?: string | null;
   reply_to_message_id?: string | null;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
   reactions?: Array<{
     emoji: string;
     count: number;
@@ -71,6 +73,8 @@ export function toClientChatMessage(
     editedAt: row.edited_at ?? null,
     deletedAt: row.deleted_at ?? null,
     replyToMessageId: row.reply_to_message_id ?? null,
+    pinnedAt: row.pinned_at ?? null,
+    pinnedBy: row.pinned_by ?? null,
     reactions: (row.reactions ?? []).map((reaction) => ({
       emoji: reaction.emoji,
       count: reaction.count,

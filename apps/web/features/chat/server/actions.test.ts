@@ -212,7 +212,6 @@ describe("sendMessageAction", () => {
       p_conversation_id: validInput.conversationId,
       p_body: "Hello coach",
       p_client_request_id: "request-1",
-      p_reply_to_message_id: null,
     });
   });
 
@@ -244,7 +243,6 @@ describe("sendMessageAction", () => {
       p_conversation_id: validInput.conversationId,
       p_body: "Hello coach",
       p_client_request_id: "request-1",
-      p_reply_to_message_id: null,
     });
   });
 

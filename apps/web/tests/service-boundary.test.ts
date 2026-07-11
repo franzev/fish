@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, extname, join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const productionRoots = ["app", "features", "components", "lib"];
@@ -25,7 +25,59 @@ function collectProductionFiles(dir: string): string[] {
   });
 }
 
+function resolveLocalImport(root: string, importer: string, specifier: string): string | null {
+  const base = specifier.startsWith("@/")
+    ? join(root, specifier.slice(2))
+    : specifier.startsWith(".")
+      ? resolve(dirname(importer), specifier)
+      : null;
+  if (!base) return null;
+
+  const candidates = extname(base)
+    ? [base]
+    : [`${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")];
+  return candidates.find((candidate) => {
+    try {
+      return statSync(candidate).isFile();
+    } catch {
+      return false;
+    }
+  }) ?? null;
+}
+
+function collectLocalImportGraph(root: string, entry: string): string[] {
+  const visited = new Set<string>();
+  const pending = [entry];
+  const importPattern = /(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/g;
+
+  while (pending.length > 0) {
+    const file = pending.pop()!;
+    if (visited.has(file)) continue;
+    visited.add(file);
+    const source = readFileSync(file, "utf-8");
+    for (const match of source.matchAll(importPattern)) {
+      const dependency = resolveLocalImport(root, file, match[1]!);
+      if (dependency && !visited.has(dependency)) pending.push(dependency);
+    }
+  }
+
+  return Array.from(visited);
+}
+
 describe("service abstraction boundary", () => {
+  it("keeps the browser service graph free of server-only modules", () => {
+    const root = process.cwd();
+    const graph = collectLocalImportGraph(
+      root,
+      join(root, "lib/services/runtime/browser.ts")
+    );
+    const offenders = graph
+      .filter((file) => /["']server-only["']|from\s+["']next\/headers["']/.test(readFileSync(file, "utf-8")))
+      .map((file) => relative(root, file));
+
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps provider APIs inside infrastructure and composition roots", () => {
     const root = process.cwd();
     const files = productionRoots.flatMap((dir) => collectProductionFiles(join(root, dir)));
