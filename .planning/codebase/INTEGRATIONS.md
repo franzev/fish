@@ -1,63 +1,102 @@
 ---
-title: External integrations
-mapped_at: 2026-07-11
-last_mapped_commit: 8db370815b16e6563aae8c1d7e1992697f5fd9d0
-focus: tech
+last_mapped: 2026-07-11
+last_mapped_commit: e25c937627b8f19251c791ed6878e6522f802959
+focus: integrations
 ---
 
 # External Integrations
 
-## Supabase Platform
+## Integration Summary
 
-- Supabase is the backend of record for authentication, PostgreSQL data, PostgREST, Realtime, storage, and Edge Functions. The intended boundary is documented in `README.md` and `AGENTS.md`.
-- Public web clients require `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; validation and client-safe build-time access are centralized in `apps/web/lib/services/env.ts`.
-- Browser and SSR client construction is separated in `apps/web/lib/services/supabase/browser.ts`, `apps/web/lib/services/supabase/server.ts`, and `apps/web/lib/services/supabase/proxy.ts`.
-- Next.js request proxying refreshes Supabase session claims for navigations via `apps/web/proxy.ts`; authenticated server reads verify the user rather than trusting cookie session data.
-- Database tables, grants, RLS policies, triggers, RPC functions, and Realtime publication configuration are versioned in `supabase/migrations/0001_profiles.sql` through `supabase/migrations/0016_channels.sql`.
-- Generated database typings live in `packages/supabase/src/database.generated.ts`; application-facing types are re-exported through `packages/supabase/src/database.types.ts` and `packages/supabase/src/index.ts`.
+| System | Purpose | Entry points | Configuration |
+| --- | --- | --- | --- |
+| Supabase Auth | Email/password, OAuth, verification, password recovery, sessions | `apps/web/lib/services/supabase/auth.ts` | `supabase/config.toml`, public Supabase environment variables |
+| Supabase PostgreSQL/PostgREST | Profiles, assignments, conversations, messages, reactions, presence, channels | `apps/web/lib/services/supabase/profile-repositories.ts`, `apps/web/lib/services/supabase/chat-repository.ts` | `supabase/migrations/` |
+| Supabase Realtime | Message/read/reaction database events plus typing and recording broadcasts | `apps/web/lib/services/supabase/chat-realtime.ts` | Realtime publication changes in migrations |
+| Supabase Edge Functions | Authenticated chat command writes and refresh operations | `supabase/functions/send-message/index.ts`, `supabase/functions/chat-command/index.ts` | Function JWT settings in `supabase/config.toml` |
+| Google OAuth | Federated sign-in through Supabase Auth | `apps/web/lib/services/supabase/auth.ts` | Google provider block in `supabase/config.toml` |
+| Supabase Auth email delivery | Confirmation and password-recovery links | `supabase/templates/confirmation.html`, `supabase/templates/recovery.html` | Auth email settings in `supabase/config.toml` |
 
-## Authentication and Email
+## Supabase Platform Boundary
 
-- Supabase Auth supports password signup/sign-in, required email confirmation, password recovery, sign-out, and session refresh. Application methods are implemented in `apps/web/lib/services/supabase/core.ts`.
-- OAuth/email callback routes are `apps/web/app/auth/callback/route.ts` and `apps/web/app/auth/confirm/route.ts`; reset and expired-link experiences live under `apps/web/app/reset-password` and `apps/web/app/expired-link`.
-- Local Auth configuration in `supabase/config.toml` sets an eight-character password minimum, requires confirmations, and sets email OTP expiry to 86,400 seconds.
-- Branded confirmation and recovery templates are stored at `supabase/templates/confirmation.html` and `supabase/templates/recovery.html`.
-- Hosted Supabase does not automatically consume those local template paths; the manual production upload/configuration process is recorded in `docs/deploy-checklist.md`.
-- Production may initially use Supabase's built-in mail sender. Custom SMTP is explicitly deferred; `docs/deploy-checklist.md` mentions Resend only as a future example, not a current dependency.
+- Supabase is the only configured backend provider and combines authentication, PostgreSQL persistence, Realtime, and Edge Functions.
+- Provider-neutral application ports are declared in `apps/web/lib/services/contracts.ts`; feature code consumes those contracts rather than SDK types.
+- Concrete provider adapters are kept in `apps/web/lib/services/supabase/` and composed by `apps/web/lib/services/supabase/core.ts` and runtime factories.
+- Browser clients use `createBrowserClient` from `@supabase/ssr` in `apps/web/lib/services/supabase/browser.ts`.
+- Server Components, Server Actions, and route handlers use request-cookie-aware clients from `apps/web/lib/services/supabase/server.ts`.
+- The Next.js proxy refreshes auth claims and mirrors cookie writes onto the response in `apps/web/lib/services/supabase/proxy.ts`.
+- Generated database types are isolated in the `@fish/supabase` package; they are consumed by adapters, not feature modules.
 
-## Google Services
+## Authentication
 
-- Google is configured as an external Supabase Auth provider in `supabase/config.toml`; local credentials come from `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`.
-- Login and signup trigger `signInWithOAuth({ provider: "google" })` through `apps/web/lib/services/supabase/core.ts`, with UI entry points in `apps/web/app/login/login-form.tsx` and `apps/web/app/signup/signup-form.tsx`.
-- The local Google OAuth callback is `http://127.0.0.1:54321/auth/v1/callback`; hosted callback and redirect allow-list setup is an explicit deploy step in `docs/deploy-checklist.md`.
-- Google Fonts are integrated at build time through `next/font/google` in `apps/web/app/layout.tsx`, which loads Lexend and Fraunces and self-hosts the optimized output through Next.js.
+- `SupabaseAuthServiceImpl` in `apps/web/lib/services/supabase/auth.ts` adapts provider operations to the application-owned `AuthService` interface.
+- Supported flows are current-user lookup, authorization-code exchange, OTP verification, auth-state subscription, claim refresh, email/password sign-in, sign-up, Google OAuth, resend confirmation, password reset, password update, and sign-out.
+- The app maps Supabase users and sessions into `AuthUser` and `AuthSession` instead of returning SDK objects.
+- Cookie transport is handled by `@supabase/ssr`; feature code does not manipulate provider cookies directly.
+- Email confirmation is required and the OTP lifetime is set to 86,400 seconds in `supabase/config.toml`.
+- Application redirect URLs include local browser callback routes and `fish://auth/callback` for a future/native deep-link consumer.
 
-## Edge Functions and PostgREST
+## Google OAuth
 
-- Server Actions in `apps/web/app/(authenticated)/chat/actions.ts` call `/functions/v1/send-message` and `/functions/v1/chat-command` with the caller's Supabase bearer token.
-- `supabase/functions/send-message/index.ts` verifies the caller through `/auth/v1/user`, then invokes the `send_chat_message` PostgreSQL RPC through `/rest/v1/rpc/send_chat_message`.
-- `supabase/functions/chat-command/index.ts` handles message edits/deletes, reactions, read state, and refresh operations through authenticated PostgREST RPC/table calls.
-- Both functions are configured with JWT verification in `supabase/config.toml` and use runtime-provided `SUPABASE_URL` plus `SUPABASE_ANON_KEY`/publishable-key variants.
-- Authorization is enforced again in PostgreSQL through RLS and RPC logic, so Edge Functions are an orchestration/validation boundary rather than a service-role bypass.
+- Google is the only enabled external identity provider in `supabase/config.toml`.
+- Supabase receives the Google client ID from `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and secret from `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`.
+- The local provider callback is `http://127.0.0.1:54321/auth/v1/callback`.
+- The web adapter initiates OAuth with `signInWithOAuth({ provider: "google" })` in `apps/web/lib/services/supabase/auth.ts`.
+- No direct Google API SDK is installed; Google is accessed only through Supabase Auth.
+
+## Database and Authorization
+
+- SQL migrations in `supabase/migrations/` are the source of truth for profiles, client profiles, coach-client assignments, conversations, messages, read state, reactions, presence sessions, and channels.
+- Row Level Security policies authorize direct reads and safe profile updates.
+- Sensitive chat writes execute through PostgreSQL RPCs including `send_chat_message`, `edit_chat_message`, `delete_chat_message`, `toggle_message_reaction`, and `mark_chat_read_state`.
+- Provider adapters map snake_case database rows into camelCase application models in `apps/web/lib/services/supabase/chat-mapping.ts` and repository implementations.
+- `scripts/verify-rls.ts` signs in as seeded roles and tests authorization boundaries and RPC behavior against a running Supabase instance.
+- `scripts/seed.ts` uses the service-role key for local fixture provisioning; this credential is not part of the browser configuration.
 
 ## Realtime
 
-- Chat clients subscribe to Supabase Realtime Postgres changes for `messages` and `message_reads` in `apps/web/app/(authenticated)/chat/realtime.ts`.
-- Typing and voice-recording indicators use Realtime broadcast channels; presence sessions combine client heartbeat behavior with the `presence_sessions` table.
-- The client explicitly restores the access token into the Realtime connection before subscribing, avoiding anonymous channel joins during session hydration.
-- `scripts/verify-chat-realtime.ts` provides an integration verifier for authenticated channels, broadcasts, presence, commands, and message delivery behavior.
+- PostgreSQL change subscriptions cover `messages`, `message_reads`, `message_reactions`, and `presence_sessions`.
+- Migration files `supabase/migrations/0011_messages_realtime.sql` and `supabase/migrations/0013_realtime_chat_features.sql` add the relevant tables to the `supabase_realtime` publication.
+- Ephemeral typing and voice-recording indicators use Supabase Realtime broadcast channels in `apps/web/lib/services/supabase/chat-realtime.ts`.
+- Presence heartbeat/session persistence is backed by the `presence_sessions` table rather than only ephemeral channel presence.
+- The application-facing realtime contracts return unsubscribe/controller handles and provider-neutral event payloads.
+- `scripts/verify-chat-realtime.ts` checks database events, broadcast behavior, authentication, and multi-client scenarios against the local backend.
 
-## Local and Deployment Operations
+## Edge Functions and HTTP
 
-- Local Supabase is operated through the Supabase CLI commands in root `package.json`: `supabase start` and `supabase db reset`.
-- `scripts/seed.ts` uses `SUPABASE_SERVICE_ROLE_KEY` for local-only administrative seeding; the key bypasses RLS and must never be browser-exposed or used for production seeding.
-- `scripts/verify-rls.ts` creates authenticated test sessions plus an admin client to exercise row-level security boundaries.
-- `PLAYWRIGHT_BASE_URL` optionally points browser tests at a non-default deployment; otherwise `apps/web/playwright.config.ts` uses `http://localhost:3001`.
-- Hosted-project linking, migrations, redirect URLs, environment variables, Auth parity checks, and email setup are manual checklist items in `docs/deploy-checklist.md`.
+- Both deployed functions require verified JWTs according to `[functions.send-message]` and `[functions.chat-command]` in `supabase/config.toml`.
+- The web adapter posts bearer-authenticated JSON to `/functions/v1/send-message` and `/functions/v1/chat-command` from `apps/web/lib/services/supabase/edge-function-transport.ts`.
+- `send-message` validates the caller through `/auth/v1/user`, then calls the `send_chat_message` PostgREST RPC.
+- `chat-command` validates the caller and dispatches edit, delete, reaction, read-state, and refresh operations through PostgREST/RPC requests.
+- Edge Functions read `SUPABASE_URL` and one of the available anon/publishable-key variables from the Deno environment.
+- For local development only, the command adapter can recognize an unavailable Edge Function and fall back to local server-side Supabase commands; this behavior is contained within the infrastructure adapter.
+- Edge Functions return calm application-facing error text while logging provider failures to the function console.
 
-## Integration Inventory and Gaps
+## Auth Email Templates
 
-- No separate REST/GraphQL application server, payment processor, analytics SDK, error-tracking service, object-storage vendor, AI provider, calendar, CRM, or messaging SaaS integration appears in the repository.
-- Supabase storage has a typed wrapper in `apps/web/lib/services/supabase/core.ts`, but no bucket creation migration or active upload/download feature is currently present.
-- Deployment hosting is not pinned to a provider in repository configuration; production web origin and hosted Supabase project details remain environment-specific.
-- Custom SMTP is not configured, and production Google OAuth credentials are intentionally external secrets rather than committed configuration.
+- Supabase Auth owns confirmation and recovery email delivery.
+- Custom HTML bodies are stored in `supabase/templates/confirmation.html` and `supabase/templates/recovery.html`.
+- The templates are registered through `content_path` entries in `supabase/config.toml`.
+- No separate transactional-email SDK or provider-specific API appears in application dependencies.
+
+## Environment and Secrets
+
+- `NEXT_PUBLIC_SUPABASE_URL` identifies the Supabase project endpoint and is intentionally exposed to browser bundles.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the browser-safe project key.
+- `SUPABASE_SERVICE_ROLE_KEY` is restricted to local seed and verification scripts and must never use a `NEXT_PUBLIC_` prefix.
+- Google OAuth credentials are read by the Supabase local runtime from `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`.
+- Public environment validation is centralized in `apps/web/lib/services/env.ts` and occurs lazily when a provider client is constructed.
+- Local commands load secrets from `apps/web/.env.local`; only blank placeholders are tracked in `apps/web/.env.example`.
+
+## Webhooks and Inbound Integrations
+
+- No application webhook endpoint is currently implemented.
+- OAuth and email verification callbacks are the only third-party-originated callback flows.
+- No Slack, calendar, CRM, payment, analytics, monitoring, object-storage, or AI-provider integration is present in the current dependency graph.
+
+## Operational Failure Behavior
+
+- Adapter errors are normalized into application-owned `ServiceResult`/`ServiceError` values by `apps/web/lib/services/supabase/shared.ts` and `apps/web/lib/services/errors.ts`.
+- A local Edge Function timeout is limited to 1.5 seconds in `apps/web/lib/services/supabase/edge-function-transport.ts` before local fallback policy is evaluated.
+- Realtime subscriptions expose teardown methods so features do not own Supabase channel cleanup details.
+- Seed, RLS, and Realtime verification scripts are explicit operational integration tests rather than production application modules.

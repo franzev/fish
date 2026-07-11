@@ -1,161 +1,245 @@
 ---
-mapped_at: 2026-07-11
-last_mapped_commit: 8db370815b16e6563aae8c1d7e1992697f5fd9d0
-focus: structure
+title: Codebase Structure
+last_mapped: 2026-07-11
+last_mapped_commit: e25c937627b8f19251c791ed6878e6522f802959
 ---
 
-# Repository Structure
+# Codebase Structure
 
-## Top-Level Layout
+## Repository Layout
 
 ```text
 fish/
 ├── apps/
-│   ├── web/                 # Active Next.js product application
-│   └── ios/                 # Empty/untracked placeholder directory; no source files
+│   └── web/                 Next.js App Router application
 ├── packages/
-│   ├── core/                # Backend-neutral product contracts and chat state machine
-│   └── supabase/            # Generated DB types and Supabase-specific contracts
-├── supabase/                # Local backend config, SQL migrations, Edge Functions, templates
-├── scripts/                 # Seed and backend verification utilities
-├── docs/                    # Architecture, UX guidance, plans, and change notes
-├── .planning/               # GSD project/milestone state and generated codebase map
-├── package.json             # Workspace orchestration scripts
-├── pnpm-workspace.yaml      # `apps/*` and `packages/*` workspaces
-└── AGENTS.md                # Repository-wide product and implementation constraints
+│   ├── core/                Framework/provider-neutral product logic
+│   └── supabase/            Generated database types and row aliases
+├── supabase/
+│   ├── functions/           Deno Edge Function entry points
+│   ├── migrations/          Ordered schema, policy, RPC, and seed migrations
+│   └── templates/           Supabase email templates
+├── scripts/                 Seed and backend verification tooling
+├── docs/                    Human-maintained architecture and product guidance
+├── .planning/               GSD plans, state, and generated codebase maps
+├── package.json             Workspace scripts and pinned tooling
+├── pnpm-workspace.yaml      Workspace package discovery
+└── pnpm-lock.yaml           pnpm dependency lockfile
 ```
 
-Generated/local directories such as `.next/`, `.pnpm-store/`, `apps/web/storybook-static/`, `supabase/.temp/`, and `supabase/.branches/` are not source architecture and should not be edited as product code.
+The repository is a pnpm workspace. Use root scripts such as `pnpm build`,
+`pnpm lint`, and `pnpm typecheck`; package-local scripts are coordinated through
+recursive pnpm execution.
 
-## `apps/web`: Application Surface
+## Web Application
 
-`apps/web/app/` follows Next.js App Router conventions:
+`apps/web` is the only production application and contains four major areas:
+the App Router entry tree, reusable components, feature modules, and shared web
+infrastructure.
 
-- `apps/web/app/layout.tsx` is the global layout; `apps/web/app/globals.css` owns Tailwind v4 theme tokens and global behavior.
-- `apps/web/app/page.tsx` is the root role-aware redirect.
-- `apps/web/app/(authenticated)/layout.tsx` protects every route in the authenticated group and renders the shared shell.
-- `apps/web/app/(authenticated)/home/page.tsx` is the client landing page.
-- `apps/web/app/(authenticated)/coach/page.tsx` and `apps/web/app/(authenticated)/coach/clients/[id]/page.tsx` are coach list/detail surfaces.
-- `apps/web/app/(authenticated)/profile/page.tsx` and `apps/web/app/(authenticated)/profile/edit/` cover client settings; mutations are colocated in `actions.ts`.
-- `apps/web/app/(authenticated)/channels/[id]/page.tsx` renders the current single community channel.
-- `apps/web/app/(authenticated)/chat/` is a supporting feature module, not its own route: it contains the chat client, actions, reducer adapters, realtime client, hooks, and tests used by the channel route.
-- `apps/web/app/auth/callback/route.ts` and `apps/web/app/auth/confirm/route.ts` are auth route handlers.
-- Public auth/status pages are under `apps/web/app/login/`, `signup/`, `forgot-password/`, `reset-password/`, `check-inbox/`, and `expired-link/`.
-- `apps/web/app/kit/page.tsx` is the component-kit preview surface.
+### App Router tree
 
-Route-specific components are colocated with pages when they are not shared, for example `apps/web/app/login/login-form.tsx` and `apps/web/app/(authenticated)/profile/edit/edit-profile-form.tsx`. Tests normally sit beside the implementation as `*.test.ts` or `*.test.tsx`.
-
-## `apps/web/components`: UI Organization
-
-`apps/web/components/ui/` contains reusable base primitives. Each primitive usually has a folder with implementation, `index.ts` barrel, unit test, and Storybook story; examples include `button/`, `input/`, `card/`, `progress/`, `alert/`, and `scroll-area/`.
-
-Domain components are grouped by product concern:
-
-- `apps/web/components/chat/` contains presentational chat building blocks such as composer, bubble, avatar, message body/meta/status, reactions, quoted message, typing indicator, search filters, and empty states.
-- `apps/web/components/shell/` owns the authenticated app shell, user menu, initial preference script, and preference hydration.
-- `apps/web/components/auth/` owns logout and identity-change cache safety.
-- `apps/web/components/profile/`, `coach/`, and `home/` contain feature-specific display components.
-- `apps/web/components/kit/` contains design-system demonstration controls.
-
-Focusable reusable controls are expected to use named exports and `forwardRef`; conditional class composition uses `cn()` from `apps/web/lib/utils.ts`.
-
-## `apps/web/lib`: Cross-Route Application Logic
-
-- `apps/web/lib/auth/` contains browser/server auth helpers, redirect constants, signed-in redirect logic, and logout behavior.
-- `apps/web/lib/services/` is the preferred provider boundary. `errors.ts` defines service results/errors, `container.ts` defines immutable service maps, `env.ts` validates public configuration, and `testing.ts` supplies test helpers.
-- `apps/web/lib/services/supabase/` contains the core repository implementations plus browser, server, proxy, and type modules.
-- `apps/web/lib/supabase/` contains legacy compatibility wrappers that delegate to the service layer.
-- `apps/web/lib/validation/` contains reusable Zod schemas such as profile validation.
-- `apps/web/lib/prefs/` contains preference application and time-format helpers.
-- `apps/web/lib/channels.ts` centralizes the seeded general channel ID, slug, name, and URL.
-- `apps/web/lib/utils.ts` contains generic web utilities, notably Tailwind class merging.
-
-Keep route orchestration in `app/`, reusable presentation in `components/`, and cross-route/provider logic in `lib/`. Do not move database authorization assumptions into UI modules.
-
-## Chat Feature Substructure
-
-The chat feature intentionally separates pure state, browser orchestration, and visual components:
+`apps/web/app` contains framework-recognized entries and route-private UI.
 
 ```text
-packages/core/src/chat-state/                   # Pure state machine
-apps/web/app/(authenticated)/chat/
-├── actions.ts                                  # Validated server command/read boundary
-├── chat-client.tsx                             # Client composition root
-├── chat-state.ts                               # View-specific derived helpers
-├── message-grouping.ts                         # Visual grouping logic
-├── presence.ts                                 # Presence calculations
-├── realtime.ts                                 # Supabase subscription primitives
-├── hooks/                                      # One concern per interaction hook
-└── store/                                      # Zustand adapter and selectors
-apps/web/components/chat/                       # Stateless/reusable rendering pieces
+apps/web/app/
+├── (authenticated)/
+│   ├── channels/[id]/page.tsx
+│   ├── coach/
+│   │   ├── page.tsx
+│   │   └── clients/[id]/page.tsx
+│   ├── home/page.tsx
+│   ├── profile/
+│   │   ├── page.tsx
+│   │   └── edit/
+│   │       ├── page.tsx
+│   │       └── _components/edit-profile-form/
+│   └── layout.tsx
+├── auth/
+│   ├── callback/route.ts
+│   └── confirm/route.ts
+├── check-inbox/
+├── expired-link/
+├── forgot-password/
+├── login/
+├── reset-password/
+├── signup/
+├── kit/page.tsx
+├── globals.css
+├── layout.tsx
+└── page.tsx
 ```
 
-The core state machine files are `packages/core/src/chat-state/types.ts`, `reducer.ts`, `selectors.ts`, and `index.ts`; fixture vectors live in `packages/core/src/chat-state/fixtures/chat-state-vectors.json`. The protocol is documented in `packages/core/docs/chat-state-protocol.md`.
+Route files should remain thin composition points. UI private to one route
+segment lives below `_components`; reusable domain UI is moved to a feature or
+shared component directory. Next.js special files (`page.tsx`, `layout.tsx`,
+`route.ts`, `loading.tsx`, `error.tsx`, and similar framework entries) are the
+only normal loose `.tsx` implementations in the route tree.
 
-Within the web feature, use hooks for lifecycle-heavy concerns (`use-chat-realtime.ts`, `use-chat-presence.ts`, `use-stick-to-bottom.ts`, `use-load-older-messages.ts`) and keep state transitions routed through `apps/web/app/(authenticated)/chat/store/chat-store.ts` rather than mutating parallel component state.
+`apps/web/proxy.ts` is the Next.js 16 proxy entry and owns session refresh.
+`apps/web/app/globals.css` is the Tailwind CSS v4 CSS-first theme source; the
+repository intentionally has no `tailwind.config.js`.
+
+### Feature modules
+
+Feature ownership is explicit under `apps/web/features`:
+
+```text
+apps/web/features/
+├── auth/
+│   ├── client/              Browser auth factories and hooks
+│   ├── components/          Auth-owned reusable components
+│   ├── server/              Auth page data and navigation use cases
+│   ├── contracts.ts         Auth presentation/page-data models
+│   ├── redirects.ts         Product redirect destinations
+│   └── index.ts             Client-safe public entry point
+├── chat/
+│   ├── components/          Chat UI organized by component folder
+│   ├── hooks/               Composer, messages, presence, reads, realtime
+│   ├── model/               State adapters, grouping, presence, realtime binding
+│   ├── server/              Actions, handlers, schemas, and page data
+│   ├── contracts.ts         Feature-specific UI contracts
+│   └── index.ts             Client-safe public entry point
+├── coach/
+│   ├── components/client-list/
+│   ├── server/page-data.ts
+│   └── index.ts
+└── profile/
+    ├── components/          Profile and preference UI
+    ├── server/              Server Actions and injected handlers
+    ├── validation.ts
+    └── index.ts
+```
+
+The feature root `index.ts` is the client-safe presentation surface. A feature
+with server APIs uses `server/index.ts` as a separate `server-only` entry. This
+split matters for the Next.js module graph: client barrels must not forward
+server implementations.
+
+### Shared components
+
+`apps/web/components` is organized by ownership:
+
+- `components/ui` contains design-system primitives: `Alert`, `Button`,
+  `Card`, `Input`, `Progress`, and `ScrollArea`.
+- `components/shell` contains the application shell, preference hydration,
+  initial preference script, and user menu.
+- `components/home` contains reusable home presentation.
+- `components/kit` contains design-kit demonstration controls.
+
+Every React component implementation uses a same-named kebab-case folder:
+
+```text
+components/ui/button/
+├── button.tsx
+├── button.test.tsx
+├── button.stories.tsx
+└── index.ts
+```
+
+The same rule applies under feature `components` and route `_components`.
+Tests, stories, and private helpers are colocated. Grouping directories may
+contain component folders, helpers, and barrels, but no loose component
+implementation files. Each component folder has an `index.ts` entry point.
+
+### Shared web services and utilities
+
+```text
+apps/web/lib/
+├── prefs/                   Browser preference constants and utilities
+├── services/
+│   ├── contracts.ts         Application-owned ports and camelCase DTOs
+│   ├── errors.ts            Provider-neutral result/error model
+│   ├── container.ts         Typed service container helper
+│   ├── env.ts               Public environment parsing
+│   ├── runtime/
+│   │   ├── browser.ts       Browser composition root
+│   │   └── server.ts        Server composition root
+│   └── supabase/            Concrete Supabase adapters only
+└── utils.ts                 Shared `cn()` class-name helper
+```
+
+Inside `lib/services/supabase`:
+
+- `auth.ts` maps Supabase Auth to `AuthService`.
+- `profile-repositories.ts` implements profile and assignment ports.
+- `chat-repository.ts` provides initial bounded chat reads.
+- `chat-command-service.ts` implements behavioral chat commands.
+- `chat-mapping.ts` translates database/provider shapes to application DTOs.
+- `chat-realtime.ts` owns Realtime channels and payload conversion.
+- `edge-function-transport.ts` owns Edge Function HTTP mechanics.
+- `local-chat-commands.ts` owns local RPC fallback implementation.
+- `browser.ts`, `server.ts`, and `proxy.ts` own runtime client/cookie setup.
+- `core.ts` and `runtime-services.ts` assemble cohesive adapter sets.
+- `types.ts` keeps provider-specific internal type aliases out of features.
+
+Only `lib/services/runtime` selects these concrete implementations. Public
+service exports come from `apps/web/lib/services/index.ts` and expose
+application contracts/errors, not provider adapters.
 
 ## Shared Packages
 
-`packages/core/` is a TypeScript-only package with no runtime framework dependency:
+### `packages/core`
 
-- `packages/core/src/index.ts` is the root barrel.
-- `packages/core/src/roles.ts` defines role contracts.
-- `packages/core/src/chat.ts` defines chat DTO/command contracts and limits.
-- `packages/core/src/chat-state/` implements the deterministic client state protocol.
-- `packages/core/package.json` exposes `.`, `./roles`, `./chat`, and `./chat-state` entry points.
+`packages/core/src` contains reusable product logic:
 
-`packages/supabase/` is also TypeScript-only and depends on `@fish/core`:
+- `roles.ts` defines recognized user roles and role guards.
+- `auth.ts` contains shared auth-facing contracts.
+- `chat.ts` contains shared chat transport/domain contracts.
+- `chat-state/` contains reducer types, transitions, selectors, and fixture
+  vectors for deterministic chat behavior.
+- `index.ts` is the package public entry point.
 
-- `packages/supabase/src/database.generated.ts` is generated from the migrated Supabase schema.
-- `packages/supabase/src/database.types.ts` provides re-exported database types and row aliases.
-- `packages/supabase/src/auth.ts` contains auth claim/redirect contracts.
-- `packages/supabase/src/index.ts` is the public barrel.
+`packages/core` must remain free of React, Next.js, Zustand, and Supabase
+imports. Tests and consumers can therefore run its state logic without a web
+or backend runtime.
 
-Shared packages typecheck through their `build`/`typecheck` scripts; they do not emit compiled artifacts in this repository.
+### `packages/supabase`
 
-## Supabase Backend Layout
+`packages/supabase/src/database.generated.ts` is generated from the database
+schema. `database.types.ts` and `auth.ts` add provider-facing type aliases, and
+`index.ts` is the package entry point. These types are consumed by web
+infrastructure, scripts, and backend-related tooling rather than application
+features.
 
-`supabase/config.toml` is the local project configuration for auth, external Google login, email templates, and Edge Function JWT verification.
+## Supabase Backend
 
-`supabase/migrations/` uses zero-padded chronological SQL filenames. The current sequence has intentional gaps and runs from `0001_profiles.sql` through `0016_channels.sql`. Later migrations amend earlier chat functions/policies, so behavior must be read cumulatively rather than inferred from `0010_chat.sql` alone.
+`supabase/migrations` is the source of truth for database changes. Migration
+filenames use ordered timestamp prefixes. They define tables, policies,
+triggers, RPCs, indexes, Realtime publication configuration, and seed-related
+backend changes.
 
-`supabase/functions/send-message/index.ts` is the dedicated send command. `supabase/functions/chat-command/index.ts` handles edit, delete, reaction, read-state, and refresh commands. Both are Deno entry points and talk to Supabase Auth/PostgREST using the caller's bearer token.
+`supabase/functions/send-message/index.ts` and
+`supabase/functions/chat-command/index.ts` are Deno Edge Function entries.
+They are command boundaries, not a general-purpose API tier.
 
-`supabase/templates/confirmation.html` and `supabase/templates/recovery.html` contain branded auth email content. `supabase/snippets/` currently has no tracked product source.
+`scripts/seed.ts`, `scripts/verify-rls.ts`, and
+`scripts/verify-chat-realtime.ts` exercise backend setup and policy/realtime
+behavior against a configured Supabase environment.
 
-## Scripts and Verification
+## Tests and Generated Artifacts
 
-- `scripts/seed.ts` provisions local demo accounts, assignments, conversations, messages, reads, and related data.
-- `scripts/seed-reaction-randomizer.ts` supports deterministic seeded reaction variation.
-- `scripts/verify-rls.ts` exercises database authorization boundaries.
-- `scripts/verify-chat-realtime.ts` verifies realtime behavior against a running local Supabase stack.
+Web unit and architecture tests are under `apps/web/tests` and colocated beside
+feature/component sources. Browser flows live in `apps/web/e2e`. Storybook
+configuration is in `apps/web/.storybook`; component stories remain colocated
+with their implementations.
 
-Web unit/component tests are colocated or live in `apps/web/tests/` for architectural/design invariants. Browser journeys live in `apps/web/e2e/`. Vitest configuration is in `apps/web/vitest.config.ts`; Playwright configuration is in `apps/web/playwright.config.ts`; Storybook configuration is under `apps/web/.storybook/`.
+Build outputs such as `apps/web/.next`, `apps/web/storybook-static`, and
+`apps/web/test-results` are generated artifacts, not architectural source.
+Dependency directories under `node_modules` are likewise excluded from source
+mapping and boundary scans.
 
-## Documentation and Planning
+## Naming and Export Conventions
 
-- `AGENTS.md` is the controlling engineering/product instruction set.
-- `docs/ui-ux-agent-guidelines.md` must be read before user-facing UI work.
-- `docs/ARCHITECTURE.md` is a human-authored architecture narrative but currently contains stale pre-chat statements; use the implementation and this generated map when they conflict.
-- `docs/superpowers/specs/` and `docs/superpowers/plans/` preserve feature design/implementation plans.
-- `.planning/PROJECT.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, and `.planning/milestones/` store GSD lifecycle state.
-- `.planning/codebase/` contains generated repository mapping documents and should describe the current commit named in frontmatter.
-
-## Naming and Placement Rules
-
-- React components and exported component symbols use PascalCase, while filenames and directories use kebab-case.
-- Hooks use `use-*.ts`; server mutations use colocated `actions.ts`; Next route handlers use `route.ts`; App Router pages/layouts use `page.tsx` and `layout.tsx`.
-- Tests use `*.test.ts(x)`, Storybook files use `*.stories.tsx`, and E2E tests use `*.spec.ts`.
-- Component folders expose public imports through `index.ts` barrels where the component family is intended for reuse.
-- Database changes belong in a new ordered file under `supabase/migrations/`, followed by regeneration of `packages/supabase/src/database.generated.ts`.
-- Product contracts shared across runtimes belong in `packages/core`; Supabase-specific contracts belong in `packages/supabase`; web-only DTOs and provider interfaces belong in `apps/web/lib/services/`.
-
-## Where to Add New Work
-
-- Add a new authenticated screen under `apps/web/app/(authenticated)/` so it inherits the session boundary.
-- Add reusable visual primitives under `apps/web/components/ui/`; extend existing primitives before creating new controls.
-- Add feature presentation under `apps/web/components/<feature>/` and feature orchestration near its route in `apps/web/app/`.
-- Add provider-neutral domain transitions/types to `packages/core` only when more than the web runtime should share them.
-- Add simple authorized reads as repository methods in `apps/web/lib/services/supabase/core.ts` and corresponding interfaces in `apps/web/lib/services/supabase/types.ts`.
-- Add sensitive writes through an Edge Function/Postgres RPC, with schema/RLS changes in `supabase/migrations/`.
-- Add architectural invariant tests under `apps/web/tests/` when a boundary should be mechanically enforced across many source files.
+- Component folders and implementation filenames use matching kebab-case.
+- Components use named exports; focusable controls use `forwardRef`.
+- Full-surface barrels use `export * from "..."`; explicit named re-exports
+  are reserved for intentional API subsets, renames, collisions, compatibility,
+  or client/server/provider boundaries.
+- Server-only entry points include `import "server-only"`; browser-only helper
+  modules include `import "client-only"` where appropriate.
+- Route-private directories start with `_`; route groups use parentheses.
+- Supabase migration files retain timestamp-prefixed snake_case names, while
+  application-facing TypeScript DTOs use camelCase.
+- Tests use `.test.ts` or `.test.tsx`; stories use `.stories.tsx` and are
+  colocated with their component.

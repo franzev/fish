@@ -1,63 +1,89 @@
 ---
-title: Technology stack
-mapped_at: 2026-07-11
-last_mapped_commit: 8db370815b16e6563aae8c1d7e1992697f5fd9d0
-focus: tech
+last_mapped: 2026-07-11
+last_mapped_commit: e25c937627b8f19251c791ed6878e6522f802959
+focus: technology
 ---
 
 # Technology Stack
 
-## Repository and Runtime
+## Repository Shape
 
-- The project is a private TypeScript monorepo managed by pnpm workspaces; the root pins `pnpm@11.7.0` in `package.json` and includes `apps/*` plus `packages/*` through `pnpm-workspace.yaml`.
-- The principal runtime is the Next.js application in `apps/web`; shared packages are source-level TypeScript libraries and do not emit JavaScript.
-- Root scripts in `package.json` delegate development, build, lint, and typechecking to workspace packages. The web development server listens on port 3001.
-- Node is used for local administration scripts with native type stripping (`node --experimental-strip-types`) in `scripts/seed.ts`, `scripts/verify-rls.ts`, and `scripts/verify-chat-realtime.ts`.
-- Supabase Edge Functions use the Deno runtime and the built-in Fetch/Response APIs; their entry points are `supabase/functions/send-message/index.ts` and `supabase/functions/chat-command/index.ts`.
+- FISH is a private TypeScript monorepo managed by pnpm workspaces; the root manifest pins `pnpm@11.7.0` in `package.json`.
+- Workspace discovery is limited to `apps/*` and `packages/*` by `pnpm-workspace.yaml`.
+- The browser application is the `@fish/web` package in `apps/web`.
+- Framework-neutral product contracts live in `@fish/core` under `packages/core/src`.
+- Supabase-generated database types and provider-facing shared types live in `@fish/supabase` under `packages/supabase/src`.
+- Database migrations, email templates, and Edge Functions live in `supabase/`.
+- Operational seed and verification programs live in `scripts/` and run directly through Node's TypeScript stripping support.
+
+## Languages and Runtimes
+
+- TypeScript 5.7.3 is the primary implementation language across the web app, shared packages, scripts, and tests.
+- React components use TSX and React 19.2.7.
+- The web package targets ES2017 and uses DOM plus `esnext` libraries in `apps/web/tsconfig.json`.
+- Shared packages target ES2022 ESM with bundler resolution and `verbatimModuleSyntax` in `packages/core/tsconfig.json` and `packages/supabase/tsconfig.json`.
+- Supabase Edge Functions use TypeScript on the Deno runtime and start through `Deno.serve`, as shown in `supabase/functions/send-message/index.ts` and `supabase/functions/chat-command/index.ts`.
+- PostgreSQL SQL defines the persistent model, RLS policies, triggers, RPCs, and Realtime publication setup in `supabase/migrations/`.
+- CSS is maintained directly in `apps/web/app/globals.css`; Tailwind configuration is CSS-first rather than JavaScript-based.
 
 ## Application Framework
 
-- `apps/web/package.json` pins Next.js 16.2.9, React 19.2.7, and React DOM 19.2.7.
-- The web app uses the Next.js App Router under `apps/web/app`, including Server Components, Client Components, Server Actions, Route Handlers, and the Next.js 16 `proxy.ts` request interception convention.
-- `apps/web/next.config.mjs` intentionally contains no custom framework configuration.
-- TypeScript 5.7.3 is used throughout. `apps/web/tsconfig.json` enables strict mode, bundler module resolution, no emit, isolated modules, and the `@/*` alias rooted at `apps/web`.
-- `packages/core/tsconfig.json` and `packages/supabase/tsconfig.json` target ES2022 and expose TypeScript source directly through package exports.
+- Next.js 16.2.9 provides the web runtime and App Router. Route segments and special files are under `apps/web/app`.
+- React 19.2.7 and React DOM 19.2.7 render Server and Client Components.
+- Next.js runtime boundaries are explicit: provider factories import `server-only` or `client-only` in `apps/web/lib/services/supabase/server.ts` and `apps/web/lib/services/supabase/browser.ts`.
+- `apps/web/proxy.ts` and `apps/web/lib/services/supabase/proxy.ts` implement request-time session refresh using the Next.js proxy API.
+- `apps/web/next.config.mjs` currently uses the default Next.js configuration with no custom plugins or runtime overrides.
+- The web development server runs on port 3001 via the `dev` script in `apps/web/package.json`.
 
-## UI and Styling
+## UI and State
 
-- Tailwind CSS 4.3.x is configured through the CSS-first `@theme` block in `apps/web/app/globals.css`; PostCSS loads only `@tailwindcss/postcss` from `apps/web/postcss.config.mjs`.
-- There is no `tailwind.config.js`. Design colors, spacing, typography, radii, control sizes, and motion values are semantic CSS variables in `apps/web/app/globals.css`.
-- `next/font/google` loads Lexend and Fraunces in `apps/web/app/layout.tsx` and exposes them as CSS variables.
-- Reusable primitives are implemented in `apps/web/components/ui`; Base UI 1.6 provides accessible low-level behavior and `@tabler/icons-react` supplies icons.
-- Component variant and class composition use `class-variance-authority`, `clsx`, `tailwind-merge`, and the `cn()` helper in `apps/web/lib/utils.ts`.
-- Color parsing and contrast assertions use `colorjs.io`; emoji picker data comes from `unicode-emoji-json`.
-
-## State, Validation, and Domain Packages
-
-- Zustand 5 is the client-side state container for chat state in `apps/web/app/(authenticated)/chat/store/chat-store.ts`.
-- Zod 4 validates form and Server Action input, notably chat commands in `apps/web/app/(authenticated)/chat/actions.ts` and profile data in `apps/web/lib/validation/profile.ts`.
-- `packages/core` owns framework-independent product contracts: roles, chat limits/types, and the chat-state reducer/selectors under `packages/core/src`.
-- `packages/supabase` owns generated and curated database/auth contracts in `packages/supabase/src`, and depends only on `@fish/core`.
-- Supabase access is wrapped behind typed service interfaces in `apps/web/lib/services`; compatibility adapters remain in `apps/web/lib/supabase` for existing call sites.
+- Tailwind CSS 4.3.1 and `@tailwindcss/postcss` 4.3.1 provide utility generation through `apps/web/postcss.config.mjs` and `@theme` tokens in `apps/web/app/globals.css`.
+- Shared primitive dependencies include Base UI 1.6, Class Variance Authority, clsx, and tailwind-merge.
+- Icons come from `@tabler/icons-react`; emoji metadata comes from `unicode-emoji-json`.
+- Zustand 5.0.14 owns client-side chat state in `apps/web/features/chat/model/store`.
+- Zod 4.4.3 validates application input, including feature validation modules such as `apps/web/features/profile/validation.ts`.
+- Lexend and Fraunces are loaded through Next font support in `apps/web/app/layout.tsx` and exposed as CSS font variables.
 
 ## Backend and Persistence
 
-- Supabase is the sole backend platform. PostgreSQL schema, triggers, RLS policies, RPC functions, and Realtime publication changes are versioned in `supabase/migrations`.
-- Browser/server connectivity uses `@supabase/supabase-js` 2.110.0; cookie-aware SSR clients use `@supabase/ssr` 0.12.0.
-- Simple authorized reads go directly through the typed Supabase client and RLS. Sensitive command-style chat writes go through Deno Edge Functions and database RPCs.
-- Realtime Postgres changes and broadcast channels drive chat messages, read state, typing, recording, and presence handling in `apps/web/app/(authenticated)/chat/realtime.ts`.
-- Storage is exposed through the service abstraction in `apps/web/lib/services/supabase/core.ts`, although no concrete application bucket workflow is currently evident.
+- Supabase is the sole backend platform: PostgreSQL, Auth, Realtime, and Edge Functions are configured under `supabase/`.
+- The browser/server SDK is `@supabase/supabase-js` 2.110.0, with cookie-aware Next.js integration through `@supabase/ssr` 0.12.0.
+- Application code depends on provider-neutral service interfaces in `apps/web/lib/services/contracts.ts`.
+- Concrete Supabase adapters and composition factories are isolated in `apps/web/lib/services/supabase/`.
+- The immutable dependency container is implemented in `apps/web/lib/services/container.ts`; runtime composition entry points are in `apps/web/lib/services/runtime/`.
+- Database schema types originate in `packages/supabase/src/database.generated.ts` and are refined/exported through `packages/supabase/src/database.types.ts`.
 
-## Quality Toolchain
+## Testing and Quality Tooling
 
-- ESLint 9 with `eslint-config-next` 16.2.9 supplies Core Web Vitals and TypeScript rules via `apps/web/eslint.config.mjs`.
-- Vitest 4.1.9, jsdom 29.1.1, React Testing Library, and jest-dom cover unit/component tests; configuration lives in `apps/web/vitest.config.ts` and `apps/web/vitest.setup.ts`.
-- Playwright 1.61.1 runs Chrome end-to-end tests from `apps/web/e2e`; `apps/web/playwright.config.ts` starts or reuses the web server and retains traces on failure.
-- Storybook 10.4.6 with the Next.js Vite integration documents components; stories sit beside components as `*.stories.tsx`.
-- The required pre-commit build contract is `pnpm build`; root scripts also expose `pnpm lint` and `pnpm typecheck`.
+- Vitest 4.1.9 with jsdom, Testing Library, and jest-dom covers unit, component, architecture-boundary, and utility tests.
+- Vitest configuration and test setup are in `apps/web/vitest.config.ts` and `apps/web/vitest.setup.ts`.
+- Playwright 1.61.1 runs Chrome end-to-end scenarios from `apps/web/e2e`; configuration is in `apps/web/playwright.config.ts`.
+- Storybook 10.4.6 with `@storybook/nextjs-vite` and addon-docs provides isolated component development.
+- ESLint 9.39.4 with `eslint-config-next` 16.2.9 enforces Next.js and TypeScript rules through `apps/web/eslint.config.mjs`.
+- TypeScript strict mode and no-emit checking are enabled across all workspace packages.
+- Specialized architecture tests in `apps/web/tests/service-boundary.test.ts`, `apps/web/tests/module-boundaries.test.ts`, and `apps/web/tests/nextjs-boundaries.test.ts` enforce dependency direction and module layout.
+- Operational backend verification is implemented by `scripts/verify-rls.ts` and `scripts/verify-chat-realtime.ts`.
 
-## Important Constraints
+## Commands and Build
 
-- Keep `tailwindcss` and `@tailwindcss/postcss` on the same version and preserve CSS-first configuration.
-- Use pnpm and the existing workspace boundary; do not introduce npm lockfiles or a separate Express API by default.
-- Treat `packages/core` as product-domain code and `packages/supabase` as backend contracts, keeping framework-specific service implementations in `apps/web`.
+- Root scripts in `package.json` fan out with pnpm recursive/filter commands.
+- `pnpm dev` runs the web development server; `pnpm build` runs all workspace build scripts.
+- `pnpm lint` and `pnpm typecheck` run every package's available checks.
+- `pnpm storybook` and `pnpm build-storybook` target the web package's component catalog.
+- `pnpm supabase:start` and `pnpm db:reset` operate the local Supabase stack.
+- `pnpm seed`, `pnpm verify:rls`, and `pnpm verify:chat-realtime` load `apps/web/.env.local` and exercise the local backend.
+
+## Configuration and Environment
+
+- Public application configuration is restricted to `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, documented in `apps/web/.env.example`.
+- `SUPABASE_SERVICE_ROLE_KEY` is server-only and used by the seed/verification workflow; the example file explicitly forbids a public prefix.
+- Environment parsing and URL validation are centralized in `apps/web/lib/services/env.ts`.
+- Local Supabase behavior, auth redirects, Google OAuth, email templates, and JWT verification are configured in `supabase/config.toml`.
+- Auth callback origins currently target the local web server at port 3001 and a `fish://auth/callback` deep link.
+- There is no `tailwind.config.js`; design tokens are defined in the Tailwind v4 `@theme` block.
+
+## Not Present
+
+- No standalone Express or Node API service exists.
+- No second database, cache, message broker, or search service is configured.
+- No deployment platform SDK, analytics SDK, error-reporting SDK, or payment SDK appears in current workspace dependencies.

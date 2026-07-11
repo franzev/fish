@@ -1,125 +1,160 @@
 ---
-last_mapped_commit: 8db370815b16e6563aae8c1d7e1992697f5fd9d0
+title: Codebase Concerns
+mapped_at: 2026-07-11
+last_mapped_commit: e25c937627b8f19251c791ed6878e6522f802959
+scope: current working tree
 ---
 
-# Codebase Concerns
+# Codebase concerns
 
-**Analysis date:** 2026-07-11
+This document records current technical and operational concerns. “Verified” means the
+condition is directly present in source or configuration; “Risk” means no failure has been
+demonstrated, but the current design leaves a credible failure mode.
 
-## Immediate Failures
+## Priority 1 — address before production scale
 
-### The committed unit-test suite is not green
+### Unbounded full-conversation recovery path
 
-- `pnpm typecheck` passes, but `pnpm --filter @fish/web test run` currently reports 1 failure out of 504 tests.
-- `apps/web/tests/chat-state-fixtures.test.ts` unconditionally reads `.planning/phases/09-cross-platform-chat-state/09-NATIVE-CHAT-STATE-NOTES.md`, which was removed by the recent planning-archive cleanup (`8db37081`). The test now fails with `ENOENT` on a clean checkout.
-- This couples an executable product test to a planning artifact whose lifecycle differs from source code. Restore a durable checked-in protocol document or change the test to validate only canonical files under `packages/core/docs/`.
+- **Status:** Verified performance issue.
+- `supabase/functions/chat-command/index.ts` implements `refresh-conversation` with an
+  ascending `messages` query that has no `limit`, cursor, or upper bound.
+- `apps/web/lib/services/supabase/local-chat-commands.ts` implements the local fallback with
+  the same unbounded query. `apps/web/features/chat/hooks/use-chat-messages.ts` explicitly
+  describes this action as the deep fallback when bounded backfill is unavailable.
+- The Edge Function then calls `enrichMessage` once per returned message; each call performs
+  at least one additional reaction request. Recovery cost therefore grows with complete
+  conversation history and can produce a large fan-out of PostgREST requests.
+- The normal reconnect path uses bounded backfill/newest-window operations, which mitigates
+  frequency but does not make this fallback safe. Retire the full refresh or give it the same
+  bounded reset contract as `loadNewestMessages`.
 
-## Security and Privacy
+### Hosted deployment remains a manual, unverified procedure
 
-### Community access is intentionally global, not membership-scoped
+- **Status:** Verified operational gap.
+- `docs/deploy-checklist.md` still contains an entirely unchecked first-deploy sequence for
+  linking Supabase, pushing migrations, deploying both Edge Functions, configuring redirects,
+  copying email templates, matching auth settings, and running hosted verification.
+- The repository contains no `.github/workflows/` files and therefore provides no committed CI
+  gate or automated deployment record. Local scripts are useful evidence only when a developer
+  runs them.
+- Until a staging/production run is recorded elsewhere, the repository cannot establish that
+  hosted RLS, Realtime publication, JWT verification, OAuth, or email expiry matches
+  `supabase/config.toml`.
 
-- `supabase/migrations/0014_demo_community_conversation.sql` changes `private.is_conversation_member` so every authenticated profile is a member of one fixed conversation. `supabase/migrations/0016_channels.sql` likewise lets every authenticated user read every channel row.
-- This is acceptable only as a demo bridge. Any authenticated account can read and post in `general`; there is no channel membership, cohort, coach assignment, block, ban, or moderation boundary.
-- The broad rule also makes future channel additions dangerous: adding rows without replacing the policy can expose channel metadata to the entire authenticated population.
-- Replace the fixed-room exception with an explicit membership model before real client data or additional channels use this surface, and extend `scripts/verify-rls.ts` with cross-channel and removed-member denial cases.
+## Priority 2 — reliability, security, and maintainability risks
 
-### Chat commands have no application-level abuse controls
+### Database contract drift is not automatically detected
 
-- `supabase/functions/send-message/index.ts` and `supabase/functions/chat-command/index.ts` authenticate callers and delegate authorization to database RPCs, but contain no per-user rate limit, payload-rate budget, spam control, or moderation hook.
-- The database functions in `supabase/migrations/0013_realtime_chat_features.sql` enforce ownership and data integrity, not request frequency. An authenticated account can generate sustained messages, reactions, read writes, and realtime fan-out.
-- Add rate limiting at the Edge Function boundary before public onboarding; the community room makes this higher priority than in a two-person coaching chat.
+- **Status:** Verified tooling gap; drift is a risk.
+- Generated schema types are committed in `packages/supabase/src/database.generated.ts`, while
+  schema evolution lives in `supabase/migrations/`.
+- Root `package.json` has no schema-generation or schema-diff command, and the build/typecheck
+  scripts do not regenerate the file. A migration can therefore merge without proving the
+  generated TypeScript contract was refreshed.
+- Add a deterministic generation command and a clean-diff CI check after applying migrations.
 
-### Edge Function request validation is weaker than the server-action validation
+### Edge command handlers have no direct automated test suite
 
-- The Zod schemas in `apps/web/app/(authenticated)/chat/actions.ts` validate UUIDs and strict object shapes, but the public Edge Functions accept partial TypeScript casts at runtime.
-- `supabase/functions/chat-command/index.ts` interpolates `conversationId` directly into PostgREST URLs for `refresh-conversation`, and does not validate it as a UUID. RLS limits direct data exposure, but malformed filters can still alter query behavior and create avoidable load/error paths.
-- Share runtime schemas or repeat strict validation in the Edge Functions; URL-encode all filter values and reject unknown actions/fields early.
+- **Status:** Verified coverage gap.
+- `supabase/functions/send-message/index.ts` and
+  `supabase/functions/chat-command/index.ts` contain request validation, authentication calls,
+  RPC dispatch, error mapping, and response enrichment, but there are no colocated Edge
+  Function test files.
+- Web tests exercise injected services and local Supabase-shaped stubs, while
+  `scripts/verify-chat-realtime.ts` exercises a running stack. Neither provides small,
+  deterministic branch coverage for malformed requests, unavailable auth, unexpected
+  PostgREST payloads, and every command variant in the deployed Deno handlers.
 
-### Auth verification adds a network dependency and logs upstream bodies
+### Command behavior is duplicated across hosted and local transports
 
-- Both files under `supabase/functions/` call `/auth/v1/user` on every command even though `supabase/config.toml` also enables `verify_jwt = true`.
-- This adds latency and makes Auth availability part of every chat write. Failure logging includes the upstream response body; today it should not include secrets, but logging raw authentication responses is an unnecessary privacy risk.
-- Standardize one documented identity-validation path and log only status plus a correlation identifier.
+- **Status:** Verified duplication; behavioral drift is a risk.
+- Hosted behavior is implemented in `supabase/functions/send-message/index.ts` and
+  `supabase/functions/chat-command/index.ts`; local fallback behavior is separately implemented
+  in `apps/web/lib/services/supabase/local-chat-commands.ts` and selected by
+  `apps/web/lib/services/supabase/chat-command-service.ts`.
+- Validation, error-to-notice mapping, reaction enrichment, row mapping, pagination, and query
+  choices exist in more than one form. For example, the Edge refresh enriches reactions per
+  message, while the local path batches reaction lookups.
+- This split is intentional for local Edge Function availability, but changes must be tested
+  against both paths until shared command contracts or parity tests remove the drift risk.
 
-## Performance and Scaling
+### No application-level abuse controls on chat commands
 
-### The deep refresh path is unbounded and performs N+1 reaction reads
+- **Status:** Verified absence; abuse/exhaustion is a risk.
+- Both Edge Functions require JWTs via `supabase/config.toml` and re-check the caller before
+  invoking RLS-protected RPCs, which is the correct authorization baseline.
+- Neither `supabase/functions/send-message/index.ts` nor
+  `supabase/functions/chat-command/index.ts` implements per-user rate limiting, request budgets,
+  or replay throttling. `clientRequestId` gives sends idempotency, but edit/reaction/read and
+  refresh commands have no equivalent request budget.
+- Before broad access, define expected message/reaction rates and enforce limits at a layer that
+  cannot be bypassed by calling PostgREST/RPC endpoints directly.
 
-- `supabase/functions/chat-command/index.ts` implements `refresh-conversation` by fetching the complete ordered message history, then calling `enrichMessage` for every message. Each enrichment paginates reactions with a separate HTTP request.
-- `apps/web/app/(authenticated)/chat/actions.ts` has a local fallback with the same unbounded conversation read, although its reaction aggregation is batched more efficiently.
-- Normal reconnects now use bounded gap backfill in `apps/web/app/(authenticated)/chat/hooks/use-chat-messages.ts`, but `refreshConversation` remains a deep fallback in `apps/web/app/(authenticated)/chat/hooks/use-chat-realtime.ts`. A degraded client can therefore trigger work proportional to all history and message count.
-- Remove or cap the full-history fallback, use the existing keyset/newest-window actions, and aggregate reactions in one bounded query or database view/RPC.
+### Realtime lifecycle code is a fragile integration hotspot
 
-### Community read-state and profile visibility grow with every participant
+- **Status:** Risk supported by complexity, not a currently reproduced defect.
+- `apps/web/lib/services/supabase/chat-realtime.ts` owns deferred auth, multiple channel types,
+  connection callbacks, browser activity listeners, presence writes, a 25-second heartbeat,
+  and teardown in one large adapter.
+- `apps/web/features/chat/hooks/use-chat-realtime.ts` separately owns reconnect coalescing,
+  conversation ownership, typing/recording timeouts, and cleanup. The large regression suite in
+  `apps/web/features/chat/components/chat-client/chat-client.test.tsx` documents prior race-prone
+  cases, but no direct adapter test drives actual channel status transitions and deferred
+  unsubscribe timing.
+- Keep lifecycle changes narrow and verify rapid mount/unmount, auth restoration, conversation
+  switching, offline recovery, and timer/listener cleanup against a running local Supabase stack.
 
-- Initial hydration in `apps/web/lib/services/supabase/core.ts` reads all `message_reads` rows for the conversation, while `apps/web/app/(authenticated)/chat/chat-client.tsx` derives a member count from read states and loaded senders because no membership table exists.
-- In a long-lived shared room this payload and derived count grow without a meaningful membership lifecycle; people who once read a message remain part of the inferred count.
-- A real membership table should become the source of truth, with a bounded/count query rather than transferring all read-state rows just to infer room size.
+## Priority 3 — test and developer-experience debt
 
-### Presence creates continuous writes without cleanup infrastructure
+### End-to-end browser coverage is narrow and environment-coupled
 
-- `apps/web/app/(authenticated)/chat/realtime.ts` maintains durable `presence_sessions` heartbeats; `supabase/migrations/0013_realtime_chat_features.sql` stores each session row and has no retention or cleanup job.
-- Ended and abandoned rows will accumulate. The `(user_id, last_heartbeat_at desc)` index helps reads but does not bound storage.
-- Add scheduled expiry/deletion and document the retention window before usage grows.
+- **Status:** Verified coverage limitation.
+- `apps/web/e2e/` contains only `chat-send.spec.ts` and `login-spacing.spec.ts`.
+- `apps/web/package.json` seeds Supabase before Playwright, and
+  `apps/web/playwright.config.ts` targets installed Chrome with a local dev server. This is useful
+  for the seeded happy path but does not cover signup confirmation, recovery, profile editing,
+  coach/client authorization, reactions, read state, pagination, or reconnect behavior.
+- Add a small staging-safe smoke suite before relying on browser automation as a release gate;
+  keep destructive seed/reset commands explicitly isolated from hosted production.
 
-## Product and Data-Model Debt
+### Large chat files concentrate change risk
 
-### Routing ignores the requested channel ID
+- **Status:** Verified maintainability concern.
+- `apps/web/lib/services/supabase/local-chat-commands.ts`,
+  `apps/web/lib/services/supabase/chat-realtime.ts`,
+  `apps/web/lib/services/supabase/chat-repository.ts`, and
+  `apps/web/features/chat/components/chat-message-list/chat-message-list.tsx` each combine several
+  responsibilities and are among the largest production modules.
+- `apps/web/features/chat/components/chat-client/chat-client.test.tsx` is substantially larger
+  than the implementation and covers many interaction regimes in a single suite. The coverage is
+  valuable, but fixture setup and failures are expensive to navigate.
+- Split by behavior only when making related changes; preserve public ports and avoid a purely
+  cosmetic file shuffle.
 
-- `apps/web/app/(authenticated)/channels/[id]/page.tsx` accepts `[id]` but does not read route params; every URL resolves through `getChatPageData()` to the single hard-coded demo room.
-- `apps/web/lib/services/supabase/core.ts` also hard-codes the demo conversation and channel identifiers instead of querying `public.channels`.
-- Invalid or future channel URLs can silently display `general`, and the `channels` table is currently a naming layer that the application does not consume. Resolve the slug/ID from the route and enforce membership before adding a second channel.
+## Security posture already present
 
-### Generated database types are already behind the migrations
+- RLS and database RPC authorization are exercised by `scripts/verify-rls.ts`; Realtime behavior
+  has a dedicated `scripts/verify-chat-realtime.ts` harness.
+- Service-role credentials are confined to local administrative scripts and are not required by
+  the production web runtime. `docs/deploy-checklist.md` explicitly warns against exposing or
+  using the dev seed in production.
+- Auth confirmation redirects in `apps/web/app/auth/confirm/route.ts` accept only same-origin
+  relative paths and reject protocol-relative and backslash variants.
+- Chat message links in
+  `apps/web/features/chat/components/message-body/message-body.tsx` allow only HTTP, HTTPS, and
+  mailto schemes and render content as React nodes rather than raw HTML.
+- Provider SDK use and component/module layout are guarded by static suites under
+  `apps/web/tests/`; these guardrails reduce architectural regression but do not replace runtime
+  integration verification.
 
-- `supabase/migrations/0016_channels.sql` creates `public.channels`, but `packages/supabase/src/database.generated.ts` contains no `channels` table entry.
-- The current hard-coded service path hides this drift because it never queries the table. A future typed channel query will fail or encourage unsafe casts.
-- Regenerate types after migrations and add a CI drift check against a reset local schema.
+## Operational watch list
 
-### Several visible controls are deliberate stubs
-
-- `apps/web/components/chat/composer/add-menu.tsx` renders focusable Upload File, Audio Recording, and Create Poll menu items without handlers. `apps/web/components/chat/search-filters/filters-dialog.tsx` presents inert filter fields and closes on Apply without applying filters.
-- `apps/web/app/(authenticated)/chat/chat-client.tsx` searches only the currently loaded message window, so results are incomplete when older messages exist.
-- These placeholders can feel broken and add choices contrary to the product's calm-focus rule. Hide unimplemented actions or label them honestly; implement server-backed search before implying whole-conversation results.
-
-### The demo community surface conflicts with the repository's own product gate
-
-- `AGENTS.md` says not to build the community feed before foundations are complete and coach validation is established, while `supabase/migrations/0014_demo_community_conversation.sql` and `/channels/[id]` expose a shared community room.
-- The design spec calls this a demo bridge, but the production code path prefers it over the assigned 1-on-1 conversation in `apps/web/lib/services/supabase/core.ts`.
-- Confirm and record the coach-validation/product decision before treating the community route as a release feature; otherwise keep it seed/dev-only and restore 1-on-1 assignment as the primary path.
-
-## Fragile Areas
-
-### Chat state reconciliation has many synchronized representations
-
-- Message state crosses SQL rows, generated Supabase types, service-layer DTOs, Edge Function response maps, `@fish/core` reducer state, Zustand hydration keys, and realtime payload conversion.
-- `apps/web/app/(authenticated)/chat/store/chat-store.ts`, `packages/core/src/chat-state/reducer.ts`, and `packages/core/src/chat-state/selectors.ts` rely on explicit field-by-field mapping/equality. Adding a message field requires updating every path or stale data can win reconciliation.
-- Preserve fixture-driven coverage, but keep its canonical documentation under stable source paths so archive operations cannot break the suite again.
-
-### Error classification depends on message text
-
-- `supabase/functions/send-message/index.ts`, `supabase/functions/chat-command/index.ts`, and `apps/web/app/(authenticated)/chat/actions.ts` map database failures by checking substrings such as `"too long"`, `"conflicts"`, and `"not found"`.
-- Renaming a PostgreSQL exception silently changes the HTTP status and user notice. Prefer stable SQLSTATE/detail codes or structured RPC results, and test the mapping contract.
-
-### Fixed UUIDs and migration ordering are operational assumptions
-
-- The community conversation/channel IDs are duplicated across `supabase/migrations/0014_demo_community_conversation.sql`, `supabase/migrations/0016_channels.sql`, `apps/web/lib/services/supabase/core.ts`, and seed scripts.
-- `0016_channels.sql` may skip channel creation on an empty database until `scripts/seed.ts` creates profiles/conversation data. Production must not run that dev seed, so deploy behavior depends on separate manual setup.
-- Replace duplicated constants with database lookups and provide an explicit production-safe provisioning path.
-
-## Test and Operational Gaps
-
-- There is no `.github/workflows/` directory, so build, lint, unit tests, generated-type drift, migration reset, RLS verification, and Playwright checks are not enforced by repository CI.
-- The Vitest suite heavily covers web/state behavior, but there are no colocated tests for `supabase/functions/send-message/index.ts` or `supabase/functions/chat-command/index.ts`.
-- `scripts/verify-rls.ts` and `scripts/verify-chat-realtime.ts` are valuable manual checks but require local Supabase and are not part of the default `pnpm build` or test command.
-- `docs/deploy-checklist.md` is stale: it describes pushing only early migrations and does not cover the current chat, realtime, demo community, reactions, and channels migrations or Edge Function deployment/secrets.
-- Add a clean-checkout CI pipeline and update the deployment runbook before the first hosted release.
-
-## Prioritized Remediation
-
-1. Fix the clean-checkout test failure caused by the archived planning document.
-2. Decide whether the community bridge is releaseable; if yes, add membership, moderation, and rate limits before real client use.
-3. Make channel routing/data lookup real and regenerate database types.
-4. Bound or remove full-conversation refresh and N+1 reaction enrichment.
-5. Add CI for build/lint/tests, schema reset/RLS checks, type generation drift, and Edge Function tests.
-6. Remove inert UI actions and refresh the hosted deployment checklist.
+- Tailwind v4 package parity remains sensitive: keep `tailwindcss` and
+  `@tailwindcss/postcss` aligned in `apps/web/package.json`.
+- `scripts/seed.ts`, `scripts/verify-rls.ts`, and `scripts/verify-chat-realtime.ts` accept a
+  service-role key and can mutate data. Use disposable local or staging projects only.
+- The 24-hour auth OTP value in `supabase/config.toml`, both email templates, and hosted Auth
+  configuration must change together; `docs/deploy-checklist.md` notes the hosted security-advisor
+  trade-off.
+- The committed quality commands are separate (`build`, `lint`, `typecheck`, Vitest, RLS, and
+  Realtime verification). A release is not proven by `pnpm build` alone.

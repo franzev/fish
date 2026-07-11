@@ -1,127 +1,208 @@
 ---
-mapped_at: 2026-07-11
-last_mapped_commit: 8db370815b16e6563aae8c1d7e1992697f5fd9d0
-focus: architecture
+title: Codebase Architecture
+last_mapped: 2026-07-11
+last_mapped_commit: e25c937627b8f19251c791ed6878e6522f802959
 ---
 
-# Architecture
+# Codebase Architecture
 
-## System Overview
+## System Shape
 
-FISH is a pnpm monorepo whose production surface is a Next.js App Router web application backed directly by Supabase. The architecture deliberately has no standalone Node/Express API: server-rendered reads use narrow Supabase repositories, while sensitive chat and profile writes cross command boundaries implemented as Next.js Server Actions, Supabase Edge Functions, and Postgres RPCs.
+FISH is a pnpm monorepo centered on one Next.js App Router application in
+`apps/web`. Supabase is the only backend platform: it supplies identity,
+Postgres persistence, row-level authorization, Realtime, storage, RPCs, and
+Edge Functions. There is no standalone Node or Express service.
 
-The active dependency direction is `apps/web` -> `packages/supabase` -> `packages/core`, with `apps/web` also importing `packages/core` directly. Shared product state and role contracts remain backend-neutral in `packages/core/src/`; generated database shapes and auth redirects live in `packages/supabase/src/`.
+The top-level dependency shape is:
 
-## Runtime Boundaries
+```text
+Next.js routes and React UI
+  -> feature use cases and presentation models
+     -> FISH-owned service ports and DTOs
+        <- runtime composition roots
+           <- Supabase adapters
+              -> Supabase Auth / Postgres / Realtime / Edge Functions
 
-- The browser renders React client components and owns interaction state under `apps/web/components/` and `apps/web/app/(authenticated)/chat/`.
-- Next.js Server Components load verified user/profile data through `apps/web/lib/auth/server.ts` and service registries created by `apps/web/lib/services/supabase/server.ts`.
-- Next.js Server Actions validate profile/chat inputs with Zod before invoking Supabase or Edge Functions; examples are `apps/web/app/(authenticated)/profile/edit/actions.ts` and `apps/web/app/(authenticated)/chat/actions.ts`.
-- `apps/web/proxy.ts` only refreshes Supabase session cookies. Authorization is not delegated to the proxy.
-- Supabase Auth owns identity, Postgres owns product data, RLS is the authoritative read boundary, and RPCs/Edge Functions enforce command invariants.
-- Realtime table changes and broadcast/presence channels are consumed by `apps/web/app/(authenticated)/chat/realtime.ts` and orchestrated by hooks in `apps/web/app/(authenticated)/chat/hooks/`.
+apps/web -> packages/core
+apps/web infrastructure -> packages/supabase -> packages/core
+```
 
-## Web Layering
+`packages/core` is the provider- and framework-neutral center. It contains role
+contracts, auth contracts, chat transport types, and the pure chat-state
+reducer. `packages/supabase` contains generated database types and row aliases;
+application and feature modules do not consume those persistence shapes.
 
-### Routing and server composition
+## Architectural Layers
 
-`apps/web/app/layout.tsx` is the global shell and font/style entry point. `apps/web/app/page.tsx` computes the role-aware landing redirect. Public auth routes live directly under `apps/web/app/`, while protected routes live in `apps/web/app/(authenticated)/`.
+### Framework and entry layer
 
-`apps/web/app/(authenticated)/layout.tsx` is the default-deny session boundary. It calls `getAuthenticatedShellProfile()`, redirects signed-out users, resets chat state on identity changes through `apps/web/components/auth/chat-identity-guard.tsx`, and supplies role/preferences to `apps/web/components/shell/app-shell.tsx`. Leaf pages retain responsibility for role-specific guards because the shared layout cannot reliably infer the active leaf.
+Next.js entry points live in `apps/web/app` and `apps/web/proxy.ts`.
 
-Server-facing page DTO assembly is concentrated in `apps/web/lib/auth/server.ts`. That module resolves the current verified user, narrows database strings into domain types, composes repository calls, and returns view-specific data such as `AuthenticatedShellProfile`, `CoachHomeData`, `ProfileData`, and `ChatPageData`.
+- `apps/web/app/layout.tsx` establishes the root document, fonts, and global
+  presentation shell.
+- `apps/web/app/(authenticated)/layout.tsx` is the shared authenticated route
+  boundary and loads the signed-in shell profile.
+- `apps/web/app/**/page.tsx` files are route composition points; they call
+  feature page-data functions and render feature or route-local components.
+- `apps/web/app/auth/callback/route.ts` and
+  `apps/web/app/auth/confirm/route.ts` are authentication HTTP boundaries.
+- `apps/web/proxy.ts` performs Supabase session-cookie refresh for matched
+  requests; it deliberately does not make authorization decisions.
+- Server Actions in `apps/web/features/chat/server/actions.ts` and
+  `apps/web/features/profile/server/actions.ts` are framework RPC boundaries
+  for browser-initiated commands.
 
-### Service and repository boundary
+### Feature/application layer
 
-`apps/web/lib/services/supabase/core.ts` wraps one typed Supabase client in implementations for auth, profiles, client profiles, coach-client assignments, chat, storage, and realtime. Every method returns the shared `ServiceResult<T>` contract from `apps/web/lib/services/errors.ts`, normalizing provider errors before they reach UI code.
+Feature modules are organized under `apps/web/features/{auth,chat,coach,profile}`.
+Each feature owns its presentation contracts, server page-data/use cases,
+components, validation, and hooks as applicable.
 
-Runtime-specific factories are separated:
+Server-only public surfaces are separated into `server/index.ts` files carrying
+the `server-only` marker. Client-safe feature barrels are exposed from each
+feature's root `index.ts`; client modules use `client-only` where a runtime
+constraint is required. This prevents accidental server implementation imports
+from Client Components.
 
-- `apps/web/lib/services/supabase/browser.ts` creates browser clients and service registries.
-- `apps/web/lib/services/supabase/server.ts` creates request-scoped clients from Next.js cookies.
-- `apps/web/lib/services/supabase/proxy.ts` implements the cookie refresh sequence for the Next.js proxy.
-- `apps/web/lib/services/container.ts` provides a small immutable dependency-injection container.
-- `apps/web/lib/supabase/` is a compatibility adapter layer; new UI code should prefer `apps/web/lib/services/`.
+Application behavior accepts narrow ports where practical. Examples include:
 
-The boundary is mechanically protected by `apps/web/tests/service-boundary.test.ts`, which prevents `.tsx` files from constructing or importing low-level Supabase dependencies directly.
+- `getCurrentProfile` in `apps/web/features/auth/server/page-data.ts`, which
+  receives `AuthService` and `ProfileRepository` capabilities.
+- `createChatActionHandlers` in
+  `apps/web/features/chat/server/action-handlers.ts`, which receives a
+  `ChatCommandService`.
+- `createProfileActionHandlers` in
+  `apps/web/features/profile/server/action-handlers.ts`, which receives the
+  profile-related repositories it needs.
 
-### Presentation layer
+Framework wrappers obtain production services and immediately delegate to
+these injected handlers. Tests provide focused fakes rather than provider SDK
+clients.
 
-Reusable design primitives live in `apps/web/components/ui/`; product-specific presentational components live beside their domains in `apps/web/components/chat/`, `apps/web/components/profile/`, `apps/web/components/coach/`, and `apps/web/components/home/`. The authenticated chrome is isolated in `apps/web/components/shell/`.
+### Ports and application DTOs
 
-Tailwind v4 tokens and global accessibility behavior are defined in `apps/web/app/globals.css`. Components compose classes with `apps/web/lib/utils.ts` and follow the calm, single-primary-action rules described in `docs/ui-ux-agent-guidelines.md`.
+Provider-neutral service contracts live in
+`apps/web/lib/services/contracts.ts`. The primary boundaries are:
 
-## Chat Architecture
+- `AuthService` for identity and session operations.
+- `ProfileRepository`, `ClientProfileRepository`, and
+  `CoachClientRepository` for profile and assignment reads/writes.
+- `ChatRepository` for initial authorized chat data.
+- `ChatCommandService` for message, reaction, read-state, refresh, pagination,
+  and recovery commands.
+- `ChatRealtimeService` for messages, reactions, reads, typing, recording, and
+  participant presence subscriptions.
+- `AppServices` and `ServerServices` as composition aggregates.
 
-The current channel route is `apps/web/app/(authenticated)/channels/[id]/page.tsx`. It accepts a stable dynamic URL, but the milestone currently resolves all requests through the single seeded `general` channel constants in `apps/web/lib/channels.ts` and the demo-community conversation path in `apps/web/lib/services/supabase/core.ts`.
+The ports return domain-shaped camelCase DTOs such as `Profile`,
+`ClientProfile`, and `ClientChatMessage`. Generic infrastructure failures are
+normalized through `ServiceResult` and `ServiceError` in
+`apps/web/lib/services/errors.ts`. Transport concepts such as native
+`Response`, bearer tokens, Edge Function names, generated rows, and Supabase
+SDK types are absent from the public contracts.
 
-Initial chat data is server rendered: the route calls `getChatPageData()`, which uses the chat repository to load a bounded newest window, sender profiles, read states, reactions, and conversation metadata. The client receives that DTO in `apps/web/app/(authenticated)/chat/chat-client.tsx`.
+### Composition and adapters
 
-Client chat state uses a two-layer design:
+Runtime selection happens in `apps/web/lib/services/runtime`:
 
-1. `packages/core/src/chat-state/` owns pure types, reducer transitions, selectors, deterministic merging, optimistic reconciliation, and pagination state.
-2. `apps/web/app/(authenticated)/chat/store/chat-store.ts` adapts that reducer into a Zustand singleton and adds hydration-key/cache-owner lifecycle behavior. UI access goes through selectors in `apps/web/app/(authenticated)/chat/store/chat-selectors.ts`.
+- `runtime/server.ts` builds request-scoped server adapters and adds the lazy
+  `ChatCommandService` implementation.
+- `runtime/browser.ts` memoizes browser auth/database services and supplies the
+  browser Realtime adapter.
 
-Feature hooks split interaction concerns: composer/send logic, message-window loading, read receipts, realtime subscriptions, presence, pagination observation, and scroll anchoring each live in their own file under `apps/web/app/(authenticated)/chat/hooks/`. `ChatClient` composes them and renders the chat component kit.
+Concrete provider implementations live in
+`apps/web/lib/services/supabase`. The directory owns client creation, cookie
+mechanics, row mapping, table/RPC names, Edge Function invocation and fallback,
+Realtime channel lifecycle, and provider error translation. It implements the
+inward-facing contracts rather than exposing raw clients to features.
 
-### Chat write path
+`apps/web/lib/services/supabase/core.ts` assembles auth and database adapter
+implementations around an injected Supabase client. Server and browser client
+factories in `server.ts` and `browser.ts` supply the runtime-specific client.
+`chat-command-service.ts` encapsulates command transport and recovery reads;
+`chat-realtime.ts` converts provider events to application-owned events.
 
-Sending follows this path:
+The intended dependency direction is application -> ports <- infrastructure.
+Composition roots may import both sides to connect them, but adapters do not
+import feature implementations and features do not import provider adapters.
 
-1. `use-chat-composer.ts` creates an optimistic local message with a client request ID.
-2. `sendMessageAction()` in `apps/web/app/(authenticated)/chat/actions.ts` validates the untrusted payload and obtains the current access token.
-3. The action calls `supabase/functions/send-message/index.ts` with the bearer token.
-4. The Edge Function verifies the caller and invokes the `send_chat_message` Postgres RPC.
-5. SQL in `supabase/migrations/0010_chat.sql`, extended by `0013_realtime_chat_features.sql` and `0014_demo_community_conversation.sql`, enforces membership, idempotency, reply integrity, and persistence.
-6. The returned persisted row reconciles with the optimistic message; Supabase Realtime later merges the same row idempotently.
+## Core Chat State
 
-Editing, deleting, reactions, and read-state updates follow the analogous `chat-command` path through `supabase/functions/chat-command/index.ts`. Bounded refresh/backfill reads also cross server actions so reconnect recovery and pagination remain validated and controlled.
+`packages/core/src/chat-state` is a pure state machine. Its reducer, events,
+selectors, deterministic merge behavior, optimistic reconciliation, and
+pagination logic do not import React, Next.js, Zustand, or Supabase.
 
-### Realtime and recovery
+`apps/web/features/chat/model/store` adapts that state machine to Zustand and
+React. The store is a UI cache and interaction model, not an authorization
+source. Server data and Postgres/RLS remain authoritative.
 
-`apps/web/app/(authenticated)/chat/realtime.ts` creates subscriptions for messages, read states, reactions, typing broadcast, voice-recording broadcast, and presence. `use-chat-realtime.ts` maps remote events into reducer events, tracks connection status, and coalesces reconnect recovery so simultaneous channel resubscriptions trigger one bounded gap backfill.
+The chat read/render flow is:
 
-Realtime events are hints, not the sole source of truth. Initial SSR data, explicit targeted refreshes, keyset pagination, and reconnect backfills all re-read RLS-protected Postgres state. This lets the client recover from missed or duplicated events while keeping merge behavior deterministic.
+```text
+authenticated channel page
+  -> feature page-data
+  -> AuthService + ProfileRepository + ChatRepository
+  -> bounded application DTO
+  -> ChatClient hydration
+  -> Zustand adapter over core reducer
+  -> chat components
+```
 
-## Backend and Data Authority
+The message command flow is:
 
-Schema evolution is ordered in `supabase/migrations/`. Core tables are `profiles`, `client_profiles`, `coach_clients`, `channels`, `conversations`, `messages`, `message_reads`, `message_reactions`, and `presence_sessions`. Generated TypeScript database types are committed in `packages/supabase/src/database.generated.ts` and re-exported through `packages/supabase/src/database.types.ts`.
+```text
+composer -> optimistic reducer event -> Next.js Server Action
+  -> injected ChatCommandService -> Supabase command adapter
+  -> Edge Function (or local RPC fallback where defined)
+  -> persisted domain result -> reconciliation + Realtime merge
+```
 
-Authorization is database-first:
+Realtime is recovery-aware rather than treated as the sole source of truth.
+Reconnect callbacks trigger bounded refresh/backfill operations, allowing the
+client to recover from missed, duplicated, or reordered provider events.
 
-- RLS policies control authenticated reads and permitted direct state operations.
-- Helper functions in the private schema, beginning in `supabase/migrations/0004_rls_helpers.sql`, centralize relationship checks without recursive policy reads.
-- Triggers prevent role/level self-escalation and validate relational integrity.
-- Public RPCs in chat migrations perform command-style writes and expose execution only to authenticated callers.
-- Edge Functions preserve the caller's bearer token when calling PostgREST, so RPC checks and RLS evaluate as that user rather than a service-role bypass.
+## Authentication and Authorization
 
-`supabase/config.toml` enables JWT verification for both `send-message` and `chat-command`, configures email verification/templates, and declares Google auth redirect settings.
+Supabase Auth owns user identity and session issuance. The web proxy refreshes
+cookies so Server Components and route handlers can read current session state.
+Feature auth use cases translate authentication outcomes into product redirect
+paths and role-aware page data.
 
-## Shared Package Contracts
+Postgres RLS is the authoritative authorization boundary for direct reads.
+Sensitive or command-style writes use Server Actions, Supabase Edge Functions,
+and database RPCs. Edge Function calls retain the caller's access context so
+database policy and RPC checks run as the user, not as an implicit trusted API.
 
-`packages/core/src/roles.ts` defines roles and narrowing helpers. `packages/core/src/chat.ts` defines transport-level chat contracts and limits. `packages/core/src/chat-state/` defines the richer client state machine, kept pure so reducer behavior can be exhaustively unit tested without React, Next.js, or Supabase.
+## Persistence and Backend
 
-`packages/supabase/src/auth.ts` contains auth redirect contracts. `packages/supabase/src/database.types.ts` layers useful row aliases over the generated schema. This package may depend on `@fish/core`; the reverse dependency is intentionally forbidden.
+Schema evolution is ordered in `supabase/migrations`. Main persisted concepts
+include profiles, coach/client assignments, channels, conversations, messages,
+read states, reactions, and presence sessions. Generated database types are
+committed at `packages/supabase/src/database.generated.ts`.
 
-## Primary Entry Points
+Edge Function entry points are:
 
-- Web development and build: root scripts in `package.json`, targeting `apps/web/package.json`.
-- Global application root: `apps/web/app/layout.tsx`.
-- Role-aware root redirect: `apps/web/app/page.tsx`.
-- Protected application shell: `apps/web/app/(authenticated)/layout.tsx`.
-- Community chat page: `apps/web/app/(authenticated)/channels/[id]/page.tsx`.
-- Session refresh: `apps/web/proxy.ts`.
-- Service registry: `apps/web/lib/services/supabase/core.ts`.
-- Send command: `supabase/functions/send-message/index.ts`.
-- Other chat commands: `supabase/functions/chat-command/index.ts`.
-- Database evolution: `supabase/migrations/0001_profiles.sql` through `supabase/migrations/0016_channels.sql`.
+- `supabase/functions/send-message/index.ts` for message creation.
+- `supabase/functions/chat-command/index.ts` for other sensitive chat commands.
 
-## Architectural Guardrails
+Operational verification and seeding live under `scripts`; these modules may
+use provider types because they are infrastructure tooling, not application
+code.
 
-- Simple authorized reads may use Supabase directly through repository abstractions; sensitive writes belong in commands/RPCs.
-- UI components should not import low-level Supabase modules.
-- `packages/core` stays free of web and backend implementation imports.
-- The authenticated route group is default-deny, while role-specific pages enforce their own wrong-role redirects.
-- The client store is a cache and interaction state machine, never an authorization source.
-- Chat windows and reaction fetches are bounded/paginated; realtime gaps are repaired from persisted state.
-- New client-facing learning flows must be manually coach-validated before implementation, per `AGENTS.md`.
+## Boundary Enforcement
+
+Architecture is executable through tests rather than documentation alone.
+
+- `apps/web/tests/service-boundary.test.ts` rejects Supabase imports, raw
+  client factories, provider types, and adapter escape hatches outside the
+  infrastructure/composition allow-list. It also checks adapter direction,
+  transport-neutral contracts, and injected use-case independence.
+- `apps/web/tests/module-boundaries.test.ts` checks route/feature placement,
+  client/server import direction, reusable-code independence from `app`, pure
+  core chat state, and component colocation rules.
+- `apps/web/tests/server-only-poisoning.test.ts` and related marker fixtures
+  verify runtime poisoning boundaries.
+
+These checks preserve the distinction between hiding a provider import and
+actually inverting the dependency: application modules depend on FISH-owned
+interfaces, while provider details remain replaceable adapter concerns.

@@ -1,41 +1,48 @@
 ---
-last_mapped_commit: 8db370815b16e6563aae8c1d7e1992697f5fd9d0
+last_mapped_commit: e25c937627b8f19251c791ed6878e6522f802959
 ---
 
 # Testing Patterns
 
-**Analysis Date:** 2026-07-11
+**Analysis date:** 2026-07-11
 
-## Test Framework
+## Test Stack
 
-**Unit and component runner:**
-- Vitest 4.1.9 with configuration in `apps/web/vitest.config.ts`.
-- Tests run in jsdom with global APIs enabled and `apps/web/vitest.setup.ts` loaded for every file.
-- React tests use Testing Library 16.3.2 and `@testing-library/jest-dom` matchers.
-- Vitest's built-in `expect` is used for value, mock, DOM, and promise assertions.
+- Vitest 4.1.9 is the unit/component runner, configured by `apps/web/vitest.config.ts`.
+- Vitest runs in jsdom, exposes globals, and loads `apps/web/vitest.setup.ts` for every test file.
+- React component tests use Testing Library 16.3.2 and `@testing-library/jest-dom` assertions.
+- Playwright 1.61.1 runs browser tests from `apps/web/e2e/` using `apps/web/playwright.config.ts`.
+- Storybook 10.4.6 provides colocated visual states; the current scripts do not treat stories as an automated interaction-test suite.
+- The current tree contains 64 Vitest files, 2 Playwright specifications, and 19 Storybook stories. No snapshot directory is present.
 
-**Browser runner:**
-- Playwright 1.61.1 runs Chrome flows from `apps/web/e2e/` using `apps/web/playwright.config.ts`.
-- E2E execution is intentionally serial (`fullyParallel: false`), uses a 45-second test timeout, retains traces on failure, and starts the app on port 3001.
-- Storybook 10.4.6 provides colocated visual/component scenarios; stories are examples and manual review surfaces, not an automated browser-test suite in the current scripts.
+## Commands and Gates
 
-**Run commands:**
 ```bash
-pnpm --filter @fish/web test                         # Run Vitest (watch mode when interactive)
-pnpm --filter @fish/web test -- --run                # Run Vitest once
-pnpm --filter @fish/web test -- --run lib/utils.test.ts
-pnpm --filter @fish/web e2e                          # Seed local Supabase, then run Playwright
-pnpm storybook                                       # Run component stories
-pnpm build                                           # Required production build/typecheck gate
+pnpm --filter @fish/web test run                    # all Vitest tests, one run
+pnpm --filter @fish/web test run path/to/file.test.ts
+pnpm --filter @fish/web e2e                         # seed, start/reuse web app, run Playwright
+pnpm lint                                           # workspace ESLint
+pnpm typecheck                                      # workspace TypeScript checks
+pnpm build                                          # required pre-commit production build gate
+pnpm seed                                           # deterministic local Supabase fixtures
+pnpm verify:rls                                     # live RLS/security assertions
+pnpm verify:chat-realtime                           # seed and verify realtime/command behavior
+pnpm build-storybook                                # verify Storybook can build
 ```
 
-## Test File Organization
+- `pnpm build` recursively runs package build scripts; the web performs `next build`, while `packages/core` and `packages/supabase` run `tsc --noEmit`.
+- `pnpm --filter @fish/web test` without `run` starts Vitest's interactive/watch behavior; use `test run` for a deterministic gate.
+- Supabase verification commands require a running local Supabase instance and populated `apps/web/.env.local`.
+- `pnpm verify:rls` does not seed by itself; run `pnpm seed` first when the local database is not already in the expected state.
 
-- Unit/component tests are colocated with source files as `*.test.ts` and `*.test.tsx`, for example `apps/web/lib/validation/profile.test.ts` and `apps/web/components/ui/button/button.test.tsx`.
-- Cross-cutting architectural and design-system checks live under `apps/web/tests/`, including `service-boundary.test.ts`, `chat-state-boundary.test.ts`, and `tailwind-design-token.test.ts`.
-- Playwright tests use `*.spec.ts` under `apps/web/e2e/`; Vitest explicitly excludes that directory.
-- Stories sit beside reusable components as `*.stories.tsx`, such as `apps/web/components/chat/avatar/avatar.stories.tsx`.
-- Shared jsdom helpers live under `apps/web/tests/`, notably `intersection-observer.ts`; there is no global fixtures/factories directory.
+## File Organization
+
+- Unit and component tests are colocated with source as `*.test.ts` or `*.test.tsx`.
+- Cross-cutting contract tests live in `apps/web/tests/`; this includes architecture, Next.js poisoning, design-token, accessibility, fixtures, and source-boundary checks.
+- Playwright specifications live in `apps/web/e2e/` and are excluded from Vitest.
+- Component stories are colocated as `*.stories.tsx` and are restricted to reusable component surfaces by `apps/web/tests/module-boundaries.test.ts`.
+- Test-environment helpers live in `apps/web/tests/`, including `intersection-observer.ts` and inert `server-only`/`client-only` module markers.
+- Canonical cross-runtime state vectors live in `packages/core/src/chat-state/fixtures/chat-state-vectors.json` and are consumed by web tests.
 
 ```text
 apps/web/
@@ -43,114 +50,97 @@ apps/web/
     button.tsx
     button.test.tsx
     button.stories.tsx
-  lib/services/
-    errors.ts
-    errors.test.ts
+  features/chat/server/
+    action-handlers.ts
+    action-handlers.test.ts
   tests/
+    module-boundaries.test.ts
     service-boundary.test.ts
   e2e/
     chat-send.spec.ts
 ```
 
-## Test Structure
+## Unit and Component Style
 
-- Import `describe`, `it`, `expect`, lifecycle hooks, and `vi` explicitly from `vitest` even though globals are enabled.
-- Name suites after the component, function, or protected boundary; name cases as observable behavior in present tense (`"returns a calm notice when signed out"`).
-- Use nested `describe` blocks for distinct state-machine areas or invariants; simple modules normally use one suite.
-- Arrange data first, execute the behavior, then assert. Comments are added when the assertion encodes a non-obvious product or regression constraint.
-- Multiple expectations per case are common when they prove one behavior. Tests favor exact statuses, accessible state, calls, and state transitions over implementation snapshots.
-- Use `afterEach` to reset mocks and restore timers when state could leak; Testing Library handles rendered DOM cleanup.
+- Suites are named after the component, use case, helper, store, or invariant under test.
+- Case names describe externally visible behavior in present tense; assertions focus on results, accessible UI, calls across a seam, and state transitions.
+- Arrange fixtures and mocks, execute the public behavior, then assert. Multiple expectations are normal when they jointly prove one behavior.
+- Prefer `getByRole`, `getByLabelText`, visible copy, ARIA state, and focus assertions. Inspect class names only for deliberate design-token or layout contracts.
+- Use `waitFor` for scheduled React updates and fake timers for timeouts/debounce; restore timers and mocks in teardown when state can leak.
+- Pure reducers, selectors, validation, and formatting utilities are exercised directly without module mocks.
+- Snapshot testing is not an established pattern; semantic assertions and Storybook scenarios are preferred.
 
-```typescript
-describe("sendMessageAction", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-    fetchMock.mockReset();
-  });
+## Dependency Injection and Mocking
 
-  it("returns a calm notice when signed out", async () => {
-    getCurrentUserMock.mockResolvedValueOnce({ ok: true, data: null });
-    const result = await sendMessageAction(validInput);
-    expect(result.status).toBe("notice");
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-});
-```
+- Use `vi.fn`, `vi.mock`, `vi.spyOn`, `vi.stubGlobal`, and Vitest fake timers for local isolation.
+- Prefer injected interface fakes over mocking infrastructure modules. `apps/web/features/chat/server/action-handlers.test.ts` constructs handlers with a `ChatCommandService` fake, while `apps/web/features/profile/server/action-handlers.test.ts` supplies narrow auth/repository dependencies.
+- Test factories use `Partial<T>` overrides but return a complete interface; unexpected methods throw so accidental calls fail loudly.
+- `apps/web/lib/services/testing.ts` provides `resolvedService` for typed successful service results.
+- Adapter tests may mock Supabase query-builder chains at the infrastructure boundary, as in `apps/web/lib/services/supabase/core.test.ts`.
+- Module mocks remain appropriate for framework seams (`next/navigation`) and client entry modules, but should not replace explicit DI in application use cases.
+- `apps/web/vitest.setup.ts` supplies no-op `ResizeObserver`, `IntersectionObserver`, `matchMedia`, animation, and scrolling behavior missing from jsdom.
 
-## Mocking
+## Test Categories
 
-- Use Vitest's `vi.fn`, `vi.mock`, `vi.spyOn`, `vi.stubGlobal`, and fake timers.
-- Declare module mocks before importing the subject when import-time wiring matters, as in `apps/web/app/(authenticated)/chat/actions.test.ts`.
-- Mock Supabase service interfaces and query-builder chains rather than starting a database for unit tests. `apps/web/lib/services/testing.ts` supplies reusable successful services and service-container doubles.
-- Stub browser APIs missing from jsdom globally in `apps/web/vitest.setup.ts` (`ResizeObserver`, `IntersectionObserver`, `matchMedia`, animations, and scrolling).
-- Use fake timers for timeout/debounce/presence behavior, then restore real timers in teardown.
-- Do not mock pure reducer/selector logic. `packages/core` chat-state code is exercised directly through web boundary and store tests.
-- Prefer role-based DOM queries (`getByRole`, `getByLabelText`) over class selectors; inspect classes only when testing token/design-system contracts.
+### Pure domain and utility tests
 
-## Fixtures and Factories
+- Cover chat reducers/selectors/store transitions, message grouping, presence, preferences, validation, service results, and utility functions.
+- Examples include `apps/web/features/chat/model/chat-state.test.ts`, `apps/web/features/chat/model/store/chat-store.test.ts`, and `apps/web/lib/services/errors.test.ts`.
+- `apps/web/tests/chat-state-fixtures.test.ts` checks shared JSON vectors against the web-facing state implementation.
 
-- Small fixtures and factory functions live inside the relevant test file. Common patterns accept `Partial<T>` overrides (`messageRow(overrides)`) and use fixed UUIDs/timestamps.
-- Canonical cross-runtime chat-state vectors are JSON in `packages/core/src/chat-state/fixtures/chat-state-vectors.json`; `apps/web/tests/chat-state-fixtures.test.ts` verifies them.
-- Storybook state uses `apps/web/components/chat/story-data.ts` and per-story `args` for visual scenarios.
-- Database-backed scripts and E2E tests use deterministic local data from `scripts/seed.ts`; Playwright assumes the documented local credentials and conversation IDs.
-- Keep test data obviously synthetic and deterministic. Use `Date.now()` only when an E2E flow needs a unique persisted value, as in `apps/web/e2e/chat-send.spec.ts`.
+### Use-case and adapter tests
 
-## Test Types
+- Handler factory tests prove validation happens before a port call, inputs are normalized, and application outputs contain no transport details.
+- Auth use-case tests target `apps/web/features/auth/server/auth-use-cases.ts` through injected `AuthService` and repository capabilities.
+- `apps/web/lib/services/container.test.ts` verifies immutable DI-container composition.
+- `apps/web/lib/services/supabase/core.test.ts` exercises provider adapters and their error/result mapping with query-chain doubles.
 
-**Pure unit tests:**
-- Cover validation, formatting, reducers, selectors, error normalization, and utilities without external systems.
-- Examples: `apps/web/lib/prefs/time-format.test.ts`, `apps/web/lib/services/errors.test.ts`, and `apps/web/app/(authenticated)/chat/message-grouping.test.ts`.
+### Component and page tests
 
-**Component tests:**
-- Render components in jsdom, drive them through accessible controls, and assert visible copy, ARIA state, focus behavior, and product token classes.
-- Page tests mock server/auth services to cover redirects, role-specific output, and calm failure states.
-- Examples: `apps/web/components/ui/button/button.test.tsx` and `apps/web/app/(authenticated)/home/page.test.tsx`.
+- Component tests render in jsdom and cover accessible states, calm copy, focus behavior, form submission, optimistic chat behavior, and design-token classes.
+- Async UI tests use Testing Library `waitFor`; browser APIs are supplied by the shared setup or targeted helpers.
+- Page and route tests mock external/framework edges to prove redirects, authentication outcomes, role-specific content, and safe failure behavior.
+- Route-handler coverage includes `apps/web/app/auth/callback/route.test.ts`; authenticated server pages have colocated `page.test.tsx` files.
 
-**Contract and architecture tests:**
-- Source-scanning tests enforce boundaries and design rules, not just runtime behavior.
-- `apps/web/tests/service-boundary.test.ts` forbids direct Supabase imports in TSX; `apps/web/tests/icon-source.test.ts` and `tailwind-design-token.test.ts` enforce UI-system constraints.
-- `apps/web/tests/chat-state-boundary.test.ts` and chat store tests keep authority and provider concerns outside shared state.
+### Architecture and source-contract tests
 
-**Integration and verification:**
-- `scripts/verify-rls.ts` performs database authorization verification against local Supabase.
-- `scripts/verify-chat-realtime.ts` checks seeded realtime chat behavior and is run through `pnpm verify:chat-realtime`.
-- These are executable verification scripts rather than Vitest files and require local environment configuration.
+- `apps/web/tests/service-boundary.test.ts` keeps Supabase APIs inside infrastructure, prevents adapter re-exports, rejects provider/transport-shaped application contracts, and verifies injected use cases do not import runtime composition.
+- `apps/web/tests/module-boundaries.test.ts` enforces component folders/barrels, App Router placement, story colocation, public entry points, and framework-free core chat state.
+- `apps/web/tests/nextjs-boundaries.test.ts` traverses imports to detect transitive `server-only`/`client-only` poisoning.
+- `apps/web/tests/tailwind-design-token.test.ts` rejects arbitrary visual values and hardcoded spacing utilities.
+- Other source-contract suites cover icon provenance, focus rings, contrast, server page loading, and seed behavior.
 
-**End-to-end tests:**
-- `apps/web/e2e/chat-send.spec.ts` proves authenticated message persistence and duplicate prevention across reload.
-- `apps/web/e2e/login-spacing.spec.ts` verifies login layout spacing in the browser.
-- `pnpm --filter @fish/web e2e` seeds before Playwright; local Supabase and `apps/web/.env.local` must be ready.
+### Backend verification
 
-## Coverage
+- `scripts/verify-rls.ts` signs in seeded users with the publishable key so queries are genuinely subject to RLS; it checks allowed reads, denied privilege escalation, profile access, and chat/database policies.
+- The RLS verifier uses the service role only for setup/inspection that requires administration and exits non-zero when any assertion fails.
+- `scripts/verify-chat-realtime.ts` drives authenticated Supabase clients, Edge Function commands, database changes, channel subscriptions, read state, reactions, typing/recording, presence, and reconnect-sensitive behavior.
+- Both scripts print explicit PASS/FAIL lines and aggregate failures into a non-zero process exit.
+- These are live integration gates, not Vitest tests; they depend on local Supabase services, migrations, Edge Functions, seeded identities, and environment keys.
 
-- No coverage provider, coverage script, threshold, or CI coverage gate is configured in `apps/web/vitest.config.ts` or package scripts.
-- The repository currently relies on breadth of behavior tests, architecture tests, required build/lint/typecheck gates, and targeted Supabase verification scripts.
-- Do not claim a numeric coverage level. If coverage is introduced, add an explicit provider, exclusions, thresholds, and a stable root command before treating it as a gate.
+### End-to-end tests
 
-## Common Patterns
+- Playwright uses Desktop Chrome, a 45-second test timeout, a 10-second assertion timeout, serial execution, and traces retained on failure.
+- `apps/web/e2e/chat-send.spec.ts` logs in as a seeded client, sends a unique message, proves exactly one persisted row, reloads, and verifies the row remains.
+- `apps/web/e2e/login-spacing.spec.ts` inspects browser geometry to protect calm token-sized login rhythm.
+- The E2E script seeds first and starts or reuses `pnpm dev` at `http://localhost:3001`; `PLAYWRIGHT_BASE_URL` can override the URL.
 
-**Async behavior:**
-- Await actions and Testing Library transitions directly; use `waitFor` when UI updates are scheduled asynchronously.
-- For timeout fallback behavior, use `vi.useFakeTimers()` and `vi.advanceTimersByTimeAsync()` rather than real waits.
+## Coverage Status
 
-**Expected failures:**
-- Assert thrown invariants with `toThrow`; assert expected service/user failures as discriminated result/status values.
-- Also assert prohibited side effects (`expect(fetchMock).not.toHaveBeenCalled()`) so validation and authorization guards remain early.
+- No coverage provider, coverage command, numeric threshold, or coverage CI gate is configured in `apps/web/vitest.config.ts` or package scripts.
+- Do not infer or report a coverage percentage from the number of tests.
+- Current confidence comes from behavior tests, source-contract suites, lint/typecheck/build gates, Playwright critical flows, and live Supabase verification.
+- If numeric coverage becomes a requirement, add an explicit Vitest coverage provider, intentional exclusions, thresholds, and a stable root command before treating it as enforced.
 
-**State transitions:**
-- Hydrate a fresh store/reducer, apply domain actions, and assert selectors or public state rather than private implementation variables.
-- Optimistic chat tests cover sending, confirmation, failure, retries, realtime merge, pagination, and read state in sequence.
+## Adding or Changing Tests
 
-**Snapshots:**
-- Snapshot tests are not an established pattern; no `__snapshots__` tree is present. Prefer semantic assertions and Storybook scenarios.
-
-**When adding a change:**
-- Add or update the nearest colocated test for behavior changes.
-- Add an `apps/web/tests/` contract test when protecting an architectural or design-system boundary.
-- Add a Storybook state for a reusable component's meaningful visual variation.
-- Reserve Playwright for critical persisted user flows that unit/component tests cannot prove.
+- Put the nearest behavior test beside the changed source.
+- Add a source-contract test under `apps/web/tests/` when protecting a dependency, folder, framework, accessibility, or design-system invariant.
+- Add a Storybook scenario for a meaningful reusable visual state.
+- Reserve Playwright for critical behavior that requires a real browser, routing, persistence, or reload.
+- Run live RLS/realtime scripts when a migration, repository, Edge Function, or subscription path changes.
+- For structural component changes, run `apps/web/tests/module-boundaries.test.ts` and confirm zero loose component files and zero component folders without `index.ts`.
 
 ---
 
-*Testing analysis: 2026-07-11*
-*Update when test patterns change*
+*Testing map refreshed 2026-07-11 at `e25c937627b8f19251c791ed6878e6522f802959`.*
