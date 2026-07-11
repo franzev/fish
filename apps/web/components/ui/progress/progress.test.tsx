@@ -9,6 +9,7 @@ describe("Progress", () => {
     expect(bar).toHaveAttribute("aria-valuenow", "40");
     expect(bar).toHaveAttribute("aria-valuemin", "0");
     expect(bar).toHaveAttribute("aria-valuemax", "100");
+    expect(bar).toHaveAccessibleName("Step 2 of 5");
     const fill = bar.firstChild as HTMLElement;
     expect(fill.style.width).toBe("40%");
   });
@@ -16,5 +17,17 @@ describe("Progress", () => {
   it("never renders a bare numeric percentage as a judgement", () => {
     const { queryByText } = render(<Progress value={40} label="Step 2 of 5" />);
     expect(queryByText("40%")).toBeNull();
+  });
+
+  it.each([
+    { value: -10, expected: "0" },
+    { value: 110, expected: "100" },
+  ])("clamps $value to the supported range", ({ value, expected }) => {
+    const { getByRole } = render(<Progress value={value} />);
+
+    expect(getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      expected
+    );
   });
 });

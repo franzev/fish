@@ -114,7 +114,10 @@ export function SearchFilterPopover({
               sideOffset={4}
               className="z-20"
             >
-              <Popover.Popup className="w-search-pop rounded-card border border-border bg-surface p-3xs shadow-popover">
+              <Popover.Popup
+                aria-label="Search filters"
+                className="w-search-pop rounded-card border border-border bg-surface p-3xs shadow-popover"
+              >
                 <p className="px-sm pb-2xs pt-xs text-ui-2xs font-medium uppercase tracking-wide text-muted">
                   Filters
                 </p>

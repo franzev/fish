@@ -18,7 +18,7 @@ import {
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
 import groups from "unicode-emoji-json/data-by-group.json";
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, forwardRef, useMemo, useState } from "react";
 
 interface EmojiEntry {
   emoji: string;
@@ -194,7 +194,7 @@ function EmojiGroupList({
   );
 }
 
-interface EmojiPickerButtonProps {
+export interface EmojiPickerButtonProps {
   onSelect: (emoji: string) => void;
   label: string;
   className?: string;
@@ -206,41 +206,43 @@ interface EmojiPickerButtonProps {
  *  (portaled to <body>, collision-aware flip/align, Escape + outside-click
  *  dismiss, and focus return handled for free). Closes on selecting an
  *  emoji. */
-export function EmojiPickerButton({
-  onSelect,
-  label,
-  className,
-  children,
-}: EmojiPickerButtonProps) {
-  const [open, setOpen] = useState(false);
+export const EmojiPickerButton = forwardRef<
+  HTMLButtonElement,
+  EmojiPickerButtonProps
+>(function EmojiPickerButton(
+  { onSelect, label, className, children },
+  ref
+) {
+    const [open, setOpen] = useState(false);
 
-  return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger aria-label={label} className={className}>
-        {children ?? (
-          <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
-        )}
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner
-          side="top"
-          align="end"
-          sideOffset={4}
-          className="z-20"
-        >
-          {/* Keep focus on the trigger at open — autofocusing the search
-              field flashes a focus ring on every open and pops the mobile
-              keyboard over the grid. Tab reaches the field in one step. */}
-          <Popover.Popup initialFocus={false}>
-            <EmojiPicker
-              onSelect={(emoji) => {
-                onSelect(emoji);
-                setOpen(false);
-              }}
-            />
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-}
+    return (
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger ref={ref} aria-label={label} className={className}>
+          {children ?? (
+            <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
+          )}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner
+            side="top"
+            align="end"
+            sideOffset={4}
+            className="z-20"
+          >
+            {/* Keep focus on the trigger at open — autofocusing the search
+                field flashes a focus ring on every open and pops the mobile
+                keyboard over the grid. Tab reaches the field in one step. */}
+            <Popover.Popup initialFocus={false}>
+              <EmojiPicker
+                onSelect={(emoji) => {
+                  onSelect(emoji);
+                  setOpen(false);
+                }}
+              />
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
+    );
+  }
+);

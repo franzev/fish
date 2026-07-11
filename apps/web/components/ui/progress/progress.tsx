@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { HTMLAttributes } from "react";
+import { HTMLAttributes, useId } from "react";
 
 interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
   /** 0-100. Progress is visual, never a grade or score. */
@@ -10,12 +10,18 @@ interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
 /** Visual progress uses the primary token. No numbers shouted at the user. */
 export function Progress({ value, label, className, ...props }: ProgressProps) {
   const clamped = Math.max(0, Math.min(100, value));
+  const labelId = useId();
   return (
     <div className={cn("w-full", className)} {...props}>
-      {label && <p className="mb-xs text-ui-sm text-muted">{label}</p>}
+      {label && (
+        <p id={labelId} className="mb-xs text-ui-sm text-muted">
+          {label}
+        </p>
+      )}
       <div
         className="h-3 w-full overflow-hidden rounded-pill bg-surface-2"
         role="progressbar"
+        aria-labelledby={label ? labelId : undefined}
         aria-valuenow={clamped}
         aria-valuemin={0}
         aria-valuemax={100}

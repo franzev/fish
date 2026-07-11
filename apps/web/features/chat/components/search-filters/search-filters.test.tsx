@@ -42,6 +42,10 @@ describe("SearchFilterPopover", () => {
 
     openFiltersPopover();
 
+    expect(
+      screen.getByRole("dialog", { name: "Search filters" })
+    ).toBeInTheDocument();
+
     for (const title of [
       "From a specific user",
       "Sent in a specific channel",

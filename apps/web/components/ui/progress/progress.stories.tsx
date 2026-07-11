@@ -25,3 +25,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const NotStarted: Story = {
+  args: {
+    label: "Getting ready",
+    value: 0,
+  },
+};
+
+export const Complete: Story = {
+  args: {
+    label: "Ready for your coach",
+    value: 100,
+  },
+};
