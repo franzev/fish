@@ -32,3 +32,6 @@ verify_jwt = true
 
 [functions.chat-command]
 verify_jwt = true
+
+[functions.chat-image-command]
+verify_jwt = true
