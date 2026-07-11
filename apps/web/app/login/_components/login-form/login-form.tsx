@@ -4,13 +4,14 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   getAuthFailureReason,
   signInWithGoogle,
   signInWithPassword,
 } from "@/features/auth";
 import { authRedirects } from "@/features/auth/redirects";
-import { IconBrandGoogle, IconEye, IconEyeOff } from "@tabler/icons-react";
+import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -27,7 +28,6 @@ export function LoginForm() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -107,37 +107,21 @@ export function LoginForm() {
               label="Email"
               type="email"
               autoComplete="email"
+              inputMode="email"
               enterKeyHint="next"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               reserveMessageSpace={false}
               required
             />
-            <Input
+            <PasswordInput
               label="Password"
-              type={passwordVisible ? "text" : "password"}
               autoComplete="current-password"
               enterKeyHint="go"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               notice={passwordError || undefined}
               reserveMessageSpace={false}
-              trailingControl={
-                <button
-                  type="button"
-                  aria-label={passwordVisible ? "Hide password" : "Show password"}
-                  aria-pressed={passwordVisible}
-                  title={passwordVisible ? "Hide password" : "Show password"}
-                  className="flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:text-body"
-                  onClick={() => setPasswordVisible((visible) => !visible)}
-                >
-                  {passwordVisible ? (
-                    <IconEyeOff size={20} stroke={1.75} aria-hidden="true" />
-                  ) : (
-                    <IconEye size={20} stroke={1.75} aria-hidden="true" />
-                  )}
-                </button>
-              }
               required
             />
           </div>

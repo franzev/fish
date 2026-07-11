@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   getAuthFailureReason,
   signInWithGoogle,
@@ -118,6 +119,8 @@ export function SignupForm() {
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <Input
             label="Name"
+            autoComplete="name"
+            enterKeyHint="next"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -125,23 +128,28 @@ export function SignupForm() {
           <Input
             label="Email"
             type="email"
+            autoComplete="email"
+            inputMode="email"
+            enterKeyHint="next"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             error={emailError || undefined}
             required
           />
-          <Input
+          <PasswordInput
             label="Password"
-            type="password"
+            autoComplete="new-password"
+            enterKeyHint="next"
             hint="At least 8 characters."
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={8}
             required
           />
-          <Input
+          <PasswordInput
             label="Confirm password"
-            type="password"
+            autoComplete="new-password"
+            enterKeyHint="go"
             value={confirmPassword}
             onChange={(e) => {
               setConfirmPassword(e.target.value);

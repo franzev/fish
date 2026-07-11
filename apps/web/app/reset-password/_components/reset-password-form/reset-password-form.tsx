@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   getAuthFailureReason,
   updatePassword,
@@ -71,9 +71,10 @@ export function ResetPasswordForm() {
       <Card className="w-full max-w-form">
         <h2 className="text-xl">Set a new password</h2>
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
-          <Input
+          <PasswordInput
             label="Password"
-            type="password"
+            autoComplete="new-password"
+            enterKeyHint="go"
             hint="At least 8 characters."
             value={password}
             onChange={(e) => setPassword(e.target.value)}

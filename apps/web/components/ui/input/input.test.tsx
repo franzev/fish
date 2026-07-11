@@ -70,6 +70,7 @@ describe("Input", () => {
       />
     );
     const field = getByLabelText("Email");
+    expect(field).toHaveAttribute("aria-invalid", "true");
     expect(field.className).toContain("border-error");
     expect(field.className).toContain("border-2");
     const message = getByText(
@@ -97,5 +98,16 @@ describe("Input", () => {
   it("disabled propagates to the input element", () => {
     const { getByLabelText } = render(<Input label="Email" disabled />);
     expect(getByLabelText("Email")).toBeDisabled();
+  });
+
+  it("preserves a caller-provided aria-invalid state without an error message", () => {
+    const { getByLabelText } = render(
+      <Input label="Email" aria-invalid="grammar" />
+    );
+
+    expect(getByLabelText("Email")).toHaveAttribute(
+      "aria-invalid",
+      "grammar"
+    );
   });
 });

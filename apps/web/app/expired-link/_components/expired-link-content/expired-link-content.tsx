@@ -73,6 +73,9 @@ export function ExpiredLinkContent() {
         <Input
           label="Email"
           type="email"
+          autoComplete="email"
+          inputMode="email"
+          enterKeyHint="send"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required

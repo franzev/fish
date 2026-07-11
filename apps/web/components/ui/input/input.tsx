@@ -25,7 +25,7 @@ export const inputVariants = cva(
   }
 );
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Plain-language label, always shown above the field. */
   label: string;
   /** Optional guidance. Calm and helpful, never scolding. */
@@ -66,6 +66,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       hasMessage ? messageId : undefined,
     ].filter(Boolean).join(" ") || undefined;
     const shouldRenderMessageRow = reserveMessageSpace || hasMessage;
+    const ariaInvalid = error ? true : props["aria-invalid"];
 
     return (
       <div className="w-full">
@@ -88,6 +89,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               )}
               {...props}
               aria-describedby={describedBy}
+              aria-invalid={ariaInvalid}
             />
             <div className="absolute right-0 top-0 flex min-h-control min-w-control items-center justify-center">
               {trailingControl}
@@ -104,6 +106,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             )}
             {...props}
             aria-describedby={describedBy}
+            aria-invalid={ariaInvalid}
           />
         )}
         {shouldRenderMessageRow && (

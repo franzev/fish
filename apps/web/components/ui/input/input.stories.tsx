@@ -33,3 +33,10 @@ export const Error: Story = {
     error: "Something needs your attention before you can continue.",
   },
 };
+
+export const Disabled: Story = {
+  args: {
+    disabled: true,
+    value: "eli@example.com",
+  },
+};

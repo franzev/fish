@@ -53,6 +53,7 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
         <Input
           label="Display name"
           name="displayName"
+          autoComplete="name"
           defaultValue={state.values.displayName}
           error={state.errors?.displayName?.[0]}
           required
