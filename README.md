@@ -1,39 +1,57 @@
 # FISH
 
-English coaching that fits how your brain works: a calm ChatHub for neurodivergent professionals.
+FISH is a calm coaching hub for neurodivergent professionals learning English.
+Coaches assign the experience; the product removes choices and keeps the next
+action clear.
 
-## What this is
+## Current product
 
-FISH turns a live English-coaching practice into a focused app. Coaches run real sessions, spot what works, and only then is it built into the product. The first product surface is 1-on-1 chat: one coach, one client, one assigned next step.
+The web application currently includes:
 
-The product stays deliberately minimal. For this audience, too much choice causes overwhelm, so the coach assigns the experience and the app keeps the next action obvious.
+- Email/password authentication, recovery, verified sessions, and client/coach roles.
+- Client profiles and coach-visible client details protected by Supabase RLS.
+- A shared monochrome UI system with accessible light and dark themes.
+- A single seeded community channel at `/channels/:id` with persisted messages,
+  replies, reactions, read state, presence, typing, bounded history loading, and
+  realtime recovery.
+- A platform-neutral chat-state reducer with fixture vectors for future native
+  adapters.
 
-## Tech stack
+Learning exercises, gamification, and AI coaching remain out of scope until a
+coach validates the technique manually.
 
-- `apps/web` — Next.js App Router + React + TypeScript + Tailwind CSS v4
-- `packages/core` — shared product contracts
-- `packages/supabase` — shared Supabase auth/database contracts
-- `supabase/functions` — Edge Functions for command-style API logic
+## Stack
 
-Supabase is the backend of record for auth, database, storage, and realtime. There is no separate Express API service unless the product proves it needs one.
+- `apps/web` — Next.js App Router, React, TypeScript, and Tailwind CSS v4.
+- `packages/core` — backend-neutral roles, chat contracts, and chat state.
+- `packages/supabase` — generated database types and Supabase-specific contracts.
+- `supabase` — Auth, Postgres, RLS, Realtime, migrations, and Edge Functions.
 
-## Getting started
+Supabase is the backend of record. There is no separate Express API.
+
+## Local development
 
 ```bash
 pnpm install
+pnpm supabase:start
+pnpm db:reset
+pnpm seed
 pnpm dev
 ```
 
-Open http://localhost:3001. The root route redirects by auth state; the design
-system preview is at http://localhost:3001/kit.
+Open [http://localhost:3001](http://localhost:3001). The root route redirects by
+authentication and role; the design-system reference is available at
+`/kit`.
 
-## Commands
+## Quality commands
 
 ```bash
-pnpm dev          # run the web app
-pnpm build        # build/typecheck all pnpm workspace packages
-pnpm lint         # lint all pnpm workspace packages
-pnpm typecheck    # typecheck all pnpm workspace packages
+pnpm build
+pnpm lint
+pnpm typecheck
+pnpm --filter @fish/web test run
+pnpm verify:rls
+pnpm verify:chat-realtime
 ```
 
 ## Product rules
@@ -43,15 +61,15 @@ pnpm typecheck    # typecheck all pnpm workspace packages
 - Assigned, never chosen.
 - Progress is visual, never a grade.
 - Reward returning; never punish a gap.
-- Copy explains and guides; it does not scold.
+- Copy explains and guides; it never scolds.
 
-## For AI agents
+See [AGENTS.md](./AGENTS.md) for the binding engineering and product rules.
 
-See [AGENTS.md](./AGENTS.md) for build commands, conventions, and the design rules every screen must follow.
-
-## Project docs
+## Documentation
 
 - [Architecture](./docs/ARCHITECTURE.md)
-- [Recent changes](./docs/recent-changes.md)
+- [Hosted Supabase deploy checklist](./docs/deploy-checklist.md)
 - [UI/UX agent guidelines](./docs/ui-ux-agent-guidelines.md)
-- [Unpublished Linear follow-up draft](./docs/linear-recent-changes-tickets-draft.md)
+- [Chat-state protocol](./packages/core/docs/chat-state-protocol.md)
+- [Project state](./.planning/STATE.md)
+- [Milestone history](./.planning/MILESTONES.md)

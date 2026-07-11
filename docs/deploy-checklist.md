@@ -26,11 +26,18 @@ is done.
 
 ## 3. Push migrations to the hosted database
 
-- [ ] Run `supabase db push` against the linked project. This applies the current migrations
-      (profiles, handle_new_user trigger, coach_clients, RLS helpers and grants, role guard,
-      email backfill, and client-read-assigned-coach policy) to the hosted Postgres in order.
-- [ ] Spot-check in the hosted SQL editor that `public.profiles` and `public.coach_clients`
-      exist and that RLS shows as enabled on both.
+- [ ] Run `supabase db push` against the linked project. This applies every
+      committed migration through `0016_channels.sql`, including profiles,
+      client profiles, assignments, chat, realtime features, reactions, and
+      the seeded `general` channel.
+- [ ] Spot-check that RLS is enabled on `profiles`, `client_profiles`,
+      `coach_clients`, `channels`, `conversations`, `messages`,
+      `message_reads`, `message_reactions`, and `presence_sessions`.
+- [ ] Deploy both command functions:
+      `supabase functions deploy send-message` and
+      `supabase functions deploy chat-command`.
+- [ ] Confirm both functions require JWT verification and preserve the caller's
+      bearer token when invoking PostgREST/RPCs.
 
 ## 4. Upload and confirm the production email templates
 
@@ -51,9 +58,10 @@ is done.
 
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` — the hosted project's API URL.
 - [ ] `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — the hosted project's publishable (anon) key.
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` — the hosted service-role key, set only in the server-side
-      environment. It must never carry a `NEXT_PUBLIC_` prefix, never be committed, and never
-      be exposed to the browser; it bypasses RLS entirely.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` — required only in trusted administrative
+      environments that run seed or verification scripts. The production web
+      runtime does not require it. Never give it a `NEXT_PUBLIC_` prefix,
+      commit it, or expose it to the browser; it bypasses RLS entirely.
 
 ## 6. Confirm the hosted auth config matches local
 
@@ -89,6 +97,14 @@ is done.
       It is local-only. Never point it at the hosted project: production coach accounts are
       created manually (dashboard or a one-off admin action with the hosted service-role
       key), and real client accounts arrive through signup.
+
+## 9. Run hosted verification
+
+- [ ] Against staging, run the RLS and realtime verification scripts with
+      staging-only credentials and disposable test users.
+- [ ] Verify signup, confirmation, login, password recovery, profile editing,
+      channel loading, message send, reaction, read state, and realtime recovery.
+- [ ] Do not point destructive reset or seed commands at production.
 
 ---
 *Deliverable of Phase 2 (D-14). Execute at first deploy; keep updated if the auth flow's
