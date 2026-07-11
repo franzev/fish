@@ -1,6 +1,7 @@
 "use client";
 
 import { SettingsRow } from "../settings-row";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { acceptConsentAction } from "@/features/profile/server/actions";
 import { useState } from "react";
@@ -24,6 +25,7 @@ export function ConsentRow({ consented, consentVersion }: ConsentRowProps) {
     consented && consentVersion === CURRENT_CONSENT_VERSION
   );
   const [pending, setPending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (accepted) {
     return (
@@ -36,24 +38,39 @@ export function ConsentRow({ consented, consentVersion }: ConsentRowProps) {
 
   async function handleAccept() {
     setPending(true);
-    await acceptConsentAction(CURRENT_CONSENT_VERSION);
-    setAccepted(true);
-    setPending(false);
+    setNotice(null);
+    try {
+      await acceptConsentAction(CURRENT_CONSENT_VERSION);
+      setAccepted(true);
+    } catch {
+      setNotice("That didn’t save yet. Give it a moment and try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
-    <SettingsRow
-      label="Your agreement"
-      control={
-        <Button
-          type="button"
-          variant="secondary"
-          loading={pending}
-          onClick={handleAccept}
-        >
-          Review &amp; accept
-        </Button>
-      }
-    />
+    <>
+      <SettingsRow
+        label="Your agreement"
+        control={
+          <Button
+            type="button"
+            variant="secondary"
+            loading={pending}
+            onClick={handleAccept}
+          >
+            Review &amp; accept
+          </Button>
+        }
+      />
+      {notice && (
+        <div className="px-md pb-md">
+          <Alert role="status" tone="notice">
+            {notice}
+          </Alert>
+        </div>
+      )}
+    </>
   );
 }

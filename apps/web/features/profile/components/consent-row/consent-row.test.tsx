@@ -38,4 +38,19 @@ describe("ConsentRow", () => {
       screen.queryByRole("button", { name: /review/i })
     ).not.toBeInTheDocument();
   });
+
+  it("recovers from a failed request and leaves consent retryable", async () => {
+    acceptConsentActionMock.mockRejectedValueOnce(new Error("offline"));
+    render(<ConsentRow consented={false} consentVersion={null} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Review & accept" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "That didn’t save yet"
+    );
+    expect(
+      screen.getByRole("button", { name: "Review & accept" })
+    ).toBeEnabled();
+    expect(screen.queryByText("Accepted")).not.toBeInTheDocument();
+  });
 });

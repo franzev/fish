@@ -1,6 +1,7 @@
 "use client";
 
 import { SettingsRow } from "../settings-row";
+import { Alert } from "@/components/ui/alert";
 import {
   applyReducedMotion,
   applyTextSize,
@@ -106,29 +107,31 @@ export function A11yPrefs({
     useState<ReducedMotionPref>(initialReducedMotion);
   const [timeFormat, setTimeFormat] =
     useState<TimeFormatPref>(initialTimeFormat);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     applyTheme(theme);
-  }, [theme]);
-
-  useEffect(() => {
     applyTextSize(textSize);
-  }, [textSize]);
-
-  useEffect(() => {
     applyReducedMotion(reducedMotion);
-  }, [reducedMotion]);
-
-  useEffect(() => {
     applyTimeFormat(timeFormat);
-  }, [timeFormat]);
+  }, [reducedMotion, textSize, theme, timeFormat]);
 
   function persist(next: UpdatePrefsInput) {
-    void updatePrefsAction(next);
+    setNotice(null);
+    void updatePrefsAction(next).catch(() => {
+      setNotice("That preference couldn’t be saved. Try choosing it again.");
+    });
   }
 
   return (
     <>
+      {notice && (
+        <div className="p-md">
+          <Alert role="status" tone="notice">
+            {notice}
+          </Alert>
+        </div>
+      )}
       <SettingsRow
         label="Appearance"
         control={

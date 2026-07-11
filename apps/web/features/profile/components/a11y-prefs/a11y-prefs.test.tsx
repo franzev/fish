@@ -209,4 +209,27 @@ describe("A11yPrefs", () => {
       timeFormatPref: null,
     });
   });
+
+  it("surfaces calm retry guidance when persistence fails", async () => {
+    updatePrefsActionMock.mockRejectedValueOnce(new Error("offline"));
+    render(
+      <A11yPrefs
+        themePref={null}
+        textSizePref={null}
+        reducedMotionPref={null}
+        timeFormatPref={null}
+      />
+    );
+
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Appearance" })).getByRole(
+        "button",
+        { name: "Dark" }
+      )
+    );
+
+    expect(
+      await screen.findByRole("status")
+    ).toHaveTextContent("That preference couldn’t be saved");
+  });
 });
