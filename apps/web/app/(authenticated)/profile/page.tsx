@@ -1,12 +1,9 @@
-import { A11yPrefs } from "@/components/profile/a11y-prefs";
+import { A11yPrefs, CoachCard, ConsentRow, SettingsRow } from "@/features/profile";
 import { Avatar } from "@/components/chat";
-import { CoachCard } from "@/components/profile/coach-card";
-import { ConsentRow } from "@/components/profile/consent-row";
-import { LogoutButton } from "@/components/auth/logout-button";
-import { SettingsRow } from "@/components/profile/settings-row";
+import { LogoutButton } from "@/features/auth";
 import { Card } from "@/components/ui/card";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getProfileData } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getProfileData } from "@/features/profile/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconChevronRight } from "@tabler/icons-react";

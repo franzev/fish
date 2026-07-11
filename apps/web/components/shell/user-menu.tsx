@@ -1,6 +1,6 @@
 "use client";
 
-import { useLogout } from "@/lib/auth/use-logout";
+import { useLogout } from "@/features/auth";
 import type { UserRole } from "@fish/core/roles";
 import { Menu } from "@base-ui/react/menu";
 import { IconLogout, IconUser } from "@tabler/icons-react";

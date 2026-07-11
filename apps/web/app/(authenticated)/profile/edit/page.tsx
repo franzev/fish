@@ -1,5 +1,5 @@
-import { authRedirects } from "@/lib/auth/redirects";
-import { getProfileData } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getProfileData } from "@/features/profile/server";
 import { redirect } from "next/navigation";
 import { EditProfileForm } from "./edit-profile-form";
 

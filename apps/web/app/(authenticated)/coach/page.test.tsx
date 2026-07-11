@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 const { getCoachHomeDataMock } = vi.hoisted(() => ({
   getCoachHomeDataMock: vi.fn(),
 }));
-vi.mock("@/lib/auth/server", () => ({
+vi.mock("@/features/coach/server", () => ({
   getCoachHomeData: getCoachHomeDataMock,
 }));
 

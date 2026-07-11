@@ -1,4 +1,4 @@
-import { getRootRedirectPath } from "@/lib/auth/server";
+import { getRootRedirectPath } from "@/features/auth/server";
 import { redirect } from "next/navigation";
 
 /* Pure redirect (D-02) — this file renders nothing. Every branch redirects:

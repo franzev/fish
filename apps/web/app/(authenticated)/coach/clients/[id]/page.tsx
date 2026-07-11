@@ -1,7 +1,7 @@
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getCoachClientDetailData } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getCoachClientDetailData } from "@/features/coach/server";
 import { redirect } from "next/navigation";
 
 /* Server Component (NOT "use client") -- mirrors coach/page.tsx's wrong-door

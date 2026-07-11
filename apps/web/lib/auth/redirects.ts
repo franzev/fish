@@ -1,1 +1,2 @@
-export { authRedirects } from "@fish/supabase/auth";
+/** Compatibility facade. New code should import from `@/features/auth/redirects`. */
+export { authRedirects } from "@/features/auth/redirects";

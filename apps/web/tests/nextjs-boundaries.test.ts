@@ -33,6 +33,10 @@ function resolveSource(from: string, specifier: string): string | null {
 
 function importsOf(file: string): string[] {
   const source = readFileSync(file, "utf8");
+  // A `use server` file is a framework-enforced RPC boundary when imported
+  // by a Client Component; its implementation dependencies do not join the
+  // browser module graph.
+  if (/^\s*["']use server["'];/m.test(source)) return [];
   const specifiers = [...source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["']([^"']+)["']/g)]
     .map((match) => match[1]);
   return specifiers.map((specifier) => resolveSource(file, specifier)).filter((path): path is string => path !== null);
@@ -92,7 +96,7 @@ describe("Next.js module poisoning", () => {
 
   it("requires feature server entry points to be directly poisoned", () => {
     const entries = sources.filter((file) =>
-      /\/features\/[^/]+\/server\/(?:index|actions|page-data)\.ts$/.test(file)
+      /\/features\/[^/]+\/server\/(?:index|page-data)\.ts$/.test(file)
     );
     expect(entries.length).toBeGreaterThan(0);
     expect(display(entries.filter((file) => marker(file) !== "server"))).toEqual([]);

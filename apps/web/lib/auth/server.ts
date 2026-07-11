@@ -4,12 +4,12 @@ import "server-only";
 export {
   getAuthenticatedShellProfile,
   getClientHomeData,
-  getProfileData,
   getRootRedirectPath,
-} from "./server-data/profile-loaders";
+} from "@/features/auth/server";
+export { getProfileData } from "@/features/profile/server";
 export {
   getCoachClientDetailData,
   getCoachHomeData,
-} from "./server-data/coach-loaders";
-export { getChatPageData } from "./server-data/chat-loader";
-export type * from "./server-data/types";
+} from "@/features/coach/server";
+export { getChatPageData } from "@/features/chat/server/page-data";
+export type * from "@/features/auth/contracts";

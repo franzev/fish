@@ -16,11 +16,11 @@ vi.mock("next/navigation", () => ({
 const { getAuthenticatedShellProfileMock } = vi.hoisted(() => ({
   getAuthenticatedShellProfileMock: vi.fn(),
 }));
-vi.mock("@/lib/auth/server", () => ({
+vi.mock("@/features/auth/server", () => ({
   getAuthenticatedShellProfile: getAuthenticatedShellProfileMock,
 }));
 
-vi.mock("@/lib/auth/browser", () => ({
+vi.mock("@/features/auth/client/browser", () => ({
   signOut: vi.fn(async () => ({ ok: true, data: undefined })),
 }));
 

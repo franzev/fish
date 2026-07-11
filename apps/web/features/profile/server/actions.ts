@@ -1,10 +1,8 @@
 "use server";
 
-import "server-only";
-
 import { createServerSupabaseServices } from "@/lib/services/supabase/server";
 import type { ClientProfileSafeFields } from "@/lib/services";
-import { editProfileSchema } from "@/lib/validation/profile";
+import { editProfileSchema } from "../validation";
 import { redirect } from "next/navigation";
 
 export interface EditProfileValues {

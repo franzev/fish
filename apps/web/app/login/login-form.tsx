@@ -8,8 +8,8 @@ import {
   getAuthErrorCode,
   signInWithGoogle,
   signInWithPassword,
-} from "@/lib/auth/browser";
-import { authRedirects } from "@/lib/auth/redirects";
+} from "@/features/auth";
+import { authRedirects } from "@/features/auth/redirects";
 import { IconBrandGoogle, IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

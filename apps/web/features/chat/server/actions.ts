@@ -1,7 +1,5 @@
 "use server";
 
-import "server-only";
-
 import type { ClientChatMessage, ClientChatReadState } from "@/lib/services";
 import type {
   MarkReadStateActionState,

@@ -1,7 +1,7 @@
-import { ChatIdentityGuard } from "@/components/auth/chat-identity-guard";
+import { ChatIdentityGuard } from "@/features/auth";
 import { AppShell } from "@/components/shell/app-shell";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getAuthenticatedShellProfile } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getAuthenticatedShellProfile } from "@/features/auth/server";
 import { redirect } from "next/navigation";
 
 /* D-06 default-deny: every route inside this (authenticated) group requires

@@ -1,4 +1,4 @@
-import { redirectIfSignedIn } from "@/lib/auth/redirect-if-signed-in";
+import { redirectIfSignedIn } from "@/features/auth/server";
 import { LoginForm } from "./login-form";
 
 /* Server Component (NOT "use client") — silently forwards an already

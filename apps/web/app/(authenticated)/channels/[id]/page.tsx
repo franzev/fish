@@ -11,8 +11,8 @@ import {
   sendMessageAction,
   toggleReactionAction,
 } from "@/features/chat/server";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getChatPageData } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getChatPageData } from "@/features/chat/server/page-data";
 import { redirect } from "next/navigation";
 
 // Single-channel milestone: [id] is accepted for URL stability, but the only

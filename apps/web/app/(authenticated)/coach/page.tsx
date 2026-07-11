@@ -1,7 +1,7 @@
-import { ClientList } from "@/components/coach/client-list";
+import { ClientList } from "@/features/coach";
 import { EmptyState } from "@/components/home/empty-state";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getCoachHomeData } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getCoachHomeData } from "@/features/coach/server";
 import { redirect } from "next/navigation";
 import { IconUsers } from "@tabler/icons-react";
 

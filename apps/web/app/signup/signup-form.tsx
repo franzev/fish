@@ -8,7 +8,7 @@ import {
   getAuthErrorCode,
   signInWithGoogle,
   signUpWithPassword,
-} from "@/lib/auth/browser";
+} from "@/features/auth";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

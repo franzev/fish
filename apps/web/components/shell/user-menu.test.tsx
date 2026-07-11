@@ -6,7 +6,7 @@ const { signOutMock, pushMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/browser", () => ({
+vi.mock("@/features/auth/client/browser", () => ({
   signOut: signOutMock,
 }));
 

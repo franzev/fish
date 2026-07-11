@@ -1,6 +1,6 @@
 import { EmptyState } from "@/components/home/empty-state";
-import { authRedirects } from "@/lib/auth/redirects";
-import { getClientHomeData } from "@/lib/auth/server";
+import { authRedirects } from "@/features/auth/redirects";
+import { getClientHomeData } from "@/features/auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconSparkles } from "@tabler/icons-react";

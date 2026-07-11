@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const { requestPasswordResetMock } = vi.hoisted(() => ({
   requestPasswordResetMock: vi.fn(),
 }));
-vi.mock("@/lib/auth/browser", () => ({
+vi.mock("@/features/auth", () => ({
   requestPasswordReset: requestPasswordResetMock,
 }));
 
@@ -18,14 +18,14 @@ describe("ForgotPasswordPage", () => {
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
+    const source = readFileSync(resolve(__dirname, "./forgot-password-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");
   });
 
   it("does not smuggle next=/reset-password through a redirectTo query string", () => {
-    const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
+    const source = readFileSync(resolve(__dirname, "./forgot-password-form.tsx"), "utf-8");
     expect(source).not.toContain("next=/reset-password");
   });
 

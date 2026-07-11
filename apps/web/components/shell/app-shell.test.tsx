@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/auth/browser", () => ({
+vi.mock("@/features/auth/client/browser", () => ({
   signOut: vi.fn(async () => ({ ok: true, data: undefined })),
 }));
 
@@ -139,7 +139,7 @@ describe("AppShell", () => {
       "utf-8"
     );
     const logoutButtonSource = readFileSync(
-      resolve(__dirname, "../auth/logout-button.tsx"),
+      resolve(__dirname, "../../features/auth/components/logout-button.tsx"),
       "utf-8"
     );
     const primaryMatches =

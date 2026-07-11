@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 const { updatePasswordMock } = vi.hoisted(() => ({
   updatePasswordMock: vi.fn(),
 }));
-vi.mock("@/lib/auth/browser", () => ({
+vi.mock("@/features/auth", () => ({
   getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
     error.details?.supabaseCode,
   getAuthErrorName: (error: { details?: { supabaseName?: string } }) =>
@@ -27,7 +27,7 @@ describe("ResetPasswordPage", () => {
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
+    const source = readFileSync(resolve(__dirname, "./reset-password-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");

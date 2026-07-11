@@ -12,7 +12,7 @@ const { signInWithGoogleMock, signInWithPasswordMock } = vi.hoisted(() => ({
   signInWithGoogleMock: vi.fn(),
   signInWithPasswordMock: vi.fn(),
 }));
-vi.mock("@/lib/auth/browser", () => ({
+vi.mock("@/features/auth", () => ({
   getAuthErrorCode: (error: { details?: { supabaseCode?: string } }) =>
     error.details?.supabaseCode,
   signInWithGoogle: signInWithGoogleMock,
