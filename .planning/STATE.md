@@ -197,6 +197,19 @@ Removed 2026-07-06: the previously built learning-flow engines are no longer par
 | 260709-p06 | Add seed data for testing long/formatted chat message rendering, plus a self-contained MessageBody rich-text renderer | 2026-07-09 | 98d33b60 | [260709-p06-add-seed-data-for-testing-long-formatted](./quick/260709-p06-add-seed-data-for-testing-long-formatted/) |
 | 260709-qag | Remove the dev-only chat kit entirely (outdated 1:1-messaging mock demo); seed real long-form community messages into the general channel via scripts/seed.ts | 2026-07-09 | 76580eef | [260709-qag-remove-the-dev-only-chat-kit-entirely-an](./quick/260709-qag-remove-the-dev-only-chat-kit-entirely-an/) |
 
+## Deferred Items
+
+Items acknowledged and deferred at v1.2 milestone close on 2026-07-11:
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (stale status file) |
+| debug | loading-earlier-messages-retry-storm | diagnosed — concluded by-design (failed older-page load stays retryable) |
+| debug | loading-new-messages | diagnosed — no delivery defect established |
+| debug | login-google-button-auth | diagnosed (stale session file, 2026-07-05) |
+| debug | native-chat-pagination-contract | diagnosed (stale session file) |
+| quick_task | 260710-jht-update-seed-data-names-change-alex-river | unknown status field, but commit a4a554a4 landed — stale bookkeeping |
+
 ## Session Continuity
 
 **Resume file:** None
