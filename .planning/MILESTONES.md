@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.2 Cross-platform Chat State Foundation (Shipped: 2026-07-11)
+
+**Delivered:** Chat state became a portable, test-vector-backed contract — a platform-neutral state machine in `@fish/core/chat-state` with a web-only Zustand adapter and Android/iOS protocol docs — and message loading became bounded and calm: near-instant conversation open on a newest-messages window, cursor-based load-earlier with preserved reading position, and duplicate-free in-place realtime merges.
+
+**Phases completed:** 2 phases (9–10), 26 plans, 62 tasks
+**Stats:** ~295 commits · 447 files · ~43.3k insertions / ~9.5k deletions · 2026-07-07 → 2026-07-11 (5 days)
+**Requirements:** 12/12 v1.2 requirements satisfied (CSTATE-01…06, CLOAD-01…06)
+**Closeout:** override_closeout — both phases verified and milestone audit passed (see `milestones/v1.2-MILESTONE-AUDIT.md`); known verification overrides: 6 stale open artifacts acknowledged as deferred (5 debug session files, 1 quick-task status file — see STATE.md Deferred Items)
+
+**Key accomplishments:**
+
+- Portable chat-state machine in `@fish/core/chat-state` — reducer, selectors, and 17 cross-platform JSON fixture vectors covering 15 chat events plus pagination state, with platform-neutral protocol docs and Android/iOS native architecture notes defining fixture-backed parity
+- Web chat rebuilt on a conversation-keyed Zustand adapter over the portable reducer — Zustand only as the React adapter, never the source of truth — with the canonical surface moved to the community room at `/channels/:id` and the dead `/chat` route removed
+- Identity-safe chat cache: the module-singleton store purges on any verified-identity change, sign-out, or cross-tab session expiry (`ensureChatStoreOwner` + `ChatIdentityGuard`), closing the CR-01 cross-account leak
+- Near-instant conversation open from a bounded 40+1 keyset SSR window, with cursor-based "load earlier" via IntersectionObserver sentinel + quiet ghost button, scroll-anchor restore, and a layout-matched two-row skeleton in a fixed 112px pagination slot
+- Realtime hardening: one conversation-owned, server-confirmed-cursor reconnect backfill replaced three concurrent full-history refetches; per-conversation in-flight locks and generation-token guards stop cross-conversation page leaks and stale lock releases
+- Send-lifecycle and contract hardening proven by fixture vectors and regression tests: draft-safe failure recovery, monotonic send status, hydration that preserves unresolved sends, grapheme-safe snippets, and exactly one automatic retry after a failed older-page load with a calm notice
+
+---
+
 ## v1.0 Monochrome Foundations (Shipped: 2026-07-04)
 
 **Delivered:** The complete monochrome foundation — a dual-theme design system provable on `/kit`, a full email/password auth loop on a hardened RLS-protected schema, and role-aware routing that lands each person on their correct calm home.

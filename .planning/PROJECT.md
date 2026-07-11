@@ -2,36 +2,33 @@
 
 ## What This Is
 
-FISH is a ChatHub that teaches English to neurodivergent professionals, many with ADHD. Coaches assign everything; clients are never given menus or choices — the product's whole job is to remove choices, not add them. v1.0 (shipped 2026-07-04) delivered the monochrome design system and the auth foundation everything else stands on: a dual-theme token ladder and UI kit, a complete email/password auth loop on an RLS-protected schema, and role-aware routing into calm client/coach homes.
+FISH is a ChatHub that teaches English to neurodivergent professionals, many with ADHD. Coaches assign everything; clients are never given menus or choices — the product's whole job is to remove choices, not add them. Three shipped milestones stand under it: v1.0 (2026-07-04) delivered the monochrome design system, the email/password auth loop on an RLS-protected schema, and role-aware routing; v1.1 (2026-07-06) added safe client profiles and real persisted chat on an idempotent `send-message` Edge Function; v1.2 (2026-07-11) made chat state a portable, test-vector-backed contract (`@fish/core/chat-state` + web-only Zustand adapter + Android/iOS protocol docs) with bounded, calm message loading on the canonical community room at `/channels/:id`.
 
 ## Current State
 
-**Shipped:** v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
-
-**In progress:** v1.2 Cross-platform Chat State Foundation — all phases complete. Phase 9 (portable chat-state machine + Zustand web adapter, re-verified 6/6 CSTATE requirements, UAT complete) and Phase 10 (bounded message loading, verified passed 2026-07-11: 6/6 CLOAD requirements, UAT 5/5, CR-01 stale-callback gap closed by c404b0cd); `/channels/general` is the canonical community chat surface (the `/chat` route was removed). Outstanding: milestone audit and the Phase 9 security review (`09-SECURITY.md`, 1 open threat).
+**Shipped:**
+- v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
+- v1.1 The Coaching Loop Foundation (2026-07-06) — Phases 4, 7, 8; profiles + real persistent chat. Closed informally during the 2026-07-06 re-scope (no separate archive; its requirements are archived inside `milestones/v1.2-REQUIREMENTS.md`).
+- v1.2 Cross-platform Chat State Foundation (2026-07-11) — Phases 9–10, 26 plans, 12/12 requirements, audit passed (`milestones/v1.2-MILESTONE-AUDIT.md`); override closeout with 6 stale artifacts acknowledged as deferred (STATE.md Deferred Items). Phase 9 security review verified, 0 open threats. `/channels/:id` is the canonical community chat surface (the 1-on-1 `/chat` route was removed 2026-07-10).
 
 What works today:
 - Monochrome design system: `light-dark()` oklch token ladder, WCAG-AA contrast-tested, five kit components (Button, Input, Card, Progress, Alert), `/kit` demo page as the visual contract in both themes.
 - Full auth loop: signup (always client) → verification email → login → persistent session → logout → password recovery; all screens Enter-submittable, calm non-enumerating copy.
-- Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients`, recursion-safe RLS (`is_coach_of`/`is_client_of`), server-enforced roles, idempotent seed + `pnpm verify:rls` (8/8 live assertions).
+- Database foundation: hardened `handle_new_user` trigger, `profiles` + `coach_clients` + `client_profiles` + chat schema, recursion-safe RLS (`is_coach_of`/`is_client_of`), server-enforced roles, DB-frozen protected fields, idempotent seed + `pnpm verify:rls` live assertions.
 - Role-aware routing: default-deny `(authenticated)` guard, pure-redirect root, wrong-door guards, `redirectIfSignedIn` on auth pages, AppShell with zero primary actions, calm empty states.
-- Quality floor: 173/173 tests, clean build/typecheck/lint, focus-ring regression tripwire, chroma/contrast gates.
+- Client profiles: safe-edit `/profile` (Server Action), instant-apply accessibility prefs, consent fields, read-only coach detail at `/coach/clients/[id]`.
+- Community chat at `/channels/:id`: persisted idempotent sends with an optimistic lifecycle and draft-safe failure recovery, realtime in-place merges (no duplicates, no layout shift), presence/typing, bounded 40+1 newest window on open, cursor-based load-earlier with infinite scroll and preserved reading position, identity-safe store purge on sign-out/identity change.
+- Portable chat-state contract: platform-neutral reducer/selectors in `@fish/core/chat-state`, 17 JSON fixture vectors, protocol docs + Android/iOS native architecture notes.
 
-Known tech debt (non-blocking, from the v1.0 audit): Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind version pinning via caret ranges; stale dev seed password for client1 (environment drift). Full list: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
+Known tech debt (non-blocking): from the v1.0 audit — Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind caret-range pinning; stale dev seed password for client1. From the v1.2 audit — docs/intel codebase maps lag the code (refresh via `/gsd-map-codebase`); vite@8 wants `@types/node` >= 22.12.0 (installed 22.10.7, warning only). Full lists: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`, `.planning/milestones/v1.2-MILESTONE-AUDIT.md`.
 
-## Current Milestone: v1.1 The Coaching Loop Foundation
+## Next Milestone Goals
 
-**Goal:** Turn FISH from an auth-and-role shell into a working coaching foundation — a coach can understand an assigned client through a safe profile and hold a real persistent 1-on-1 conversation; the client experiences both as calm, assigned, choice-free screens.
-
-**Current active foundations:**
-- **Client profiles** — profile domain schema (goals, role context, level, locale/timezone, accessibility prefs, consent metadata), client read/edit flow, coach client-detail view
-- **Real 1-on-1 chat** — conversation/message schema + RLS, a real `send-message` Edge Function (idempotent, calm errors), web chat route on live data (persistent send/read), coach reads the same thread
-
-**Scope boundaries (this milestone):**
-- Persistent chat send/read only — realtime/presence/typing deferred to the next milestone
-- Human coach↔client chat only — no AI replies or learning pipelines (AGENTS.md coach-first + build order)
-- Assignment stays seed/manual-only — everything reads the existing seeded coach↔client relationship; no assignment UI
-- Learning-flow engines were removed on 2026-07-06 and are not active product surfaces until a coach validates the technique and a new milestone accepts them
+Not yet defined — run `/gsd-new-milestone` (questioning → research → requirements → roadmap). Standing candidates from the deferred list:
+- Native Android/iOS chat implementations against the shipped `@fish/core/chat-state` contract (fixture-vector parity)
+- Assignment UI (coach→client assignment is still seed/manual-only)
+- Privacy tooling (consent flows, export, delete, retention) — precedes public launch
+- Coach-validated learning techniques (coach-first rule; nothing built until validated manually)
 
 ## Core Value
 
@@ -68,28 +65,27 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 - ✓ Role-aware landing screens: client home greets by first name and names the real assigned coach; calm assigned-state empty state — v1.0 (Phase 3)
 - ✓ Coach home lists the coach's assigned clients (seeded), alphabetical with quiet emails, rows inert — v1.0 (Phase 3)
 - ✓ Chat data boundary: one assigned coach-client conversation, member-scoped RLS reads, RPC-only idempotent sends, immutable messages, read-state ownership, seeded conversations, and generated Supabase chat row aliases — v1.1 (Phase 7)
+- ✓ Client profiles: safe-edit client flow with DB-frozen protected fields, accessibility prefs, consent fields, and read-only coach detail view — v1.1 (Phase 4, PROF-01..06)
+- ✓ Real persisted chat: idempotent `send-message` Edge Function, live web chat route, optimistic send lifecycle with draft preservation and calm invalid-message guidance — v1.1 (Phase 8, CHAT-02/03/05/07, XC-04)
+- ✓ Portable chat-state contract: platform-neutral reducer/selectors in `@fish/core/chat-state` with 17 JSON fixture vectors, web-only Zustand adapter (never source of truth), identity-safe store purge, and Android/iOS protocol docs — v1.2 (Phase 9, CSTATE-01..06)
 - ✓ Bounded chat message loading: 40-message newest window on open, cursor-based older-history pagination with reading position preserved, in-place realtime merges with no duplicates or layout shift, and coalesced bounded reconnect recovery with stale-callback revocation — v1.2 (Phase 10, CLOAD-01..06)
 
 ### Active
 
-v1.1 The Coaching Loop — scoped and committed (full requirements with REQ-IDs: `.planning/REQUIREMENTS.md`):
-
-- [x] Client profiles — profile domain schema, client read/edit flow, coach client-detail view
-- [x] Real 1-on-1 chat route — real send-message Edge Function, web chat route on live data, optimistic send lifecycle, draft preservation, calm invalid-message guidance, and coach/client thread read
+(None — the next milestone defines fresh requirements via `/gsd-new-milestone`.)
 
 ### Out of Scope
 
 Durable exclusions:
 - Color palette / brand colors — hierarchy before color; if the UI works in monochrome, the structure is right; color is a deliberate later layer
 - Coach signup UI — coach accounts are created manually (seed/dashboard); open role pickers would let anyone claim coach powers
-- Community feed, gamification, streaks — explicitly barred until foundations are done and techniques are coach-validated (AGENTS.md)
-- Native iOS/Android clients — web-only product; no native apps
+- Gamification and streaks — explicitly barred until techniques are coach-validated; a resetting streak is never allowed (AGENTS.md). *Note: a community chat room (`/channels/:id`) shipped in v1.2 as the canonical chat surface — that is a chat channel, not the gamified community feed this exclusion covers.*
 
-Deferred past v1.1 (in the build order, just not this milestone):
-- Realtime chat (presence, typing, read-state, live updates) — v1.1 ships persistent send/read; realtime is the next chat layer
+Deferred (in the build order, just not scheduled):
+- Native iOS/Android client implementations — the v1.2 event/result contract and native architecture notes anticipate them; production native code is a future milestone
 - AI-assisted coaching (AI replies, grammar/vocabulary/pronunciation pipelines, memory, personalization) — build the human chat foundation first; AI waits for coach-validated techniques
-- Assignment UI — coach→client assignment stays seed/manual-only in v1.1; the relationship schema already carries chat and profiles
-- Full privacy tooling (consent flows, export, delete, retention, audit logging) — v1.1 captures consent *fields* on the profile; the privacy milestone precedes public launch
+- Assignment UI — coach→client assignment stays seed/manual-only; the relationship schema already carries chat and profiles
+- Full privacy tooling (consent flows, export, delete, retention, audit logging) — consent *fields* shipped on the profile in v1.1; the privacy milestone precedes public launch
 - Validated learning content/templates — learning mechanics await coach validation (coach-first rule)
 
 ## Context
@@ -98,7 +94,7 @@ Deferred past v1.1 (in the build order, just not this milestone):
 - Web stack: Next.js 16.2.9, React 19.2.7, Tailwind CSS v4.3.1 (CSS-first `@theme` — **never** create `tailwind.config.js`; keep `tailwindcss` and `@tailwindcss/postcss` on the same version).
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
-- **Current state (2026-07-06):** v1.0 Monochrome Foundations shipped and archived (see `## Current State` above). v1.1 now contains client profiles and real persistent 1-on-1 chat. The unvalidated learning-flow implementations were removed from active code, schema contracts, seed data, and release gates. The product is web-only; the native iOS/Android app scaffolds were removed.
+- **Current state (2026-07-11):** v1.2 shipped. Chat state lives in `@fish/core/chat-state` (portable reducer + 17 fixture vectors) with a web-only Zustand adapter; the canonical chat surface is the community room at `/channels/:id` (the 1-on-1 `/chat` route was removed 2026-07-10, with dated supersede notes on CSTATE-02/06 and D-09). Message loading is bounded (40+1 keyset SSR window, cursor-based load-earlier, coalesced reconnect backfill). The product is web-only; Android/iOS get the same event contract for future native implementations. The unvalidated learning-flow implementations remain removed. The `.planning/codebase/` maps lag the current code — refresh via `/gsd-map-codebase` before relying on them.
 
 ## Constraints
 
@@ -126,6 +122,12 @@ Deferred past v1.1 (in the build order, just not this milestone):
 | Each protected page re-checks role server-side (getUser + profiles.role) | Server Components re-execute per navigation; the shared layout can't know which leaf route it wraps | ✓ Good — wrong-door guards verified live in Phase 3 UAT |
 | RLS is the sole authorization boundary for reads (no manual id filtering) | Direct Supabase reads under RLS per AGENTS.md; policies (`is_coach_of`/`is_client_of`) carry the whole burden | ✓ Good — `pnpm verify:rls` passes 8/8 live assertions |
 | Realtime lifecycle callbacks are revoked per effect (`active` flag) so a removed conversation's queued callbacks are inert | Async channel removal leaves stale callbacks callable; guarding entry (not just promise exit) is the only way to protect the active conversation's reconnect state | ✓ Good — CR-01 closed at c404b0cd; regression proves stale A callbacks can't corrupt B's first-subscribe slots or recovery lock |
+| Chat state is a portable reducer in `@fish/core` with JSON fixture vectors as the cross-platform contract | Android/iOS must implement identical behavior natively; replayable vectors make parity testable instead of aspirational | ✓ Good — 17 vectors, dependency-boundary tests reject React/Zustand/Supabase imports in the core |
+| Zustand is the web React adapter only, never the source of truth | State rules must stay portable; a web store that owns logic can't be reimplemented natively | ✓ Good — store actions dispatch `ChatEvent` through the one portable reducer; authority exclusions are tested |
+| Community room `/channels/:id` is the canonical chat surface; the 1-on-1 `/chat` route was removed (supersedes D-09) | The shipped, verified surface is the community room; keeping a dead route made verification measure the wrong thing | ✓ Good — dated supersede notes on CSTATE-02/06; e2e smoke repointed; re-verification passed against the real surface |
+| Conversation open reads a bounded 40+1 keyset window; older history is cursor-paged | Near-instant open with no unbounded fetches; the +1 sentinel answers "is there more" without a count query | ✓ Good — CLOAD-01..06 verified; reconnect backfill bounded and conversation-owned |
+| Chat cache binds to a verified auth identity fingerprint and purges on any identity change | A module-singleton store outlives sign-out; only identity-keyed purging prevents cross-account leaks | ✓ Good — CR-01 leak closed; covers non-button account switch, sign-out, and cross-tab expiry |
+| Failed older-page loads stop after exactly one automatic retry, then a calm manual affordance | Unbounded auto-retry is a silent storm; the failure flag must commit atomically with the loading flag in the reducer | ✓ Good — store-backed `hasLoadError`; browser-faithful IntersectionObserver regression proves single-fire |
 
 ## Evolution
 
@@ -145,4 +147,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-11 after Phase 10 verification passed (6/6 CLOAD requirements) — all v1.2 phases complete*
+*Last updated: 2026-07-11 after v1.2 milestone*
