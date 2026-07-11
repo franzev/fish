@@ -34,9 +34,25 @@ apps/web -> packages/supabase -> packages/core
 
 Protected routes live under `apps/web/app/(authenticated)`. The shared layout
 verifies the current user and loads shell preferences; leaf pages enforce
-role-specific redirects.
+role-specific redirects. The `app` tree is the route layer: it owns route
+files and genuinely route-local UI, while reusable domain implementations live
+outside it.
 
-Server-facing page data is assembled in `apps/web/lib/auth/server.ts`.
+Auth, profile, coach, and chat code is organized under `apps/web/features`.
+Each feature exposes a client-safe presentation entry point from `index.ts`
+and a separate server entry point from `server/index.ts`. Server page-data and
+factory modules import `server-only`; browser client factories, session
+listeners, and hooks import `client-only`. Server Actions remain explicit
+`"use server"` RPC boundaries so Client Components can invoke them without
+pulling their implementation dependencies into the browser graph.
+
+The former `apps/web/lib/auth/*`, `apps/web/lib/validation/profile`, and moved
+`apps/web/components/{auth,profile,coach}` paths remain as documented, small
+compatibility re-export facades. New route and feature code imports the owning
+feature entry point directly. These facades preserve existing public and test
+contracts while callers migrate; client-safe barrels never re-export poisoned
+server entries.
+
 Supabase access is wrapped by repositories in
 `apps/web/lib/services/supabase/`, with separate browser, server, and proxy
 factories. UI components do not construct low-level Supabase clients.
@@ -67,7 +83,7 @@ uses two state layers:
 
 1. `packages/core/src/chat-state` — pure events, reducer transitions,
    selectors, deterministic merges, optimistic reconciliation, and pagination.
-2. `apps/web/app/(authenticated)/chat/store` — a Zustand adapter that adds
+2. `apps/web/features/chat/model/store` — a Zustand adapter that adds
    React integration, hydration keys, and identity-safe cache ownership.
 
 Sending follows this command path:
