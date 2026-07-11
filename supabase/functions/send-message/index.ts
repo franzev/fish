@@ -3,6 +3,7 @@ type SendMessageCommand = {
   body: string;
   clientRequestId: string;
   replyToMessageId?: string | null;
+  attachmentIds?: string[];
 };
 
 const chatLimits = {
@@ -53,7 +54,11 @@ Deno.serve(async (request) => {
   const clientRequestId = command.clientRequestId?.trim() ?? "";
   const replyToMessageId = command.replyToMessageId?.trim() || null;
 
-  if (!command.conversationId || !body || !clientRequestId) {
+  const attachmentIds = Array.isArray(command.attachmentIds)
+    ? [...new Set(command.attachmentIds.filter((id) => typeof id === "string" && id))]
+    : [];
+
+  if (!command.conversationId || (!body && attachmentIds.length === 0) || !clientRequestId) {
     return calmError("Add a message before sending.", 400);
   }
 
@@ -62,6 +67,9 @@ Deno.serve(async (request) => {
       "This message is a little long. Try sending it in two parts.",
       400,
     );
+  }
+  if (attachmentIds.length > 5) {
+    return calmError("Add up to five images to one message.", 400);
   }
 
   const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -90,6 +98,7 @@ Deno.serve(async (request) => {
       p_body: body,
       p_client_request_id: clientRequestId,
       p_reply_to_message_id: replyToMessageId,
+      p_attachment_ids: attachmentIds,
     }),
   });
 
