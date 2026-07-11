@@ -28,6 +28,9 @@ function MessageImage({
 }) {
   const width = image.width ?? 1;
   const height = image.height ?? 1;
+  const previewAspectRatio = wrapped
+    ? Math.min(2, Math.max(2 / 3, width / height))
+    : width / height;
   const [localPreviewUrl] = useState(() =>
     image.thumbnailUrl?.startsWith("blob:") ? image.thumbnailUrl : undefined
   );
@@ -63,6 +66,9 @@ function MessageImage({
       : loadedDisplayUrl === displayUrl
         ? "loaded"
         : "loading";
+  const progressivelyLoads = Boolean(
+    displayUrl && thumbnailUrl && displayUrl !== thumbnailUrl
+  );
 
   const refreshUrls = useCallback(async () => {
     setRefreshing(true);
@@ -116,11 +122,16 @@ function MessageImage({
         className={cn(
           "relative block overflow-hidden rounded-control bg-surface-2 text-left",
           wrapped
-            ? "h-chat-image-preview w-auto max-w-full shrink-0"
+            ? "max-h-chat-image-preview w-auto max-w-full shrink-0"
             : "w-full max-h-chat-image-max-height max-w-chat-image",
           mine && "bg-surface-3"
         )}
-        style={{ aspectRatio: wrapped ? wrappedAspectRatio(width, height) : `${width} / ${height}` }}
+        style={{
+          aspectRatio: previewAspectRatio,
+          ...(wrapped
+            ? { width: `calc(var(--spacing-chat-image-preview) * ${previewAspectRatio})` }
+            : {}),
+        }}
       >
         {thumbnailState === "failed" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-xs p-sm text-center text-ui-xs text-muted">
@@ -152,9 +163,34 @@ function MessageImage({
                 onLoad={() => setLoadedThumbnailUrl(thumbnailUrl)}
                 onError={() => setFailedThumbnailUrl(thumbnailUrl)}
                 className={cn(
-                  "size-full object-cover transition-opacity duration-message",
-                  thumbnailState === "loaded" ? "opacity-100" : "opacity-0"
+                  "size-full object-cover transition-image-load duration-message",
+                  thumbnailState === "loaded" &&
+                    !(progressivelyLoads && displayState === "loaded")
+                    ? "opacity-100"
+                    : "opacity-0",
+                  progressivelyLoads && displayState === "loading" &&
+                    "scale-110 blur-md"
                 )}
+                data-image-quality={progressivelyLoads ? "preview" : "full"}
+              />
+            )}
+            {progressivelyLoads && displayUrl && (
+              /* The private display variant fades over the intentionally blurred LQIP. */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={displayUrl}
+                alt=""
+                aria-hidden="true"
+                width={width}
+                height={height}
+                decoding="async"
+                onLoad={() => setLoadedDisplayUrl(displayUrl)}
+                onError={() => setFailedDisplayUrl(displayUrl)}
+                className={cn(
+                  "absolute inset-0 size-full object-cover transition-opacity duration-message",
+                  displayState === "loaded" ? "opacity-100" : "opacity-0"
+                )}
+                data-image-quality="full"
               />
             )}
             {thumbnailState === "loading" && (
@@ -254,24 +290,24 @@ function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
   );
 }
 
-function wrappedAspectRatio(width: number, height: number): string {
-  const ratio = width / height;
-  if (ratio > 2) return "2 / 1";
-  if (ratio < 2 / 3) return "2 / 3";
-  return `${width} / ${height}`;
-}
-
 export function MessageImages({ images, authorName, mine }: MessageImagesProps) {
   if (images.length === 0) return null;
   const imageAttachments = images.filter((attachment) => attachment.kind !== "file");
   const fileAttachments = images.filter((attachment) => attachment.kind === "file");
   const wrapped = imageAttachments.length > 1;
   return (
-    <div className="flex w-full max-w-chat-image flex-col gap-2xs" aria-label={`${images.length} shared ${images.length === 1 ? "file" : "files"}`}>
+    <div
+      className={cn(
+        "flex w-full flex-col gap-2xs",
+        imageAttachments.length === 1 && "max-w-chat-preview",
+        imageAttachments.length === 0 && "max-w-chat-image"
+      )}
+      aria-label={`${images.length} shared ${images.length === 1 ? "file" : "files"}`}
+    >
       {imageAttachments.length > 0 && (
         <div
           data-image-layout={wrapped ? "wrap" : "single"}
-          className={cn(wrapped ? "flex flex-wrap items-start justify-start gap-2xs" : "block")}
+          className="flex flex-wrap gap-nudge"
         >
           {imageAttachments.map((image) => (
             <MessageImage

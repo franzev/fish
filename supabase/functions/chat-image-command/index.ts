@@ -284,9 +284,9 @@ Deno.serve(async (request) => {
         return Response.json({ attachment: ready.data, urls: signed.data ?? [] }, { headers: jsonHeaders });
       }
       const display = await makeVariant(bytes, 1920, 78, 1_250_000);
-      const needsSeparateThumbnail = Math.max(display.sourceWidth, display.sourceHeight) > 480;
+      const needsSeparateThumbnail = Math.max(display.sourceWidth, display.sourceHeight) > 64;
       const thumbnail = needsSeparateThumbnail
-        ? await makeVariant(bytes, 480, 68, 120_000)
+        ? await makeVariant(bytes, 64, 56, 16_000)
         : null;
       if (display.bytes.length > maxStoredBytes) throw new Error("processed_too_large");
       const base = `${attachment.conversation_id}/${attachment.id}`;

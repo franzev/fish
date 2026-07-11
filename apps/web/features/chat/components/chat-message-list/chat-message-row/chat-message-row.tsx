@@ -296,6 +296,7 @@ export function ChatMessageRow({
             <div
               className={cn(
                 "flex max-w-message flex-col",
+                Boolean(message.images?.length) && "w-full",
                 mine && "items-end"
               )}
             >

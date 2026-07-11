@@ -67,7 +67,7 @@ test("client prepares, sends, and opens a private image", async ({ page }) => {
   await expect(composerPreview).toBeVisible();
   const previewBox = await composerPreview.boundingBox();
   expect(previewBox).not.toBeNull();
-  expect(previewBox!.width).toBeLessThanOrEqual(88);
+  expect(previewBox!.width).toBeLessThanOrEqual(200);
   const sendButton = page.getByRole("button", { name: "Send message" });
   await expect(sendButton).toBeEnabled({ timeout: 30_000 });
   await sendButton.click();
@@ -130,8 +130,9 @@ test("mixed image aspect ratios flow from left to right and wrap", async ({ page
   expect(continuedRows).toBeGreaterThan(0);
   expect(wrappedRows).toBeGreaterThan(0);
   for (const box of boxes) {
-    expect(box.width / box.height).toBeGreaterThanOrEqual(0.65);
-    expect(box.width / box.height).toBeLessThanOrEqual(2.05);
+    const previewRatio = box.width / box.height;
+    expect(previewRatio).toBeGreaterThanOrEqual(0.65);
+    expect(previewRatio).toBeLessThanOrEqual(2.05);
   }
 });
 

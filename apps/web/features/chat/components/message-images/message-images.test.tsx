@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MessageImages } from "./message-images";
 
@@ -47,6 +47,29 @@ describe("MessageImages", () => {
     expect(screen.getByRole("link", { name: "Open notes.pdf" })).toHaveAttribute("target", "_blank");
   });
 
+  it("crossfades from a blurred thumbnail to the sharp display image", () => {
+    const { container } = render(<MessageImages
+      images={[{
+        ...image,
+        thumbnailUrl: "https://storage.test/thumbnail",
+        displayUrl: "https://storage.test/display",
+      }]}
+      authorName="Alex"
+      mine={false}
+    />);
+
+    const preview = container.querySelector<HTMLImageElement>('[data-image-quality="preview"]');
+    const full = container.querySelector<HTMLImageElement>('[data-image-quality="full"]');
+    expect(preview).toHaveClass("scale-110", "blur-md");
+    expect(full).toHaveClass("opacity-0");
+
+    fireEvent.load(preview!);
+    fireEvent.load(full!);
+
+    expect(preview).toHaveClass("opacity-0");
+    expect(full).toHaveClass("opacity-100");
+  });
+
   it.each([
     { count: 1, layout: "single" },
     { count: 2, layout: "wrap" },
@@ -67,19 +90,19 @@ describe("MessageImages", () => {
 
     const gallery = container.querySelector(`[data-image-layout="${layout}"]`);
     expect(gallery?.children).toHaveLength(count);
-    if (count > 1) expect(gallery).toHaveClass("flex", "flex-wrap", "justify-start", "gap-2xs");
+    expect(gallery).toHaveClass("flex", "flex-wrap", "gap-nudge");
     Array.from(gallery?.children ?? []).forEach((tile) => {
       if (count > 1) {
-        expect(tile).toHaveClass("h-chat-image-preview", "w-auto", "shrink-0");
+        expect(tile).toHaveClass("max-h-chat-image-preview", "w-auto", "max-w-full", "shrink-0");
         expect(tile).not.toHaveClass("grow", "flex-1");
-        expect(tile).toHaveStyle({ aspectRatio: "1200 / 800" });
+        expect(tile).toHaveStyle({ aspectRatio: "1.5" });
       } else {
         expect(tile).toHaveClass("max-h-chat-image-max-height");
       }
     });
   });
 
-  it("clamps extreme aspect ratios without changing source order", () => {
+  it("bounds extreme preview frames without changing source order", () => {
     const { container } = render(<MessageImages
       images={[
         { ...image, id: "tall", width: 200, height: 1200, thumbnailUrl: "blob:tall", displayUrl: "blob:tall" },
@@ -90,7 +113,7 @@ describe("MessageImages", () => {
     />);
 
     const items = container.querySelector('[data-image-layout="wrap"]')?.children;
-    expect(items?.[0]).toHaveStyle({ aspectRatio: "2 / 3" });
-    expect(items?.[1]).toHaveStyle({ aspectRatio: "2 / 1" });
+    expect(items?.[0]).toHaveStyle({ aspectRatio: String(2 / 3) });
+    expect(items?.[1]).toHaveStyle({ aspectRatio: "2" });
   });
 });

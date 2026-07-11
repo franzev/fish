@@ -138,7 +138,7 @@
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
   --spacing-chat-container-demo: 720px;
-  --spacing-chat-image-preview: 88px;
+  --spacing-chat-image-preview: 200px;
   --spacing-chat-image-max-height: 480px;
   --aspect-chat-gallery: 4 / 3;
   --spacing-chat-image-thumb: 240px;
@@ -157,7 +157,7 @@
   --container-search-header: 180px; /* compact always-visible chat header search field */
   --container-search-pop: 340px;    /* chat quick-filter popover panel */
   --container-filters-dialog: 384px; /* centered Filters dialog on md+ */
-  --container-chat-image: 320px;
+  --container-chat-image: 560px;
   --container-image-viewer: 1120px;
 
   /* ---- Focus and motion ---- */
@@ -356,6 +356,10 @@
 
 @utility transition-progress {
   transition-property: width;
+}
+
+@utility transition-image-load {
+  transition-property: filter, opacity, transform;
 }
 
 /* Chat: "load earlier" skeleton rows. Opacity-only pulse — never a shimmer
