@@ -17,9 +17,8 @@ interface UseLoadOlderMessagesOptions {
 
 /** Sentinel-triggered "load earlier" with reading-position preservation
  *  (CLOAD-03/CLOAD-04). Exposes ONE wrapped `loadOlderAndPreserveScroll`
- *  callback — both the IntersectionObserver sentinel below and the
- *  component's "Load earlier" button must call this same callback, never
- *  the raw `onLoadOlder`, or the button path would bypass the scroll
+ *  callback for the IntersectionObserver sentinel and the calm retry action;
+ *  neither path may call the raw `onLoadOlder`, or it would bypass the scroll
  *  restore (review HIGH 10-04).
  *
  *  The failure flag (`hasLoadError`) is per-conversation store state, read

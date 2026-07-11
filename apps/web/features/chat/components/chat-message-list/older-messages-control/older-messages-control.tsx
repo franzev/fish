@@ -39,12 +39,7 @@ export function OlderMessagesControl({
         className="flex h-pagination-slot flex-col justify-center gap-xs pb-md"
       >
         {loading ? (
-          <>
-            <MessageRowsSkeleton />
-            <span role="status" className="sr-only">
-              Loading earlier messages
-            </span>
-          </>
+          <MessageRowsSkeleton />
         ) : hasError ? (
           <div
             className="flex items-center gap-xs"
@@ -61,17 +56,7 @@ export function OlderMessagesControl({
               Try again
             </Button>
           </div>
-        ) : (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => void onLoad()}
-            >
-              Load earlier messages
-            </Button>
-          </div>
-        )}
+        ) : null}
       </div>
     </>
   );

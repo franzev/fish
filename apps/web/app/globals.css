@@ -43,6 +43,7 @@
   --color-foreground: light-dark(oklch(0.15 0 0), oklch(0.97 0 0));    /* headings, highest emphasis */
   --color-body: light-dark(oklch(0.32 0 0), oklch(0.88 0 0));          /* body copy */
   --color-muted: light-dark(oklch(0.50 0 0), oklch(0.68 0 0));         /* captions, placeholders, hints */
+  --color-skeleton-author: light-dark(oklch(0.82 0 0), oklch(0.38 0 0)); /* loading names: distinct from body bars without text-level contrast */
   --color-focus-outer: light-dark(oklch(0.15 0 0), oklch(1 0 0));      /* keyboard ring band against page */
   --color-focus-inner: light-dark(oklch(1 0 0), oklch(0.15 0 0));      /* keyboard ring band against primary fill */
 
@@ -100,10 +101,10 @@
   /* ---- Tap targets (ND rule: nothing tiny or fiddly) ---- */
   --size-control: 56px;           /* min height for buttons & inputs       */
   /* Reserved height for the older-page feedback region (WR-07): sized to
-     the tallest state (the two-row loading skeleton) so idle / loading /
+     the tallest state (the paragraph-shaped loading skeleton) so idle / loading /
      failure / retry-success never change the region's height and the
      transcript below never shifts (layout-stability contract, STATE.md). */
-  --size-pagination-slot: 112px;
+  --size-pagination-slot: 144px;
 
   /* ---- Spacing scale: intent tokens only, no one-off numeric utilities ---- */
   --spacing-3xs: 2px;             /* hairline separation */
@@ -122,6 +123,7 @@
 
   --spacing-control: var(--size-control);
   --spacing-pagination-slot: var(--size-pagination-slot);
+  --spacing-skeleton-text: var(--text-ui-sm);
   --spacing-field-message: 22px;
   --spacing-badge: 20px;
   /* Reply spline: gap-md + half sm avatar — anchors the L-stem on avatar centre. */
@@ -147,6 +149,7 @@
   --container-chat: 720px;
   --container-chat-preview: 360px;
   --container-message: 85%;
+  --container-skeleton-author: 96px;
   --container-search-header: 180px; /* compact always-visible chat header search field */
   --container-search-pop: 340px;    /* chat quick-filter popover panel */
   --container-filters-dialog: 384px; /* centered Filters dialog on md+ */
