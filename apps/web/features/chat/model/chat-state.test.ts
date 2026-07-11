@@ -163,4 +163,27 @@ describe("chat-state", () => {
       snippet: "Message deleted",
     });
   });
+
+  it("merges private image metadata into a realtime placeholder", () => {
+    const current = [message({ id: "m-image", senderId: "them", body: "" })];
+    const images = [{
+      id: "image-1",
+      status: "ready" as const,
+      originalName: "photo.png",
+      width: 1200,
+      height: 800,
+      thumbnailPath: "chat/image/thumbnail.webp",
+      displayPath: "chat/image/display.webp",
+      thumbnailUrl: "https://storage.test/thumbnail",
+      displayUrl: "https://storage.test/display",
+    }];
+
+    const merged = mergeChatMessage(
+      current,
+      message({ id: "m-image", senderId: "them", body: "", images })
+    );
+
+    expect(merged[0].images).toEqual(images);
+    expect(toReplyPreview(merged[0], "me", "Coach Dana", "Alex").snippet).toBe("Image");
+  });
 });

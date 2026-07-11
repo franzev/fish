@@ -151,6 +151,40 @@ describe("chat store authority boundary", () => {
 });
 
 describe("chat store actions", () => {
+  it("keeps optimistic attachment URLs when the send acknowledgement is a bare message row", () => {
+    const store = createChatStore();
+    const attachment = {
+      id: "attachment-1",
+      status: "ready" as const,
+      kind: "image" as const,
+      originalName: "photo.png",
+      mimeType: "image/webp",
+      byteSize: 512,
+      width: 1,
+      height: 1,
+      thumbnailPath: "chat/thumbnail.webp",
+      displayPath: "chat/display.webp",
+      thumbnailUrl: "https://storage.test/thumbnail",
+      displayUrl: "https://storage.test/display",
+    };
+
+    store.getState().sendOptimisticMessage({
+      ...baseMessage,
+      id: "request-with-image",
+      clientRequestId: "request-with-image",
+      images: [attachment],
+    });
+    store.getState().confirmSentMessage({
+      ...baseMessage,
+      id: "persisted-with-image",
+      clientRequestId: "request-with-image",
+      images: [],
+    }, "request-with-image");
+
+    expect(selectMessagesForConversation(store.getState(), conversationId)[0]?.images)
+      .toEqual([attachment]);
+  });
+
   it("hydrates, sends optimistically, confirms, fails, and merges read state by conversation", () => {
     const store = createChatStore();
 
