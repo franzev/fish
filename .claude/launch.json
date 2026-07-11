@@ -1,7 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "sketches", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8765"], "port": 8765 },
     { "name": "web", "runtimeExecutable": "pnpm", "runtimeArgs": ["--filter", "@fish/web", "exec", "next", "dev"], "autoPort": true },
     { "name": "web-preview", "runtimeExecutable": "pnpm", "runtimeArgs": ["--filter", "@fish/web", "exec", "next", "start"], "autoPort": true }
   ]
