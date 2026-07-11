@@ -4,16 +4,11 @@ const redirectMock = vi.fn();
 vi.mock("next/navigation", () => ({
   redirect: (...args: unknown[]) => {
     redirectMock(...args);
-    // next/navigation's redirect() throws in real usage to halt rendering;
-    // mirror that so the caller stops executing past the call.
     throw new Error("NEXT_REDIRECT");
   },
 }));
 
 const getUserMock = vi.fn();
-
-// Keyed-by-table mock: .from(table).select().eq().single() resolves from a
-// configurable per-table queue so each test can script the profiles read.
 const singleQueues: Record<string, unknown[]> = {};
 
 function queueSingle(table: string, value: unknown) {

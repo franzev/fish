@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// Mock surface for getCoachClientDetailData: getCurrentProfile() reads
-// auth.getCurrentUser() + profiles.findById(); the detail read then uses
-// clientProfiles.findByIdForCoach() and profiles.findDisplayNameById().
 const getCurrentUserMock = vi.fn();
 const findProfileByIdMock = vi.fn();
 const findClientProfileByIdMock = vi.fn();
@@ -25,7 +22,8 @@ vi.mock("@/lib/services/supabase/server", () => ({
   }),
 }));
 
-import { getAuthenticatedShellProfile, getCoachClientDetailData } from "./server";
+import { getAuthenticatedShellProfile } from "@/features/auth/server";
+import { getCoachClientDetailData } from "@/features/coach/server";
 
 function signedInAsCoach() {
   getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "coach-1" } });
@@ -35,10 +33,6 @@ function signedInAsCoach() {
   });
 }
 
-/* Regression: a `uuid` column rejects a non-UUID id with Postgres 22P02 (a
-   THROW, not zero rows). Without the id guard, /coach/clients/not-a-uuid would
-   surface a distinguishable 500 instead of the calm not-found — a UUID
-   enumeration side channel and a broken not-found contract (T-04-02/D-11). */
 describe("getCoachClientDetailData — uniform calm not-found (T-04-02)", () => {
   afterEach(() => {
     getCurrentUserMock.mockReset();
@@ -77,8 +71,6 @@ describe("getCoachClientDetailData — uniform calm not-found (T-04-02)", () => 
 
     expect(findByIdForCoachMock).toHaveBeenCalledWith(uuid);
     expect(result).toEqual({ role: "coach", client: null });
-    // A null client-profile row means unassigned/unknown — the display-name
-    // read must NOT happen (it would only run for a visible, assigned client).
     expect(findDisplayNameByIdMock).not.toHaveBeenCalled();
   });
 });

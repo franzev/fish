@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editProfileSchema } from "./profile";
+import { editProfileSchema } from "./validation";
 
 describe("editProfileSchema", () => {
   it("rejects an empty displayName with the calm error message", () => {
