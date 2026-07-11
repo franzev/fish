@@ -9,7 +9,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 **Shipped:**
 - v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
 - v1.1 The Coaching Loop Foundation (2026-07-06) — Phases 4, 7, 8; profiles + real persistent chat. Closed informally during the 2026-07-06 re-scope (no separate archive; its requirements are archived inside `milestones/v1.2-REQUIREMENTS.md`).
-- v1.2 Cross-platform Chat State Foundation (2026-07-11) — Phases 9–10, 26 plans, 12/12 requirements, audit passed (`milestones/v1.2-MILESTONE-AUDIT.md`); override closeout with 6 stale artifacts acknowledged as deferred (STATE.md Deferred Items). Phase 9 security review verified, 0 open threats. `/channels/:id` is the canonical community chat surface (the 1-on-1 `/chat` route was removed 2026-07-10).
+- v1.2 Cross-platform Chat State Foundation (2026-07-11) — Phases 9–10, 26 plans, 12/12 requirements, audit passed (`milestones/v1.2-MILESTONE-AUDIT.md`). Phase 9 security review verified, 0 open threats. `/channels/:id` is the canonical community chat surface (the 1-on-1 `/chat` route was removed 2026-07-10).
 
 What works today:
 - Monochrome design system: `light-dark()` oklch token ladder, WCAG-AA contrast-tested, five kit components (Button, Input, Card, Progress, Alert), `/kit` demo page as the visual contract in both themes.
@@ -20,7 +20,7 @@ What works today:
 - Community chat at `/channels/:id`: persisted idempotent sends with an optimistic lifecycle and draft-safe failure recovery, realtime in-place merges (no duplicates, no layout shift), presence/typing, bounded 40+1 newest window on open, cursor-based load-earlier with infinite scroll and preserved reading position, identity-safe store purge on sign-out/identity change.
 - Portable chat-state contract: platform-neutral reducer/selectors in `@fish/core/chat-state`, 17 JSON fixture vectors, protocol docs + Android/iOS native architecture notes.
 
-Known tech debt (non-blocking): from the v1.0 audit — Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind caret-range pinning; stale dev seed password for client1. From the v1.2 audit — docs/intel codebase maps lag the code (refresh via `/gsd-map-codebase`); vite@8 wants `@types/node` >= 22.12.0 (installed 22.10.7, warning only). Full lists: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`, `.planning/milestones/v1.2-MILESTONE-AUDIT.md`.
+Known tech debt (non-blocking): from the v1.0 audit — Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind caret-range pinning; stale dev seed password for client1. From the v1.2 audit — vite@8 wants `@types/node` >= 22.12.0 (installed 22.10.7, warning only). Full lists: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`, `.planning/milestones/v1.2-MILESTONE-AUDIT.md`.
 
 ## Next Milestone Goals
 

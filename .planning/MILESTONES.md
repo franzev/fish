@@ -7,7 +7,7 @@
 **Phases completed:** 2 phases (9–10), 26 plans, 62 tasks
 **Stats:** ~295 commits · 447 files · ~43.3k insertions / ~9.5k deletions · 2026-07-07 → 2026-07-11 (5 days)
 **Requirements:** 12/12 v1.2 requirements satisfied (CSTATE-01…06, CLOAD-01…06)
-**Closeout:** override_closeout — both phases verified and milestone audit passed (see `milestones/v1.2-MILESTONE-AUDIT.md`); known verification overrides: 6 stale open artifacts acknowledged as deferred (5 debug session files, 1 quick-task status file — see STATE.md Deferred Items)
+**Closeout:** override_closeout — both phases verified and milestone audit passed (see `milestones/v1.2-MILESTONE-AUDIT.md`). Six stale bookkeeping artifacts were acknowledged at close and later removed during planning cleanup; Git history retains them.
 
 **Key accomplishments:**
 
