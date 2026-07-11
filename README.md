@@ -50,6 +50,8 @@ pnpm build
 pnpm lint
 pnpm typecheck
 pnpm --filter @fish/web test run
+pnpm test:storybook
+pnpm build-storybook
 pnpm verify:rls
 pnpm verify:chat-realtime
 ```
