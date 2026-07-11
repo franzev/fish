@@ -20,7 +20,14 @@ test("client sends a message and it persists as exactly one row after reload", a
   // A newest-row-only match is never used here — selecting only the most
   // recent row would silently hide a duplicate instead of proving there is
   // only one.
-  await expect(page.locator("li", { hasText: body })).toHaveCount(1);
+  const sentRow = page.locator("li", { hasText: body });
+  await expect(sentRow).toHaveCount(1);
+  // Optimistic rows intentionally appear immediately. The message action bar
+  // is rendered only after the Server Action confirms the persisted row, so
+  // wait for that stable UI contract before reloading the page.
+  await expect(
+    sentRow.getByRole("button", { name: "Reply to message" })
+  ).toHaveCount(1);
   await expect(page.getByText("Not sent yet")).toHaveCount(0);
   await expect(
     page.getByText("That did not send yet. Keep this open and try again.")

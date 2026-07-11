@@ -26,6 +26,7 @@ const client1 = { email: "client1@fish.dev", password: "fish-client-dev" };
 // 04-01 Task 3: the unassigned second coach and client2 negative-path fixtures (D-15).
 const coach2Unassigned = { email: "coach2@fish.dev", password: "fish-coach-dev" };
 const client2 = { email: "client2@fish.dev", password: "fish-client-dev" };
+const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 
 let failures = 0;
 
@@ -45,6 +46,17 @@ async function signInAs(email: string, password: string) {
   return supabase;
 }
 
+async function getCommunityProfileIds(
+  supabase: Awaited<ReturnType<typeof signInAs>>,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("message_reads")
+    .select("user_id")
+    .eq("conversation_id", demoCommunityConversationId);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.user_id));
+}
+
 /** Any 42P17 (recursion) anywhere is a hard failure regardless of which assertion hit it. */
 function checkNoRecursion(label: string, error: { code?: string; message: string } | null): void {
   if (error?.code === "42P17") {
@@ -61,11 +73,9 @@ async function checkClientBoundary(): Promise<void> {
   }
   const ownId = userData.user.id;
 
-  // Post-0006 invariant: the is_client_of policy legitimately widens a
-  // client's profiles read to include their assigned coach's row, so the
-  // client now sees exactly 2 rows (own + assigned coach), not 1. Resolve
-  // the assigned coach id the same legitimate way a client can (the 0003
-  // "client reads own coach assignment" policy permits this read).
+  // Direct assignment and community membership both legitimately widen the
+  // profile read. Resolve the direct coach and the community membership set,
+  // then prove no identity outside that exact union is visible.
   const { data: assignment, error: assignmentError } = await supabase
     .from("coach_clients")
     .select("coach_id")
@@ -84,21 +94,29 @@ async function checkClientBoundary(): Promise<void> {
     return;
   }
   const rows = data ?? [];
-  const exactlyOwnAndCoach = rows.length === 2;
+  const allowedIds = await getCommunityProfileIds(supabase);
+  allowedIds.add(ownId);
+  allowedIds.add(coachId);
+  const returnedIds = new Set(rows.map((row) => row.id));
+  const exactlyAllowed =
+    returnedIds.size === allowedIds.size &&
+    Array.from(returnedIds).every((id) => allowedIds.has(id));
   report(
-    "DB-03 client boundary: sees exactly two rows (own + assigned coach)",
-    exactlyOwnAndCoach,
-    `got ${rows.length} rows`,
+    "DB-03 client boundary: sees exactly the direct and community profile set",
+    exactlyAllowed,
+    `got ${rows.length} rows; expected ${allowedIds.size}`,
   );
-  // Identity-based leak check: any row whose id is neither our own nor our
-  // assigned coach's is a leak (cross-client visibility or a foreign coach).
-  const allowedIds = new Set([ownId, coachId]);
   const leaked = rows.some((row) => !allowedIds.has((row as { id?: string }).id ?? ""));
   report("DB-03 client boundary: no other accounts visible", !leaked, leaked ? "row(s) with a foreign id returned" : undefined);
 }
 
 async function checkCoachBoundary(): Promise<void> {
   const supabase = await signInAs(coach.email, coach.password);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    report("DB-03 coach boundary: resolve own user id", false, userError?.message);
+    return;
+  }
   const { data, error } = await supabase.from("profiles").select("*");
   checkNoRecursion("DB-03 coach boundary", error);
   if (error) {
@@ -106,12 +124,30 @@ async function checkCoachBoundary(): Promise<void> {
     return;
   }
   const rows = data ?? [];
-  // Own row + 3 assigned clients = 4.
-  report("DB-03 coach boundary: sees own row plus 3 assigned clients", rows.length === 4, `got ${rows.length} rows`);
-  const roles = rows.map((row) => (row as { role?: string }).role);
-  const coachCount = roles.filter((role) => role === "coach").length;
-  const clientCount = roles.filter((role) => role === "client").length;
-  report("DB-03 coach boundary: exactly one coach row, three client rows", coachCount === 1 && clientCount === 3, `coach=${coachCount} client=${clientCount}`);
+  const { data: assignments, error: assignmentError } = await supabase
+    .from("coach_clients")
+    .select("client_id")
+    .eq("coach_id", userData.user.id);
+  if (assignmentError) {
+    report("DB-03 coach boundary: resolve assigned client ids", false, assignmentError.message);
+    return;
+  }
+  const allowedIds = await getCommunityProfileIds(supabase);
+  allowedIds.add(userData.user.id);
+  for (const assignment of assignments ?? []) allowedIds.add(assignment.client_id);
+  const returnedIds = new Set(rows.map((row) => row.id));
+  const exactlyAllowed =
+    returnedIds.size === allowedIds.size &&
+    Array.from(returnedIds).every((id) => allowedIds.has(id));
+  report(
+    "DB-03 coach boundary: sees exactly the assigned and community profile set",
+    exactlyAllowed,
+    `got ${rows.length} rows; expected ${allowedIds.size}`,
+  );
+  report(
+    "DB-03 coach boundary: no profile outside the allowed set",
+    rows.every((row) => allowedIds.has(row.id)),
+  );
 }
 
 async function checkEscalationRejected(): Promise<void> {
@@ -409,7 +445,8 @@ async function queryChatConversationsForClient(
   const { data, error } = await supabase
     .from("conversations")
     .select("id, client_id, coach_id")
-    .eq("client_id", clientId);
+    .eq("client_id", clientId)
+    .neq("id", demoCommunityConversationId);
   checkNoRecursion(label, error);
   if (error) {
     report(`${label}: conversation select succeeds`, false, error.message);
@@ -455,7 +492,8 @@ async function resetChatVerificationState(): Promise<void> {
 
   const { data: conversations, error: conversationError } = await admin
     .from("conversations")
-    .select("id, client_id, coach_id");
+    .select("id, client_id, coach_id")
+    .neq("id", demoCommunityConversationId);
   report("CHAT setup: reads seeded conversations", !conversationError, conversationError?.message);
   if (conversationError) return;
 

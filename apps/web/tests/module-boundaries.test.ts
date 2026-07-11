@@ -20,16 +20,45 @@ function collectSourceFiles(root: string): string[] {
   });
 }
 
+function collectDirectories(root: string): string[] {
+  return [
+    root,
+    ...readdirSync(root).flatMap((entry) => {
+      const path = join(root, entry);
+      return statSync(path).isDirectory() ? collectDirectories(path) : [];
+    }),
+  ];
+}
+
 function relativePaths(paths: string[], root = webRoot): string[] {
   return paths.map((path) => relative(root, path)).sort();
 }
 
 describe("module boundaries", () => {
-  it("keeps the reusable chat feature out of the App Router tree", () => {
-    const appChatPath = join(webRoot, "app", "(authenticated)", "chat");
-    const appSources = collectSourceFiles(join(webRoot, "app"));
+  it("keeps feature-only directories out of the App Router tree", () => {
+    const routeFiles = new Set([
+      "default.tsx",
+      "error.tsx",
+      "layout.tsx",
+      "loading.tsx",
+      "not-found.tsx",
+      "page.tsx",
+      "route.ts",
+      "template.tsx",
+    ]);
+    const offenders = collectDirectories(join(webRoot, "app")).filter((dir) => {
+      const directSources = readdirSync(dir).filter((entry) =>
+        /\.(?:ts|tsx)$/.test(entry) &&
+        !/\.(?:test|stories)\.(?:ts|tsx)$/.test(entry)
+      );
 
-    expect(appSources.filter((file) => file.startsWith(`${appChatPath}${sep}`))).toEqual([]);
+      return (
+        directSources.length > 0 &&
+        !directSources.some((entry) => routeFiles.has(entry))
+      );
+    });
+
+    expect(relativePaths(offenders)).toEqual([]);
   });
 
   it("keeps client modules from importing the chat server entry point", () => {
@@ -51,6 +80,30 @@ describe("module boundaries", () => {
       .filter((file) => /from\s+["']@\/app\//.test(readFileSync(file, "utf8")));
 
     expect(relativePaths(offenders)).toEqual([]);
+  });
+
+  it("keeps chat compatibility callers on public entry points", () => {
+    const offenders = collectSourceFiles(webRoot).filter((file) =>
+      /from\s+["']@\/components\/chat\//.test(readFileSync(file, "utf8"))
+    );
+
+    expect(relativePaths(offenders)).toEqual([]);
+  });
+
+  it("keeps stories on the intentional reusable-component surface", () => {
+    const stories = collectSourceFiles(webRoot)
+      .map((file) => relative(webRoot, file).split(sep).join("/"))
+      .filter((file) => /\.stories\.(?:ts|tsx)$/.test(file));
+    const offenders = stories.filter(
+      (file) =>
+        !file.startsWith("components/") &&
+        !file.startsWith("features/chat/components/")
+    );
+
+    expect(offenders).toEqual([]);
+    expect(stories.some((file) => file.startsWith("features/chat/components/"))).toBe(
+      true
+    );
   });
 
   it("keeps the core chat state free of framework and provider dependencies", () => {
