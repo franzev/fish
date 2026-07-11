@@ -9,9 +9,11 @@ import {
   IconSend,
   IconSticker,
 } from "@tabler/icons-react";
-import type { KeyboardEvent } from "react";
+import { useState, type DragEvent, type KeyboardEvent } from "react";
 import { AddMenu } from "./add-menu";
 import { composerIconButtonClass } from "./icon-button-class";
+import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
+import { ImageUploadPreview } from "./image-upload-preview";
 
 export interface ComposerProps {
   /** Community channel name for the placeholder; direct chats omit it. */
@@ -23,6 +25,11 @@ export interface ComposerProps {
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onBlur: () => void;
   onSelectEmoji: (emoji: string) => void;
+  images?: PendingChatImage[];
+  onSelectImages?: (files: File[]) => void;
+  onRemoveImage?: (clientUploadId: string) => void;
+  onRetryImage?: (clientUploadId: string) => void;
+  imageSelectionDisabled?: boolean;
 }
 
 /** The message composer: one borderless surface-2 bar holding every input
@@ -40,9 +47,29 @@ export function Composer({
   onKeyDown,
   onBlur,
   onSelectEmoji,
+  images = [],
+  onSelectImages = () => undefined,
+  onRemoveImage = () => undefined,
+  onRetryImage = () => undefined,
+  imageSelectionDisabled,
 }: ComposerProps) {
+  const [dragActive, setDragActive] = useState(false);
+  const hasSendContent = draft.trim().length > 0 || images.length > 0;
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    if (!imageSelectionDisabled) onSelectImages(Array.from(event.dataTransfer.files));
+  };
   return (
-    <div className="p-sm">
+    <div
+      className="relative p-sm"
+      onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+      onDragOver={(event) => event.preventDefault()}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragActive(false);
+      }}
+      onDrop={handleDrop}
+    >
       {/* Accessibility floor: the textarea carries no border or ring of its
           own (explicit design decision), so the visible keyboard-focus
           indicator moves to the bar via focus-within — a thinner, dimmed
@@ -51,11 +78,13 @@ export function Composer({
           bar while still being visible. */}
       <div
         className={cn(
-          "flex items-end gap-xs rounded-control bg-surface-2 p-xs",
+          "rounded-control bg-surface-2",
           "focus-within:outline-1 focus-within:outline-offset-2 focus-within:outline-focus-outer/60"
         )}
       >
-        <AddMenu />
+        <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
+        <div className="flex items-end gap-xs p-xs">
+        <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
         <textarea
           aria-label="Message"
           value={draft}
@@ -88,18 +117,25 @@ export function Composer({
         >
           <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
         </EmojiPickerButton>
-        {canSend && (
+        {hasSendContent && (
           <Button
             type="button"
             fullWidth={false}
             onClick={onSend}
+            disabled={!canSend}
             className="shrink-0 px-md"
             aria-label="Send message"
           >
             <IconSend size={20} stroke={1.75} aria-hidden="true" />
           </Button>
         )}
+        </div>
       </div>
+      {dragActive && !imageSelectionDisabled && (
+        <div className="pointer-events-none absolute inset-sm z-10 flex items-center justify-center rounded-control border border-border-strong bg-surface text-ui-sm text-body">
+          Add images to this message
+        </div>
+      )}
     </div>
   );
 }

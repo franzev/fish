@@ -9,6 +9,7 @@ import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import { useMemo, useRef, useState } from "react";
 import type { SendMessageActionState } from "@/features/chat/contracts";
 import { useChatComposer } from "@/features/chat/hooks/use-chat-composer";
+import { useChatImageUploads } from "@/features/chat/hooks/use-chat-image-uploads";
 import type { LoadOlderMessagesActionState } from "@/features/chat/hooks/use-chat-messages";
 import { useChatMessages } from "@/features/chat/hooks/use-chat-messages";
 import { useChatPresence } from "@/features/chat/hooks/use-chat-presence";
@@ -159,6 +160,7 @@ export function ChatClient({
   }
   const isReconnecting = realtimeStatus === "connecting" && hasConnected;
   const isOffline = realtimeStatus === "disconnected";
+  const imageUploads = useChatImageUploads(chat.conversationId);
   const {
     draft,
     notice,
@@ -185,6 +187,10 @@ export function ChatClient({
     sendLocalTyping,
     stopLocalTyping,
     scheduleLocalTypingStop,
+    pendingImages: imageUploads.images,
+    // The sent row takes ownership of local image preview URLs so it can
+    // render immediately without downloading its just-uploaded image again.
+    clearPendingImages: () => imageUploads.clear({ preservePreviewUrls: true }),
   });
 
   // Room membership has no dedicated table yet (demo bridge), so the member
@@ -288,6 +294,11 @@ export function ChatClient({
         handleComposerKeyDown={handleComposerKeyDown}
         stopLocalTyping={stopLocalTyping}
         scrollToBottom={scrollToBottom}
+        images={imageUploads.images}
+        imageNotice={imageUploads.notice}
+        addImages={imageUploads.addFiles}
+        removeImage={imageUploads.remove}
+        retryImage={imageUploads.retry}
       />
     </section>
   );

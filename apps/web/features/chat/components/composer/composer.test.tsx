@@ -36,7 +36,26 @@ describe("Composer", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps the GIF, sticker, and + menu affordances visible but inert", () => {
+  it("keeps Send visible but disabled while an attachment is preparing", () => {
+    const file = new File(["image"], "photo.png", { type: "image/png" });
+    render(<Composer
+      {...baseProps}
+      images={[{
+        clientUploadId: "upload-1",
+        file,
+        kind: "image",
+        sourceMimeType: "image/png",
+        previewUrl: "blob:preview",
+        progress: 0.5,
+        status: "uploading",
+      }]}
+      canSend={false}
+    />);
+
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+  });
+
+  it("keeps the image, GIF, sticker, and + menu affordances visible", () => {
     render(<Composer {...baseProps} />);
 
     expect(
@@ -48,7 +67,7 @@ describe("Composer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
     expect(
-      screen.getByRole("menuitem", { name: "Upload File" })
+      screen.getByRole("menuitem", { name: "Add files" })
     ).toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: "Audio Recording" })

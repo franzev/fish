@@ -5,6 +5,7 @@ import type { ClientChatData } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import { IconX } from "@tabler/icons-react";
 import type { KeyboardEvent } from "react";
+import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
 import { Composer, QuotedMessage } from "../visual";
 
 interface ChatComposerSurfaceProps {
@@ -23,6 +24,11 @@ interface ChatComposerSurfaceProps {
   handleComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   stopLocalTyping: () => void;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
+  images: PendingChatImage[];
+  imageNotice: string | null;
+  addImages: (files: File[]) => void;
+  removeImage: (clientUploadId: string) => void;
+  retryImage: (clientUploadId: string) => void;
 }
 
 export function ChatComposerSurface({
@@ -41,6 +47,11 @@ export function ChatComposerSurface({
   handleComposerKeyDown,
   stopLocalTyping,
   scrollToBottom,
+  images,
+  imageNotice,
+  addImages,
+  removeImage,
+  retryImage,
 }: ChatComposerSurfaceProps) {
   return (
     <>
@@ -53,6 +64,12 @@ export function ChatComposerSurface({
       {notice && (
         <Alert tone="notice" className="mx-md mb-xs">
           {notice}
+        </Alert>
+      )}
+
+      {imageNotice && (
+        <Alert tone="notice" className="mx-md mb-xs">
+          {imageNotice}
         </Alert>
       )}
 
@@ -112,6 +129,11 @@ export function ChatComposerSurface({
           onKeyDown={handleComposerKeyDown}
           onBlur={stopLocalTyping}
           onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
+          images={images}
+          onSelectImages={addImages}
+          onRemoveImage={(id) => void removeImage(id)}
+          onRetryImage={retryImage}
+          imageSelectionDisabled={Boolean(editingMessage) || isOffline}
         />
       </div>
     </>

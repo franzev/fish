@@ -19,6 +19,7 @@ import {
   getBubbleRadiusClasses,
   MessageBody,
   MessageMeta,
+  MessageImages,
   MessageStatus,
   QuotedMessage,
   Reactions,
@@ -34,7 +35,9 @@ export interface ChatMessageActions {
     body: string,
     clientRequestId: string,
     replyToMessageId: string | null,
-    clearComposer?: boolean
+    clearComposer?: boolean,
+    attachmentIds?: string[],
+    images?: NonNullable<LocalMessage["images"]>
   ) => Promise<void>;
 }
 
@@ -138,6 +141,9 @@ export function ChatMessageRow({
           snippet={getMessageSnippet(replyMessage)}
         />
       )}
+      {Boolean(message.images?.length) && !message.deletedAt && (
+        <MessageImages images={message.images ?? []} authorName={getAuthorName(message)} mine={mine} />
+      )}
       <div
         className={cn(
           "text-ui-sm break-words",
@@ -150,7 +156,8 @@ export function ChatMessageRow({
                   : "bg-surface text-body",
                 connectedBubbleRadius
               ),
-          message.deletedAt && "italic text-muted"
+          message.deletedAt && "italic text-muted",
+          !message.deletedAt && !visibleMessageBody(message) && "hidden"
         )}
       >
         <MessageBody body={visibleMessageBody(message)} mine={mine} />
@@ -221,7 +228,9 @@ export function ChatMessageRow({
                   message.body,
                   message.clientRequestId,
                   message.replyToMessageId ?? null,
-                  false
+                  false,
+                  message.images?.map((image) => image.id) ?? [],
+                  message.images ?? []
                 )
               }
             >

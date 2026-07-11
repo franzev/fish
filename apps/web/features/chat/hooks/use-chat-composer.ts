@@ -3,6 +3,8 @@ import { chatLimits } from "@fish/core/chat";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import type { SendMessageActionState } from "@/features/chat/contracts";
 import type { LocalMessage } from "./use-chat-messages";
+import type { PendingChatImage } from "./use-chat-image-uploads";
+import type { ClientChatImage } from "@/lib/services";
 import { useChatStore, selectComposerForConversation } from "@/features/chat/model/store";
 
 interface UseChatComposerOptions {
@@ -15,6 +17,8 @@ interface UseChatComposerOptions {
   sendLocalTyping: (typing: boolean) => void;
   stopLocalTyping: () => void;
   scheduleLocalTypingStop: () => void;
+  pendingImages: PendingChatImage[];
+  clearPendingImages: () => void;
 }
 
 function makeRequestId(): string {
@@ -31,6 +35,8 @@ export function useChatComposer({
   sendLocalTyping,
   stopLocalTyping,
   scheduleLocalTypingStop,
+  pendingImages,
+  clearPendingImages,
 }: UseChatComposerOptions) {
   const [notice, setNotice] = useState<string | null>(null);
   const composer = useChatStore((state) =>
@@ -47,7 +53,9 @@ export function useChatComposer({
   const { draft, replyTargetId: replyingToId, editTargetId: editingMessageId } =
     composer;
   const trimmedDraft = draft.trim();
-  const canSend = trimmedDraft.length > 0;
+  const readyImages = pendingImages.filter((image) => image.status === "ready");
+  const imageUploadsSettled = pendingImages.every((image) => image.status === "ready");
+  const canSend = (trimmedDraft.length > 0 || readyImages.length > 0) && imageUploadsSettled;
   const replyingTo = useMemo(
     () =>
       replyingToId
@@ -80,7 +88,9 @@ export function useChatComposer({
     body: string,
     clientRequestId: string,
     replyToMessageId: string | null,
-    clearComposer = false
+    clearComposer = false,
+    attachmentIds: string[] = [],
+    optimisticImages: ClientChatImage[] = []
   ) {
     setNotice(null);
     stopLocalTyping();
@@ -92,6 +102,7 @@ export function useChatComposer({
       senderRole: chat.currentUserRole,
       senderDisplayName: chat.currentUserDisplayName,
       body,
+      images: optimisticImages,
       clientRequestId,
       editedAt: null,
       deletedAt: null,
@@ -106,6 +117,7 @@ export function useChatComposer({
     if (clearComposer) {
       setDraft(chat.conversationId, "");
       setReplyTarget(chat.conversationId, null);
+      clearPendingImages();
     }
 
     const result = await sendMessageAction({
@@ -113,6 +125,7 @@ export function useChatComposer({
       body,
       clientRequestId,
       replyToMessageId,
+      attachmentIds,
     }).catch(() => ({
       status: "notice" as const,
       values: {},
@@ -162,8 +175,13 @@ export function useChatComposer({
   }
 
   async function handleSend() {
-    if (trimmedDraft.length === 0) {
+    if (trimmedDraft.length === 0 && readyImages.length === 0) {
       setNotice("Add a message before sending.");
+      return;
+    }
+
+    if (!imageUploadsSettled) {
+      setNotice("Let the files finish preparing, then send.");
       return;
     }
 
@@ -177,7 +195,31 @@ export function useChatComposer({
       return;
     }
 
-    await sendWithRequestId(trimmedDraft, makeRequestId(), replyingToId, true);
+    await sendWithRequestId(
+      trimmedDraft,
+      makeRequestId(),
+      replyingToId,
+      true,
+      readyImages.flatMap((image) => image.attachmentId ? [image.attachmentId] : []),
+      readyImages.flatMap((image) =>
+        image.attachmentId && image.displayPath && image.storedMimeType && image.storedByteSize
+          ? [{
+              id: image.attachmentId,
+              status: "ready" as const,
+              kind: image.kind,
+              originalName: image.file.name || "File",
+              mimeType: image.storedMimeType,
+              byteSize: image.storedByteSize,
+              width: image.width,
+              height: image.height,
+              thumbnailPath: image.thumbnailPath,
+              displayPath: image.displayPath,
+              thumbnailUrl: image.kind === "image" ? image.previewUrl : image.thumbnailUrl,
+              displayUrl: image.kind === "image" ? image.previewUrl : image.displayUrl,
+            }]
+          : []
+      )
+    );
   }
 
   async function handleDeleteMessage(message: LocalMessage) {
@@ -250,6 +292,7 @@ export function useChatComposer({
     }
 
     event.preventDefault();
+    if (!canSend) return;
     void handleSend();
   }
 
