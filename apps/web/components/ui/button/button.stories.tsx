@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { Button } from "./button";
 
 const meta = {
@@ -10,6 +11,7 @@ const meta = {
     fullWidth: false,
     loading: false,
     variant: "primary",
+    onClick: fn(),
   },
   argTypes: {
     variant: {
@@ -43,5 +45,23 @@ export const Loading: Story = {
   args: {
     children: "Saving",
     loading: true,
+  },
+};
+
+export const Disabled: Story = {
+  args: {
+    children: "Send message",
+    disabled: true,
+  },
+};
+
+export const ActivatesOnce: Story = {
+  args: {
+    children: "Send message",
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Send message" }));
+    await expect(args.onClick).toHaveBeenCalledOnce();
   },
 };
