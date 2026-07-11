@@ -9,6 +9,14 @@ const meta = {
   args: {
     value: "",
     onValueChange: fn(),
+    members: [
+      { id: "1", displayName: "Yoshibro", username: "yoshibro5019" },
+      { id: "2", displayName: "Sir Regan", username: "reganspor" },
+      { id: "3", displayName: "stellostuds", username: "juststello" },
+    ],
+    channels: [
+      { id: "general", name: "general", slug: "general", conversationId: "community" },
+    ],
   },
 } satisfies Meta<typeof SearchFilterPopover>;
 
@@ -22,7 +30,16 @@ export const QuickFiltersOpen: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Search filters" }));
     await expect(
-      within(document.body).getByRole("button", { name: /From a specific user/ })
+      within(document.body).getByRole("menuitem", { name: /From a specific user/ })
+    ).toBeVisible();
+  },
+};
+
+export const FromSuggestions: Story = {
+  args: { value: "from:" },
+  play: async () => {
+    await expect(
+      within(document.body).getByRole("listbox", { name: "From User" })
     ).toBeVisible();
   },
 };

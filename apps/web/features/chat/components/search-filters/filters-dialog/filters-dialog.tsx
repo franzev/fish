@@ -1,124 +1,232 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  parseChatSearchQuery,
+  queryFromCriteria,
+  type ChatFilterCriterion,
+  type ChatSearchAuthorType,
+  type ChatSearchChannel,
+  type ChatSearchContentKind,
+  type ChatSearchMember,
+} from "@/features/chat/model/search";
 import { Dialog } from "@base-ui/react/dialog";
 import { IconX } from "@tabler/icons-react";
-import type { RefObject } from "react";
-
-/** UI stub: every field is inert and all three footer actions simply close
- *  the dialog — the filtering logic lands with the real search feature. */
+import { useState, type RefObject } from "react";
+import { AuthorTypeFilterField } from "../author-type-filter-field";
+import { ChannelFilterField } from "../channel-filter-field";
+import { ContentFilterField } from "../content-filter-field";
+import { DateFilterField } from "../date-filter-field";
+import { MemberFilterField } from "../member-filter-field";
+import { PinnedFilterField } from "../pinned-filter-field";
 
 export interface FiltersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Where focus lands on close. The opener (the search popover) unmounts
-   *  before this dialog closes, so Base UI's default restore target is a
-   *  disconnected node — callers pass a surviving element instead. */
   finalFocus?: RefObject<HTMLElement | null>;
+  query?: string;
+  criteria?: ChatFilterCriterion[];
+  members?: ChatSearchMember[];
+  channels?: ChatSearchChannel[];
+  onApply?: (query: string, criteria: ChatFilterCriterion[]) => void;
 }
 
-interface FilterField {
-  label: string;
-  description: string;
-  placeholder: string;
-}
+const emptyCriteria: ChatFilterCriterion[] = [];
+const emptyMembers: ChatSearchMember[] = [];
+const emptyChannels: ChatSearchChannel[] = [];
 
-const filterFields: FilterField[] = [
-  {
-    label: "From",
-    description: "Messages sent by a person",
-    placeholder: "Anyone",
-  },
-  {
-    label: "In",
-    description: "Messages sent in a channel",
-    placeholder: "ex. general",
-  },
-  {
-    label: "Has",
-    description: "Messages that include links, images, or files",
-    placeholder: "Any content",
-  },
-  {
-    label: "Mentions",
-    description: "Messages that mention a person",
-    placeholder: "Anyone",
-  },
-];
-
-/** Full filter sheet behind the popover's "More filters" — a bottom sheet on
- *  small screens that becomes a centered dialog on md+. */
 export function FiltersDialog({
+  open,
+  ...props
+}: FiltersDialogProps) {
+  return open ? <OpenFiltersDialog open {...props} /> : null;
+}
+
+function OpenFiltersDialog({
   open,
   onOpenChange,
   finalFocus,
+  query = "",
+  criteria = emptyCriteria,
+  members = emptyMembers,
+  channels = emptyChannels,
+  onApply,
 }: FiltersDialogProps) {
-  const close = () => onOpenChange(false);
+  const [draft, setDraft] = useState(criteria);
+
+  const memberCriteria = (kind: "from" | "mentions") =>
+    draft.filter(
+      (criterion): criterion is Extract<ChatFilterCriterion, { kind: typeof kind }> =>
+        criterion.kind === kind
+    );
+  const toggleMember = (kind: "from" | "mentions", member: ChatSearchMember) => {
+    const exists = draft.some(
+      (criterion) => criterion.kind === kind && criterion.member.id === member.id
+    );
+    setDraft(
+      exists
+        ? draft.filter(
+            (criterion) =>
+              !(criterion.kind === kind && criterion.member.id === member.id)
+          )
+        : [...draft, { id: `${kind}:${member.username}`, kind, member }]
+    );
+  };
+  const toggleChannel = (channel: ChatSearchChannel) => {
+    const exists = draft.some(
+      (criterion) => criterion.kind === "in" && criterion.channel.id === channel.id
+    );
+    setDraft(
+      exists
+        ? draft.filter(
+            (criterion) =>
+              !(criterion.kind === "in" && criterion.channel.id === channel.id)
+          )
+        : [...draft, { id: `in:${channel.slug}`, kind: "in", channel }]
+    );
+  };
+  const toggleContent = (contentKind: ChatSearchContentKind) => {
+    const exists = draft.some(
+      (criterion) =>
+        criterion.kind === "has" && criterion.contentKind === contentKind
+    );
+    setDraft(
+      exists
+        ? draft.filter(
+            (criterion) =>
+              !(criterion.kind === "has" && criterion.contentKind === contentKind)
+          )
+        : [...draft, { id: `has:${contentKind}`, kind: "has", contentKind }]
+    );
+  };
+  const toggleAuthor = (authorType: ChatSearchAuthorType) => {
+    const exists = draft.some(
+      (criterion) =>
+        criterion.kind === "author" && criterion.authorType === authorType
+    );
+    setDraft(
+      exists
+        ? draft.filter(
+            (criterion) =>
+              !(criterion.kind === "author" && criterion.authorType === authorType)
+          )
+        : [...draft, { id: `author:${authorType}`, kind: "author", authorType }]
+    );
+  };
+  const pinned = draft.find(
+    (criterion): criterion is Extract<ChatFilterCriterion, { kind: "pinned" }> =>
+      criterion.kind === "pinned"
+  );
+
+  const apply = () => {
+    const text = parseChatSearchQuery(query).text;
+    const nextQuery = queryFromCriteria(text, draft);
+    onApply?.(nextQuery, draft);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-scrim" />
-        {/* Centering without translate positioning (the design-token guard
-            forbids left-1/2-style offsets): on md+ the popup spans inset-0
-            with a fixed width, fit height, and auto margins — the absolute
-            -centering idiom — while small screens keep it docked to the
-            bottom edge as a sheet. */}
         <Dialog.Popup
           finalFocus={finalFocus}
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-filters-sheet flex-col overflow-hidden rounded-t-card border border-border bg-surface md:inset-0 md:m-auto md:h-fit md:w-filters-dialog md:rounded-card"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-filters-sheet flex-col overflow-hidden rounded-t-card border border-border bg-surface md:inset-0 md:m-auto md:h-fit md:w-content md:rounded-card lg:w-filters-dialog"
         >
-          <header className="flex items-center justify-between gap-sm border-b border-border px-md py-sm">
-            <Dialog.Title className="text-heading-sm text-foreground">
-              Filters
-            </Dialog.Title>
+          <header className="flex items-center justify-between gap-sm border-b border-border px-lg py-sm">
+            <div>
+              <Dialog.Title className="font-sans text-heading text-foreground">
+                Filters
+              </Dialog.Title>
+              <Dialog.Description className="text-ui-sm text-muted">
+                Narrow the messages shown in this conversation.
+              </Dialog.Description>
+            </div>
             <Dialog.Close
               aria-label="Close filters"
               className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
             >
-              <IconX size={20} stroke={1.75} aria-hidden="true" />
+              <IconX size={22} stroke={1.75} aria-hidden="true" />
             </Dialog.Close>
           </header>
-          <div className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-md py-md">
-            {filterFields.map((field) => (
-              <div key={field.label} className="flex flex-col gap-2xs">
-                <p className="text-ui-sm font-semibold text-foreground">
-                  {field.label}
-                </p>
-                <p className="text-ui-xs text-muted">{field.description}</p>
-                <div className="flex min-h-control items-center justify-between rounded-control border border-border px-sm text-ui-sm text-muted">
-                  <span>{field.placeholder}</span>
-                  <span aria-hidden="true">▾</span>
-                </div>
-              </div>
-            ))}
-            <div className="flex flex-col gap-2xs">
-              <p className="text-ui-sm font-semibold text-foreground">Date</p>
-              <p className="text-ui-xs text-muted">
-                Messages sent in a time range
-              </p>
-              {/* Honest stub: a plain well like the four selects above — a
-                  focusable button with no handler would be a dead end. */}
-              <div className="flex min-h-control w-full items-center justify-center rounded-control bg-surface-2 text-ui-sm text-muted">
-                + Add date
-              </div>
+
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-lg overflow-y-auto px-lg py-lg lg:grid-cols-2">
+            <div className="flex flex-col gap-lg">
+              <MemberFilterField
+                label="From"
+                description="Sent by any of the selected users"
+                members={members}
+                selectedIds={memberCriteria("from").map((criterion) => criterion.member.id)}
+                onToggle={(member) => toggleMember("from", member)}
+              />
+              <MemberFilterField
+                label="Mentions"
+                description="Mentions any of the selected users"
+                members={members}
+                selectedIds={memberCriteria("mentions").map((criterion) => criterion.member.id)}
+                onToggle={(member) => toggleMember("mentions", member)}
+              />
+              <ChannelFilterField
+                channels={channels}
+                selectedIds={draft.flatMap((criterion) =>
+                  criterion.kind === "in" ? [criterion.channel.id] : []
+                )}
+                onToggle={toggleChannel}
+              />
+              <ContentFilterField
+                selected={draft.flatMap((criterion) =>
+                  criterion.kind === "has" ? [criterion.contentKind] : []
+                )}
+                onToggle={toggleContent}
+              />
+            </div>
+            <div className="flex flex-col gap-lg">
+              <DateFilterField
+                criteria={draft.filter(
+                  (criterion): criterion is Extract<ChatFilterCriterion, { kind: "date" }> =>
+                    criterion.kind === "date"
+                )}
+                onChange={(dates) =>
+                  setDraft([
+                    ...draft.filter((criterion) => criterion.kind !== "date"),
+                    ...dates,
+                  ])
+                }
+              />
+              <AuthorTypeFilterField
+                selected={draft.flatMap((criterion) =>
+                  criterion.kind === "author" ? [criterion.authorType] : []
+                )}
+                onToggle={toggleAuthor}
+              />
+              <PinnedFilterField
+                value={pinned?.value ?? null}
+                onChange={(value) =>
+                  setDraft([
+                    ...draft.filter((criterion) => criterion.kind !== "pinned"),
+                    ...(value === null
+                      ? []
+                      : [{ id: `pinned:${value}`, kind: "pinned" as const, value }]),
+                  ])
+                }
+              />
             </div>
           </div>
-          <footer className="flex items-center gap-sm border-t border-border px-md py-sm">
+
+          <footer className="grid grid-cols-2 items-center gap-sm border-t border-border px-lg py-sm sm:flex">
             <button
               type="button"
-              onClick={close}
-              className="min-h-control rounded-control px-xs text-ui-sm text-muted hover:text-body"
+              onClick={() => setDraft([])}
+              className="col-span-2 min-h-control rounded-control px-xs text-copy font-semibold text-notice hover:text-body sm:col-span-1"
             >
-              Clear filters
+              Clear filters ({draft.length})
             </button>
-            <span aria-hidden="true" className="flex-1" />
-            <Button variant="ghost" fullWidth={false} onClick={close}>
+            <span aria-hidden="true" className="hidden flex-1 sm:block" />
+            <Button className="w-full sm:w-auto" variant="ghost" fullWidth={false} onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            {/* The one primary action in this modal layer. */}
-            <Button fullWidth={false} onClick={close}>
-              Apply
+            <Button className="w-full sm:w-auto" fullWidth={false} onClick={apply}>
+              Apply filters
             </Button>
           </footer>
         </Dialog.Popup>

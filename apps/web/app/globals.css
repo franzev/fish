@@ -149,6 +149,11 @@
      + tab strip 49 (border 1 + py-2xs + h-10). */
   --spacing-emoji-panel-h: 337px; /* emoji picker popover height */
   --spacing-filters-sheet: 85dvh; /* Filters bottom-sheet max height on small screens */
+  --spacing-search-suggestions: 360px;
+  --spacing-search-discovery: min(70dvh, 640px);
+  --spacing-search-results: 520px;
+  --spacing-search-control: 64px; /* prominent chat-toolbar search field */
+  --spacing-filter-options: 312px;
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
   --spacing-chat-container-demo: 720px;
@@ -168,9 +173,12 @@
   --container-chat-preview: 360px;
   --container-message: 85%;
   --container-skeleton-author: 96px;
-  --container-search-header: 180px; /* compact always-visible chat header search field */
-  --container-search-pop: 340px;    /* chat quick-filter popover panel */
-  --container-filters-dialog: 384px; /* centered Filters dialog on md+ */
+  --container-search-header: 488px; /* Discord-like command search field */
+  --container-search-pop: 488px;    /* command and autocomplete panel */
+  --container-search-pop-mobile: calc(100vw - (var(--spacing-page) * 2));
+  --container-filters-dialog: 936px; /* detailed desktop filter editor */
+  --container-calendar: 600px;
+  --container-filter-operator: 240px;
   --container-chat-image: 560px;
   --container-image-viewer: 1120px;
 

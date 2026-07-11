@@ -1,177 +1,273 @@
 "use client";
 
-import { Popover } from "@base-ui/react/popover";
+import { IconSearch, IconX } from "@tabler/icons-react";
 import {
-  Icon,
-  IconAdjustmentsHorizontal,
-  IconAt,
-  IconHash,
-  IconPaperclip,
-  IconSearch,
-  IconUser,
-} from "@tabler/icons-react";
-import { useRef, useState } from "react";
-import { FiltersDialog } from "../filters-dialog";
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import {
+  addChatSearchHistory,
+  appendChatSearchOperator,
+  clearChatSearchHistory,
+  parseChatSearchQuery,
+  queryFromCriteria,
+  readChatSearchHistory,
+  reconcileCriteria,
+  replaceChatSearchToken,
+  type ChatFilterCriterion,
+  type ChatSearchChannel,
+  type ChatSearchContentKind,
+  type ChatSearchHistoryEntry,
+  type ChatSearchMember,
+  type ChatSearchOperator,
+  type ChatSearchToken,
+} from "@/features/chat/model/search";
+import { cn } from "@/lib/utils";
+import { SearchCommandMenu } from "../search-command-menu";
+import {
+  SearchDiscoveryMenu,
+  searchDiscoverySelections,
+  type SearchDiscoverySelection,
+} from "../search-discovery-menu";
+import { SearchSuggestions, type SearchSuggestion } from "../search-suggestions";
 
 export interface SearchFilterPopoverProps {
-  /** Controlled search text — drives the live message filter upstream. */
   value: string;
   onValueChange: (value: string) => void;
+  criteria?: ChatFilterCriterion[];
+  onCriteriaChange?: (criteria: ChatFilterCriterion[]) => void;
+  members?: ChatSearchMember[];
+  channels?: ChatSearchChannel[];
+  onSubmit?: (query: string, criteria: ChatFilterCriterion[]) => void;
+  onOpenFilters?: () => void;
 }
 
-interface QuickFilter {
-  icon: Icon;
-  title: string;
-  /** Prefix appended into the search text, e.g. `from:`. */
-  token: string;
-  /** One-line usage hint under the title. */
-  hint: string;
+const emptyCriteria: ChatFilterCriterion[] = [];
+const emptyMembers: ChatSearchMember[] = [];
+const emptyChannels: ChatSearchChannel[] = [];
+const contentKinds: ChatSearchContentKind[] = ["image", "video", "link", "file", "embed"];
+
+function suggestionValue(suggestion: SearchSuggestion): string {
+  if (suggestion.kind === "member") return suggestion.member.username;
+  if (suggestion.kind === "channel") return suggestion.channel.slug;
+  return String(suggestion.value);
 }
 
-const quickFilters: QuickFilter[] = [
-  {
-    icon: IconUser,
-    title: "From a specific user",
-    token: "from:",
-    hint: "from: user",
-  },
-  {
-    icon: IconHash,
-    title: "Sent in a specific channel",
-    token: "in:",
-    hint: "in: channel",
-  },
-  {
-    icon: IconPaperclip,
-    title: "Includes a specific type of data",
-    token: "has:",
-    hint: "has: link, image, file",
-  },
-  {
-    icon: IconAt,
-    title: "Mentions a specific user",
-    token: "mentions:",
-    hint: "mentions: user",
-  },
-];
+function criterionFromSuggestion(operator: ChatSearchOperator, suggestion: SearchSuggestion): ChatFilterCriterion | null {
+  const value = suggestionValue(suggestion).toLocaleLowerCase();
+  if ((operator === "from" || operator === "mentions") && suggestion.kind === "member") return { id: `${operator}:${suggestion.member.id}`, kind: operator, member: suggestion.member };
+  if (operator === "in" && suggestion.kind === "channel") return { id: `in:${suggestion.channel.id}`, kind: "in", channel: suggestion.channel };
+  if (operator === "has" && suggestion.kind === "content") return { id: `has:${value}`, kind: "has", contentKind: suggestion.value };
+  if (operator === "author" && suggestion.kind === "author") return { id: `author:${value}`, kind: "author", authorType: suggestion.value };
+  if (operator === "pinned" && suggestion.kind === "pinned") return { id: `pinned:${value}`, kind: "pinned", value: suggestion.value };
+  if ((operator === "before" || operator === "after" || operator === "during") && suggestion.kind === "date") return { id: `${operator}:${value}`, kind: "date", operator, date: suggestion.value };
+  return null;
+}
 
-const quickFilterItemClass =
-  "flex min-h-control w-full items-center gap-sm rounded-control px-sm text-left hover:bg-surface-2";
+function renderTokenizedSearchValue(
+  value: string,
+  tokens: ChatSearchToken[]
+): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let offset = 0;
+  for (const token of tokens) {
+    if (token.start > offset) {
+      parts.push(
+        <span key={`text:${offset}`} className="whitespace-pre">
+          {value.slice(offset, token.start)}
+        </span>
+      );
+    }
+    parts.push(
+      <span
+        key={`${token.start}:${token.end}`}
+        data-testid="search-filter-token"
+        className="rounded-control bg-surface-3 font-semibold text-foreground"
+      >
+        {value.slice(token.start, token.end)}
+      </span>
+    );
+    offset = token.end;
+  }
+  if (offset < value.length) {
+    parts.push(
+      <span key={`text:${offset}`} className="whitespace-pre">
+        {value.slice(offset)}
+      </span>
+    );
+  }
+  return parts;
+}
 
-/** The chat header's search field: a compact, always-visible input — no
- *  popover to open before typing — paired with a quiet filters trigger that
- *  holds quick-filter shortcuts (dropping `from:`-style tokens into the
- *  query) and the full Filters dialog. UI stub for now: the tokens land in
- *  the search text; real token-aware filtering ships with the search
- *  feature. */
 export function SearchFilterPopover({
   value,
   onValueChange,
+  criteria = emptyCriteria,
+  onCriteriaChange,
+  members = emptyMembers,
+  channels = emptyChannels,
+  onSubmit = () => undefined,
+  onOpenFilters = () => undefined,
 }: SearchFilterPopoverProps) {
-  const [open, setOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  // Focus restore target for the Filters dialog: the popover (the dialog's
-  // opener) unmounts when the dialog opens, so the dialog needs a surviving
-  // element to return focus to on close.
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [caret, setCaret] = useState(value.length);
+  const [history, setHistory] = useState<ChatSearchHistoryEntry[]>([]);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const tokenLayerRef = useRef<HTMLDivElement | null>(null);
+  const parsed = useMemo(() => parseChatSearchQuery(value, caret), [caret, value]);
+  const activeToken = parsed.activeToken;
+  const tokenMode = Boolean(activeToken && activeToken.start === 0 && parsed.tokens.length === 1 && parsed.text.length === 0);
+  const showTokenLayer = !tokenMode && parsed.tokens.some((token) => token.value.length > 0);
 
-  const appendToken = (token: string) => {
-    onValueChange(`${value.trimEnd()} ${token} `.trimStart());
+  const suggestions = useMemo<SearchSuggestion[]>(() => {
+    if (!activeToken) return [];
+    const query = activeToken.value.trim().toLocaleLowerCase();
+    if (activeToken.operator === "from" || activeToken.operator === "mentions") {
+      return members.filter((member) => `${member.displayName} ${member.username}`.toLocaleLowerCase().includes(query)).map((member) => ({ kind: "member", member }));
+    }
+    if (activeToken.operator === "in") {
+      return channels.filter((channel) => `${channel.name} ${channel.slug}`.toLocaleLowerCase().includes(query)).map((channel) => ({ kind: "channel", channel }));
+    }
+    if (activeToken.operator === "has") return contentKinds.filter((kind) => kind.includes(query)).map((item) => ({ kind: "content", value: item }));
+    if (activeToken.operator === "author") return (["client", "coach"] as const).filter((item) => item.includes(query)).map((item) => ({ kind: "author", value: item }));
+    if (activeToken.operator === "pinned") return ([true, false] as const).filter((item) => String(item).includes(query)).map((item) => ({ kind: "pinned", value: item }));
+    const today = new Date().toISOString().slice(0, 10);
+    return [{ kind: "date", value: /^\d{4}-\d{2}-\d{2}$/.test(activeToken.value) ? activeToken.value : today }];
+  }, [activeToken, channels, members]);
+
+  const discovery = !activeToken && value.trim() ? searchDiscoverySelections(value, members, channels) : [];
+  const updateValue = (nextValue: string, nextCaret = nextValue.length) => {
+    onValueChange(nextValue);
+    onCriteriaChange?.(reconcileCriteria(nextValue, criteria));
+    setCaret(nextCaret);
+    setActiveIndex(0);
+  };
+  const focusAt = (position: number) => requestAnimationFrame(() => {
+    inputRef.current?.focus();
+    inputRef.current?.setSelectionRange(position, position);
+  });
+  const submit = (query: string, nextCriteria: ChatFilterCriterion[]) => {
+    if (!parseChatSearchQuery(query).text && nextCriteria.length === 0) return;
+    setHistory(addChatSearchHistory(query, nextCriteria));
+    setPanelOpen(false);
+    onSubmit(query, nextCriteria);
+  };
+  const selectSuggestion = (suggestion: SearchSuggestion) => {
+    if (!activeToken) return;
+    const replacement = replaceChatSearchToken(value, activeToken, suggestionValue(suggestion));
+    const criterion = criterionFromSuggestion(activeToken.operator, suggestion);
+    const nextCriteria = criterion ? [...criteria.filter((item) => item.id !== criterion.id), criterion] : criteria;
+    onValueChange(replacement.value);
+    onCriteriaChange?.(nextCriteria);
+    setCaret(replacement.caret);
+    setActiveIndex(0);
+    focusAt(replacement.caret);
+  };
+  const selectDiscovery = (selection: SearchDiscoverySelection) => {
+    if (selection.kind === "search") return submit(value, criteria);
+    if (selection.kind === "filters") { setPanelOpen(false); onOpenFilters(); return; }
+    const criterion: ChatFilterCriterion = selection.kind === "from"
+      ? { id: `from:${selection.member.id}`, kind: "from", member: selection.member }
+      : selection.kind === "mentions"
+        ? { id: `mentions:${selection.member.id}`, kind: "mentions", member: selection.member }
+        : { id: `in:${selection.channel.id}`, kind: "in", channel: selection.channel };
+    const nextCriteria = [...criteria.filter((item) => item.id !== criterion.id), criterion];
+    const nextQuery = queryFromCriteria(parsed.text, nextCriteria);
+    onValueChange(nextQuery);
+    onCriteriaChange?.(nextCriteria);
+    setCaret(nextQuery.length);
+    setActiveIndex(0);
+    focusAt(nextQuery.length);
+  };
+  const selectCommand = (operator: ChatSearchOperator | "more") => {
+    if (operator === "more") { setPanelOpen(false); onOpenFilters(); return; }
+    const next = appendChatSearchOperator(value, operator);
+    updateValue(next.value, next.caret);
+    focusAt(next.caret);
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    const options = activeToken ? suggestions : discovery;
+    if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => Math.min(index + 1, Math.max(options.length - 1, 0))); return; }
+    if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => Math.max(index - 1, 0)); return; }
+    if (event.key === "Escape") { event.preventDefault(); setPanelOpen(false); return; }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (activeToken && suggestions[activeIndex]) selectSuggestion(suggestions[activeIndex]);
+      else if (discovery[activeIndex]) selectDiscovery(discovery[activeIndex]);
+      else submit(value, criteria);
+    }
   };
 
   return (
-    <>
-      <div className="flex min-w-0 items-center gap-2xs">
-        {/* Same quiet-well idiom as the emoji picker: no field chrome, focus
-            lands as a border step on the well itself. Fixed compact width —
-            this lives inline in the header now, not in its own panel. */}
-        <div className="relative min-w-0 max-w-search-header flex-1">
-          <span className="pointer-events-none absolute inset-y-0 left-sm flex items-center text-muted">
-            <IconSearch size={18} stroke={1.75} aria-hidden="true" />
-          </span>
+    <div
+      ref={rootRef}
+      className="relative flex min-w-0 max-w-search-header flex-1 flex-col gap-2xs"
+      onBlurCapture={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !rootRef.current?.contains(nextTarget)) {
+          setPanelOpen(false);
+        }
+      }}
+    >
+      <div className="relative flex min-h-search-control min-w-0 items-center rounded-control border border-border bg-bg focus-within:border-border-strong">
+        {tokenMode && activeToken && <span className="ml-md rounded-control bg-surface-3 px-xs py-2xs text-heading-sm font-semibold text-foreground">{activeToken.operator}:</span>}
+        <div className="relative min-w-0 flex-1">
+          {showTokenLayer && (
+            <div
+              ref={tokenLayerRef}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+            >
+              <div className="flex min-h-search-control w-max items-center whitespace-pre px-md text-heading-sm font-semibold text-foreground">
+                {renderTokenizedSearchValue(value, parsed.tokens)}
+              </div>
+            </div>
+          )}
           <input
+            ref={inputRef}
             type="search"
+            role="combobox"
             aria-label="Search messages"
-            placeholder="Search"
-            value={value}
-            onChange={(event) => onValueChange(event.target.value)}
-            className="h-10 w-full rounded-control border border-transparent bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:border-border-strong focus-visible:shadow-none focus-visible:outline-none"
+            aria-autocomplete="list"
+            aria-controls="chat-search-panel"
+            aria-expanded={panelOpen}
+            placeholder={tokenMode ? "" : "Search"}
+            value={tokenMode && activeToken ? activeToken.value : value}
+            onFocus={() => { setHistory(readChatSearchHistory()); setPanelOpen(true); setActiveIndex(0); }}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              const next = tokenMode && activeToken ? `${activeToken.operator}: ${event.target.value}` : event.target.value;
+              updateValue(next, next.length);
+              setPanelOpen(true);
+            }}
+            onClick={(event) => { setCaret(event.currentTarget.selectionStart ?? value.length); setPanelOpen(true); }}
+            onKeyUp={(event) => setCaret(event.currentTarget.selectionStart ?? value.length)}
+            onKeyDown={handleKeyDown}
+            onScroll={(event) => {
+              if (tokenLayerRef.current) {
+                tokenLayerRef.current.scrollLeft = event.currentTarget.scrollLeft;
+              }
+            }}
+            className={cn(
+              "min-h-search-control w-full min-w-0 bg-transparent px-md text-heading-sm font-semibold text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden",
+              showTokenLayer && "text-transparent caret-foreground selection:bg-surface-3"
+            )}
           />
         </div>
-
-        <Popover.Root open={open} onOpenChange={setOpen}>
-          <Popover.Trigger
-            ref={triggerRef}
-            aria-label="Search filters"
-            className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-          >
-            <IconAdjustmentsHorizontal size={20} stroke={1.75} aria-hidden="true" />
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Positioner
-              side="bottom"
-              align="end"
-              sideOffset={4}
-              className="z-20"
-            >
-              <Popover.Popup
-                aria-label="Search filters"
-                className="w-search-pop rounded-card border border-border bg-surface p-3xs shadow-popover"
-              >
-                <p className="px-sm pb-2xs pt-xs text-ui-2xs font-medium uppercase tracking-wide text-muted">
-                  Filters
-                </p>
-                {quickFilters.map((filter) => (
-                  <button
-                    key={filter.token}
-                    type="button"
-                    onClick={() => appendToken(filter.token)}
-                    className={quickFilterItemClass}
-                  >
-                    <filter.icon
-                      size={20}
-                      stroke={1.75}
-                      aria-hidden="true"
-                      className="shrink-0 text-muted"
-                    />
-                    <span className="flex min-w-0 flex-col">
-                      <span className="text-ui-sm text-foreground">
-                        {filter.title}
-                      </span>
-                      <span className="text-ui-xs text-muted">{filter.hint}</span>
-                    </span>
-                  </button>
-                ))}
-                <div className="mt-3xs border-t border-border pt-3xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      setFiltersOpen(true);
-                    }}
-                    className={quickFilterItemClass}
-                  >
-                    <IconAdjustmentsHorizontal
-                      size={20}
-                      stroke={1.75}
-                      aria-hidden="true"
-                      className="shrink-0 text-muted"
-                    />
-                    <span className="text-ui-sm text-foreground">
-                      More filters
-                    </span>
-                  </button>
-                </div>
-              </Popover.Popup>
-            </Popover.Positioner>
-          </Popover.Portal>
-        </Popover.Root>
+        {!value && <span className="pointer-events-none flex min-h-search-control min-w-control items-center justify-center text-muted"><IconSearch size={28} stroke={1.75} aria-hidden="true" /></span>}
+        {value && <button type="button" aria-label="Clear search" onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:text-body"><IconX size={22} stroke={1.75} aria-hidden="true" /></button>}
       </div>
-      <FiltersDialog
-        open={filtersOpen}
-        onOpenChange={setFiltersOpen}
-        finalFocus={triggerRef}
-      />
-    </>
+
+      {panelOpen && <div id="chat-search-panel" className="absolute right-0 top-full z-30 mt-2xs">
+        {activeToken ? <SearchSuggestions operator={activeToken.operator} suggestions={suggestions} activeIndex={Math.min(activeIndex, Math.max(suggestions.length - 1, 0))} onSelect={selectSuggestion} />
+          : value.trim() ? <SearchDiscoveryMenu query={value} members={members} channels={channels} activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} onSelect={selectDiscovery} />
+            : <SearchCommandMenu onSelect={selectCommand} history={history} onHistorySelect={(entry) => { onValueChange(entry.query); onCriteriaChange?.(entry.criteria); submit(entry.query, entry.criteria); }} onClearHistory={() => { clearChatSearchHistory(); setHistory([]); }} />}
+      </div>}
+    </div>
   );
 }

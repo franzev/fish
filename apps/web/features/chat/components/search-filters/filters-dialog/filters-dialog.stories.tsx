@@ -9,6 +9,15 @@ const meta = {
   args: {
     open: true,
     onOpenChange: fn(),
+    members: [
+      { id: "1", displayName: "Yoshibro", username: "yoshibro5019" },
+      { id: "2", displayName: "Sir Regan", username: "reganspor" },
+      { id: "3", displayName: "stellostuds", username: "juststello" },
+    ],
+    channels: [
+      { id: "general", name: "general", slug: "general", conversationId: "community" },
+    ],
+    onApply: fn(),
   },
 } satisfies Meta<typeof FiltersDialog>;
 
