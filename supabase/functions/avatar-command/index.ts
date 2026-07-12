@@ -45,7 +45,7 @@ function calmError(code: string, error: string, status: number): Response {
 }
 
 function enabled(): boolean {
-  return (Deno.env.get("AVATAR_UPLOADS_ENABLED") ?? "true").toLowerCase() !== "false";
+  return Deno.env.get("AVATAR_UPLOADS_ENABLED")?.trim().toLowerCase() === "true";
 }
 
 function isWebP(bytes: Uint8Array): boolean {
@@ -148,25 +148,25 @@ Deno.serve(async (request) => {
     if (authHeader !== `Bearer ${serviceKey}`) {
       return calmError("not_authorized", "That cleanup request is not available.", 403);
     }
-    const cutoff = new Date().toISOString();
-    const oldReadyCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: uploads, error } = await admin.from("avatar_uploads").select("*")
-      .or(`expires_at.lt.${cutoff},and(status.eq.ready,updated_at.lt.${oldReadyCutoff})`)
-      .limit(100);
+    const { data: uploads, error } = await admin.rpc("list_avatar_cleanup_candidates", {
+      p_limit: 100,
+    });
     if (error) return calmError("cleanup_failed", "Avatar cleanup did not finish.", 503);
     let objectsRemoved = 0;
     let rowsRemoved = 0;
     for (const upload of (uploads ?? []) as AvatarUploadRow[]) {
-      if (upload.status === "ready" && upload.avatar_path) {
-        const { count } = await admin.from("profiles").select("id", { count: "exact", head: true })
-          .eq("avatar_path", upload.avatar_path);
-        if ((count ?? 0) > 0) continue;
-      }
       const paths = [upload.staging_path, upload.avatar_path, upload.thumbnail_path]
         .filter((path): path is string => Boolean(path));
       if (paths.length > 0) {
         const removed = await admin.storage.from(bucket).remove(paths);
-        if (!removed.error) objectsRemoved += paths.length;
+        if (removed.error) {
+          console.error("avatar cleanup storage removal failed", {
+            uploadId: upload.id,
+            error: removed.error,
+          });
+          continue;
+        }
+        objectsRemoved += paths.length;
       }
       const deleted = await admin.from("avatar_uploads").delete().eq("id", upload.id);
       if (!deleted.error) rowsRemoved += 1;
@@ -277,6 +277,24 @@ Deno.serve(async (request) => {
     if (new Date(upload.expires_at).getTime() <= Date.now()) {
       return calmError("upload_expired", "That photo upload expired. Choose it again.", 410);
     }
+    if (upload.status === "failed") {
+      const previousPaths = [upload.avatar_path, upload.thumbnail_path]
+        .filter((path): path is string => Boolean(path));
+      if (previousPaths.length > 0) {
+        const removed = await admin.storage.from(bucket).remove(previousPaths);
+        if (removed.error) {
+          return calmError("processing_unavailable", "That photo is still being cleared. Try again.", 503);
+        }
+        const cleared = await admin.from("avatar_uploads").update({
+          avatar_path: null,
+          thumbnail_path: null,
+          updated_at: new Date().toISOString(),
+        }).eq("id", upload.id).eq("user_id", user.id);
+        if (cleared.error) {
+          return calmError("processing_unavailable", "That photo is still being cleared. Try again.", 503);
+        }
+      }
+    }
     const claimed = await admin.from("avatar_uploads")
       .update({ status: "processing", updated_at: new Date().toISOString() })
       .eq("id", upload.id).eq("user_id", user.id).in("status", ["pending", "failed"])
@@ -295,19 +313,26 @@ Deno.serve(async (request) => {
       await admin.storage.from(bucket).remove([upload.staging_path]);
       return calmError("invalid_file", "That file does not match the prepared photo.", 400);
     }
+    let avatarPath = "";
+    let thumbnailPath = "";
+    let displayCreated = false;
+    let thumbnailCreated = false;
+    let published: PublishRow | null = null;
     try {
       await inspectUpload(bytes);
       const display = await makeVariant(bytes, 512, 82);
       const thumbnail = await makeVariant(bytes, 128, 76);
       const base = `${user.id}/${upload.id}`;
-      const avatarPath = `${base}/avatar.webp`;
-      const thumbnailPath = `${base}/thumbnail.webp`;
+      avatarPath = `${base}/avatar.webp`;
+      thumbnailPath = `${base}/thumbnail.webp`;
       const displayUpload = await admin.storage.from(bucket).upload(avatarPath, display.bytes, {
         contentType: "image/webp", cacheControl: "86400", upsert: false,
       });
+      displayCreated = !displayUpload.error;
       const thumbnailUpload = await admin.storage.from(bucket).upload(thumbnailPath, thumbnail.bytes, {
         contentType: "image/webp", cacheControl: "86400", upsert: false,
       });
+      thumbnailCreated = !thumbnailUpload.error;
       if (displayUpload.error || thumbnailUpload.error) throw new Error("variant_upload_failed");
       const publishedResult = await admin.rpc("publish_avatar_upload", {
         p_user_id: user.id,
@@ -318,27 +343,66 @@ Deno.serve(async (request) => {
         p_stored_width: display.width,
         p_stored_height: display.height,
       });
-      const published = (Array.isArray(publishedResult.data) ? publishedResult.data[0] : publishedResult.data) as PublishRow | null;
+      published = (Array.isArray(publishedResult.data) ? publishedResult.data[0] : publishedResult.data) as PublishRow | null;
       if (publishedResult.error || !published?.published) {
+        await admin.from("avatar_uploads").update({
+          avatar_path: displayCreated ? avatarPath : null,
+          thumbnail_path: thumbnailCreated ? thumbnailPath : null,
+          expires_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq("id", upload.id);
         await admin.storage.from(bucket).remove([avatarPath, thumbnailPath, upload.staging_path]);
         return calmError("superseded", "A newer photo selection replaced this one.", 409);
       }
-      await admin.storage.from(bucket).remove([upload.staging_path]);
-      const oldPaths = [published.old_avatar_path, published.old_thumbnail_path]
-        .filter((path): path is string => Boolean(path));
-      if (oldPaths.length > 0) await admin.storage.from(bucket).remove(oldPaths);
-      const urls = await signedAvatarUrls(admin, [avatarPath, thumbnailPath]);
-      return Response.json({
-        profileId: user.id,
-        avatarUrl: urls.get(avatarPath),
-        avatarThumbnailUrl: urls.get(thumbnailPath),
-        updatedAt: published.published_at,
-      }, { headers: jsonHeaders });
     } catch (processingError) {
       console.error("avatar processing failed", { uploadId: upload.id, processingError });
-      await admin.from("avatar_uploads").update({ status: "failed", failure_code: "processing_failed" }).eq("id", upload.id);
+      await admin.from("avatar_uploads").update({
+        status: "failed",
+        failure_code: "processing_failed",
+        avatar_path: displayCreated ? avatarPath : null,
+        thumbnail_path: thumbnailCreated ? thumbnailPath : null,
+        expires_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", upload.id);
+      const generatedPaths = [
+        displayCreated ? avatarPath : null,
+        thumbnailCreated ? thumbnailPath : null,
+      ].filter((path): path is string => Boolean(path));
+      if (generatedPaths.length > 0) {
+        await admin.storage.from(bucket).remove(generatedPaths);
+      }
       return calmError("processing_failed", "We could not prepare that photo. Try another copy.", 422);
     }
+
+    await admin.storage.from(bucket).remove([upload.staging_path]);
+    const oldPaths = [published?.old_avatar_path, published?.old_thumbnail_path]
+      .filter((path): path is string => Boolean(path));
+    if (published?.old_avatar_path) {
+      const now = new Date().toISOString();
+      await admin.from("avatar_uploads").update({
+        status: "superseded",
+        expires_at: now,
+        updated_at: now,
+      }).eq("avatar_path", published.old_avatar_path);
+    }
+    if (oldPaths.length > 0) {
+      const removed = await admin.storage.from(bucket).remove(oldPaths);
+      if (removed.error) {
+        console.error("previous avatar removal failed", { uploadId: upload.id, error: removed.error });
+      }
+    }
+    let urls = new Map<string, string>();
+    try {
+      urls = await signedAvatarUrls(admin, [avatarPath, thumbnailPath]);
+    } catch (signingError) {
+      console.error("published avatar URL signing failed", { uploadId: upload.id, signingError });
+    }
+    return Response.json({
+      profileId: user.id,
+      avatarUrl: urls.get(avatarPath),
+      avatarThumbnailUrl: urls.get(thumbnailPath),
+      updatedAt: published?.published_at,
+    }, { headers: jsonHeaders });
   }
 
   if (command.action === "cancel-upload") {
@@ -365,7 +429,23 @@ Deno.serve(async (request) => {
     } | null;
     const paths = [row?.old_avatar_path, row?.old_thumbnail_path]
       .filter((path): path is string => Boolean(path));
-    if (paths.length > 0) await admin.storage.from(bucket).remove(paths);
+    if (row?.old_avatar_path) {
+      const now = new Date().toISOString();
+      await admin.from("avatar_uploads").update({
+        status: "superseded",
+        expires_at: now,
+        updated_at: now,
+      }).eq("avatar_path", row.old_avatar_path);
+    }
+    if (paths.length > 0) {
+      const storageRemoval = await admin.storage.from(bucket).remove(paths);
+      if (storageRemoval.error) {
+        console.error("removed avatar storage cleanup failed", {
+          userId: user.id,
+          error: storageRemoval.error,
+        });
+      }
+    }
     return Response.json({ removed: true }, { headers: jsonHeaders });
   }
 
