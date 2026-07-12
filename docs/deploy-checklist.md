@@ -27,17 +27,25 @@ is done.
 ## 3. Push migrations to the hosted database
 
 - [ ] Run `supabase db push` against the linked project. This applies every
-      committed migration through `0016_channels.sql`, including profiles,
-      client profiles, assignments, chat, realtime features, reactions, and
-      the seeded `general` channel.
+      committed migration through `0020_calls.sql`, including profiles,
+      client profiles, assignments, chat, realtime features, reactions, the
+      seeded `general` channel, and the call control plane.
 - [ ] Spot-check that RLS is enabled on `profiles`, `client_profiles`,
       `coach_clients`, `channels`, `conversations`, `messages`,
       `message_reads`, `message_reactions`, and `presence_sessions`.
-- [ ] Deploy both command functions:
+- [ ] Deploy the chat command functions:
       `supabase functions deploy send-message` and
       `supabase functions deploy chat-command`.
 - [ ] Confirm both functions require JWT verification and preserve the caller's
       bearer token when invoking PostgREST/RPCs.
+- [ ] Create a LiveKit Cloud project and set `LIVEKIT_URL`, `LIVEKIT_API_KEY`,
+      and `LIVEKIT_API_SECRET` as Supabase Edge Function secrets.
+- [ ] Deploy `call-command` with JWT verification and `livekit-webhook` without
+      Supabase JWT verification; the webhook validates LiveKit's signature.
+- [ ] Add the deployed webhook URL in LiveKit and send a test event before
+      enabling calls for users.
+- [ ] Confirm the `expire-stale-calls` pg_cron job exists and runs once per
+      minute in the hosted database.
 
 ## 4. Upload and confirm the production email templates
 
