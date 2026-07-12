@@ -4,7 +4,7 @@ import {
   avatarMinEdge,
   avatarPreparedMaxBytes,
   type PixelCrop,
-} from "./avatar-image";
+} from "./avatar-image-config";
 
 self.addEventListener("message", async (event: MessageEvent<{
   file: File;
