@@ -21,6 +21,8 @@ type TimeFormatPref = "12h" | "24h" | null;
 
 interface AppShellProps {
   displayName: string;
+  avatarUrl?: string | null;
+  profileId?: string;
   role: UserRole;
   /** Server-resolved pilot flag; the Friends nav entry stays hidden until
       the coach-validated rollout turns it on. */
@@ -115,6 +117,8 @@ function NavLinks({
    the shell adds no primary action. */
 export function AppShell({
   displayName,
+  avatarUrl,
+  profileId,
   role,
   friendsNavEnabled = false,
   preferences,
@@ -162,7 +166,11 @@ export function AppShell({
           <NavLinks items={navItems} pathname={pathname} placement="top" />
         </nav>
         <div className="hidden flex-1 md:block" aria-hidden="true" />
-        <UserMenu displayName={displayName} role={role} />
+        <UserMenu
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          profileId={profileId}
+        />
       </header>
 
       <main

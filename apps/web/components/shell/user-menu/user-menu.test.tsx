@@ -41,7 +41,7 @@ describe("UserMenu", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows Log out but no Profile item for a coach", () => {
+  it("shows Profile and Log out for a coach", () => {
     render(<UserMenu displayName="Coach Dana" role="coach" />);
 
     fireEvent.click(
@@ -51,9 +51,8 @@ describe("UserMenu", () => {
     expect(
       screen.getByRole("menuitem", { name: "Log out" })
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "Profile" })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Profile" }))
+      .toHaveAttribute("href", "/profile");
   });
 
   it("clicking Log out signs out, clears the chat store, and pushes /login (CR-01)", async () => {

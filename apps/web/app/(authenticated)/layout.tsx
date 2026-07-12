@@ -37,6 +37,8 @@ export default async function AuthenticatedLayout({
       <ChatIdentityGuard userId={profile.userId} />
       <AppShell
         displayName={profile.displayName}
+        avatarUrl={profile.avatarUrl}
+        profileId={profile.userId}
         role={profile.role}
         friendsNavEnabled={friendsFeatureEnabled()}
         preferences={{

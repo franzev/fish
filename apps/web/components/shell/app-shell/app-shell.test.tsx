@@ -153,7 +153,7 @@ describe("AppShell", () => {
     expect(logoutButtonSource).toContain('variant="ghost"');
   });
 
-  it("gives the logo link a centered 56px accessible target (WR-09)", () => {
+  it("gives the logo link a centered accessible target (WR-09)", () => {
     render(
       <AppShell displayName="Alex Rivera" role="client">
         Content
@@ -228,7 +228,7 @@ describe("AppShell", () => {
     expect(profileLink).toHaveAttribute("href", "/profile");
   });
 
-  it("opens a menu with Log out and no Profile item for the coach display name trigger, since coaches have no /profile view", () => {
+  it("opens the shared Profile view for a coach", () => {
     render(
       <AppShell displayName="Coach Dana" role="coach">
         Content
@@ -240,8 +240,7 @@ describe("AppShell", () => {
     );
 
     expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("menuitem", { name: "Profile" })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Profile" }))
+      .toHaveAttribute("href", "/profile");
   });
 });
