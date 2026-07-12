@@ -443,7 +443,7 @@ apps/web/app/(authenticated)/calls/[id]/
 UI rules:
 
 - Incoming call: `Answer call` is the one primary action; `Not now` is secondary/ghost.
-- Active voice call: the participant and connection state dominate. `End call` is the single emphasized action. `Mute` and `Audio settings` are quieter controls with 56px minimum targets.
+- Active voice call: the participant and connection state dominate. `End call` is the single emphasized 56px action. `Mute` and `Audio settings` are quieter controls with 44px minimum targets.
 - Never show a grid of people/devices/plans in the 1:1 flow.
 - Do not use alarming red for decline, failure, or end. Use existing semantic notice/error tokens and calm guidance.
 - Respect reduced motion: ringing uses no pulsing animation when reduced motion is enabled.
@@ -658,7 +658,7 @@ Exit criteria:
 - Initiate, accept, reject, cancel, missed, active, reconnect, and end paths work in two browser contexts.
 - Microphone tracks stop within one second of terminal state or sign-out.
 - Reload during an active call rejoins only for an authorized participant.
-- There is at most one primary button in every call-related view and all controls are at least 56px tall.
+- There is at most one primary button in every call-related view. Touch-first and frequently used controls have at least 44×44px interaction targets; the primary end-call action is 56px tall.
 - Reduced-motion and keyboard/focus behavior pass existing design-system tests.
 
 ### Milestone 3 — Production hardening and limited pilot
