@@ -141,6 +141,38 @@ async function main() {
     p_call_id: call.id,
   });
   report("participant can end the call", !endError && ended?.status === "ended", endError?.message);
+
+  const { data: videoCall, error: videoInitiateError } = await coach.client.rpc(
+    "initiate_call",
+    {
+      p_recipient_id: client.userId,
+      p_kind: "video",
+      p_client_request_id: crypto.randomUUID(),
+    },
+  );
+  report(
+    "assigned coach can initiate a video call",
+    !videoInitiateError && videoCall?.kind === "video" && videoCall.status === "ringing",
+    videoInitiateError?.message,
+  );
+  if (videoCall) {
+    const { data: videoAccepted, error: videoAcceptError } =
+      await client.client.rpc("accept_call", { p_call_id: videoCall.id });
+    report(
+      "invitee can accept the video call",
+      !videoAcceptError && videoAccepted?.status === "connecting",
+      videoAcceptError?.message,
+    );
+    const { data: videoEnded, error: videoEndError } = await coach.client.rpc(
+      "end_call",
+      { p_call_id: videoCall.id },
+    );
+    report(
+      "participant can end the video call",
+      !videoEndError && videoEnded?.status === "ended",
+      videoEndError?.message,
+    );
+  }
   await client.client.removeChannel(callChannel);
 
   if (failures > 0) {

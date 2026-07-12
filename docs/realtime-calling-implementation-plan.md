@@ -1,6 +1,6 @@
 # Real-time calling architecture and implementation plan
 
-**Status:** Secure control plane and local voice slice implemented; real-device, network, privacy, and pilot gates remain  
+**Status:** Secure control plane plus local one-to-one voice and video slices implemented; real-device, network, privacy, and pilot gates remain
 **Prepared:** 2026-07-12  
 **First delivery target:** One-to-one voice calls between an assigned coach and client  
 **Later targets:** One-to-one video, group voice, group video, recording, screen sharing, and quality monitoring
@@ -685,15 +685,14 @@ Exit criteria:
 
 ### 1. One-to-one video calls
 
-Reuse the same rooms, tables, commands, and state machine.
+Implemented locally by reusing the same rooms, tables, commands, and state machine.
 
 Changes:
 
-- Add `kind: video` and issue `canPublishSources: [microphone, camera]` only for video calls.
-- Ask for camera permission only after the user intentionally starts/accepts video.
-- Add local preview before publishing; default camera off if the product validation says voice-first escalation is calmer.
-- Add `Camera on/off` as a secondary control and one remote video surface.
-- Enable adaptive stream and dynacast; constrain resolution/frame rate for mobile and weak networks.
+- `kind: video` issues `canPublishSources: [microphone, camera]` only for video calls.
+- Camera permission is requested only after the user intentionally starts or accepts video.
+- The call screen includes a local preview, a remote video surface, and a secondary camera on/off control.
+- Adaptive stream and dynacast are enabled; device/network validation remains a pilot gate.
 - Test backgrounding, orientation change, camera switching, and thermal/battery behavior.
 
 Do not change a voice call into video without an explicit action from both participants if that consent model is selected.

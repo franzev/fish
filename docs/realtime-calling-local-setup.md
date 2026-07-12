@@ -35,8 +35,9 @@ The checked-in `livekit.local.yaml` sends signed room and participant events to
 the local webhook function, keeping durable call state synchronized. The web
 app and Supabase Edge Functions start together under `pnpm dev`. Sign
 in as `coach@fish.dev` and `client1@fish.dev` in two browser profiles to place
-a call. Browser tabs cannot share the same Supabase session reliably for this
-test.
+a voice or video call. Allow microphone access for voice; allow both camera and
+microphone access for video. Browser tabs cannot share the same Supabase
+session reliably for this test.
 
 Run the control-plane verification independently of LiveKit:
 
