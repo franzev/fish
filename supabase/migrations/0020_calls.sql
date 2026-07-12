@@ -82,6 +82,7 @@ create table public.call_participants (
   user_id uuid not null references public.profiles (id) on delete restrict,
   role public.call_participant_role not null,
   invitation_status public.call_invitation_status not null,
+  provider_participant_sid text,
   joined_at timestamptz,
   left_at timestamptz,
   reconnect_count integer not null default 0 check (reconnect_count >= 0),
@@ -99,7 +100,7 @@ create index call_participants_user_call_idx
 create table public.call_events (
   id uuid primary key default gen_random_uuid(),
   call_id uuid not null references public.calls (id) on delete cascade,
-  provider_event_id text unique,
+  provider_event_id text not null unique,
   event_type text not null,
   actor_id uuid references public.profiles (id) on delete set null,
   metadata jsonb not null default '{}'::jsonb,
@@ -199,6 +200,7 @@ declare
   v_client_id uuid;
   v_existing public.calls%rowtype;
   v_call public.calls%rowtype;
+  v_client_request_id text := btrim(p_client_request_id);
 begin
   if v_user_id is null then
     raise exception 'not authenticated';
@@ -234,7 +236,7 @@ begin
   select * into v_existing
   from public.calls
   where initiated_by = v_user_id
-    and client_request_id = p_client_request_id;
+    and client_request_id = v_client_request_id;
 
   if found then
     if v_existing.coach_id = v_coach_id
@@ -253,6 +255,24 @@ begin
   where id in (v_coach_id, v_client_id)
   order by id
   for update;
+
+  -- A concurrent retry can pass the first lookup before the original request
+  -- commits. Recheck after the identity locks so idempotency wins over the
+  -- busy check and unique constraint.
+  select * into v_existing
+  from public.calls
+  where initiated_by = v_user_id
+    and client_request_id = v_client_request_id;
+
+  if found then
+    if v_existing.coach_id = v_coach_id
+      and v_existing.client_id = v_client_id
+      and v_existing.kind = p_kind
+    then
+      return v_existing;
+    end if;
+    raise exception 'client request id conflicts with an existing call';
+  end if;
 
   if exists (
     select 1
@@ -287,7 +307,7 @@ begin
     v_user_id,
     p_kind,
     'call_' || replace(gen_random_uuid()::text, '-', ''),
-    btrim(p_client_request_id),
+    v_client_request_id,
     now() + interval '45 seconds'
   ) returning * into v_call;
 
@@ -447,12 +467,20 @@ declare
   v_call public.calls%rowtype;
 begin
   v_call := private.current_call_member(p_call_id);
-  if v_call.status not in ('ringing', 'connecting', 'active') then
+  if v_call.status not in ('connecting', 'active') then
     raise exception 'call already finished';
   end if;
   if not exists (
     select 1 from public.coach_clients cc
     where cc.coach_id = v_call.coach_id and cc.client_id = v_call.client_id
+  ) then
+    raise exception 'call not allowed';
+  end if;
+  if not exists (
+    select 1 from public.call_participants cp
+    where cp.call_id = p_call_id
+      and cp.user_id = (select auth.uid())
+      and cp.invitation_status = 'accepted'
   ) then
     raise exception 'call not allowed';
   end if;
@@ -470,19 +498,150 @@ as $$
 declare
   v_count integer;
   v_connecting_count integer;
+  v_disconnected_count integer;
 begin
   update public.calls
   set status = 'missed', ended_at = p_now, end_reason = 'no_answer', updated_at = p_now
   where status = 'ringing' and expires_at <= p_now;
   get diagnostics v_count = row_count;
+  update public.calls c
+  set status = 'failed', ended_at = p_now, end_reason = 'network_lost', updated_at = p_now
+  where c.status in ('connecting', 'active')
+    and exists (
+      select 1
+      from public.call_participants cp
+      where cp.call_id = c.id
+        and cp.left_at is not null
+        and cp.left_at <= p_now - interval '20 seconds'
+    );
+  get diagnostics v_disconnected_count = row_count;
   update public.calls
   set status = 'failed', ended_at = p_now, end_reason = 'connect_failed', updated_at = p_now
   where status = 'connecting'
     and accepted_at is not null
     and accepted_at <= p_now - interval '2 minutes';
   get diagnostics v_connecting_count = row_count;
-  v_count := v_count + v_connecting_count;
+  v_count := v_count + v_disconnected_count + v_connecting_count;
   return v_count;
+end;
+$$;
+
+-- Reconcile one verified LiveKit event in the same database transaction as
+-- its idempotency record. A failed lifecycle update rolls the event insert
+-- back, allowing LiveKit's retry to repair the state instead of being skipped.
+create or replace function public.reconcile_livekit_webhook(
+  p_provider_event_id text,
+  p_room_name text,
+  p_event_type text,
+  p_participant_id uuid,
+  p_participant_sid text,
+  p_occurred_at timestamptz
+)
+returns text
+language plpgsql
+security definer
+volatile
+set search_path = ''
+as $$
+declare
+  v_call public.calls%rowtype;
+  v_event_id uuid;
+  v_updated_count integer;
+  v_present_count integer;
+begin
+  if p_provider_event_id is null or char_length(btrim(p_provider_event_id)) = 0 then
+    raise exception 'provider event id is required';
+  end if;
+  if p_room_name is null or char_length(btrim(p_room_name)) = 0 then
+    raise exception 'provider room name is required';
+  end if;
+  if p_event_type is null or char_length(btrim(p_event_type)) = 0 then
+    raise exception 'provider event type is required';
+  end if;
+
+  select * into v_call
+  from public.calls
+  where provider_room_name = p_room_name
+  for update;
+
+  if not found then return 'ignored'; end if;
+
+  insert into public.call_events (
+    call_id,
+    provider_event_id,
+    event_type,
+    actor_id,
+    metadata,
+    occurred_at
+  ) values (
+    v_call.id,
+    btrim(p_provider_event_id),
+    btrim(p_event_type),
+    p_participant_id,
+    case
+      when p_participant_sid is null then '{}'::jsonb
+      else jsonb_build_object('participantSid', p_participant_sid)
+    end,
+    p_occurred_at
+  )
+  on conflict (provider_event_id) do nothing
+  returning id into v_event_id;
+
+  if v_event_id is null then return 'duplicate'; end if;
+
+  if p_event_type = 'participant_joined'
+    and p_participant_id is not null
+    and p_participant_sid is not null
+    and v_call.status in ('connecting', 'active')
+  then
+    update public.call_participants
+    set provider_participant_sid = p_participant_sid,
+        joined_at = coalesce(joined_at, p_occurred_at),
+        left_at = null,
+        reconnect_count = reconnect_count + case when joined_at is null then 0 else 1 end,
+        updated_at = p_occurred_at
+    where call_id = v_call.id and user_id = p_participant_id;
+    get diagnostics v_updated_count = row_count;
+
+    if v_updated_count = 1 then
+      select count(*) into v_present_count
+      from public.call_participants
+      where call_id = v_call.id
+        and joined_at is not null
+        and left_at is null;
+
+      if v_present_count >= 2 and v_call.status = 'connecting' then
+        update public.calls
+        set status = 'active',
+            connected_at = coalesce(connected_at, p_occurred_at),
+            updated_at = p_occurred_at
+        where id = v_call.id and status = 'connecting';
+      end if;
+    end if;
+  elsif p_event_type in ('participant_left', 'participant_connection_aborted')
+    and p_participant_id is not null
+    and p_participant_sid is not null
+    and v_call.status in ('connecting', 'active')
+  then
+    update public.call_participants
+    set provider_participant_sid = null,
+        left_at = greatest(p_occurred_at, joined_at),
+        updated_at = greatest(p_occurred_at, joined_at)
+    where call_id = v_call.id
+      and user_id = p_participant_id
+      and provider_participant_sid = p_participant_sid;
+  elsif p_event_type = 'room_finished'
+    and v_call.status in ('ringing', 'connecting', 'active')
+  then
+    update public.calls
+    set status = 'failed',
+        ended_at = greatest(p_occurred_at, created_at),
+        end_reason = 'provider_error',
+        updated_at = greatest(p_occurred_at, created_at)
+    where id = v_call.id and status in ('ringing', 'connecting', 'active');
+  end if;
+
+  return 'applied';
 end;
 $$;
 
@@ -493,6 +652,7 @@ revoke execute on function public.cancel_call(uuid) from public;
 revoke execute on function public.end_call(uuid) from public;
 revoke execute on function public.join_call(uuid) from public;
 revoke execute on function public.expire_stale_calls(timestamptz) from public;
+revoke execute on function public.reconcile_livekit_webhook(text, text, text, uuid, text, timestamptz) from public;
 grant execute on function public.initiate_call(uuid, public.call_kind, text) to authenticated;
 grant execute on function public.accept_call(uuid) to authenticated;
 grant execute on function public.reject_call(uuid) to authenticated;
@@ -500,6 +660,7 @@ grant execute on function public.cancel_call(uuid) to authenticated;
 grant execute on function public.end_call(uuid) to authenticated;
 grant execute on function public.join_call(uuid) to authenticated;
 grant execute on function public.expire_stale_calls(timestamptz) to service_role;
+grant execute on function public.reconcile_livekit_webhook(text, text, text, uuid, text, timestamptz) to service_role;
 
 -- Invitation/status wakeups. The payload contains only a call id and status;
 -- clients always re-read the RLS-protected row for canonical state.
