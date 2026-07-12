@@ -34,6 +34,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      avatar_uploads: {
+        Row: {
+          avatar_path: string | null
+          client_upload_id: string
+          created_at: string
+          expires_at: string
+          failure_code: string | null
+          id: string
+          original_name: string
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_height: number | null
+          stored_width: number | null
+          thumbnail_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_path?: string | null
+          client_upload_id: string
+          created_at?: string
+          expires_at?: string
+          failure_code?: string | null
+          id?: string
+          original_name: string
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status?: string
+          stored_byte_size?: number | null
+          stored_height?: number | null
+          stored_width?: number | null
+          thumbnail_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_path?: string | null
+          client_upload_id?: string
+          created_at?: string
+          expires_at?: string
+          failure_code?: string | null
+          id?: string
+          original_name?: string
+          source_byte_size?: number
+          source_mime_type?: string
+          staging_path?: string
+          status?: string
+          stored_byte_size?: number | null
+          stored_height?: number | null
+          stored_width?: number | null
+          thumbnail_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatar_uploads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_events: {
         Row: {
           actor_id: string | null
@@ -937,6 +1005,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
+          avatar_thumbnail_path: string | null
+          avatar_updated_at: string | null
           created_at: string
           display_name: string
           email: string
@@ -946,6 +1017,9 @@ export type Database = {
           username: string
         }
         Insert: {
+          avatar_path?: string | null
+          avatar_thumbnail_path?: string | null
+          avatar_updated_at?: string | null
           created_at?: string
           display_name?: string
           email?: string
@@ -955,6 +1029,9 @@ export type Database = {
           username: string
         }
         Update: {
+          avatar_path?: string | null
+          avatar_thumbnail_path?: string | null
+          avatar_updated_at?: string | null
           created_at?: string
           display_name?: string
           email?: string
@@ -1259,6 +1336,39 @@ export type Database = {
           username: string
         }[]
       }
+      initialize_avatar_upload: {
+        Args: {
+          p_client_upload_id: string
+          p_original_name: string
+          p_source_byte_size: number
+          p_source_mime_type: string
+        }
+        Returns: {
+          avatar_path: string | null
+          client_upload_id: string
+          created_at: string
+          expires_at: string
+          failure_code: string | null
+          id: string
+          original_name: string
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_height: number | null
+          stored_width: number | null
+          thumbnail_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "avatar_uploads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       initialize_chat_image_upload: {
         Args: {
           p_client_upload_id: string
@@ -1433,6 +1543,23 @@ export type Database = {
         Args: { p_notification_ids: string[] }
         Returns: number
       }
+      publish_avatar_upload: {
+        Args: {
+          p_avatar_path: string
+          p_stored_byte_size: number
+          p_stored_height: number
+          p_stored_width: number
+          p_thumbnail_path: string
+          p_upload_id: string
+          p_user_id: string
+        }
+        Returns: {
+          old_avatar_path: string
+          old_thumbnail_path: string
+          published: boolean
+          published_at: string
+        }[]
+      }
       reconcile_livekit_webhook: {
         Args: {
           p_event_type: string
@@ -1473,6 +1600,20 @@ export type Database = {
         }
       }
       remove_friend: { Args: { p_target_id: string }; Returns: boolean }
+      remove_profile_avatar: {
+        Args: { p_user_id: string }
+        Returns: {
+          old_avatar_path: string
+          old_thumbnail_path: string
+        }[]
+      }
+      resolve_avatar_paths: {
+        Args: { p_profile_ids: string[]; p_variant?: string }
+        Returns: {
+          object_path: string
+          profile_id: string
+        }[]
+      }
       respond_friend_request: {
         Args: { p_request_id: string; p_response: string }
         Returns: {
