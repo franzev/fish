@@ -45,6 +45,7 @@ function activeCallValue() {
     toggleCamera: vi.fn(async () => undefined),
     hearCall: vi.fn(async () => undefined),
     loadCall: vi.fn(async () => undefined),
+    leaveSurface: vi.fn(),
     clear: vi.fn(),
     microphones: vi.fn(async () => [
       { deviceId: "default", label: "Built-in microphone" },
@@ -135,5 +136,15 @@ describe("CallScreen", () => {
 
     expect(value.clear).toHaveBeenCalledOnce();
     expect(pushMock).toHaveBeenCalledWith("/coach");
+  });
+
+  it("releases local media when the call surface unmounts", () => {
+    const value = activeCallValue();
+    useCallMock.mockReturnValue(value);
+
+    const view = render(<CallScreen callId="call-1" />);
+    view.unmount();
+
+    expect(value.leaveSurface).toHaveBeenCalledOnce();
   });
 });

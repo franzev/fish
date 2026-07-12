@@ -16,7 +16,7 @@ import type {
   CallRealtimeService,
   ClientCall,
 } from "@/lib/services";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -32,6 +32,10 @@ import {
   requestMediaPermission,
   type AudioDeviceOption,
 } from "../../client/call-media";
+import {
+  closeCallForNavigation,
+  closeFailedMediaConnection,
+} from "./call-exit";
 
 interface CallContextValue {
   state: CallState;
@@ -56,6 +60,7 @@ interface CallContextValue {
   toggleCamera(): Promise<void>;
   hearCall(): Promise<void>;
   loadCall(callId: string): Promise<void>;
+  leaveSurface(): void;
   clear(): void;
   microphones(): Promise<AudioDeviceOption[]>;
   switchMicrophone(deviceId: string): Promise<void>;
@@ -79,6 +84,7 @@ export function CallProvider({
   realtime: realtimeOverride,
 }: CallProviderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [state, dispatch] = useReducer(
     reduceCallState,
     undefined,
@@ -96,6 +102,8 @@ export function CallProvider({
   const [remoteVideoStream, setRemoteVideoStream] =
     useState<MediaStream | null>(null);
   const stateRef = useRef(state);
+  const previousPathnameRef = useRef(pathname);
+  const ignoredCallIdsRef = useRef(new Set<string>());
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
@@ -208,6 +216,12 @@ export function CallProvider({
     void media.disconnect();
   }, [media, userId]);
 
+  const failMediaConnection = useCallback(async (callId: string) => {
+    await closeFailedMediaConnection(callId, commands, () => media.disconnect());
+    dispatch({ type: "callFailed", callId, reason: "connectFailed" });
+    setNotice("The call didn’t connect. Messages still work.");
+  }, [commands, media]);
+
   const loadCall = useCallback(async (callId: string) => {
     const found = await realtime.findCall(callId, userId);
     if (!found) {
@@ -219,18 +233,27 @@ export function CallProvider({
     if (["connecting", "active"].includes(found.call.status)) {
       const joined = await commands.join(found.call.id);
       if (joined.ok && joined.connection) {
-        await media.connect(found.call.id, joined.connection, {
-          microphone: true,
-          camera: found.call.kind === "video",
-        });
+        try {
+          await media.connect(found.call.id, joined.connection, {
+            microphone: true,
+            camera: found.call.kind === "video",
+          });
+        } catch {
+          await failMediaConnection(found.call.id);
+        }
+      } else if (joined.ok) {
+        await failMediaConnection(found.call.id);
+      } else {
+        setNotice(joined.notice);
       }
     }
-  }, [applyCall, commands, media, realtime, userId]);
+  }, [applyCall, commands, failMediaConnection, media, realtime, userId]);
 
   useEffect(() => {
     let active = true;
     const recover = () => {
       const currentCallId = stateRef.current.current.callId;
+      if (currentCallId && ignoredCallIdsRef.current.has(currentCallId)) return;
       const lookup = currentCallId
         ? realtime.findCall(currentCallId, userId)
         : realtime.findCurrentCall(userId);
@@ -241,6 +264,7 @@ export function CallProvider({
       });
     };
     const unsubscribe = realtime.subscribe(userId, (event) => {
+      if (ignoredCallIdsRef.current.has(event.callId)) return;
       void realtime.findCall(event.callId, userId).then((found) => {
         if (!active || !found) return;
         applyCall(found.call, found.counterpartName);
@@ -250,23 +274,29 @@ export function CallProvider({
         ) {
           void commands.join(found.call.id).then(async (joined) => {
             if (joined.ok && joined.connection) {
-              await media.connect(
-                found.call.id,
-                joined.connection,
-                {
-                  microphone: true,
-                  camera: found.call.kind === "video",
-                }
-              );
+              try {
+                await media.connect(
+                  found.call.id,
+                  joined.connection,
+                  {
+                    microphone: true,
+                    camera: found.call.kind === "video",
+                  }
+                );
+              } catch {
+                await failMediaConnection(found.call.id);
+              }
+              return;
+            }
+            if (joined.ok) {
+              await failMediaConnection(found.call.id);
               return;
             }
             setNotice(
-              joined.ok
-                ? "This call could not connect yet."
-                : joined.notice
+              joined.notice
             );
           }).catch(() => {
-            setNotice("The call didn’t connect. Messages still work.");
+            void failMediaConnection(found.call.id);
           });
         }
         if (
@@ -284,7 +314,37 @@ export function CallProvider({
       dispatch({ type: "identityChanged" });
       void media.disconnect();
     };
-  }, [applyCall, commands, media, realtime, router, userId]);
+  }, [applyCall, commands, failMediaConnection, media, realtime, router, userId]);
+
+  const leaveSurface = useCallback(() => {
+    void media.disconnect();
+  }, [media]);
+
+  useEffect(() => {
+    const handlePageHide = () => leaveSurface();
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, [leaveSurface]);
+
+  useEffect(() => {
+    const previousPathname = previousPathnameRef.current;
+    previousPathnameRef.current = pathname;
+    if (!previousPathname.startsWith("/calls/") || pathname.startsWith("/calls/")) {
+      return;
+    }
+
+    const call = stateRef.current.current;
+    if (!call.callId) {
+      leaveSurface();
+      dispatch({ type: "clearCall" });
+      return;
+    }
+
+    ignoredCallIdsRef.current.add(call.callId);
+    void closeCallForNavigation(call, commands, leaveSurface)
+      .catch(() => undefined)
+      .finally(() => dispatch({ type: "clearCall" }));
+  }, [commands, leaveSurface, pathname]);
 
   const run = useCallback(async (action: () => Promise<void>) => {
     if (busy) return;
@@ -377,14 +437,19 @@ export function CallProvider({
       }
       const result = await commands.accept(callId);
       if (!result.ok || !result.connection) {
-        setNotice(result.ok ? "This call could not connect yet." : result.notice);
+        if (result.ok) await failMediaConnection(callId);
+        else setNotice(result.notice);
         return;
       }
       dispatch({ type: "callAccepted", callId });
-      await media.connect(callId, result.connection, {
-        microphone: true,
-        camera: callKind === "video",
-      });
+      try {
+        await media.connect(callId, result.connection, {
+          microphone: true,
+          camera: callKind === "video",
+        });
+      } catch {
+        await failMediaConnection(callId);
+      }
     }),
     decline: async () => run(async () => {
       const callId = stateRef.current.current.callId;
@@ -436,6 +501,7 @@ export function CallProvider({
     },
     hearCall: async () => media.startAudio(),
     loadCall,
+    leaveSurface,
     clear: () => {
       setNotice(null);
       setAudioBlocked(false);
@@ -462,7 +528,7 @@ export function CallProvider({
         setNotice("That microphone isn’t available. The current one still works.");
       }
     },
-  }), [audioBlocked, busy, commands, homeHref, loadCall, localVideoStream, media, notice, remoteVideoStream, router, run, speaking, state]);
+  }), [audioBlocked, busy, commands, failMediaConnection, homeHref, leaveSurface, loadCall, localVideoStream, media, notice, remoteVideoStream, router, run, speaking, state]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }

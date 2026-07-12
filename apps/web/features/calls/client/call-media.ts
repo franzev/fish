@@ -65,13 +65,19 @@ export class LiveKitCallMedia {
     this.canPublishCamera = publish.camera;
     this.intentionalDisconnect = false;
     this.bind(room, callId);
-    await room.connect(connection.serverUrl, connection.participantToken, {
-      autoSubscribe: true,
-    });
-    if (publish.microphone) await this.enableMicrophone();
-    if (publish.camera) await this.enableCamera();
-    if (room.remoteParticipants.size > 0) this.callbacks.onConnected(callId);
-    this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
+    try {
+      await room.connect(connection.serverUrl, connection.participantToken, {
+        autoSubscribe: true,
+      });
+      if (publish.microphone) await this.enableMicrophone();
+      if (publish.camera) await this.enableCamera();
+      if (room.remoteParticipants.size > 0) this.callbacks.onConnected(callId);
+      this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
+    } catch (error) {
+      if (this.room === room) await this.disconnect();
+      else await room.disconnect(true);
+      throw error;
+    }
   }
 
   async enableMicrophone(): Promise<void> {

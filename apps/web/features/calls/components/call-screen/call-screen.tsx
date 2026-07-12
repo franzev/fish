@@ -34,6 +34,7 @@ export function CallScreen({ callId }: { callId: string }) {
     toggleCamera,
     hearCall,
     loadCall,
+    leaveSurface,
     clear,
     microphones,
     switchMicrophone,
@@ -53,6 +54,8 @@ export function CallScreen({ callId }: { callId: string }) {
     loadedId.current = callId;
     void loadCall(callId);
   }, [callId, loadCall]);
+
+  useEffect(() => () => leaveSurface(), [leaveSurface]);
 
   useEffect(() => {
     if (localVideo.current) localVideo.current.srcObject = localVideoStream;
