@@ -41,6 +41,9 @@ export interface Profile {
   displayName: string;
   email: string;
   role: string;
+  avatarPath: string | null;
+  avatarThumbnailPath: string | null;
+  avatarUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,7 +96,12 @@ export interface ClientProfileRepository {
   findByIdForCoach(id: string): Promise<ServiceResult<ClientProfile | null>>;
   updateSafeFields(id: string, fields: ClientProfileUpdate): Promise<ServiceResult<void>>;
 }
-export interface CoachClientListItem { id: string; displayName: string; email: string }
+export interface CoachClientListItem {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl?: string | null;
+}
 export interface CoachClientRepository {
   findAssignmentForClient(clientId: string): Promise<ServiceResult<CoachAssignment | null>>;
   listAssignedClients(): Promise<ServiceResult<CoachClientListItem[]>>;
@@ -109,12 +117,18 @@ export type ClientChatImage = ClientChatAttachment;
 export interface ClientChatMessage {
   id: string; conversationId: string; senderId: string; senderRole: "client" | "coach";
   senderDisplayName?: string | null; body: string; clientRequestId: string; createdAt: string;
+  senderAvatarUrl?: string | null;
   editedAt?: string | null; deletedAt?: string | null; replyToMessageId?: string | null;
   pinnedAt?: string | null; pinnedBy?: string | null;
   reactions?: ClientChatReaction[];
   images?: ClientChatImage[];
 }
-export interface ClientChatParticipant { id: string; displayName: string; role: "client" | "coach" }
+export interface ClientChatParticipant {
+  id: string;
+  displayName: string;
+  role: "client" | "coach";
+  avatarUrl?: string | null;
+}
 export interface ClientChatSearchMember {
   id: string; displayName: string; username: string; avatarUrl?: string;
 }
@@ -164,7 +178,47 @@ export interface DatabaseServices {
   chatSearch: ChatSearchRepository;
   friends: FriendRepository;
 }
-export interface AppServices { auth: AuthService; database: DatabaseServices }
+export interface AvatarUploadAuthorization {
+  uploadId: string;
+  bucket: "avatars";
+  objectPath: string;
+  uploadToken: string;
+  signedUploadUrl: string;
+  expiresAt: string;
+}
+
+export interface AvatarUrlItem {
+  profileId: string;
+  url: string;
+  expiresAt: string;
+}
+
+export interface AvatarCommandService {
+  initialize(input: {
+    clientUploadId: string;
+    originalName: string;
+    sourceMimeType: string;
+    sourceByteSize: number;
+  }): Promise<AvatarUploadAuthorization>;
+  complete(uploadId: string): Promise<{
+    profileId: string;
+    avatarUrl?: string;
+    avatarThumbnailUrl?: string;
+    updatedAt: string;
+  }>;
+  cancel(uploadId: string): Promise<void>;
+  remove(): Promise<void>;
+  resolveUrls(
+    profileIds: string[],
+    variant?: "thumbnail" | "display"
+  ): Promise<AvatarUrlItem[]>;
+}
+
+export interface AppServices {
+  auth: AuthService;
+  database: DatabaseServices;
+  avatars: AvatarCommandService;
+}
 
 export interface ChatImageUploadAuthorization {
   attachmentId: string;
@@ -373,6 +427,7 @@ export interface FriendProfile {
   id: string;
   displayName: string;
   username: string;
+  avatarUrl?: string | null;
 }
 
 export type FriendRelationshipStatus =

@@ -27,6 +27,9 @@ function toProfile(row: ProfileRow): Profile {
     displayName: row.display_name,
     email: row.email,
     role: row.role,
+    avatarPath: row.avatar_path ?? null,
+    avatarThumbnailPath: row.avatar_thumbnail_path ?? null,
+    avatarUpdatedAt: row.avatar_updated_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

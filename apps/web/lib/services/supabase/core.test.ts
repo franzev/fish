@@ -66,12 +66,15 @@ describe("Supabase service registry", () => {
           role: "client",
           displayName: "Franz Fish",
           email: "franz@example.com",
+          avatarPath: null,
+          avatarThumbnailPath: null,
+          avatarUpdatedAt: null,
           createdAt: "2026-07-04T00:00:00Z",
           updatedAt: "2026-07-04T00:00:00Z",
         },
       }
     );
-    expect(Object.keys(services).sort()).toEqual(["auth", "database"]);
+    expect(Object.keys(services).sort()).toEqual(["auth", "avatars", "database"]);
   });
 
   it("maps Supabase database failures into centralized service failures", async () => {

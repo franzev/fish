@@ -2,6 +2,7 @@ import "client-only";
 
 import type {
   AppServices,
+  AvatarCommandService,
   CallCommandService,
   CallRealtimeService,
   ChatImageService,
@@ -33,6 +34,12 @@ export function getChatRealtimeService(override?: ChatRealtimeService): ChatReal
 
 export function getChatImageService(override?: ChatImageService): ChatImageService {
   return override ?? chatImageService;
+}
+
+export function getAvatarCommandService(
+  override?: AvatarCommandService
+): AvatarCommandService {
+  return override ?? getBrowserServices().avatars;
 }
 
 export function getCallCommandService(

@@ -1,5 +1,6 @@
 import { SupabaseAuthServiceImpl } from "./auth";
 import { SupabaseDatabaseServiceImpl } from "./runtime-services";
+import { SupabaseAvatarCommandService } from "./avatar-command-service";
 import type { AppServices } from "../contracts";
 import type { AppSupabaseClient } from "./types";
 
@@ -14,5 +15,6 @@ export function createSupabaseServices(
   return {
     auth: new SupabaseAuthServiceImpl(client),
     database: new SupabaseDatabaseServiceImpl(client),
+    avatars: new SupabaseAvatarCommandService(client),
   };
 }
