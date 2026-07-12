@@ -19,6 +19,7 @@ function lazyChatCommands(): ChatCommandService {
     sendMessage: async (input) => (await adapter()).sendMessage(input),
     executeMessageCommand: async (command) =>
       (await adapter()).executeMessageCommand(command),
+    reportGif: async (input) => (await adapter()).reportGif(input),
     markReadState: async (input) => (await adapter()).markReadState(input),
     refreshMessages: async (input) => (await adapter()).refreshMessages(input),
     refreshConversation: async (input) =>
