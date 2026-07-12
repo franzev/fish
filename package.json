@@ -14,14 +14,17 @@
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "supabase:start": "supabase start",
+    "dev:livekit": "livekit-server --dev --bind 127.0.0.1 --config livekit.local.yaml",
     "db:reset": "supabase db reset",
     "seed": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/seed.ts",
     "verify:rls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-rls.ts",
-    "verify:chat-realtime": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-realtime.ts"
+    "verify:chat-realtime": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-realtime.ts",
+    "verify:calls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-calls.ts"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "2.110.0",
+    "livekit-server-sdk": "^2.17.0",
     "next": "16.2.9",
-    "typescript": "5.7.3",
-    "@supabase/supabase-js": "2.110.0"
+    "typescript": "5.7.3"
   }
 }
