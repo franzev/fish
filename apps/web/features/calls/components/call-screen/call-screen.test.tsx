@@ -35,11 +35,14 @@ function activeCallValue() {
     audioBlocked: false,
     localMicrophoneActive: true,
     remoteSpeaking: false,
+    localVideoStream: null,
+    remoteVideoStream: null,
     answer: vi.fn(async () => undefined),
     decline: vi.fn(async () => undefined),
     cancel: vi.fn(async () => undefined),
     end: vi.fn(async () => undefined),
     toggleMute: vi.fn(async () => undefined),
+    toggleCamera: vi.fn(async () => undefined),
     hearCall: vi.fn(async () => undefined),
     loadCall: vi.fn(async () => undefined),
     clear: vi.fn(),
@@ -88,6 +91,38 @@ describe("CallScreen", () => {
 
     expect(screen.getByText("No voice detected")).toBeInTheDocument();
     expect(screen.getByText("Speaking")).toBeInTheDocument();
+  });
+
+  it("shows video surfaces and camera controls only for a video call", () => {
+    const value = activeCallValue();
+    value.state.current.kind = "video";
+    value.state.current.cameraEnabled = true;
+    useCallMock.mockReturnValue(value);
+
+    render(<CallScreen callId="call-1" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Video call with Alex" })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Alex video")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your video preview")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Turn camera off" })
+    ).toBeInTheDocument();
+  });
+
+  it("makes video consent explicit when answering", () => {
+    const value = activeCallValue();
+    value.state.current.kind = "video";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "incoming";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallScreen callId="call-1" />);
+
+    expect(
+      screen.getByRole("button", { name: "Answer video call" })
+    ).toBeInTheDocument();
   });
 
   it("returns a coach to the coach home after a terminal call", () => {

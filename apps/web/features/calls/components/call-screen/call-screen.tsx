@@ -7,6 +7,8 @@ import {
   IconMicrophone,
   IconMicrophoneOff,
   IconPhone,
+  IconVideo,
+  IconVideoOff,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -22,11 +24,14 @@ export function CallScreen({ callId }: { callId: string }) {
     audioBlocked,
     localMicrophoneActive,
     remoteSpeaking,
+    localVideoStream,
+    remoteVideoStream,
     answer,
     decline,
     cancel,
     end,
     toggleMute,
+    toggleCamera,
     hearCall,
     loadCall,
     clear,
@@ -35,6 +40,8 @@ export function CallScreen({ callId }: { callId: string }) {
   } = useCall();
   const call = state.current;
   const loadedId = useRef<string | null>(null);
+  const localVideo = useRef<HTMLVideoElement | null>(null);
+  const remoteVideo = useRef<HTMLVideoElement | null>(null);
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const [microphoneOptions, setMicrophoneOptions] = useState<
     Array<{ deviceId: string; label: string }>
@@ -46,6 +53,14 @@ export function CallScreen({ callId }: { callId: string }) {
     loadedId.current = callId;
     void loadCall(callId);
   }, [callId, loadCall]);
+
+  useEffect(() => {
+    if (localVideo.current) localVideo.current.srcObject = localVideoStream;
+  }, [localVideoStream]);
+
+  useEffect(() => {
+    if (remoteVideo.current) remoteVideo.current.srcObject = remoteVideoStream;
+  }, [remoteVideoStream]);
 
   async function toggleAudioSettings() {
     const nextOpen = !audioSettingsOpen;
@@ -65,14 +80,20 @@ export function CallScreen({ callId }: { callId: string }) {
   ].includes(call.status);
   const heading = call.status === "ringing"
     ? call.direction === "incoming"
-      ? `${call.counterpartName ?? "Your call partner"} is calling`
+      ? call.kind === "video"
+        ? `Video call from ${call.counterpartName ?? "your call partner"}`
+        : `${call.counterpartName ?? "Your call partner"} is calling`
+      : call.kind === "video"
+      ? `Video calling ${call.counterpartName ?? "your call partner"}`
       : `Calling ${call.counterpartName ?? "your call partner"}`
     : call.status === "connecting"
     ? "Connecting you now"
     : call.status === "reconnecting"
     ? "Connection is coming back"
     : call.status === "active"
-    ? `In call with ${call.counterpartName ?? "your call partner"}`
+    ? `${call.kind === "video" ? "Video call" : "In call"} with ${
+        call.counterpartName ?? "your call partner"
+      }`
     : call.status === "missed"
     ? "You missed this call"
     : call.status === "rejected"
@@ -110,6 +131,48 @@ export function CallScreen({ callId }: { callId: string }) {
               : "Preparing your call."}
           </p>
         </div>
+
+        {call.kind === "video" &&
+          ["connecting", "active", "reconnecting"].includes(call.status) && (
+          <div className="relative aspect-video w-full overflow-hidden rounded-card bg-surface-2">
+            {!remoteVideoStream && (
+              <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
+                <IconVideoOff size={28} aria-hidden="true" />
+                <span className="text-ui-sm">
+                  {call.counterpartName ?? "Your call partner"}&apos;s camera is off
+                </span>
+              </div>
+            )}
+            <video
+              ref={remoteVideo}
+              aria-label={`${call.counterpartName ?? "Your call partner"} video`}
+              autoPlay
+              muted
+              playsInline
+              className={`h-full w-full object-cover ${
+                remoteVideoStream ? "block" : "hidden"
+              }`}
+            />
+            <div className="absolute bottom-sm right-sm aspect-video w-1/3 overflow-hidden rounded-control border border-border bg-bg shadow-card">
+              {!localVideoStream && (
+                <div className="flex h-full items-center justify-center gap-2xs text-ui-xs text-muted">
+                  <IconVideoOff size={16} aria-hidden="true" />
+                  Camera off
+                </div>
+              )}
+              <video
+                ref={localVideo}
+                aria-label="Your video preview"
+                autoPlay
+                muted
+                playsInline
+                className={`h-full w-full -scale-x-100 object-cover ${
+                  localVideoStream ? "block" : "hidden"
+                }`}
+              />
+            </div>
+          </div>
+        )}
 
         {["active", "reconnecting"].includes(call.status) && (
           <div className="grid w-full gap-xs text-left sm:grid-cols-2">
@@ -178,7 +241,7 @@ export function CallScreen({ callId }: { callId: string }) {
           {call.status === "ringing" && call.direction === "incoming" && (
             <>
               <Button fullWidth loading={busy} onClick={() => void answer()}>
-                Answer call
+                {call.kind === "video" ? "Answer video call" : "Answer call"}
               </Button>
               <Button
                 variant="ghost"
@@ -216,6 +279,22 @@ export function CallScreen({ callId }: { callId: string }) {
                       </span>
                     )}
                   </Button>
+                  {call.kind === "video" && (
+                    <Button
+                      variant="secondary"
+                      fullWidth
+                      onClick={() => void toggleCamera()}
+                    >
+                      <span className="inline-flex items-center gap-xs">
+                        {call.cameraEnabled ? (
+                          <IconVideoOff size={20} aria-hidden="true" />
+                        ) : (
+                          <IconVideo size={20} aria-hidden="true" />
+                        )}
+                        {call.cameraEnabled ? "Turn camera off" : "Turn camera on"}
+                      </span>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     fullWidth

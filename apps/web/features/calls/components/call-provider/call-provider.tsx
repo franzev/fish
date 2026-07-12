@@ -4,6 +4,7 @@ import {
   createEmptyCallState,
   reduceCallState,
   selectHasLiveCall,
+  type CallKind,
   type CallState,
 } from "@fish/core/call-state";
 import {
@@ -28,7 +29,7 @@ import {
 } from "react";
 import {
   LiveKitCallMedia,
-  requestMicrophonePermission,
+  requestMediaPermission,
   type AudioDeviceOption,
 } from "../../client/call-media";
 
@@ -40,12 +41,19 @@ interface CallContextValue {
   audioBlocked: boolean;
   localMicrophoneActive: boolean;
   remoteSpeaking: boolean;
-  startCall(recipientId: string, recipientName: string): Promise<void>;
+  localVideoStream: MediaStream | null;
+  remoteVideoStream: MediaStream | null;
+  startCall(
+    recipientId: string,
+    recipientName: string,
+    kind: CallKind
+  ): Promise<void>;
   answer(): Promise<void>;
   decline(): Promise<void>;
   cancel(): Promise<void>;
   end(): Promise<void>;
   toggleMute(): Promise<void>;
+  toggleCamera(): Promise<void>;
   hearCall(): Promise<void>;
   loadCall(callId: string): Promise<void>;
   clear(): void;
@@ -83,6 +91,10 @@ export function CallProvider({
     localMicrophoneActive: false,
     remoteSpeaking: false,
   });
+  const [localVideoStream, setLocalVideoStream] =
+    useState<MediaStream | null>(null);
+  const [remoteVideoStream, setRemoteVideoStream] =
+    useState<MediaStream | null>(null);
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
@@ -119,6 +131,15 @@ export function CallProvider({
       onSpeakingChanged(_callId, speakingState) {
         setSpeaking(speakingState);
       },
+      onLocalVideoChanged(stream) {
+        setLocalVideoStream(stream);
+      },
+      onRemoteVideoChanged(stream) {
+        setRemoteVideoStream(stream);
+      },
+      onCameraChanged(enabled) {
+        dispatch({ type: "cameraChanged", enabled });
+      },
     })
   );
 
@@ -132,6 +153,7 @@ export function CallProvider({
         callId: call.id,
         counterpartId,
         counterpartName,
+        kind: call.kind,
         expiresAt: call.expiresAt,
       });
       return;
@@ -145,6 +167,7 @@ export function CallProvider({
           callId: call.id,
           counterpartId,
           counterpartName,
+          kind: call.kind,
           expiresAt: call.expiresAt,
         });
       }
@@ -167,6 +190,7 @@ export function CallProvider({
         callId: call.id,
         counterpartId,
         counterpartName,
+        kind: call.kind,
         expiresAt: call.expiresAt,
       });
     }
@@ -195,7 +219,10 @@ export function CallProvider({
     if (["connecting", "active"].includes(found.call.status)) {
       const joined = await commands.join(found.call.id);
       if (joined.ok && joined.connection) {
-        await media.connect(found.call.id, joined.connection, true);
+        await media.connect(found.call.id, joined.connection, {
+          microphone: true,
+          camera: found.call.kind === "video",
+        });
       }
     }
   }, [applyCall, commands, media, realtime, userId]);
@@ -226,7 +253,10 @@ export function CallProvider({
               await media.connect(
                 found.call.id,
                 joined.connection,
-                true
+                {
+                  microphone: true,
+                  camera: found.call.kind === "video",
+                }
               );
               return;
             }
@@ -280,7 +310,9 @@ export function CallProvider({
     audioBlocked,
     localMicrophoneActive: speaking.localMicrophoneActive,
     remoteSpeaking: speaking.remoteSpeaking,
-    startCall: async (recipientId, recipientName) => run(async () => {
+    localVideoStream,
+    remoteVideoStream,
+    startCall: async (recipientId, recipientName, kind) => run(async () => {
       if (selectHasLiveCall(stateRef.current)) {
         setNotice("Finish the current call before starting another one.");
         return;
@@ -289,8 +321,9 @@ export function CallProvider({
         type: "permissionRequested",
         counterpartId: recipientId,
         counterpartName: recipientName,
+        kind,
       });
-      const permission = await requestMicrophonePermission();
+      const permission = await requestMediaPermission(kind);
       if (permission !== "granted") {
         dispatch({
           type: "permissionDenied",
@@ -300,14 +333,18 @@ export function CallProvider({
         });
         setNotice(
           permission === "denied"
-            ? "Allow microphone access in your browser, then try the call again."
+            ? kind === "video"
+              ? "Allow camera and microphone access, then try the video call again."
+              : "Allow microphone access in your browser, then try the call again."
+            : kind === "video"
+            ? "We couldn’t find a camera and microphone. Check your devices and try again."
             : "We couldn’t find a microphone. Check your device and try again."
         );
         return;
       }
       const result = await commands.initiate({
         recipientId,
-        kind: "audio",
+        kind,
         clientRequestId: crypto.randomUUID(),
       });
       if (!result.ok) {
@@ -320,6 +357,7 @@ export function CallProvider({
         callId: result.call.id,
         counterpartId: recipientId,
         counterpartName: recipientName,
+        kind,
         expiresAt: result.call.expiresAt,
       });
       router.push(`/calls/${result.call.id}`);
@@ -327,9 +365,14 @@ export function CallProvider({
     answer: async () => run(async () => {
       const callId = stateRef.current.current.callId;
       if (!callId) return;
-      const permission = await requestMicrophonePermission();
+      const callKind = stateRef.current.current.kind;
+      const permission = await requestMediaPermission(callKind);
       if (permission !== "granted") {
-        setNotice("Allow microphone access in your browser, then answer again.");
+        setNotice(
+          callKind === "video"
+            ? "Allow camera and microphone access, then answer again."
+            : "Allow microphone access in your browser, then answer again."
+        );
         return;
       }
       const result = await commands.accept(callId);
@@ -338,7 +381,10 @@ export function CallProvider({
         return;
       }
       dispatch({ type: "callAccepted", callId });
-      await media.connect(callId, result.connection, true);
+      await media.connect(callId, result.connection, {
+        microphone: true,
+        camera: callKind === "video",
+      });
     }),
     decline: async () => run(async () => {
       const callId = stateRef.current.current.callId;
@@ -375,6 +421,19 @@ export function CallProvider({
       }
       dispatch({ type: "muteChanged", muted });
     },
+    toggleCamera: async () => {
+      if (stateRef.current.current.kind !== "video") return;
+      const enabled = !stateRef.current.current.cameraEnabled;
+      try {
+        await media.setCameraEnabled(enabled);
+      } catch {
+        setNotice(
+          enabled
+            ? "We couldn’t start your camera. Check its permission and try again."
+            : "We couldn’t turn off your camera yet. Try again."
+        );
+      }
+    },
     hearCall: async () => media.startAudio(),
     loadCall,
     clear: () => {
@@ -384,6 +443,8 @@ export function CallProvider({
         localMicrophoneActive: false,
         remoteSpeaking: false,
       });
+      setLocalVideoStream(null);
+      setRemoteVideoStream(null);
       dispatch({ type: "clearCall" });
     },
     microphones: async () => {
@@ -401,7 +462,7 @@ export function CallProvider({
         setNotice("That microphone isn’t available. The current one still works.");
       }
     },
-  }), [audioBlocked, busy, commands, homeHref, loadCall, media, notice, router, run, speaking, state]);
+  }), [audioBlocked, busy, commands, homeHref, loadCall, localVideoStream, media, notice, remoteVideoStream, router, run, speaking, state]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }
