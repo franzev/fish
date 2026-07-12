@@ -17,7 +17,16 @@ export default defineConfig({
   projects: [
     {
       name: "chrome",
-      use: { ...devices["Desktop Chrome"], channel: "chrome" },
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: "chrome",
+        launchOptions: {
+          args: [
+            "--use-fake-device-for-media-stream",
+            "--use-fake-ui-for-media-stream",
+          ],
+        },
+      },
     },
   ],
   webServer: {
