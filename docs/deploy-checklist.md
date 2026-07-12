@@ -27,7 +27,7 @@ is done.
 ## 3. Push migrations to the hosted database
 
 - [ ] Run `supabase db push` against the linked project. This applies every
-      committed migration through `0020_calls.sql`, including profiles,
+      committed migrations through `0025_avatar_photos.sql`, including profiles,
       client profiles, assignments, chat, realtime features, reactions, the
       seeded `general` channel, and the call control plane.
 - [ ] Spot-check that RLS is enabled on `profiles`, `client_profiles`,
@@ -46,6 +46,14 @@ is done.
       enabling calls for users.
 - [ ] Confirm the `expire-stale-calls` pg_cron job exists and runs once per
       minute in the hosted database.
+- [ ] Deploy `avatar-command` with JWT verification and set its
+      `AVATAR_UPLOADS_ENABLED` secret to `true` only after staging verification.
+- [ ] Confirm the `avatars` Storage bucket is private, accepts only WebP, and
+      has a 2 MB object limit.
+- [ ] Create a daily Supabase Cron job that invokes `avatar-command` with
+      `{"action":"cleanup-expired"}` using a service-role credential stored in
+      Vault. Confirm the job removes expired staging uploads without deleting
+      avatar paths still referenced by `profiles`.
 
 ## 4. Upload and confirm the production email templates
 
@@ -70,6 +78,8 @@ is done.
       environments that run seed or verification scripts. The production web
       runtime does not require it. Never give it a `NEXT_PUBLIC_` prefix,
       commit it, or expose it to the browser; it bypasses RLS entirely.
+- [ ] `AVATAR_UPLOADS_ENABLED` — server-side web kill switch. Set `false` to
+      hide avatar mutations while keeping existing avatar reads available.
 
 ## 6. Confirm the hosted auth config matches local
 
@@ -111,7 +121,8 @@ is done.
 - [ ] Against staging, run the RLS and realtime verification scripts with
       staging-only credentials and disposable test users.
 - [ ] Verify signup, confirmation, login, password recovery, profile editing,
-      channel loading, message send, reaction, read state, and realtime recovery.
+      client and coach avatar upload/removal, channel loading, message send,
+      reaction, read state, and realtime recovery.
 - [ ] Do not point destructive reset or seed commands at production.
 
 ---
