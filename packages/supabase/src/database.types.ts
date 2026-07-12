@@ -25,6 +25,12 @@ export type CallParticipantRow =
   Database["public"]["Tables"]["call_participants"]["Row"];
 export type CallEventRow =
   Database["public"]["Tables"]["call_events"]["Row"];
+export type FriendRequestRow =
+  Database["public"]["Tables"]["friend_requests"]["Row"];
+export type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
+export type UserBlockRow = Database["public"]["Tables"]["user_blocks"]["Row"];
+export type UserNotificationRow =
+  Database["public"]["Tables"]["user_notifications"]["Row"];
 
 // Re-exported for callers that still import UserRole via this module's historical surface.
 export type { UserRole };

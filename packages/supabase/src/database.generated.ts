@@ -43,7 +43,7 @@ export type Database = {
           id: string
           metadata: Json
           occurred_at: string
-          provider_event_id: string | null
+          provider_event_id: string
         }
         Insert: {
           actor_id?: string | null
@@ -53,7 +53,7 @@ export type Database = {
           id?: string
           metadata?: Json
           occurred_at: string
-          provider_event_id?: string | null
+          provider_event_id: string
         }
         Update: {
           actor_id?: string | null
@@ -63,7 +63,7 @@ export type Database = {
           id?: string
           metadata?: Json
           occurred_at?: string
-          provider_event_id?: string | null
+          provider_event_id?: string
         }
         Relationships: [
           {
@@ -89,6 +89,7 @@ export type Database = {
           invitation_status: Database["public"]["Enums"]["call_invitation_status"]
           joined_at: string | null
           left_at: string | null
+          provider_participant_sid: string | null
           reconnect_count: number
           role: Database["public"]["Enums"]["call_participant_role"]
           updated_at: string
@@ -100,6 +101,7 @@ export type Database = {
           invitation_status: Database["public"]["Enums"]["call_invitation_status"]
           joined_at?: string | null
           left_at?: string | null
+          provider_participant_sid?: string | null
           reconnect_count?: number
           role: Database["public"]["Enums"]["call_participant_role"]
           updated_at?: string
@@ -111,6 +113,7 @@ export type Database = {
           invitation_status?: Database["public"]["Enums"]["call_invitation_status"]
           joined_at?: string | null
           left_at?: string | null
+          provider_participant_sid?: string | null
           reconnect_count?: number
           role?: Database["public"]["Enums"]["call_participant_role"]
           updated_at?: string
@@ -412,6 +415,102 @@ export type Database = {
           {
             foreignKeyName: "conversations_coach_id_fkey"
             columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friend_requests: {
+        Row: {
+          client_request_id: string
+          created_at: string
+          id: string
+          pair_high_id: string
+          pair_low_id: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: Database["public"]["Enums"]["friend_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          client_request_id: string
+          created_at?: string
+          id?: string
+          recipient_id: string
+          responded_at?: string | null
+          sender_id: string
+          status?: Database["public"]["Enums"]["friend_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          client_request_id?: string
+          created_at?: string
+          id?: string
+          recipient_id?: string
+          responded_at?: string | null
+          sender_id?: string
+          status?: Database["public"]["Enums"]["friend_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_requests_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friend_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          created_at: string
+          created_by_request_id: string | null
+          id: string
+          user_high_id: string
+          user_low_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_request_id?: string | null
+          id?: string
+          user_high_id: string
+          user_low_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_request_id?: string | null
+          id?: string
+          user_high_id?: string
+          user_low_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_created_by_request_id_fkey"
+            columns: ["created_by_request_id"]
+            isOneToOne: false
+            referencedRelation: "friend_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_user_high_id_fkey"
+            columns: ["user_high_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_user_low_id_fkey"
+            columns: ["user_low_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -844,6 +943,84 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notifications: {
+        Row: {
+          actor_id: string
+          created_at: string
+          entity_id: string
+          id: string
+          kind: Database["public"]["Enums"]["friend_notification_kind"]
+          read_at: string | null
+          recipient_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          entity_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["friend_notification_kind"]
+          read_at?: string | null
+          recipient_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          entity_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["friend_notification_kind"]
+          read_at?: string | null
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -877,6 +1054,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      block_user: {
+        Args: { p_target_id: string }
+        Returns: boolean
+      }
       cancel_call: {
         Args: { p_call_id: string }
         Returns: {
@@ -901,6 +1082,27 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_friend_request: {
+        Args: { p_request_id: string }
+        Returns: {
+          client_request_id: string
+          created_at: string
+          id: string
+          pair_high_id: string
+          pair_low_id: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: Database["public"]["Enums"]["friend_request_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "friend_requests"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1126,6 +1328,43 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      list_friend_notifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          actor_display_name: string
+          actor_id: string
+          actor_username: string
+          created_at: string
+          entity_id: string
+          id: string
+          kind: Database["public"]["Enums"]["friend_notification_kind"]
+          read_at: string | null
+        }[]
+      }
+      list_friends: {
+        Args: {
+          p_cursor_created_at?: string
+          p_cursor_id?: string
+          p_limit?: number
+        }
+        Returns: {
+          created_at: string
+          display_name: string
+          friend_id: string
+          friendship_id: string
+          username: string
+        }[]
+      }
+      list_incoming_friend_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          request_id: string
+          sender_id: string
+          username: string
+        }[]
+      }
       mark_chat_read_state: {
         Args: {
           p_conversation_id: string
@@ -1147,6 +1386,21 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      mark_friend_notifications_read: {
+        Args: { p_notification_ids: string[] }
+        Returns: number
+      }
+      reconcile_livekit_webhook: {
+        Args: {
+          p_event_type: string
+          p_occurred_at: string
+          p_participant_id: string
+          p_participant_sid: string
+          p_provider_event_id: string
+          p_room_name: string
+        }
+        Returns: string
       }
       reject_call: {
         Args: { p_call_id: string }
@@ -1172,6 +1426,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      remove_friend: {
+        Args: { p_target_id: string }
+        Returns: boolean
+      }
+      respond_friend_request: {
+        Args: { p_request_id: string; p_response: string }
+        Returns: {
+          client_request_id: string
+          created_at: string
+          id: string
+          pair_high_id: string
+          pair_low_id: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: Database["public"]["Enums"]["friend_request_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "friend_requests"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1214,6 +1493,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      search_friend_candidate: {
+        Args: { p_username: string }
+        Returns: Json
+      }
       send_chat_message: {
         Args: {
           p_attachment_ids?: string[]
@@ -1243,6 +1526,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      send_friend_request: {
+        Args: { p_client_request_id: string; p_target_id: string }
+        Returns: {
+          client_request_id: string
+          created_at: string
+          id: string
+          pair_high_id: string
+          pair_low_id: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: Database["public"]["Enums"]["friend_request_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "friend_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       toggle_message_reaction: {
         Args: { p_emoji: string; p_message_id: string }
         Returns: {
@@ -1265,6 +1569,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      unblock_user: {
+        Args: { p_target_id: string }
+        Returns: boolean
       }
     }
     Enums: {
@@ -1289,6 +1597,10 @@ export type Database = {
         | "cancelled"
         | "missed"
         | "failed"
+      friend_notification_kind:
+        | "friend_request_received"
+        | "friend_request_accepted"
+      friend_request_status: "pending" | "accepted" | "declined" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
