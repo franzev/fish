@@ -74,12 +74,17 @@ is done.
 
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` — the hosted project's API URL.
 - [ ] `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — the hosted project's publishable (anon) key.
+- [ ] `NEXT_PUBLIC_KLIPY_API_KEY` — the production KLIPY application key used
+      by the browser GIF picker. GIF search stays unavailable unless this is set.
+- [ ] `NEXT_PUBLIC_KLIPY_CLIENT_KEY` — the stable KLIPY client identifier for
+      search and share analytics (use `fish_chat` unless the provider assigns another value).
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` — required only in trusted administrative
       environments that run seed or verification scripts. The production web
       runtime does not require it. Never give it a `NEXT_PUBLIC_` prefix,
       commit it, or expose it to the browser; it bypasses RLS entirely.
-- [ ] `AVATAR_UPLOADS_ENABLED` — server-side web kill switch. Set `false` to
-      hide avatar mutations while keeping existing avatar reads available.
+- [ ] `AVATAR_UPLOADS_ENABLED` — server-side web rollout switch. Avatar
+      mutations stay hidden unless this is explicitly set to `true`; existing
+      avatar reads remain available either way.
 
 ## 6. Confirm the hosted auth config matches local
 
