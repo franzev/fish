@@ -3,6 +3,19 @@ import { WebhookReceiver } from "npm:livekit-server-sdk@2.17.0";
 
 const jsonHeaders = { "content-type": "application/json; charset=utf-8" };
 
+function isUuid(value: string | undefined): value is string {
+  return !!value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      .test(value);
+}
+
+function eventTime(createdAt: bigint): string {
+  const seconds = Number(createdAt);
+  return Number.isFinite(seconds) && seconds > 0
+    ? new Date(seconds * 1_000).toISOString()
+    : new Date().toISOString();
+}
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") {
     return Response.json({ error: "method_not_allowed" }, {
@@ -43,79 +56,35 @@ Deno.serve(async (request) => {
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false },
   });
-  const { data: call } = await admin.from("calls").select("id,status")
-    .eq("provider_room_name", roomName).maybeSingle();
-  if (!call) {
-    return Response.json({ received: true }, { headers: jsonHeaders });
-  }
-
-  const occurredAt = new Date().toISOString();
-  const participantId = event.participant?.identity;
-  const providerEventId = event.id || null;
-  if (providerEventId) {
-    const inserted = await admin.from("call_events").insert({
-      call_id: call.id,
-      provider_event_id: providerEventId,
-      event_type: event.event,
-      actor_id: participantId || null,
-      occurred_at: occurredAt,
-      metadata: {},
+  const participantIdentity = event.participant?.identity;
+  const participantId = isUuid(participantIdentity)
+    ? participantIdentity
+    : null;
+  const participantSid = event.participant?.sid || null;
+  const occurredAt = eventTime(event.createdAt);
+  const providerEventId = event.id || [
+    roomName,
+    event.event,
+    participantSid ?? "room",
+    occurredAt,
+  ].join(":");
+  const { error } = await admin.rpc("reconcile_livekit_webhook", {
+    p_provider_event_id: providerEventId,
+    p_room_name: roomName,
+    p_event_type: event.event,
+    p_participant_id: participantId,
+    p_participant_sid: participantSid,
+    p_occurred_at: occurredAt,
+  });
+  if (error) {
+    console.error("livekit webhook reconciliation failed", {
+      code: error.code,
+      eventType: event.event,
     });
-    if (inserted.error?.code === "23505") {
-      return Response.json({ received: true }, { headers: jsonHeaders });
-    }
-    if (inserted.error) {
-      return Response.json({ error: "event_store_failed" }, {
-        status: 500,
-        headers: jsonHeaders,
-      });
-    }
-  }
-
-  if (event.event === "participant_joined" && participantId) {
-    await admin.from("call_participants").update({
-      joined_at: occurredAt,
-      left_at: null,
-      updated_at: occurredAt,
-    }).eq("call_id", call.id).eq("user_id", participantId);
-
-    const { count } = await admin.from("call_participants")
-      .select("user_id", { count: "exact", head: true })
-      .eq("call_id", call.id).not("joined_at", "is", null)
-      .is("left_at", null);
-    if ((count ?? 0) >= 2 && call.status === "connecting") {
-      await admin.from("calls").update({
-        status: "active",
-        connected_at: occurredAt,
-        updated_at: occurredAt,
-      }).eq("id", call.id).eq("status", "connecting");
-    }
-  }
-
-  if (
-    (event.event === "participant_left" ||
-      event.event === "participant_connection_aborted") && participantId
-  ) {
-    await admin.from("call_participants").update({
-      left_at: occurredAt,
-      updated_at: occurredAt,
-    }).eq("call_id", call.id).eq("user_id", participantId);
-
-    await admin.from("calls").update({
-      status: "failed",
-      ended_at: occurredAt,
-      end_reason: "network_lost",
-      updated_at: occurredAt,
-    }).eq("id", call.id).in("status", ["connecting", "active"]);
-  }
-
-  if (event.event === "room_finished") {
-    await admin.from("calls").update({
-      status: "failed",
-      ended_at: occurredAt,
-      end_reason: "provider_error",
-      updated_at: occurredAt,
-    }).eq("id", call.id).in("status", ["ringing", "connecting", "active"]);
+    return Response.json({ error: "event_reconciliation_failed" }, {
+      status: 500,
+      headers: jsonHeaders,
+    });
   }
 
   return Response.json({ received: true }, { headers: jsonHeaders });
