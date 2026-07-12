@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./chat": "./src/chat.ts",
     "./chat-state": "./src/chat-state/index.ts",
+    "./call-state": "./src/call-state/index.ts",
     "./roles": "./src/roles.ts"
   },
   "scripts": {

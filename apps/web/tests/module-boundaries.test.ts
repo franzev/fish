@@ -160,10 +160,12 @@ describe("module boundaries", () => {
     expect(relativePaths(offenders)).toEqual([]);
   });
 
-  it("keeps the core chat state free of framework and provider dependencies", () => {
-    const coreChatState = join(repositoryRoot, "packages", "core", "src", "chat-state");
+  it.each(["chat-state", "call-state"])(
+    "keeps the core %s free of framework and provider dependencies",
+    (stateDirectory) => {
+    const coreState = join(repositoryRoot, "packages", "core", "src", stateDirectory);
     const forbidden = /from\s+["'](?:react|next(?:\/|["'])|zustand|@supabase\/|@fish\/supabase)/;
-    const offenders = collectSourceFiles(coreChatState).filter((file) =>
+    const offenders = collectSourceFiles(coreState).filter((file) =>
       forbidden.test(readFileSync(file, "utf8"))
     );
 
