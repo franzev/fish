@@ -28,7 +28,7 @@ export const EmptySearch: Story = {};
 export const QuickFiltersOpen: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "Search filters" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Search messages" }));
     await expect(
       within(document.body).getByRole("menuitem", { name: /From a specific user/ })
     ).toBeVisible();
@@ -36,8 +36,11 @@ export const QuickFiltersOpen: Story = {
 };
 
 export const FromSuggestions: Story = {
-  args: { value: "from:" },
-  play: async () => {
+  args: { value: "from: y" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("combobox", { name: "Search messages" }));
+    await userEvent.keyboard("{End}");
     await expect(
       within(document.body).getByRole("listbox", { name: "From User" })
     ).toBeVisible();

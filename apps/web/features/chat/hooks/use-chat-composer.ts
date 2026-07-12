@@ -2,10 +2,12 @@ import type { ClientChatData } from "@/lib/services";
 import { chatLimits } from "@fish/core/chat";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import type { SendMessageActionState } from "@/features/chat/contracts";
+import type { ReportGifActionState } from "@/features/chat/contracts";
 import type { LocalMessage } from "./use-chat-messages";
 import type { PendingChatImage } from "./use-chat-image-uploads";
-import type { ClientChatImage } from "@/lib/services";
+import type { ClientChatGif, ClientChatImage } from "@/lib/services";
 import { useChatStore, selectComposerForConversation } from "@/features/chat/model/store";
+import { gifProvider } from "@/features/chat/model/gif-provider";
 
 interface UseChatComposerOptions {
   chat: ClientChatData;
@@ -14,6 +16,7 @@ interface UseChatComposerOptions {
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   toggleReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
+  reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
   sendLocalTyping: (typing: boolean) => void;
   stopLocalTyping: () => void;
   scheduleLocalTypingStop: () => void;
@@ -32,6 +35,7 @@ export function useChatComposer({
   editMessageAction,
   deleteMessageAction,
   toggleReactionAction,
+  reportGifAction,
   sendLocalTyping,
   stopLocalTyping,
   scheduleLocalTypingStop,
@@ -39,6 +43,8 @@ export function useChatComposer({
   clearPendingImages,
 }: UseChatComposerOptions) {
   const [notice, setNotice] = useState<string | null>(null);
+  const [selectedGif, setSelectedGif] = useState<ClientChatGif | null>(null);
+  const [selectedGifQuery, setSelectedGifQuery] = useState("");
   const composer = useChatStore((state) =>
     selectComposerForConversation(state, chat.conversationId)
   );
@@ -55,7 +61,8 @@ export function useChatComposer({
   const trimmedDraft = draft.trim();
   const readyImages = pendingImages.filter((image) => image.status === "ready");
   const imageUploadsSettled = pendingImages.every((image) => image.status === "ready");
-  const canSend = (trimmedDraft.length > 0 || readyImages.length > 0) && imageUploadsSettled;
+  const canSend = (trimmedDraft.length > 0 || readyImages.length > 0 || Boolean(selectedGif))
+    && imageUploadsSettled;
   const replyingTo = useMemo(
     () =>
       replyingToId
@@ -90,7 +97,9 @@ export function useChatComposer({
     replyToMessageId: string | null,
     clearComposer = false,
     attachmentIds: string[] = [],
-    optimisticImages: ClientChatImage[] = []
+    optimisticImages: ClientChatImage[] = [],
+    optimisticGif?: ClientChatGif,
+    gifQuery = ""
   ) {
     setNotice(null);
     stopLocalTyping();
@@ -102,6 +111,7 @@ export function useChatComposer({
       senderRole: chat.currentUserRole,
       senderDisplayName: chat.currentUserDisplayName,
       body,
+      gif: optimisticGif,
       images: optimisticImages,
       clientRequestId,
       editedAt: null,
@@ -118,6 +128,8 @@ export function useChatComposer({
       setDraft(chat.conversationId, "");
       setReplyTarget(chat.conversationId, null);
       clearPendingImages();
+      setSelectedGif(null);
+      setSelectedGifQuery("");
     }
 
     const result = await sendMessageAction({
@@ -126,6 +138,7 @@ export function useChatComposer({
       clientRequestId,
       replyToMessageId,
       attachmentIds,
+      gif: optimisticGif,
     }).catch(() => ({
       status: "notice" as const,
       values: {},
@@ -142,11 +155,18 @@ export function useChatComposer({
         clientRequestId,
         result.notice ?? "Not sent yet"
       );
+      if (clearComposer && optimisticGif) {
+        setSelectedGif(optimisticGif);
+        setSelectedGifQuery(gifQuery);
+      }
       return;
     }
 
     const sentMessage = result.message;
     confirmSentMessage(sentMessage, clientRequestId);
+    if (optimisticGif) {
+      void gifProvider.registerShare({ gif: optimisticGif, query: gifQuery }).catch(() => undefined);
+    }
   }
 
   async function handleEditMessage(body: string) {
@@ -175,7 +195,7 @@ export function useChatComposer({
   }
 
   async function handleSend() {
-    if (trimmedDraft.length === 0 && readyImages.length === 0) {
+    if (trimmedDraft.length === 0 && readyImages.length === 0 && !selectedGif) {
       setNotice("Add a message before sending.");
       return;
     }
@@ -218,7 +238,9 @@ export function useChatComposer({
               displayUrl: image.kind === "image" ? image.previewUrl : image.displayUrl,
             }]
           : []
-      )
+      ),
+      selectedGif ?? undefined,
+      selectedGifQuery
     );
   }
 
@@ -264,6 +286,21 @@ export function useChatComposer({
     mergeRemoteMessage(result.message!);
   }
 
+  async function handleReportGif(message: LocalMessage) {
+    if (!message.gif || !reportGifAction) {
+      setNotice("That GIF is not available.");
+      return;
+    }
+    const result = await reportGifAction({ messageId: message.id }).catch(() => ({
+      status: "notice" as const,
+      values: {},
+      notice: "That report did not send yet. Try again.",
+    }));
+    setNotice(result.status === "sent"
+      ? "Thanks. This GIF was reported."
+      : result.notice ?? "That report did not send yet. Try again.");
+  }
+
   function startReplyingToMessage(message: LocalMessage) {
     setReplyTarget(chat.conversationId, message.id);
     setEditTarget(chat.conversationId, null);
@@ -274,6 +311,8 @@ export function useChatComposer({
     setEditTarget(chat.conversationId, message.id);
     setReplyTarget(chat.conversationId, null);
     setDraft(chat.conversationId, message.body);
+    setSelectedGif(null);
+    setSelectedGifQuery("");
     setNotice(null);
   }
 
@@ -284,6 +323,17 @@ export function useChatComposer({
   function cancelEdit() {
     setEditTarget(chat.conversationId, null);
     setDraft(chat.conversationId, "");
+  }
+
+  function selectGif(gif: ClientChatGif, query: string) {
+    setSelectedGif(gif);
+    setSelectedGifQuery(query);
+    setNotice(null);
+  }
+
+  function removeSelectedGif() {
+    setSelectedGif(null);
+    setSelectedGifQuery("");
   }
 
   function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -298,6 +348,7 @@ export function useChatComposer({
 
   return {
     draft,
+    selectedGif,
     notice,
     canSend,
     replyingTo,
@@ -307,10 +358,13 @@ export function useChatComposer({
     sendWithRequestId,
     handleDeleteMessage,
     handleToggleReaction,
+    handleReportGif,
     startReplyingToMessage,
     startEditingMessage,
     cancelReply,
     cancelEdit,
+    selectGif,
+    removeSelectedGif,
     handleComposerKeyDown,
   };
 }

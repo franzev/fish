@@ -3,7 +3,7 @@ import "server-only";
 import { getServerServices } from "@/lib/services/runtime/server";
 import { getCurrentProfile } from "@/features/auth/server/page-data";
 import type { ChatPageData } from "@/features/auth/contracts";
-import type { AppServices } from "@/lib/services";
+import { resolveAvatarUrlsSafely, type AppServices } from "@/lib/services";
 
 export async function getChatPageData(
   injected?: AppServices
@@ -25,11 +25,11 @@ export async function getChatPageData(
 
   const chat = chatResult.data;
   if (!chat) return { role: profile.role, chat: null };
-  const avatarItems = services.avatars ? await services.avatars.resolveUrls([
+  const avatarItems = await resolveAvatarUrlsSafely(services.avatars, [
     chat.participant.id,
     ...chat.messages.map((message) => message.senderId),
     ...(chat.searchMembers ?? []).map((member) => member.id),
-  ]) : [];
+  ]);
   const avatarUrls = new Map(avatarItems.map((item) => [item.profileId, item.url]));
 
   return {

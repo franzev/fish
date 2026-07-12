@@ -201,9 +201,10 @@ export function useChatRealtime({
         // community member with no earlier loaded message): pull the enriched
         // row through the same profiles-backed refresh path SSR/reactions use,
         // so the transient "Member" fallback self-corrects.
-        if (!senderDisplayName) {
-          void refreshMessages([message.id]);
-        }
+        // Realtime carries only the messages row. Always pull the enriched
+        // message so provider GIFs, private attachments, reactions, and a
+        // previously unknown sender name arrive without waiting for reconnect.
+        void refreshMessages([message.id]);
       },
       () => {
         if (!active) {

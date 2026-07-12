@@ -8,6 +8,7 @@ import type { ClientChatReadState } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import {
   IconMessageReply,
+  IconFlag,
   IconMoodSmile,
   IconPencil,
   IconTrash,
@@ -20,6 +21,7 @@ import {
   MessageBody,
   MessageMeta,
   MessageImages,
+  MessageGif,
   MessageStatus,
   QuotedMessage,
   Reactions,
@@ -31,13 +33,15 @@ export interface ChatMessageActions {
   toggleReaction: (message: LocalMessage, emoji: string) => Promise<void>;
   edit: (message: LocalMessage) => void;
   delete: (message: LocalMessage) => Promise<void>;
+  reportGif: (message: LocalMessage) => Promise<void>;
   retry: (
     body: string,
     clientRequestId: string,
     replyToMessageId: string | null,
     clearComposer?: boolean,
     attachmentIds?: string[],
-    images?: NonNullable<LocalMessage["images"]>
+    images?: NonNullable<LocalMessage["images"]>,
+    gif?: LocalMessage["gif"]
   ) => Promise<void>;
 }
 
@@ -152,6 +156,7 @@ export function ChatMessageRow({
       {Boolean(message.images?.length) && !message.deletedAt && (
         <MessageImages images={message.images ?? []} authorName={getAuthorName(message)} mine={mine} />
       )}
+      {message.gif && !message.deletedAt && <MessageGif gif={message.gif} />}
       <div
         className={cn(
           "text-ui-sm break-words",
@@ -190,16 +195,28 @@ export function ChatMessageRow({
           >
             <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
           </EmojiPickerButton>
+          {message.gif && (
+            <button
+              type="button"
+              aria-label="Report GIF"
+              onClick={() => void actions.reportGif(message)}
+              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+            >
+              <IconFlag size={18} stroke={1.75} aria-hidden="true" />
+            </button>
+          )}
           {mine && (
             <>
-              <button
-                type="button"
-                aria-label="Edit message"
-                onClick={() => actions.edit(message)}
-                className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-              >
-                <IconPencil size={18} stroke={1.75} aria-hidden="true" />
-              </button>
+              {Boolean(message.body.trim()) && (
+                <button
+                  type="button"
+                  aria-label="Edit message"
+                  onClick={() => actions.edit(message)}
+                  className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                >
+                  <IconPencil size={18} stroke={1.75} aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="button"
                 aria-label="Delete message"
@@ -238,7 +255,8 @@ export function ChatMessageRow({
                   message.replyToMessageId ?? null,
                   false,
                   message.images?.map((image) => image.id) ?? [],
-                  message.images ?? []
+                  message.images ?? [],
+                  message.gif
                 )
               }
             >
@@ -313,7 +331,7 @@ export function ChatMessageRow({
             <div
               className={cn(
                 "flex max-w-message flex-col",
-                Boolean(message.images?.length) && "w-full",
+                (Boolean(message.images?.length) || Boolean(message.gif)) && "w-full",
                 mine && "items-end"
               )}
             >

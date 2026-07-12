@@ -34,3 +34,22 @@ export const ReadyToSend: Story = {
     await expect(args.onSend).toHaveBeenCalledOnce();
   },
 };
+
+export const GifSelected: Story = {
+  args: {
+    canSend: true,
+    selectedGif: {
+      provider: "klipy",
+      providerId: "JIX9t2j0ZTN9S",
+      title: "Typing cat",
+      description: "A cat typing quickly",
+      sourceUrl: "https://giphy.com/gifs/JIX9t2j0ZTN9S",
+      posterUrl: "https://media.giphy.com/media/JIX9t2j0ZTN9S/200_s.gif",
+      previewUrl: "https://media.giphy.com/media/JIX9t2j0ZTN9S/200w.mp4",
+      mediaUrl: "https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.mp4",
+      width: 480,
+      height: 270,
+    },
+    onRemoveGif: fn(),
+  },
+};

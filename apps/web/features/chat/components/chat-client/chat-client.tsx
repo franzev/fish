@@ -10,6 +10,7 @@ import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChatSearchActionState,
+  ReportGifActionState,
   SendMessageActionState,
 } from "@/features/chat/contracts";
 import {
@@ -81,6 +82,7 @@ export interface ChatClientProps {
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   toggleReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
+  reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
   markReadStateAction?: (input: unknown) => Promise<{
     status: "sent" | "notice";
     values: unknown;
@@ -112,6 +114,7 @@ export function ChatClient({
   editMessageAction,
   deleteMessageAction,
   toggleReactionAction,
+  reportGifAction,
   markReadStateAction,
   refreshMessagesAction,
   refreshConversationAction,
@@ -234,6 +237,7 @@ export function ChatClient({
   const imageUploads = useChatImageUploads(chat.conversationId);
   const {
     draft,
+    selectedGif,
     notice,
     canSend,
     replyingTo,
@@ -243,10 +247,13 @@ export function ChatClient({
     sendWithRequestId,
     handleDeleteMessage,
     handleToggleReaction,
+    handleReportGif,
     startReplyingToMessage,
     startEditingMessage,
     cancelReply,
     cancelEdit,
+    selectGif,
+    removeSelectedGif,
     handleComposerKeyDown,
   } = useChatComposer({
     chat,
@@ -255,6 +262,7 @@ export function ChatClient({
     editMessageAction,
     deleteMessageAction,
     toggleReactionAction,
+    reportGifAction,
     sendLocalTyping,
     stopLocalTyping,
     scheduleLocalTypingStop,
@@ -462,6 +470,7 @@ export function ChatClient({
         actions={{
           reply: startReplyingToMessage,
           toggleReaction: handleToggleReaction,
+          reportGif: handleReportGif,
           edit: startEditingMessage,
           delete: handleDeleteMessage,
           retry: sendWithRequestId,
@@ -489,6 +498,9 @@ export function ChatClient({
         addImages={imageUploads.addFiles}
         removeImage={imageUploads.remove}
         retryImage={imageUploads.retry}
+        selectedGif={selectedGif}
+        selectGif={selectGif}
+        removeSelectedGif={removeSelectedGif}
       />
       </div>
       {searchResultsOpen && <SearchResultsSidebar

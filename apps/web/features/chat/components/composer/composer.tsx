@@ -4,7 +4,6 @@ import { EmojiPickerButton } from "../emoji-picker";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
-  IconGif,
   IconMoodSmile,
   IconSend,
   IconSticker,
@@ -14,6 +13,9 @@ import { AddMenu } from "./add-menu";
 import { composerIconButtonClass } from "./icon-button-class";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
 import { ImageUploadPreview } from "./image-upload-preview";
+import type { ClientChatGif } from "@/lib/services";
+import { GifPickerButton } from "../gif-picker";
+import { GifSelectionPreview } from "../gif-selection-preview";
 
 export interface ComposerProps {
   /** Community channel name for the placeholder; direct chats omit it. */
@@ -30,14 +32,16 @@ export interface ComposerProps {
   onRemoveImage?: (clientUploadId: string) => void;
   onRetryImage?: (clientUploadId: string) => void;
   imageSelectionDisabled?: boolean;
+  selectedGif?: ClientChatGif | null;
+  onSelectGif?: (gif: ClientChatGif, query: string) => void;
+  onRemoveGif?: () => void;
+  gifSelectionDisabled?: boolean;
 }
 
 /** The message composer: one borderless surface-2 bar holding every input
  *  affordance. The Send button only exists while there is something to send
  *  — with an empty draft the bar has no primary action at all, keeping the
- *  one-primary-action rule intact for the whole screen. GIFs, stickers,
- *  uploads, audio recording, and polls aren't built yet; those controls stay
- *  visible but inert rather than raising an alert. */
+ *  one-primary-action rule intact for the whole screen. */
 export function Composer({
   channelName,
   draft,
@@ -52,9 +56,14 @@ export function Composer({
   onRemoveImage = () => undefined,
   onRetryImage = () => undefined,
   imageSelectionDisabled,
+  selectedGif,
+  onSelectGif = () => undefined,
+  onRemoveGif = () => undefined,
+  gifSelectionDisabled,
 }: ComposerProps) {
   const [dragActive, setDragActive] = useState(false);
-  const hasSendContent = draft.trim().length > 0 || images.length > 0;
+  const hasSendContent =
+    draft.trim().length > 0 || images.length > 0 || Boolean(selectedGif);
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragActive(false);
@@ -83,6 +92,7 @@ export function Composer({
         )}
       >
         <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
+        {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
         <div className="flex items-end gap-xs p-xs">
         <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
         <textarea
@@ -96,13 +106,13 @@ export function Composer({
           placeholder={channelName ? `Message #${channelName}` : "Message"}
           className="min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-copy text-foreground outline-none placeholder:text-muted focus-visible:shadow-none focus-visible:outline-none"
         />
-        <button
-          type="button"
-          aria-label="Add a GIF"
+        <GifPickerButton
+          onSelect={onSelectGif}
+          disabled={gifSelectionDisabled}
           className={composerIconButtonClass}
         >
-          <IconGif size={20} stroke={1.75} aria-hidden="true" />
-        </button>
+          <span className="text-ui-xs font-semibold" aria-hidden="true">GIF</span>
+        </GifPickerButton>
         <button
           type="button"
           aria-label="Add a sticker"

@@ -18,6 +18,12 @@ export interface MarkReadStateActionState {
   readState?: ClientChatReadState;
 }
 
+export interface ReportGifActionState {
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+}
+
 export interface ChatSearchActionState {
   status: "sent" | "notice";
   values: ChatSearchInput | unknown;

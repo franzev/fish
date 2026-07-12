@@ -2,10 +2,14 @@
 export * from "./avatar";
 export * from "./composer";
 export * from "./emoji-picker";
+export * from "./gif-media";
+export * from "./gif-picker";
+export * from "./gif-selection-preview";
 export * from "./empty-state";
 export * from "./message-body";
 export * from "./message-meta";
 export * from "./message-images";
+export * from "./message-gif";
 export { getBubbleRadiusClasses } from "./message-presentation";
 export * from "./message-row";
 export { MessageStatus } from "./message-status";

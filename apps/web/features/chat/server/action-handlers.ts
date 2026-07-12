@@ -19,6 +19,7 @@ import {
   markReadStateSchema,
   refreshConversationSchema,
   refreshMessagesSchema,
+  reportGifSchema,
   sendMessageSchema,
   toggleReactionSchema,
 } from "./schemas";
@@ -37,6 +38,7 @@ export function createChatActionHandlers(chat: ChatCommandService) {
     async sendMessage(input: unknown): Promise<SendMessageActionState> {
       const parsed = sendMessageSchema.safeParse(input);
       if (!parsed.success) {
+        const hasGif = typeof input === "object" && input !== null && "gif" in input;
         return {
           status: "notice",
           values: input,
@@ -47,7 +49,9 @@ export function createChatActionHandlers(chat: ChatCommandService) {
             String((input as { body?: unknown }).body ?? "").length >
               chatLimits.messageBodyMaxLength
               ? "This message is a little long. Try sending it in two parts."
-              : "Add a message before sending.",
+              : hasGif
+                ? "That GIF is not available. Choose another one."
+                : "Add a message before sending.",
         };
       }
       return messageActionState(
@@ -101,6 +105,21 @@ export function createChatActionHandlers(chat: ChatCommandService) {
           ...parsed.data,
         })
       );
+    },
+
+    async reportGif(input: unknown) {
+      const parsed = reportGifSchema.safeParse(input);
+      if (!parsed.success) {
+        return {
+          status: "notice" as const,
+          values: input,
+          notice: "That GIF is not available.",
+        };
+      }
+      const result = await chat.reportGif(parsed.data);
+      return result.ok
+        ? { status: "sent" as const, values: parsed.data }
+        : { status: "notice" as const, values: parsed.data, notice: result.notice };
     },
 
     async markReadState(input: unknown): Promise<MarkReadStateActionState> {

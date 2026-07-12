@@ -152,6 +152,8 @@
      search 56 (p-xs + h-10) + grid 232 (8 + 5 rows x 40 + 4 gaps x 4 + 8)
      + tab strip 49 (border 1 + py-2xs + h-10). */
   --spacing-emoji-panel-h: 337px; /* emoji picker popover height */
+  --spacing-gif-panel: 384px;     /* focused two-column GIF picker */
+  --spacing-gif-panel-h: min(70dvh, 520px);
   --spacing-filters-sheet: 85dvh; /* Filters bottom-sheet max height on small screens */
   --spacing-search-suggestions: 360px;
   --spacing-search-discovery: min(70dvh, 640px);
@@ -165,6 +167,8 @@
   --spacing-chat-image-max-height: 480px;
   --aspect-chat-gallery: 4 / 3;
   --spacing-chat-image-thumb: 240px;
+  --spacing-chat-gif-selection: 160px;
+  --aspect-gif-tile: 4 / 3;
   --spacing-motion-enter: 6px;
   --spacing-motion-typing: 4px;
 
@@ -184,6 +188,7 @@
   --container-calendar: 600px;
   --container-filter-operator: 240px;
   --container-chat-image: 560px;
+  --container-chat-gif: 420px;
   --container-image-viewer: 1120px;
 
   /* ---- Focus and motion ---- */
@@ -413,4 +418,21 @@
    also trying to compensate for the content growing above the viewport. */
 .chat-log-viewport {
   overflow-anchor: none;
+}
+
+/* Base UI owns collision-aware anchoring on larger screens. On narrow
+   screens the same popover becomes a thumb-reachable bottom sheet without
+   changing component semantics or mounting a second picker. */
+@media (max-width: 639px) {
+  .gif-picker-positioner {
+    position: fixed !important;
+    inset: auto var(--spacing-page)
+      max(var(--spacing-page), env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    transform: none !important;
+  }
+
+  .gif-picker-positioner [role="dialog"] {
+    width: 100%;
+  }
 }

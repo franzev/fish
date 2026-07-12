@@ -97,6 +97,7 @@ export function createChatHydrationKey(
       senderId: message.senderId,
       senderRole: message.senderRole,
       body: message.body,
+      gif: message.gif ?? null,
       clientRequestId: message.clientRequestId,
       createdAt: message.createdAt,
       editedAt: message.editedAt ?? null,

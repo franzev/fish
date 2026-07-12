@@ -5,6 +5,7 @@ import type {
   ChatSearchActionState,
   MarkReadStateActionState,
   SendMessageActionState,
+  ReportGifActionState,
 } from "@/features/chat/contracts";
 import type {
   ClientChatMessage,
@@ -71,6 +72,12 @@ export async function toggleReactionAction(
   input: unknown
 ): Promise<SendMessageActionState> {
   return (await handlers()).toggleReaction(input);
+}
+
+export async function reportGifAction(
+  input: unknown
+): Promise<ReportGifActionState> {
+  return (await handlers()).reportGif(input);
 }
 
 export async function markReadStateAction(

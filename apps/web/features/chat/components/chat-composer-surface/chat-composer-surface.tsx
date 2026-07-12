@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { IconX } from "@tabler/icons-react";
 import type { KeyboardEvent } from "react";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
+import type { ClientChatGif } from "@/lib/services";
 import { Composer, QuotedMessage } from "../visual";
 
 interface ChatComposerSurfaceProps {
@@ -29,6 +30,9 @@ interface ChatComposerSurfaceProps {
   addImages: (files: File[]) => void;
   removeImage: (clientUploadId: string) => void;
   retryImage: (clientUploadId: string) => void;
+  selectedGif: ClientChatGif | null;
+  selectGif: (gif: ClientChatGif, query: string) => void;
+  removeSelectedGif: () => void;
 }
 
 export function ChatComposerSurface({
@@ -52,6 +56,9 @@ export function ChatComposerSurface({
   addImages,
   removeImage,
   retryImage,
+  selectedGif,
+  selectGif,
+  removeSelectedGif,
 }: ChatComposerSurfaceProps) {
   return (
     <>
@@ -133,7 +140,11 @@ export function ChatComposerSurface({
           onSelectImages={addImages}
           onRemoveImage={(id) => void removeImage(id)}
           onRetryImage={retryImage}
-          imageSelectionDisabled={Boolean(editingMessage) || isOffline}
+          imageSelectionDisabled={Boolean(editingMessage) || isOffline || Boolean(selectedGif)}
+          selectedGif={selectedGif}
+          onSelectGif={selectGif}
+          onRemoveGif={removeSelectedGif}
+          gifSelectionDisabled={Boolean(editingMessage) || isOffline || images.length > 0}
         />
       </div>
     </>

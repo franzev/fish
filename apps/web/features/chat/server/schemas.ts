@@ -1,14 +1,53 @@
 import { chatLimits } from "@fish/core/chat";
 import { z } from "zod";
 
+const httpsUrl = z.url().max(2000).refine((value) => value.startsWith("https://"), {
+  message: "GIF URLs must use HTTPS",
+});
+
+function hostname(value: string): string {
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+export const chatGifSchema = z.strictObject({
+  provider: z.enum(["klipy", "giphy"]),
+  providerId: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(300),
+  description: z.string().trim().min(1).max(500),
+  sourceUrl: httpsUrl,
+  posterUrl: httpsUrl,
+  previewUrl: httpsUrl,
+  mediaUrl: httpsUrl,
+  width: z.number().int().min(1).max(4096),
+  height: z.number().int().min(1).max(4096),
+}).superRefine((gif, context) => {
+  const sourceHost = hostname(gif.sourceUrl);
+  const mediaHosts = [gif.posterUrl, gif.previewUrl, gif.mediaUrl].map(hostname);
+  const valid = gif.provider === "klipy"
+    ? (sourceHost === "klipy.com" || sourceHost.endsWith(".klipy.com"))
+      && mediaHosts.every((host) => /^static\d*\.klipy\.com$/.test(host))
+    : (sourceHost === "giphy.com" || sourceHost.endsWith(".giphy.com"))
+      && mediaHosts.every((host) => /^media\d*\.giphy\.com$/.test(host));
+  if (!valid) {
+    context.addIssue({ code: "custom", message: "GIF source is not allowed" });
+  }
+});
+
 export const sendMessageSchema = z.strictObject({
   conversationId: z.string().uuid(),
   body: z.string().trim().max(chatLimits.messageBodyMaxLength),
   clientRequestId: z.string().trim().min(1).max(120),
   replyToMessageId: z.string().trim().min(1).nullable().optional(),
   attachmentIds: z.array(z.string().uuid()).max(chatLimits.imageMaxCount).optional(),
-}).refine((value) => value.body.length > 0 || (value.attachmentIds?.length ?? 0) > 0, {
+  gif: chatGifSchema.optional(),
+}).refine((value) => value.body.length > 0 || (value.attachmentIds?.length ?? 0) > 0 || value.gif, {
   message: "Message content is required",
+}).refine((value) => !(value.gif && (value.attachmentIds?.length ?? 0) > 0), {
+  message: "A GIF cannot be combined with files",
 });
 
 export const editMessageSchema = z.strictObject({
@@ -23,6 +62,10 @@ export const deleteMessageSchema = z.strictObject({
 export const toggleReactionSchema = z.strictObject({
   messageId: z.string().trim().min(1),
   emoji: z.string().trim().min(1).max(16),
+});
+
+export const reportGifSchema = z.strictObject({
+  messageId: z.string().uuid(),
 });
 
 export const markReadStateSchema = z.strictObject({

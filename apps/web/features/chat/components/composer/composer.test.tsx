@@ -55,6 +55,32 @@ describe("Composer", () => {
     expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
   });
 
+  it("previews a selected GIF and keeps sending behind the existing Send action", () => {
+    const onRemoveGif = vi.fn();
+    render(<Composer
+      {...baseProps}
+      canSend
+      selectedGif={{
+        provider: "klipy",
+        providerId: "gif-1",
+        title: "Happy cat",
+        description: "A happy cat nodding",
+        sourceUrl: "https://klipy.com/gifs/gif-1",
+        posterUrl: "https://static.klipy.com/gif-1.jpg",
+        previewUrl: "https://static.klipy.com/gif-1-tiny.mp4",
+        mediaUrl: "https://static.klipy.com/gif-1.mp4",
+        width: 480,
+        height: 270,
+      }}
+      onRemoveGif={onRemoveGif}
+    />);
+
+    expect(screen.getByText("GIF selected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove selected GIF" }));
+    expect(onRemoveGif).toHaveBeenCalledOnce();
+  });
+
   it("keeps the image, GIF, sticker, and + menu affordances visible", () => {
     render(<Composer {...baseProps} />);
 
