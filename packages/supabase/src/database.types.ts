@@ -15,6 +15,7 @@ export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 export type MessageAttachmentRow =
   Database["public"]["Tables"]["message_attachments"]["Row"];
+export type MessageGifRow = Database["public"]["Tables"]["message_gifs"]["Row"];
 export type MessageReadRow = Database["public"]["Tables"]["message_reads"]["Row"];
 export type MessageReactionRow =
   Database["public"]["Tables"]["message_reactions"]["Row"];

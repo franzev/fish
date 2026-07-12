@@ -743,6 +743,98 @@ export type Database = {
           },
         ]
       }
+      message_gif_reports: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          reason: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          reason?: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          reason?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_gif_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "message_gifs"
+            referencedColumns: ["message_id"]
+          },
+          {
+            foreignKeyName: "message_gif_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_gifs: {
+        Row: {
+          created_at: string
+          description: string
+          height: number
+          media_url: string
+          message_id: string
+          poster_url: string
+          preview_url: string
+          provider: string
+          provider_content_id: string
+          source_url: string
+          title: string
+          width: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          height: number
+          media_url: string
+          message_id: string
+          poster_url: string
+          preview_url: string
+          provider: string
+          provider_content_id: string
+          source_url: string
+          title: string
+          width: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          height?: number
+          media_url?: string
+          message_id?: string
+          poster_url?: string
+          preview_url?: string
+          provider?: string
+          provider_content_id?: string
+          source_url?: string
+          title?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_gifs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_mentions: {
         Row: {
           conversation_id: string
@@ -1468,6 +1560,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      list_avatar_cleanup_candidates: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_path: string | null
+          client_upload_id: string
+          created_at: string
+          expires_at: string
+          failure_code: string | null
+          id: string
+          original_name: string
+          source_byte_size: number
+          source_mime_type: string
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_height: number | null
+          stored_width: number | null
+          thumbnail_path: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "avatar_uploads"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       list_blocked_users: {
         Args: never
         Returns: {
@@ -1607,6 +1727,7 @@ export type Database = {
           old_thumbnail_path: string
         }[]
       }
+      report_message_gif: { Args: { p_message_id: string }; Returns: boolean }
       resolve_avatar_paths: {
         Args: { p_profile_ids: string[]; p_variant?: string }
         Returns: {
@@ -1680,6 +1801,7 @@ export type Database = {
           p_body: string
           p_client_request_id: string
           p_conversation_id: string
+          p_gif?: Json
           p_reply_to_message_id?: string
         }
         Returns: {
