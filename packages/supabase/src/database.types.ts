@@ -20,6 +20,11 @@ export type MessageReactionRow =
   Database["public"]["Tables"]["message_reactions"]["Row"];
 export type PresenceSessionRow =
   Database["public"]["Tables"]["presence_sessions"]["Row"];
+export type CallRow = Database["public"]["Tables"]["calls"]["Row"];
+export type CallParticipantRow =
+  Database["public"]["Tables"]["call_participants"]["Row"];
+export type CallEventRow =
+  Database["public"]["Tables"]["call_events"]["Row"];
 
 // Re-exported for callers that still import UserRole via this module's historical surface.
 export type { UserRole };

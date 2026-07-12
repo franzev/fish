@@ -7,8 +7,221 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      call_events: {
+        Row: {
+          actor_id: string | null
+          call_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          provider_event_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          call_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          occurred_at: string
+          provider_event_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          call_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          provider_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_events_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_participants: {
+        Row: {
+          call_id: string
+          created_at: string
+          invitation_status: Database["public"]["Enums"]["call_invitation_status"]
+          joined_at: string | null
+          left_at: string | null
+          reconnect_count: number
+          role: Database["public"]["Enums"]["call_participant_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          invitation_status: Database["public"]["Enums"]["call_invitation_status"]
+          joined_at?: string | null
+          left_at?: string | null
+          reconnect_count?: number
+          role: Database["public"]["Enums"]["call_participant_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          invitation_status?: Database["public"]["Enums"]["call_invitation_status"]
+          joined_at?: string | null
+          left_at?: string | null
+          reconnect_count?: number
+          role?: Database["public"]["Enums"]["call_participant_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_participants_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calls: {
+        Row: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at?: string | null
+          created_at?: string
+          end_reason?: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at?: string | null
+          ended_by?: string | null
+          expires_at: string
+          id?: string
+          initiated_by: string
+          kind?: Database["public"]["Enums"]["call_kind"]
+          provider?: string
+          provider_room_name: string
+          status?: Database["public"]["Enums"]["call_status"]
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          client_id?: string
+          client_request_id?: string
+          coach_id?: string
+          connected_at?: string | null
+          created_at?: string
+          end_reason?: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at?: string | null
+          ended_by?: string | null
+          expires_at?: string
+          id?: string
+          initiated_by?: string
+          kind?: Database["public"]["Enums"]["call_kind"]
+          provider?: string
+          provider_room_name?: string
+          status?: Database["public"]["Enums"]["call_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_ended_by_fkey"
+            columns: ["ended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_members: {
         Row: {
           channel_id: string
@@ -636,6 +849,62 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_call: {
+        Args: { p_call_id: string }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_call: {
+        Args: { p_call_id: string }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       count_chat_messages: {
         Args: {
           p_author_types?: string[]
@@ -696,6 +965,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      end_call: {
+        Args: { p_call_id: string }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      expire_stale_calls: { Args: { p_now?: string }; Returns: number }
       expire_unattached_chat_images: {
         Args: never
         Returns: {
@@ -768,6 +1066,66 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      initiate_call: {
+        Args: {
+          p_client_request_id: string
+          p_kind: Database["public"]["Enums"]["call_kind"]
+          p_recipient_id: string
+        }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      join_call: {
+        Args: { p_call_id: string }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       mark_chat_read_state: {
         Args: {
           p_conversation_id: string
@@ -786,6 +1144,34 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "message_reads"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reject_call: {
+        Args: { p_call_id: string }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          provider: string
+          provider_room_name: string
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -882,7 +1268,27 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      call_end_reason:
+        | "completed"
+        | "rejected"
+        | "caller_cancelled"
+        | "no_answer"
+        | "permission_denied"
+        | "connect_failed"
+        | "network_lost"
+        | "provider_error"
+      call_invitation_status: "invited" | "accepted" | "rejected"
+      call_kind: "audio" | "video"
+      call_participant_role: "host" | "invitee"
+      call_status:
+        | "ringing"
+        | "connecting"
+        | "active"
+        | "ended"
+        | "rejected"
+        | "cancelled"
+        | "missed"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1008,7 +1414,34 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  public: {
+  graphql_public: {
     Enums: {},
+  },
+  public: {
+    Enums: {
+      call_end_reason: [
+        "completed",
+        "rejected",
+        "caller_cancelled",
+        "no_answer",
+        "permission_denied",
+        "connect_failed",
+        "network_lost",
+        "provider_error",
+      ],
+      call_invitation_status: ["invited", "accepted", "rejected"],
+      call_kind: ["audio", "video"],
+      call_participant_role: ["host", "invitee"],
+      call_status: [
+        "ringing",
+        "connecting",
+        "active",
+        "ended",
+        "rejected",
+        "cancelled",
+        "missed",
+        "failed",
+      ],
+    },
   },
 } as const
