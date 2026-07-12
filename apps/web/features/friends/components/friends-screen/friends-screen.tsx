@@ -73,7 +73,7 @@ export function FriendsScreen({
     }
   }
 
-  useFriendsRefresh(userId, () => void refresh(), realtimeOverride);
+  useFriendsRefresh(userId, refresh, realtimeOverride);
 
   // The accepted notes were already rendered from server data; marking them
   // read once keeps them from reappearing on the next visit.

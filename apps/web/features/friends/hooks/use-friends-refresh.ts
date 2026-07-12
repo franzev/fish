@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef } from "react";
    what the user sees. */
 export function useFriendsRefresh(
   userId: string,
-  refresh: () => void,
+  refresh: () => void | Promise<void>,
   realtimeOverride?: FriendRealtimeService
 ) {
   const realtime = useMemo(
@@ -24,16 +24,44 @@ export function useFriendsRefresh(
   }, [refresh]);
 
   useEffect(() => {
+    let active = true;
+    let running = false;
+    let queued = false;
+
+    async function requestRefresh() {
+      if (!active) return;
+      if (running) {
+        queued = true;
+        return;
+      }
+
+      running = true;
+      try {
+        do {
+          queued = false;
+          try {
+            await refreshRef.current();
+          } catch {
+            // Realtime is a recovery hint. A later signal or visibility
+            // change retries without surfacing a technical error here.
+          }
+        } while (active && queued);
+      } finally {
+        running = false;
+      }
+    }
+
     const unsubscribe = realtime.subscribe(
       userId,
-      () => refreshRef.current(),
-      () => refreshRef.current()
+      () => void requestRefresh(),
+      () => void requestRefresh()
     );
     function onVisibilityChange() {
-      if (document.visibilityState === "visible") refreshRef.current();
+      if (document.visibilityState === "visible") void requestRefresh();
     }
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
+      active = false;
       document.removeEventListener("visibilitychange", onVisibilityChange);
       unsubscribe();
     };

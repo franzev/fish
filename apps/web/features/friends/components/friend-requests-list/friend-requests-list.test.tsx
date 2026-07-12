@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { resolvedService } from "@/lib/services/testing";
 import type {
@@ -132,5 +132,58 @@ describe("FriendRequestsList", () => {
       createdAt: request.createdAt,
       id: request.requestId,
     });
+  });
+
+  it("coalesces rapid hints so an older refresh cannot overwrite a newer one", async () => {
+    const realtime = makeRealtime();
+    const repository = makeRepository([[request]]);
+    let releaseFirst: (() => void) | undefined;
+    const firstPending = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let calls = 0;
+    let activeCalls = 0;
+    let maxActiveCalls = 0;
+    repository.listIncomingRequests = vi.fn(async () => {
+      calls += 1;
+      activeCalls += 1;
+      maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
+      if (calls === 1) await firstPending;
+      activeCalls -= 1;
+      return {
+        ok: true as const,
+        data: {
+          requests: calls === 1 ? [request] : [],
+          nextCursor: null,
+        },
+      };
+    });
+
+    render(
+      <FriendRequestsList
+        userId="me"
+        initialRequests={[request]}
+        initialNextCursor={null}
+        repository={repository}
+        realtime={realtime.service}
+      />
+    );
+
+    act(() => {
+      realtime.emit({ reason: "first", occurredAt: "2026-07-12T00:00:00Z" });
+      realtime.emit({ reason: "second", occurredAt: "2026-07-12T00:00:01Z" });
+    });
+    await waitFor(() => expect(repository.listIncomingRequests).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      releaseFirst?.();
+      await firstPending;
+    });
+
+    expect(
+      await screen.findByText("No requests right now. New ones will appear here.")
+    ).toBeVisible();
+    expect(repository.listIncomingRequests).toHaveBeenCalledTimes(2);
+    expect(maxActiveCalls).toBe(1);
   });
 });

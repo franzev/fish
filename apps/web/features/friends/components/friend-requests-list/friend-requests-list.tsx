@@ -43,7 +43,7 @@ export function FriendRequestsList({
     }
   }
 
-  useFriendsRefresh(userId, () => void refresh(), realtimeOverride);
+  useFriendsRefresh(userId, refresh, realtimeOverride);
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;
