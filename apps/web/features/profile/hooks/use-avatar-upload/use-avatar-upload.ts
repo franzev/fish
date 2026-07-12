@@ -20,6 +20,12 @@ class UploadResponseError extends Error {
   }
 }
 
+class AvatarUploadCancelledError extends Error {
+  constructor() {
+    super("Photo upload cancelled.");
+  }
+}
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -49,7 +55,7 @@ function uploadPreparedFile(
     });
     request.addEventListener("abort", () => {
       register(null);
-      reject(new Error("Photo upload cancelled."));
+      reject(new AvatarUploadCancelledError());
     });
     request.send(file);
   });
@@ -62,10 +68,14 @@ export function useAvatarUpload(override?: AvatarCommandService) {
   const [notice, setNotice] = useState<string | null>(null);
   const requestRef = useRef<XMLHttpRequest | null>(null);
   const uploadIdRef = useRef<string | null>(null);
+  const operationRef = useRef(0);
 
   useEffect(() => () => {
+    operationRef.current += 1;
     requestRef.current?.abort();
-    if (uploadIdRef.current) void service.cancel(uploadIdRef.current).catch(() => undefined);
+    const uploadId = uploadIdRef.current;
+    uploadIdRef.current = null;
+    if (uploadId) void service.cancel(uploadId).catch(() => undefined);
   }, [service]);
 
   const markSelected = useCallback(() => {
@@ -75,6 +85,11 @@ export function useAvatarUpload(override?: AvatarCommandService) {
   }, []);
 
   const save = useCallback(async (file: File, crop: PixelCrop) => {
+    const operationId = ++operationRef.current;
+    const isActive = () => operationRef.current === operationId;
+    const requireActive = () => {
+      if (!isActive()) throw new AvatarUploadCancelledError();
+    };
     const clientUploadId = crypto.randomUUID();
     let authorization: AvatarUploadAuthorization | null = null;
     try {
@@ -82,6 +97,7 @@ export function useAvatarUpload(override?: AvatarCommandService) {
       setStatus("preparing");
       setProgress(0.08);
       const prepared = await prepareAvatar(file, crop);
+      requireActive();
       setStatus("authorizing");
       setProgress(0.22);
       authorization = await service.initialize({
@@ -90,22 +106,34 @@ export function useAvatarUpload(override?: AvatarCommandService) {
         sourceMimeType: file.type.toLowerCase(),
         sourceByteSize: file.size,
       });
+      if (!isActive()) {
+        await service.cancel(authorization.uploadId).catch(() => undefined);
+        throw new AvatarUploadCancelledError();
+      }
       uploadIdRef.current = authorization.uploadId;
 
       let uploaded = false;
       const retryDelays = [0, 1_000, 3_000];
       for (let attempt = 0; attempt < retryDelays.length && !uploaded; attempt += 1) {
         if (retryDelays[attempt]) await wait(retryDelays[attempt]!);
+        requireActive();
         setStatus("uploading");
         try {
           await uploadPreparedFile(
             prepared,
             authorization,
-            (value) => setProgress(0.25 + value * 0.6),
-            (request) => { requestRef.current = request; }
+            (value) => {
+              if (isActive()) setProgress(0.25 + value * 0.6);
+            },
+            (request) => {
+              if (isActive()) requestRef.current = request;
+              else request?.abort();
+            }
           );
+          requireActive();
           uploaded = true;
         } catch (error) {
+          if (error instanceof AvatarUploadCancelledError) throw error;
           if (
             error instanceof UploadResponseError
             && (error.status === 401 || error.status === 403)
@@ -117,6 +145,7 @@ export function useAvatarUpload(override?: AvatarCommandService) {
               sourceMimeType: file.type.toLowerCase(),
               sourceByteSize: file.size,
             });
+            requireActive();
             continue;
           }
           if (attempt === retryDelays.length - 1) throw error;
@@ -130,8 +159,10 @@ export function useAvatarUpload(override?: AvatarCommandService) {
       let completed = false;
       for (let attempt = 0; attempt < processingDelays.length && !completed; attempt += 1) {
         if (processingDelays[attempt]) await wait(processingDelays[attempt]!);
+        requireActive();
         try {
           await service.complete(authorization.uploadId);
+          requireActive();
           completed = true;
         } catch (error) {
           const message = error instanceof Error ? error.message : "";
@@ -145,24 +176,30 @@ export function useAvatarUpload(override?: AvatarCommandService) {
       setProgress(1);
       return true;
     } catch (error) {
+      if (error instanceof AvatarUploadCancelledError || !isActive()) return false;
       setStatus("failed");
-      setNotice(error instanceof Error
-        ? error.message
-        : "That photo did not upload. Your crop is still here. Try again.");
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "That photo did not upload. Your crop is still here. Try again."
+      );
       return false;
     }
   }, [service]);
 
   const remove = useCallback(async () => {
+    const operationId = ++operationRef.current;
     try {
       setNotice(null);
       setStatus("processing");
       setProgress(0.5);
       await service.remove();
+      if (operationRef.current !== operationId) return false;
       setProgress(1);
       setStatus("idle");
       return true;
     } catch (error) {
+      if (operationRef.current !== operationId) return false;
       setStatus("failed");
       setNotice(error instanceof Error ? error.message : "That photo could not be removed yet. Try again.");
       return false;
@@ -170,6 +207,7 @@ export function useAvatarUpload(override?: AvatarCommandService) {
   }, [service]);
 
   const cancel = useCallback(async () => {
+    operationRef.current += 1;
     requestRef.current?.abort();
     const uploadId = uploadIdRef.current;
     uploadIdRef.current = null;

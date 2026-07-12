@@ -98,9 +98,6 @@ export function AvatarPhotoEditor({
 
   async function chooseAnother() {
     await upload.cancel();
-    setFile(null);
-    setPreviewUrl(null);
-    setPixelCrop(null);
     inputRef.current?.click();
   }
 
@@ -132,7 +129,7 @@ export function AvatarPhotoEditor({
         id={fileInputId}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
+        className="hidden"
         onChange={selectFile}
         aria-describedby={instructionsId}
       />
@@ -146,12 +143,14 @@ export function AvatarPhotoEditor({
             size="lg"
             alt=""
           />
-          <label
-            htmlFor={fileInputId}
-            className={cn(buttonVariants({ variant: "primary", fullWidth: true }), "cursor-pointer")}
+          <Button
+            variant="primary"
+            fullWidth
+            aria-controls={fileInputId}
+            onClick={() => inputRef.current?.click()}
           >
             Choose photo
-          </label>
+          </Button>
           {hasAvatar && (
             <Button variant="ghost" fullWidth onClick={removePhoto} loading={upload.busy}>
               Remove current photo
