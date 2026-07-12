@@ -14,6 +14,10 @@ type ChatCommand =
       emoji: string;
     }
   | {
+      action: "report-gif";
+      messageId: string;
+    }
+  | {
       action: "mark-read-state";
       conversationId: string;
       lastDeliveredMessageId: string | null;
@@ -249,6 +253,13 @@ Deno.serve(async (request) => {
       p_message_id: command.messageId,
       p_emoji: emoji,
     });
+  } else if (command.action === "report-gif") {
+    if (!command.messageId) {
+      return calmError("That GIF is not available.", 400);
+    }
+    response = await rpc(supabaseUrl, apiKey, authHeader, "report_message_gif", {
+      p_message_id: command.messageId,
+    });
   } else if (command.action === "mark-read-state") {
     if (!command.conversationId) {
       return calmError("That conversation is not available.", 400);
@@ -359,6 +370,10 @@ Deno.serve(async (request) => {
   if (!response.ok) {
     const mapped = mapCommandError(payload);
     return calmError(mapped.error, mapped.status);
+  }
+
+  if (command.action === "report-gif") {
+    return Response.json({ reported: payload === true }, { headers: jsonHeaders });
   }
 
   if (command.action === "mark-read-state") {

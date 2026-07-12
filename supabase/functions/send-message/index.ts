@@ -4,6 +4,20 @@ type SendMessageCommand = {
   clientRequestId: string;
   replyToMessageId?: string | null;
   attachmentIds?: string[];
+  gif?: ChatGif;
+};
+
+type ChatGif = {
+  provider: "klipy" | "giphy";
+  providerId: string;
+  title: string;
+  description: string;
+  sourceUrl: string;
+  posterUrl: string;
+  previewUrl: string;
+  mediaUrl: string;
+  width: number;
+  height: number;
 };
 
 const chatLimits = {
@@ -16,6 +30,35 @@ const jsonHeaders = {
 
 function calmError(error: string, status: number): Response {
   return Response.json({ error }, { status, headers: jsonHeaders });
+}
+
+function hostname(value: unknown): string {
+  try {
+    return new URL(String(value)).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function isValidGif(value: unknown): value is ChatGif {
+  if (!value || typeof value !== "object") return false;
+  const gif = value as Partial<ChatGif>;
+  if (
+    (gif.provider !== "klipy" && gif.provider !== "giphy")
+    || typeof gif.providerId !== "string" || gif.providerId.length < 1 || gif.providerId.length > 200
+    || typeof gif.title !== "string" || gif.title.length < 1 || gif.title.length > 300
+    || typeof gif.description !== "string" || gif.description.length < 1 || gif.description.length > 500
+    || !Number.isInteger(gif.width) || Number(gif.width) < 1 || Number(gif.width) > 4096
+    || !Number.isInteger(gif.height) || Number(gif.height) < 1 || Number(gif.height) > 4096
+  ) return false;
+
+  const sourceHost = hostname(gif.sourceUrl);
+  const mediaHosts = [gif.posterUrl, gif.previewUrl, gif.mediaUrl].map(hostname);
+  return gif.provider === "klipy"
+    ? (sourceHost === "klipy.com" || sourceHost.endsWith(".klipy.com"))
+      && mediaHosts.every((host) => /^static\d*\.klipy\.com$/.test(host))
+    : (sourceHost === "giphy.com" || sourceHost.endsWith(".giphy.com"))
+      && mediaHosts.every((host) => /^media\d*\.giphy\.com$/.test(host));
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -53,13 +96,21 @@ Deno.serve(async (request) => {
   const body = command.body?.trim() ?? "";
   const clientRequestId = command.clientRequestId?.trim() ?? "";
   const replyToMessageId = command.replyToMessageId?.trim() || null;
+  const gif = command.gif;
 
   const attachmentIds = Array.isArray(command.attachmentIds)
     ? [...new Set(command.attachmentIds.filter((id) => typeof id === "string" && id))]
     : [];
 
-  if (!command.conversationId || (!body && attachmentIds.length === 0) || !clientRequestId) {
+  if (!command.conversationId || (!body && attachmentIds.length === 0 && !gif) || !clientRequestId) {
     return calmError("Add a message before sending.", 400);
+  }
+
+  if (gif && !isValidGif(gif)) {
+    return calmError("That GIF is not available. Choose another one.", 400);
+  }
+  if (gif && attachmentIds.length > 0) {
+    return calmError("Send the GIF or the files first, then send the other.", 400);
   }
 
   if (body.length > chatLimits.messageBodyMaxLength) {
@@ -99,6 +150,7 @@ Deno.serve(async (request) => {
       p_client_request_id: clientRequestId,
       p_reply_to_message_id: replyToMessageId,
       p_attachment_ids: attachmentIds,
+      p_gif: gif ?? null,
     }),
   });
 
