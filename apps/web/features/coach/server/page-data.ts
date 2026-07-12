@@ -3,7 +3,7 @@ import "server-only";
 import { getServerServices } from "@/lib/services/runtime/server";
 import { getCurrentProfile } from "@/features/auth/server/page-data";
 import type { CoachClientDetailData, CoachHomeData } from "@/features/auth/contracts";
-import type { AppServices } from "@/lib/services";
+import { resolveAvatarUrlsSafely, type AppServices } from "@/lib/services";
 
 export async function getCoachHomeData(
   injected?: AppServices
@@ -23,9 +23,10 @@ export async function getCoachHomeData(
     throw clientsResult.error;
   }
 
-  const avatarItems = services.avatars
-    ? await services.avatars.resolveUrls(clientsResult.data.map((client) => client.id))
-    : [];
+  const avatarItems = await resolveAvatarUrlsSafely(
+    services.avatars,
+    clientsResult.data.map((client) => client.id)
+  );
   const avatarUrls = new Map(avatarItems.map((item) => [item.profileId, item.url]));
 
   return {
@@ -95,9 +96,7 @@ export async function getCoachClientDetailData(
     return { role: profile.role, client: null };
   }
 
-  const avatarUrl = services.avatars
-    ? (await services.avatars.resolveUrls([clientId]))[0]?.url ?? null
-    : null;
+  const avatarUrl = (await resolveAvatarUrlsSafely(services.avatars, [clientId]))[0]?.url ?? null;
 
   return {
     role: profile.role,

@@ -1,12 +1,13 @@
 import "server-only";
 
 import { getServerServices } from "@/lib/services/runtime/server";
-import type {
-  AppServices,
-  AuthService,
-  ProfileRepository,
+import {
+  resolveAvatarUrlsSafely,
+  ServiceError,
+  type AppServices,
+  type AuthService,
+  type ProfileRepository,
 } from "@/lib/services";
-import { ServiceError } from "@/lib/services";
 import { authRedirects } from "../redirects";
 import { isUserRole } from "@fish/core/roles";
 import {
@@ -73,8 +74,7 @@ async function resolveAvatarUrl(
   profileId: string,
   variant: "thumbnail" | "display" = "thumbnail"
 ): Promise<string | null> {
-  if (!services.avatars) return null;
-  return (await services.avatars.resolveUrls([profileId], variant))[0]?.url ?? null;
+  return (await resolveAvatarUrlsSafely(services.avatars, [profileId], variant))[0]?.url ?? null;
 }
 
 export async function getRootRedirectPath(

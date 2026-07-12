@@ -1,7 +1,11 @@
 import "server-only";
 
 import { getServerServices } from "@/lib/services/runtime/server";
-import type { AppServices, FriendListItem } from "@/lib/services";
+import {
+  resolveAvatarUrlsSafely,
+  type AppServices,
+  type FriendListItem,
+} from "@/lib/services";
 import { getCurrentProfile } from "@/features/auth/server";
 import type {
   AddFriendPageData,
@@ -23,8 +27,7 @@ function profileDependencies(services: AppServices) {
 }
 
 async function avatarMap(services: AppServices, profileIds: string[]) {
-  if (!services.avatars) return new Map<string, string>();
-  const items = await services.avatars.resolveUrls(profileIds);
+  const items = await resolveAvatarUrlsSafely(services.avatars, profileIds);
   return new Map(items.map((item) => [item.profileId, item.url]));
 }
 
@@ -141,8 +144,8 @@ export async function getFriendRequestDetailData(
   const result = await services.database.friends.getIncomingRequest(requestId);
   if (!result.ok) throw result.error;
   const request = result.data;
-  const url = request && services.avatars
-    ? (await services.avatars.resolveUrls([request.sender.id]))[0]?.url ?? null
+  const url = request
+    ? (await resolveAvatarUrlsSafely(services.avatars, [request.sender.id]))[0]?.url ?? null
     : null;
   return {
     role: profile.role,
@@ -179,9 +182,10 @@ export async function getFriendDetailData(
   }
 
   if (friend) {
-    const url = services.avatars
-      ? (await services.avatars.resolveUrls([friend.friend.id]))[0]?.url ?? null
-      : null;
+    const url = (await resolveAvatarUrlsSafely(
+      services.avatars,
+      [friend.friend.id]
+    ))[0]?.url ?? null;
     friend = { ...friend, friend: { ...friend.friend, avatarUrl: url } };
   }
   return { role: profile.role, userId: profile.userId, friend };

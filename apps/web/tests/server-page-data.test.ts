@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getCurrentUserMock = vi.fn();
 const findProfileByIdMock = vi.fn();
 const findClientProfileByIdMock = vi.fn();
 const findByIdForCoachMock = vi.fn();
 const findDisplayNameByIdMock = vi.fn();
+const resolveAvatarUrlsMock = vi.fn();
 
 vi.mock("@/lib/services/supabase/server", () => ({
   createServerSupabaseServices: async () => ({
@@ -19,6 +20,7 @@ vi.mock("@/lib/services/supabase/server", () => ({
         findByIdForCoach: findByIdForCoachMock,
       },
     },
+    avatars: { resolveUrls: resolveAvatarUrlsMock },
   }),
 }));
 
@@ -76,10 +78,15 @@ describe("getCoachClientDetailData — uniform calm not-found (T-04-02)", () => 
 });
 
 describe("getAuthenticatedShellProfile — persisted preference hydration", () => {
+  beforeEach(() => {
+    resolveAvatarUrlsMock.mockResolvedValue([]);
+  });
+
   afterEach(() => {
     getCurrentUserMock.mockReset();
     findProfileByIdMock.mockReset();
     findClientProfileByIdMock.mockReset();
+    resolveAvatarUrlsMock.mockReset();
   });
 
   it("returns persisted client preferences for the authenticated shell", async () => {
@@ -130,5 +137,19 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
       timeFormatPref: null,
     });
     expect(findClientProfileByIdMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the authenticated shell available when avatar delivery is unavailable", async () => {
+    getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "coach-1" } });
+    findProfileByIdMock.mockResolvedValue({
+      ok: true,
+      data: { role: "coach", displayName: "Jamie Coach" },
+    });
+    resolveAvatarUrlsMock.mockRejectedValue(new Error("avatar-command unavailable"));
+
+    await expect(getAuthenticatedShellProfile()).resolves.toMatchObject({
+      userId: "coach-1",
+      avatarUrl: null,
+    });
   });
 });
