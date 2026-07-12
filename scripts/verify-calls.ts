@@ -1,13 +1,23 @@
-// Live call-control verification through authenticated PostgREST sessions.
-// Media is deliberately out of scope here; this proves lifecycle RPCs and RLS.
+// Live call-control verification through authenticated sessions and signed
+// provider webhooks. Browser media publication is covered by Playwright.
 import { createClient } from "@supabase/supabase-js";
+import { AccessToken } from "livekit-server-sdk";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const livekitApiKey = process.env.LIVEKIT_API_KEY;
+const livekitApiSecret = process.env.LIVEKIT_API_SECRET;
 
-if (!supabaseUrl || !publishableKey) {
+if (
+  !supabaseUrl ||
+  !publishableKey ||
+  !serviceRoleKey ||
+  !livekitApiKey ||
+  !livekitApiSecret
+) {
   console.error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. Run `supabase start` and configure apps/web/.env.local.",
+    "Missing local Supabase or LiveKit settings. Run `supabase start` and configure the web and function env files.",
   );
   process.exit(1);
 }
@@ -34,6 +44,49 @@ async function signIn(email: string, password: string) {
   return { client, userId: data.user.id };
 }
 
+async function sendLiveKitWebhook(input: {
+  eventId: string;
+  eventType: string;
+  roomName: string;
+  participantId: string | null;
+  participantSid: string | null;
+  occurredAt: Date;
+}) {
+  const body = JSON.stringify({
+    id: input.eventId,
+    event: input.eventType,
+    createdAt: String(Math.floor(input.occurredAt.getTime() / 1_000)),
+    room: { sid: "RM_fish_verification", name: input.roomName },
+    ...(input.participantId && input.participantSid
+      ? {
+          participant: {
+            identity: input.participantId,
+            sid: input.participantSid,
+          },
+        }
+      : {}),
+  });
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(body),
+  );
+  const token = new AccessToken(livekitApiKey!, livekitApiSecret!);
+  token.sha256 = Buffer.from(digest).toString("base64");
+  const response = await fetch(`${supabaseUrl}/functions/v1/livekit-webhook`, {
+    method: "POST",
+    headers: {
+      Authorization: await token.toJwt(),
+      "content-type": "application/webhook+json",
+    },
+    body,
+  });
+  return {
+    error: response.ok
+      ? null
+      : { message: `${response.status}: ${await response.text()}` },
+  };
+}
+
 async function main() {
   const coach = await signIn(users.coach.email, users.coach.password);
   const client = await signIn(users.client.email, users.client.password);
@@ -41,6 +94,9 @@ async function main() {
     users.unrelatedCoach.email,
     users.unrelatedCoach.password,
   );
+  const admin = createClient(supabaseUrl!, serviceRoleKey!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
   await client.client.realtime.setAuth();
   let resolveBroadcast: (payload: { callId?: string } | null) => void;
@@ -68,12 +124,32 @@ async function main() {
   ]);
   report("invitee can authorize a private call topic", realtimeReady);
 
-  const { data: call, error: initiateError } = await coach.client.rpc("initiate_call", {
-    p_recipient_id: client.userId,
-    p_kind: "audio",
-    p_client_request_id: crypto.randomUUID(),
-  });
-  report("assigned coach can initiate an audio call", !initiateError && call?.status === "ringing", initiateError?.message);
+  const clientRequestId = crypto.randomUUID();
+  const [firstInitiate, secondInitiate] = await Promise.all([
+    coach.client.rpc("initiate_call", {
+      p_recipient_id: client.userId,
+      p_kind: "audio",
+      p_client_request_id: clientRequestId,
+    }),
+    coach.client.rpc("initiate_call", {
+      p_recipient_id: client.userId,
+      p_kind: "audio",
+      p_client_request_id: clientRequestId,
+    }),
+  ]);
+  const call = firstInitiate.data ?? secondInitiate.data;
+  report(
+    "assigned coach can initiate an audio call",
+    !firstInitiate.error && call?.status === "ringing",
+    firstInitiate.error?.message,
+  );
+  report(
+    "concurrent retries return the same canonical call",
+    !firstInitiate.error &&
+      !secondInitiate.error &&
+      firstInitiate.data?.id === secondInitiate.data?.id,
+    firstInitiate.error?.message ?? secondInitiate.error?.message,
+  );
   if (!call) throw new Error("Cannot continue without an initiated call");
 
   const broadcast = await Promise.race([
@@ -111,6 +187,17 @@ async function main() {
     p_call_id: call.id,
   });
   report("unrelated user cannot accept the call", !!unauthorizedAcceptError);
+
+  const { error: callerEarlyJoinError } = await coach.client.rpc("join_call", {
+    p_call_id: call.id,
+  });
+  const { error: inviteeEarlyJoinError } = await client.client.rpc("join_call", {
+    p_call_id: call.id,
+  });
+  report(
+    "participants cannot join media before acceptance",
+    !!callerEarlyJoinError && !!inviteeEarlyJoinError,
+  );
 
   const { error: directInsertError } = await client.client.from("calls").insert({
     coach_id: coach.userId,
@@ -173,7 +260,152 @@ async function main() {
       videoEndError?.message,
     );
   }
+
+  const { data: webhookCall, error: webhookInitiateError } = await coach.client.rpc(
+    "initiate_call",
+    {
+      p_recipient_id: client.userId,
+      p_kind: "audio",
+      p_client_request_id: crypto.randomUUID(),
+    },
+  );
+  if (webhookInitiateError || !webhookCall) {
+    throw new Error(`Cannot create webhook verification call: ${webhookInitiateError?.message}`);
+  }
+  const { error: webhookAcceptError } = await client.client.rpc("accept_call", {
+    p_call_id: webhookCall.id,
+  });
+  if (webhookAcceptError) {
+    throw new Error(`Cannot accept webhook verification call: ${webhookAcceptError.message}`);
+  }
+
+  const joinedAt = new Date(Date.now() + 1_000);
+  const reconcile = (input: {
+    eventId: string;
+    eventType: string;
+    participantId: string | null;
+    participantSid: string | null;
+    occurredAt: Date;
+  }) => sendLiveKitWebhook({
+    ...input,
+    roomName: webhookCall.provider_room_name,
+  });
+
+  const coachJoined = await reconcile({
+    eventId: crypto.randomUUID(),
+    eventType: "participant_joined",
+    participantId: coach.userId,
+    participantSid: "PA_coach_1",
+    occurredAt: joinedAt,
+  });
+  const clientJoinEventId = crypto.randomUUID();
+  const clientJoined = await reconcile({
+    eventId: clientJoinEventId,
+    eventType: "participant_joined",
+    participantId: client.userId,
+    participantSid: "PA_client_1",
+    occurredAt: new Date(joinedAt.getTime() + 1_000),
+  });
+  const duplicateJoin = await reconcile({
+    eventId: clientJoinEventId,
+    eventType: "participant_joined",
+    participantId: client.userId,
+    participantSid: "PA_client_1",
+    occurredAt: new Date(joinedAt.getTime() + 1_000),
+  });
+  const { data: activeWebhookCall } = await admin.from("calls")
+    .select("status")
+    .eq("id", webhookCall.id)
+    .single();
+  const { count: duplicateEventCount, error: duplicateEventCountError } =
+    await admin.from("call_events")
+      .select("id", { count: "exact", head: true })
+      .eq("provider_event_id", clientJoinEventId);
+  report(
+    "verified participant joins atomically activate the call",
+    !coachJoined.error &&
+      !clientJoined.error &&
+      activeWebhookCall?.status === "active",
+    coachJoined.error?.message ?? clientJoined.error?.message,
+  );
+  report(
+    "duplicate provider events are idempotent",
+    !duplicateJoin.error &&
+      !duplicateEventCountError &&
+      duplicateEventCount === 1,
+    duplicateJoin.error?.message ?? duplicateEventCountError?.message,
+  );
+
+  const rejoinedAt = new Date(joinedAt.getTime() + 2_000);
+  const coachRejoined = await reconcile({
+    eventId: crypto.randomUUID(),
+    eventType: "participant_joined",
+    participantId: coach.userId,
+    participantSid: "PA_coach_2",
+    occurredAt: rejoinedAt,
+  });
+  const staleLeave = await reconcile({
+    eventId: crypto.randomUUID(),
+    eventType: "participant_left",
+    participantId: coach.userId,
+    participantSid: "PA_coach_1",
+    occurredAt: new Date(rejoinedAt.getTime() + 1_000),
+  });
+  const { data: afterStaleLeave } = await admin.from("call_participants")
+    .select("left_at,provider_participant_sid,reconnect_count")
+    .eq("call_id", webhookCall.id)
+    .eq("user_id", coach.userId)
+    .single();
+  report(
+    "a stale leave cannot overwrite a newer participant session",
+    !coachRejoined.error &&
+      !staleLeave.error &&
+      afterStaleLeave?.left_at === null &&
+      afterStaleLeave.provider_participant_sid === "PA_coach_2" &&
+      afterStaleLeave.reconnect_count === 1,
+    coachRejoined.error?.message ?? staleLeave.error?.message,
+  );
+
+  const currentLeaveAt = new Date(rejoinedAt.getTime() + 2_000);
+  const currentLeave = await reconcile({
+    eventId: crypto.randomUUID(),
+    eventType: "participant_left",
+    participantId: coach.userId,
+    participantSid: "PA_coach_2",
+    occurredAt: currentLeaveAt,
+  });
+  const { data: callDuringGrace } = await admin.from("calls")
+    .select("status")
+    .eq("id", webhookCall.id)
+    .single();
+  report(
+    "participant leave keeps the call active during reconnect grace",
+    !currentLeave.error && callDuringGrace?.status === "active",
+    currentLeave.error?.message,
+  );
+
+  const expiry = await admin.rpc("expire_stale_calls", {
+    p_now: new Date(currentLeaveAt.getTime() + 21_000).toISOString(),
+  });
+  const { data: callAfterGrace } = await admin.from("calls")
+    .select("status,end_reason")
+    .eq("id", webhookCall.id)
+    .single();
+  report(
+    "disconnect grace eventually records a network failure",
+    !expiry.error &&
+      callAfterGrace?.status === "failed" &&
+      callAfterGrace.end_reason === "network_lost",
+    expiry.error?.message,
+  );
+
   await client.client.removeChannel(callChannel);
+  await Promise.all([
+    coach.client.realtime.disconnect(),
+    client.client.realtime.disconnect(),
+    unrelated.client.realtime.disconnect(),
+    admin.realtime.disconnect(),
+  ]);
 
   if (failures > 0) {
     console.error(`\n${failures} call verification check(s) failed.`);

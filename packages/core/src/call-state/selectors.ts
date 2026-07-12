@@ -17,4 +17,3 @@ export function selectHasLiveCall(state: CallState): boolean {
 export function selectCanMute(state: CallState): boolean {
   return state.current.status === "active" || state.current.status === "reconnecting";
 }
-

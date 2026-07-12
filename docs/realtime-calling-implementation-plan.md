@@ -1,8 +1,8 @@
 # Real-time calling architecture and implementation plan
 
 **Status:** Secure control plane plus local one-to-one voice and video slices implemented; real-device, network, privacy, and pilot gates remain
-**Prepared:** 2026-07-12  
-**First delivery target:** One-to-one voice calls between an assigned coach and client  
+**Prepared:** 2026-07-12
+**First delivery target:** One-to-one voice calls between an assigned coach and client
 **Later targets:** One-to-one video, group voice, group video, recording, screen sharing, and quality monitoring
 
 ## Executive decision

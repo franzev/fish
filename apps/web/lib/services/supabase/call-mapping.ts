@@ -18,4 +18,3 @@ export function toClientCall(row: CallRow): ClientCall {
     updatedAt: row.updated_at,
   };
 }
-
