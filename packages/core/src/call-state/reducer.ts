@@ -8,6 +8,7 @@ export const emptyCallSession: CallSessionState = {
   status: "idle",
   direction: null,
   muted: false,
+  cameraEnabled: false,
   expiresAt: null,
   connectedAt: null,
   failureReason: null,
@@ -27,6 +28,7 @@ export function reduceCallState(state: CallState, event: CallEvent): CallState {
           ...emptyCallSession,
           counterpartId: event.counterpartId,
           counterpartName: event.counterpartName,
+          kind: event.kind,
           direction: "outgoing",
           status: "requestingPermission",
         },
@@ -46,6 +48,7 @@ export function reduceCallState(state: CallState, event: CallEvent): CallState {
           callId: event.callId,
           counterpartId: event.counterpartId,
           counterpartName: event.counterpartName,
+          kind: event.kind,
           direction: "outgoing",
           status: "ringing",
           expiresAt: event.expiresAt,
@@ -59,6 +62,7 @@ export function reduceCallState(state: CallState, event: CallEvent): CallState {
           callId: event.callId,
           counterpartId: event.counterpartId,
           counterpartName: event.counterpartName,
+          kind: event.kind,
           direction: "incoming",
           status: "ringing",
           expiresAt: event.expiresAt,
@@ -80,6 +84,9 @@ export function reduceCallState(state: CallState, event: CallEvent): CallState {
     case "muteChanged":
       if (!isLive(current)) return state;
       return { current: { ...current, muted: event.muted } };
+    case "cameraChanged":
+      if (!isLive(current) || current.kind !== "video") return state;
+      return { current: { ...current, cameraEnabled: event.enabled } };
     case "reconnecting":
       return forCurrentCall(state, event.callId, (call) => ({
         ...call,
@@ -140,4 +147,3 @@ function terminal(
 ): CallState {
   return forCurrentCall(state, callId, (call) => ({ ...call, status }));
 }
-

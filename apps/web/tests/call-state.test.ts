@@ -11,6 +11,7 @@ describe("portable call state", () => {
       callId: "call-1",
       counterpartId: "coach-1",
       counterpartName: "Coach Mina",
+      kind: "video",
       expiresAt: "2026-07-12T10:00:45.000Z",
     });
     const connecting = reduceCallState(ringing, {
@@ -26,9 +27,14 @@ describe("portable call state", () => {
     expect(ringing.current).toMatchObject({
       status: "ringing",
       direction: "outgoing",
+      kind: "video",
     });
     expect(connecting.current.status).toBe("connecting");
     expect(active.current.status).toBe("active");
+    expect(
+      reduceCallState(active, { type: "cameraChanged", enabled: true }).current
+        .cameraEnabled
+    ).toBe(true);
   });
 
   it("ignores stale call events and clears state on identity change", () => {
@@ -38,6 +44,7 @@ describe("portable call state", () => {
         callId: "call-1",
         counterpartId: "client-1",
         counterpartName: "Ari",
+        kind: "audio",
         expiresAt: "2026-07-12T10:00:45.000Z",
       }),
       { type: "callAccepted", callId: "call-1" }

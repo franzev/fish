@@ -31,6 +31,7 @@ export interface CallSessionState {
   status: CallLifecycleStatus;
   direction: "incoming" | "outgoing" | null;
   muted: boolean;
+  cameraEnabled: boolean;
   expiresAt: string | null;
   connectedAt: string | null;
   failureReason: CallFailureReason | null;
@@ -41,13 +42,19 @@ export interface CallState {
 }
 
 export type CallEvent =
-  | { type: "permissionRequested"; counterpartId: string; counterpartName: string }
+  | {
+      type: "permissionRequested";
+      counterpartId: string;
+      counterpartName: string;
+      kind: CallKind;
+    }
   | { type: "permissionDenied"; reason: "permissionDenied" | "deviceUnavailable" }
   | {
       type: "outgoingCallCreated";
       callId: string;
       counterpartId: string;
       counterpartName: string;
+      kind: CallKind;
       expiresAt: string;
     }
   | {
@@ -55,11 +62,13 @@ export type CallEvent =
       callId: string;
       counterpartId: string;
       counterpartName: string;
+      kind: CallKind;
       expiresAt: string;
     }
   | { type: "callAccepted"; callId: string }
   | { type: "mediaConnected"; callId: string; connectedAt: string }
   | { type: "muteChanged"; muted: boolean }
+  | { type: "cameraChanged"; enabled: boolean }
   | { type: "reconnecting"; callId: string }
   | { type: "reconnected"; callId: string }
   | { type: "callRejected"; callId: string }
@@ -69,4 +78,3 @@ export type CallEvent =
   | { type: "callFailed"; callId?: string; reason: CallFailureReason }
   | { type: "clearCall" }
   | { type: "identityChanged" };
-
