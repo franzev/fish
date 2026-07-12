@@ -336,7 +336,7 @@ export type CallCommandResult =
 export interface CallCommandService {
   initiate(input: {
     recipientId: string;
-    kind: "audio";
+    kind: "audio" | "video";
     clientRequestId: string;
   }): Promise<CallCommandResult>;
   accept(callId: string): Promise<CallCommandResult>;

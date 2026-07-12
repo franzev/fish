@@ -20,7 +20,7 @@ const commandSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("initiate"),
     recipientId: z.uuid(),
-    kind: z.literal("audio"),
+    kind: z.enum(["audio", "video"]),
     clientRequestId: z.string().trim().min(1).max(128),
   }),
   z.object({ action: z.literal("accept"), callId: z.uuid() }),
@@ -138,7 +138,9 @@ async function connectionFor(call: CallRow, userId: string) {
     canSubscribe: true,
     canPublish: true,
     canPublishData: false,
-    canPublishSources: [TrackSource.MICROPHONE],
+    canPublishSources: call.kind === "video"
+      ? [TrackSource.MICROPHONE, TrackSource.CAMERA]
+      : [TrackSource.MICROPHONE],
   });
 
   return { serverUrl, participantToken: await token.toJwt() };

@@ -20,7 +20,7 @@ export class SupabaseCallCommandService implements CallCommandService {
 
   initiate(input: {
     recipientId: string;
-    kind: "audio";
+    kind: "audio" | "video";
     clientRequestId: string;
   }) {
     return this.invoke({ action: "initiate", ...input });
@@ -77,4 +77,3 @@ export class SupabaseCallCommandService implements CallCommandService {
     };
   }
 }
-
