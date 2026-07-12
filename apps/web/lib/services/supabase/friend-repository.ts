@@ -207,4 +207,29 @@ export class SupabaseFriendRepository implements FriendRepository {
       return serviceSuccess(notifications);
     });
   }
+
+  async listBlockedUsers(): Promise<ServiceResult<FriendProfile[]>> {
+    return safely("friends.listBlockedUsers", async () => {
+      const { data, error } = await this.client.rpc("list_blocked_users");
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load blocked people.",
+            operation: "friends.listBlockedUsers",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(
+        (data ?? []).map((row) => ({
+          id: row.user_id,
+          displayName: row.display_name,
+          username: row.username,
+        }))
+      );
+    });
+  }
 }

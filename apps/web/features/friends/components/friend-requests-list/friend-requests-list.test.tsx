@@ -26,6 +26,7 @@ function makeRepository(pages: IncomingFriendRequest[][]): FriendRepository {
       return resolvedService(page);
     }),
     listNotifications: vi.fn(() => resolvedService([])),
+    listBlockedUsers: vi.fn(() => resolvedService([])),
   };
 }
 

@@ -44,6 +44,7 @@ function makeRepository(
       )
     ),
     listNotifications: vi.fn(() => resolvedService([])),
+    listBlockedUsers: vi.fn(() => resolvedService([])),
   };
 }
 
@@ -97,6 +98,10 @@ describe("FriendsScreen", () => {
     expect(screen.getByRole("link", { name: "Add a friend" })).toHaveAttribute(
       "href",
       "/friends/add"
+    );
+    expect(screen.getByRole("link", { name: "Blocked people" })).toHaveAttribute(
+      "href",
+      "/friends/blocked"
     );
   });
 

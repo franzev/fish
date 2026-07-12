@@ -5,6 +5,7 @@ import type { AppServices, FriendListItem } from "@/lib/services";
 import { getCurrentProfile } from "@/features/auth/server";
 import type {
   AddFriendPageData,
+  BlockedPeoplePageData,
   FriendDetailData,
   FriendRequestDetailData,
   FriendRequestsPageData,
@@ -134,4 +135,24 @@ export async function getFriendDetailData(
   }
 
   return { role: profile.role, userId: profile.userId, friend };
+}
+
+export async function getBlockedPeoplePageData(
+  injected?: AppServices
+): Promise<BlockedPeoplePageData | null> {
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile(profileDependencies(services));
+  if (!profile) return null;
+
+  if (profile.role !== "client") {
+    return { role: profile.role, userId: profile.userId, blockedPeople: [] };
+  }
+
+  const result = await services.database.friends.listBlockedUsers();
+  if (!result.ok) throw result.error;
+  return {
+    role: profile.role,
+    userId: profile.userId,
+    blockedPeople: result.data,
+  };
 }

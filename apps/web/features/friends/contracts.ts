@@ -1,6 +1,7 @@
 import type {
   FriendListItem,
   FriendNotification,
+  FriendProfile,
   IncomingFriendRequest,
 } from "@/lib/services";
 import type { UserRole } from "@fish/core/roles";
@@ -35,4 +36,10 @@ export interface FriendDetailData {
   role: UserRole;
   userId: string;
   friend: FriendListItem | null;
+}
+
+export interface BlockedPeoplePageData {
+  role: UserRole;
+  userId: string;
+  blockedPeople: FriendProfile[];
 }

@@ -170,6 +170,12 @@ export function FriendsScreen({
         <IconUserPlus size={20} stroke={1.75} aria-hidden="true" />
         Add a friend
       </Link>
+      <Link
+        href="/friends/blocked"
+        className={cn(buttonVariants({ variant: "ghost", fullWidth: true }))}
+      >
+        Blocked people
+      </Link>
     </div>
   );
 }

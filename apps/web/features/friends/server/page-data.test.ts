@@ -5,6 +5,7 @@ const findProfileByIdMock = vi.fn();
 const listFriendsMock = vi.fn();
 const listIncomingRequestsMock = vi.fn();
 const listNotificationsMock = vi.fn();
+const listBlockedUsersMock = vi.fn();
 const searchCandidateMock = vi.fn();
 
 vi.mock("@/lib/services/supabase/server", () => ({
@@ -17,6 +18,7 @@ vi.mock("@/lib/services/supabase/server", () => ({
         listFriends: listFriendsMock,
         listIncomingRequests: listIncomingRequestsMock,
         listNotifications: listNotificationsMock,
+        listBlockedUsers: listBlockedUsersMock,
       },
     },
   }),
@@ -24,6 +26,7 @@ vi.mock("@/lib/services/supabase/server", () => ({
 
 import {
   friendsFeatureEnabled,
+  getBlockedPeoplePageData,
   getFriendDetailData,
   getFriendRequestDetailData,
   getFriendsPageData,
@@ -46,6 +49,7 @@ afterEach(() => {
   listFriendsMock.mockReset();
   listIncomingRequestsMock.mockReset();
   listNotificationsMock.mockReset();
+  listBlockedUsersMock.mockReset();
   searchCandidateMock.mockReset();
 });
 
@@ -203,5 +207,26 @@ describe("getFriendDetailData", () => {
 
     const data = await getFriendDetailData("user-ghost");
     expect(data?.friend).toBeNull();
+  });
+});
+
+describe("getBlockedPeoplePageData", () => {
+  it("returns only the signed-in client's blocked people", async () => {
+    signedInAs("client");
+    listBlockedUsersMock.mockResolvedValue({ ok: true, data: [sam] });
+
+    const data = await getBlockedPeoplePageData();
+
+    expect(data?.blockedPeople).toEqual([sam]);
+    expect(listBlockedUsersMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps coaches out without reading block data", async () => {
+    signedInAs("coach");
+
+    const data = await getBlockedPeoplePageData();
+
+    expect(data?.blockedPeople).toEqual([]);
+    expect(listBlockedUsersMock).not.toHaveBeenCalled();
   });
 });

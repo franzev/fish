@@ -60,7 +60,9 @@ describe("FriendSafetyActions", () => {
     await waitFor(() =>
       expect(commands.blockUser).toHaveBeenCalledWith("user-sam")
     );
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/friends"));
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/friends/blocked")
+    );
   });
 
   it("lets the user step back out of the confirmation", () => {

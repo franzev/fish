@@ -46,7 +46,7 @@ export function FriendSafetyActions({
       setNotice(result.notice);
       return;
     }
-    router.push("/friends");
+    router.push(action === "block" ? "/friends/blocked" : "/friends");
   }
 
   if (confirming) {

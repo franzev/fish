@@ -421,6 +421,24 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          enabled: boolean
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       friend_requests: {
         Row: {
           client_request_id: string
@@ -1327,6 +1345,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      list_blocked_users: {
+        Args: never
+        Returns: {
+          display_name: string
+          user_id: string
+          username: string
+        }[]
       }
       list_friend_notifications: {
         Args: { p_limit?: number }

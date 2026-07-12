@@ -425,6 +425,7 @@ export interface FriendRepository {
   ): Promise<ServiceResult<FriendListPage>>;
   listIncomingRequests(): Promise<ServiceResult<IncomingFriendRequest[]>>;
   listNotifications(): Promise<ServiceResult<FriendNotification[]>>;
+  listBlockedUsers(): Promise<ServiceResult<FriendProfile[]>>;
 }
 
 export type FriendRequestStatus =
