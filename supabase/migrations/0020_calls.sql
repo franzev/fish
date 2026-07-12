@@ -206,9 +206,6 @@ begin
   if p_recipient_id is null or p_recipient_id = v_user_id then
     raise exception 'call not allowed';
   end if;
-  if p_kind <> 'audio' then
-    raise exception 'call kind not available';
-  end if;
   if p_client_request_id is null or char_length(btrim(p_client_request_id)) = 0 then
     raise exception 'client request id is required';
   end if;
