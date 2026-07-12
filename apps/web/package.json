@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --names web,functions \"next dev -p 3001\" \"supabase functions serve --workdir ../.. --env-file ../../supabase/functions/.env.local\"",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "storybook": "storybook dev -p 6006 --no-open",
     "test:storybook": "vitest run --config vitest.storybook.config.ts",
@@ -30,6 +30,7 @@
     "next": "16.2.9",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "react-easy-crop": "^6.2.2",
     "server-only": "0.0.1",
     "tailwind-merge": "2.6.0",
     "tus-js-client": "^4.3.1",
