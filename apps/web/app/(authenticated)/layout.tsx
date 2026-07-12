@@ -2,6 +2,7 @@ import { ChatIdentityGuard } from "@/features/auth";
 import { AppShell } from "@/components/shell/app-shell";
 import { authRedirects } from "@/features/auth/redirects";
 import { getAuthenticatedShellProfile } from "@/features/auth/server";
+import { friendsFeatureEnabled } from "@/features/friends/server";
 import { redirect } from "next/navigation";
 import { CallProvider } from "@/features/calls";
 
@@ -37,6 +38,7 @@ export default async function AuthenticatedLayout({
       <AppShell
         displayName={profile.displayName}
         role={profile.role}
+        friendsNavEnabled={friendsFeatureEnabled()}
         preferences={{
           themePref: profile.themePref,
           textSizePref: profile.textSizePref,

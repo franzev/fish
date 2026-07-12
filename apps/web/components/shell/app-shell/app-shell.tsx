@@ -22,6 +22,9 @@ type TimeFormatPref = "12h" | "24h" | null;
 interface AppShellProps {
   displayName: string;
   role: UserRole;
+  /** Server-resolved pilot flag; the Friends nav entry stays hidden until
+      the coach-validated rollout turns it on. */
+  friendsNavEnabled?: boolean;
   preferences?: {
     themePref?: ThemePref;
     textSizePref?: TextSizePref;
@@ -42,13 +45,20 @@ const clientNavItems: NavItem[] = [
   { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
 
+const clientNavItemsWithFriends: NavItem[] = [
+  { href: "/home", label: "Home", Icon: IconHome },
+  { href: "/friends", label: "Friends", Icon: IconUsers },
+  { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
+];
+
 const coachNavItems: NavItem[] = [
   { href: "/coach", label: "Clients", Icon: IconUsers },
   { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
 
-function getNavItems(role: UserRole) {
-  return role === "coach" ? coachNavItems : clientNavItems;
+function getNavItems(role: UserRole, friendsNavEnabled: boolean) {
+  if (role === "coach") return coachNavItems;
+  return friendsNavEnabled ? clientNavItemsWithFriends : clientNavItems;
 }
 
 function isActivePath(pathname: string, href: string) {
@@ -106,11 +116,12 @@ function NavLinks({
 export function AppShell({
   displayName,
   role,
+  friendsNavEnabled = false,
   preferences,
   children,
 }: AppShellProps) {
   const pathname = usePathname();
-  const navItems = getNavItems(role);
+  const navItems = getNavItems(role, friendsNavEnabled);
   /* Channels and calls are immersive surfaces: each owns the available pane
      and scrolls internally, so the shell locks to the viewport there. */
   const channelSurface = isActivePath(pathname, "/channels");
