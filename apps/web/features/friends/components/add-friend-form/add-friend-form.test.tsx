@@ -14,7 +14,11 @@ function makeRepository(candidate: FriendCandidate): FriendRepository {
     listFriends: vi.fn(() =>
       resolvedService({ friends: [], nextCursor: null })
     ),
-    listIncomingRequests: vi.fn(() => resolvedService([])),
+    listIncomingRequests: vi.fn(() =>
+      resolvedService({ requests: [], nextCursor: null })
+    ),
+    getIncomingRequest: vi.fn(() => resolvedService(null)),
+    countIncomingRequests: vi.fn(() => resolvedService(0)),
     listNotifications: vi.fn(() => resolvedService([])),
     listBlockedUsers: vi.fn(() => resolvedService([])),
   };

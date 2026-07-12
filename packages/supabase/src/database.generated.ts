@@ -1139,6 +1139,7 @@ export type Database = {
         }
         Returns: number
       }
+      count_incoming_friend_requests: { Args: never; Returns: number }
       delete_chat_message: {
         Args: { p_message_id: string }
         Returns: {
@@ -1246,6 +1247,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_incoming_friend_request: {
+        Args: { p_request_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          request_id: string
+          sender_id: string
+          username: string
+        }[]
       }
       initialize_chat_image_upload: {
         Args: {
@@ -1382,7 +1393,11 @@ export type Database = {
         }[]
       }
       list_incoming_friend_requests: {
-        Args: never
+        Args: {
+          p_cursor_created_at?: string
+          p_cursor_id?: string
+          p_limit?: number
+        }
         Returns: {
           created_at: string
           display_name: string

@@ -24,6 +24,7 @@ export interface FriendRequestsPageData {
   role: UserRole;
   userId: string;
   requests: IncomingFriendRequest[];
+  nextCursor: { createdAt: string; id: string } | null;
 }
 
 export interface FriendRequestDetailData {

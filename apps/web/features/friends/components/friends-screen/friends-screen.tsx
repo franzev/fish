@@ -62,14 +62,14 @@ export function FriendsScreen({
   async function refresh() {
     const [friendsResult, requestsResult] = await Promise.all([
       repository.listFriends(),
-      repository.listIncomingRequests(),
+      repository.countIncomingRequests(),
     ]);
     if (friendsResult.ok) {
       setFriends(friendsResult.data.friends);
       setNextCursor(friendsResult.data.nextCursor);
     }
     if (requestsResult.ok) {
-      setIncomingRequestCount(requestsResult.data.length);
+      setIncomingRequestCount(requestsResult.data);
     }
   }
 

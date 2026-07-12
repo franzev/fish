@@ -7,6 +7,7 @@ import type {
   IncomingFriendRequest,
 } from "@/lib/services";
 import { IconChevronRight } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useFriendsRefresh } from "../../hooks/use-friends-refresh";
@@ -14,6 +15,7 @@ import { useFriendsRefresh } from "../../hooks/use-friends-refresh";
 interface FriendRequestsListProps {
   userId: string;
   initialRequests: IncomingFriendRequest[];
+  initialNextCursor: { createdAt: string; id: string } | null;
   repository?: FriendRepository;
   realtime?: FriendRealtimeService;
 }
@@ -21,6 +23,7 @@ interface FriendRequestsListProps {
 export function FriendRequestsList({
   userId,
   initialRequests,
+  initialNextCursor,
   repository: repositoryOverride,
   realtime: realtimeOverride,
 }: FriendRequestsListProps) {
@@ -29,16 +32,32 @@ export function FriendRequestsList({
     [repositoryOverride]
   );
   const [requests, setRequests] = useState(initialRequests);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   async function refresh() {
     const result = await repository.listIncomingRequests();
-    if (result.ok) setRequests(result.data);
+    if (result.ok) {
+      setRequests(result.data.requests);
+      setNextCursor(result.data.nextCursor);
+    }
   }
 
   useFriendsRefresh(userId, () => void refresh(), realtimeOverride);
 
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    const result = await repository.listIncomingRequests(nextCursor);
+    if (result.ok) {
+      setRequests((current) => [...current, ...result.data.requests]);
+      setNextCursor(result.data.nextCursor);
+    }
+    setLoadingMore(false);
+  }
+
   return (
-    <div aria-live="polite">
+    <div aria-live="polite" className="flex flex-col gap-md">
       {requests.length === 0 ? (
         <p className="text-copy text-body">
           No requests right now. New ones will appear here.
@@ -69,6 +88,16 @@ export function FriendRequestsList({
             </li>
           ))}
         </ul>
+      )}
+      {nextCursor && (
+        <Button
+          type="button"
+          variant="ghost"
+          loading={loadingMore}
+          onClick={() => void loadMore()}
+        >
+          Show more requests
+        </Button>
       )}
     </div>
   );

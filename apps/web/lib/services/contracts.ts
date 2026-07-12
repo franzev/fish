@@ -405,6 +405,11 @@ export interface IncomingFriendRequest {
   createdAt: string;
 }
 
+export interface IncomingFriendRequestPage {
+  requests: IncomingFriendRequest[];
+  nextCursor: { createdAt: string; id: string } | null;
+}
+
 export type FriendNotificationKind =
   | "friendRequestReceived"
   | "friendRequestAccepted";
@@ -423,7 +428,13 @@ export interface FriendRepository {
   listFriends(
     cursor?: { createdAt: string; id: string } | null
   ): Promise<ServiceResult<FriendListPage>>;
-  listIncomingRequests(): Promise<ServiceResult<IncomingFriendRequest[]>>;
+  listIncomingRequests(
+    cursor?: { createdAt: string; id: string } | null
+  ): Promise<ServiceResult<IncomingFriendRequestPage>>;
+  getIncomingRequest(
+    requestId: string
+  ): Promise<ServiceResult<IncomingFriendRequest | null>>;
+  countIncomingRequests(): Promise<ServiceResult<number>>;
   listNotifications(): Promise<ServiceResult<FriendNotification[]>>;
   listBlockedUsers(): Promise<ServiceResult<FriendProfile[]>>;
 }

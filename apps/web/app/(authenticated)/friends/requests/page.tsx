@@ -23,7 +23,11 @@ export default async function FriendRequestsPage() {
   return (
     <>
       <h1 className="mb-lg text-3xl">Friend requests</h1>
-      <FriendRequestsList userId={data.userId} initialRequests={data.requests} />
+      <FriendRequestsList
+        userId={data.userId}
+        initialRequests={data.requests}
+        initialNextCursor={data.nextCursor}
+      />
       <p className="mt-lg text-center text-ui-sm text-muted">
         <Link href="/friends" className="text-body underline">
           Back to friends

@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { resolvedService } from "@/lib/services/testing";
 import type {
@@ -23,8 +23,10 @@ function makeRepository(pages: IncomingFriendRequest[][]): FriendRepository {
     listIncomingRequests: vi.fn(() => {
       const page = pages[Math.min(call, pages.length - 1)];
       call += 1;
-      return resolvedService(page);
+      return resolvedService({ requests: page, nextCursor: null });
     }),
+    getIncomingRequest: vi.fn(() => resolvedService(null)),
+    countIncomingRequests: vi.fn(() => resolvedService(0)),
     listNotifications: vi.fn(() => resolvedService([])),
     listBlockedUsers: vi.fn(() => resolvedService([])),
   };
@@ -52,6 +54,7 @@ describe("FriendRequestsList", () => {
       <FriendRequestsList
         userId="me"
         initialRequests={[request]}
+        initialNextCursor={null}
         repository={makeRepository([[request]])}
         realtime={makeRealtime().service}
       />
@@ -69,6 +72,7 @@ describe("FriendRequestsList", () => {
       <FriendRequestsList
         userId="me"
         initialRequests={[]}
+        initialNextCursor={null}
         repository={makeRepository([[]])}
         realtime={makeRealtime().service}
       />
@@ -85,6 +89,7 @@ describe("FriendRequestsList", () => {
       <FriendRequestsList
         userId="me"
         initialRequests={[request]}
+        initialNextCursor={null}
         repository={makeRepository([[]])}
         realtime={realtime.service}
       />
@@ -101,5 +106,31 @@ describe("FriendRequestsList", () => {
     expect(
       await screen.findByText("No requests right now. New ones will appear here.")
     ).toBeVisible();
+  });
+
+  it("loads every cursor page instead of hiding older requests", async () => {
+    const older = {
+      requestId: "req-older",
+      sender: { id: "user-noor", displayName: "Noor Aziz", username: "noor_a" },
+      createdAt: "2026-07-09T00:00:00Z",
+    };
+    const repository = makeRepository([[older]]);
+    render(
+      <FriendRequestsList
+        userId="me"
+        initialRequests={[request]}
+        initialNextCursor={{ createdAt: request.createdAt, id: request.requestId }}
+        repository={repository}
+        realtime={makeRealtime().service}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Show more requests" }));
+
+    expect(await screen.findByText("Noor Aziz")).toBeVisible();
+    expect(repository.listIncomingRequests).toHaveBeenCalledWith({
+      createdAt: request.createdAt,
+      id: request.requestId,
+    });
   });
 });

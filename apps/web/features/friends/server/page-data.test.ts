@@ -4,6 +4,8 @@ const getCurrentUserMock = vi.fn();
 const findProfileByIdMock = vi.fn();
 const listFriendsMock = vi.fn();
 const listIncomingRequestsMock = vi.fn();
+const getIncomingRequestMock = vi.fn();
+const countIncomingRequestsMock = vi.fn();
 const listNotificationsMock = vi.fn();
 const listBlockedUsersMock = vi.fn();
 const searchCandidateMock = vi.fn();
@@ -17,6 +19,8 @@ vi.mock("@/lib/services/supabase/server", () => ({
         searchCandidate: searchCandidateMock,
         listFriends: listFriendsMock,
         listIncomingRequests: listIncomingRequestsMock,
+        getIncomingRequest: getIncomingRequestMock,
+        countIncomingRequests: countIncomingRequestsMock,
         listNotifications: listNotificationsMock,
         listBlockedUsers: listBlockedUsersMock,
       },
@@ -29,6 +33,7 @@ import {
   getBlockedPeoplePageData,
   getFriendDetailData,
   getFriendRequestDetailData,
+  getFriendRequestsPageData,
   getFriendsPageData,
 } from "./page-data";
 
@@ -48,6 +53,8 @@ afterEach(() => {
   findProfileByIdMock.mockReset();
   listFriendsMock.mockReset();
   listIncomingRequestsMock.mockReset();
+  getIncomingRequestMock.mockReset();
+  countIncomingRequestsMock.mockReset();
   listNotificationsMock.mockReset();
   listBlockedUsersMock.mockReset();
   searchCandidateMock.mockReset();
@@ -100,10 +107,7 @@ describe("getFriendsPageData", () => {
         nextCursor: null,
       },
     });
-    listIncomingRequestsMock.mockResolvedValue({
-      ok: true,
-      data: [{ requestId: "req-1", sender: sam, createdAt: "2026-07-10" }],
-    });
+    countIncomingRequestsMock.mockResolvedValue({ ok: true, data: 1 });
     listNotificationsMock.mockResolvedValue({
       ok: true,
       data: [
@@ -143,25 +147,45 @@ describe("getFriendsPageData", () => {
 });
 
 describe("getFriendRequestDetailData", () => {
-  it("finds the request by id and hides everything else", async () => {
+  it("loads the recipient-scoped request directly by id", async () => {
     signedInAs("client");
-    listIncomingRequestsMock.mockResolvedValue({
-      ok: true,
-      data: [
-        { requestId: "req-1", sender: sam, createdAt: "2026-07-10" },
-        {
-          requestId: "req-2",
-          sender: { ...sam, id: "user-noor" },
-          createdAt: "2026-07-11",
-        },
-      ],
-    });
+    const request = {
+      requestId: "req-2",
+      sender: { ...sam, id: "user-noor" },
+      createdAt: "2026-07-11",
+    };
+    getIncomingRequestMock
+      .mockResolvedValueOnce({ ok: true, data: request })
+      .mockResolvedValueOnce({ ok: true, data: null });
 
     const found = await getFriendRequestDetailData("req-2");
     expect(found?.request?.requestId).toBe("req-2");
 
     const missing = await getFriendRequestDetailData("req-404");
     expect(missing?.request).toBeNull();
+    expect(getIncomingRequestMock).toHaveBeenNthCalledWith(1, "req-2");
+    expect(getIncomingRequestMock).toHaveBeenNthCalledWith(2, "req-404");
+  });
+});
+
+describe("getFriendRequestsPageData", () => {
+  it("returns the first cursor page of pending requests", async () => {
+    signedInAs("client");
+    const cursor = { createdAt: "2026-07-10", id: "req-1" };
+    listIncomingRequestsMock.mockResolvedValue({
+      ok: true,
+      data: {
+        requests: [
+          { requestId: "req-1", sender: sam, createdAt: "2026-07-10" },
+        ],
+        nextCursor: cursor,
+      },
+    });
+
+    const data = await getFriendRequestsPageData();
+
+    expect(data?.requests).toHaveLength(1);
+    expect(data?.nextCursor).toEqual(cursor);
   });
 });
 

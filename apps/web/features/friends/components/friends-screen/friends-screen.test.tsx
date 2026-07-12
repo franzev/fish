@@ -35,14 +35,17 @@ function makeRepository(
       return resolvedService({ friends: page, nextCursor: null });
     }),
     listIncomingRequests: vi.fn(() =>
-      resolvedService(
-        Array.from({ length: incomingCount }, (_, index) => ({
+      resolvedService({
+        requests: Array.from({ length: incomingCount }, (_, index) => ({
           requestId: `req-${index}`,
           sender: sam.friend,
           createdAt: sam.since,
-        }))
-      )
+        })),
+        nextCursor: null,
+      })
     ),
+    getIncomingRequest: vi.fn(() => resolvedService(null)),
+    countIncomingRequests: vi.fn(() => resolvedService(incomingCount)),
     listNotifications: vi.fn(() => resolvedService([])),
     listBlockedUsers: vi.fn(() => resolvedService([])),
   };

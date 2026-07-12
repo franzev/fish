@@ -40,14 +40,14 @@ export async function getFriendsPageData(
     };
   }
 
-  const [friendsResult, requestsResult, notificationsResult] =
+  const [friendsResult, requestCountResult, notificationsResult] =
     await Promise.all([
       services.database.friends.listFriends(),
-      services.database.friends.listIncomingRequests(),
+      services.database.friends.countIncomingRequests(),
       services.database.friends.listNotifications(),
     ]);
   if (!friendsResult.ok) throw friendsResult.error;
-  if (!requestsResult.ok) throw requestsResult.error;
+  if (!requestCountResult.ok) throw requestCountResult.error;
   if (!notificationsResult.ok) throw notificationsResult.error;
 
   return {
@@ -55,7 +55,7 @@ export async function getFriendsPageData(
     userId: profile.userId,
     friends: friendsResult.data.friends,
     nextCursor: friendsResult.data.nextCursor,
-    incomingRequestCount: requestsResult.data.length,
+    incomingRequestCount: requestCountResult.data,
     acceptedNotifications: notificationsResult.data.filter(
       (notification) =>
         notification.kind === "friendRequestAccepted" &&
@@ -81,7 +81,12 @@ export async function getFriendRequestsPageData(
   if (!profile) return null;
 
   if (profile.role !== "client") {
-    return { role: profile.role, userId: profile.userId, requests: [] };
+    return {
+      role: profile.role,
+      userId: profile.userId,
+      requests: [],
+      nextCursor: null,
+    };
   }
 
   const requestsResult = await services.database.friends.listIncomingRequests();
@@ -89,7 +94,8 @@ export async function getFriendRequestsPageData(
   return {
     role: profile.role,
     userId: profile.userId,
-    requests: requestsResult.data,
+    requests: requestsResult.data.requests,
+    nextCursor: requestsResult.data.nextCursor,
   };
 }
 
@@ -97,15 +103,20 @@ export async function getFriendRequestDetailData(
   requestId: string,
   injected?: AppServices
 ): Promise<FriendRequestDetailData | null> {
-  // The incoming list RPC caps at 100 pending requests; with senders limited
-  // to 25 outstanding each this holds comfortably at pilot scale.
-  const data = await getFriendRequestsPageData(injected);
-  if (!data) return null;
+  const services = injected ?? (await getServerServices());
+  const profile = await getCurrentProfile(profileDependencies(services));
+  if (!profile) return null;
+
+  if (profile.role !== "client") {
+    return { role: profile.role, userId: profile.userId, request: null };
+  }
+
+  const result = await services.database.friends.getIncomingRequest(requestId);
+  if (!result.ok) throw result.error;
   return {
-    role: data.role,
-    userId: data.userId,
-    request:
-      data.requests.find((request) => request.requestId === requestId) ?? null,
+    role: profile.role,
+    userId: profile.userId,
+    request: result.data,
   };
 }
 

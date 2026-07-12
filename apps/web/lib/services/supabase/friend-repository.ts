@@ -13,10 +13,12 @@ import type {
   FriendRelationshipStatus,
   FriendRepository,
   IncomingFriendRequest,
+  IncomingFriendRequestPage,
 } from "../contracts";
 import type { AppSupabaseClient } from "./types";
 
 const friendPageSize = 50;
+const friendRequestPageSize = 50;
 
 type CandidatePayload = {
   status?: string;
@@ -56,6 +58,28 @@ function toFriendProfile(
     id: value.id,
     displayName: value.display_name,
     username: value.username,
+  };
+}
+
+type IncomingFriendRequestRow = {
+  request_id: string;
+  sender_id: string;
+  display_name: string;
+  username: string;
+  created_at: string;
+};
+
+function toIncomingFriendRequest(
+  row: IncomingFriendRequestRow
+): IncomingFriendRequest {
+  return {
+    requestId: row.request_id,
+    sender: {
+      id: row.sender_id,
+      displayName: row.display_name,
+      username: row.username,
+    },
+    createdAt: row.created_at,
   };
 }
 
@@ -136,12 +160,21 @@ export class SupabaseFriendRepository implements FriendRepository {
     });
   }
 
-  async listIncomingRequests(): Promise<
-    ServiceResult<IncomingFriendRequest[]>
-  > {
+  async listIncomingRequests(
+    cursor?: { createdAt: string; id: string } | null
+  ): Promise<ServiceResult<IncomingFriendRequestPage>> {
     return safely("friends.listIncomingRequests", async () => {
       const { data, error } = await this.client.rpc(
-        "list_incoming_friend_requests"
+        "list_incoming_friend_requests",
+        {
+          p_limit: friendRequestPageSize,
+          ...(cursor
+            ? {
+                p_cursor_created_at: cursor.createdAt,
+                p_cursor_id: cursor.id,
+              }
+            : {}),
+        }
       );
 
       if (error) {
@@ -155,17 +188,62 @@ export class SupabaseFriendRepository implements FriendRepository {
         );
       }
 
-      return serviceSuccess(
-        (data ?? []).map((row) => ({
-          requestId: row.request_id,
-          sender: {
-            id: row.sender_id,
-            displayName: row.display_name,
-            username: row.username,
-          },
-          createdAt: row.created_at,
-        }))
+      const rows = data ?? [];
+      const last = rows.length === friendRequestPageSize
+        ? rows[rows.length - 1]
+        : null;
+      return serviceSuccess({
+        requests: rows.map(toIncomingFriendRequest),
+        nextCursor: last
+          ? { createdAt: last.created_at, id: last.request_id }
+          : null,
+      });
+    });
+  }
+
+  async getIncomingRequest(
+    requestId: string
+  ): Promise<ServiceResult<IncomingFriendRequest | null>> {
+    return safely("friends.getIncomingRequest", async () => {
+      const { data, error } = await this.client.rpc(
+        "get_incoming_friend_request",
+        { p_request_id: requestId }
       );
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load that friend request.",
+            operation: "friends.getIncomingRequest",
+            recoverable: true,
+          })
+        );
+      }
+
+      const row = data?.[0];
+      return serviceSuccess(row ? toIncomingFriendRequest(row) : null);
+    });
+  }
+
+  async countIncomingRequests(): Promise<ServiceResult<number>> {
+    return safely("friends.countIncomingRequests", async () => {
+      const { data, error } = await this.client.rpc(
+        "count_incoming_friend_requests"
+      );
+
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not count friend requests.",
+            operation: "friends.countIncomingRequests",
+            recoverable: true,
+          })
+        );
+      }
+
+      return serviceSuccess(data ?? 0);
     });
   }
 
