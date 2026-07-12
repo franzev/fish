@@ -456,6 +456,8 @@ export type Database = {
           client_request_id: string
           created_at?: string
           id?: string
+          pair_high_id?: string
+          pair_low_id?: string
           recipient_id: string
           responded_at?: string | null
           sender_id: string
@@ -466,6 +468,8 @@ export type Database = {
           client_request_id?: string
           created_at?: string
           id?: string
+          pair_high_id?: string
+          pair_low_id?: string
           recipient_id?: string
           responded_at?: string | null
           sender_id?: string
@@ -1072,10 +1076,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      block_user: {
-        Args: { p_target_id: string }
-        Returns: boolean
-      }
+      block_user: { Args: { p_target_id: string }; Returns: boolean }
       cancel_call: {
         Args: { p_call_id: string }
         Returns: {
@@ -1375,7 +1376,7 @@ export type Database = {
           entity_id: string
           id: string
           kind: Database["public"]["Enums"]["friend_notification_kind"]
-          read_at: string | null
+          read_at: string
         }[]
       }
       list_friends: {
@@ -1471,10 +1472,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      remove_friend: {
-        Args: { p_target_id: string }
-        Returns: boolean
-      }
+      remove_friend: { Args: { p_target_id: string }; Returns: boolean }
       respond_friend_request: {
         Args: { p_request_id: string; p_response: string }
         Returns: {
@@ -1534,10 +1532,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      search_friend_candidate: {
-        Args: { p_username: string }
-        Returns: Json
-      }
+      search_friend_candidate: { Args: { p_username: string }; Returns: Json }
       send_chat_message: {
         Args: {
           p_attachment_ids?: string[]
@@ -1611,10 +1606,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      unblock_user: {
-        Args: { p_target_id: string }
-        Returns: boolean
-      }
+      unblock_user: { Args: { p_target_id: string }; Returns: boolean }
     }
     Enums: {
       call_end_reason:
@@ -1795,6 +1787,11 @@ export const Constants = {
         "missed",
         "failed",
       ],
+      friend_notification_kind: [
+        "friend_request_received",
+        "friend_request_accepted",
+      ],
+      friend_request_status: ["pending", "accepted", "declined", "cancelled"],
     },
   },
 } as const
