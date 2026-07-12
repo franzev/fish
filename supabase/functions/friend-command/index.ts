@@ -142,9 +142,9 @@ Deno.serve(async (request) => {
     );
   }
 
-  // Server-side pilot gate: set FRIENDS_ENABLED=false to pause the feature
-  // without a client deploy while coach validation is in progress.
-  if (Deno.env.get("FRIENDS_ENABLED")?.trim().toLowerCase() === "false") {
+  // Fail closed: the Edge environment and the authoritative database flag
+  // must both be deliberately enabled for the coach-validated rollout.
+  if (Deno.env.get("FRIENDS_ENABLED")?.trim().toLowerCase() !== "true") {
     return calmError(
       "friends_unavailable",
       "Friends is taking a break. Chat still works.",

@@ -50,14 +50,17 @@ afterEach(() => {
 });
 
 describe("friendsFeatureEnabled", () => {
-  it("is on unless the pilot flag explicitly turns it off", () => {
+  it("stays off unless the pilot flag explicitly turns it on", () => {
     vi.stubEnv("FRIENDS_ENABLED", "");
-    expect(friendsFeatureEnabled()).toBe(true);
+    expect(friendsFeatureEnabled()).toBe(false);
 
     vi.stubEnv("FRIENDS_ENABLED", "false");
     expect(friendsFeatureEnabled()).toBe(false);
 
     vi.stubEnv("FRIENDS_ENABLED", "true");
+    expect(friendsFeatureEnabled()).toBe(true);
+
+    vi.stubEnv("FRIENDS_ENABLED", " TRUE ");
     expect(friendsFeatureEnabled()).toBe(true);
   });
 });

@@ -11,11 +11,10 @@ import type {
   FriendsPageData,
 } from "../contracts";
 
-/* Server-side pilot gate (mirrors FRIENDS_ENABLED in friend-command): the
-   Friends surface stays hidden until the coach-validated pilot turns it on.
-   Unset means enabled so local dev and tests work without extra setup. */
+/* Presentation gate only; the database independently enforces the same
+   fail-closed rollout at the RPC boundary. */
 export function friendsFeatureEnabled(): boolean {
-  return process.env.FRIENDS_ENABLED?.trim().toLowerCase() !== "false";
+  return process.env.FRIENDS_ENABLED?.trim().toLowerCase() === "true";
 }
 
 function profileDependencies(services: AppServices) {
