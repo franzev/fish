@@ -4,6 +4,7 @@ import { authRedirects } from "@/features/auth/redirects";
 import { getCoachClientDetailData } from "@/features/coach/server";
 import { redirect } from "next/navigation";
 import { CallEntryAction } from "@/features/calls";
+import { Avatar } from "@/features/chat";
 
 /* Server Component (NOT "use client") -- mirrors coach/page.tsx's wrong-door
    guard + data-fetch + render shape. This is a DYNAMIC segment: `params` is
@@ -45,7 +46,16 @@ export default async function CoachClientDetailPage({
 
   return (
     <div className="flex flex-col gap-lg">
-      <h1 className="text-3xl">{data.client.displayName}</h1>
+      <div className="flex items-center gap-sm">
+        <Avatar
+          profileId={data.client.id}
+          src={data.client.avatarUrl ?? undefined}
+          name={data.client.displayName}
+          size="lg"
+          alt=""
+        />
+        <h1 className="text-3xl">{data.client.displayName}</h1>
+      </div>
       <Card className="flex flex-col gap-md">
         <div className="flex flex-col gap-2xs">
           <span className="text-ui-sm text-muted">Working toward</span>

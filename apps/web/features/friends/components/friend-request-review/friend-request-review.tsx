@@ -11,6 +11,7 @@ import type {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { Avatar } from "@/features/chat";
 
 interface FriendRequestReviewProps {
   request: IncomingFriendRequest;
@@ -55,13 +56,22 @@ export function FriendRequestReview({
         </div>
       )}
       <Card className="flex flex-col gap-md">
-        <div className="flex flex-col">
+        <div className="flex items-center gap-sm">
+          <Avatar
+            profileId={request.sender.id}
+            src={request.sender.avatarUrl ?? undefined}
+            name={request.sender.displayName}
+            size="lg"
+            alt=""
+          />
+          <div className="flex min-w-0 flex-col">
           <span className="text-copy font-semibold text-foreground">
             {request.sender.displayName}
           </span>
           <span className="text-ui-sm text-muted">
             @{request.sender.username}
           </span>
+          </div>
         </div>
         <p className="text-ui text-body">
           Wants to be friends. Accept when you&apos;re ready — there&apos;s no

@@ -23,9 +23,17 @@ export async function getCoachHomeData(
     throw clientsResult.error;
   }
 
+  const avatarItems = services.avatars
+    ? await services.avatars.resolveUrls(clientsResult.data.map((client) => client.id))
+    : [];
+  const avatarUrls = new Map(avatarItems.map((item) => [item.profileId, item.url]));
+
   return {
     role: profile.role,
-    clients: clientsResult.data,
+    clients: clientsResult.data.map((client) => ({
+      ...client,
+      avatarUrl: avatarUrls.get(client.id) ?? null,
+    })),
   };
 }
 
@@ -87,11 +95,16 @@ export async function getCoachClientDetailData(
     return { role: profile.role, client: null };
   }
 
+  const avatarUrl = services.avatars
+    ? (await services.avatars.resolveUrls([clientId]))[0]?.url ?? null
+    : null;
+
   return {
     role: profile.role,
     client: {
       id: clientId,
       displayName: nameResult.data.displayName,
+      avatarUrl,
       goal: clientProfileResult.data.goal ?? "",
       level: clientProfileResult.data.level ?? null,
     },

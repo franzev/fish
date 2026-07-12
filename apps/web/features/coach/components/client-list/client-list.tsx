@@ -1,10 +1,12 @@
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { Avatar } from "@/features/chat";
 
 export interface Client {
   id: string;
   displayName: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 /** D-12..15/D-11: one calm Card, hairline dividers, alphabetical, each row a
@@ -24,7 +26,16 @@ export function ClientList({ clients }: { clients: Client[] }) {
           href={`/coach/clients/${client.id}`}
           className="flex flex-col gap-3xs p-md"
         >
-          <span className="text-foreground">{client.displayName}</span>
+          <span className="flex items-center gap-sm text-foreground">
+            <Avatar
+              profileId={client.id}
+              src={client.avatarUrl ?? undefined}
+              name={client.displayName}
+              size="md"
+              alt=""
+            />
+            <span>{client.displayName}</span>
+          </span>
           <span className="text-ui-sm text-muted">{client.email}</span>
         </Link>
       ))}

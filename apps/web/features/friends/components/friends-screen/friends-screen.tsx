@@ -18,6 +18,8 @@ import { IconChevronRight, IconUserPlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFriendsRefresh } from "../../hooks/use-friends-refresh";
+import { Avatar } from "@/features/chat";
+import { resolveAvatarUrlsSafely } from "@/features/profile/image/resolve-avatar-urls";
 
 interface FriendsScreenProps {
   userId: string;
@@ -65,7 +67,14 @@ export function FriendsScreen({
       repository.countIncomingRequests(),
     ]);
     if (friendsResult.ok) {
-      setFriends(friendsResult.data.friends);
+      const urls = await resolveAvatarUrlsSafely(
+        friendsResult.data.friends.map((item) => item.friend.id)
+      );
+      const avatarUrls = new Map(urls.map((item) => [item.profileId, item.url]));
+      setFriends(friendsResult.data.friends.map((item) => ({
+        ...item,
+        friend: { ...item.friend, avatarUrl: avatarUrls.get(item.friend.id) ?? null },
+      })));
       setNextCursor(friendsResult.data.nextCursor);
     }
     if (requestsResult.ok) {
@@ -91,7 +100,15 @@ export function FriendsScreen({
     setLoadingMore(true);
     const result = await repository.listFriends(nextCursor);
     if (result.ok) {
-      setFriends((current) => [...current, ...result.data.friends]);
+      const urls = await resolveAvatarUrlsSafely(
+        result.data.friends.map((item) => item.friend.id)
+      );
+      const avatarUrls = new Map(urls.map((item) => [item.profileId, item.url]));
+      const hydrated = result.data.friends.map((item) => ({
+        ...item,
+        friend: { ...item.friend, avatarUrl: avatarUrls.get(item.friend.id) ?? null },
+      }));
+      setFriends((current) => [...current, ...hydrated]);
       setNextCursor(result.data.nextCursor);
     }
     setLoadingMore(false);
@@ -132,12 +149,21 @@ export function FriendsScreen({
                 href={`/friends/${item.friend.id}`}
                 className="flex min-h-control items-center justify-between rounded-control border border-border bg-surface px-md transition-colors hover:bg-surface-2"
               >
-                <span className="flex min-w-0 flex-col py-xs">
+                <span className="flex min-w-0 items-center gap-sm py-xs">
+                  <Avatar
+                    profileId={item.friend.id}
+                    src={item.friend.avatarUrl ?? undefined}
+                    name={item.friend.displayName}
+                    size="md"
+                    alt=""
+                  />
+                  <span className="flex min-w-0 flex-col">
                   <span className="truncate text-copy text-foreground">
                     {item.friend.displayName}
                   </span>
                   <span className="truncate text-ui-sm text-muted">
                     @{item.friend.username}
+                  </span>
                   </span>
                 </span>
                 <IconChevronRight

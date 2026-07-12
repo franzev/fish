@@ -16,6 +16,8 @@ import type {
 } from "@/lib/services";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import { Avatar } from "@/features/chat";
+import { resolveAvatarUrlsSafely } from "@/features/profile/image/resolve-avatar-urls";
 
 interface AddFriendFormProps {
   repository?: FriendRepository;
@@ -71,7 +73,13 @@ export function AddFriendForm({
       setNotice("The search didn’t go through. Give it a moment and try again.");
       return;
     }
-    setCandidate(result.data);
+    const found = result.data;
+    const avatarUrl = found.profile
+      ? (await resolveAvatarUrlsSafely([found.profile.id]))[0]?.url ?? null
+      : null;
+    setCandidate(found.profile
+      ? { ...found, profile: { ...found.profile, avatarUrl } }
+      : found);
     // One id per found person: a retried tap resends the same request
     // instead of creating a new one.
     setClientRequestId(crypto.randomUUID());
@@ -157,11 +165,20 @@ export function AddFriendForm({
         <Alert tone="notice">{unavailableCopy}</Alert>
       ) : (
         <Card className="flex flex-col gap-md">
-          <div className="flex flex-col">
+          <div className="flex items-center gap-sm">
+            <Avatar
+              profileId={profile.id}
+              src={profile.avatarUrl ?? undefined}
+              name={profile.displayName}
+              size="lg"
+              alt=""
+            />
+            <div className="flex min-w-0 flex-col">
             <span className="text-copy font-semibold text-foreground">
               {profile.displayName}
             </span>
             <span className="text-ui-sm text-muted">@{profile.username}</span>
+            </div>
           </div>
 
           {showRequestSent ? (

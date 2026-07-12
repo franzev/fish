@@ -7,6 +7,7 @@ import {
 import { authRedirects } from "@/features/auth/redirects";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Avatar } from "@/features/chat";
 
 export default async function FriendDetailPage({
   params,
@@ -41,7 +42,16 @@ export default async function FriendDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-form">
-      <h1 className="mb-xs text-3xl">{data.friend.friend.displayName}</h1>
+      <div className="mb-xs flex items-center gap-sm">
+        <Avatar
+          profileId={data.friend.friend.id}
+          src={data.friend.friend.avatarUrl ?? undefined}
+          name={data.friend.friend.displayName}
+          size="lg"
+          alt=""
+        />
+        <h1 className="text-3xl">{data.friend.friend.displayName}</h1>
+      </div>
       <p className="mb-lg text-ui-sm text-muted">
         @{data.friend.friend.username}
       </p>

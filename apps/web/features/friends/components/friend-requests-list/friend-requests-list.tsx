@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useFriendsRefresh } from "../../hooks/use-friends-refresh";
+import { Avatar } from "@/features/chat";
+import { resolveAvatarUrlsSafely } from "@/features/profile/image/resolve-avatar-urls";
 
 interface FriendRequestsListProps {
   userId: string;
@@ -38,7 +40,14 @@ export function FriendRequestsList({
   async function refresh() {
     const result = await repository.listIncomingRequests();
     if (result.ok) {
-      setRequests(result.data.requests);
+      const urls = await resolveAvatarUrlsSafely(
+        result.data.requests.map((request) => request.sender.id)
+      );
+      const avatarUrls = new Map(urls.map((item) => [item.profileId, item.url]));
+      setRequests(result.data.requests.map((request) => ({
+        ...request,
+        sender: { ...request.sender, avatarUrl: avatarUrls.get(request.sender.id) ?? null },
+      })));
       setNextCursor(result.data.nextCursor);
     }
   }
@@ -50,7 +59,15 @@ export function FriendRequestsList({
     setLoadingMore(true);
     const result = await repository.listIncomingRequests(nextCursor);
     if (result.ok) {
-      setRequests((current) => [...current, ...result.data.requests]);
+      const urls = await resolveAvatarUrlsSafely(
+        result.data.requests.map((request) => request.sender.id)
+      );
+      const avatarUrls = new Map(urls.map((item) => [item.profileId, item.url]));
+      const hydrated = result.data.requests.map((request) => ({
+        ...request,
+        sender: { ...request.sender, avatarUrl: avatarUrls.get(request.sender.id) ?? null },
+      }));
+      setRequests((current) => [...current, ...hydrated]);
       setNextCursor(result.data.nextCursor);
     }
     setLoadingMore(false);
@@ -70,12 +87,21 @@ export function FriendRequestsList({
                 href={`/friends/requests/${request.requestId}`}
                 className="flex min-h-control items-center justify-between rounded-control border border-border bg-surface px-md transition-colors hover:bg-surface-2"
               >
-                <span className="flex min-w-0 flex-col py-xs">
+                <span className="flex min-w-0 items-center gap-sm py-xs">
+                  <Avatar
+                    profileId={request.sender.id}
+                    src={request.sender.avatarUrl ?? undefined}
+                    name={request.sender.displayName}
+                    size="md"
+                    alt=""
+                  />
+                  <span className="flex min-w-0 flex-col">
                   <span className="truncate text-copy text-foreground">
                     {request.sender.displayName}
                   </span>
                   <span className="truncate text-ui-sm text-muted">
                     @{request.sender.username}
+                  </span>
                   </span>
                 </span>
                 <IconChevronRight
