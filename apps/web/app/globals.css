@@ -98,8 +98,10 @@
   --radius-chat-inner: 4px;
   --radius-pill: 999px;
 
-  /* ---- Tap targets (ND rule: nothing tiny or fiddly) ---- */
-  --size-control: 56px;           /* min height for buttons & inputs       */
+  /* ---- Interaction targets: accessible, sized by context ---- */
+  --size-target-touch: 44px;      /* touch-first and frequently used targets */
+  --size-control-primary: 56px;   /* focused primary actions                 */
+  --size-control: var(--size-target-touch); /* default control compatibility */
   /* Reserved height for the older-page feedback region (WR-07): sized to
      the tallest state (the paragraph-shaped loading skeleton) so idle / loading /
      failure / retry-success never change the region's height and the
@@ -122,6 +124,8 @@
   --spacing-mobile-nav-offset: 112px;
 
   --spacing-control: var(--size-control);
+  --spacing-control-primary: var(--size-control-primary);
+  --spacing-target-touch: var(--size-target-touch);
   --spacing-pagination-slot: var(--size-pagination-slot);
   --spacing-skeleton-text: var(--text-ui-sm);
   --spacing-skeleton-word-8: 8%;

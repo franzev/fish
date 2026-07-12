@@ -44,7 +44,10 @@ decisions from clients.
 ## Accessibility & Inclusion
 
 Meet WCAG AA as a baseline and design for keyboard use, visible focus,
-reduced motion, sufficient contrast in light and dark themes, large 56px touch
-targets, readable typography, and calm layout-stable feedback. Never rely on
-color alone. Account for attention, working-memory, and cognitive-load needs
-through sparse screens, consistent language, and predictable interaction.
+reduced motion, sufficient contrast in light and dark themes, context-sized
+targets that are at least 44×44px for touch-first and frequently used controls,
+readable typography, and calm layout-stable feedback. Primary actions may use
+56px height for focus and prominence; compact desktop controls and inline links
+may be smaller. Never rely on color alone. Account for attention,
+working-memory, and cognitive-load needs through sparse screens, consistent
+language, and predictable interaction.

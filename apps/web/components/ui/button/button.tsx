@@ -8,7 +8,7 @@ export const buttonVariants = cva(
     // relative anchors the loading overlay; a constant (transparent)
     // border keeps the box model identical across all variants.
     "relative inline-flex items-center justify-center rounded-control px-lg",
-    "min-h-control text-copy transition-colors",
+    "text-copy transition-colors",
     "border border-transparent cursor-pointer",
     "disabled:opacity-50 disabled:cursor-not-allowed",
   ],
@@ -17,13 +17,13 @@ export const buttonVariants = cva(
       variant: {
         // The ONE action on a screen. Use at most one primary per view.
         primary:
-          "bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
+          "min-h-control-primary bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
         // A quieter alternative action when genuinely needed. Border width lives
         // in the base classes (constant across variants); only the color differs.
         secondary:
-          "bg-surface text-foreground border-border hover:bg-surface-2",
+          "min-h-control bg-surface text-foreground border-border hover:bg-surface-2",
         // Low-emphasis text actions ("Back", "Need help?").
-        ghost: "bg-transparent text-muted hover:text-body",
+        ghost: "min-h-control bg-transparent text-muted hover:text-body",
       },
       fullWidth: {
         true: "w-full",

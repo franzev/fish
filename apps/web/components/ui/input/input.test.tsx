@@ -11,7 +11,7 @@ describe("Input", () => {
     expect(inputVariants({ feedback: "error" })).toContain("border-error");
   });
 
-  it("meets the 56px tap-target floor via the size-control token (KIT-04)", () => {
+  it("uses the default 44px interaction-target token (KIT-04)", () => {
     const { getByLabelText } = render(<Input label="Email" />);
     expect(getByLabelText("Email").className).toContain(
       "min-h-control"

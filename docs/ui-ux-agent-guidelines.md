@@ -42,8 +42,10 @@ When sources overlap or conflict, use this order:
 
 Important project-specific overrides:
 
-- PDFs often mention 44px mobile touch targets; FISH requires at least
-  `--size-control` / 56px for primary controls on web.
+- FISH uses `--size-target-touch` / 44px for touch-first and frequently used
+  controls. Primary actions may use `--size-control-primary` / 56px when the
+  extra prominence supports focus. Compact desktop controls and inline links
+  may be smaller when context and spacing keep them easy to operate.
 - PDFs often use red for errors; FISH uses calm semantic tones and helpful
   copy. Never use alarming red as the main experience.
 - PDFs sometimes recommend title case labels; FISH copy uses sentence case.
@@ -765,7 +767,9 @@ Do:
 - Use `aria-describedby` for hints/errors.
 - Use `role="progressbar"` with values for progress.
 - Use descriptive link text.
-- Keep touch targets at least 56px for FISH controls on web.
+- Give touch-first and frequently used controls at least a 44×44px interaction
+  target. The visible control may be smaller when its clickable area preserves
+  the target.
 - Ensure icons used as buttons have accessible names.
 - Respect reduced motion.
 - Test contrast in both themes.
@@ -992,7 +996,8 @@ Use this checklist before approving UI work.
 
 - [ ] Is keyboard navigation complete?
 - [ ] Is focus visible on every interactive element?
-- [ ] Are touch targets at least 56px for FISH web controls?
+- [ ] Are touch-first and frequently used targets at least 44×44px, including
+  any invisible clickable padding?
 - [ ] Does the UI avoid color-only communication?
 - [ ] Does motion respect reduced-motion preferences?
 - [ ] Do images have correct alt behavior?
@@ -1033,7 +1038,7 @@ Flag these as inconsistencies or implementation mistakes:
 
 - More than one primary button in a view.
 - Client-facing browsing of learning plans/templates.
-- Controls below 56px high on web.
+- Touch-first or frequently used controls with targets below 44×44px.
 - Raw color values in web components.
 - Missing visible labels on inputs.
 - Placeholder-only form fields.

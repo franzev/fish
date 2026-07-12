@@ -32,7 +32,7 @@ PDF-derived UI/UX review reference for this product.
 
 1. **One primary action per screen.** At most one `Button variant="primary"` per view. Two competing choices is a bug.
 2. **Assigned, never chosen.** Users never browse a menu of plans/templates. The coach assigns; the app presents. No "pick one of N" UI for clients.
-3. **Big tap targets.** Controls are min 56px tall (`--size-control` on web). Nothing tiny or fiddly.
+3. **Accessible targets, sized by context.** Touch-first and frequently used controls use at least a 44×44px interaction target. A control may look smaller when padding or its surrounding clickable area preserves that target. Compact desktop controls and inline text links are allowed. Keep primary actions 56px tall when the extra prominence supports focus.
 4. **Progress is visual, never a grade.** Use the `Progress` bar / milestones. No scores, no percentages-as-judgement.
 5. **Gamification is reward-only.** Never build a streak that resets to zero — broken streaks are the top abandonment trigger for this audience. Reward returning, never punish a gap.
 6. **Copy never scolds.** Errors explain and guide in the app's voice; they use the soft `notice` color, never alarming red. Sentence case, plain verbs.

@@ -27,10 +27,10 @@ describe("Button", () => {
     expect(button.className).toContain("text-on-primary");
   });
 
-  it("meets the 56px tap-target floor via the size-control token (KIT-04)", () => {
+  it("uses the 56px primary-action token for focused prominence (KIT-04)", () => {
     const { getByRole } = render(<Button>Get started</Button>);
     expect(getByRole("button").className).toContain(
-      "min-h-control"
+      "min-h-control-primary"
     );
   });
 
@@ -42,6 +42,7 @@ describe("Button", () => {
     expect(button.className).toContain("bg-surface");
     expect(button.className).toContain("border-border");
     expect(button.className).toContain("text-foreground");
+    expect(button.className).toContain("min-h-control");
   });
 
   it("ghost variant renders its low-emphasis tokens", () => {
