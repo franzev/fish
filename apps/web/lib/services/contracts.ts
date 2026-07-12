@@ -298,6 +298,76 @@ export interface ChatCommandService {
   >;
 }
 
+export type ClientCallStatus =
+  | "ringing"
+  | "connecting"
+  | "active"
+  | "ended"
+  | "rejected"
+  | "cancelled"
+  | "missed"
+  | "failed";
+
+export interface ClientCall {
+  id: string;
+  coachId: string;
+  clientId: string;
+  initiatedBy: string;
+  kind: "audio" | "video";
+  status: ClientCallStatus;
+  expiresAt: string;
+  acceptedAt: string | null;
+  connectedAt: string | null;
+  endedAt: string | null;
+  endReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CallConnection {
+  serverUrl: string;
+  participantToken: string;
+}
+
+export type CallCommandResult =
+  | { ok: true; call: ClientCall; connection?: CallConnection }
+  | { ok: false; code: string; notice: string };
+
+export interface CallCommandService {
+  initiate(input: {
+    recipientId: string;
+    kind: "audio";
+    clientRequestId: string;
+  }): Promise<CallCommandResult>;
+  accept(callId: string): Promise<CallCommandResult>;
+  reject(callId: string): Promise<CallCommandResult>;
+  cancel(callId: string): Promise<CallCommandResult>;
+  end(callId: string): Promise<CallCommandResult>;
+  join(callId: string): Promise<CallCommandResult>;
+}
+
+export interface CallRealtimeEvent {
+  callId: string;
+  status: ClientCallStatus;
+  occurredAt: string;
+}
+
+export interface CallRealtimeService {
+  subscribe(
+    userId: string,
+    onEvent: (event: CallRealtimeEvent) => void,
+    onRecovery?: () => void
+  ): () => void;
+  findCurrentCall(userId: string): Promise<
+    | { call: ClientCall; counterpartName: string }
+    | null
+  >;
+  findCall(callId: string, userId: string): Promise<
+    | { call: ClientCall; counterpartName: string }
+    | null
+  >;
+}
+
 export interface ServerServices extends AppServices {
   chatCommands: ChatCommandService;
 }
