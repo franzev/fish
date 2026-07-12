@@ -41,6 +41,32 @@ async function signIn(email: string, password: string) {
 
 type Session = Awaited<ReturnType<typeof signIn>>;
 
+type EdgeCommandPayload = {
+  request?: { id: string; status: string };
+  done?: boolean;
+  updated?: number;
+  code?: string;
+  error?: string;
+};
+
+async function invokeFriendCommand(
+  session: Session,
+  body: Record<string, unknown>,
+) {
+  const result = await session.client.functions.invoke<EdgeCommandPayload>(
+    "friend-command",
+    { body },
+  );
+  let payload = result.data;
+  const context = result.error && "context" in result.error
+    ? result.error.context
+    : null;
+  if (context instanceof Response) {
+    payload = await context.json().catch(() => null) as EdgeCommandPayload | null;
+  }
+  return { payload, error: result.error };
+}
+
 async function main() {
   const coach = await signIn(users.coach.email, users.coach.password);
   const a = await signIn(users.clientA.email, users.clientA.password);
@@ -65,6 +91,25 @@ async function main() {
 
   await cleanup();
 
+  const disableGate = await admin
+    .from("feature_flags")
+    .update({ enabled: false, updated_at: new Date().toISOString() })
+    .eq("key", "friends");
+  if (disableGate.error) throw disableGate.error;
+  const gatedSearch = await a.client.rpc("search_friend_candidate", {
+    p_username: "nobody_here",
+  });
+  report(
+    "the authoritative database rollout gate fails closed",
+    !!gatedSearch.error && gatedSearch.error.message.includes("friends not available"),
+    gatedSearch.error?.message,
+  );
+  const enableGate = await admin
+    .from("feature_flags")
+    .update({ enabled: true, updated_at: new Date().toISOString() })
+    .eq("key", "friends");
+  if (enableGate.error) throw enableGate.error;
+
   const { data: profileRows } = await admin
     .from("profiles")
     .select("id, username")
@@ -75,6 +120,79 @@ async function main() {
   const usernameA = usernameOf.get(a.userId)!;
   const usernameB = usernameOf.get(b.userId)!;
   const usernameCoach = usernameOf.get(coach.userId)!;
+
+  // --- pagination beyond the old 100-row cap -----------------------------
+  const { data: extraProfiles, error: extraProfilesError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("role", "client")
+    .not("id", "in", `(${involved.join(",")})`)
+    .limit(105);
+  if (extraProfilesError) throw extraProfilesError;
+  const syntheticSenders = extraProfiles ?? [];
+  if (syntheticSenders.length < 105) {
+    throw new Error("Need at least 105 extra client profiles for pagination verification.");
+  }
+  const syntheticRows = syntheticSenders.map((profile, index) => ({
+    sender_id: profile.id,
+    recipient_id: a.userId,
+    client_request_id: `verify-pagination-${index}-${crypto.randomUUID()}`,
+    created_at: new Date(Date.now() - index * 1_000).toISOString(),
+  }));
+  const syntheticInsert = await admin.from("friend_requests").insert(syntheticRows);
+  if (syntheticInsert.error) throw syntheticInsert.error;
+  const { data: requestCount } = await a.client.rpc(
+    "count_incoming_friend_requests",
+  );
+  const { data: firstRequestPage } = await a.client.rpc(
+    "list_incoming_friend_requests",
+    { p_limit: 50 },
+  );
+  const firstPageLast = firstRequestPage?.at(-1);
+  const { data: secondRequestPage } = await a.client.rpc(
+    "list_incoming_friend_requests",
+    {
+      p_limit: 50,
+      p_cursor_created_at: firstPageLast?.created_at,
+      p_cursor_id: firstPageLast?.request_id,
+    },
+  );
+  const secondPageLast = secondRequestPage?.at(-1);
+  const { data: thirdRequestPage } = await a.client.rpc(
+    "list_incoming_friend_requests",
+    {
+      p_limit: 50,
+      p_cursor_created_at: secondPageLast?.created_at,
+      p_cursor_id: secondPageLast?.request_id,
+    },
+  );
+  const oldestRequest = thirdRequestPage?.at(-1);
+  const { data: oldestRequestDetail } = await a.client.rpc(
+    "get_incoming_friend_request",
+    { p_request_id: oldestRequest?.request_id },
+  );
+  report(
+    "incoming requests paginate past 100 and remain directly reviewable",
+    requestCount === 105 &&
+      firstRequestPage?.length === 50 &&
+      secondRequestPage?.length === 50 &&
+      thirdRequestPage?.length === 5 &&
+      oldestRequestDetail?.[0]?.request_id === oldestRequest?.request_id,
+    JSON.stringify({
+      requestCount,
+      pages: [
+        firstRequestPage?.length,
+        secondRequestPage?.length,
+        thirdRequestPage?.length,
+      ],
+    }),
+  );
+  const syntheticCleanup = await admin
+    .from("friend_requests")
+    .delete()
+    .eq("recipient_id", a.userId)
+    .like("client_request_id", "verify-pagination-%");
+  if (syntheticCleanup.error) throw syntheticCleanup.error;
 
   // --- private realtime topics -------------------------------------------
   await a.client.realtime.setAuth();
@@ -554,6 +672,50 @@ async function main() {
     coachSendError?.message ?? sendToCoachError?.message,
   );
 
+  // --- Edge Function command path used by the browser --------------------
+  const edgeRequestKey = crypto.randomUUID();
+  const edgeSend = await invokeFriendCommand(c, {
+    action: "send-request",
+    targetId: b.userId,
+    clientRequestId: edgeRequestKey,
+  });
+  const edgeRequestId = edgeSend.payload?.request?.id;
+  report(
+    "friend-command sends through the authenticated Edge Function",
+    !edgeSend.error &&
+      typeof edgeRequestId === "string" &&
+      edgeSend.payload?.request?.status === "pending",
+    edgeSend.payload?.error ?? edgeSend.error?.message,
+  );
+  const edgeDuplicate = await invokeFriendCommand(c, {
+    action: "send-request",
+    targetId: b.userId,
+    clientRequestId: crypto.randomUUID(),
+  });
+  report(
+    "friend-command maps database conflicts to calm stable codes",
+    !!edgeDuplicate.error && edgeDuplicate.payload?.code === "request_pending",
+    JSON.stringify(edgeDuplicate.payload),
+  );
+  const edgeDecline = await invokeFriendCommand(b, {
+    action: "respond-request",
+    requestId: edgeRequestId,
+    response: "decline",
+  });
+  report(
+    "friend-command completes the response lifecycle",
+    !edgeDecline.error && edgeDecline.payload?.request?.status === "declined",
+    edgeDecline.payload?.error ?? edgeDecline.error?.message,
+  );
+  const edgeInvalid = await invokeFriendCommand(c, {
+    action: "send-request",
+  });
+  report(
+    "friend-command rejects malformed browser commands",
+    !!edgeInvalid.error && edgeInvalid.payload?.code === "invalid_request",
+    JSON.stringify(edgeInvalid.payload),
+  );
+
   // --- realtime isolation recap ---------------------------------------------------------
   report(
     "every broadcast B received carried only ids and reasons",
@@ -575,6 +737,11 @@ async function main() {
   );
 
   await cleanup();
+  const restoreGate = await admin
+    .from("feature_flags")
+    .update({ enabled: false, updated_at: new Date().toISOString() })
+    .eq("key", "friends");
+  if (restoreGate.error) throw restoreGate.error;
   await b.client.removeChannel(bChannel);
   await a.client.removeChannel(aChannel);
   await a.client.removeChannel(foreignChannel);

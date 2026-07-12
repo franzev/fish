@@ -57,6 +57,11 @@ pnpm verify:chat-realtime
 pnpm verify:friends
 ```
 
+`verify:friends` exercises both database/RLS behavior and the production Edge
+Function command path. Run it while local functions are served with
+`FRIENDS_ENABLED=true` (the normal `pnpm dev` command does this after the local
+function environment is configured).
+
 ## Product rules
 
 - Coach-first, code-second.
