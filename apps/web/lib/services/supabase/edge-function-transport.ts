@@ -12,7 +12,7 @@ function isLocalBackend(): boolean {
 }
 
 export async function postBackendCommand(
-  functionName: "send-message" | "chat-command",
+  functionName: "send-message" | "chat-command" | "call-command",
   accessToken: string,
   body: unknown
 ): Promise<Response> {

@@ -1,7 +1,18 @@
 import "client-only";
 
-import type { AppServices, ChatImageService, ChatRealtimeService } from "../contracts";
-import { createBrowserSupabaseServices } from "../supabase/browser";
+import type {
+  AppServices,
+  CallCommandService,
+  CallRealtimeService,
+  ChatImageService,
+  ChatRealtimeService,
+} from "../contracts";
+import { SupabaseCallCommandService } from "../supabase/call-command-service";
+import { supabaseCallRealtimeService } from "../supabase/call-realtime";
+import {
+  createBrowserSupabaseClient,
+  createBrowserSupabaseServices,
+} from "../supabase/browser";
 import { supabaseChatRealtimeService } from "../supabase/chat-realtime";
 import { chatImageService } from "../supabase/chat-images";
 
@@ -18,4 +29,16 @@ export function getChatRealtimeService(override?: ChatRealtimeService): ChatReal
 
 export function getChatImageService(override?: ChatImageService): ChatImageService {
   return override ?? chatImageService;
+}
+
+export function getCallCommandService(
+  override?: CallCommandService
+): CallCommandService {
+  return override ?? new SupabaseCallCommandService(createBrowserSupabaseClient());
+}
+
+export function getCallRealtimeService(
+  override?: CallRealtimeService
+): CallRealtimeService {
+  return override ?? supabaseCallRealtimeService;
 }
