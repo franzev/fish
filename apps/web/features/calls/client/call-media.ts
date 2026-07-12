@@ -1,7 +1,13 @@
 "use client";
 
 import type { CallConnection } from "@/lib/services";
-import { Room, RoomEvent, Track, type RemoteTrack } from "livekit-client";
+import {
+  Room,
+  RoomEvent,
+  Track,
+  type LocalTrackPublication,
+  type RemoteTrack,
+} from "livekit-client";
 
 export interface CallMediaCallbacks {
   onConnected(callId: string): void;
@@ -13,6 +19,9 @@ export interface CallMediaCallbacks {
     callId: string,
     state: { localMicrophoneActive: boolean; remoteSpeaking: boolean }
   ): void;
+  onLocalVideoChanged(stream: MediaStream | null): void;
+  onRemoteVideoChanged(stream: MediaStream | null): void;
+  onCameraChanged(enabled: boolean): void;
 }
 
 export interface AudioDeviceOption {
@@ -25,6 +34,7 @@ export class LiveKitCallMedia {
   private callId: string | null = null;
   private intentionalDisconnect = false;
   private canPublishMicrophone = false;
+  private canPublishCamera = false;
   private speakingInterval: ReturnType<typeof setInterval> | null = null;
   private localMicrophoneActive = false;
   private remoteSpeaking = false;
@@ -35,11 +45,15 @@ export class LiveKitCallMedia {
   async connect(
     callId: string,
     connection: CallConnection,
-    publishMicrophone: boolean
+    publish: { microphone: boolean; camera: boolean }
   ): Promise<void> {
     if (this.callId === callId && this.room) {
-      if (!publishMicrophone || this.canPublishMicrophone) {
-        if (publishMicrophone) await this.enableMicrophone();
+      if (
+        (!publish.microphone || this.canPublishMicrophone) &&
+        (!publish.camera || this.canPublishCamera)
+      ) {
+        if (publish.microphone) await this.enableMicrophone();
+        if (publish.camera) await this.enableCamera();
         return;
       }
     }
@@ -47,13 +61,15 @@ export class LiveKitCallMedia {
     const room = new Room({ adaptiveStream: true, dynacast: true });
     this.room = room;
     this.callId = callId;
-    this.canPublishMicrophone = publishMicrophone;
+    this.canPublishMicrophone = publish.microphone;
+    this.canPublishCamera = publish.camera;
     this.intentionalDisconnect = false;
     this.bind(room, callId);
     await room.connect(connection.serverUrl, connection.participantToken, {
       autoSubscribe: true,
     });
-    if (publishMicrophone) await this.enableMicrophone();
+    if (publish.microphone) await this.enableMicrophone();
+    if (publish.camera) await this.enableCamera();
     if (room.remoteParticipants.size > 0) this.callbacks.onConnected(callId);
     this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
   }
@@ -81,6 +97,24 @@ export class LiveKitCallMedia {
     }
   }
 
+  async enableCamera(): Promise<void> {
+    await this.setCameraEnabled(true);
+  }
+
+  async setCameraEnabled(enabled: boolean): Promise<void> {
+    if (!this.room) return;
+    await this.room.localParticipant.setCameraEnabled(enabled);
+    const publication = this.room.localParticipant.getTrackPublication(
+      Track.Source.Camera
+    );
+    this.callbacks.onLocalVideoChanged(
+      enabled && publication?.track
+        ? new MediaStream([publication.track.mediaStreamTrack])
+        : null
+    );
+    this.callbacks.onCameraChanged(enabled);
+  }
+
   async startAudio(): Promise<void> {
     await this.room?.startAudio();
     this.callbacks.onAudioPlaybackChanged(!(this.room?.canPlaybackAudio ?? true));
@@ -106,7 +140,15 @@ export class LiveKitCallMedia {
     this.room = null;
     this.callId = null;
     this.canPublishMicrophone = false;
+    this.canPublishCamera = false;
+    this.callbacks.onLocalVideoChanged(null);
+    this.callbacks.onRemoteVideoChanged(null);
+    this.callbacks.onCameraChanged(false);
     if (room) await room.disconnect(true);
+    this.clearAttachedMedia();
+  }
+
+  private clearAttachedMedia() {
     document.querySelectorAll("[data-fish-call-audio]").forEach((node) => {
       if (node instanceof HTMLMediaElement) {
         node.pause();
@@ -142,12 +184,29 @@ export class LiveKitCallMedia {
       this.callbacks.onReconnected(callId);
     });
     room.on(RoomEvent.Disconnected, () => {
-      if (!this.intentionalDisconnect) this.callbacks.onDisconnected(callId);
+      if (!this.intentionalDisconnect) {
+        this.stopSpeakingMonitor();
+        this.room = null;
+        this.callId = null;
+        this.canPublishMicrophone = false;
+        this.canPublishCamera = false;
+        this.callbacks.onLocalVideoChanged(null);
+        this.callbacks.onRemoteVideoChanged(null);
+        this.callbacks.onCameraChanged(false);
+        this.clearAttachedMedia();
+        this.callbacks.onDisconnected(callId);
+      }
     });
     room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
       this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
     });
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+      if (track.kind === Track.Kind.Video) {
+        this.callbacks.onRemoteVideoChanged(
+          new MediaStream([track.mediaStreamTrack])
+        );
+        return;
+      }
       if (track.kind !== Track.Kind.Audio) return;
       const element = track.attach();
       element.dataset.fishCallAudio = "true";
@@ -158,8 +217,57 @@ export class LiveKitCallMedia {
       });
     });
     room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
+      if (track.kind === Track.Kind.Video) {
+        this.callbacks.onRemoteVideoChanged(null);
+        return;
+      }
       track.detach().forEach((element) => element.remove());
     });
+    room.on(
+      RoomEvent.LocalTrackPublished,
+      (publication: LocalTrackPublication) => {
+        if (
+          publication.source === Track.Source.Camera &&
+          publication.track
+        ) {
+          this.callbacks.onLocalVideoChanged(
+            new MediaStream([publication.track.mediaStreamTrack])
+          );
+          this.callbacks.onCameraChanged(true);
+        }
+      }
+    );
+    room.on(RoomEvent.LocalTrackUnpublished, (publication) => {
+      if (publication.source === Track.Source.Camera) {
+        this.callbacks.onLocalVideoChanged(null);
+        this.callbacks.onCameraChanged(false);
+      }
+    });
+    room.on(
+      RoomEvent.TrackMuted,
+      (publication, participant) => {
+        if (
+          participant.identity !== room.localParticipant.identity &&
+          publication.source === Track.Source.Camera
+        ) {
+          this.callbacks.onRemoteVideoChanged(null);
+        }
+      }
+    );
+    room.on(
+      RoomEvent.TrackUnmuted,
+      (publication, participant) => {
+        if (
+          participant.identity !== room.localParticipant.identity &&
+          publication.source === Track.Source.Camera &&
+          publication.track
+        ) {
+          this.callbacks.onRemoteVideoChanged(
+            new MediaStream([publication.track.mediaStreamTrack])
+          );
+        }
+      }
+    );
   }
 
   private startSpeakingMonitor(room: Room, callId: string) {
@@ -204,7 +312,9 @@ export class LiveKitCallMedia {
   }
 }
 
-export async function requestMicrophonePermission(): Promise<
+export async function requestMediaPermission(
+  kind: "audio" | "video"
+): Promise<
   "granted" | "denied" | "unavailable"
 > {
   if (!navigator.mediaDevices?.getUserMedia) return "unavailable";
@@ -215,7 +325,7 @@ export async function requestMicrophonePermission(): Promise<
         noiseSuppression: true,
         autoGainControl: true,
       },
-      video: false,
+      video: kind === "video",
     });
     stream.getTracks().forEach((track) => track.stop());
     return "granted";
