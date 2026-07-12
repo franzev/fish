@@ -19,7 +19,8 @@
     "seed": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/seed.ts",
     "verify:rls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-rls.ts",
     "verify:chat-realtime": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-realtime.ts",
-    "verify:calls": "node --experimental-strip-types --env-file=apps/web/.env.local --env-file=supabase/functions/.env.local scripts/verify-calls.ts"
+    "verify:calls": "node --experimental-strip-types --env-file=apps/web/.env.local --env-file=supabase/functions/.env.local scripts/verify-calls.ts",
+    "verify:friends": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-friends.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "2.110.0",

@@ -54,6 +54,7 @@ pnpm test:storybook
 pnpm build-storybook
 pnpm verify:rls
 pnpm verify:chat-realtime
+pnpm verify:friends
 ```
 
 ## Product rules
