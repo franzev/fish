@@ -90,6 +90,7 @@ export async function getCoachClientDetailData(
   return {
     role: profile.role,
     client: {
+      id: clientId,
       displayName: nameResult.data.displayName,
       goal: clientProfileResult.data.goal ?? "",
       level: clientProfileResult.data.level ?? null,

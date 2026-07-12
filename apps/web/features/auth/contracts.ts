@@ -38,6 +38,7 @@ export interface AuthenticatedShellProfile extends CurrentProfile {
 export interface ClientHomeData {
   role: UserRole;
   firstName: string;
+  coachId: string | null;
   coachName: string | null;
 }
 
@@ -47,6 +48,7 @@ export interface CoachHomeData {
 }
 
 export interface CoachClientDetail {
+  id: string;
   /* Identity + goal/role-context + level ONLY (D-10) -- a11y prefs and
      consent are the client's personal settings, never selected into this
      coach-facing DTO. */

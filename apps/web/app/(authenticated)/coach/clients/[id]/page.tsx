@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { authRedirects } from "@/features/auth/redirects";
 import { getCoachClientDetailData } from "@/features/coach/server";
 import { redirect } from "next/navigation";
+import { CallEntryAction } from "@/features/calls";
 
 /* Server Component (NOT "use client") -- mirrors coach/page.tsx's wrong-door
    guard + data-fetch + render shape. This is a DYNAMIC segment: `params` is
@@ -11,7 +12,8 @@ import { redirect } from "next/navigation";
    Read-only (PROF-06/D-10/D-11): identity + goal/role-context + level ONLY.
    A11y prefs and consent are the client's personal settings, never shown to
    a coach. Level is a quiet data label. No
-   primary button anywhere on this view -- there is nothing to edit here.
+   profile editing stays unavailable. The one primary action starts a call
+   with this already-assigned client; it does not expose a client picker.
 
    Deny behavior (T-04-02): `data.client` is null for BOTH "no such client"
    and "not your client" -- RLS (private.is_coach_of) returns zero rows for
@@ -56,6 +58,11 @@ export default async function CoachClientDetailPage({
           <p className="text-foreground">{data.client.level ?? "Not set yet"}</p>
         </div>
       </Card>
+      <CallEntryAction
+        recipientId={data.client.id}
+        recipientName={data.client.displayName}
+        label={`Call ${data.client.displayName}`}
+      />
     </div>
   );
 }

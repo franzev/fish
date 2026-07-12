@@ -20,6 +20,9 @@ const { getCoachClientDetailDataMock } = vi.hoisted(() => ({
 vi.mock("@/features/coach/server", () => ({
   getCoachClientDetailData: getCoachClientDetailDataMock,
 }));
+vi.mock("@/features/calls", () => ({
+  CallEntryAction: ({ label }: { label: string }) => <button>{label}</button>,
+}));
 
 import CoachClientDetailPage from "./page";
 
@@ -73,6 +76,7 @@ describe("CoachClientDetailPage", () => {
     getCoachClientDetailDataMock.mockResolvedValueOnce({
       role: "coach",
       client: {
+        id: "assigned-id",
         displayName: "Alex Rivera",
         goal: "Speak confidently in team meetings",
         level: "B1",
@@ -93,10 +97,11 @@ describe("CoachClientDetailPage", () => {
     expect(screen.queryByText(/grade/i)).not.toBeInTheDocument();
   });
 
-  it("hides a11y prefs and consent (D-10) and has no primary button (read-only)", async () => {
+  it("hides private profile fields and exposes only the assigned call action", async () => {
     getCoachClientDetailDataMock.mockResolvedValueOnce({
       role: "coach",
       client: {
+        id: "assigned-id",
         displayName: "Alex Rivera",
         goal: "Speak confidently in team meetings",
         level: "B1",
@@ -107,7 +112,9 @@ describe("CoachClientDetailPage", () => {
     });
     render(Page);
 
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Call Alex Rivera" })
+    ).toBeInTheDocument();
     expect(screen.queryByText(/reduced motion/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/agreement/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/consent/i)).not.toBeInTheDocument();

@@ -3,6 +3,7 @@ import { AppShell } from "@/components/shell/app-shell";
 import { authRedirects } from "@/features/auth/redirects";
 import { getAuthenticatedShellProfile } from "@/features/auth/server";
 import { redirect } from "next/navigation";
+import { CallProvider } from "@/features/calls";
 
 /* D-06 default-deny: every route inside this (authenticated) group requires
    a session. getUser() is the only server-verified read (never
@@ -28,7 +29,10 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <>
+    <CallProvider
+      userId={profile.userId}
+      homeHref={profile.role === "coach" ? "/coach" : "/home"}
+    >
       <ChatIdentityGuard userId={profile.userId} />
       <AppShell
         displayName={profile.displayName}
@@ -42,6 +46,6 @@ export default async function AuthenticatedLayout({
       >
         {children}
       </AppShell>
-    </>
+    </CallProvider>
   );
 }

@@ -111,10 +111,11 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const navItems = getNavItems(role);
-  /* Channels is the one immersive surface: the thread owns the pane
-     edge-to-edge and scrolls internally, so the shell locks to the viewport
-     here. Every other screen keeps the centered reading column (D-10). */
-  const immersive = isActivePath(pathname, "/channels");
+  /* Channels and calls are immersive surfaces: each owns the available pane
+     and scrolls internally, so the shell locks to the viewport there. */
+  const channelSurface = isActivePath(pathname, "/channels");
+  const callSurface = isActivePath(pathname, "/calls");
+  const immersive = channelSurface || callSurface;
 
   return (
     <div
@@ -164,7 +165,7 @@ export function AppShell({
         {/* Single-channel milestone: the column lists only `# general`, so it
             appears just on the immersive channel surface where it orients
             the reader — never as a browsable menu on other screens. */}
-        {immersive && (
+        {channelSurface && (
           <aside className="hidden w-channel-col shrink-0 flex-col border-r border-border bg-surface px-sm py-page md:flex">
             <h2 className="px-xs pb-sm text-ui-2xs font-sans font-medium uppercase tracking-wide text-muted">
               Channels
@@ -192,18 +193,21 @@ export function AppShell({
         <div
           className={cn(
             "flex min-w-0 flex-1 flex-col",
-            immersive && "min-h-0 pb-mobile-nav-offset md:pb-0"
+            immersive && "min-h-0",
+            channelSurface && "pb-mobile-nav-offset md:pb-0"
           )}
         >
           {children}
         </div>
       </main>
-      <nav
-        aria-label="Mobile primary"
-        className="fixed inset-x-0 bottom-0 flex border-t border-border bg-surface px-xs py-xs md:hidden"
-      >
-        <NavLinks items={navItems} pathname={pathname} placement="bottom" />
-      </nav>
+      {!callSurface && (
+        <nav
+          aria-label="Mobile primary"
+          className="fixed inset-x-0 bottom-0 flex border-t border-border bg-surface px-xs py-xs md:hidden"
+        >
+          <NavLinks items={navItems} pathname={pathname} placement="bottom" />
+        </nav>
+      )}
     </div>
   );
 }

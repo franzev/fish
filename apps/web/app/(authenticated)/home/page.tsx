@@ -4,6 +4,7 @@ import { getClientHomeData } from "@/features/auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconSparkles } from "@tabler/icons-react";
+import { CallEntryAction } from "@/features/calls";
 
 /* Server Component (NOT "use client") — the (authenticated) layout already
    ran getUser(), redirected signed-out visitors, and resolved role/shell.
@@ -33,6 +34,15 @@ export default async function ClientHomePage() {
           <p>We&apos;re getting things ready for you.</p>
         )}
       </EmptyState>
+      {data.coachId && data.coachName && (
+        <div className="mt-lg">
+          <CallEntryAction
+            recipientId={data.coachId}
+            recipientName={data.coachName}
+            label={`Call ${data.coachName}`}
+          />
+        </div>
+      )}
       <p className="mt-lg text-center text-ui-sm text-muted">
         <Link href="/profile" className="text-body underline">
           Your profile

@@ -20,6 +20,9 @@ const { getClientHomeDataMock } = vi.hoisted(() => ({
 vi.mock("@/features/auth/server", () => ({
   getClientHomeData: getClientHomeDataMock,
 }));
+vi.mock("@/features/calls", () => ({
+  CallEntryAction: ({ label }: { label: string }) => <button>{label}</button>,
+}));
 
 import ClientHomePage from "./page";
 
@@ -33,6 +36,7 @@ describe("ClientHomePage", () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "coach",
       firstName: "Dana",
+      coachId: null,
       coachName: null,
     });
 
@@ -44,6 +48,7 @@ describe("ClientHomePage", () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
       firstName: "Alex",
+      coachId: null,
       coachName: null,
     });
 
@@ -61,6 +66,7 @@ describe("ClientHomePage", () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
       firstName: "Alex",
+      coachId: "coach-id",
       coachName: "Coach Dana",
     });
 
@@ -71,9 +77,12 @@ describe("ClientHomePage", () => {
     expect(
       screen.getByText("Your coach Coach Dana is setting things up.")
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Call Coach Dana" })
+    ).toBeInTheDocument();
   });
 
-  it("keeps the source free of primary actions and removed feature routes", () => {
+  it("keeps the assigned call as the only forward action and avoids choice lists", () => {
     const pageSource = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
     const matches = (pageSource.match(/variant="primary"/g) ?? []).length;
     expect(matches).toBe(0);

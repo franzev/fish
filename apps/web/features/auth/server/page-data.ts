@@ -141,6 +141,7 @@ export async function getClientHomeData(
     return null;
   }
 
+  let coachId: string | null = null;
   let coachName: string | null = null;
   const assignmentResult =
     await services.database.coachClients.findAssignmentForClient(profile.userId);
@@ -149,6 +150,7 @@ export async function getClientHomeData(
   }
 
   if (assignmentResult.data) {
+    coachId = assignmentResult.data.coachId;
     const coachResult = await services.database.profiles.findDisplayNameById(
       assignmentResult.data.coachId
     );
@@ -161,6 +163,7 @@ export async function getClientHomeData(
   return {
     role: profile.role,
     firstName: profile.displayName.split(" ")[0] ?? "",
+    coachId,
     coachName,
   };
 }
