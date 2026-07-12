@@ -2340,7 +2340,7 @@ describe("ChatClient", () => {
     expect(within(secondRow).getByText("SO")).toBeInTheDocument();
   });
 
-  it("sizes revealed message-action controls to the 56px touch floor, not the old 40px size", async () => {
+  it("sizes revealed message-action controls to the shared touch target", async () => {
     render(
       <ChatClient
         chat={{

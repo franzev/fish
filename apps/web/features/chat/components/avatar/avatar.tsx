@@ -4,6 +4,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { IconUser } from "@tabler/icons-react";
 import { HTMLAttributes, useState } from "react";
+import { useRef } from "react";
+import { getAvatarCommandService } from "@/lib/services/runtime/browser";
 
 export const avatarVariants = cva(
   "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-surface-2 font-medium text-body",
@@ -29,8 +31,10 @@ type AvatarSize = NonNullable<VariantProps<typeof avatarVariants>["size"]>;
 
 interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   src?: string;
+  profileId?: string;
   name?: string;
   size?: AvatarSize;
+  alt?: string;
 }
 
 /** Derive up to two uppercase initials from a display name. Never throws —
@@ -46,13 +50,41 @@ function initialsFrom(name: string): string {
 /** Image -> initials -> neutral placeholder, in that order. A broken/missing
  *  `src` (or an image `onError`) falls through to initials, and no name at
  *  all falls through to a plain glyph — the chain never crashes. */
-export function Avatar({ src, name, size = "md", className, ...props }: AvatarProps) {
+export function Avatar({
+  src,
+  profileId,
+  name,
+  size = "md",
+  alt,
+  className,
+  ...props
+}: AvatarProps) {
   // Track the src that failed, not a boolean — so a later change to a new,
   // valid src (e.g. switching conversations reuses this instance) shows the
   // new image instead of staying stuck on the previous load error.
   const [failedSrc, setFailedSrc] = useState<string | undefined>();
-  const showImage = Boolean(src) && src !== failedSrc;
+  const [refreshed, setRefreshed] = useState<{ profileId: string; url: string } | null>(null);
+  const attemptedRefresh = useRef<string | null>(null);
+  const activeSrc = refreshed && refreshed.profileId === profileId ? refreshed.url : src;
+  const showImage = Boolean(activeSrc) && activeSrc !== failedSrc;
   const initials = name ? initialsFrom(name) : "";
+
+  async function handleImageError() {
+    if (profileId && attemptedRefresh.current !== `${profileId}:${activeSrc}`) {
+      attemptedRefresh.current = `${profileId}:${activeSrc}`;
+      let item: Awaited<ReturnType<ReturnType<typeof getAvatarCommandService>["resolveUrls"]>>[number] | undefined;
+      try {
+        item = (await getAvatarCommandService().resolveUrls([profileId]))[0];
+      } catch {
+        item = undefined;
+      }
+      if (item?.url && item.url !== activeSrc) {
+        setRefreshed({ profileId, url: item.url });
+        return;
+      }
+    }
+    setFailedSrc(activeSrc);
+  }
 
   return (
     <div
@@ -62,10 +94,10 @@ export function Avatar({ src, name, size = "md", className, ...props }: AvatarPr
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
-          alt={name ? `${name}'s avatar` : "User avatar"}
+          src={activeSrc}
+          alt={alt ?? (name ? `${name}'s avatar` : "User avatar")}
           className="size-full object-cover"
-          onError={() => setFailedSrc(src)}
+          onError={handleImageError}
         />
       ) : initials ? (
         <span aria-hidden="true">{initials}</span>

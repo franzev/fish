@@ -4,9 +4,12 @@ import type {
   ChatSearchChannel,
   ChatSearchMember,
 } from "@/features/chat/model/search";
+import { Avatar } from "../avatar";
 
 interface ChatHeaderProps {
   chatTitle: string;
+  participantId?: string;
+  avatarUrl?: string | null;
   channelName?: string;
   isCommunity: boolean;
   memberCount: number;
@@ -24,6 +27,8 @@ interface ChatHeaderProps {
 
 export function ChatHeader({
   chatTitle,
+  participantId,
+  avatarUrl,
   channelName,
   isCommunity,
   memberCount,
@@ -41,7 +46,17 @@ export function ChatHeader({
   return (
     <div className="border-b border-border bg-surface px-md">
       <div className="flex items-center justify-between gap-sm">
-        <div className="flex min-w-0 items-baseline gap-2xs">
+        <div className="flex min-w-0 items-center gap-2xs">
+          {!isCommunity && (
+            <Avatar
+              profileId={participantId}
+              src={avatarUrl ?? undefined}
+              name={chatTitle}
+              size="md"
+              alt=""
+            />
+          )}
+          <div className="flex min-w-0 items-baseline gap-2xs">
           <h1 className="truncate font-sans text-heading text-foreground">
             {isCommunity ? `# ${channelName ?? chatTitle}` : chatTitle}
           </h1>
@@ -58,6 +73,7 @@ export function ChatHeader({
                 : presenceLabel}
             </span>
           </span>
+          </div>
         </div>
         <SearchFilterPopover
           value={search}

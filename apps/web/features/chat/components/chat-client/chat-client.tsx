@@ -167,6 +167,12 @@ export function ChatClient({
   const activityName = isCommunity ? "Someone" : chat.participant.displayName;
   const getMessageAuthorName = (message: ClientChatMessage) =>
     message.senderDisplayName ?? (isCommunity ? "Member" : chat.participant.displayName);
+  const getMessageAuthorAvatar = (message: ClientChatMessage) =>
+    message.senderAvatarUrl
+    ?? searchMembers.find((member) => member.id === message.senderId)?.avatarUrl
+    ?? (!isCommunity && message.senderId === chat.participant.id
+      ? chat.participant.avatarUrl
+      : undefined);
   const {
     participantTyping,
     sendLocalTyping,
@@ -407,6 +413,8 @@ export function ChatClient({
     >
       <ChatHeader
         chatTitle={chatTitle}
+        participantId={chat.participant.id}
+        avatarUrl={chat.participant.avatarUrl}
         channelName={chat.channelName}
         isCommunity={isCommunity}
         memberCount={memberCount}
@@ -449,6 +457,7 @@ export function ChatClient({
           participantReadState,
           latestMineRequestId,
           getAuthorName: getMessageAuthorName,
+          getAuthorAvatar: getMessageAuthorAvatar,
         }}
         actions={{
           reply: startReplyingToMessage,

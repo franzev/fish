@@ -51,6 +51,7 @@ interface ChatMessageRowProps {
   participantReadState?: ClientChatReadState;
   latestMineRequestId: string | null;
   getAuthorName: (message: LocalMessage) => string;
+  getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
   actions: ChatMessageActions;
 }
 
@@ -65,6 +66,7 @@ export function ChatMessageRow({
   participantReadState,
   latestMineRequestId,
   getAuthorName,
+  getAuthorAvatar,
   actions,
 }: ChatMessageRowProps) {
   const mine = message.senderId === currentUserId;
@@ -119,7 +121,13 @@ export function ChatMessageRow({
             aria-hidden="true"
             className="pointer-events-none absolute -left-reply-spline-left top-compact h-sm w-lg rounded-tl-chat-inner border-l border-t border-border"
           />
-          <Avatar name={getAuthorName(replyMessage)} size="xs" />
+          <Avatar
+            profileId={replyMessage.senderId}
+            src={getAuthorAvatar(replyMessage) ?? undefined}
+            name={getAuthorName(replyMessage)}
+            size="xs"
+            alt=""
+          />
           <span className="shrink-0 font-medium text-body">
             {getAuthorName(replyMessage)}
           </span>
@@ -244,8 +252,11 @@ export function ChatMessageRow({
 
   const communityAvatarSlot = showParticipantAvatar ? (
     <Avatar
+      profileId={message.senderId}
+      src={getAuthorAvatar(message) ?? undefined}
       name={getAuthorName(message)}
       size="sm"
+      alt=""
       className={cn(replyMessage && "mt-lg")}
     />
   ) : (
@@ -289,7 +300,13 @@ export function ChatMessageRow({
           <>
             {!mine &&
               (showParticipantAvatar ? (
-                <Avatar name={getAuthorName(message)} size="sm" />
+                <Avatar
+                  profileId={message.senderId}
+                  src={getAuthorAvatar(message) ?? undefined}
+                  name={getAuthorName(message)}
+                  size="sm"
+                  alt=""
+                />
               ) : (
                 <div aria-hidden="true" className="size-8 shrink-0" />
               ))}

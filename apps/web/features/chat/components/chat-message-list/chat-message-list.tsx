@@ -34,6 +34,7 @@ interface ChatMessageListProps {
     participantReadState?: ClientChatReadState;
     latestMineRequestId: string | null;
     getAuthorName: (message: LocalMessage) => string;
+    getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
   };
   actions: ChatMessageActions;
 }
@@ -56,6 +57,7 @@ export function ChatMessageList({
     participantReadState,
     latestMineRequestId,
     getAuthorName,
+    getAuthorAvatar,
   } = transcript;
   const emptyMessage = isCommunity
     ? "No messages yet. Say hello to the community."
@@ -101,6 +103,7 @@ export function ChatMessageList({
                   participantReadState={participantReadState}
                   latestMineRequestId={latestMineRequestId}
                   getAuthorName={getAuthorName}
+                  getAuthorAvatar={getAuthorAvatar}
                   actions={actions}
                 />
               ))}
