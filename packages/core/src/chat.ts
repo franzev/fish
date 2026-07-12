@@ -24,8 +24,27 @@ export interface ChatMessage {
   senderId: UserId;
   senderRole: UserRole;
   body: string;
+  gif?: ChatGif;
   images?: ChatImage[];
   createdAt: string;
+}
+
+export type ChatGifProvider = "klipy" | "giphy";
+
+/** Provider-hosted animated media attached to one chat message. The provider
+ *  identifier and source URL preserve attribution and moderation context;
+ *  FISH never copies the media into private chat storage. */
+export interface ChatGif {
+  provider: ChatGifProvider;
+  providerId: string;
+  title: string;
+  description: string;
+  sourceUrl: string;
+  posterUrl: string;
+  previewUrl: string;
+  mediaUrl: string;
+  width: number;
+  height: number;
 }
 
 export interface ChatImage {
@@ -48,6 +67,7 @@ export interface SendMessageCommand {
   body: string;
   clientRequestId?: string;
   attachmentIds?: string[];
+  gif?: ChatGif;
 }
 
 export interface SendMessageResult {

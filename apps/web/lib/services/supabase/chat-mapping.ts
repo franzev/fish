@@ -1,4 +1,5 @@
 import type {
+  ClientChatGif,
   ClientChatMessage,
   ClientChatReadState,
 } from "../contracts";
@@ -32,6 +33,21 @@ export interface MessageResponseRow {
     byMe?: boolean;
   }>;
   images?: ImageResponseRow[];
+  gif?: GifResponseRow | null;
+}
+
+export interface GifResponseRow {
+  message_id: string;
+  provider: ClientChatGif["provider"];
+  provider_content_id: string;
+  title: string;
+  description: string;
+  source_url: string;
+  poster_url: string;
+  preview_url: string;
+  media_url: string;
+  width: number;
+  height: number;
 }
 
 export interface ImageResponseRow {
@@ -80,6 +96,20 @@ export function toClientChatMessage(
       count: reaction.count,
       byMe: reaction.byMe ?? reaction.by_me ?? false,
     })),
+    gif: row.gif
+      ? {
+          provider: row.gif.provider,
+          providerId: row.gif.provider_content_id,
+          title: row.gif.title,
+          description: row.gif.description,
+          sourceUrl: row.gif.source_url,
+          posterUrl: row.gif.poster_url,
+          previewUrl: row.gif.preview_url,
+          mediaUrl: row.gif.media_url,
+          width: row.gif.width,
+          height: row.gif.height,
+        }
+      : undefined,
     images: (row.images ?? []).map((image) => ({
       id: image.id,
       status: "ready",

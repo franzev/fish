@@ -10,6 +10,7 @@ import type {
   LoadOlderMessagesInput,
   MarkReadStateInput,
   RefreshMessagesInput,
+  ReportGifInput,
   SendMessageInput,
 } from "../contracts";
 import {
@@ -30,6 +31,7 @@ import {
   markReadStateViaLocalRpc,
   refreshConversationViaLocalRpc,
   refreshMessagesViaLocalRpc,
+  reportGifViaLocalRpc,
   sendMessageViaLocalRpc,
   toClientChatMessagesWithSenders,
 } from "./local-chat-commands";
@@ -83,6 +85,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
             body: input.body,
             clientRequestId: input.clientRequestId,
             ...(input.attachmentIds?.length ? { attachmentIds: input.attachmentIds } : {}),
+            ...(input.gif ? { gif: input.gif } : {}),
           }
     );
     if (!edge) return sendMessageViaLocalRpc(input);
@@ -139,6 +142,23 @@ export class SupabaseChatCommandService implements ChatCommandService {
     }
     const [mapped] = await toClientChatMessagesWithSenders([message as MessageResponseRow]);
     return { ok: true, data: mapped };
+  }
+
+  async reportGif(input: ReportGifInput): Promise<ChatOperationResult<void>> {
+    const edge = await this.post("chat-command", {
+      action: "report-gif",
+      messageId: input.messageId,
+    });
+    if (!edge) return reportGifViaLocalRpc(input);
+    if (!edge.response.ok || edge.payload?.reported !== true) {
+      return {
+        ok: false,
+        notice: typeof edge.payload?.error === "string"
+          ? edge.payload.error
+          : "That report did not send yet. Try again.",
+      };
+    }
+    return { ok: true, data: undefined };
   }
 
   async markReadState(

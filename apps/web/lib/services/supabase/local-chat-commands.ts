@@ -9,8 +9,10 @@ import type {
   LoadOlderMessagesInput,
   MarkReadStateInput,
   RefreshMessagesInput,
+  ReportGifInput,
   SendMessageInput,
 } from "../contracts";
+import type { Json } from "@fish/supabase";
 import { createServerSupabaseClient } from "./server";
 import {
   chatOlderPageSize,
@@ -36,6 +38,19 @@ async function getLocalFallbackContext(): Promise<{
   }
 
   return { client, userId: data.user.id };
+}
+
+export async function reportGifViaLocalRpc(
+  values: ReportGifInput
+): Promise<ChatOperationResult<void>> {
+  const context = await getLocalFallbackContext();
+  if (!context) return { ok: false, notice: saveNotice };
+  const { data, error } = await context.client.rpc("report_message_gif", {
+    p_message_id: values.messageId,
+  });
+  return error || !data
+    ? { ok: false, notice: "That report did not send yet. Try again." }
+    : { ok: true, data: undefined };
 }
 
 function aggregateReactions(
@@ -212,6 +227,32 @@ async function addImageAttachments(
   return messages.map((message) => ({ ...message, images: byMessage.get(message.id) ?? [] }));
 }
 
+async function addGifAttachments(
+  context: NonNullable<Awaited<ReturnType<typeof getLocalFallbackContext>>>,
+  messages: MessageResponseRow[]
+): Promise<MessageResponseRow[]> {
+  const messageIds = messages.map((message) => message.id);
+  if (messageIds.length === 0) return messages;
+
+  let response;
+  try {
+    response = await context.client
+      .from("message_gifs")
+      .select("*")
+      .in("message_id", messageIds);
+  } catch {
+    return messages;
+  }
+  const { data, error } = response;
+  if (error || !data) return messages;
+
+  const byMessage = new Map(data.map((gif) => [gif.message_id, gif]));
+  return messages.map((message) => ({
+    ...message,
+    gif: byMessage.get(message.id) as MessageResponseRow["gif"],
+  }));
+}
+
 export async function toClientChatMessagesWithSenders(
   messages: MessageResponseRow[]
 ): Promise<ClientChatMessage[]> {
@@ -222,7 +263,10 @@ export async function toClientChatMessagesWithSenders(
   const enrichedMessages = context
     ? await addImageAttachments(context, namedMessages)
     : namedMessages;
-  return enrichedMessages.map(toClientChatMessage);
+  const withGifs = context
+    ? await addGifAttachments(context, enrichedMessages)
+    : enrichedMessages;
+  return withGifs.map(toClientChatMessage);
 }
 
 export async function sendMessageViaLocalRpc(
@@ -241,6 +285,7 @@ export async function sendMessageViaLocalRpc(
       ? { p_reply_to_message_id: values.replyToMessageId }
       : {}),
     ...(values.attachmentIds?.length ? { p_attachment_ids: values.attachmentIds } : {}),
+    ...(values.gif ? { p_gif: values.gif as unknown as Json } : {}),
   });
 
   if (error || !data) {

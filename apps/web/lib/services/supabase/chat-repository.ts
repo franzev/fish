@@ -3,6 +3,7 @@ import { serviceFailure, serviceSuccess, type ServiceResult } from "@/lib/servic
 import type {
   ConversationRow,
   MessageAttachmentRow,
+  MessageGifRow,
   MessageReactionRow,
   MessageReadRow,
   MessageRow,
@@ -322,6 +323,26 @@ export class SupabaseChatRepository implements ChatRepository {
         )
       );
 
+      const { data: gifRows, error: gifError } = messageIds.length > 0
+        ? (await this.client
+            .from("message_gifs")
+            .select("*")
+            .in("message_id", messageIds)) as {
+            data: MessageGifRow[] | null;
+            error: SupabaseResponse<unknown>["error"];
+          }
+        : { data: [] as MessageGifRow[], error: null };
+      if (gifError) {
+        return serviceFailure(
+          mapSupabaseError(gifError, {
+            code: "database",
+            fallbackMessage: "Could not load message GIFs.",
+            operation: "chat.getAssignedConversation.gifs",
+            recoverable: true,
+          })
+        );
+      }
+
       const { data: readStates, error: readStateError } = (await this.client
         .from("message_reads")
         .select("*")
@@ -461,7 +482,8 @@ export class SupabaseChatRepository implements ChatRepository {
             userId,
             senderDisplayNames,
             (attachmentRows ?? []).filter((image) => image.message_id === message.id),
-            imageUrls
+            imageUrls,
+            (gifRows ?? []).find((gif) => gif.message_id === message.id)
           )
         ),
         readStates: (readStates ?? []).map(toClientChatReadState),
@@ -493,7 +515,8 @@ function toClientChatMessage(
   currentUserId = "",
   senderDisplayNames: Map<string, string> = new Map(),
   images: MessageAttachmentRow[] = [],
-  imageUrls: Map<string, string> = new Map()
+  imageUrls: Map<string, string> = new Map(),
+  gif?: MessageGifRow
 ): ClientChatMessage {
   const reactionCounts = new Map<string, { count: number; byMe: boolean }>();
 
@@ -531,6 +554,20 @@ function toClientChatMessage(
       count: reaction.count,
       byMe: reaction.byMe,
     })),
+    gif: gif
+      ? {
+          provider: gif.provider as "klipy" | "giphy",
+          providerId: gif.provider_content_id,
+          title: gif.title,
+          description: gif.description,
+          sourceUrl: gif.source_url,
+          posterUrl: gif.poster_url,
+          previewUrl: gif.preview_url,
+          mediaUrl: gif.media_url,
+          width: gif.width,
+          height: gif.height,
+        }
+      : undefined,
     images: images.flatMap((image) =>
       image.display_path && image.stored_mime_type && image.stored_byte_size
         ? [{

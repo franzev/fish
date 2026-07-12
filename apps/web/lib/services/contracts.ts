@@ -1,4 +1,5 @@
 import type { ServiceResult } from "./errors";
+import type { ChatGif } from "@fish/core/chat";
 
 export interface AuthUser {
   id: string;
@@ -114,6 +115,7 @@ export interface ClientChatAttachment {
   thumbnailPath?: string; displayPath: string; thumbnailUrl?: string; displayUrl?: string;
 }
 export type ClientChatImage = ClientChatAttachment;
+export type ClientChatGif = ChatGif;
 export interface ClientChatMessage {
   id: string; conversationId: string; senderId: string; senderRole: "client" | "coach";
   senderDisplayName?: string | null; body: string; clientRequestId: string; createdAt: string;
@@ -121,6 +123,7 @@ export interface ClientChatMessage {
   editedAt?: string | null; deletedAt?: string | null; replyToMessageId?: string | null;
   pinnedAt?: string | null; pinnedBy?: string | null;
   reactions?: ClientChatReaction[];
+  gif?: ClientChatGif;
   images?: ClientChatImage[];
 }
 export interface ClientChatParticipant {
@@ -252,6 +255,7 @@ export interface SendMessageInput {
   clientRequestId: string;
   replyToMessageId?: string | null;
   attachmentIds?: string[];
+  gif?: ClientChatGif;
 }
 
 export interface EditMessageInput {
@@ -266,6 +270,10 @@ export interface DeleteMessageInput {
 export interface ToggleReactionInput {
   messageId: string;
   emoji: string;
+}
+
+export interface ReportGifInput {
+  messageId: string;
 }
 
 export type ChatMessageCommand =
@@ -311,6 +319,7 @@ export interface ChatCommandService {
   executeMessageCommand(
     command: ChatMessageCommand
   ): Promise<ChatOperationResult<ClientChatMessage>>;
+  reportGif(input: ReportGifInput): Promise<ChatOperationResult<void>>;
   markReadState(
     input: MarkReadStateInput
   ): Promise<ChatOperationResult<ClientChatReadState>>;

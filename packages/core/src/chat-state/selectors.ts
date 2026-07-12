@@ -221,6 +221,9 @@ export function getMessageSnippet(message: ChatMessageState): string {
   }
 
   const body = message.body.trim();
+  if (!body && message.gif) {
+    return "GIF";
+  }
   if (!body && (message.images?.length ?? 0) > 0) {
     const attachments = message.images ?? [];
     if (attachments.length === 1) return attachments[0]?.kind === "file" ? "File" : "Image";
