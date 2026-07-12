@@ -28,7 +28,7 @@ export interface UpdatePrefsInput {
 
 export interface ProfileActionDependencies {
   auth: Pick<AuthService, "getCurrentUser">;
-  profiles: Pick<ProfileRepository, "updateDisplayName">;
+  profiles: Pick<ProfileRepository, "findById" | "updateDisplayName">;
   clientProfiles: Pick<ClientProfileRepository, "updateSafeFields">;
   redirect(path: string): never;
 }
@@ -63,20 +63,29 @@ export function createProfileActionHandlers(
         };
       }
 
+      const profileResult = await dependencies.profiles.findById(userResult.data.id);
+      if (!profileResult.ok || !profileResult.data) {
+        return {
+          values: rawValues,
+          notice: "Couldn't load your profile just now. Try again?",
+        };
+      }
+
       const displayNameResult =
         await dependencies.profiles.updateDisplayName(
           userResult.data.id,
           parsed.data.displayName
         );
-      const clientProfileResult =
-        await dependencies.clientProfiles.updateSafeFields(
+      const clientProfileResult = profileResult.data.role === "client"
+        ? await dependencies.clientProfiles.updateSafeFields(
           userResult.data.id,
           {
             goal: parsed.data.goal,
             locale: parsed.data.locale,
             timezone: parsed.data.timezone,
           }
-        );
+        )
+        : { ok: true as const, data: undefined };
 
       if (!displayNameResult.ok || !clientProfileResult.ok) {
         return {

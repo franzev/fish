@@ -13,6 +13,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const getCurrentUserMock = vi.fn();
+const findProfileMock = vi.fn();
 const updateDisplayNameMock = vi.fn();
 const updateSafeFieldsMock = vi.fn();
 
@@ -20,7 +21,10 @@ vi.mock("@/lib/services/supabase/server", () => ({
   createServerSupabaseServices: async () => ({
     auth: { getCurrentUser: getCurrentUserMock },
     database: {
-      profiles: { updateDisplayName: updateDisplayNameMock },
+      profiles: {
+        findById: findProfileMock,
+        updateDisplayName: updateDisplayNameMock,
+      },
       clientProfiles: { updateSafeFields: updateSafeFieldsMock },
     },
   }),
@@ -54,6 +58,11 @@ describe("updateProfileAction", () => {
   afterEach(() => {
     redirectMock.mockClear();
     getCurrentUserMock.mockReset();
+    findProfileMock.mockReset();
+    findProfileMock.mockResolvedValue({
+      ok: true,
+      data: { id: "client-1", role: "client" },
+    });
     updateDisplayNameMock.mockReset();
     updateSafeFieldsMock.mockReset();
   });

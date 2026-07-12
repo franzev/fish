@@ -26,9 +26,12 @@ export interface CurrentProfile {
   userId: string;
   role: UserRole;
   displayName: string;
+  avatarPath: string | null;
+  avatarThumbnailPath: string | null;
 }
 
 export interface AuthenticatedShellProfile extends CurrentProfile {
+  avatarUrl: string | null;
   themePref: ThemePref;
   textSizePref: TextSizePref;
   reducedMotionPref: boolean | null;
@@ -53,6 +56,7 @@ export interface CoachClientDetail {
      consent are the client's personal settings, never selected into this
      coach-facing DTO. */
   displayName: string;
+  avatarUrl: string | null;
   goal: string;
   level: string | null;
 }
@@ -71,8 +75,11 @@ export interface ChatPageData {
 }
 
 export interface ProfileData {
+  userId: string;
   role: UserRole;
   displayName: string;
+  avatarUrl: string | null;
+  hasAvatar: boolean;
   goal: string;
   locale: string | null;
   timezone: string | null;
@@ -85,4 +92,6 @@ export interface ProfileData {
   consentedAt: string | null;
   consentVersion: string | null;
   coachName: string | null;
+  coachId: string | null;
+  coachAvatarUrl: string | null;
 }

@@ -59,11 +59,22 @@ export async function getCurrentProfile(
     userId: userResult.data.id,
     role: profileResult.data.role,
     displayName: profileResult.data.displayName,
+    avatarPath: profileResult.data.avatarPath ?? null,
+    avatarThumbnailPath: profileResult.data.avatarThumbnailPath ?? null,
   };
 }
 
 function currentProfileDependencies(services: AppServices) {
   return { auth: services.auth, profiles: services.database.profiles };
+}
+
+async function resolveAvatarUrl(
+  services: AppServices,
+  profileId: string,
+  variant: "thumbnail" | "display" = "thumbnail"
+): Promise<string | null> {
+  if (!services.avatars) return null;
+  return (await services.avatars.resolveUrls([profileId], variant))[0]?.url ?? null;
 }
 
 export async function getRootRedirectPath(
@@ -91,9 +102,12 @@ async function getAuthenticatedShellProfileUncached(
     return null;
   }
 
+  const avatarUrl = await resolveAvatarUrl(services, profile.userId);
+
   if (profile.role !== "client") {
     return {
       ...profile,
+      avatarUrl,
       themePref: null,
       textSizePref: "default",
       reducedMotionPref: null,
@@ -110,6 +124,7 @@ async function getAuthenticatedShellProfileUncached(
 
   return {
     ...profile,
+    avatarUrl,
     themePref: toThemePref(clientProfileResult.data?.themePref ?? null),
     textSizePref: toTextSizePref(clientProfileResult.data?.textSizePref ?? null),
     reducedMotionPref: clientProfileResult.data?.reducedMotionPref ?? null,
@@ -168,10 +183,9 @@ export async function getClientHomeData(
   };
 }
 
-/* Client-only data-access -- the caller (page) owns the role guard (D-03: a
-   coach landing on /profile redirects away, same wrong-door discipline as
-   every other page). This throws on any ServiceResult failure via the same
-   idiom getClientHomeData/getCoachHomeData already use. */
+/* Shared account-profile read. Client-only coaching and preference fields are
+   populated only for clients; coaches receive the same identity surface
+   without crossing into client_profiles. */
 export async function getProfileData(
   injected?: AppServices
 ): Promise<ProfileData | null> {
@@ -180,6 +194,32 @@ export async function getProfileData(
 
   if (!profile) {
     return null;
+  }
+
+  const avatarUrl = await resolveAvatarUrl(services, profile.userId, "display");
+
+  if (profile.role === "coach") {
+    return {
+      userId: profile.userId,
+      role: profile.role,
+      displayName: profile.displayName,
+      avatarUrl,
+      hasAvatar: Boolean(profile.avatarPath),
+      goal: "",
+      locale: null,
+      timezone: null,
+      level: null,
+      themePref: null,
+      textSizePref: "default",
+      reducedMotionPref: null,
+      timeFormatPref: null,
+      consented: false,
+      consentedAt: null,
+      consentVersion: null,
+      coachName: null,
+      coachId: null,
+      coachAvatarUrl: null,
+    };
   }
 
   const clientProfileResult = await services.database.clientProfiles.findById(
@@ -192,6 +232,8 @@ export async function getProfileData(
   const clientProfile = clientProfileResult.data;
 
   let coachName: string | null = null;
+  let coachId: string | null = null;
+  let coachAvatarUrl: string | null = null;
   const assignmentResult =
     await services.database.coachClients.findAssignmentForClient(profile.userId);
   if (!assignmentResult.ok) {
@@ -199,6 +241,7 @@ export async function getProfileData(
   }
 
   if (assignmentResult.data) {
+    coachId = assignmentResult.data.coachId;
     const coachResult = await services.database.profiles.findDisplayNameById(
       assignmentResult.data.coachId
     );
@@ -206,11 +249,15 @@ export async function getProfileData(
       throw coachResult.error;
     }
     coachName = coachResult.data?.displayName ?? null;
+    coachAvatarUrl = await resolveAvatarUrl(services, assignmentResult.data.coachId);
   }
 
   return {
+    userId: profile.userId,
     role: profile.role,
     displayName: profile.displayName,
+    avatarUrl,
+    hasAvatar: Boolean(profile.avatarPath),
     goal: clientProfile?.goal ?? "",
     locale: clientProfile?.locale ?? null,
     timezone: clientProfile?.timezone ?? null,
@@ -223,5 +270,7 @@ export async function getProfileData(
     consentedAt: clientProfile?.consentedAt ?? null,
     consentVersion: clientProfile?.consentVersion ?? null,
     coachName,
+    coachId,
+    coachAvatarUrl,
   };
 }

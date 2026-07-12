@@ -1,5 +1,5 @@
 import { authRedirects } from "@/features/auth/redirects";
-import { getProfileData } from "@/features/profile/server";
+import { avatarUploadsEnabled, getProfileData } from "@/features/profile/server";
 import { redirect } from "next/navigation";
 import { EditProfileForm } from "./_components/edit-profile-form";
 
@@ -15,13 +15,13 @@ export default async function EditProfilePage() {
     redirect(authRedirects.signedOut);
   }
 
-  if (data.role === "coach") {
-    redirect(authRedirects.coachHome);
-  }
-
   return (
     <div className="mx-auto w-full max-w-form">
       <EditProfileForm
+        role={data.role}
+        userId={data.userId}
+        avatarUrl={data.avatarUrl}
+        avatarEnabled={avatarUploadsEnabled()}
         initial={{
           displayName: data.displayName,
           goal: data.goal,

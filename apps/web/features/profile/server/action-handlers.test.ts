@@ -21,7 +21,23 @@ describe("createProfileActionHandlers", () => {
           data: { id: "client-1" },
         }),
       },
-      profiles: { updateDisplayName },
+      profiles: {
+        findById: async () => ({
+          ok: true,
+          data: {
+            id: "client-1",
+            displayName: "Alex Rivera",
+            email: "alex@example.com",
+            role: "client",
+            avatarPath: null,
+            avatarThumbnailPath: null,
+            avatarUpdatedAt: null,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+          },
+        }),
+        updateDisplayName,
+      },
       clientProfiles: { updateSafeFields },
       redirect,
     });

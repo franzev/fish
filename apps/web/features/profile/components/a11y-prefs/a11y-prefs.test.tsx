@@ -41,7 +41,7 @@ describe("A11yPrefs", () => {
     expect(screen.getByRole("group", { name: "Time format" })).toBeInTheDocument();
   });
 
-  it("keeps segmented preference buttons at the 56px FISH control target", () => {
+  it("keeps segmented preference buttons at the default interaction target", () => {
     const source = readFileSync(resolve(__dirname, "./a11y-prefs.tsx"), "utf-8");
 
     expect(source).toContain("min-h-control");

@@ -8,7 +8,7 @@ interface SettingsRowProps extends HTMLAttributes<HTMLDivElement> {
   control?: React.ReactNode;
 }
 
-/** A >=56px row: label + trailing control. Reused for every settings row on
+/** A touch-friendly row: label + trailing control. Reused for every settings row on
  *  /profile (Appearance, Text size, Reduced motion, Your agreement, Sign
  *  out) so the whole settings block reads as one consistent list, never a
  *  buffet of differently-shaped controls (sketch 003 winner A). */

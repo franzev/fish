@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useActionState, useSyncExternalStore } from "react";
@@ -9,6 +9,9 @@ import {
   type EditProfileState,
   type EditProfileValues,
 } from "@/features/profile/server/actions";
+import { Avatar } from "@/features/chat";
+import type { UserRole } from "@fish/core/roles";
+import Link from "next/link";
 
 // Locale/timezone never change during a session, so the external store never
 // emits -- subscribe is a no-op that returns an empty unsubscribe.
@@ -22,7 +25,19 @@ const subscribeNever = () => () => {};
    also what gives D-07's "mid-edit refresh reverts to last-saved" property
    for free -- a hard refresh re-runs the Server Component above, which
    re-reads the DB, not any client-side cache. */
-export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
+export function EditProfileForm({
+  initial,
+  role,
+  userId,
+  avatarUrl,
+  avatarEnabled,
+}: {
+  initial: EditProfileValues;
+  role: UserRole;
+  userId: string;
+  avatarUrl: string | null;
+  avatarEnabled: boolean;
+}) {
   const initialState: EditProfileState = { values: initial };
   const [state, formAction, pending] = useActionState(
     updateProfileAction,
@@ -50,6 +65,26 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
     <Card className="w-full max-w-form">
       <h2 className="text-xl">Edit profile</h2>
       <form action={formAction} className="mt-lg space-y-2xs">
+        <div className="flex items-center justify-between gap-sm">
+          <div className="flex items-center gap-sm">
+            <Avatar
+              profileId={userId}
+              src={avatarUrl ?? undefined}
+              name={state.values.displayName}
+              size="lg"
+              alt=""
+            />
+            <span className="text-ui font-medium text-foreground">Profile photo</span>
+          </div>
+          {avatarEnabled && (
+            <Link
+              href="/profile/avatar"
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              Change photo
+            </Link>
+          )}
+        </div>
         <Input
           label="Display name"
           name="displayName"
@@ -58,15 +93,17 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
           error={state.errors?.displayName?.[0]}
           required
         />
-        <Input
-          label="What are you working toward with your English?"
-          name="goal"
-          defaultValue={state.values.goal}
-          hint="A quick note for your coach — optional."
-        />
+        {role === "client" && (
+          <Input
+            label="What are you working toward with your English?"
+            name="goal"
+            defaultValue={state.values.goal}
+            hint="A quick note for your coach, optional."
+          />
+        )}
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="timezone" value={timezone} />
-        <div className="w-full">
+        {role === "client" && <div className="w-full">
           <span className="mb-xs block text-ui font-medium text-foreground">
             Locale &amp; timezone
           </span>
@@ -76,7 +113,7 @@ export function EditProfileForm({ initial }: { initial: EditProfileValues }) {
           <p className="mt-2xs text-ui-sm text-muted">
             Detected from your browser.
           </p>
-        </div>
+        </div>}
         {state.notice && (
           <p className="flex items-center gap-nudge text-ui-sm text-notice">
             {state.notice}

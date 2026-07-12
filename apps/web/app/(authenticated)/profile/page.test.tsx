@@ -9,7 +9,7 @@ describe("ProfilePage source contracts", () => {
     expect(source).not.toMatch(/variant="primary"/);
   });
 
-  it("keeps the edit navigation target at the 56px FISH control size", () => {
+  it("keeps the edit navigation target at the default interaction size", () => {
     const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
 
     expect(source).toContain("min-h-control");

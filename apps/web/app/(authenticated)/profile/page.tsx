@@ -21,21 +21,31 @@ export default async function ProfilePage() {
     redirect(authRedirects.signedOut);
   }
 
-  if (data.role === "coach") {
-    redirect(authRedirects.coachHome);
-  }
-
   return (
     <div className="flex flex-col gap-lg">
       <div className="flex flex-col items-center gap-sm py-md text-center">
-        <Avatar name={data.displayName} size="lg" />
+        <Avatar
+          profileId={data.userId}
+          src={data.avatarUrl ?? undefined}
+          name={data.displayName}
+          size="lg"
+          alt=""
+        />
         <div>
           <h1 className="text-2xl">{data.displayName}</h1>
-          <p className="text-ui text-muted">Learning English</p>
+          <p className="text-ui text-muted">
+            {data.role === "client" ? "Learning English" : "Coach"}
+          </p>
         </div>
       </div>
 
-      <CoachCard coachName={data.coachName} />
+      {data.role === "client" && (
+        <CoachCard
+          coachId={data.coachId}
+          coachName={data.coachName}
+          avatarUrl={data.coachAvatarUrl}
+        />
+      )}
 
       <Card className="divide-y divide-border p-0">
         <SettingsRow
@@ -50,16 +60,20 @@ export default async function ProfilePage() {
             </Link>
           }
         />
-        <A11yPrefs
-          themePref={data.themePref}
-          textSizePref={data.textSizePref}
-          reducedMotionPref={data.reducedMotionPref}
-          timeFormatPref={data.timeFormatPref}
-        />
-        <ConsentRow
-          consented={data.consented}
-          consentVersion={data.consentVersion}
-        />
+        {data.role === "client" && (
+          <>
+            <A11yPrefs
+              themePref={data.themePref}
+              textSizePref={data.textSizePref}
+              reducedMotionPref={data.reducedMotionPref}
+              timeFormatPref={data.timeFormatPref}
+            />
+            <ConsentRow
+              consented={data.consented}
+              consentVersion={data.consentVersion}
+            />
+          </>
+        )}
         <SettingsRow label="Sign out" control={<LogoutButton />} />
       </Card>
     </div>
