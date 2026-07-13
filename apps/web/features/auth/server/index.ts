@@ -1,14 +1,6 @@
 import "server-only";
 
-export { redirectIfSignedIn } from "./redirect-if-signed-in";
-export {
-  getAuthenticatedShellProfile,
-  getClientHomeData,
-  getCurrentProfile,
-  getRootRedirectPath,
-} from "./page-data";
-export type {
-  AuthenticatedShellProfile,
-  ClientHomeData,
-  CurrentProfile,
-} from "../contracts";
+export * from "./google-auth-availability";
+export * from "./redirect-if-signed-in";
+export * from "./page-data";
+export type * from "../contracts";
