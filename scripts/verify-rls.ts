@@ -402,6 +402,7 @@ type ChatMessageRow = {
   sender_id: string;
   sender_role: string;
   body: string;
+  sticker_id?: string | null;
   client_request_id: string;
   created_at: string;
 };
@@ -1132,6 +1133,90 @@ async function checkChatGifBoundaries(): Promise<void> {
   );
 }
 
+async function checkChatStickerBoundaries(): Promise<void> {
+  const member = await signInAs(client1.email, client1.password);
+  const conversation = await getClientOneConversationFixture("CHAT-10 sticker boundary");
+  if (!conversation) return;
+
+  const requestId = "verify-chat-sticker-message";
+  const sendInput = {
+    p_conversation_id: conversation.id,
+    p_body: "",
+    p_client_request_id: requestId,
+    p_sticker_id: "aquatic-hello-otter",
+  };
+  const { data: sendData, error: sendError } = await member.rpc(
+    "send_chat_message",
+    sendInput
+  );
+  checkNoRecursion("CHAT-10 sticker boundary: setup send", sendError);
+  const message = toChatMessage(sendData);
+  report(
+    "CHAT-10 sticker boundary: member can send a sticker-only message",
+    !sendError && message?.sticker_id === "aquatic-hello-otter",
+    sendError?.message ?? `sticker=${message?.sticker_id ?? "missing"}`
+  );
+  if (!message) return;
+
+  const { data: retryData, error: retryError } = await member.rpc(
+    "send_chat_message",
+    sendInput
+  );
+  const retried = toChatMessage(retryData);
+  checkNoRecursion("CHAT-10 sticker boundary: idempotent retry", retryError);
+  report(
+    "CHAT-10 sticker boundary: identical retry returns the same message",
+    !retryError && retried?.id === message.id,
+    retryError?.message ?? `id=${retried?.id ?? "missing"}`
+  );
+
+  const { error: conflictError } = await member.rpc("send_chat_message", {
+    ...sendInput,
+    p_sticker_id: "aquatic-awesome-dolphin",
+  });
+  checkNoRecursion("CHAT-10 sticker boundary: conflicting retry", conflictError);
+  report(
+    "CHAT-10 sticker boundary: changed sticker with the same request id is rejected",
+    !!conflictError,
+    conflictError?.message ?? "send succeeded"
+  );
+
+  const { error: unknownError } = await member.rpc("send_chat_message", {
+    ...sendInput,
+    p_client_request_id: "verify-chat-unknown-sticker",
+    p_sticker_id: "aquatic-unknown",
+  });
+  checkNoRecursion("CHAT-10 sticker boundary: unknown sticker", unknownError);
+  report(
+    "CHAT-10 sticker boundary: unknown catalog id is rejected",
+    !!unknownError,
+    unknownError?.message ?? "send succeeded"
+  );
+
+  const { error: mixedMediaError } = await member.rpc("send_chat_message", {
+    ...sendInput,
+    p_client_request_id: "verify-chat-mixed-sticker",
+    p_gif: {
+      provider: "klipy",
+      providerId: "verify-sticker-conflict",
+      title: "Verification GIF",
+      description: "A GIF used to verify sticker exclusivity",
+      sourceUrl: "https://klipy.com/gifs/verify-sticker-conflict",
+      posterUrl: "https://static.klipy.com/verify-sticker-conflict.jpg",
+      previewUrl: "https://static1.klipy.com/verify-sticker-conflict-preview.mp4",
+      mediaUrl: "https://static2.klipy.com/verify-sticker-conflict.mp4",
+      width: 480,
+      height: 270,
+    },
+  });
+  checkNoRecursion("CHAT-10 sticker boundary: mixed media", mixedMediaError);
+  report(
+    "CHAT-10 sticker boundary: sticker cannot be combined with a GIF",
+    !!mixedMediaError,
+    mixedMediaError?.message ?? "send succeeded"
+  );
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
@@ -1158,6 +1243,7 @@ async function main(): Promise<void> {
   await checkChatReadStateMonotonic();
   await checkChatReactionsSoftDeleteAndIntegrity();
   await checkChatGifBoundaries();
+  await checkChatStickerBoundaries();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);

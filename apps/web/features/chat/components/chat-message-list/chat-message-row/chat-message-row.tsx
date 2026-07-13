@@ -13,6 +13,7 @@ import {
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
+import { isChatStickerId, type ChatStickerId } from "@fish/core/chat";
 import {
   Avatar,
   CommunityMessageRowLayout,
@@ -42,7 +43,7 @@ export interface ChatMessageActions {
     clearComposer?: boolean,
     attachmentIds?: string[],
     images?: NonNullable<LocalMessage["images"]>,
-    stickerId?: LocalMessage["stickerId"],
+    stickerId?: ChatStickerId,
     gif?: LocalMessage["gif"]
   ) => Promise<void>;
 }
@@ -261,7 +262,7 @@ export function ChatMessageRow({
                   false,
                   message.images?.map((image) => image.id) ?? [],
                   message.images ?? [],
-                  message.stickerId,
+                  isChatStickerId(message.stickerId) ? message.stickerId : undefined,
                   message.gif
                 )
               }

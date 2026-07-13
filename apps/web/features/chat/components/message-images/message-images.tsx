@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { Dialog } from "@base-ui/react/dialog";
 import { IconDownload, IconFileText, IconRefresh, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isAquaticStickerFileName } from "../sticker-picker/sticker-catalog";
 
 interface MessageImagesProps {
   images: ClientChatImage[];
@@ -27,7 +26,6 @@ function MessageImage({
   mine: boolean;
   wrapped?: boolean;
 }) {
-  const isSticker = isAquaticStickerFileName(image.originalName);
   const width = image.width ?? 1;
   const height = image.height ?? 1;
   const previewAspectRatio = wrapped
@@ -133,8 +131,7 @@ function MessageImage({
           onLoad={() => setLoadedThumbnailUrl(thumbnailUrl)}
           onError={() => setFailedThumbnailUrl(thumbnailUrl)}
           className={cn(
-            "size-full transition-image-load duration-message",
-            isSticker ? "object-contain" : "object-cover",
+            "size-full object-cover transition-image-load duration-message",
             thumbnailState === "loaded" &&
               !(progressivelyLoads && displayState === "loaded")
               ? "opacity-100"
@@ -158,8 +155,7 @@ function MessageImage({
           onLoad={() => setLoadedDisplayUrl(displayUrl)}
           onError={() => setFailedDisplayUrl(displayUrl)}
           className={cn(
-            "absolute inset-0 size-full transition-opacity duration-message",
-            isSticker ? "object-contain" : "object-cover",
+            "absolute inset-0 size-full object-cover transition-opacity duration-message",
             displayState === "loaded" ? "opacity-100" : "opacity-0"
           )}
           data-image-quality="full"
@@ -167,10 +163,7 @@ function MessageImage({
       )}
       {thumbnailState === "loading" && (
         <span
-          className={cn(
-            "absolute inset-0 animate-pulse",
-            !isSticker && "bg-surface-2"
-          )}
+          className="absolute inset-0 animate-pulse bg-surface-2"
           aria-label="Loading image"
         />
       )}
@@ -181,13 +174,11 @@ function MessageImage({
     <Dialog.Root>
       <div
         className={cn(
-          "relative block overflow-hidden rounded-control text-left",
-          isSticker
-            ? "w-full max-w-sticker-tile"
-            : wrapped
+          "relative block overflow-hidden rounded-control bg-surface-2 text-left",
+          wrapped
             ? "max-h-chat-image-preview w-auto max-w-full shrink-0"
             : "w-full max-h-chat-image-max-height max-w-chat-image",
-          !isSticker && (mine ? "bg-surface-3" : "bg-surface-2")
+          mine && "bg-surface-3"
         )}
         style={{
           aspectRatio: previewAspectRatio,
@@ -208,10 +199,6 @@ function MessageImage({
               Try again
             </button>
           </div>
-        ) : isSticker ? (
-          <div className="absolute inset-0 block size-full">
-            {previewContent}
-          </div>
         ) : (
           <Dialog.Trigger
             aria-label={`Open image shared by ${authorName}`}
@@ -221,7 +208,7 @@ function MessageImage({
           </Dialog.Trigger>
         )}
       </div>
-      {!isSticker && <Dialog.Portal>
+      <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-scrim" />
         <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-fit max-h-filters-sheet w-full max-w-image-viewer flex-col p-md outline-none">
           <Dialog.Title className="sr-only">Image shared by {authorName}</Dialog.Title>
@@ -259,7 +246,7 @@ function MessageImage({
             )}
           </div>
         </Dialog.Popup>
-      </Dialog.Portal>}
+      </Dialog.Portal>
     </Dialog.Root>
   );
 }

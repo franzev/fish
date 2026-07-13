@@ -32,7 +32,7 @@ export const aquaticStickers: readonly ChatSticker[] = [
     phrase: "Thank you",
     animal: "octopus",
     description: "A grateful coral octopus saying thank you",
-    src: "/stickers/aquatic/thank-you-octopus-v2.webp",
+    src: "/stickers/aquatic/thank-you-octopus.webp",
     styles: ["cute", "hand-drawn", "expressive"],
     keywords: ["thanks", "grateful", "appreciate", "octopus"],
   },
@@ -50,7 +50,7 @@ export const aquaticStickers: readonly ChatSticker[] = [
     phrase: "Great job",
     animal: "sea star",
     description: "A proud golden sea star saying great job",
-    src: "/stickers/aquatic/great-job-sea-star-v2.webp",
+    src: "/stickers/aquatic/great-job-sea-star.webp",
     styles: ["cute", "hand-drawn", "expressive"],
     keywords: ["well done", "proud", "congratulations", "sea star"],
   },
@@ -95,7 +95,7 @@ export const aquaticStickers: readonly ChatSticker[] = [
     phrase: "Goodbye",
     animal: "squid",
     description: "A cheerful squid waving goodbye",
-    src: "/stickers/aquatic/goodbye-squid-v2.webp",
+    src: "/stickers/aquatic/goodbye-squid.webp",
     styles: ["cute", "hand-drawn", "expressive"],
     keywords: ["goodbye", "bye", "farewell", "later", "squid"],
   },
@@ -140,7 +140,7 @@ export const aquaticStickers: readonly ChatSticker[] = [
     phrase: "Yes",
     animal: "crab",
     description: "A confident red crab saying yes",
-    src: "/stickers/aquatic/yes-crab-v2.webp",
+    src: "/stickers/aquatic/yes-crab.webp",
     styles: ["cute", "hand-drawn", "expressive"],
     keywords: ["yes", "agree", "correct", "absolutely", "crab"],
   },
@@ -158,7 +158,7 @@ export const aquaticStickers: readonly ChatSticker[] = [
     phrase: "Okay",
     animal: "manta ray",
     description: "A calm manta ray saying okay",
-    src: "/stickers/aquatic/okay-manta-ray-v2.webp",
+    src: "/stickers/aquatic/okay-manta-ray.webp",
     styles: ["cute", "hand-drawn", "expressive"],
     keywords: ["okay", "ok", "sure", "sounds good", "manta ray"],
   },
@@ -245,25 +245,10 @@ export const aquaticStickers: readonly ChatSticker[] = [
   },
 ];
 
-const aquaticStickerFileNames = new Set(
-  aquaticStickers.flatMap((sticker) => [
-    `${sticker.id}.webp`,
-    sticker.src.split("/").at(-1),
-  ])
-);
-
 const aquaticStickersById = new Map(
   aquaticStickers.map((sticker) => [sticker.id, sticker])
 );
 
-export function getChatSticker(stickerId: ChatStickerId): ChatSticker {
-  const sticker = aquaticStickersById.get(stickerId);
-  if (!sticker) {
-    throw new Error(`Unknown bundled sticker: ${stickerId}`);
-  }
-  return sticker;
-}
-
-export function isAquaticStickerFileName(fileName: string): boolean {
-  return aquaticStickerFileNames.has(fileName);
+export function getChatSticker(stickerId: string): ChatSticker | null {
+  return aquaticStickersById.get(stickerId as ChatStickerId) ?? null;
 }

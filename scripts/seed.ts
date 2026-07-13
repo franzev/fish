@@ -4,6 +4,7 @@
 // signup. Fixed, documented dev credentials — local only, never run against production
 // (see docs/deploy-checklist.md).
 import { createClient } from "@supabase/supabase-js";
+import { chatStickerIds, type ChatStickerId } from "../packages/core/src/chat.ts";
 import { buildSeedReactionRows } from "./seed-reaction-randomizer.ts";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -575,6 +576,7 @@ type CommunitySeedMessage = {
   body: string;
   client_request_id: string;
   created_at: string;
+  sticker_id?: ChatStickerId;
   pinned_at?: string | null;
   pinned_by?: string | null;
 };
@@ -770,14 +772,20 @@ async function seedCommunityChannels(
       if (!author) throw new Error(`No seed author available for ${channel.slug}`);
 
       const createdAt = new Date(start + index * 45 * 60 * 1000).toISOString();
+      const stickerId = index === 12
+        ? chatStickerIds[channelIndex % chatStickerIds.length]
+        : undefined;
       return {
         id: `${channel.id.slice(0, 8)}-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
         conversation_id: channel.conversationId,
         sender_id: author.id,
         sender_role: author.role,
-        body: communityMessageBody(channel.slug, index, author.name, searchUsername),
+        body: stickerId
+          ? ""
+          : communityMessageBody(channel.slug, index, author.name, searchUsername),
         client_request_id: `seed-${channel.slug}-${String(index + 1).padStart(3, "0")}`,
         created_at: createdAt,
+        ...(stickerId ? { sticker_id: stickerId } : {}),
         ...(channel.slug === "general" && index === 1
           ? { pinned_at: createdAt, pinned_by: coachId }
           : {}),

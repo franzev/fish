@@ -11,7 +11,7 @@ import type {
   ProfileRow,
 } from "@fish/supabase";
 import { mapSupabaseError, safely, type SupabaseResponse } from "./shared";
-import { isChatStickerId } from "@fish/core/chat";
+import { readChatStickerId } from "./chat-mapping";
 import type {
   ChatRepository,
   ClientChatData,
@@ -563,6 +563,7 @@ function toClientChatMessage(
       byMe: current.byMe || reaction.user_id === currentUserId,
     });
   }
+  const stickerId = readChatStickerId(row.sticker_id);
 
   return {
     id: row.id,
@@ -597,7 +598,7 @@ function toClientChatMessage(
           height: gif.height,
         }
       : undefined,
-    ...(isChatStickerId(row.sticker_id) ? { stickerId: row.sticker_id } : {}),
+    ...(stickerId ? { stickerId } : {}),
     images: images.flatMap((image) =>
       image.display_path && image.stored_mime_type && image.stored_byte_size
         ? [{

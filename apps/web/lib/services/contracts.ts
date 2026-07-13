@@ -124,7 +124,7 @@ export interface ClientChatMessage {
   pinnedAt?: string | null; pinnedBy?: string | null;
   reactions?: ClientChatReaction[];
   gif?: ClientChatGif;
-  stickerId?: ChatStickerId;
+  stickerId?: string;
   images?: ClientChatImage[];
 }
 export interface ClientChatParticipant {

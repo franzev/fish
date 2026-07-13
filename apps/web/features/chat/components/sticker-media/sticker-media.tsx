@@ -1,10 +1,9 @@
 import { cn } from "@/lib/utils";
-import type { ChatStickerId } from "@fish/core/chat";
 import Image from "next/image";
 import { getChatSticker } from "../sticker-picker/sticker-catalog";
 
 interface StickerMediaProps {
-  stickerId: ChatStickerId;
+  stickerId: string;
   className?: string;
 }
 
@@ -14,6 +13,21 @@ export function StickerMedia({
   className,
 }: StickerMediaProps) {
   const sticker = getChatSticker(stickerId);
+  if (!sticker) {
+    return (
+      <span
+        role="img"
+        aria-label="Sticker unavailable"
+        className={cn(
+          "inline-flex size-sticker-tile items-center justify-center rounded-control bg-surface-2 px-xs text-center text-ui-xs text-muted",
+          className
+        )}
+      >
+        Sticker unavailable
+      </span>
+    );
+  }
+
   return (
     <Image
       src={sticker.src}

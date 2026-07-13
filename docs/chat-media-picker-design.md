@@ -13,10 +13,10 @@ span multiple real themes. This avoids a redundant `Aquatic` choice while
 every available sticker is aquatic.
 
 Recently used and favorites are intentionally deferred. Neither feature exists
-in the current Emoji or GIF picker, and six sticker samples do not justify
-new management controls. Add a single `Recent` section after a real catalog is
-used often enough to provide meaningful history. Add favorites only if user
-testing shows that search plus recent use is still too slow.
+in the current Emoji or GIF picker, and the initial 24-sticker catalog does not
+justify new management controls. Add a single `Recent` section after real usage
+provides meaningful history. Add favorites only if user testing shows that
+search plus recent use is still too slow.
 
 ## Wireframe
 
@@ -51,8 +51,7 @@ composer.
 
 ## Sample art direction
 
-The first six assets prove the visual language without prematurely producing
-the full pack:
+The first six assets established the visual language for the 24-sticker pack:
 
 - `Thank you`: grateful coral octopus, exactly eight visible arms.
 - `Good night`: sleepy blue whale with two pectoral flippers and a horizontal
@@ -62,10 +61,10 @@ the full pack:
 - `Awesome!`: energetic bottlenose dolphin in a curved leap.
 - `See you soon`: friendly sea turtle with four flippers and a short tail.
 
-All samples use bold, baked-in text, a warm-white die-cut outline, restrained
+All stickers use bold, baked-in text, a warm-white die-cut outline, restrained
 ocean colors, rounded hand-drawn forms, and subtle paper texture. Transparent
-WebP files stay readable at the 96px picker size while remaining between 39KB
-and 107KB.
+WebP files stay readable at the 96px picker size while remaining compact enough
+to bundle with the web application.
 
 ## Proposed aquatic pack
 
@@ -135,9 +134,10 @@ Useful next phrases after the core set:
 
 ## Production path
 
-The six samples currently enter the existing image attachment flow. This
-makes the prototype selectable and sendable without introducing a premature
-backend contract. Before expanding the pack, add a catalog-backed sticker
-message reference such as `pack_id` plus `sticker_id`. That avoids repeated
-uploads, supports true recent-use history, and lets a future pack asset be
-updated without rewriting old messages.
+Sticker messages use a catalog-backed `sticker_id` stored on the message. The
+corresponding WebP remains a bundled application asset, so sticker sends do not
+create uploads or enter the image-attachment flow. The shared TypeScript
+contract, Edge Function allowlist, database constraint, and UI catalog must
+stay synchronized when the pack changes. Stable IDs allow artwork to be
+updated without rewriting old messages and leave room for recent-use history
+after real usage validates it.

@@ -3,7 +3,6 @@ import type {
   ClientChatMessage,
   ClientChatReadState,
 } from "../contracts";
-import { isChatStickerId } from "@fish/core/chat";
 
 export const sendNotice =
   "That did not send yet. Keep this open and try again.";
@@ -11,6 +10,16 @@ export const saveNotice =
   "That did not save yet. Keep this open and try again.";
 export const reactionPageSize = 1000;
 export const chatOlderPageSize = 40;
+
+/** Persisted sticker references are deliberately more permissive than send
+ * commands. An older open client may receive a newly deployed catalog id; keep
+ * it so the UI can render an unavailable-sticker fallback instead of a blank
+ * message. */
+export function readChatStickerId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const stickerId = value.trim();
+  return stickerId || undefined;
+}
 
 export interface MessageResponseRow {
   id: string;
@@ -78,6 +87,8 @@ export interface ReadStateResponseRow {
 export function toClientChatMessage(
   row: MessageResponseRow
 ): ClientChatMessage {
+  const stickerId = readChatStickerId(row.sticker_id);
+
   return {
     id: row.id,
     conversationId: row.conversation_id,
@@ -112,7 +123,7 @@ export function toClientChatMessage(
           height: row.gif.height,
         }
       : undefined,
-    ...(isChatStickerId(row.sticker_id) ? { stickerId: row.sticker_id } : {}),
+    ...(stickerId ? { stickerId } : {}),
     images: (row.images ?? []).map((image) => ({
       id: image.id,
       status: "ready",

@@ -47,7 +47,7 @@ describe("MessageImages", () => {
     expect(screen.getByRole("link", { name: "Open notes.pdf" })).toHaveAttribute("target", "_blank");
   });
 
-  it("renders a bundled sticker at quarter-size on a transparent frame", () => {
+  it("does not classify an uploaded image as a sticker from its filename", () => {
     const { container } = render(<MessageImages
       images={[{
         ...image,
@@ -60,10 +60,10 @@ describe("MessageImages", () => {
     />);
 
     const frame = container.querySelector('[data-image-layout="single"]')?.firstElementChild;
-    expect(frame).toHaveClass("max-w-sticker-tile");
-    expect(frame).not.toHaveClass("bg-surface-2", "bg-surface-3");
-    expect(screen.getByAltText("Image shared by Alex")).toHaveClass("object-contain");
-    expect(screen.queryByRole("button", { name: "Open image shared by Alex" })).toBeNull();
+    expect(frame).toHaveClass("max-h-chat-image-max-height", "bg-surface-2");
+    expect(frame).not.toHaveClass("max-w-sticker-tile");
+    expect(screen.getByAltText("Image shared by Alex")).toHaveClass("object-cover");
+    expect(screen.getByRole("button", { name: "Open image shared by Alex" })).toBeInTheDocument();
   });
 
   it("crossfades from a blurred thumbnail to the sharp display image", () => {

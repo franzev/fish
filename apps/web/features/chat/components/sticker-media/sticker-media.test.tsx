@@ -23,4 +23,12 @@ describe("StickerMedia", () => {
     expect(sticker).toHaveAttribute("width", "96");
     expect(sticker).toHaveAttribute("height", "96");
   });
+
+  it("renders a calm fallback for an unknown persisted sticker id", () => {
+    render(<StickerMedia stickerId="aquatic-new-rollout-sticker" />);
+
+    const fallback = screen.getByRole("img", { name: "Sticker unavailable" });
+    expect(fallback).toHaveTextContent("Sticker unavailable");
+    expect(fallback).toHaveClass("size-sticker-tile", "text-muted");
+  });
 });

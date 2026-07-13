@@ -25,7 +25,9 @@ export interface ChatMessage {
   senderRole: UserRole;
   body: string;
   gif?: ChatGif;
-  stickerId?: ChatStickerId;
+  /** Stable catalog reference returned by persisted messages. Readers preserve
+   * unknown ids so older clients can render a calm fallback during rollouts. */
+  stickerId?: string;
   images?: ChatImage[];
   createdAt: string;
 }
