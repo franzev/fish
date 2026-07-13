@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-import { generalChannelHref, generalChannelId } from "@/lib/channels";
+import { generalChannelHref } from "@/lib/channels";
 import { AppShell } from "./app-shell";
 
 let pathname = "/home";
@@ -57,7 +57,7 @@ describe("AppShell", () => {
   });
 
   it("gives channel routes the full pane instead of the centered column", () => {
-    pathname = `/channels/${generalChannelId}`;
+    pathname = generalChannelHref;
     const { container } = render(
       <AppShell displayName="Alex Rivera" role="client">
         Content
@@ -71,8 +71,8 @@ describe("AppShell", () => {
     expect(container.firstElementChild?.className).toContain("h-dvh");
   });
 
-  it("renders the channel column with the active # general link on channel routes", () => {
-    pathname = `/channels/${generalChannelId}`;
+  it("renders the channel column with the active room and the two focused community rooms", () => {
+    pathname = generalChannelHref;
 
     render(
       <AppShell displayName="Alex Rivera" role="client">
@@ -85,10 +85,20 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
 
     const channelNav = screen.getByRole("navigation", { name: "Channels" });
+    expect(within(channelNav).getAllByRole("link")).toHaveLength(15);
     const general = within(channelNav).getByRole("link", { name: "general" });
     expect(general).toHaveAttribute("href", generalChannelHref);
     expect(general).toHaveAttribute("aria-current", "page");
     expect(general).toHaveTextContent("# general");
+    expect(
+      within(channelNav).getByRole("link", { name: "introduce yourself" })
+    ).toHaveAttribute("href", "/channels/introductions");
+    expect(
+      within(channelNav).getByRole("link", { name: "announcements" })
+    ).toHaveAttribute("href", "/channels/announcements");
+    expect(
+      within(channelNav).getByRole("link", { name: "coworker culture" })
+    ).toHaveAttribute("href", "/channels/coworker-culture");
   });
 
   it("does not render the channel column outside channel routes", () => {
@@ -173,7 +183,7 @@ describe("AppShell", () => {
   });
 
   it("renders labeled client navigation without the unvalidated Progress tab", () => {
-    pathname = "/channels/22222222-2222-4222-8222-222222222222";
+    pathname = generalChannelHref;
 
     render(
       <AppShell displayName="Alex Rivera" role="client">
@@ -187,10 +197,7 @@ describe("AppShell", () => {
     expect(primaryNav).not.toHaveTextContent("Profile");
     expect(primaryNav).not.toHaveTextContent("Progress");
     const community = within(primaryNav).getByRole("link", { name: "Community" });
-    expect(community).toHaveAttribute(
-      "href",
-      "/channels/22222222-2222-4222-8222-222222222222"
-    );
+    expect(community).toHaveAttribute("href", "/channels/general");
     expect(community).toHaveAttribute("aria-current", "page");
   });
 

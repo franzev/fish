@@ -15,12 +15,30 @@ import {
 } from "@/features/chat/server";
 import { authRedirects } from "@/features/auth/redirects";
 import { getChatPageData } from "@/features/chat/server/page-data";
-import { redirect } from "next/navigation";
+import {
+  findCommunityChannel,
+} from "@/lib/channels";
+import { notFound, redirect } from "next/navigation";
 
-// Single-channel milestone: [id] is accepted for URL stability, but the only
-// channel is `general`, resolved through the existing demo-community data path.
-export default async function ChannelPage() {
-  const data = await getChatPageData();
+// Single-channel milestone: keep UUID links working, but expose the stable,
+// readable slug as the canonical URL.
+export default async function ChannelPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const channel = findCommunityChannel(slug);
+  if (!channel) {
+    notFound();
+  }
+
+  if (slug !== channel.slug) {
+    redirect(channel.href);
+  }
+
+  const data = await getChatPageData(undefined, channel.slug);
 
   if (!data) {
     redirect(authRedirects.signedOut);

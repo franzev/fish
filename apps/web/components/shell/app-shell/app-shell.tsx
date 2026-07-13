@@ -2,7 +2,7 @@
 
 import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
 import { UserMenu } from "@/components/shell/user-menu";
-import { generalChannelHref } from "@/lib/channels";
+import { communityChannels, generalChannelHref } from "@/lib/channels";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@fish/core/roles";
 import {
@@ -181,30 +181,30 @@ export function AppShell({
             : "mx-auto max-w-content px-page py-xl pb-mobile-nav-offset md:py-2xl"
         )}
       >
-        {/* Single-channel milestone: the column lists only `# general`, so it
-            appears just on the immersive channel surface where it orients
-            the reader — never as a browsable menu on other screens. */}
+        {/* Keep channel navigation inside the immersive community surface so
+            the rest of the product still presents one clear destination. */}
         {channelSurface && (
-          <aside className="hidden w-channel-col shrink-0 flex-col border-r border-divider bg-surface px-sm py-page md:flex">
-            <h2 className="px-xs pb-sm text-ui-2xs font-sans font-medium uppercase tracking-wide text-muted">
+          <aside className="hidden w-channel-col shrink-0 flex-col overflow-y-auto border-r border-divider bg-surface px-2xs py-xs md:flex">
+            <h2 className="px-2xs pb-2xs text-ui-2xs font-sans font-medium uppercase tracking-wide text-muted">
               Channels
             </h2>
             <nav aria-label="Channels" className="flex flex-col gap-3xs">
-              <Link
-                href={generalChannelHref}
-                aria-current={
-                  isActivePath(pathname, generalChannelHref)
-                    ? "page"
-                    : undefined
-                }
-                className={cn(
-                  "flex min-h-control items-center gap-2xs rounded-control px-sm text-ui-sm text-muted transition-colors hover:bg-surface-2 hover:text-foreground",
-                  isActivePath(pathname, generalChannelHref) &&
-                    "bg-surface-2 font-semibold text-foreground"
-                )}
-              >
-                <span aria-hidden="true">#</span> general
-              </Link>
+              {communityChannels.map((channel) => (
+                <Link
+                  key={channel.id}
+                  href={channel.href}
+                  aria-current={
+                    isActivePath(pathname, channel.href) ? "page" : undefined
+                  }
+                  className={cn(
+                    "flex items-center gap-2xs rounded-control px-xs py-2xs text-ui-sm text-muted transition-colors hover:bg-surface-2 hover:text-foreground",
+                    isActivePath(pathname, channel.href) &&
+                      "bg-surface-2 font-semibold text-foreground"
+                  )}
+                >
+                  <span aria-hidden="true">#</span> {channel.name}
+                </Link>
+              ))}
             </nav>
           </aside>
         )}
@@ -216,6 +216,30 @@ export function AppShell({
             channelSurface && "pb-mobile-nav-offset md:pb-0"
           )}
         >
+          {channelSurface && (
+            <nav
+              aria-label="Mobile channels"
+              className="flex shrink-0 gap-3xs overflow-x-auto border-b border-divider bg-surface px-page py-xs md:hidden"
+            >
+              {communityChannels.map((channel) => (
+                <Link
+                  key={channel.id}
+                  href={channel.href}
+                  aria-current={
+                    isActivePath(pathname, channel.href) ? "page" : undefined
+                  }
+                  className={cn(
+                    "flex min-h-control shrink-0 items-center gap-2xs rounded-control px-sm text-ui-sm text-muted transition-colors",
+                    "hover:bg-surface-2 hover:text-foreground",
+                    isActivePath(pathname, channel.href) &&
+                      "bg-surface-2 font-semibold text-foreground"
+                  )}
+                >
+                  <span aria-hidden="true">#</span> {channel.name}
+                </Link>
+              ))}
+            </nav>
+          )}
           {children}
         </div>
       </main>
