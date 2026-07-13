@@ -120,7 +120,7 @@ export function FriendsScreen({
         {incomingRequestCount > 0 && (
           <Link
             href="/friends/requests"
-            className="flex min-h-control items-center justify-between rounded-control border border-border-strong bg-surface px-md text-ui text-body transition-colors hover:bg-surface-2"
+            className="flex min-h-control items-center justify-between rounded-control bg-surface-2 px-md text-ui text-body transition-colors hover:bg-surface-3"
           >
             <span>
               {incomingRequestCount === 1
@@ -147,7 +147,7 @@ export function FriendsScreen({
             <li key={item.friendshipId}>
               <Link
                 href={`/friends/${item.friend.id}`}
-                className="flex min-h-control items-center justify-between rounded-control border border-border bg-surface px-md transition-colors hover:bg-surface-2"
+                className="flex min-h-control items-center justify-between rounded-control bg-surface-2 px-md transition-colors hover:bg-surface-3"
               >
                 <span className="flex min-w-0 items-center gap-sm py-xs">
                   <Avatar

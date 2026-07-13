@@ -71,9 +71,9 @@ export function SearchCommandMenu({
     <div
       role="menu"
       aria-label="Search filters"
-      className="max-h-search-discovery w-search-pop-mobile overflow-y-auto rounded-card border border-border bg-surface p-xs shadow-popover sm:w-search-pop"
+      className="max-h-search-discovery w-full overflow-y-auto rounded-card border border-divider bg-surface p-xs"
     >
-      <p className="px-xs pb-xs text-ui-sm font-semibold text-muted">Filters</p>
+      <p className="px-xs pb-xs text-ui-sm font-medium text-muted">Filters</p>
       {commands.map((command) => (
         <button
           key={command.operator}
@@ -83,25 +83,25 @@ export function SearchCommandMenu({
           className="flex min-h-control w-full items-center gap-sm rounded-control px-xs py-xs text-left hover:bg-surface-2 focus-visible:bg-surface-2"
         >
           <command.icon
-            size={28}
+            size={20}
             stroke={1.75}
             aria-hidden="true"
             className="shrink-0 text-muted"
           />
           <span className="flex min-w-0 flex-col">
-            <span className="text-ui font-semibold text-foreground">
+            <span className="text-ui text-foreground">
               {command.title}
             </span>
-            <span className="text-ui-sm font-semibold text-muted">
+            <span className="text-ui-sm text-muted">
               {command.hint}
             </span>
           </span>
         </button>
       ))}
       {history.length > 0 && (
-        <section className="mt-xs border-t border-border pt-sm" aria-labelledby="search-history-heading">
+        <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="search-history-heading">
           <div className="flex min-h-control items-center justify-between px-xs">
-            <p id="search-history-heading" className="text-ui-sm font-semibold text-muted">
+            <p id="search-history-heading" className="text-ui-sm font-medium text-muted">
               History
             </p>
             <button
@@ -110,7 +110,7 @@ export function SearchCommandMenu({
               onClick={onClearHistory}
               className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
             >
-              <IconTrash size={22} stroke={1.75} aria-hidden="true" />
+              <IconTrash size={20} stroke={1.75} aria-hidden="true" />
             </button>
           </div>
           {history.map((entry) => (
@@ -120,11 +120,11 @@ export function SearchCommandMenu({
               onClick={() => onHistorySelect(entry)}
               className="flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left hover:bg-surface-2 focus-visible:bg-surface-2"
             >
-              <IconSearch size={26} stroke={1.75} className="shrink-0 text-muted" aria-hidden="true" />
+              <IconSearch size={20} stroke={1.75} className="shrink-0 text-muted" aria-hidden="true" />
               <span className="flex min-w-0 flex-wrap items-center gap-2xs">
-                {parseChatSearchQuery(entry.query).text && <span className="truncate text-ui font-semibold text-foreground">{parseChatSearchQuery(entry.query).text}</span>}
+                {parseChatSearchQuery(entry.query).text && <span className="truncate text-ui text-foreground">{parseChatSearchQuery(entry.query).text}</span>}
                 {entry.criteria.map((criterion) => (
-                  <span key={criterion.id} className="rounded-control bg-surface-3 px-xs py-2xs text-ui-sm font-semibold text-body">
+                  <span key={criterion.id} className="rounded-control bg-surface-3 px-xs py-2xs text-ui-sm text-body">
                     {criterionOperator(criterion)}: {criterionTokenValue(criterion)}
                   </span>
                 ))}

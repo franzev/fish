@@ -82,7 +82,7 @@ describe("SearchFilterPopover", () => {
     openCommandMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /from a specific user/i }));
 
-    expect(screen.getByText("from:")).toBeInTheDocument();
+    expect(screen.getByText("from:")).toHaveClass("bg-surface-2");
     const list = screen.getByRole("listbox", { name: "From User" });
     expect(within(list).getByRole("option", { name: /Yoshibro yoshibro5019/i })).toBeInTheDocument();
     expect(within(list).getAllByRole("option")).toHaveLength(3);
@@ -136,6 +136,7 @@ describe("SearchFilterPopover", () => {
 
     expect(screen.getByRole("combobox", { name: "Search messages" })).toHaveValue("from: reganspor ");
     expect(screen.getByTestId("search-filter-token")).toHaveTextContent("from: reganspor");
+    expect(screen.getByTestId("search-filter-token")).toHaveClass("bg-surface-2");
     expect(screen.queryByLabelText("Applied filters")).toBeNull();
   });
 

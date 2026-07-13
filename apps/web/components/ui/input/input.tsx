@@ -5,10 +5,13 @@ import { InputHTMLAttributes, ReactNode, forwardRef, useId } from "react";
 
 export const inputVariants = cva(
   [
-    "w-full rounded-control bg-surface px-md",
+    // A quiet surface-step well, not an outlined box — the same borderless
+    // field idiom the chat composer uses. The constant (transparent) border
+    // keeps the box stable when a feedback tier colors it in.
+    "w-full rounded-control bg-surface-2 px-md",
     "min-h-control text-copy text-foreground",
-    "border border-border placeholder:text-muted",
-    "transition-colors focus:border-primary",
+    "border border-transparent placeholder:text-muted",
+    "transition-colors",
     "disabled:opacity-50",
   ],
   {
@@ -16,7 +19,7 @@ export const inputVariants = cva(
       feedback: {
         default: null,
         notice: "border-border-strong",
-        error: "border-error border-2",
+        error: "border-error",
       },
     },
     defaultVariants: {
@@ -28,6 +31,8 @@ export const inputVariants = cva(
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Plain-language label, always shown above the field. */
   label: string;
+  /** Keep the label available to assistive technology without displaying it. */
+  labelVisuallyHidden?: boolean;
   /** Optional guidance. Calm and helpful, never scolding. */
   hint?: string;
   /** Tier 1 feedback — structural weight only, never a hue. Hidden if `error` is set. */
@@ -38,6 +43,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   reserveMessageSpace?: boolean;
   /** Optional in-field control, such as a password reveal button. */
   trailingControl?: ReactNode;
+  /** Optional decorative icon shown at the start of the field. */
+  leadingIcon?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -50,8 +57,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       error,
       id,
       disabled,
+      labelVisuallyHidden = false,
       reserveMessageSpace = true,
       trailingControl,
+      leadingIcon,
       ...props
     },
     ref
@@ -72,11 +81,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         <label
           htmlFor={inputId}
-          className="mb-xs block text-ui font-medium text-foreground"
+          className={cn(
+            labelVisuallyHidden
+              ? "sr-only"
+              : "mb-xs block text-ui-sm font-medium text-foreground"
+          )}
         >
           {label}
         </label>
-        {trailingControl ? (
+        {leadingIcon || trailingControl ? (
           <div className="relative">
             <input
               ref={ref}
@@ -84,16 +97,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               disabled={disabled}
               className={cn(
                 inputVariants({ feedback }),
-                "pr-control",
+                leadingIcon && "pl-control",
+                trailingControl && "pr-control",
                 className
               )}
               {...props}
               aria-describedby={describedBy}
               aria-invalid={ariaInvalid}
             />
-            <div className="absolute right-0 top-0 flex min-h-control min-w-control items-center justify-center">
-              {trailingControl}
-            </div>
+            {leadingIcon && (
+              <div className="pointer-events-none absolute left-0 top-0 flex min-h-control min-w-control items-center justify-center text-muted">
+                {leadingIcon}
+              </div>
+            )}
+            {trailingControl && (
+              <div className="absolute right-0 top-0 flex min-h-control min-w-control items-center justify-center">
+                {trailingControl}
+              </div>
+            )}
           </div>
         ) : (
           <input
@@ -111,7 +132,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         {shouldRenderMessageRow && (
           /* Reserved so showing/hiding a message can change text, not
-             geometry, on forms that opt into that stability. Login opts out
+             geometry, on forms that opt into that stability. Sign-in opts out
              when empty so it does not create dead air between fields. */
           <div
             className={cn(

@@ -24,6 +24,13 @@ describe("Composer", () => {
     expect(screen.getByPlaceholderText("Message")).toBeInTheDocument();
   });
 
+  it("keeps the textarea surface transparent while focused", () => {
+    render(<Composer {...baseProps} />);
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveClass(
+      "focus-visible:bg-transparent"
+    );
+  });
+
   it("hides the Send button while the draft is empty", () => {
     render(<Composer {...baseProps} canSend={false} />);
     expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();

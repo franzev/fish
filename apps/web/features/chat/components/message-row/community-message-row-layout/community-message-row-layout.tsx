@@ -26,7 +26,7 @@ export function CommunityMessageRowLayout({
       className={cn(
         "relative flex -mx-md items-start gap-md px-md py-2xs",
         hasPrecedingRow && startsGroup && "py-sm",
-        interactive && "group transition-colors hover:bg-surface",
+        interactive && "group transition-colors hover:bg-chat-hover",
         className
       )}
     >

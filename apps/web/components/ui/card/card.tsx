@@ -1,18 +1,11 @@
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
-/** A calm container. The basic surface everything sits on. Elevation is a
- *  light-dark() token — soft shadow in light theme, none in dark theme
- *  (dark relies on the surface lightness-step instead). No theme-variant
- *  branching in this component. */
+/** A calm container separated from the canvas by its surface step. */
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "rounded-card bg-surface p-lg border border-border",
-        "shadow-card",
-        className
-      )}
+      className={cn("rounded-card bg-surface p-md", className)}
       {...props}
     />
   );

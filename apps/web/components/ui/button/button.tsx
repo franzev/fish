@@ -7,8 +7,8 @@ export const buttonVariants = cva(
     // Layout stability: no state change may alter the rendered size.
     // relative anchors the loading overlay; a constant (transparent)
     // border keeps the box model identical across all variants.
-    "relative inline-flex items-center justify-center rounded-control px-lg",
-    "text-copy transition-colors",
+    "relative inline-flex items-center justify-center rounded-control px-md",
+    "text-ui transition-colors",
     "border border-transparent cursor-pointer",
     "disabled:opacity-50 disabled:cursor-not-allowed",
   ],
@@ -18,10 +18,12 @@ export const buttonVariants = cva(
         // The ONE action on a screen. Use at most one primary per view.
         primary:
           "min-h-control-primary bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
-        // A quieter alternative action when genuinely needed. Border width lives
-        // in the base classes (constant across variants); only the color differs.
+        // A quieter alternative action when genuinely needed. A surface-step
+        // well, not an outline — state and affordance come from the fill
+        // (same idiom as the chat controls); the transparent border from the
+        // base classes keeps the box model constant across variants.
         secondary:
-          "min-h-control bg-surface text-foreground border-border hover:bg-surface-2",
+          "min-h-control bg-surface-2 text-foreground hover:bg-surface-3",
         // Low-emphasis text actions ("Back", "Need help?").
         ghost: "min-h-control bg-transparent text-muted hover:text-body",
       },

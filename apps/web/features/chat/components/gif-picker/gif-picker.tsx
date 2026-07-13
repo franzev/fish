@@ -1,5 +1,8 @@
 "use client";
 
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { gifProvider, type GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
 import { Popover } from "@base-ui/react/popover";
@@ -82,28 +85,30 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
   const resultLabel = query.trim() ? `GIF results for ${query.trim()}` : "Trending GIFs";
 
   return (
-    <div
+    <Card
       role="dialog"
       aria-label="Choose a GIF"
-      className="flex h-gif-panel-h w-gif-panel flex-col overflow-hidden rounded-card border border-border bg-surface shadow-popover"
+      className="flex h-gif-panel-h w-gif-panel flex-col overflow-hidden border border-divider p-0"
     >
-      <div className="relative shrink-0 p-xs">
-        <label htmlFor="gif-search" className="sr-only">Search GIFs</label>
-        <span className="pointer-events-none absolute inset-y-0 left-page flex items-center text-muted">
-          <IconSearch size={16} stroke={1.75} aria-hidden="true" />
-        </span>
-        <input
+      <div className="shrink-0 p-xs">
+        <Input
           id="gif-search"
           type="search"
+          label="Search GIFs"
+          labelVisuallyHidden
+          reserveMessageSpace={false}
           placeholder="Search KLIPY"
           value={query}
           maxLength={50}
           onChange={(event) => setQuery(event.target.value)}
-          className="min-h-control w-full rounded-pill border border-transparent bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:border-border-strong focus-visible:shadow-none focus-visible:outline-none"
+          leadingIcon={<IconSearch size={16} stroke={1.75} aria-hidden="true" />}
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-xs pb-xs">
+      <ScrollArea
+        className="flex-1"
+        viewportClassName="flex flex-col px-xs pb-xs"
+      >
         {status === "loading" && (
           <p className="mb-xs text-ui-xs text-muted" role="status" aria-live="polite">
             Finding GIFs…
@@ -163,7 +168,7 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
                 type="button"
                 aria-label={`Choose ${gif.description}`}
                 onClick={() => onSelect(gif, query.trim())}
-                className="min-h-target-touch overflow-hidden rounded-control text-left hover:outline hover:outline-1 hover:outline-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-outer"
+                className="min-h-target-touch overflow-hidden rounded-control text-left hover:outline hover:outline-1 hover:outline-border-strong"
               >
                 <GifMedia
                   gif={gif}
@@ -179,16 +184,16 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
         )}
         <div ref={loadMoreRef} className="h-xs shrink-0" aria-hidden="true" />
         {loadingMore && <p className="py-xs text-center text-ui-xs text-muted">Finding more GIFs…</p>}
-      </div>
+      </ScrollArea>
       <a
         href="https://klipy.com"
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 border-t border-border px-sm py-xs text-right text-ui-xs text-muted hover:text-body"
+        className="shrink-0 border-t border-divider px-sm py-xs text-right text-ui-xs text-muted hover:text-body"
       >
         Powered by KLIPY
       </a>
-    </div>
+    </Card>
   );
 }
 

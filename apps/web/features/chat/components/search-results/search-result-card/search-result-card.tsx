@@ -15,11 +15,12 @@ interface SearchResultCardProps {
 export function SearchResultCard({ message, currentUserId, authorName, avatarUrl }: SearchResultCardProps) {
   const mine = message.senderId === currentUserId;
   return (
-    <article className="flex gap-sm rounded-card border border-border bg-surface p-sm">
+    <article className="flex gap-sm rounded-card bg-surface-2 p-sm">
       <Avatar size="md" name={authorName} src={avatarUrl} />
       <div className="min-w-0 flex-1">
         <MessageMeta authorName={authorName} sentAt={message.createdAt} tag={message.senderRole === "coach" ? "Coach" : undefined} />
-        <MessageBody body={visibleMessageBody(message)} />
+        {/* Same size the chat bubble wrapper applies — the renderer inherits. */}
+        <MessageBody body={visibleMessageBody(message)} className="text-ui-sm" />
         {(message.images?.length ?? 0) > 0 && <div className="mt-xs"><MessageImages images={message.images ?? []} authorName={authorName} mine={mine} /></div>}
       </div>
     </article>

@@ -54,8 +54,6 @@ const expectedTokenNames = [
   "foreground",
   "body",
   "muted",
-  "focus-outer",
-  "focus-inner",
   "primary",
   "on-primary",
   "primary-press",

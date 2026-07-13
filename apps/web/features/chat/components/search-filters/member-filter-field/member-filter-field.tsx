@@ -34,11 +34,11 @@ export function MemberFilterField({
   return (
     <section className="flex flex-col gap-xs">
       <div>
-        <h3 className="font-sans text-heading-sm text-foreground">{label}</h3>
-        <p className="text-copy text-muted">{description}</p>
+        <h3 className="font-sans text-ui font-semibold text-foreground">{label}</h3>
+        <p className="text-ui-sm text-muted">{description}</p>
       </div>
       <div className="relative">
-        <div className="flex min-h-control items-center rounded-control border border-border bg-bg focus-within:border-border-strong">
+        <div className="flex min-h-control items-center rounded-control bg-surface-2">
           <input
             type="search"
             role="combobox"
@@ -52,7 +52,7 @@ export function MemberFilterField({
               setQuery(event.target.value);
               setOpen(true);
             }}
-            className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-copy text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-ui text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
           />
           <button
             type="button"
@@ -60,7 +60,7 @@ export function MemberFilterField({
             onClick={() => setOpen((current) => !current)}
             className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted"
           >
-            {open ? <IconChevronUp size={24} /> : <IconChevronDown size={24} />}
+            {open ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
           </button>
         </div>
         {open && (
@@ -69,7 +69,7 @@ export function MemberFilterField({
             role="listbox"
             aria-label={`${label} users`}
             aria-multiselectable="true"
-            className="mt-2xs max-h-filter-options overflow-y-auto rounded-card border border-border bg-surface p-xs"
+            className="mt-2xs max-h-filter-options overflow-y-auto rounded-card bg-surface-2 p-xs"
           >
             {results.length === 0 ? (
               <p className="px-xs py-sm text-ui-sm text-muted">No members match.</p>
@@ -82,16 +82,16 @@ export function MemberFilterField({
                   role="option"
                   aria-selected={selected}
                   onClick={() => onToggle(member)}
-                  className={`flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left ${selected ? "bg-surface-2" : "hover:bg-surface-2"}`}
+                  className={`flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left ${selected ? "bg-surface-3" : "hover:bg-surface-3"}`}
                 >
                   <Avatar size="md" name={member.displayName} src={member.avatarUrl} />
-                  <span className="min-w-0 flex-1 truncate text-copy font-semibold text-foreground">
+                  <span className="min-w-0 flex-1 truncate text-ui text-foreground">
                     {member.displayName}
                   </span>
-                  <span className="truncate text-ui text-muted">{member.username}</span>
+                  <span className="truncate text-ui-sm text-muted">{member.username}</span>
                   <span
                     aria-hidden="true"
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-control border ${selected ? "border-border-strong bg-surface-3 text-foreground" : "border-border text-transparent"}`}
+                    className={`flex size-10 shrink-0 items-center justify-center ${selected ? "text-foreground" : "text-transparent"}`}
                   >
                     <IconCheck size={20} stroke={2} />
                   </span>
@@ -104,4 +104,3 @@ export function MemberFilterField({
     </section>
   );
 }
-

@@ -56,7 +56,7 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                 </Menu.Trigger>
                 <Menu.Portal>
                   <Menu.Positioner side="top" align="start" sideOffset={4} className="z-30">
-                    <Menu.Popup className="min-w-menu rounded-card border border-border bg-surface p-3xs shadow-popover">
+                    <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
                       <Menu.Item
                         onClick={() => onRetry(image.clientUploadId)}
                         className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2"
@@ -82,7 +82,7 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                 onClick={() => onRemove(image.clientUploadId)}
                 className="absolute right-3xs top-3xs inline-flex min-h-control min-w-control items-start justify-end rounded-control p-2xs text-body"
               >
-                <span className="inline-flex size-md items-center justify-center rounded-pill bg-surface shadow-popover">
+                <span className="inline-flex size-md items-center justify-center rounded-pill bg-surface">
                   <IconX size={16} stroke={1.75} aria-hidden="true" />
                 </span>
               </button>

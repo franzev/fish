@@ -18,6 +18,7 @@ const tokenSwatches = [
   { name: "surface-2", className: "bg-surface-2" },
   { name: "border", className: "bg-border" },
   { name: "border-strong", className: "bg-border-strong" },
+  { name: "divider", className: "bg-divider" },
   { name: "foreground", className: "bg-foreground" },
   { name: "body", className: "bg-body" },
   { name: "muted", className: "bg-muted" },
@@ -46,7 +47,7 @@ export default function KitPage() {
         <p className="mb-xs text-ui-sm uppercase tracking-widest text-muted">
           FISH
         </p>
-        <h1 className="text-4xl">UI kit</h1>
+        <h1 className="text-display">UI kit</h1>
         <p className="mt-sm text-body">
           The contract every screen is built from. Every component, every
           state, both themes.
@@ -57,7 +58,7 @@ export default function KitPage() {
       </header>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Tokens</h2>
+        <h2 className="mb-md text-heading-sm">Tokens</h2>
         <div className="grid grid-cols-2 gap-sm sm:grid-cols-3">
           {tokenSwatches.map((s) => (
             <div key={s.name} className="min-w-0 space-y-xs">
@@ -74,7 +75,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Typography</h2>
+        <h2 className="mb-md text-heading-sm">Typography</h2>
         <div className="space-y-page">
           <div>
             <p className="mb-2xs text-ui-xs text-muted">Display — 32px / 600 / Fraunces</p>
@@ -98,7 +99,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Icons</h2>
+        <h2 className="mb-md text-heading-sm">Icons</h2>
         <div className="grid grid-cols-2 gap-sm sm:grid-cols-3">
           {iconSamples.map(({ name, Icon }) => (
             <div key={name} className="min-w-0 space-y-xs">
@@ -110,7 +111,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Button</h2>
+        <h2 className="mb-md text-heading-sm">Button</h2>
         <div className="space-y-page">
           <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Variants</p>
@@ -132,7 +133,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Input</h2>
+        <h2 className="mb-md text-heading-sm">Input</h2>
         <div className="space-y-page">
           <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Default</p>
@@ -161,7 +162,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Card</h2>
+        <h2 className="mb-md text-heading-sm">Card</h2>
         <div className="space-y-page">
           <div className="space-y-sm">
             <p className="text-ui-sm text-muted">Default</p>
@@ -171,7 +172,7 @@ export default function KitPage() {
           </div>
           <div className="space-y-sm">
             <p className="text-ui-sm text-muted">
-              Elevated (soft shadow in light, surface-step in dark)
+              Flat surface step
             </p>
             <Card className="bg-surface-2">
               <p className="text-body">Elevation comes from a token, never a dark: branch.</p>
@@ -181,7 +182,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Progress</h2>
+        <h2 className="mb-md text-heading-sm">Progress</h2>
         <div className="space-y-sm">
           <p className="text-ui-sm text-muted">Visual only — never a grade</p>
           <Progress value={40} label="Step 2 of 5" />
@@ -189,7 +190,7 @@ export default function KitPage() {
       </section>
 
       <section className="mb-xl">
-        <h2 className="mb-md text-xl">Alert</h2>
+        <h2 className="mb-md text-heading-sm">Alert</h2>
         <div className="space-y-sm">
           <Alert tone="notice">
             That doesn&apos;t look like an email yet. Check the spelling?

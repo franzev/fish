@@ -35,6 +35,19 @@ function provider(overrides: Partial<GifProvider> = {}): GifProvider {
 }
 
 describe("GifPicker", () => {
+  it("uses the shared popup border for the panel and attribution divider", () => {
+    render(<GifPicker provider={provider()} onSelect={() => undefined} />);
+
+    expect(screen.getByRole("dialog", { name: "Choose a GIF" })).toHaveClass(
+      "border",
+      "border-divider"
+    );
+    expect(screen.getByText("Powered by KLIPY")).toHaveClass(
+      "border-t",
+      "border-divider"
+    );
+  });
+
   it("loads trending GIFs and returns the chosen item without sending it", async () => {
     const onSelect = vi.fn();
     render(<GifPicker provider={provider()} onSelect={onSelect} />);

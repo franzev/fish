@@ -22,7 +22,7 @@ export default async function FriendRequestsPage() {
 
   return (
     <>
-      <h1 className="mb-lg text-3xl">Friend requests</h1>
+      <h1 className="mb-lg text-heading-sm">Friend requests</h1>
       <FriendRequestsList
         userId={data.userId}
         initialRequests={data.requests}

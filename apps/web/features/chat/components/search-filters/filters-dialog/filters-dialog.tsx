@@ -131,11 +131,11 @@ function OpenFiltersDialog({
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-scrim" />
         <Dialog.Popup
           finalFocus={finalFocus}
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-filters-sheet flex-col overflow-hidden rounded-t-card border border-border bg-surface md:inset-0 md:m-auto md:h-fit md:w-content md:rounded-card lg:w-filters-dialog"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-filters-sheet flex-col overflow-hidden rounded-t-card bg-surface md:inset-0 md:m-auto md:h-fit md:w-content md:rounded-card lg:w-filters-dialog"
         >
-          <header className="flex items-center justify-between gap-sm border-b border-border px-lg py-sm">
+          <header className="flex items-center justify-between gap-sm border-b border-divider px-lg py-sm">
             <div>
-              <Dialog.Title className="font-sans text-heading text-foreground">
+              <Dialog.Title className="font-sans text-copy font-semibold text-foreground">
                 Filters
               </Dialog.Title>
               <Dialog.Description className="text-ui-sm text-muted">
@@ -146,7 +146,7 @@ function OpenFiltersDialog({
               aria-label="Close filters"
               className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
             >
-              <IconX size={22} stroke={1.75} aria-hidden="true" />
+              <IconX size={20} stroke={1.75} aria-hidden="true" />
             </Dialog.Close>
           </header>
 
@@ -213,11 +213,11 @@ function OpenFiltersDialog({
             </div>
           </div>
 
-          <footer className="grid grid-cols-2 items-center gap-sm border-t border-border px-lg py-sm sm:flex">
+          <footer className="grid grid-cols-2 items-center gap-sm border-t border-divider px-lg py-sm sm:flex">
             <button
               type="button"
               onClick={() => setDraft([])}
-              className="col-span-2 min-h-control rounded-control px-xs text-copy font-semibold text-notice hover:text-body sm:col-span-1"
+              className="col-span-2 min-h-control rounded-control px-xs text-ui font-medium text-notice hover:text-body sm:col-span-1"
             >
               Clear filters ({draft.length})
             </button>

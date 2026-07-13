@@ -26,7 +26,7 @@ export default async function ClientHomePage() {
 
   return (
     <>
-      <h1 className="mb-lg text-3xl">Welcome back, {data.firstName}</h1>
+      <h1 className="mb-lg text-heading-sm">Welcome back, {data.firstName}</h1>
       <EmptyState Icon={IconSparkles}>
         {data.coachName ? (
           <p>Your coach {data.coachName} is setting things up.</p>

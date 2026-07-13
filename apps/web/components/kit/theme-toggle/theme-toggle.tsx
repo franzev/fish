@@ -32,12 +32,12 @@ export function KitThemeToggle() {
           onClick={() => setMode(opt)}
           aria-pressed={mode === opt}
           className={cn(
-            "min-h-control rounded-control border px-md text-ui transition-colors",
-            // Active state signals with color only — a font-weight flip
-            // would resize the buttons on every click (layout stability).
+            "min-h-control rounded-control px-md text-ui-sm transition-colors",
+            // Active state signals with the fill step only — a font-weight
+            // flip would resize the buttons on every click (layout stability).
             mode === opt
-              ? "border-border-strong bg-surface-2 text-foreground"
-              : "border-border bg-surface text-muted hover:text-body"
+              ? "bg-surface-3 text-foreground"
+              : "bg-surface-2 text-body hover:bg-surface-3"
           )}
         >
           {opt}

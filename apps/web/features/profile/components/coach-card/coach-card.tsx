@@ -14,7 +14,7 @@ interface CoachCardProps {
    Non-focusable -> plain function export (no forwardRef needed). */
 export function CoachCard({ coachId, coachName, avatarUrl }: CoachCardProps) {
   return (
-    <div className="flex items-center gap-sm rounded-card border border-border bg-surface p-md">
+    <div className="flex items-center gap-sm rounded-card bg-surface p-md">
       <Avatar
         profileId={coachId ?? undefined}
         src={avatarUrl ?? undefined}

@@ -26,7 +26,7 @@ describe("AppShell", () => {
     delete document.documentElement.dataset.timeFormat;
   });
 
-  it("renders the muted display name (D-09) as the menu trigger, with Log out reachable via the menu", () => {
+  it("renders the muted display name (D-09) as the menu trigger, with Sign out reachable via the menu", () => {
     render(
       <AppShell displayName="Alex Rivera" role="client">
         Content
@@ -37,10 +37,10 @@ describe("AppShell", () => {
       name: "Account menu for Alex Rivera",
     });
     expect(trigger.className).toContain("text-muted");
-    expect(screen.queryByRole("button", { name: "Log out" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
-    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
   });
 
   it("renders one centered content column with max-w-content and mx-auto (D-10)", () => {
@@ -132,25 +132,25 @@ describe("AppShell", () => {
     });
   });
 
-  it("D-09/SHEL-01: zero variant=\"primary\" across app-shell.tsx + user-menu.tsx + logout-button.tsx, and variant=\"ghost\" is present", () => {
+  it("D-09/SHEL-01: zero variant=\"primary\" across app-shell.tsx + user-menu.tsx + sign-out-button.tsx, and variant=\"ghost\" is present", () => {
     const shellSource = readFileSync(resolve(__dirname, "./app-shell.tsx"), "utf-8");
     const userMenuSource = readFileSync(
       resolve(__dirname, "../user-menu/user-menu.tsx"),
       "utf-8"
     );
-    const logoutButtonSource = readFileSync(
+    const signOutButtonSource = readFileSync(
       resolve(
         __dirname,
-        "../../../features/auth/components/logout-button/logout-button.tsx"
+        "../../../features/auth/components/sign-out-button/sign-out-button.tsx"
       ),
       "utf-8"
     );
     const primaryMatches =
       (shellSource.match(/variant="primary"/g) ?? []).length +
       (userMenuSource.match(/variant="primary"/g) ?? []).length +
-      (logoutButtonSource.match(/variant="primary"/g) ?? []).length;
+      (signOutButtonSource.match(/variant="primary"/g) ?? []).length;
     expect(primaryMatches).toBe(0);
-    expect(logoutButtonSource).toContain('variant="ghost"');
+    expect(signOutButtonSource).toContain('variant="ghost"');
   });
 
   it("gives the logo link a centered accessible target (WR-09)", () => {
@@ -239,7 +239,7 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "Account menu for Coach Dana" })
     );
 
-    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Profile" }))
       .toHaveAttribute("href", "/profile");
   });

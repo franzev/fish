@@ -1,6 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Icon,
@@ -77,29 +79,24 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
   }, [query]);
 
   return (
-    <div
+    <Card
       className={cn(
-        "flex h-emoji-panel-h w-emoji-panel flex-col overflow-hidden rounded-card bg-surface shadow-popover",
+        "flex h-emoji-panel-h w-emoji-panel flex-col overflow-hidden border border-divider p-0",
         className
       )}
       role="dialog"
       aria-label="Choose an emoji"
     >
-      {/* Quiet pill search — no visible label or field chrome; the panel is
-          already announced as "Choose an emoji", so aria-label carries the
-          field name. The global :focus-visible ring lands on the pill
-          itself. */}
-      <div className="relative shrink-0 p-xs">
-        <span className="pointer-events-none absolute inset-y-0 left-page flex items-center text-muted">
-          <IconSearch size={16} stroke={1.75} aria-hidden="true" />
-        </span>
-        <input
+      <div className="shrink-0 p-xs">
+        <Input
           type="search"
-          aria-label="Search emoji"
+          label="Search emoji"
+          labelVisuallyHidden
+          reserveMessageSpace={false}
           placeholder="Search emoji"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="h-10 w-full rounded-pill border border-transparent bg-surface-2 pl-xl pr-sm text-ui-sm text-foreground placeholder:text-muted focus-visible:border-border-strong focus-visible:shadow-none focus-visible:outline-none"
+          leadingIcon={<IconSearch size={16} stroke={1.75} aria-hidden="true" />}
         />
       </div>
       {results ? (
@@ -135,7 +132,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
           {/* Tab strip lives below the grid (thumb-reach on mobile) and
               distributes evenly — nine fixed categories, no horizontal
               scrolling. */}
-          <Tabs.List className="flex shrink-0 border-t border-border bg-surface px-nudge py-2xs">
+          <Tabs.List className="flex shrink-0 border-t border-divider bg-surface px-nudge py-2xs">
             {emojiGroups.map((group) => {
               const GroupIcon = groupIcons[group.name] ?? IconMoodSmile;
               return (
@@ -143,14 +140,9 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
                   key={group.slug}
                   value={group.slug}
                   aria-label={group.name}
-                  className="group flex h-10 flex-1 items-center justify-center text-muted focus-visible:shadow-none focus-visible:outline-none data-[active]:text-foreground"
+                  className="group flex h-10 flex-1 items-center justify-center rounded-control text-muted data-[active]:text-foreground"
                 >
-                  {/* Circular highlight sized to fit inside the ~30px
-                      flex-1 tab — a wider circle (or the global focus
-                      ring on the full tab rect) clips against the
-                      panel's overflow-hidden edge on the first/last
-                      tab. Focus ring renders on the circle instead. */}
-                  <span className="flex size-7 items-center justify-center rounded-pill group-hover:bg-surface-2 group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus-outer group-data-[active]:bg-surface-2">
+                  <span className="flex size-7 items-center justify-center rounded-pill group-hover:bg-surface-2 group-data-[active]:bg-surface-2">
                     <GroupIcon size={18} stroke={1.75} aria-hidden="true" />
                   </span>
                 </Tabs.Tab>
@@ -159,7 +151,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
           </Tabs.List>
         </Tabs.Root>
       )}
-    </div>
+    </Card>
   );
 }
 

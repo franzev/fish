@@ -54,7 +54,7 @@ export default async function CoachClientDetailPage({
           size="lg"
           alt=""
         />
-        <h1 className="text-3xl">{data.client.displayName}</h1>
+        <h1 className="text-heading-sm">{data.client.displayName}</h1>
       </div>
       <Card className="flex flex-col gap-md">
         <div className="flex flex-col gap-2xs">

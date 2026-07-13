@@ -79,9 +79,9 @@ export function SearchSuggestions({
       id="chat-search-suggestions"
       role="listbox"
       aria-label={headings[operator]}
-      className="w-search-pop-mobile rounded-card border border-border bg-surface p-sm shadow-popover sm:w-search-pop"
+      className="w-full rounded-card border border-divider bg-surface p-sm"
     >
-      <p className="px-xs pb-xs text-ui-sm font-semibold text-muted">
+      <p className="px-xs pb-xs text-ui-sm font-medium text-muted">
         {headings[operator]}
       </p>
       {suggestions.length === 0 ? (
@@ -110,7 +110,7 @@ export function SearchSuggestions({
                       name={suggestion.member.displayName}
                       src={suggestion.member.avatarUrl}
                     />
-                    <span className="min-w-0 truncate text-ui font-semibold text-foreground">
+                    <span className="min-w-0 truncate text-ui text-foreground">
                       {suggestion.member.displayName}{" "}
                       <span className="font-normal text-muted">
                         {suggestion.member.username}
@@ -119,8 +119,8 @@ export function SearchSuggestions({
                   </>
                 ) : suggestion.kind === "channel" ? (
                   <>
-                    <IconHash size={24} stroke={1.75} className="text-muted" />
-                    <span className="text-ui font-semibold text-foreground">
+                    <IconHash size={20} stroke={1.75} className="text-muted" />
+                    <span className="text-ui text-foreground">
                       {suggestion.channel.name}
                     </span>
                   </>
@@ -129,8 +129,8 @@ export function SearchSuggestions({
                     const ContentIcon = contentIcons[suggestion.value];
                     return (
                       <>
-                        <ContentIcon size={24} stroke={1.75} className="text-muted" />
-                        <span className="capitalize text-ui font-semibold text-foreground">
+                        <ContentIcon size={20} stroke={1.75} className="text-muted" />
+                        <span className="capitalize text-ui text-foreground">
                           {suggestion.value}
                         </span>
                       </>
@@ -138,20 +138,20 @@ export function SearchSuggestions({
                   })()
                 ) : suggestion.kind === "author" ? (
                   <>
-                    <IconUser size={24} stroke={1.75} className="text-muted" />
-                    <span className="capitalize text-ui font-semibold text-foreground">
+                    <IconUser size={20} stroke={1.75} className="text-muted" />
+                    <span className="capitalize text-ui text-foreground">
                       {suggestion.value}
                     </span>
                   </>
                 ) : suggestion.kind === "pinned" ? (
                   <>
-                    <IconPinned size={24} stroke={1.75} className="text-muted" />
-                    <span className="text-ui font-semibold text-foreground">{label}</span>
+                    <IconPinned size={20} stroke={1.75} className="text-muted" />
+                    <span className="text-ui text-foreground">{label}</span>
                   </>
                 ) : (
                   <>
-                    <IconCalendar size={24} stroke={1.75} className="text-muted" />
-                    <span className="text-ui font-semibold text-foreground">{label}</span>
+                    <IconCalendar size={20} stroke={1.75} className="text-muted" />
+                    <span className="text-ui text-foreground">{label}</span>
                   </>
                 )}
               </button>

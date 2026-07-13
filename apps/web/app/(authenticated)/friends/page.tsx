@@ -23,7 +23,7 @@ export default async function FriendsPage() {
 
   return (
     <>
-      <h1 className="mb-lg text-3xl">Friends</h1>
+      <h1 className="mb-lg text-heading-sm">Friends</h1>
       <FriendsScreen
         userId={data.userId}
         initialFriends={data.friends}

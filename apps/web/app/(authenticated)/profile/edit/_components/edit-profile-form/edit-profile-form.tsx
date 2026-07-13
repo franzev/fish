@@ -62,9 +62,9 @@ export function EditProfileForm({
   );
 
   return (
-    <Card className="w-full max-w-form">
-      <h2 className="text-xl">Edit profile</h2>
-      <form action={formAction} className="mt-lg space-y-2xs">
+    <Card className="w-full max-w-form p-lg">
+      <h2 className="text-heading-sm">Edit profile</h2>
+      <form action={formAction} className="mt-lg space-y-lg">
         <div className="flex items-center justify-between gap-sm">
           <div className="flex items-center gap-sm">
             <Avatar
@@ -74,7 +74,7 @@ export function EditProfileForm({
               size="lg"
               alt=""
             />
-            <span className="text-ui font-medium text-foreground">Profile photo</span>
+            <span className="text-ui-sm font-medium text-foreground">Profile photo</span>
           </div>
           {avatarEnabled && (
             <Link
@@ -91,6 +91,7 @@ export function EditProfileForm({
           autoComplete="name"
           defaultValue={state.values.displayName}
           error={state.errors?.displayName?.[0]}
+          reserveMessageSpace={false}
           required
         />
         {role === "client" && (
@@ -103,17 +104,19 @@ export function EditProfileForm({
         )}
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="timezone" value={timezone} />
-        {role === "client" && <div className="w-full">
-          <span className="mb-xs block text-ui font-medium text-foreground">
-            Locale &amp; timezone
-          </span>
-          <p className="text-ui text-body">
-            {locale} · {timezone}
-          </p>
-          <p className="mt-2xs text-ui-sm text-muted">
-            Detected from your browser.
-          </p>
-        </div>}
+        {role === "client" && (
+          <div className="w-full">
+            <span className="mb-xs block text-ui-sm font-medium text-foreground">
+              Locale &amp; timezone
+            </span>
+            <p className="text-ui text-body">
+              {locale} · {timezone}
+            </p>
+            <p className="mt-2xs text-ui-sm text-muted">
+              Detected from your browser.
+            </p>
+          </div>
+        )}
         {state.notice && (
           <p className="flex items-center gap-nudge text-ui-sm text-notice">
             {state.notice}

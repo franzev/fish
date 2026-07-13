@@ -20,10 +20,10 @@ export function ChannelFilterField({ channels, selectedIds, onToggle }: ChannelF
   return (
     <section className="flex flex-col gap-xs">
       <div>
-        <h3 className="font-sans text-heading-sm text-foreground">In</h3>
-        <p className="text-copy text-muted">Sent in any of the selected channels</p>
+        <h3 className="font-sans text-ui font-semibold text-foreground">In</h3>
+        <p className="text-ui-sm text-muted">Sent in any of the selected channels</p>
       </div>
-      <div className="flex min-h-control items-center rounded-control border border-border bg-bg focus-within:border-border-strong">
+      <div className="flex min-h-control items-center rounded-control bg-surface-2">
         <input
           type="search"
           role="combobox"
@@ -34,7 +34,7 @@ export function ChannelFilterField({ channels, selectedIds, onToggle }: ChannelF
           value={query}
           onFocus={() => setOpen(true)}
           onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
-          className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-copy text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-ui text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         <button
           type="button"
@@ -42,18 +42,18 @@ export function ChannelFilterField({ channels, selectedIds, onToggle }: ChannelF
           onClick={() => setOpen((current) => !current)}
           className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted"
         >
-          {open ? <IconChevronUp size={24} /> : <IconChevronDown size={24} />}
+          {open ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
         </button>
       </div>
       {open && (
-        <div id="channel-filter-options" role="listbox" aria-multiselectable="true" className="max-h-filter-options overflow-y-auto rounded-card border border-border bg-surface p-xs">
+        <div id="channel-filter-options" role="listbox" aria-multiselectable="true" className="max-h-filter-options overflow-y-auto rounded-card bg-surface-2 p-xs">
           {results.map((channel) => {
             const selected = selectedIds.includes(channel.id);
             return (
-              <button key={channel.id} type="button" role="option" aria-selected={selected} onClick={() => onToggle(channel)} className={`flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left ${selected ? "bg-surface-2" : "hover:bg-surface-2"}`}>
-                <IconHash size={24} stroke={1.75} className="text-muted" />
-                <span className="flex-1 text-copy font-semibold text-foreground">{channel.name}</span>
-                <span aria-hidden="true" className={`flex size-10 items-center justify-center rounded-control border ${selected ? "border-border-strong bg-surface-3 text-foreground" : "border-border text-transparent"}`}>
+              <button key={channel.id} type="button" role="option" aria-selected={selected} onClick={() => onToggle(channel)} className={`flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left ${selected ? "bg-surface-3" : "hover:bg-surface-3"}`}>
+                <IconHash size={20} stroke={1.75} className="text-muted" />
+                <span className="flex-1 text-ui text-foreground">{channel.name}</span>
+                <span aria-hidden="true" className={`flex size-10 items-center justify-center ${selected ? "text-foreground" : "text-transparent"}`}>
                   <IconCheck size={20} stroke={2} />
                 </span>
               </button>
@@ -64,4 +64,3 @@ export function ChannelFilterField({ channels, selectedIds, onToggle }: ChannelF
     </section>
   );
 }
-

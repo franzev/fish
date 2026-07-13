@@ -22,7 +22,7 @@ export default async function BlockedPeoplePage() {
 
   return (
     <div className="mx-auto w-full max-w-content">
-      <h1 className="mb-xs text-3xl">Blocked people</h1>
+      <h1 className="mb-xs text-heading-sm">Blocked people</h1>
       <p className="mb-lg text-copy text-body">
         Unblock someone when you&apos;re ready to let them find you again.
       </p>

@@ -29,11 +29,17 @@
 @theme {
   /* ---- Monochrome ladder — semantic roles only, no hue, no numbered ramp ---- */
   --color-bg: light-dark(oklch(0.98 0 0), oklch(0.15 0 0));            /* page canvas — near-white / near-black */
-  --color-surface: light-dark(oklch(1 0 0), oklch(0.20 0 0));          /* cards, inputs, elevated containers */
-  --color-surface-2: light-dark(oklch(0.94 0 0), oklch(0.26 0 0));     /* alt rows, subtle wells, progress track */
+  --color-surface: light-dark(oklch(0.99 0 0), oklch(0.18 0 0));       /* cards, inputs, elevated containers — kept close to the canvas for calm separation */
+  --color-surface-2: light-dark(oklch(0.96 0 0), oklch(0.20 0 0));     /* alt rows, subtle wells, progress track */
+  --color-chat-hover: light-dark(oklch(0.94 0 0), oklch(0.22 0 0));   /* quiet transcript-row interaction state */
+  --color-avatar: light-dark(oklch(0.90 0 0), oklch(0.27 0 0));       /* identity marker — distinct from both the canvas and chat hover */
   --color-surface-3: light-dark(oklch(0.88 0 0), oklch(0.33 0 0));     /* selected wells — e.g. the viewer's own reaction chip; state by fill step, not border or hue */
-  --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* separators, field borders — meets 3:1 on surface */
+  --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* semantic control boundaries — retains 3:1 contrast */
   --color-border-strong: light-dark(oklch(0.55 0 0), oklch(0.65 0 0)); /* notice-tier borders — heavier step than border */
+  /* Decorative separation only (row dividers, framing hairlines) — a low-alpha
+     monochrome ink so it stays subtle on any surface step. Never a control
+     affordance: fields and semantic boundaries keep the 3:1 tokens above. */
+  --color-divider: light-dark(oklch(0.15 0 0 / 0.1), oklch(0.98 0 0 / 0.12));
 
   /* The ONE action per screen — full-contrast inversion, not a hue. */
   --color-primary: light-dark(oklch(0.15 0 0), oklch(0.98 0 0));
@@ -44,9 +50,6 @@
   --color-body: light-dark(oklch(0.32 0 0), oklch(0.88 0 0));          /* body copy */
   --color-muted: light-dark(oklch(0.50 0 0), oklch(0.68 0 0));         /* captions, placeholders, hints */
   --color-skeleton-author: light-dark(oklch(0.82 0 0), oklch(0.38 0 0)); /* loading names: distinct from body bars without text-level contrast */
-  --color-focus-outer: light-dark(oklch(0.15 0 0), oklch(1 0 0));      /* keyboard ring band against page */
-  --color-focus-inner: light-dark(oklch(1 0 0), oklch(0.15 0 0));      /* keyboard ring band against primary fill */
-
   /* Feedback — calm, not alarming.
      `notice` stays monochrome (structural weight only, no hue — the neutral
      informational tier). `error`/`warning`/`success` are a deliberate D-08
@@ -90,6 +93,15 @@
   --text-emoji--line-height: 1;
   --text-display: 32px;
   --text-display--line-height: 1.1;
+  /* Marketing type (public landing + auth brand panel only) — fluid so the
+     hero breathes on desktop without a breakpoint stack. Product screens
+     keep the fixed ladder above. */
+  --text-lead: 20px;              /* hero/section lead paragraph */
+  --text-lead--line-height: 1.5;
+  --text-heading-lg: clamp(28px, 22px + 1.5vw, 40px);
+  --text-heading-lg--line-height: 1.12;
+  --text-hero: clamp(40px, 24px + 4vw, 68px);
+  --text-hero--line-height: 1.05;
 
   /* ---- Radius (rounded, friendly) ---- */
   --radius-card: 16px;
@@ -121,6 +133,8 @@
   --spacing-lg: 24px;             /* section rhythm inside a view */
   --spacing-xl: 40px;             /* page rhythm and calm breathing room */
   --spacing-2xl: 48px;            /* large screen-level pauses */
+  --spacing-3xl: 72px;            /* landing section rhythm, small screens */
+  --spacing-4xl: 112px;           /* landing section rhythm, large screens */
   --spacing-mobile-nav-offset: 112px;
 
   --spacing-control: var(--size-control);
@@ -158,7 +172,7 @@
   --spacing-search-suggestions: 360px;
   --spacing-search-discovery: min(70dvh, 640px);
   --spacing-search-results: 520px;
-  --spacing-search-control: 64px; /* prominent chat-toolbar search field */
+  --spacing-search-control: 36px; /* compact desktop chat-toolbar search field */
   --spacing-filter-options: 312px;
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
@@ -177,11 +191,12 @@
   --container-menu: 224px;        /* floating action menus (composer +) */
   --container-form: 440px;
   --container-content: 640px;
+  --container-marketing: 1120px;  /* landing page shell */
   --container-chat: 720px;
   --container-chat-preview: 360px;
   --container-message: 85%;
   --container-skeleton-author: 96px;
-  --container-search-header: 488px; /* Discord-like command search field */
+  --container-search-header: 360px; /* compact command search field */
   --container-search-pop: 488px;    /* command and autocomplete panel */
   --container-search-pop-mobile: calc(100vw - (var(--spacing-page) * 2));
   --container-filters-dialog: 936px; /* detailed desktop filter editor */
@@ -192,10 +207,8 @@
   --container-image-viewer: 1120px;
 
   /* ---- Focus and motion ---- */
-  --focus-outline-width: 2px;
-  --focus-outline-offset: 2px;
-  --focus-ring-width: 4px;
-  --focus-radius: var(--radius-control);
+  --opacity-focus: 0.72;
+  --opacity-focus-field: 0.82;
   --duration-reduced-motion: 0.001ms;
   --duration-fade: 200ms;
   --duration-message: 200ms;
@@ -207,16 +220,6 @@
   --duration-progress: 500ms;
   --duration-skeleton: 1400ms;
 
-  /* ---- Elevation (D-06): a token, not a dark: branch ----
-     Soft shadow in light; dark relies on the surface lightness-step
-     already in the ladder, so the shadow resolves to none there. */
-  --shadow-card: light-dark(0 4px 16px oklch(0.15 0 0 / 0.08), none);
-  /* Floating overlays (popovers) — surface step stays the primary depth cue
-     in dark; the shadow just settles the edge where the border used to be. */
-  --shadow-popover: light-dark(
-    0 8px 24px oklch(0.15 0 0 / 0.16),
-    0 8px 24px oklch(0 0 0 / 0.5)
-  );
 }
 
 /* ---- Base ---- */
@@ -269,6 +272,12 @@
     animation-iteration-count: 1 !important;
     transition-duration: var(--duration-reduced-motion) !important;
   }
+  /* Native <details> rows (landing FAQ) draw their own affordance — a
+     rotating plus — so the default disclosure triangle never renders.
+     list-none covers standards browsers; this covers WebKit. */
+  summary::-webkit-details-marker {
+    display: none;
+  }
   body {
     background-color: var(--color-bg);
     color: var(--color-body);
@@ -284,15 +293,21 @@
     line-height: 1.15;
     letter-spacing: -0.01em;
   }
-  /* Visible keyboard focus everywhere — accessibility floor.
-     Two-tone ring (D-05): inner + outer bands in opposite tones so the
-     ring stays visible against the inverted primary fill in BOTH themes
-     (Pitfall 4) as well as against default surfaces. */
+  /* Keyboard focus never draws an edge around a control. The quieter state
+     change remains visible without an outline, ring, border, or glow. */
   :focus-visible {
-    outline: var(--focus-outline-width) solid var(--color-focus-outer);
-    outline-offset: var(--focus-outline-offset);
-    box-shadow: 0 0 0 var(--focus-ring-width) var(--color-focus-inner);
-    border-radius: var(--focus-radius);
+    outline: none;
+    box-shadow: none;
+    opacity: var(--opacity-focus);
+  }
+  :where(input, textarea, select):focus-visible {
+    background-color: var(--color-surface-3);
+    opacity: var(--opacity-focus-field);
+  }
+  a:focus-visible {
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: var(--spacing-2xs);
   }
   /* Tailwind v4 preflight leaves buttons at the OS default cursor — a single
      base-layer rule so every clickable (native buttons and role="button"
@@ -316,6 +331,15 @@
       transition-duration: var(--duration-reduced-motion) !important;
     }
   }
+}
+
+/* FISH uses surface steps and hairline borders for separation. Keep this
+   unlayered so it wins over browser defaults and any utility-layer shadow. */
+*,
+*::before,
+*::after {
+  box-shadow: none;
+  text-shadow: none;
 }
 
 /* Calm entrance for the floating notice overlay (D-08) — opacity only, no

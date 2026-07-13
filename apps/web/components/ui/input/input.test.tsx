@@ -1,10 +1,14 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { IconSearch } from "@tabler/icons-react";
 import { Input, inputVariants } from "./input";
 
 describe("Input", () => {
   it("exposes reusable CVA feedback variants for the maintained field styles", () => {
-    expect(inputVariants()).toContain("border-border");
+    // Default field is a borderless surface-step well (chat's field idiom);
+    // the constant transparent border keeps the box stable across tiers.
+    expect(inputVariants()).toContain("bg-surface-2");
+    expect(inputVariants()).toContain("border-transparent");
     expect(inputVariants({ feedback: "notice" })).toContain(
       "border-border-strong"
     );
@@ -16,6 +20,11 @@ describe("Input", () => {
     expect(getByLabelText("Email").className).toContain(
       "min-h-control"
     );
+  });
+
+  it("does not add a focus-only border or shadow", () => {
+    const classes = inputVariants();
+    expect(classes).not.toMatch(/focus-visible:(?:border|outline|ring|shadow)/);
   });
 
   it("always renders the message row, even with no hint/notice/error (layout-stability contract)", () => {
@@ -43,6 +52,23 @@ describe("Input", () => {
     expect(field?.nextElementSibling).toBeNull();
   });
 
+  it("supports compact search fields with a hidden label and leading icon", () => {
+    const { getByRole, container } = render(
+      <Input
+        type="search"
+        label="Search"
+        labelVisuallyHidden
+        reserveMessageSpace={false}
+        leadingIcon={<IconSearch aria-hidden="true" />}
+      />
+    );
+
+    const field = getByRole("searchbox", { name: "Search" });
+    expect(field.className).toContain("pl-control");
+    expect(container.querySelector("label")).toHaveClass("sr-only");
+    expect(container.querySelector("svg")).not.toBeNull();
+  });
+
   it("notice tier: field carries border-border-strong, message is regular weight with an info icon", () => {
     const { getByLabelText, getByText, container } = render(
       <Input
@@ -62,7 +88,7 @@ describe("Input", () => {
     expect(container.querySelector("svg")).not.toBeNull();
   });
 
-  it("error tier: field carries border-error + border-2, message is semibold with an alert icon", () => {
+  it("error tier: field carries the border-error hairline, message is semibold with an alert icon", () => {
     const { getByLabelText, getByText, container } = render(
       <Input
         label="Email"
@@ -72,7 +98,6 @@ describe("Input", () => {
     const field = getByLabelText("Email");
     expect(field).toHaveAttribute("aria-invalid", "true");
     expect(field.className).toContain("border-error");
-    expect(field.className).toContain("border-2");
     const message = getByText(
       "Something needs your attention before you can continue."
     );

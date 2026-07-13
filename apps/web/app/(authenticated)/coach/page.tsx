@@ -25,7 +25,7 @@ export default async function CoachHomePage() {
 
   return (
     <>
-      <h1 className="mb-lg text-3xl">Your clients</h1>
+      <h1 className="mb-lg text-heading-sm">Your clients</h1>
       {data.clients.length === 0 ? (
         <EmptyState Icon={IconUsers}>
           <p>Clients assigned to you will show up here.</p>

@@ -123,7 +123,7 @@ export function ChatMessageList({
         <button
           type="button"
           onClick={() => viewport.scrollToBottom()}
-          className="absolute inset-x-0 bottom-sm mx-auto inline-flex min-h-control w-fit items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-body shadow-popover hover:bg-surface-2"
+          className="absolute inset-x-0 bottom-sm mx-auto inline-flex min-h-control w-fit items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-body hover:bg-surface-2"
         >
           <IconArrowDown size={18} stroke={1.75} aria-hidden="true" />
           New messages
@@ -132,7 +132,7 @@ export function ChatMessageList({
       {!viewport.showNewMessages && viewport.isReconnecting && (
         <div
           role="status"
-          className="absolute inset-x-0 bottom-sm mx-auto inline-flex min-h-control w-fit items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-muted shadow-popover"
+          className="absolute inset-x-0 bottom-sm mx-auto inline-flex min-h-control w-fit items-center gap-2xs rounded-pill border border-border bg-surface px-md text-ui-sm text-muted"
         >
           Reconnecting…
         </div>

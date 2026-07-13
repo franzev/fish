@@ -44,7 +44,7 @@ export function ChatHeader({
   onOpenFilters,
 }: ChatHeaderProps) {
   return (
-    <div className="border-b border-border bg-surface px-md">
+    <div className="border-b border-divider bg-surface px-md py-xs">
       <div className="flex items-center justify-between gap-sm">
         <div className="flex min-w-0 items-center gap-2xs">
           {!isCommunity && (

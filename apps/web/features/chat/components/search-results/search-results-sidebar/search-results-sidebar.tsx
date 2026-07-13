@@ -2,6 +2,7 @@
 
 import { Menu } from "@base-ui/react/menu";
 import { IconAdjustmentsHorizontal, IconArrowsSort, IconX } from "@tabler/icons-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
 import type { ChatSearchChannel, ChatSearchMember } from "@/features/chat/model/search";
 import { SearchResultCard } from "../search-result-card";
@@ -45,44 +46,44 @@ export function SearchResultsSidebar(props: SearchResultsSidebarProps) {
     groups.set(message.conversationId, current);
   }
   return (
-    <aside aria-label="Search results" aria-busy={props.isSearching} className="fixed inset-0 z-40 flex min-h-0 flex-col border-l border-border bg-bg md:relative md:z-auto md:w-search-results md:shrink-0">
-      <header className="border-b border-border bg-surface p-sm">
+    <aside aria-label="Search results" aria-busy={props.isSearching} className="fixed inset-0 z-40 flex min-h-0 flex-col border-l border-divider bg-bg md:relative md:z-auto md:w-search-results md:shrink-0">
+      <header className="border-b border-divider bg-surface p-sm">
         <div className="flex min-h-control items-center gap-xs">
-          <h2 aria-live="polite" className="flex min-w-0 flex-1 items-center gap-xs whitespace-nowrap font-sans text-heading font-semibold text-foreground">
+          <h2 aria-live="polite" className="flex min-w-0 flex-1 items-center gap-xs whitespace-nowrap font-sans text-copy font-semibold text-foreground">
             {hasSettledResults || !props.isSearching ? resultLabel : "Searching"}
             {hasSettledResults && <span aria-hidden="true" className={`text-ui-sm font-medium text-muted ${isRefreshing ? "visible" : "invisible"}`}>Updating</span>}
           </h2>
           {isRefreshing && <span role="status" className="sr-only">Updating search results</span>}
-          <button type="button" onClick={props.onOpenFilters} className="inline-flex min-h-control shrink-0 items-center gap-xs whitespace-nowrap rounded-control border border-border bg-surface-2 px-sm text-ui font-semibold text-body hover:bg-surface-3"><IconAdjustmentsHorizontal size={21} aria-hidden="true" />Filters{props.filterCount > 0 ? ` (${props.filterCount})` : ""}</button>
+          <button type="button" onClick={props.onOpenFilters} className="inline-flex min-h-control shrink-0 items-center gap-xs whitespace-nowrap rounded-control bg-surface-2 px-sm text-ui-sm font-medium text-body hover:bg-surface-3"><IconAdjustmentsHorizontal size={20} aria-hidden="true" />Filters{props.filterCount > 0 ? ` (${props.filterCount})` : ""}</button>
           <Menu.Root>
-            <Menu.Trigger className="inline-flex min-h-control shrink-0 items-center gap-xs whitespace-nowrap rounded-control border border-border bg-surface-2 px-sm text-ui font-semibold text-body hover:bg-surface-3"><IconArrowsSort size={21} aria-hidden="true" />Sort</Menu.Trigger>
-            <Menu.Portal><Menu.Positioner side="bottom" align="start" sideOffset={4} className="z-50"><Menu.Popup className="min-w-menu rounded-card border border-border bg-surface p-3xs shadow-popover">
+            <Menu.Trigger className="inline-flex min-h-control shrink-0 items-center gap-xs whitespace-nowrap rounded-control bg-surface-2 px-sm text-ui-sm font-medium text-body hover:bg-surface-3"><IconArrowsSort size={20} aria-hidden="true" />Sort</Menu.Trigger>
+            <Menu.Portal><Menu.Positioner side="bottom" align="start" sideOffset={4} className="z-50"><Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
               <Menu.Item onClick={() => props.onSortChange("desc")} className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui text-foreground data-[highlighted]:bg-surface-2">Newest first{props.sortDirection === "desc" ? " ✓" : ""}</Menu.Item>
               <Menu.Item onClick={() => props.onSortChange("asc")} className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui text-foreground data-[highlighted]:bg-surface-2">Oldest first{props.sortDirection === "asc" ? " ✓" : ""}</Menu.Item>
             </Menu.Popup></Menu.Positioner></Menu.Portal>
           </Menu.Root>
-          <button type="button" aria-label="Close search results" onClick={props.onClose} className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"><IconX size={24} stroke={1.75} aria-hidden="true" /></button>
+          <button type="button" aria-label="Close search results" onClick={props.onClose} className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"><IconX size={20} stroke={1.75} aria-hidden="true" /></button>
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto p-sm">
-        {props.isSearching && !hasSettledResults ? <div role="status" className="flex h-full items-center justify-center text-center text-copy text-body">Searching messages…</div>
-          : props.notice ? <p role="status" className="rounded-card bg-surface p-md text-copy text-notice">{props.notice}</p>
-            : props.messages.length === 0 ? <div className="flex h-full items-center justify-center text-center text-copy text-body">No messages match this search.</div>
+      <ScrollArea className="flex-1" viewportClassName="p-sm">
+        {props.isSearching && !hasSettledResults ? <div role="status" className="flex h-full items-center justify-center text-center text-ui-sm text-body">Searching messages…</div>
+          : props.notice ? <p role="status" className="rounded-card bg-surface-2 p-md text-ui-sm text-notice">{props.notice}</p>
+            : props.messages.length === 0 ? <div className="flex h-full items-center justify-center text-center text-ui-sm text-body">No messages match this search.</div>
               : [...groups].map(([conversationId, messages]) => {
                 const channel = channelByConversation.get(conversationId);
                 return <section key={conversationId} className="mb-lg" aria-labelledby={`result-channel-${conversationId}`}>
-                  <h3 id={`result-channel-${conversationId}`} className="mb-xs text-ui font-semibold text-muted"># {channel?.name ?? "general"}</h3>
+                  <h3 id={`result-channel-${conversationId}`} className="mb-xs text-ui-sm font-medium text-muted"># {channel?.name ?? "general"}</h3>
                   <div className="flex flex-col gap-xs">{messages.map((message) => {
                     const member = memberById.get(message.senderId);
                     return <SearchResultCard key={message.id} message={message} currentUserId={props.currentUserId} authorName={message.senderDisplayName ?? member?.displayName ?? "Member"} avatarUrl={member?.avatarUrl} />;
                   })}</div>
                 </section>;
               })}
-      </div>
-      {!props.notice && props.totalCount > 0 && <nav aria-label="Search result pages" aria-busy={props.isSearching} className="flex min-h-control items-center justify-center gap-2xs border-t border-border bg-surface p-xs">
-        <button type="button" disabled={props.isSearching || props.page === 1} onClick={() => props.onPageChange(props.page - 1)} className="min-h-control rounded-control px-xs text-ui text-body disabled:text-muted">Back</button>
-        {paginationItems(props.page, totalPages).map((item, index) => item === "ellipsis" ? <span key={`ellipsis-${index}`} className="px-2xs text-muted">…</span> : <button key={item} type="button" disabled={props.isSearching} aria-current={item === props.page ? "page" : undefined} onClick={() => props.onPageChange(item)} className={`min-h-control min-w-control rounded-control text-ui disabled:text-muted ${item === props.page ? "bg-primary text-on-primary" : "text-body hover:bg-surface-2"}`}>{item}</button>)}
-        <button type="button" disabled={props.isSearching || props.page === totalPages} onClick={() => props.onPageChange(props.page + 1)} className="min-h-control rounded-control px-xs text-ui text-body disabled:text-muted">Next</button>
+      </ScrollArea>
+      {!props.notice && props.totalCount > 0 && <nav aria-label="Search result pages" aria-busy={props.isSearching} className="flex min-h-control items-center justify-center gap-2xs border-t border-divider bg-surface p-xs">
+        <button type="button" disabled={props.isSearching || props.page === 1} onClick={() => props.onPageChange(props.page - 1)} className="min-h-control rounded-control px-xs text-ui-sm text-body disabled:text-muted">Back</button>
+        {paginationItems(props.page, totalPages).map((item, index) => item === "ellipsis" ? <span key={`ellipsis-${index}`} className="px-2xs text-muted">…</span> : <button key={item} type="button" disabled={props.isSearching} aria-current={item === props.page ? "page" : undefined} onClick={() => props.onPageChange(item)} className={`min-h-control min-w-control rounded-control text-ui-sm disabled:text-muted ${item === props.page ? "bg-surface-3 font-medium text-foreground" : "text-body hover:bg-surface-2"}`}>{item}</button>)}
+        <button type="button" disabled={props.isSearching || props.page === totalPages} onClick={() => props.onPageChange(props.page + 1)} className="min-h-control rounded-control px-xs text-ui-sm text-body disabled:text-muted">Next</button>
       </nav>}
     </aside>
   );

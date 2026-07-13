@@ -100,13 +100,13 @@ export function SearchDiscoveryMenu({
       id="chat-search-discovery"
       role="listbox"
       aria-label="Search suggestions"
-      className="flex max-h-search-discovery w-search-pop-mobile flex-col overflow-y-auto rounded-card border border-border bg-surface p-xs shadow-popover sm:w-search-pop"
+      className="flex max-h-search-discovery w-full flex-col overflow-y-auto rounded-card border border-divider bg-surface p-xs"
     >
       {option(
         { kind: "search" },
         <>
-          <IconSearch size={28} stroke={1.75} className="shrink-0 text-muted" />
-          <span className="truncate text-ui font-semibold text-foreground">
+          <IconSearch size={20} stroke={1.75} className="shrink-0 text-muted" />
+          <span className="truncate text-ui text-foreground">
             Search for {query}
           </span>
         </>
@@ -115,19 +115,19 @@ export function SearchDiscoveryMenu({
         { kind: "filters" },
         <>
           <IconAdjustmentsHorizontal
-            size={28}
+            size={20}
             stroke={1.75}
             className="shrink-0 text-muted"
           />
-          <span className="text-ui font-semibold text-foreground">
+          <span className="text-ui text-foreground">
             Add search filters
           </span>
         </>
       )}
 
       {from.length > 0 && (
-        <section className="mt-xs border-t border-border pt-sm" aria-labelledby="from-user-heading">
-          <h2 id="from-user-heading" className="px-xs pb-xs text-ui-sm font-semibold text-muted">
+        <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="from-user-heading">
+          <h2 id="from-user-heading" className="px-xs pb-xs text-ui-sm font-medium text-muted">
             From user
           </h2>
           {from.map((selection) =>
@@ -136,10 +136,10 @@ export function SearchDiscoveryMenu({
               <>
                 <Avatar size="sm" name={selection.member.displayName} src={selection.member.avatarUrl} />
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-ui font-semibold text-foreground">
+                  <span className="truncate text-ui text-foreground">
                     {selection.member.displayName}
                   </span>
-                  <span className="truncate text-ui-sm font-semibold text-muted">
+                  <span className="truncate text-ui-sm text-muted">
                     from: {selection.member.username}
                   </span>
                 </span>
@@ -150,20 +150,20 @@ export function SearchDiscoveryMenu({
       )}
 
       {inChannels.length > 0 && (
-        <section className="mt-xs border-t border-border pt-sm" aria-labelledby="in-channel-heading">
-          <h2 id="in-channel-heading" className="px-xs pb-xs text-ui-sm font-semibold text-muted">
+        <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="in-channel-heading">
+          <h2 id="in-channel-heading" className="px-xs pb-xs text-ui-sm font-medium text-muted">
             In channel
           </h2>
           {inChannels.map((selection) =>
             option(
               selection,
               <>
-                <IconHash size={28} stroke={1.75} className="shrink-0 text-muted" />
+                <IconHash size={20} stroke={1.75} className="shrink-0 text-muted" />
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-ui font-semibold text-foreground">
+                  <span className="truncate text-ui text-foreground">
                     # {selection.channel.name}
                   </span>
-                  <span className="truncate text-ui-sm font-semibold text-muted">
+                  <span className="truncate text-ui-sm text-muted">
                     in: {selection.channel.slug}
                   </span>
                 </span>
@@ -174,21 +174,21 @@ export function SearchDiscoveryMenu({
       )}
 
       {mentions.length > 0 && (
-        <section className="mt-xs border-t border-border pt-sm" aria-labelledby="mentions-user-heading">
-          <h2 id="mentions-user-heading" className="px-xs pb-xs text-ui-sm font-semibold text-muted">
+        <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="mentions-user-heading">
+          <h2 id="mentions-user-heading" className="px-xs pb-xs text-ui-sm font-medium text-muted">
             Mentions user
           </h2>
           {mentions.map((selection) =>
             option(
               selection,
               <>
-                <IconAt size={28} stroke={1.75} className="shrink-0 text-muted" />
+                <IconAt size={20} stroke={1.75} className="shrink-0 text-muted" />
                 <Avatar size="sm" name={selection.member.displayName} src={selection.member.avatarUrl} />
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-ui font-semibold text-foreground">
+                  <span className="truncate text-ui text-foreground">
                     {selection.member.displayName}
                   </span>
-                  <span className="truncate text-ui-sm font-semibold text-muted">
+                  <span className="truncate text-ui-sm text-muted">
                     mentions: {selection.member.username}
                   </span>
                 </span>

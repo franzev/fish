@@ -22,8 +22,8 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
   return (
     <section aria-labelledby="date-filter-label" className="flex flex-col gap-sm">
       <div>
-        <h3 id="date-filter-label" className="font-sans text-heading-sm text-foreground">Date</h3>
-        <p className="text-copy text-muted">When the message was sent</p>
+        <h3 id="date-filter-label" className="font-sans text-ui font-semibold text-foreground">Date</h3>
+        <p className="text-ui-sm text-muted">When the message was sent</p>
       </div>
       {criteria.map((criterion, index) => (
         <div key={criterion.id} className="flex flex-wrap items-center gap-sm sm:flex-nowrap">
@@ -39,7 +39,7 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
                 id: `${event.target.value}:${criterion.date}`,
               })
             }
-            className="min-h-control w-full rounded-control border border-border bg-bg px-sm text-copy text-foreground sm:w-filter-operator"
+            className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui text-foreground sm:w-filter-operator"
           >
             <option value="before">Before</option>
             <option value="after">After</option>
@@ -56,7 +56,7 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
             onClick={() => onChange(criteria.filter((item) => item.id !== criterion.id))}
             className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
           >
-            <IconTrash size={24} stroke={1.75} aria-hidden="true" />
+            <IconTrash size={20} stroke={1.75} aria-hidden="true" />
           </button>
         </div>
       ))}
@@ -70,7 +70,7 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
         }}
       >
         <span className="flex items-center gap-xs">
-          <IconPlus size={22} stroke={1.75} aria-hidden="true" />
+          <IconPlus size={20} stroke={1.75} aria-hidden="true" />
           Add date
         </span>
       </Button>

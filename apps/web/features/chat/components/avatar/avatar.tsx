@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { getAvatarCommandService } from "@/lib/services/runtime/browser";
 
 export const avatarVariants = cva(
-  "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-surface-2 font-medium text-body",
+  "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-avatar font-medium text-body",
   {
     variants: {
       size: {

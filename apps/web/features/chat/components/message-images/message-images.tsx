@@ -206,7 +206,7 @@ function MessageImage({
           <div className="relative flex min-h-control items-center justify-center overflow-hidden rounded-card bg-bg">
             <Dialog.Close
               aria-label="Close image"
-              className="absolute right-sm top-sm z-10 inline-flex min-h-control min-w-control items-center justify-center rounded-control bg-surface text-body shadow-popover"
+              className="absolute right-sm top-sm z-10 inline-flex min-h-control min-w-control items-center justify-center rounded-control bg-surface text-body"
             >
               <IconX size={20} stroke={1.75} aria-hidden="true" />
             </Dialog.Close>

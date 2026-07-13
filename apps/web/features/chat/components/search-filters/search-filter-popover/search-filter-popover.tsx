@@ -86,7 +86,7 @@ function renderTokenizedSearchValue(
       <span
         key={`${token.start}:${token.end}`}
         data-testid="search-filter-token"
-        className="rounded-control bg-surface-3 font-semibold text-foreground"
+        className="-mx-xs rounded-control bg-surface-2 px-xs py-2xs text-foreground"
       >
         {value.slice(token.start, token.end)}
       </span>
@@ -215,8 +215,8 @@ export function SearchFilterPopover({
         }
       }}
     >
-      <div className="relative flex min-h-search-control min-w-0 items-center rounded-control border border-border bg-bg focus-within:border-border-strong">
-        {tokenMode && activeToken && <span className="ml-md rounded-control bg-surface-3 px-xs py-2xs text-heading-sm font-semibold text-foreground">{activeToken.operator}:</span>}
+      <div className="relative flex min-h-target-touch min-w-0 items-center rounded-control border border-divider bg-bg sm:min-h-search-control">
+        {tokenMode && activeToken && <span className="ml-md rounded-control bg-surface-2 px-xs py-2xs text-ui text-foreground">{activeToken.operator}:</span>}
         <div className="relative min-w-0 flex-1">
           {showTokenLayer && (
             <div
@@ -224,7 +224,7 @@ export function SearchFilterPopover({
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 overflow-hidden"
             >
-              <div className="flex min-h-search-control w-max items-center whitespace-pre px-md text-heading-sm font-semibold text-foreground">
+              <div className="flex min-h-target-touch w-max items-center whitespace-pre px-md text-ui text-foreground sm:min-h-search-control">
                 {renderTokenizedSearchValue(value, parsed.tokens)}
               </div>
             </div>
@@ -254,16 +254,16 @@ export function SearchFilterPopover({
               }
             }}
             className={cn(
-              "min-h-search-control w-full min-w-0 bg-transparent px-md text-heading-sm font-semibold text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden",
+              "min-h-target-touch w-full min-w-0 bg-transparent px-md text-ui text-foreground placeholder:text-muted focus:outline-none sm:min-h-search-control [&::-webkit-search-cancel-button]:hidden",
               showTokenLayer && "text-transparent caret-foreground selection:bg-surface-3"
             )}
           />
         </div>
-        {!value && <span className="pointer-events-none flex min-h-search-control min-w-control items-center justify-center text-muted"><IconSearch size={28} stroke={1.75} aria-hidden="true" /></span>}
-        {value && <button type="button" aria-label="Clear search" onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:text-body"><IconX size={22} stroke={1.75} aria-hidden="true" /></button>}
+        {!value && <span className="pointer-events-none flex min-h-target-touch min-w-target-touch shrink-0 items-center justify-center text-muted sm:min-h-search-control sm:min-w-search-control"><IconSearch size={16} stroke={1.75} aria-hidden="true" /></span>}
+        {value && <button type="button" aria-label="Clear search" onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="inline-flex min-h-target-touch min-w-target-touch items-center justify-center rounded-control text-muted hover:text-body sm:min-h-search-control sm:min-w-search-control"><IconX size={16} stroke={1.75} aria-hidden="true" /></button>}
       </div>
 
-      {panelOpen && <div id="chat-search-panel" className="absolute right-0 top-full z-30 mt-2xs">
+      {panelOpen && <div id="chat-search-panel" className="absolute right-0 top-full z-30 mt-2xs w-full">
         {activeToken ? <SearchSuggestions operator={activeToken.operator} suggestions={suggestions} activeIndex={Math.min(activeIndex, Math.max(suggestions.length - 1, 0))} onSelect={selectSuggestion} />
           : value.trim() ? <SearchDiscoveryMenu query={value} members={members} channels={channels} activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} onSelect={selectDiscovery} />
             : <SearchCommandMenu onSelect={selectCommand} history={history} onHistorySelect={(entry) => { onValueChange(entry.query); onCriteriaChange?.(entry.criteria); submit(entry.query, entry.criteria); }} onClearHistory={() => { clearChatSearchHistory(); setHistory([]); }} />}

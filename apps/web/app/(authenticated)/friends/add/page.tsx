@@ -22,7 +22,7 @@ export default async function AddFriendPage() {
 
   return (
     <div className="mx-auto w-full max-w-form">
-      <h1 className="mb-xs text-3xl">Add a friend</h1>
+      <h1 className="mb-xs text-heading-sm">Add a friend</h1>
       <p className="mb-lg text-copy text-body">
         Search by exact username to send a request.
       </p>

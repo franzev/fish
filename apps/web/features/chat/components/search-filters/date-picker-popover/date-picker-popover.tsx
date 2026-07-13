@@ -88,28 +88,28 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
         aria-label={label}
-        className="flex min-h-control min-w-0 flex-1 items-center justify-between rounded-control border border-border bg-bg px-sm text-left text-copy text-foreground hover:bg-surface-2"
+        className="flex min-h-control min-w-0 flex-1 items-center justify-between rounded-control bg-surface-2 px-sm text-left text-ui text-foreground hover:bg-surface-3"
       >
         <span>{formatted}</span>
-        <IconCalendar size={22} stroke={1.75} aria-hidden="true" className="text-muted" />
+        <IconCalendar size={20} stroke={1.75} aria-hidden="true" className="text-muted" />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={4} className="z-50">
           <Popover.Popup
             ref={popupRef}
             aria-label="Choose a date"
-            className="w-search-pop-mobile rounded-card border border-border bg-surface p-sm shadow-popover sm:w-calendar sm:p-lg"
+            className="w-search-pop-mobile rounded-card bg-surface p-sm sm:w-calendar sm:p-lg"
           >
-            <div className="flex items-center justify-between border-b border-border pb-md">
+            <div className="flex items-center justify-between border-b border-divider pb-md">
               <button
                 type="button"
                 aria-label="Previous month"
                 onClick={() => moveMonth(-1)}
                 className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
               >
-                <IconChevronLeft size={22} stroke={1.75} aria-hidden="true" />
+                <IconChevronLeft size={20} stroke={1.75} aria-hidden="true" />
               </button>
-              <p className="text-ui font-semibold uppercase text-foreground">
+              <p className="text-ui font-medium text-foreground">
                 {visibleMonth.toLocaleDateString(undefined, {
                   month: "long",
                   year: "numeric",
@@ -121,7 +121,7 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
                 onClick={() => moveMonth(1)}
                 className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
               >
-                <IconChevronRight size={22} stroke={1.75} aria-hidden="true" />
+                <IconChevronRight size={20} stroke={1.75} aria-hidden="true" />
               </button>
             </div>
             <div className="mt-sm grid grid-cols-7" role="row">
@@ -129,13 +129,13 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
                 <span
                   key={weekday}
                   role="columnheader"
-                  className="flex min-h-control items-center justify-center text-ui-sm font-semibold text-muted"
+                  className="flex min-h-control items-center justify-center text-ui-sm font-medium text-muted"
                 >
                   {weekday}
                 </span>
               ))}
             </div>
-            <div className="grid grid-cols-7 overflow-hidden rounded-control border border-border" role="grid">
+            <div className="grid grid-cols-7 overflow-hidden rounded-control" role="grid">
               {days.map((date) => {
                 const iso = toIso(date);
                 const inMonth = date.getMonth() === visibleMonth.getMonth();
@@ -153,7 +153,7 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
                       onChange(iso);
                       setOpen(false);
                     }}
-                    className={`relative min-h-control border-b border-r border-border text-ui ${
+                    className={`relative min-h-control rounded-control text-ui ${
                       isSelected
                         ? "bg-surface-3 font-semibold text-foreground after:absolute after:inset-x-xs after:bottom-0 after:h-3xs after:bg-primary"
                         : inMonth

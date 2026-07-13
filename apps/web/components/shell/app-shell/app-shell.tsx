@@ -113,7 +113,7 @@ function NavLinks({
 
 /* Sketch 001/007: labeled navigation, top bar on wider web and bottom nav on
    mobile. Progress stays out until a coach validates that tracking technique.
-   Account actions (Profile, Log out) live behind the UserMenu trigger, so
+   Account actions (Profile, Sign out) live behind the UserMenu trigger, so
    the shell adds no primary action. */
 export function AppShell({
   displayName,
@@ -146,7 +146,7 @@ export function AppShell({
         timeFormatPref={preferences?.timeFormatPref}
       />
 
-      <header className="flex shrink-0 items-center gap-md border-b border-border bg-surface px-page py-md md:py-sm">
+      <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md md:py-sm">
         <Link
           href={role === "coach" ? "/coach" : "/home"}
           aria-label="FISH home"
@@ -185,7 +185,7 @@ export function AppShell({
             appears just on the immersive channel surface where it orients
             the reader — never as a browsable menu on other screens. */}
         {channelSurface && (
-          <aside className="hidden w-channel-col shrink-0 flex-col border-r border-border bg-surface px-sm py-page md:flex">
+          <aside className="hidden w-channel-col shrink-0 flex-col border-r border-divider bg-surface px-sm py-page md:flex">
             <h2 className="px-xs pb-sm text-ui-2xs font-sans font-medium uppercase tracking-wide text-muted">
               Channels
             </h2>
@@ -222,7 +222,7 @@ export function AppShell({
       {!callSurface && (
         <nav
           aria-label="Mobile primary"
-          className="fixed inset-x-0 bottom-0 flex border-t border-border bg-surface px-xs py-xs md:hidden"
+          className="fixed inset-x-0 bottom-0 flex border-t border-divider bg-surface px-xs py-xs md:hidden"
         >
           <NavLinks items={navItems} pathname={pathname} placement="bottom" />
         </nav>

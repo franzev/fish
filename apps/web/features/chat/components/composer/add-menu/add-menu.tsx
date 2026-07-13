@@ -55,7 +55,7 @@ export function AddMenu({ onSelectImages = () => undefined, disabled }: AddMenuP
           sideOffset={4}
           className="z-20"
         >
-          <Menu.Popup className="min-w-menu rounded-card border border-border bg-surface p-3xs shadow-popover">
+          <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
             <Menu.Item className={menuItemClass} onClick={() => inputRef.current?.click()}>
               <IconUpload size={20} stroke={1.75} aria-hidden="true" />
               Add files

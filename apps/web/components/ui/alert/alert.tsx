@@ -9,15 +9,17 @@ import {
 import { HTMLAttributes } from "react";
 
 export const alertVariants = cva(
-  "flex items-start gap-xs rounded-control border bg-surface p-md shadow-card",
+  // Hairline tone border only — the icon shape, message weight, and hue carry
+  // the meaning; a heavy outline would shout louder than the copy.
+  "flex items-start gap-xs rounded-control border bg-surface p-md",
   {
     variants: {
       tone: {
         // Neutral/informational tier — stays monochrome (structural weight only).
-        notice: "border-border-strong",
-        warning: "border-warning border-2",
-        error: "border-error border-2",
-        success: "border-success border-2",
+        notice: "border-border",
+        warning: "border-warning",
+        error: "border-error",
+        success: "border-success",
       },
     },
   }

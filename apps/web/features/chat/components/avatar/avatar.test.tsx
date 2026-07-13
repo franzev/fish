@@ -5,6 +5,7 @@ import { Avatar, avatarVariants } from "./avatar";
 describe("Avatar", () => {
   it("exposes reusable CVA size variants for the maintained avatar styles", () => {
     // Default size is md.
+    expect(avatarVariants()).toContain("bg-avatar");
     expect(avatarVariants()).toContain("size-10");
     expect(avatarVariants({ size: "xs" })).toContain("size-badge");
     expect(avatarVariants({ size: "sm" })).toContain("size-8");

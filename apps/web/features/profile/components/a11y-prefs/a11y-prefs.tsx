@@ -51,9 +51,10 @@ const timeFormatOptions: Array<{ value: TimeFormatPref; label: string }> = [
   { value: "24h", label: "24 hr" },
 ];
 
-/** Segmented control shared by profile prefs -- 56px-tall pill buttons,
- *  active state signaled by color/border only (no size/weight change, so
- *  clicking never resizes the row -- layout-stability contract). */
+/** Segmented control shared by profile prefs -- quiet pill wells, active
+ *  state signaled by the surface-3 fill step only (chat's selected-well
+ *  idiom; no border, no size/weight change, so clicking never resizes the
+ *  row -- layout-stability contract). */
 function SegmentedControl<T>({
   options,
   value,
@@ -74,10 +75,10 @@ function SegmentedControl<T>({
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
           className={cn(
-            "min-h-control rounded-pill border px-sm text-ui-sm transition-colors",
+            "min-h-control rounded-pill px-sm text-ui-sm transition-colors",
             value === opt.value
-              ? "border-border-strong bg-surface-2 text-foreground"
-              : "border-border bg-surface text-muted hover:text-body"
+              ? "bg-surface-3 text-foreground"
+              : "bg-surface-2 text-body hover:bg-surface-3"
           )}
         >
           {opt.label}

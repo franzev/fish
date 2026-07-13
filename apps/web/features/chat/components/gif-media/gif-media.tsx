@@ -103,7 +103,7 @@ export function GifMedia({
             setPaused(false);
             setLocalPlayRequested(true);
           }}
-          className="absolute bottom-xs right-xs flex size-control items-center justify-center rounded-pill bg-scrim text-foreground shadow-popover"
+          className="absolute bottom-xs right-xs flex size-control items-center justify-center rounded-pill bg-scrim text-foreground"
         >
           {shouldPlay ? (
             <IconPlayerPause size={20} stroke={1.75} aria-hidden="true" />

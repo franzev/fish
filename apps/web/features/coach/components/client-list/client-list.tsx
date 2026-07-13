@@ -11,15 +11,15 @@ export interface Client {
 
 /** D-12..15/D-11: one calm Card, hairline dividers, alphabetical, each row a
  *  link to the coach's read-only client detail (/coach/clients/[id]) --
- *  monochrome, no color added to the row; the global :focus-visible outline
- *  gives keyboard-focusable links their visible focus for free. */
+ *  monochrome, no color added to the row; the global focus state handles
+ *  keyboard navigation without a component-specific edge treatment. */
 export function ClientList({ clients }: { clients: Client[] }) {
   const sorted = [...clients].sort((a, b) =>
     a.displayName.localeCompare(b.displayName)
   );
 
   return (
-    <Card className="divide-y divide-border p-0">
+    <Card className="divide-y divide-divider p-0">
       {sorted.map((client) => (
         <Link
           key={client.id}

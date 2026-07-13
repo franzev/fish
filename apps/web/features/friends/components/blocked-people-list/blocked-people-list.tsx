@@ -54,7 +54,7 @@ export function BlockedPeopleList({
           {blockedPeople.map((person) => (
             <li
               key={person.id}
-              className="flex min-h-control items-center justify-between gap-sm rounded-control border border-border bg-surface px-md"
+              className="flex min-h-control items-center justify-between gap-sm rounded-control bg-surface-2 px-md"
             >
               <span className="flex min-w-0 flex-col py-xs">
                 <span className="truncate text-copy text-foreground">

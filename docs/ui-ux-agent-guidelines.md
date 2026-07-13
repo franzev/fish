@@ -170,7 +170,7 @@ Do:
 Do not:
 
 - Use the same gap between every element.
-- Put logout, delete, or cancel actions beside routine navigation.
+- Put sign-out, delete, or cancel actions beside routine navigation.
 - Separate a field from its label with the same gap used between field groups.
 
 ### One Primary Action
@@ -465,7 +465,7 @@ Examples:
 
 - Do: `Send message`
 - Do not: `Submit`
-- Do: `Log in instead`
+- Do: `Sign in instead`
 - Do not: `Continue`
 - Do: `Clear history`
 - Do not: `OK`
@@ -877,7 +877,7 @@ Examples:
 
 - Do: `Remove data` and `Cancel`.
 - Do not: `Deny` and `Forget`.
-- Do: `Email is already used. Log in instead or use a different email.`
+- Do: `Email is already used. Sign in instead or use a different email.`
 - Do not: `Unknown error 51526c`.
 
 ## Dark Patterns To Reject

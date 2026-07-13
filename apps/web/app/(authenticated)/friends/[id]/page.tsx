@@ -50,7 +50,7 @@ export default async function FriendDetailPage({
           size="lg"
           alt=""
         />
-        <h1 className="text-3xl">{data.friend.friend.displayName}</h1>
+        <h1 className="text-heading-sm">{data.friend.friend.displayName}</h1>
       </div>
       <p className="mb-lg text-ui-sm text-muted">
         @{data.friend.friend.username}

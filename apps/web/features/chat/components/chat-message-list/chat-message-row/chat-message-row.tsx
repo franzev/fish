@@ -247,7 +247,7 @@ export function ChatMessageRow({
             <span>Not sent yet</span>
             <button
               type="button"
-              className="min-h-control rounded-control px-xs py-2xs text-body underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="min-h-control rounded-control px-xs py-2xs text-body underline"
               onClick={() =>
                 void actions.retry(
                   message.body,

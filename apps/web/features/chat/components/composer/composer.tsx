@@ -2,7 +2,6 @@
 
 import { EmojiPickerButton } from "../emoji-picker";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   IconMoodSmile,
   IconSend,
@@ -79,18 +78,7 @@ export function Composer({
       }}
       onDrop={handleDrop}
     >
-      {/* Accessibility floor: the textarea carries no border or ring of its
-          own (explicit design decision), so the visible keyboard-focus
-          indicator moves to the bar via focus-within — a thinner, dimmed
-          1px focus-outer/60 outline (vs. the global solid 2px
-          :focus-visible rule) to stay unobtrusive on this dense control
-          bar while still being visible. */}
-      <div
-        className={cn(
-          "rounded-control bg-surface-2",
-          "focus-within:outline-1 focus-within:outline-offset-2 focus-within:outline-focus-outer/60"
-        )}
-      >
+      <div className="rounded-control bg-surface-2">
         <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
         <div className="flex items-end gap-xs p-xs">
@@ -104,7 +92,7 @@ export function Composer({
           rows={1}
           enterKeyHint="send"
           placeholder={channelName ? `Message #${channelName}` : "Message"}
-          className="min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-copy text-foreground outline-none placeholder:text-muted focus-visible:shadow-none focus-visible:outline-none"
+          className="min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-copy text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
         />
         <GifPickerButton
           onSelect={onSelectGif}

@@ -28,7 +28,7 @@ export default async function FriendRequestDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-form">
-      <h1 className="mb-lg text-3xl">Friend request</h1>
+      <h1 className="mb-lg text-heading-sm">Friend request</h1>
       {data.request ? (
         <FriendRequestReview request={data.request} />
       ) : (

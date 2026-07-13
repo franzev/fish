@@ -4,18 +4,18 @@ import { Alert, alertMessageVariants, alertVariants } from "./alert";
 
 describe("Alert", () => {
   it("exposes reusable CVA variants for the maintained alert tone styles", () => {
-    expect(alertVariants({ tone: "notice" })).toContain("border-border-strong");
+    expect(alertVariants({ tone: "notice" })).toContain("border-border");
     expect(alertVariants({ tone: "warning" })).toContain("border-warning");
     expect(alertVariants({ tone: "error" })).toContain("border-error");
     expect(alertMessageVariants({ tone: "error" })).toContain("font-semibold");
   });
 
-  it("notice tone: border-border-strong, regular-weight message, info icon", () => {
+  it("notice tone: monochrome border-border hairline, regular-weight message, info icon", () => {
     const { getByText, container } = render(
       <Alert tone="notice">That doesn&apos;t look like an email yet. Check the spelling?</Alert>
     );
     const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain("border-border-strong");
+    expect(card.className).toContain("border-border");
     const message = getByText(
       "That doesn't look like an email yet. Check the spelling?"
     );
@@ -25,13 +25,12 @@ describe("Alert", () => {
     expect(icon).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("error tone: border-error + border-2, semibold message, alert icon", () => {
+  it("error tone: border-error hairline, semibold message, alert icon", () => {
     const { getByText, container } = render(
       <Alert tone="error">Something needs your attention before you can continue.</Alert>
     );
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain("border-error");
-    expect(card.className).toContain("border-2");
     const message = getByText(
       "Something needs your attention before you can continue."
     );
@@ -42,13 +41,12 @@ describe("Alert", () => {
     expect(icon?.getAttribute("class")).toContain("text-error");
   });
 
-  it("warning tone: border-warning + border-2, semibold message, triangle icon", () => {
+  it("warning tone: border-warning hairline, semibold message, triangle icon", () => {
     const { getByText, container } = render(
       <Alert tone="warning">That didn&apos;t send — give it a minute and try again.</Alert>
     );
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain("border-warning");
-    expect(card.className).toContain("border-2");
     const message = getByText(
       "That didn't send — give it a minute and try again."
     );

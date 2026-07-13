@@ -85,7 +85,7 @@ export function FriendRequestsList({
             <li key={request.requestId}>
               <Link
                 href={`/friends/requests/${request.requestId}`}
-                className="flex min-h-control items-center justify-between rounded-control border border-border bg-surface px-md transition-colors hover:bg-surface-2"
+                className="flex min-h-control items-center justify-between rounded-control bg-surface-2 px-md transition-colors hover:bg-surface-3"
               >
                 <span className="flex min-w-0 items-center gap-sm py-xs">
                   <Avatar

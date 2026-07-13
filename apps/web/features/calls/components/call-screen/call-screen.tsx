@@ -117,7 +117,7 @@ export function CallScreen({ callId }: { callId: string }) {
           <IconPhone size={28} stroke={1.75} aria-hidden="true" />
         </span>
         <div className="flex flex-col gap-xs">
-          <h1 className="text-3xl">{heading}</h1>
+          <h1 className="text-heading-sm">{heading}</h1>
           <p className="text-body">
             {call.status === "ringing" && call.direction === "outgoing"
               ? "They’ll join when they’re ready."
@@ -156,7 +156,7 @@ export function CallScreen({ callId }: { callId: string }) {
                 remoteVideoStream ? "block" : "hidden"
               }`}
             />
-            <div className="absolute bottom-sm right-sm aspect-video w-1/3 overflow-hidden rounded-control border border-border bg-bg shadow-card">
+            <div className="absolute bottom-sm right-sm aspect-video w-1/3 overflow-hidden rounded-control bg-bg">
               {!localVideoStream && (
                 <div className="flex h-full items-center justify-center gap-2xs text-ui-xs text-muted">
                   <IconVideoOff size={16} aria-hidden="true" />
@@ -310,7 +310,7 @@ export function CallScreen({ callId }: { callId: string }) {
                     <label className="flex w-full flex-col gap-xs text-left text-ui-sm text-body">
                       Microphone
                       <select
-                        className="min-h-control w-full rounded-control border border-border bg-surface-2 px-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui text-foreground"
                         value={microphoneId}
                         onChange={(event) => {
                           setMicrophoneId(event.target.value);

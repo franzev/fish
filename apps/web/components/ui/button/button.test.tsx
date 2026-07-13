@@ -6,7 +6,7 @@ describe("Button", () => {
   it("exposes reusable CVA variants for the maintained button styles", () => {
     expect(buttonVariants()).toContain("bg-primary");
     expect(buttonVariants()).not.toContain("w-full");
-    expect(buttonVariants({ variant: "secondary" })).toContain("bg-surface");
+    expect(buttonVariants({ variant: "secondary" })).toContain("bg-surface-2");
     expect(buttonVariants({ variant: "ghost", fullWidth: false })).not.toContain(
       "w-full"
     );
@@ -34,13 +34,12 @@ describe("Button", () => {
     );
   });
 
-  it("secondary variant renders its surface/border tokens", () => {
+  it("secondary variant renders its quiet surface-step well tokens", () => {
     const { getByRole } = render(
       <Button variant="secondary">I already have an account</Button>
     );
     const button = getByRole("button");
-    expect(button.className).toContain("bg-surface");
-    expect(button.className).toContain("border-border");
+    expect(button.className).toContain("bg-surface-2");
     expect(button.className).toContain("text-foreground");
     expect(button.className).toContain("min-h-control");
   });
@@ -83,10 +82,10 @@ describe("Button", () => {
   it("loading state disables native activation, including submit buttons with no onClick", () => {
     const { getByRole } = render(
       <Button type="submit" loading>
-        Log in
+        Sign in
       </Button>
     );
-    expect(getByRole("button", { name: "Log in" })).toBeDisabled();
+    expect(getByRole("button", { name: "Sign in" })).toBeDisabled();
   });
 
   it("does not mark a non-loading button as busy", () => {
@@ -179,7 +178,7 @@ describe("Button layout stability", () => {
     expect(classes()).toContain("border-transparent");
     rerender(<Button variant="secondary">Go</Button>);
     expect(classes()).toContain("border");
-    expect(classes()).toContain("border-border");
+    expect(classes()).toContain("border-transparent");
     rerender(<Button variant="ghost">Go</Button>);
     expect(classes()).toContain("border");
     expect(classes()).toContain("border-transparent");

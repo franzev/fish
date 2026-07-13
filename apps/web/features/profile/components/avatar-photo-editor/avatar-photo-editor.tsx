@@ -118,7 +118,7 @@ export function AvatarPhotoEditor({
 
   return (
     <Card className="w-full max-w-form">
-      <h1 className="text-xl">Profile photo</h1>
+      <h1 className="text-heading-sm">Profile photo</h1>
       <p id={instructionsId} className="mt-xs text-ui-sm text-body">
         Move the photo with touch, drag, or the arrow keys. Use zoom only if you need it.
       </p>

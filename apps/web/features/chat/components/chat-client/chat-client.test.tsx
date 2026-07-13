@@ -1802,7 +1802,7 @@ describe("ChatClient", () => {
     const alert = within(error)
       .getByText("Couldn't load earlier messages. Try again.")
       .closest("div");
-    expect(alert).toHaveClass("border-border-strong");
+    expect(alert).toHaveClass("border-border");
     expect(alert).not.toHaveClass("border-error", "border-2");
   });
 
