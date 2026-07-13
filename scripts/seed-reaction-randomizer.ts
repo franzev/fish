@@ -111,7 +111,8 @@ export function buildSeedReactionRows({
       continue;
     }
 
-    const reactionCount = Math.min(Math.max(1, reactionCountFor(messageSeed)), maxCount);
+    const reactionCount = Math.min(reactionCountFor(messageSeed), maxCount);
+    if (reactionCount === 0) continue;
 
     const selectedEmojis = selectEmojis(emojis, messageSeed, emojiTypeCountFor(reactionCount, messageSeed));
     const selectedUsers = selectUsers(users, messageSeed, reactionCount);

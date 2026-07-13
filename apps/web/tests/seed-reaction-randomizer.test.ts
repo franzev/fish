@@ -57,7 +57,7 @@ describe("buildSeedReactionRows", () => {
     expect(Array.from(countsByMessage.keys()).some((messageId) => deletedMessageIds.has(messageId))).toBe(false);
   });
 
-  it("always gives reactions to every visible message", () => {
+  it("leaves a deterministic subset of visible messages without reactions", () => {
     const reactions = buildSeedReactionRows({
       conversationId,
       messages,
@@ -69,7 +69,12 @@ describe("buildSeedReactionRows", () => {
     const visibleMessages = messages.filter((message) => !message.deleted_at);
 
     expect(visibleMessages).toHaveLength(893);
-    expect(visibleMessages.every((message) => reactedMessageIds.has(message.id))).toBe(true);
+    const messagesWithoutReactions = visibleMessages.filter(
+      (message) => !reactedMessageIds.has(message.id),
+    );
+
+    expect(messagesWithoutReactions.length).toBeGreaterThan(250);
+    expect(messagesWithoutReactions.length).toBeLessThan(500);
   });
 
   it("gives super-long messages 20-30 reaction types with 9-20 reactions each", () => {

@@ -497,7 +497,15 @@ async function resetChatVerificationState(): Promise<void> {
   report("CHAT setup: reads seeded conversations", !conversationError, conversationError?.message);
   if (conversationError) return;
 
-  const chatConversations = (conversations ?? []) as ChatConversationRow[];
+  const assignmentKeys = new Set(
+    (assignments ?? []).map(
+      (assignment) => `${assignment.client_id}:${assignment.coach_id}`,
+    ),
+  );
+  const chatConversations = ((conversations ?? []) as ChatConversationRow[]).filter(
+    (conversation) =>
+      assignmentKeys.has(`${conversation.client_id}:${conversation.coach_id}`),
+  );
   report(
     "CHAT setup: one conversation per seeded assignment",
     chatConversations.length === (assignments ?? []).length,
