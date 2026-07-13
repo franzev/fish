@@ -24,6 +24,13 @@ interface UseChatComposerOptions {
   clearPendingImages: () => void;
 }
 
+interface GifSelectionState {
+  conversationId: string;
+  gif: ClientChatGif | null;
+  query: string;
+  revision: number;
+}
+
 function makeRequestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
 }
@@ -43,8 +50,22 @@ export function useChatComposer({
   clearPendingImages,
 }: UseChatComposerOptions) {
   const [notice, setNotice] = useState<string | null>(null);
-  const [selectedGif, setSelectedGif] = useState<ClientChatGif | null>(null);
-  const [selectedGifQuery, setSelectedGifQuery] = useState("");
+  const [gifSelection, setGifSelection] = useState<GifSelectionState>({
+    conversationId: chat.conversationId,
+    gif: null,
+    query: "",
+    revision: 0,
+  });
+  if (gifSelection.conversationId !== chat.conversationId) {
+    setGifSelection({
+      conversationId: chat.conversationId,
+      gif: null,
+      query: "",
+      revision: gifSelection.revision + 1,
+    });
+  }
+  const selectedGif = gifSelection.gif;
+  const selectedGifQuery = gifSelection.query;
   const composer = useChatStore((state) =>
     selectComposerForConversation(state, chat.conversationId)
   );
@@ -101,6 +122,8 @@ export function useChatComposer({
     optimisticGif?: ClientChatGif,
     gifQuery = ""
   ) {
+    const sendConversationId = chat.conversationId;
+    const gifSelectionRevisionAtSend = gifSelection.revision;
     setNotice(null);
     stopLocalTyping();
 
@@ -128,8 +151,11 @@ export function useChatComposer({
       setDraft(chat.conversationId, "");
       setReplyTarget(chat.conversationId, null);
       clearPendingImages();
-      setSelectedGif(null);
-      setSelectedGifQuery("");
+      setGifSelection((current) =>
+        current.conversationId === sendConversationId
+          ? { ...current, gif: null, query: "" }
+          : current
+      );
     }
 
     const result = await sendMessageAction({
@@ -156,8 +182,13 @@ export function useChatComposer({
         result.notice ?? "Not sent yet"
       );
       if (clearComposer && optimisticGif) {
-        setSelectedGif(optimisticGif);
-        setSelectedGifQuery(gifQuery);
+        setGifSelection((current) =>
+          current.conversationId === sendConversationId
+          && current.revision === gifSelectionRevisionAtSend
+          && current.gif === null
+            ? { ...current, gif: optimisticGif, query: gifQuery }
+            : current
+        );
       }
       return;
     }
@@ -311,8 +342,12 @@ export function useChatComposer({
     setEditTarget(chat.conversationId, message.id);
     setReplyTarget(chat.conversationId, null);
     setDraft(chat.conversationId, message.body);
-    setSelectedGif(null);
-    setSelectedGifQuery("");
+    setGifSelection((current) => ({
+      ...current,
+      gif: null,
+      query: "",
+      revision: current.revision + 1,
+    }));
     setNotice(null);
   }
 
@@ -326,14 +361,22 @@ export function useChatComposer({
   }
 
   function selectGif(gif: ClientChatGif, query: string) {
-    setSelectedGif(gif);
-    setSelectedGifQuery(query);
+    setGifSelection((current) => ({
+      conversationId: chat.conversationId,
+      gif,
+      query,
+      revision: current.revision + 1,
+    }));
     setNotice(null);
   }
 
   function removeSelectedGif() {
-    setSelectedGif(null);
-    setSelectedGifQuery("");
+    setGifSelection((current) => ({
+      ...current,
+      gif: null,
+      query: "",
+      revision: current.revision + 1,
+    }));
   }
 
   function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
