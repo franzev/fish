@@ -127,16 +127,23 @@ describe("SearchFilterPopover", () => {
     expect(within(list).queryByRole("option", { name: /Yoshibro/i })).toBeNull();
   });
 
-  it("renders selected criteria as filled tokens inside the search field", () => {
+  it("keeps only the operator filled while editing a sole filter", () => {
     render(<Harness />);
-    const input = screen.getByRole("combobox", { name: "Search messages" });
+    const input = screen.getByRole<HTMLInputElement>("combobox", { name: "Search messages" });
     fireEvent.change(input, { target: { value: "from:" } });
     fireEvent.change(input, { target: { value: "reg" } });
+
+    input.setSelectionRange(2, 2);
+    fireEvent.click(input);
+
+    expect(screen.getByText("from:")).toHaveClass("bg-surface-2");
+    expect(screen.queryByTestId("search-filter-token")).toBeNull();
+
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(screen.getByRole("combobox", { name: "Search messages" })).toHaveValue("from: reganspor ");
-    expect(screen.getByTestId("search-filter-token")).toHaveTextContent("from: reganspor");
-    expect(screen.getByTestId("search-filter-token")).toHaveClass("bg-surface-2");
+    expect(screen.getByRole("combobox", { name: "Search messages" })).toHaveValue("reganspor");
+    expect(screen.getByText("from:")).toHaveClass("bg-surface-2");
+    expect(screen.queryByTestId("search-filter-token")).toBeNull();
     expect(screen.queryByLabelText("Applied filters")).toBeNull();
   });
 

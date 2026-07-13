@@ -121,9 +121,16 @@ export function SearchFilterPopover({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const tokenLayerRef = useRef<HTMLDivElement | null>(null);
   const parsed = useMemo(() => parseChatSearchQuery(value, caret), [caret, value]);
-  const activeToken = parsed.activeToken;
-  const tokenMode = Boolean(activeToken && activeToken.start === 0 && parsed.tokens.length === 1 && parsed.text.length === 0);
+  const tokenModeToken = parsed.tokens.length === 1 && parsed.tokens[0]?.start === 0 && parsed.text.length === 0
+    ? parsed.tokens[0]
+    : null;
+  const activeToken = parsed.activeToken ?? tokenModeToken;
+  const tokenMode = tokenModeToken !== null;
   const showTokenLayer = !tokenMode && parsed.tokens.some((token) => token.value.length > 0);
+  const canonicalCaret = (selectionStart: number | null) => {
+    const position = selectionStart ?? value.length;
+    return tokenModeToken ? tokenModeToken.valueStart + position : position;
+  };
 
   const suggestions = useMemo<SearchSuggestion[]>(() => {
     if (!activeToken) return [];
@@ -216,7 +223,7 @@ export function SearchFilterPopover({
       }}
     >
       <div className="relative flex min-h-target-touch min-w-0 items-center rounded-control border border-divider bg-bg sm:min-h-search-control">
-        {tokenMode && activeToken && <span className="ml-md rounded-control bg-surface-2 px-xs py-2xs text-ui text-foreground">{activeToken.operator}:</span>}
+        {tokenModeToken && <span className="ml-md rounded-control bg-surface-2 px-xs py-2xs text-ui text-foreground">{tokenModeToken.operator}:</span>}
         <div className="relative min-w-0 flex-1">
           {showTokenLayer && (
             <div
@@ -238,15 +245,15 @@ export function SearchFilterPopover({
             aria-controls="chat-search-panel"
             aria-expanded={panelOpen}
             placeholder={tokenMode ? "" : "Search"}
-            value={tokenMode && activeToken ? activeToken.value : value}
+            value={tokenModeToken ? tokenModeToken.value : value}
             onFocus={() => { setHistory(readChatSearchHistory()); setPanelOpen(true); setActiveIndex(0); }}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              const next = tokenMode && activeToken ? `${activeToken.operator}: ${event.target.value}` : event.target.value;
+              const next = tokenModeToken ? `${tokenModeToken.operator}: ${event.target.value}` : event.target.value;
               updateValue(next, next.length);
               setPanelOpen(true);
             }}
-            onClick={(event) => { setCaret(event.currentTarget.selectionStart ?? value.length); setPanelOpen(true); }}
-            onKeyUp={(event) => setCaret(event.currentTarget.selectionStart ?? value.length)}
+            onClick={(event) => { setCaret(canonicalCaret(event.currentTarget.selectionStart)); setPanelOpen(true); }}
+            onKeyUp={(event) => setCaret(canonicalCaret(event.currentTarget.selectionStart))}
             onKeyDown={handleKeyDown}
             onScroll={(event) => {
               if (tokenLayerRef.current) {
