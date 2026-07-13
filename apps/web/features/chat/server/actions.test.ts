@@ -302,6 +302,21 @@ describe("sendMessageAction", () => {
     expect(result.notice).toBe("That conversation is not available.");
   });
 
+  it("surfaces sign-in guidance when the Edge Function rejects a stale session", async () => {
+    mockSignedIn();
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: "Your session ended. Sign in again to send." }),
+    });
+
+    const result = await sendMessageAction(validInput);
+
+    expect(result).toMatchObject({
+      status: "notice",
+      notice: "Your session ended. Sign in again to send.",
+    });
+  });
+
   it("returns a notice instead of throwing when the send request rejects", async () => {
     mockSignedIn();
     fetchMock.mockRejectedValueOnce(new Error("network down"));

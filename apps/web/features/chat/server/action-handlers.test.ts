@@ -132,6 +132,61 @@ describe("createChatActionHandlers", () => {
     });
   });
 
+  it("explains that a sticker and another media item must be sent separately", async () => {
+    const sendMessage = vi.fn();
+    const handlers = createChatActionHandlers(chatFake({ sendMessage }));
+
+    const result = await handlers.sendMessage({
+      conversationId: "11111111-1111-4111-8111-111111111111",
+      body: "",
+      clientRequestId: "mixed-sticker-request",
+      stickerId: "aquatic-hello-otter",
+      attachmentIds: ["22222222-2222-4222-8222-222222222222"],
+    });
+
+    expect(result).toMatchObject({
+      status: "notice",
+      notice: "Send the sticker or the other media first.",
+    });
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("does not misreport an invalid conversation as a sticker problem", async () => {
+    const sendMessage = vi.fn();
+    const handlers = createChatActionHandlers(chatFake({ sendMessage }));
+
+    const result = await handlers.sendMessage({
+      conversationId: "not-a-conversation",
+      body: "",
+      clientRequestId: "invalid-conversation-request",
+      stickerId: "aquatic-hello-otter",
+    });
+
+    expect(result).toMatchObject({
+      status: "notice",
+      notice: "That conversation is not available.",
+    });
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("rejects sticker ids outside the bundled send catalog", async () => {
+    const sendMessage = vi.fn();
+    const handlers = createChatActionHandlers(chatFake({ sendMessage }));
+
+    const result = await handlers.sendMessage({
+      conversationId: "11111111-1111-4111-8111-111111111111",
+      body: "",
+      clientRequestId: "unknown-sticker-request",
+      stickerId: "aquatic-unknown",
+    });
+
+    expect(result).toMatchObject({
+      status: "notice",
+      notice: "That sticker is not available. Choose another one.",
+    });
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
   it("accepts a GIF-only message and rejects spoofed provider media", async () => {
     const sent = {
       id: "message-gif-1",

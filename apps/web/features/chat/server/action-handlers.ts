@@ -33,28 +33,50 @@ function messageActionState(
     : { status: "notice", values, notice: result.notice };
 }
 
+interface ValidationIssue {
+  code?: string;
+  message: string;
+  path: PropertyKey[];
+}
+
+function sendValidationNotice(issues: readonly ValidationIssue[]): string {
+  const messages = new Set(issues.map((issue) => issue.message));
+  if (messages.has("A sticker cannot be combined with other media")) {
+    return "Send the sticker or the other media first.";
+  }
+  if (messages.has("A GIF cannot be combined with files")) {
+    return "Send the GIF or the files first.";
+  }
+  if (issues.some((issue) => issue.path[0] === "conversationId")) {
+    return "That conversation is not available.";
+  }
+  if (issues.some((issue) => issue.path[0] === "stickerId")) {
+    return "That sticker is not available. Choose another one.";
+  }
+  if (issues.some((issue) => issue.path[0] === "gif")) {
+    return "That GIF is not available. Choose another one.";
+  }
+  if (issues.some((issue) => issue.path[0] === "attachmentIds")) {
+    return "Those files are not available. Add them again.";
+  }
+  if (issues.some((issue) => issue.path[0] === "replyToMessageId")) {
+    return "That message is no longer available.";
+  }
+  if (issues.some((issue) => issue.path[0] === "body" && issue.code === "too_big")) {
+    return "This message is a little long. Try sending it in two parts.";
+  }
+  return "Add a message before sending.";
+}
+
 export function createChatActionHandlers(chat: ChatCommandService) {
   return {
     async sendMessage(input: unknown): Promise<SendMessageActionState> {
       const parsed = sendMessageSchema.safeParse(input);
       if (!parsed.success) {
-        const hasGif = typeof input === "object" && input !== null && "gif" in input;
-        const hasSticker = typeof input === "object" && input !== null && "stickerId" in input;
         return {
           status: "notice",
           values: input,
-          notice:
-            typeof input === "object" &&
-            input !== null &&
-            "body" in input &&
-            String((input as { body?: unknown }).body ?? "").length >
-              chatLimits.messageBodyMaxLength
-              ? "This message is a little long. Try sending it in two parts."
-              : hasGif
-                ? "That GIF is not available. Choose another one."
-                : hasSticker
-                  ? "That sticker is not available. Choose another one."
-                : "Add a message before sending.",
+          notice: sendValidationNotice(parsed.error.issues),
         };
       }
       return messageActionState(

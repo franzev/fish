@@ -173,7 +173,7 @@ Deno.serve(async (request) => {
       status: authResponse.status,
       body: await authResponse.clone().text().catch(() => ""),
     });
-    return calmError("That did not send yet. Keep this open and try again.", 401);
+    return calmError("Your session ended. Sign in again to send.", 401);
   }
 
   const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/send_chat_message`, {
