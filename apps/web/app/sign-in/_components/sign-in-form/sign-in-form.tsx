@@ -2,7 +2,6 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
@@ -18,9 +17,13 @@ import { FormEvent, useState } from "react";
 
 /* Sibling auth form to /signup — mirrors its submit try/catch template.
    D-05: an "email not confirmed" result routes to /check-inbox rather than
-   showing an error, so login never scolds, it just routes. Bad credentials
+   showing an error, so sign-in never scolds, it just routes. Bad credentials
    never reveal which field is wrong (T-02-19). */
-export function LoginForm() {
+export interface SignInFormProps {
+  showGoogleAuth?: boolean;
+}
+
+export function SignInForm({ showGoogleAuth = false }: SignInFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +37,7 @@ export function LoginForm() {
     setPasswordError("");
     setFormError("");
     setLoading(true);
+    let navigationStarted = false;
 
     try {
       const result = await signInWithPassword({
@@ -56,6 +60,7 @@ export function LoginForm() {
           result.error.message.toLowerCase().includes("email not confirmed")
         ) {
           router.push(`/check-inbox?email=${encodeURIComponent(email)}`);
+          navigationStarted = true;
           return;
         }
         setPasswordError(
@@ -65,6 +70,7 @@ export function LoginForm() {
       }
 
       router.push(authRedirects.clientHome);
+      navigationStarted = true;
     } catch {
       // Thrown means transport failure, not bad credentials — don't tell an
       // offline user their password is wrong.
@@ -72,7 +78,10 @@ export function LoginForm() {
         "Couldn't reach the server. Check your connection and try again."
       );
     } finally {
-      setLoading(false);
+      // A successful push only starts the route transition. Keep the action
+      // busy until this form unmounts so it cannot briefly return to idle
+      // while the authenticated page is still loading.
+      if (!navigationStarted) setLoading(false);
     }
   }
 
@@ -80,6 +89,7 @@ export function LoginForm() {
     setPasswordError("");
     setFormError("");
     setGoogleLoading(true);
+    let navigationStarted = false;
 
     try {
       const result = await signInWithGoogle();
@@ -87,25 +97,29 @@ export function LoginForm() {
         setFormError(
           "Couldn't start Google sign-in. Check your connection and try again."
         );
+      } else {
+        navigationStarted = true;
       }
     } catch {
       setFormError(
         "Couldn't start Google sign-in. Check your connection and try again."
       );
     } finally {
-      setGoogleLoading(false);
+      if (!navigationStarted) setGoogleLoading(false);
     }
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
-      <Card className="w-full max-w-form">
-        <h1 className="text-xl">Log in</h1>
+    // Bare content block — AuthSplitLayout (the page) owns <main>, the
+    // split shell, centering, and the max-w-form column.
+    <div className="w-full">
+      <h1 className="text-heading-sm">Sign in</h1>
         <form className="mt-lg" onSubmit={handleSubmit}>
           <div className="space-y-md">
             <Input
               label="Email"
               type="email"
+              autoFocus
               autoComplete="email"
               inputMode="email"
               enterKeyHint="next"
@@ -132,9 +146,9 @@ export function LoginForm() {
               fullWidth={true}
               loading={loading}
             >
-              Log in
+              Sign in
             </Button>
-            <div className="flex justify-center">
+            {showGoogleAuth && <div className="flex justify-center">
               <Button
                 type="button"
                 variant="ghost"
@@ -146,7 +160,7 @@ export function LoginForm() {
                   Continue with Google
                 </span>
               </Button>
-            </div>
+            </div>}
           </div>
           {formError && <Alert tone="error" className="mt-md">{formError}</Alert>}
         </form>
@@ -158,7 +172,6 @@ export function LoginForm() {
             Forgot your password?
           </Link>
         </p>
-      </Card>
-    </main>
+    </div>
   );
 }

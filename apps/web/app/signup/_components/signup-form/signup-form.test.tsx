@@ -43,9 +43,16 @@ describe("SignupForm", () => {
     expect(primaryButtons[0]).toHaveTextContent("Create account");
   });
 
+  it("hides Google sign-up unless it is explicitly configured", () => {
+    render(<SignupForm />);
+    expect(
+      screen.queryByRole("button", { name: "Sign up with Google" })
+    ).not.toBeInTheDocument();
+  });
+
   it("renders four Inputs (name, email, password, confirm password)", () => {
     render(<SignupForm />);
-    expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveFocus();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm password")).toBeInTheDocument();
@@ -118,7 +125,7 @@ describe("SignupForm", () => {
 
   it("starts Google sign-up from the secondary action", async () => {
     signInWithGoogleMock.mockResolvedValueOnce({ ok: true, data: undefined });
-    render(<SignupForm />);
+    render(<SignupForm showGoogleAuth />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sign up with Google" }));
 
@@ -127,7 +134,7 @@ describe("SignupForm", () => {
   });
 
   it("renders the Google action as secondary, keeping one primary button", () => {
-    render(<SignupForm />);
+    render(<SignupForm showGoogleAuth />);
 
     const googleButton = screen.getByRole("button", { name: "Sign up with Google" });
     expect(googleButton.className).toContain("bg-surface");

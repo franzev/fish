@@ -1,19 +1,18 @@
-import { Card } from "@/components/ui/card";
+import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
 import { Suspense } from "react";
 import { CheckInboxContent } from "./_components/check-inbox-content";
 
 export default function CheckInboxPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
+    <AuthSplitLayout
+      headline="One email away."
+      message="Open the link on this device and you're straight back in."
+    >
       <Suspense
-        fallback={
-          <Card className="w-full max-w-form">
-            <h2 className="text-xl">Check your inbox</h2>
-          </Card>
-        }
+        fallback={<h2 className="text-heading-sm">Check your inbox</h2>}
       >
         <CheckInboxContent />
       </Suspense>
-    </main>
+    </AuthSplitLayout>
   );
 }

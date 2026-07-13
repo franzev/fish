@@ -19,45 +19,52 @@ vi.mock("@/features/auth", () => ({
   signInWithPassword: signInWithPasswordMock,
 }));
 
-import { LoginForm } from "./login-form";
+import { SignInForm } from "./sign-in-form";
 
-describe("LoginForm", () => {
+describe("SignInForm", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders exactly one primary Button in the source file (grep gate)", () => {
-    const source = readFileSync(resolve(__dirname, "./login-form.tsx"), "utf-8");
+    const source = readFileSync(resolve(__dirname, "./sign-in-form.tsx"), "utf-8");
     const matches = source.match(/variant="primary"/g) ?? [];
     expect(matches).toHaveLength(1);
     expect(source).toContain("fullWidth={true}");
   });
 
   it("renders exactly one primary button via an RTL role query", () => {
-    render(<LoginForm />);
+    render(<SignInForm />);
     const buttons = screen.getAllByRole("button");
     const primaryButtons = buttons.filter((b) =>
       b.className.includes("bg-primary")
     );
     expect(primaryButtons).toHaveLength(1);
-    expect(primaryButtons[0]).toHaveTextContent("Log in");
+    expect(primaryButtons[0]).toHaveTextContent("Sign in");
   });
 
-  it("uses a page-level heading for the login screen", () => {
-    render(<LoginForm />);
+  it("hides Google sign-in unless it is explicitly configured", () => {
+    render(<SignInForm />);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Log in" })
+      screen.queryByRole("button", { name: "Continue with Google" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses a page-level heading for the sign-in screen", () => {
+    render(<SignInForm />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Sign in" })
     ).toBeInTheDocument();
   });
 
   it("renders two Inputs (email, password)", () => {
-    render(<LoginForm />);
-    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    render(<SignInForm />);
+    expect(screen.getByLabelText("Email")).toHaveFocus();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
   it("adds autofill and enter-key hints that reduce typing effort", () => {
-    render(<LoginForm />);
+    render(<SignInForm />);
     expect(screen.getByLabelText("Email")).toHaveAttribute(
       "autocomplete",
       "email"
@@ -77,7 +84,7 @@ describe("LoginForm", () => {
   });
 
   it("lets the user reveal and hide the password without leaving the field", () => {
-    render(<LoginForm />);
+    render(<SignInForm />);
     const password = screen.getByLabelText("Password");
     expect(password).toHaveAttribute("type", "password");
 
@@ -89,7 +96,7 @@ describe("LoginForm", () => {
   });
 
   it("renders the Google action as a quiet alternative, keeping one primary button", () => {
-    render(<LoginForm />);
+    render(<SignInForm showGoogleAuth />);
     const googleButton = screen.getByRole("button", {
       name: "Continue with Google",
     });
@@ -104,14 +111,14 @@ describe("LoginForm", () => {
   });
 
   it("renders two sibling links and two total buttons", () => {
-    render(<LoginForm />);
+    render(<SignInForm showGoogleAuth />);
     expect(
       screen.getByRole("link", { name: "Create account" })
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Forgot your password?" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Log in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Continue with Google" })
     ).toBeInTheDocument();
@@ -119,7 +126,7 @@ describe("LoginForm", () => {
 
   it("starts Google sign-in from the secondary action", async () => {
     signInWithGoogleMock.mockResolvedValueOnce({ ok: true, data: undefined });
-    render(<LoginForm />);
+    render(<SignInForm showGoogleAuth />);
 
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
@@ -132,7 +139,7 @@ describe("LoginForm", () => {
       ok: false,
       error: { code: "auth", message: "provider unavailable", details: {} },
     });
-    render(<LoginForm />);
+    render(<SignInForm showGoogleAuth />);
 
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
@@ -147,7 +154,7 @@ describe("LoginForm", () => {
 
   it("a successful sign-in redirects to /home", async () => {
     signInWithPasswordMock.mockResolvedValueOnce({ ok: true, data: undefined });
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -155,7 +162,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
       expect(signInWithPasswordMock).toHaveBeenCalledWith({
@@ -166,14 +173,9 @@ describe("LoginForm", () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/home"));
   });
 
-  it("disables the submit action while password sign-in is in flight", async () => {
-    let resolveSignIn: (value: { ok: true; data: undefined }) => void = () => {};
-    signInWithPasswordMock.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveSignIn = resolve;
-      })
-    );
-    render(<LoginForm />);
+  it("keeps the submit action loading while the authenticated page loads", async () => {
+    signInWithPasswordMock.mockResolvedValueOnce({ ok: true, data: undefined });
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -181,10 +183,35 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/home"));
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sign in" })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+  });
+
+  it("disables the submit action while password sign-in is in flight", async () => {
+    let resolveSignIn: (value: { ok: true; data: undefined }) => void = () => {};
+    signInWithPasswordMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSignIn = resolve;
+      })
+    );
+    render(<SignInForm />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "ada@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Log in" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled()
     );
 
     resolveSignIn({ ok: true, data: undefined });
@@ -195,7 +222,7 @@ describe("LoginForm", () => {
       ok: false,
       error: { code: "auth", message: "Email not confirmed", details: {} },
     });
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -203,7 +230,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
       expect(pushMock).toHaveBeenCalledWith(
@@ -220,7 +247,7 @@ describe("LoginForm", () => {
       ok: false,
       error: { code: "auth", message: "Invalid login credentials", details: {} },
     });
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -228,7 +255,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "wrong-password" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
       expect(
@@ -244,7 +271,7 @@ describe("LoginForm", () => {
       ok: false,
       error: { code: "auth", message: "Invalid login credentials", details: {} },
     });
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -252,7 +279,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "wrong-password" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     const message = await screen.findByText(
       "That email and password don't match. Try again?"
@@ -269,7 +296,7 @@ describe("LoginForm", () => {
         details: { reason: "emailNotConfirmed" },
       },
     });
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -277,7 +304,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
       expect(pushMock).toHaveBeenCalledWith(
@@ -288,7 +315,7 @@ describe("LoginForm", () => {
 
   it("a thrown network failure shows connection copy, never the bad-credentials copy", async () => {
     signInWithPasswordMock.mockRejectedValueOnce(new Error("fetch failed"));
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -296,7 +323,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
       expect(
@@ -315,7 +342,7 @@ describe("LoginForm", () => {
       ok: false,
       error: { code: "network", message: "fetch failed", details: {} },
     });
-    render(<LoginForm />);
+    render(<SignInForm />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "ada@example.com" },
@@ -323,7 +350,7 @@ describe("LoginForm", () => {
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() =>
       expect(

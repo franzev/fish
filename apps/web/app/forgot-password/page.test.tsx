@@ -53,7 +53,7 @@ describe("ForgotPasswordPage", () => {
 
   it("renders one email Input", () => {
     render(<ForgotPasswordPage />);
-    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveFocus();
   });
 
   it("calls resetPasswordForEmail with the email and no redirectTo option", async () => {

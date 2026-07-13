@@ -1,6 +1,6 @@
 /** Web route destinations owned by the auth feature. */
 export const authRedirects = {
-  signedOut: "/login",
+  signedOut: "/sign-in",
   clientHome: "/home",
   coachHome: "/coach",
 } as const;

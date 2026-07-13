@@ -43,15 +43,15 @@ function avatarPng(): Buffer {
   ]);
 }
 
-async function login(page: import("@playwright/test").Page, email: string, password: string) {
-  await page.goto("/login");
+async function signIn(page: import("@playwright/test").Page, email: string, password: string) {
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
 }
 
 test("client crops, publishes, displays, and removes a private avatar", async ({ page }) => {
-  await login(page, "client1@fish.dev", "fish-client-dev");
+  await signIn(page, "client1@fish.dev", "fish-client-dev");
   await expect(page).toHaveURL(/\/home$/);
   await page.goto("/profile/avatar");
 
@@ -76,7 +76,7 @@ test("client crops, publishes, displays, and removes a private avatar", async ({
 });
 
 test("coach can open the shared avatar editor", async ({ page }) => {
-  await login(page, "coach@fish.dev", "fish-coach-dev");
+  await signIn(page, "coach@fish.dev", "fish-coach-dev");
   await expect(page).toHaveURL(/\/coach$/);
   await page.goto("/profile/avatar");
   await expect(page.getByRole("heading", { name: "Profile photo" })).toBeVisible();

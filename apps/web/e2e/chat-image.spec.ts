@@ -47,10 +47,10 @@ const onePixelPng = Buffer.from(
 );
 
 test("client prepares, sends, and opens a private image", async ({ page }) => {
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill("client1@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
   await page.goto("/channels/22222222-2222-4222-8222-222222222222");
   const imagesBeforeSend = await page.getByAltText(/Image shared by/).count();
@@ -84,10 +84,10 @@ test("client prepares, sends, and opens a private image", async ({ page }) => {
 });
 
 test("mixed image aspect ratios flow from left to right and wrap", async ({ page }) => {
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill("client1@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
   await page.goto("/channels/22222222-2222-4222-8222-222222222222");
   const galleriesBeforeSend = await page.locator('[data-image-layout="wrap"]').count();
@@ -137,10 +137,10 @@ test("mixed image aspect ratios flow from left to right and wrap", async ({ page
 });
 
 test("two medium images complete server processing without competing for the Edge CPU budget", async ({ page }) => {
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill("client1@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
   await page.goto("/channels/22222222-2222-4222-8222-222222222222");
 
@@ -155,10 +155,10 @@ test("two medium images complete server processing without competing for the Edg
 });
 
 test("client sends and opens a private text attachment", async ({ page }) => {
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill("client1@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
   await page.goto("/channels/22222222-2222-4222-8222-222222222222");
 

@@ -43,22 +43,22 @@ describe("AuthenticatedLayout", () => {
     getAuthenticatedShellProfileMock.mockReset();
   });
 
-  it("calls redirect('/login') when getUser() returns no user (D-06 default-deny)", async () => {
+  it("calls redirect('/sign-in') when getUser() returns no user (D-06 default-deny)", async () => {
     getAuthenticatedShellProfileMock.mockResolvedValueOnce(null);
 
     await expect(AuthenticatedLayout({ children: <div /> })).rejects.toThrow(
       "NEXT_REDIRECT"
     );
-    expect(redirectMock).toHaveBeenCalledWith("/login");
+    expect(redirectMock).toHaveBeenCalledWith("/sign-in");
   });
 
-  it("calls redirect('/login') when getUser() returns a user but no profile row exists", async () => {
+  it("calls redirect('/sign-in') when getUser() returns a user but no profile row exists", async () => {
     getAuthenticatedShellProfileMock.mockResolvedValueOnce(null);
 
     await expect(AuthenticatedLayout({ children: <div /> })).rejects.toThrow(
       "NEXT_REDIRECT"
     );
-    expect(redirectMock).toHaveBeenCalledWith("/login");
+    expect(redirectMock).toHaveBeenCalledWith("/sign-in");
   });
 
   it("resolves role + renders AppShell with the display name, no redirect, for a valid profile", async () => {

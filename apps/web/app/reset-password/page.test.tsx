@@ -49,7 +49,7 @@ describe("ResetPasswordPage", () => {
 
   it("renders one password Input with the 8-char hint", () => {
     render(<ResetPasswordPage />);
-    expect(screen.getByLabelText("Password")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveFocus();
     expect(screen.getByText("At least 8 characters.")).toBeInTheDocument();
   });
 

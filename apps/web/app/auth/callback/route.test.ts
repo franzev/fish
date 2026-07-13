@@ -37,12 +37,12 @@ describe("OAuth callback route", () => {
     vi.clearAllMocks();
   });
 
-  it("redirects to login without exchanging when the OAuth code is missing", async () => {
+  it("redirects to sign-in without exchanging when the OAuth code is missing", async () => {
     const response = await GET(
       request("http://localhost:3001/auth/callback")
     );
 
-    expect(response.headers.get("location")).toBe("http://localhost:3001/login");
+    expect(response.headers.get("location")).toBe("http://localhost:3001/sign-in");
     expect(getServerServicesMock).not.toHaveBeenCalled();
   });
 
@@ -70,7 +70,7 @@ describe("OAuth callback route", () => {
     expect(response.headers.get("location")).toBe("http://localhost:3001/coach");
   });
 
-  it("redirects to login when the code exchange fails", async () => {
+  it("redirects to sign-in when the code exchange fails", async () => {
     getServerServicesMock.mockResolvedValueOnce(
       createSupabaseClient({ exchangeError: { message: "invalid code" } })
     );
@@ -79,6 +79,6 @@ describe("OAuth callback route", () => {
       request("http://localhost:3001/auth/callback?code=bad")
     );
 
-    expect(response.headers.get("location")).toBe("http://localhost:3001/login");
+    expect(response.headers.get("location")).toBe("http://localhost:3001/sign-in");
   });
 });

@@ -1,19 +1,18 @@
-import { Card } from "@/components/ui/card";
+import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
 import { Suspense } from "react";
 import { ExpiredLinkContent } from "./_components/expired-link-content";
 
 export default function ExpiredLinkPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
+    <AuthSplitLayout
+      headline="No rush."
+      message="Links only work once. Send yourself a fresh one whenever you're ready."
+    >
       <Suspense
-        fallback={
-          <Card className="w-full max-w-form">
-            <h2 className="text-xl">That link has expired</h2>
-          </Card>
-        }
+        fallback={<h2 className="text-heading-sm">That link has expired</h2>}
       >
         <ExpiredLinkContent />
       </Suspense>
-    </main>
+    </AuthSplitLayout>
   );
 }

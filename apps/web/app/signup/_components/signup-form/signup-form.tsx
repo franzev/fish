@@ -2,7 +2,6 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
@@ -20,7 +19,11 @@ import { type SubmitEvent, useState } from "react";
    creates a client (AUTH-01) — role is never read from this form, only
    display_name is sent as metadata; the handle_new_user trigger hard-codes
    role='client' server-side regardless of what a client sends here. */
-export function SignupForm() {
+export interface SignupFormProps {
+  showGoogleAuth?: boolean;
+}
+
+export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -113,12 +116,14 @@ export function SignupForm() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
-      <Card className="w-full max-w-form">
-        <h2 className="text-xl">Create your account</h2>
+    // Bare content block — AuthSplitLayout (the page) owns <main>, the
+    // split shell, centering, and the max-w-form column.
+    <div className="w-full">
+      <h2 className="text-heading-sm">Create your account</h2>
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <Input
             label="Name"
+            autoFocus
             autoComplete="name"
             enterKeyHint="next"
             value={name}
@@ -168,7 +173,7 @@ export function SignupForm() {
           >
             Create account
           </Button>
-          <Button
+          {showGoogleAuth && <Button
             type="button"
             variant="secondary"
             fullWidth={true}
@@ -179,15 +184,14 @@ export function SignupForm() {
               <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
               Sign up with Google
             </span>
-          </Button>
+          </Button>}
         </form>
         <p className="mt-page text-center text-ui-sm text-muted">
           Already have an account?{" "}
-          <Link href="/login" className="text-body underline">
-            Log in
+          <Link href="/sign-in" className="text-body underline">
+            Sign in
           </Link>
         </p>
-      </Card>
-    </main>
+    </div>
   );
 }

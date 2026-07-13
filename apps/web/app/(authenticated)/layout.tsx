@@ -9,7 +9,7 @@ import { CallProvider } from "@/features/calls";
 /* D-06 default-deny: every route inside this (authenticated) group requires
    a session. getUser() is the only server-verified read (never
    untrusted client session data).
-   The public allowlist (/login, /signup, /forgot-password, /reset-password,
+   The public allowlist (/sign-in, /signup, /forgot-password, /reset-password,
    /check-inbox, /expired-link, /auth/confirm, /kit) is enforced
    structurally — those routes live OUTSIDE this group, so this guard never
    wraps them. The per-page "wrong role for THIS page" guard (D-03) is NOT

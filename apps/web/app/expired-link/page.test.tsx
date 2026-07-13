@@ -69,6 +69,7 @@ describe("ExpiredLinkPage", () => {
   it("pre-fills the email from the search param", () => {
     render(<ExpiredLinkPage />);
     expect(screen.getByLabelText("Email")).toHaveValue("ada@example.com");
+    expect(screen.getByLabelText("Email")).toHaveFocus();
   });
 
   it("default (no type param) calls the signup resend method", async () => {
@@ -155,7 +156,7 @@ describe("ExpiredLinkPage", () => {
       screen.getByText("Add your email above, then resend.")
     ).toBeInTheDocument();
     const alertBox = container.querySelector('[aria-live="polite"] > div');
-    expect(alertBox?.className).toContain("border-border-strong");
+    expect(alertBox?.className).toContain("border-border");
     expect(alertBox?.className).not.toContain("border-warning");
     expect(alertBox?.className).not.toContain("border-success");
   });

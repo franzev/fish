@@ -1,10 +1,10 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
-async function logIn(page: Page, email: string, password: string) {
-  await page.goto("/login");
+async function signIn(page: Page, email: string, password: string) {
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
 }
 
 async function callPair(browser: Browser) {
@@ -22,8 +22,8 @@ async function callPair(browser: Browser) {
   const client = await clientContext.newPage();
 
   await Promise.all([
-    logIn(coach, "coach@fish.dev", "fish-coach-dev"),
-    logIn(client, "client1@fish.dev", "fish-client-dev"),
+    signIn(coach, "coach@fish.dev", "fish-coach-dev"),
+    signIn(client, "client1@fish.dev", "fish-client-dev"),
   ]);
   await Promise.all([
     expect(coach).toHaveURL(/\/coach$/),

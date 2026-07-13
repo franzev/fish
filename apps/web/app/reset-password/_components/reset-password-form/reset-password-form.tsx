@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
   getAuthFailureReason,
@@ -67,12 +66,14 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
-      <Card className="w-full max-w-form">
-        <h2 className="text-xl">Set a new password</h2>
+    // Bare content block — AuthSplitLayout (the page) owns <main>, the
+    // split shell, centering, and the max-w-form column.
+    <div className="w-full">
+      <h2 className="text-heading-sm">Set a new password</h2>
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <PasswordInput
             label="Password"
+            autoFocus
             autoComplete="new-password"
             enterKeyHint="go"
             hint="At least 8 characters."
@@ -91,7 +92,6 @@ export function ResetPasswordForm() {
             Set new password
           </Button>
         </form>
-      </Card>
-    </main>
+    </div>
   );
 }

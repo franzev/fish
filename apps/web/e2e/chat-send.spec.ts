@@ -5,10 +5,10 @@ test("client sends a message and it persists as exactly one row after reload", a
 }) => {
   const body = `Playwright chat send ${Date.now()}`;
 
-  await page.goto("/login");
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill("client1@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/home$/);
 

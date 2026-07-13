@@ -38,7 +38,7 @@ describe("CoachClientDetailPage", () => {
     await expect(
       CoachClientDetailPage({ params: Promise.resolve({ id: "some-id" }) })
     ).rejects.toThrow("NEXT_REDIRECT");
-    expect(redirectMock).toHaveBeenCalledWith("/login");
+    expect(redirectMock).toHaveBeenCalledWith("/sign-in");
   });
 
   it("silently forwards a client to /home (wrong door)", async () => {

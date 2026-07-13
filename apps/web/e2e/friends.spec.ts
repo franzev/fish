@@ -13,11 +13,11 @@ function localEnv(name: string): string {
   return value;
 }
 
-async function logIn(page: Page, email: string) {
-  await page.goto("/login");
+async function signIn(page: Page, email: string) {
+  await page.goto("/sign-in");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
 }
 
@@ -81,8 +81,8 @@ test.describe.serial("client friendships", () => {
 
     try {
       await Promise.all([
-        logIn(franzPage, "client1@fish.dev"),
-        logIn(samPage, "client2@fish.dev"),
+        signIn(franzPage, "client1@fish.dev"),
+        signIn(samPage, "client2@fish.dev"),
       ]);
 
       await franzPage.getByRole("link", { name: "Friends", exact: true }).click();

@@ -125,7 +125,7 @@ is done.
 
 - [ ] Against staging, run the RLS and realtime verification scripts with
       staging-only credentials and disposable test users.
-- [ ] Verify signup, confirmation, login, password recovery, profile editing,
+- [ ] Verify signup, confirmation, sign-in, password recovery, profile editing,
       client and coach avatar upload/removal, channel loading, message send,
       reaction, read state, and realtime recovery.
 - [ ] Do not point destructive reset or seed commands at production.

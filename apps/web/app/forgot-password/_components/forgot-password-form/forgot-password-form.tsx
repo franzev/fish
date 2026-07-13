@@ -2,7 +2,6 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { requestPasswordReset } from "@/features/auth";
 import { type SubmitEvent, useState } from "react";
@@ -32,9 +31,10 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-page py-2xl">
-      <Card className="w-full max-w-form">
-        <h2 className="text-xl">Reset your password</h2>
+    // Bare content block — AuthSplitLayout (the page) owns <main>, the
+    // split shell, centering, and the max-w-form column.
+    <div className="w-full">
+      <h2 className="text-heading-sm">Reset your password</h2>
         {submitted ? (
           <div className="mt-lg">
             <Alert tone="notice">
@@ -51,6 +51,7 @@ export function ForgotPasswordForm() {
               <Input
                 label="Email"
                 type="email"
+                autoFocus
                 autoComplete="email"
                 inputMode="email"
                 enterKeyHint="send"
@@ -69,7 +70,6 @@ export function ForgotPasswordForm() {
             </form>
           </>
         )}
-      </Card>
-    </main>
+    </div>
   );
 }

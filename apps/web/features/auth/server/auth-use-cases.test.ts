@@ -47,6 +47,6 @@ describe("auth navigation use cases", () => {
         "bad-code",
         dependencies({ exchangeOk: false, userId: null, role: null })
       )
-    ).resolves.toBe("/login");
+    ).resolves.toBe("/sign-in");
   });
 });

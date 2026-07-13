@@ -2,7 +2,6 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   requestPasswordReset,
@@ -59,12 +58,12 @@ export function ExpiredLinkContent() {
   }
 
   return (
-    // relative so the notice overlay below can anchor to THIS card's edge
-    // without affecting its own box — the card stays exactly where flex
-    // centering puts it in every state (D-08: floating overlay, not an
-    // in-flow row).
-    <Card className="relative w-full max-w-form">
-      <h2 className="text-xl">That link has expired</h2>
+    // relative so the notice overlay below can anchor to THIS block's edge
+    // without affecting its own box — the content stays exactly where the
+    // AuthSplitLayout centering puts it in every state (D-08: floating
+    // overlay, not an in-flow row).
+    <div className="relative w-full">
+      <h2 className="text-heading-sm">That link has expired</h2>
       <p className="mt-sm text-body">
         Links only work once, and this one&apos;s had its turn. Send
         yourself a fresh one.
@@ -73,6 +72,7 @@ export function ExpiredLinkContent() {
         <Input
           label="Email"
           type="email"
+          autoFocus
           autoComplete="email"
           inputMode="email"
           enterKeyHint="send"
@@ -109,6 +109,6 @@ export function ExpiredLinkContent() {
           </Alert>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

@@ -2,12 +2,11 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { resendSignupEmail } from "@/features/auth";
 import { useSearchParams } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 
-/* Shared by signup AND unverified-login (D-05) — one screen, one owner.
+/* Shared by signup AND unverified sign-in (D-05) — one screen, one owner.
    Reads ?email= via useSearchParams(), so this must sit under a page-level
    Suspense boundary or `next build` fails ("useSearchParams() should be
    wrapped in a suspense boundary"). */
@@ -41,12 +40,12 @@ export function CheckInboxContent() {
   }
 
   return (
-    // relative so the notice overlay below can anchor to THIS card's edge
-    // without affecting its own box — the card stays exactly where flex
-    // centering puts it in every state (D-08: floating overlay, not an
-    // in-flow row).
-    <Card className="relative w-full max-w-form">
-      <h2 className="text-xl">Check your inbox</h2>
+    // relative so the notice overlay below can anchor to THIS block's edge
+    // without affecting its own box — the content stays exactly where the
+    // AuthSplitLayout centering puts it in every state (D-08: floating
+    // overlay, not an in-flow row).
+    <div className="relative w-full">
+      <h2 className="text-heading-sm">Check your inbox</h2>
       <p className="mt-sm text-body">
         {email
           ? `We sent a link to ${email}. Open it on this device to continue.`
@@ -83,6 +82,6 @@ export function CheckInboxContent() {
           </Alert>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

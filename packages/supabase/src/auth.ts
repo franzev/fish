@@ -6,7 +6,7 @@ export interface FishAuthClaims {
 }
 
 export const authRedirects = {
-  signedOut: "/login",
+  signedOut: "/sign-in",
   clientHome: "/home",
   coachHome: "/coach",
 } as const;

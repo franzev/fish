@@ -3,19 +3,19 @@ import {
   isGoogleAuthAvailable,
   redirectIfSignedIn,
 } from "@/features/auth/server";
-import { SignupForm } from "./_components/signup-form";
+import { SignInForm } from "./_components/sign-in-form";
 
 /* Server Component (NOT "use client") — silently forwards an already
    signed-in visitor to their role home (D-05) before ever rendering the
    form. A signed-out visitor falls through to the unchanged client form. */
-export default async function SignupPage() {
+export default async function SignInPage() {
   await redirectIfSignedIn();
   return (
     <AuthSplitLayout
-      headline="A calmer way to learn English."
-      message="One coach, one conversation, one next step at a time."
+      headline="Welcome back."
+      message="Your chat is where you left it. No catching up required."
     >
-      <SignupForm showGoogleAuth={isGoogleAuthAvailable()} />
+      <SignInForm showGoogleAuth={isGoogleAuthAvailable()} />
     </AuthSplitLayout>
   );
 }
