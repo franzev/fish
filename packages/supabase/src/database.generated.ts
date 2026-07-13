@@ -1000,6 +1000,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+          sticker_id: string | null
         }
         Insert: {
           body?: string
@@ -1014,6 +1015,7 @@ export type Database = {
           reply_to_message_id?: string | null
           sender_id: string
           sender_role: string
+          sticker_id?: string | null
         }
         Update: {
           body?: string
@@ -1028,6 +1030,7 @@ export type Database = {
           reply_to_message_id?: string | null
           sender_id?: string
           sender_role?: string
+          sticker_id?: string | null
         }
         Relationships: [
           {
@@ -1325,6 +1328,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+          sticker_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -1348,6 +1352,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+          sticker_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -1786,6 +1791,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+          sticker_id: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -1803,6 +1809,7 @@ export type Database = {
           p_conversation_id: string
           p_gif?: Json
           p_reply_to_message_id?: string
+          p_sticker_id?: string
         }
         Returns: {
           body: string
@@ -1817,6 +1824,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+          sticker_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -1861,6 +1869,7 @@ export type Database = {
           reply_to_message_id: string | null
           sender_id: string
           sender_role: string
+          sticker_id: string | null
         }
         SetofOptions: {
           from: "*"

@@ -5,6 +5,7 @@ type SendMessageCommand = {
   replyToMessageId?: string | null;
   attachmentIds?: string[];
   gif?: ChatGif;
+  stickerId?: string;
 };
 
 type ChatGif = {
@@ -23,6 +24,33 @@ type ChatGif = {
 const chatLimits = {
   messageBodyMaxLength: 4000,
 };
+
+const stickerIds = new Set([
+  "aquatic-thank-you-octopus",
+  "aquatic-good-night-whale",
+  "aquatic-great-job-sea-star",
+  "aquatic-hello-otter",
+  "aquatic-awesome-dolphin",
+  "aquatic-see-you-soon-turtle",
+  "aquatic-youre-welcome-seal",
+  "aquatic-goodbye-squid",
+  "aquatic-good-morning-seahorse",
+  "aquatic-congratulations-jellyfish",
+  "aquatic-sorry-penguin",
+  "aquatic-please-shrimp",
+  "aquatic-yes-crab",
+  "aquatic-no-lobster",
+  "aquatic-okay-manta-ray",
+  "aquatic-good-luck-goldfish",
+  "aquatic-happy-birthday-narwhal",
+  "aquatic-i-miss-you-manatee",
+  "aquatic-love-you-angelfish",
+  "aquatic-lol-clownfish",
+  "aquatic-omg-pufferfish",
+  "aquatic-cheers-walrus",
+  "aquatic-welcome-back-sea-lion",
+  "aquatic-nice-nudibranch",
+]);
 
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
@@ -97,12 +125,17 @@ Deno.serve(async (request) => {
   const clientRequestId = command.clientRequestId?.trim() ?? "";
   const replyToMessageId = command.replyToMessageId?.trim() || null;
   const gif = command.gif;
+  const stickerId = command.stickerId?.trim() || undefined;
 
   const attachmentIds = Array.isArray(command.attachmentIds)
     ? [...new Set(command.attachmentIds.filter((id) => typeof id === "string" && id))]
     : [];
 
-  if (!command.conversationId || (!body && attachmentIds.length === 0 && !gif) || !clientRequestId) {
+  if (
+    !command.conversationId
+    || (!body && attachmentIds.length === 0 && !gif && !stickerId)
+    || !clientRequestId
+  ) {
     return calmError("Add a message before sending.", 400);
   }
 
@@ -111,6 +144,12 @@ Deno.serve(async (request) => {
   }
   if (gif && attachmentIds.length > 0) {
     return calmError("Send the GIF or the files first, then send the other.", 400);
+  }
+  if (stickerId && !stickerIds.has(stickerId)) {
+    return calmError("That sticker is not available. Choose another one.", 400);
+  }
+  if (stickerId && (gif || attachmentIds.length > 0)) {
+    return calmError("Send the sticker or the other media first.", 400);
   }
 
   if (body.length > chatLimits.messageBodyMaxLength) {
@@ -151,6 +190,7 @@ Deno.serve(async (request) => {
       p_reply_to_message_id: replyToMessageId,
       p_attachment_ids: attachmentIds,
       p_gif: gif ?? null,
+      p_sticker_id: stickerId ?? null,
     }),
   });
 
