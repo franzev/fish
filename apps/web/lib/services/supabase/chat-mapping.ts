@@ -3,6 +3,7 @@ import type {
   ClientChatMessage,
   ClientChatReadState,
 } from "../contracts";
+import { isChatStickerId } from "@fish/core/chat";
 
 export const sendNotice =
   "That did not send yet. Keep this open and try again.";
@@ -26,6 +27,7 @@ export interface MessageResponseRow {
   reply_to_message_id?: string | null;
   pinned_at?: string | null;
   pinned_by?: string | null;
+  sticker_id?: string | null;
   reactions?: Array<{
     emoji: string;
     count: number;
@@ -110,6 +112,7 @@ export function toClientChatMessage(
           height: row.gif.height,
         }
       : undefined,
+    ...(isChatStickerId(row.sticker_id) ? { stickerId: row.sticker_id } : {}),
     images: (row.images ?? []).map((image) => ({
       id: image.id,
       status: "ready",

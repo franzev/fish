@@ -7,6 +7,7 @@ import type { ChatRealtimeService } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
 import type { AppSupabaseClient } from "./types";
 import type { MessageReadRow, MessageRow } from "@fish/supabase";
+import { isChatStickerId } from "@fish/core/chat";
 import type {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
@@ -121,6 +122,7 @@ function toClientChatMessage(row: MessageRow): ClientChatMessage | null {
     editedAt: "edited_at" in row ? row.edited_at ?? null : null,
     deletedAt: "deleted_at" in row ? row.deleted_at ?? null : null,
     replyToMessageId: "reply_to_message_id" in row ? row.reply_to_message_id ?? null : null,
+    ...(isChatStickerId(row.sticker_id) ? { stickerId: row.sticker_id } : {}),
     reactions: [],
     images: [],
   };

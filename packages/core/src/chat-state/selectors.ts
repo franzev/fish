@@ -89,6 +89,7 @@ function areChatMessagesEqual(
     (left.replyToMessageId ?? null) === (right.replyToMessageId ?? null) &&
     (left.localStatus ?? null) === (right.localStatus ?? null) &&
     (left.failureReason ?? null) === (right.failureReason ?? null) &&
+    (left.stickerId ?? null) === (right.stickerId ?? null) &&
     areReactionsEqual(left.reactions ?? [], right.reactions ?? []) &&
     areImagesEqual(left.images ?? [], right.images ?? [])
   );
@@ -221,6 +222,9 @@ export function getMessageSnippet(message: ChatMessageState): string {
   }
 
   const body = message.body.trim();
+  if (!body && message.stickerId) {
+    return "Sticker";
+  }
   if (!body && message.gif) {
     return "GIF";
   }

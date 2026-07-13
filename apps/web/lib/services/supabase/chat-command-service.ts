@@ -86,6 +86,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
             clientRequestId: input.clientRequestId,
             ...(input.attachmentIds?.length ? { attachmentIds: input.attachmentIds } : {}),
             ...(input.gif ? { gif: input.gif } : {}),
+            ...(input.stickerId ? { stickerId: input.stickerId } : {}),
           }
     );
     if (!edge) return sendMessageViaLocalRpc(input);

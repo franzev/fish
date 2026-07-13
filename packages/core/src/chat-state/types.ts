@@ -1,5 +1,5 @@
 import type { UserRole } from "../roles";
-import type { ChatGif } from "../chat";
+import type { ChatGif, ChatStickerId } from "../chat";
 
 export type ChatConversationId = string;
 export type ChatMessageId = string;
@@ -28,6 +28,7 @@ export interface ChatMessageState {
   senderDisplayName?: string | null;
   body: string;
   gif?: ChatGif;
+  stickerId?: ChatStickerId;
   images?: Array<{
     id: string;
     status: "ready";

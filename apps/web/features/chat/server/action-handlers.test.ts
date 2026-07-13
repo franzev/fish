@@ -102,6 +102,36 @@ describe("createChatActionHandlers", () => {
     });
   });
 
+  it("accepts a sticker-only message and preserves its bundled catalog id", async () => {
+    const sent = {
+      id: "message-sticker-1",
+      conversationId: "11111111-1111-4111-8111-111111111111",
+      senderId: "client-1",
+      senderRole: "client" as const,
+      body: "",
+      stickerId: "aquatic-hello-otter" as const,
+      clientRequestId: "sticker-request-1",
+      createdAt: "2026-07-13T00:00:00.000Z",
+    };
+    const sendMessage = vi.fn(async () => ({ ok: true as const, data: sent }));
+    const handlers = createChatActionHandlers(chatFake({ sendMessage }));
+
+    const result = await handlers.sendMessage({
+      conversationId: sent.conversationId,
+      body: "",
+      clientRequestId: sent.clientRequestId,
+      stickerId: sent.stickerId,
+    });
+
+    expect(result.status).toBe("sent");
+    expect(sendMessage).toHaveBeenCalledWith({
+      conversationId: sent.conversationId,
+      body: "",
+      clientRequestId: sent.clientRequestId,
+      stickerId: sent.stickerId,
+    });
+  });
+
   it("accepts a GIF-only message and rejects spoofed provider media", async () => {
     const sent = {
       id: "message-gif-1",

@@ -6,7 +6,8 @@ import type { ChatPageData } from "@/features/auth/contracts";
 import { resolveAvatarUrlsSafely, type AppServices } from "@/lib/services";
 
 export async function getChatPageData(
-  injected?: AppServices
+  injected?: AppServices,
+  channelSlug?: string,
 ): Promise<ChatPageData | null> {
   const services = injected ?? (await getServerServices());
   const profile = await getCurrentProfile({
@@ -18,7 +19,7 @@ export async function getChatPageData(
     return null;
   }
 
-  const chatResult = await services.database.chat.getAssignedConversation();
+  const chatResult = await services.database.chat.getAssignedConversation(channelSlug);
   if (!chatResult.ok) {
     throw chatResult.error;
   }

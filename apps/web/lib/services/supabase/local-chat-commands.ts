@@ -286,6 +286,7 @@ export async function sendMessageViaLocalRpc(
       : {}),
     ...(values.attachmentIds?.length ? { p_attachment_ids: values.attachmentIds } : {}),
     ...(values.gif ? { p_gif: values.gif as unknown as Json } : {}),
+    ...(values.stickerId ? { p_sticker_id: values.stickerId } : {}),
   });
 
   if (error || !data) {

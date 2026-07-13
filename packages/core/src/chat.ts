@@ -25,11 +25,46 @@ export interface ChatMessage {
   senderRole: UserRole;
   body: string;
   gif?: ChatGif;
+  stickerId?: ChatStickerId;
   images?: ChatImage[];
   createdAt: string;
 }
 
 export type ChatGifProvider = "klipy" | "giphy";
+
+export const chatStickerIds = [
+  "aquatic-thank-you-octopus",
+  "aquatic-good-night-whale",
+  "aquatic-great-job-sea-star",
+  "aquatic-hello-otter",
+  "aquatic-awesome-dolphin",
+  "aquatic-see-you-soon-turtle",
+  "aquatic-youre-welcome-seal",
+  "aquatic-goodbye-squid",
+  "aquatic-good-morning-seahorse",
+  "aquatic-congratulations-jellyfish",
+  "aquatic-sorry-penguin",
+  "aquatic-please-shrimp",
+  "aquatic-yes-crab",
+  "aquatic-no-lobster",
+  "aquatic-okay-manta-ray",
+  "aquatic-good-luck-goldfish",
+  "aquatic-happy-birthday-narwhal",
+  "aquatic-i-miss-you-manatee",
+  "aquatic-love-you-angelfish",
+  "aquatic-lol-clownfish",
+  "aquatic-omg-pufferfish",
+  "aquatic-cheers-walrus",
+  "aquatic-welcome-back-sea-lion",
+  "aquatic-nice-nudibranch",
+] as const;
+
+export type ChatStickerId = (typeof chatStickerIds)[number];
+
+export function isChatStickerId(value: unknown): value is ChatStickerId {
+  return typeof value === "string"
+    && (chatStickerIds as readonly string[]).includes(value);
+}
 
 /** Provider-hosted animated media attached to one chat message. The provider
  *  identifier and source URL preserve attribution and moderation context;
@@ -68,6 +103,7 @@ export interface SendMessageCommand {
   clientRequestId?: string;
   attachmentIds?: string[];
   gif?: ChatGif;
+  stickerId?: ChatStickerId;
 }
 
 export interface SendMessageResult {

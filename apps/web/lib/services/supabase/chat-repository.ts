@@ -11,6 +11,7 @@ import type {
   ProfileRow,
 } from "@fish/supabase";
 import { mapSupabaseError, safely, type SupabaseResponse } from "./shared";
+import { isChatStickerId } from "@fish/core/chat";
 import type {
   ChatRepository,
   ClientChatData,
@@ -80,7 +81,7 @@ async function fetchConversationReactions(
 export class SupabaseChatRepository implements ChatRepository {
   constructor(private readonly client: AppSupabaseClient) {}
 
-  async getAssignedConversation(): Promise<ServiceResult<ClientChatData | null>> {
+  async getAssignedConversation(channelSlug?: string): Promise<ServiceResult<ClientChatData | null>> {
     return safely("chat.getAssignedConversation", async () => {
       const { data: userData, error: userError } = await this.client.auth.getUser();
       if (userError) {
@@ -118,11 +119,35 @@ export class SupabaseChatRepository implements ChatRepository {
         return serviceSuccess(null);
       }
 
+      const { data: requestedChannel, error: requestedChannelError } = channelSlug
+        ? (await this.client
+            .from("channels")
+            .select("id, name, slug, conversation_id")
+            .eq("slug", channelSlug)
+            .maybeSingle()) as SupabaseResponse<{
+              id: string;
+              name: string;
+              slug: string;
+              conversation_id: string;
+            }>
+        : { data: null, error: null };
+      if (requestedChannelError) {
+        return serviceFailure(
+          mapSupabaseError(requestedChannelError, {
+            code: "database",
+            fallbackMessage: "Could not load the community room.",
+            operation: "chat.getAssignedConversation.channel",
+            recoverable: true,
+          })
+        );
+      }
+      if (channelSlug && !requestedChannel) return serviceSuccess(null);
+
       const { data: demoConversation, error: demoConversationError } =
         (await this.client
           .from("conversations")
           .select("*")
-          .eq("id", demoCommunityConversationId)
+          .eq("id", requestedChannel?.conversation_id ?? demoCommunityConversationId)
           .maybeSingle()) as SupabaseResponse<ConversationRow>;
 
       if (demoConversationError) {
@@ -138,7 +163,7 @@ export class SupabaseChatRepository implements ChatRepository {
 
       let conversation = demoConversation;
 
-      if (!conversation) {
+      if (!conversation && !requestedChannel) {
         const { data: conversations, error: conversationError } = (await this.client
           .from("conversations")
           .select("*")
@@ -164,14 +189,20 @@ export class SupabaseChatRepository implements ChatRepository {
 
       if (!conversation) return serviceSuccess(null);
 
-      const isDemoCommunity = conversation.id === demoCommunityConversationId;
+      const isCommunity = Boolean(requestedChannel) || conversation.id === demoCommunityConversationId;
+      const activeChannel = requestedChannel ?? {
+        id: generalChannelId,
+        name: generalChannelName,
+        slug: generalChannelSlug,
+        conversation_id: demoCommunityConversationId,
+      };
       let participant: Pick<ProfileRow, "id" | "role" | "display_name"> = {
-        id: demoCommunityConversationId,
+        id: conversation.id,
         role: "coach",
         display_name: demoCommunityTitle,
       };
 
-      if (!isDemoCommunity) {
+      if (!isCommunity) {
         const participantId = conversation.client_id === userId
           ? conversation.coach_id
           : conversation.client_id;
@@ -409,11 +440,11 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
       const { data: channelMemberRows, error: channelMemberError } =
-        isDemoCommunity
+        isCommunity
           ? (await this.client
               .from("channel_members")
               .select("user_id")
-              .eq("channel_id", generalChannelId)) as {
+              .eq("channel_id", activeChannel.id)) as {
               data: Array<{ user_id: string }> | null;
               error: SupabaseResponse<unknown>["error"];
             }
@@ -428,7 +459,7 @@ export class SupabaseChatRepository implements ChatRepository {
           })
         );
       }
-      const searchMemberIds = isDemoCommunity
+      const searchMemberIds = isCommunity
         ? Array.from(new Set((channelMemberRows ?? []).map((row) => row.user_id)))
         : Array.from(new Set([userId, participant.id]));
       const { data: searchMemberProfiles, error: searchMemberError } =
@@ -460,13 +491,11 @@ export class SupabaseChatRepository implements ChatRepository {
 
       return serviceSuccess({
         conversationId: conversation.id,
-        kind: isDemoCommunity ? "community" : "direct",
-        channelId: isDemoCommunity ? generalChannelId : undefined,
-        channelSlug: isDemoCommunity ? generalChannelSlug : undefined,
-        channelName: isDemoCommunity ? generalChannelName : undefined,
-        // The simplified header renders "# general" from the channel name;
-        // the old "FISH Community"/"Community room" title/subtitle pair is retired.
-        title: isDemoCommunity ? generalChannelName : undefined,
+        kind: isCommunity ? "community" : "direct",
+        channelId: isCommunity ? activeChannel.id : undefined,
+        channelSlug: isCommunity ? activeChannel.slug : undefined,
+        channelName: isCommunity ? activeChannel.name : undefined,
+        title: isCommunity ? activeChannel.name : undefined,
         currentUserId: userId,
         currentUserRole: profile.role,
         currentUserDisplayName: profile.display_name,
@@ -568,6 +597,7 @@ function toClientChatMessage(
           height: gif.height,
         }
       : undefined,
+    ...(isChatStickerId(row.sticker_id) ? { stickerId: row.sticker_id } : {}),
     images: images.flatMap((image) =>
       image.display_path && image.stored_mime_type && image.stored_byte_size
         ? [{

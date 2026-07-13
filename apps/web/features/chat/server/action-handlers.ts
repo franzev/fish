@@ -39,6 +39,7 @@ export function createChatActionHandlers(chat: ChatCommandService) {
       const parsed = sendMessageSchema.safeParse(input);
       if (!parsed.success) {
         const hasGif = typeof input === "object" && input !== null && "gif" in input;
+        const hasSticker = typeof input === "object" && input !== null && "stickerId" in input;
         return {
           status: "notice",
           values: input,
@@ -51,6 +52,8 @@ export function createChatActionHandlers(chat: ChatCommandService) {
               ? "This message is a little long. Try sending it in two parts."
               : hasGif
                 ? "That GIF is not available. Choose another one."
+                : hasSticker
+                  ? "That sticker is not available. Choose another one."
                 : "Add a message before sending.",
         };
       }

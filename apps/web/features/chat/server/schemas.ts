@@ -1,4 +1,4 @@
-import { chatLimits } from "@fish/core/chat";
+import { chatLimits, chatStickerIds } from "@fish/core/chat";
 import { z } from "zod";
 
 const httpsUrl = z.url().max(2000).refine((value) => value.startsWith("https://"), {
@@ -44,10 +44,21 @@ export const sendMessageSchema = z.strictObject({
   replyToMessageId: z.string().trim().min(1).nullable().optional(),
   attachmentIds: z.array(z.string().uuid()).max(chatLimits.imageMaxCount).optional(),
   gif: chatGifSchema.optional(),
-}).refine((value) => value.body.length > 0 || (value.attachmentIds?.length ?? 0) > 0 || value.gif, {
+  stickerId: z.enum(chatStickerIds).optional(),
+}).refine((value) =>
+  value.body.length > 0
+  || (value.attachmentIds?.length ?? 0) > 0
+  || value.gif
+  || value.stickerId,
+{
   message: "Message content is required",
 }).refine((value) => !(value.gif && (value.attachmentIds?.length ?? 0) > 0), {
   message: "A GIF cannot be combined with files",
+}).refine((value) => !(
+  value.stickerId
+  && (value.gif || (value.attachmentIds?.length ?? 0) > 0)
+), {
+  message: "A sticker cannot be combined with other media",
 });
 
 export const editMessageSchema = z.strictObject({

@@ -1,5 +1,5 @@
 import type { ServiceResult } from "./errors";
-import type { ChatGif } from "@fish/core/chat";
+import type { ChatGif, ChatStickerId } from "@fish/core/chat";
 
 export interface AuthUser {
   id: string;
@@ -124,6 +124,7 @@ export interface ClientChatMessage {
   pinnedAt?: string | null; pinnedBy?: string | null;
   reactions?: ClientChatReaction[];
   gif?: ClientChatGif;
+  stickerId?: ChatStickerId;
   images?: ClientChatImage[];
 }
 export interface ClientChatParticipant {
@@ -149,7 +150,9 @@ export interface ClientChatData {
   searchMembers?: ClientChatSearchMember[]; searchChannels?: ClientChatSearchChannel[];
   hasMoreOlder?: boolean; oldestCursor?: { createdAt: string; id: string } | null;
 }
-export interface ChatRepository { getAssignedConversation(): Promise<ServiceResult<ClientChatData | null>> }
+export interface ChatRepository {
+  getAssignedConversation(channelSlug?: string): Promise<ServiceResult<ClientChatData | null>>;
+}
 export interface ChatSearchResult {
   messages: ClientChatMessage[];
   nextCursor: { createdAt: string; id: string } | null;
@@ -256,6 +259,7 @@ export interface SendMessageInput {
   replyToMessageId?: string | null;
   attachmentIds?: string[];
   gif?: ClientChatGif;
+  stickerId?: ChatStickerId;
 }
 
 export interface EditMessageInput {
