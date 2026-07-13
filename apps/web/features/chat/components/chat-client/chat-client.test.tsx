@@ -715,7 +715,7 @@ describe("ChatClient", () => {
     ).toBeGreaterThan(1);
   });
 
-  it("does not raise a notice when an unimplemented composer affordance is clicked", async () => {
+  it("opens the implemented GIF picker without a coming-soon notice", () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
@@ -730,7 +730,7 @@ describe("ChatClient", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
 
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Choose a GIF" })).toBeInTheDocument();
     expect(screen.queryByText(/coming soon/i)).toBeNull();
   });
 

@@ -10,7 +10,12 @@ interface GifSelectionPreviewProps {
 export function GifSelectionPreview({ gif, onRemove }: GifSelectionPreviewProps) {
   return (
     <div className="flex items-start gap-xs border-b border-border p-xs">
-      <GifMedia gif={gif} preview className="w-chat-gif-selection shrink-0" />
+      <GifMedia
+        gif={gif}
+        preview
+        allowPlaybackControl
+        className="w-chat-gif-selection shrink-0"
+      />
       <p className="min-w-0 flex-1 py-xs text-ui-xs text-muted">
         GIF selected
       </p>

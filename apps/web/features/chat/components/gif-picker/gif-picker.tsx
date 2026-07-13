@@ -27,6 +27,10 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
   const [next, setNext] = useState<string | null>(null);
   const [status, setStatus] = useState<PickerStatus>("loading");
   const [loadingMore, setLoadingMore] = useState(false);
+  const [animationsPaused, setAnimationsPaused] = useState(() =>
+    typeof window !== "undefined"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
   const requestSequence = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -100,9 +104,26 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-xs pb-xs">
-        <p className="mb-xs text-ui-xs text-muted" aria-live="polite">
-          {status === "loading" ? "Finding GIFs…" : resultLabel}
-        </p>
+        {status === "loading" && (
+          <p className="mb-xs text-ui-xs text-muted" role="status" aria-live="polite">
+            Finding GIFs…
+          </p>
+        )}
+        {status === "ready" && (
+          <div className="mb-xs flex items-center justify-between gap-xs">
+            <p className="text-ui-xs text-muted" role="status" aria-live="polite">
+              {resultLabel}
+            </p>
+            <button
+              type="button"
+              aria-pressed={animationsPaused}
+              onClick={() => setAnimationsPaused((current) => !current)}
+              className="min-h-target-touch rounded-control px-xs text-ui-xs text-muted hover:bg-surface-2 hover:text-body"
+            >
+              {animationsPaused ? "Play GIF animations" : "Pause GIF animations"}
+            </button>
+          </div>
+        )}
         {status === "loading" && (
           <div className="grid grid-cols-2 gap-2xs" aria-label="Loading GIFs">
             {Array.from({ length: 6 }, (_, index) => (
@@ -111,12 +132,15 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
           </div>
         )}
         {status === "empty" && (
-          <p className="py-lg text-center text-ui-sm text-muted">
+          <p role="status" className="py-lg text-center text-ui-sm text-muted">
             No GIFs found. Try a simpler phrase.
           </p>
         )}
         {status === "notice" && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-sm text-center">
+          <div
+            role="status"
+            className="flex flex-1 flex-col items-center justify-center gap-sm text-center"
+          >
             <p className="max-w-form text-ui-sm text-notice">
               GIF search is taking a break. Your message is still here.
             </p>
@@ -141,7 +165,14 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
                 onClick={() => onSelect(gif, query.trim())}
                 className="min-h-target-touch overflow-hidden rounded-control text-left hover:outline hover:outline-1 hover:outline-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-outer"
               >
-                <GifMedia gif={gif} preview fixedAspect className="rounded-none" />
+                <GifMedia
+                  gif={gif}
+                  preview
+                  paused={animationsPaused}
+                  playRequested={!animationsPaused}
+                  fixedAspect
+                  className="rounded-none"
+                />
               </button>
             ))}
           </div>

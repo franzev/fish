@@ -45,4 +45,18 @@ describe("GifMedia", () => {
     fireEvent.click(screen.getByRole("button", { name: `Play GIF: ${gif.description}` }));
     expect(screen.getByLabelText(gif.description)).toHaveAttribute("src", gif.mediaUrl);
   });
+
+  it("lets every user pause and resume a looping message GIF", () => {
+    render(<GifMedia gif={gif} allowPlaybackControl />);
+
+    expect(screen.getByLabelText(gif.description)).toHaveAttribute("src", gif.mediaUrl);
+    fireEvent.click(screen.getByRole("button", { name: `Pause GIF: ${gif.description}` }));
+
+    expect(screen.getByRole("img", { name: gif.description })).toHaveAttribute(
+      "src",
+      gif.posterUrl
+    );
+    fireEvent.click(screen.getByRole("button", { name: `Play GIF: ${gif.description}` }));
+    expect(screen.getByLabelText(gif.description)).toHaveAttribute("src", gif.mediaUrl);
+  });
 });

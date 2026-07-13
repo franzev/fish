@@ -2,7 +2,7 @@
 
 import type { ClientChatGif } from "@/lib/services";
 import { cn } from "@/lib/utils";
-import { IconPlayerPlay } from "@tabler/icons-react";
+import { IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
 import { useState, useSyncExternalStore } from "react";
 
 function subscribeToReducedMotion(onChange: () => void): () => void {
@@ -19,6 +19,8 @@ interface GifMediaProps {
   gif: ClientChatGif;
   preview?: boolean;
   allowPlaybackControl?: boolean;
+  paused?: boolean;
+  playRequested?: boolean;
   fixedAspect?: boolean;
   className?: string;
 }
@@ -29,6 +31,8 @@ export function GifMedia({
   gif,
   preview = false,
   allowPlaybackControl = false,
+  paused: externallyPaused = false,
+  playRequested: externalPlayRequested = false,
   fixedAspect = false,
   className,
 }: GifMediaProps) {
@@ -37,10 +41,13 @@ export function GifMedia({
     getReducedMotionSnapshot,
     () => false
   );
-  const [playRequested, setPlayRequested] = useState(false);
+  const [localPlayRequested, setLocalPlayRequested] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [failed, setFailed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
-  const shouldPlay = !reducedMotion || playRequested;
+  const shouldPlay = !externallyPaused
+    && !paused
+    && (!reducedMotion || localPlayRequested || externalPlayRequested);
 
   return (
     <div
@@ -84,14 +91,25 @@ export function GifMedia({
           className="size-full object-cover"
         />
       )}
-      {reducedMotion && !playRequested && allowPlaybackControl && !failed && !posterFailed && (
+      {allowPlaybackControl && !failed && !posterFailed && (
         <button
           type="button"
-          aria-label={`Play GIF: ${gif.description}`}
-          onClick={() => setPlayRequested(true)}
-          className="absolute inset-0 m-auto flex size-control items-center justify-center rounded-pill bg-scrim text-foreground shadow-popover"
+          aria-label={`${shouldPlay ? "Pause" : "Play"} GIF: ${gif.description}`}
+          onClick={() => {
+            if (shouldPlay) {
+              setPaused(true);
+              return;
+            }
+            setPaused(false);
+            setLocalPlayRequested(true);
+          }}
+          className="absolute bottom-xs right-xs flex size-control items-center justify-center rounded-pill bg-scrim text-foreground shadow-popover"
         >
-          <IconPlayerPlay size={20} stroke={1.75} aria-hidden="true" />
+          {shouldPlay ? (
+            <IconPlayerPause size={20} stroke={1.75} aria-hidden="true" />
+          ) : (
+            <IconPlayerPlay size={20} stroke={1.75} aria-hidden="true" />
+          )}
         </button>
       )}
     </div>
