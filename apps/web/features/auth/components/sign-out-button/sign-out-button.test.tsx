@@ -27,36 +27,36 @@ import {
 } from "@/features/chat/model/store";
 import { generalChannelId } from "@/lib/channels";
 import { ServiceError } from "@/lib/services";
-import { LogoutButton } from "./logout-button";
+import { SignOutButton } from "./sign-out-button";
 
-describe("LogoutButton", () => {
+describe("SignOutButton", () => {
   afterEach(() => {
     vi.clearAllMocks();
     resetChatStoreForTests();
   });
 
-  it("clears account A's community draft and pending send so account B starts clean after the same soft logout/login lifecycle (CR-01)", async () => {
+  it("clears account A's community draft and pending send so account B starts clean after the same soft sign-out/sign-in lifecycle (CR-01)", async () => {
     // Simulate account A: an unsent draft plus a pending optimistic send in
     // the one fixed community conversation every account shares.
     chatStore
       .getState()
       .setDraft(generalChannelId, "Account A's unsent draft");
     chatStore.getState().sendOptimisticMessage({
-      id: "local-request-logout",
+      id: "local-request-sign-out",
       conversationId: generalChannelId,
       senderId: "account-a",
       senderRole: "client",
       body: "Account A's pending send.",
-      clientRequestId: "request-logout",
+      clientRequestId: "request-sign-out",
       createdAt: "2026-07-06T04:07:00.000Z",
     });
 
-    render(<LogoutButton />);
-    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    render(<SignOutButton />);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
-    // Logout still signs out and performs the same soft navigation.
+    // Sign-out still performs the same soft navigation.
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sign-in"));
 
     // Simulating account B in the same tab (soft nav means no module
     // reload): the shared conversation's composer and messages must be
@@ -79,8 +79,8 @@ describe("LogoutButton", () => {
       .getState()
       .setDraft(generalChannelId, "Account A's unsent draft");
 
-    render(<LogoutButton />);
-    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    render(<SignOutButton />);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
     await screen.findByText(

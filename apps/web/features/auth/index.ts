@@ -3,6 +3,6 @@
 import "client-only";
 
 export * from "./components/chat-identity-guard";
-export * from "./components/logout-button";
+export * from "./components/sign-out-button";
 export * from "./client/browser";
-export * from "./client/use-logout";
+export * from "./client/use-sign-out";

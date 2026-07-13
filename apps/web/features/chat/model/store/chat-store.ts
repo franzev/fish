@@ -269,7 +269,7 @@ export function useChatStore<T>(selector: (state: ChatStoreState) => T): T {
 // sole authority (D-05, D-08).
 let cacheOwnerUserId: string | null = null;
 
-// Full singleton reset for production sign-out (CR-01): logout is a soft
+// Full singleton reset for production sign-out (CR-01): sign-out is a soft
 // `router.push`, so the JS module and this Zustand singleton survive across
 // accounts in the same tab. A full replace (not a merge) empties every
 // conversation's composer draft, pending/failed local messages, read state,
@@ -282,7 +282,7 @@ export function clearChatStore(): void {
 
 // Purges the cache the moment the verified user changes (CR-01), covering
 // non-button account transitions on the same tab -- e.g. a server re-render
-// after a different account signs in without ever touching LogoutButton. A
+// after a different account signs in without ever touching SignOutButton. A
 // fresh store (no owner yet) or a repeated call for the SAME owner is a
 // no-op beyond re-affirming ownership; existing state is never purged just
 // because the guard mounts or re-renders.

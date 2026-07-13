@@ -1,6 +1,6 @@
 import { A11yPrefs, CoachCard, ConsentRow, SettingsRow } from "@/features/profile";
 import { Avatar } from "@/features/chat";
-import { LogoutButton } from "@/features/auth";
+import { SignOutButton } from "@/features/auth";
 import { Card } from "@/components/ui/card";
 import { authRedirects } from "@/features/auth/redirects";
 import { getProfileData } from "@/features/profile/server";
@@ -32,7 +32,7 @@ export default async function ProfilePage() {
           alt=""
         />
         <div>
-          <h1 className="text-2xl">{data.displayName}</h1>
+          <h1 className="text-heading-sm">{data.displayName}</h1>
           <p className="text-ui text-muted">
             {data.role === "client" ? "Learning English" : "Coach"}
           </p>
@@ -47,7 +47,7 @@ export default async function ProfilePage() {
         />
       )}
 
-      <Card className="divide-y divide-border p-0">
+      <Card className="divide-y divide-divider p-0">
         <SettingsRow
           label="Edit profile"
           control={
@@ -74,7 +74,9 @@ export default async function ProfilePage() {
             />
           </>
         )}
-        <SettingsRow label="Sign out" control={<LogoutButton />} />
+        <div className="flex min-h-control items-center justify-end p-md">
+          <SignOutButton />
+        </div>
       </Card>
     </div>
   );

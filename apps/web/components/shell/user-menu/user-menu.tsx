@@ -1,6 +1,6 @@
 "use client";
 
-import { useLogout } from "@/features/auth";
+import { useSignOut } from "@/features/auth";
 import type { UserRole } from "@fish/core/roles";
 import { Menu } from "@base-ui/react/menu";
 import { IconLogout, IconUser } from "@tabler/icons-react";
@@ -19,16 +19,16 @@ interface UserMenuProps {
 }
 
 /* Consolidates the header's account actions behind one quiet trigger — the
-   display name — instead of a name link plus a standalone Log out button.
+   display name — instead of a name link plus a standalone Sign out button.
    D-09: the bar stays zero-primary; this menu adds no primary-styled Button.
-   Log out routes through the shared useLogout hook so clearChatStore() (CR-01)
+   Sign out routes through the shared useSignOut hook so clearChatStore() (CR-01)
    always runs before the redirect, whether triggered here or from the
    Profile "Sign out" row. A failed sign-out (CR-01) never clears state or
    navigates -- it surfaces the hook's calm notice-tone guidance as a
    non-interactive row instead. Base UI Menu supplies roving focus,
    Escape/outside dismiss, and focus return for free. */
 export function UserMenu({ displayName, avatarUrl, profileId }: UserMenuProps) {
-  const { logout, notice } = useLogout();
+  const { signOut, notice } = useSignOut();
 
   return (
     <Menu.Root>
@@ -47,7 +47,7 @@ export function UserMenu({ displayName, avatarUrl, profileId }: UserMenuProps) {
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-20">
-          <Menu.Popup className="min-w-menu rounded-card border border-border bg-surface p-3xs shadow-popover">
+          <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
             <Menu.Item
               className={menuItemClass}
               render={<Link href="/profile" />}
@@ -55,9 +55,9 @@ export function UserMenu({ displayName, avatarUrl, profileId }: UserMenuProps) {
               <IconUser size={20} stroke={1.75} aria-hidden="true" />
               Profile
             </Menu.Item>
-            <Menu.Item className={menuItemClass} onClick={logout}>
+            <Menu.Item className={menuItemClass} onClick={signOut}>
               <IconLogout size={20} stroke={1.75} aria-hidden="true" />
-              Log out
+              Sign out
             </Menu.Item>
             {notice && (
               <p className="px-sm py-2xs text-ui-sm text-notice">{notice}</p>

@@ -15,4 +15,11 @@ describe("ProfilePage source contracts", () => {
     expect(source).toContain("min-h-control");
     expect(source).not.toMatch(/min-h-\[[^\]]+\]/);
   });
+
+  it("shows only the Sign out action in the account row", () => {
+    const source = readFileSync(resolve(__dirname, "./page.tsx"), "utf-8");
+
+    expect(source).not.toContain('label="Sign out"');
+    expect(source.match(/<SignOutButton \/>/g)).toHaveLength(1);
+  });
 });

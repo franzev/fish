@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { LogoutButton } from "./logout-button";
+import { SignOutButton } from "./sign-out-button";
 
 const meta = {
-  title: "Product/LogoutButton",
-  component: LogoutButton,
+  title: "Product/SignOutButton",
+  component: SignOutButton,
   tags: ["autodocs"],
-} satisfies Meta<typeof LogoutButton>;
+} satisfies Meta<typeof SignOutButton>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

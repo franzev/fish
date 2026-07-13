@@ -3,11 +3,11 @@
 import "client-only";
 
 import { clearChatStore } from "@/features/chat/model/store";
-import { signOut } from "./browser";
+import { signOut as performSignOut } from "./browser";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-/* Single-sourced logout handler shared by LogoutButton (profile "Sign out"
+/* Single-sourced sign-out handler shared by SignOutButton (profile "Sign out"
    row) and UserMenu (header). No confirmation dialog — the product is
    calm/frictionless and sessions are cheap to re-establish (UI-SPEC).
    clearChatStore() must run after signOut() and before the soft
@@ -17,15 +17,15 @@ import { useState } from "react";
    completing the transition would silently drop this account's draft with
    no way back, so failure preserves the current account's state and
    surfaces a calm retry notice instead (CR-01). */
-export function useLogout() {
+export function useSignOut() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function logout() {
+  async function signOut() {
     setNotice(null);
     setLoading(true);
-    const result = await signOut();
+    const result = await performSignOut();
 
     if (!result.ok) {
       setLoading(false);
@@ -36,8 +36,8 @@ export function useLogout() {
     }
 
     clearChatStore();
-    router.push("/login");
+    router.push("/sign-in");
   }
 
-  return { logout, loading, notice };
+  return { signOut, loading, notice };
 }

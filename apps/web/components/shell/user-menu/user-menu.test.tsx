@@ -27,7 +27,7 @@ describe("UserMenu", () => {
     resetChatStoreForTests();
   });
 
-  it("opens on click and shows Profile + Log out for a client", () => {
+  it("opens on click and shows Profile + Sign out for a client", () => {
     render(<UserMenu displayName="Alex Rivera" role="client" />);
 
     fireEvent.click(
@@ -37,11 +37,11 @@ describe("UserMenu", () => {
     const profileLink = screen.getByRole("menuitem", { name: "Profile" });
     expect(profileLink).toHaveAttribute("href", "/profile");
     expect(
-      screen.getByRole("menuitem", { name: "Log out" })
+      screen.getByRole("menuitem", { name: "Sign out" })
     ).toBeInTheDocument();
   });
 
-  it("shows Profile and Log out for a coach", () => {
+  it("shows Profile and Sign out for a coach", () => {
     render(<UserMenu displayName="Coach Dana" role="coach" />);
 
     fireEvent.click(
@@ -49,22 +49,22 @@ describe("UserMenu", () => {
     );
 
     expect(
-      screen.getByRole("menuitem", { name: "Log out" })
+      screen.getByRole("menuitem", { name: "Sign out" })
     ).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Profile" }))
       .toHaveAttribute("href", "/profile");
   });
 
-  it("clicking Log out signs out, clears the chat store, and pushes /login (CR-01)", async () => {
+  it("clicking Sign out signs out, clears the chat store, and pushes /sign-in (CR-01)", async () => {
     render(<UserMenu displayName="Alex Rivera" role="client" />);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Account menu for Alex Rivera" })
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: "Log out" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sign-in"));
     expect(chatStore.getState()).toBeDefined();
   });
 });

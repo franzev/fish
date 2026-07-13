@@ -20,7 +20,7 @@ interface ChatIdentityGuardProps {
       the same tab (a soft nav keeps the JS module alive across accounts).
    2. Auth-state listener: purges on SIGNED_OUT and on any event whose
       session belongs to a DIFFERENT user, covering cross-tab sign-out and
-      session expiry-then-login. A same-user event (e.g. TOKEN_REFRESHED)
+      session expiry then sign-in. A same-user event (e.g. TOKEN_REFRESHED)
       is a no-op.
    This is a purge trigger only -- it never reads role/permission data and
    makes no authorization decision; RLS/Edge Functions remain the sole
