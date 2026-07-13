@@ -238,6 +238,7 @@ export function ChatClient({
   const {
     draft,
     selectedGif,
+    selectedStickerId,
     notice,
     canSend,
     replyingTo,
@@ -254,6 +255,8 @@ export function ChatClient({
     cancelEdit,
     selectGif,
     removeSelectedGif,
+    selectSticker,
+    removeSelectedSticker,
     handleComposerKeyDown,
   } = useChatComposer({
     chat,
@@ -501,6 +504,9 @@ export function ChatClient({
         selectedGif={selectedGif}
         selectGif={selectGif}
         removeSelectedGif={removeSelectedGif}
+        selectedStickerId={selectedStickerId}
+        selectSticker={selectSticker}
+        removeSelectedSticker={removeSelectedSticker}
       />
       </div>
       {searchResultsOpen && <SearchResultsSidebar

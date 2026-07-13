@@ -59,12 +59,14 @@ describe("Input", () => {
         label="Search"
         labelVisuallyHidden
         reserveMessageSpace={false}
+        density="compact"
         leadingIcon={<IconSearch aria-hidden="true" />}
       />
     );
 
     const field = getByRole("searchbox", { name: "Search" });
-    expect(field.className).toContain("pl-control");
+    expect(field.className).toContain("sm:min-h-search-control");
+    expect(field.className).toContain("sm:pl-search-control");
     expect(container.querySelector("label")).toHaveClass("sr-only");
     expect(container.querySelector("svg")).not.toBeNull();
   });

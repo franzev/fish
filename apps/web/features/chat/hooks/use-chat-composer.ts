@@ -1,5 +1,5 @@
 import type { ClientChatData } from "@/lib/services";
-import { chatLimits } from "@fish/core/chat";
+import { chatLimits, type ChatStickerId } from "@fish/core/chat";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import type { SendMessageActionState } from "@/features/chat/contracts";
 import type { ReportGifActionState } from "@/features/chat/contracts";
@@ -31,6 +31,12 @@ interface GifSelectionState {
   revision: number;
 }
 
+interface StickerSelectionState {
+  conversationId: string;
+  stickerId: ChatStickerId | null;
+  revision: number;
+}
+
 function makeRequestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
 }
@@ -56,6 +62,11 @@ export function useChatComposer({
     query: "",
     revision: 0,
   });
+  const [stickerSelection, setStickerSelection] = useState<StickerSelectionState>({
+    conversationId: chat.conversationId,
+    stickerId: null,
+    revision: 0,
+  });
   if (gifSelection.conversationId !== chat.conversationId) {
     setGifSelection({
       conversationId: chat.conversationId,
@@ -64,8 +75,16 @@ export function useChatComposer({
       revision: gifSelection.revision + 1,
     });
   }
+  if (stickerSelection.conversationId !== chat.conversationId) {
+    setStickerSelection({
+      conversationId: chat.conversationId,
+      stickerId: null,
+      revision: stickerSelection.revision + 1,
+    });
+  }
   const selectedGif = gifSelection.gif;
   const selectedGifQuery = gifSelection.query;
+  const selectedStickerId = stickerSelection.stickerId;
   const composer = useChatStore((state) =>
     selectComposerForConversation(state, chat.conversationId)
   );
@@ -82,7 +101,12 @@ export function useChatComposer({
   const trimmedDraft = draft.trim();
   const readyImages = pendingImages.filter((image) => image.status === "ready");
   const imageUploadsSettled = pendingImages.every((image) => image.status === "ready");
-  const canSend = (trimmedDraft.length > 0 || readyImages.length > 0 || Boolean(selectedGif))
+  const canSend = (
+    trimmedDraft.length > 0
+    || readyImages.length > 0
+    || Boolean(selectedGif)
+    || Boolean(selectedStickerId)
+  )
     && imageUploadsSettled;
   const replyingTo = useMemo(
     () =>
@@ -119,11 +143,13 @@ export function useChatComposer({
     clearComposer = false,
     attachmentIds: string[] = [],
     optimisticImages: ClientChatImage[] = [],
+    optimisticStickerId?: ChatStickerId,
     optimisticGif?: ClientChatGif,
     gifQuery = ""
   ) {
     const sendConversationId = chat.conversationId;
     const gifSelectionRevisionAtSend = gifSelection.revision;
+    const stickerSelectionRevisionAtSend = stickerSelection.revision;
     setNotice(null);
     stopLocalTyping();
 
@@ -135,6 +161,7 @@ export function useChatComposer({
       senderDisplayName: chat.currentUserDisplayName,
       body,
       gif: optimisticGif,
+      stickerId: optimisticStickerId,
       images: optimisticImages,
       clientRequestId,
       editedAt: null,
@@ -156,6 +183,11 @@ export function useChatComposer({
           ? { ...current, gif: null, query: "" }
           : current
       );
+      setStickerSelection((current) =>
+        current.conversationId === sendConversationId
+          ? { ...current, stickerId: null }
+          : current
+      );
     }
 
     const result = await sendMessageAction({
@@ -165,6 +197,7 @@ export function useChatComposer({
       replyToMessageId,
       attachmentIds,
       gif: optimisticGif,
+      stickerId: optimisticStickerId,
     }).catch(() => ({
       status: "notice" as const,
       values: {},
@@ -187,6 +220,15 @@ export function useChatComposer({
           && current.revision === gifSelectionRevisionAtSend
           && current.gif === null
             ? { ...current, gif: optimisticGif, query: gifQuery }
+            : current
+        );
+      }
+      if (clearComposer && optimisticStickerId) {
+        setStickerSelection((current) =>
+          current.conversationId === sendConversationId
+          && current.revision === stickerSelectionRevisionAtSend
+          && current.stickerId === null
+            ? { ...current, stickerId: optimisticStickerId }
             : current
         );
       }
@@ -226,7 +268,12 @@ export function useChatComposer({
   }
 
   async function handleSend() {
-    if (trimmedDraft.length === 0 && readyImages.length === 0 && !selectedGif) {
+    if (
+      trimmedDraft.length === 0
+      && readyImages.length === 0
+      && !selectedGif
+      && !selectedStickerId
+    ) {
       setNotice("Add a message before sending.");
       return;
     }
@@ -270,6 +317,7 @@ export function useChatComposer({
             }]
           : []
       ),
+      selectedStickerId ?? undefined,
       selectedGif ?? undefined,
       selectedGifQuery
     );
@@ -348,6 +396,11 @@ export function useChatComposer({
       query: "",
       revision: current.revision + 1,
     }));
+    setStickerSelection((current) => ({
+      ...current,
+      stickerId: null,
+      revision: current.revision + 1,
+    }));
     setNotice(null);
   }
 
@@ -367,6 +420,11 @@ export function useChatComposer({
       query,
       revision: current.revision + 1,
     }));
+    setStickerSelection((current) => ({
+      ...current,
+      stickerId: null,
+      revision: current.revision + 1,
+    }));
     setNotice(null);
   }
 
@@ -375,6 +433,29 @@ export function useChatComposer({
       ...current,
       gif: null,
       query: "",
+      revision: current.revision + 1,
+    }));
+  }
+
+  function selectSticker(stickerId: ChatStickerId) {
+    setStickerSelection((current) => ({
+      conversationId: chat.conversationId,
+      stickerId,
+      revision: current.revision + 1,
+    }));
+    setGifSelection((current) => ({
+      ...current,
+      gif: null,
+      query: "",
+      revision: current.revision + 1,
+    }));
+    setNotice(null);
+  }
+
+  function removeSelectedSticker() {
+    setStickerSelection((current) => ({
+      ...current,
+      stickerId: null,
       revision: current.revision + 1,
     }));
   }
@@ -392,6 +473,7 @@ export function useChatComposer({
   return {
     draft,
     selectedGif,
+    selectedStickerId,
     notice,
     canSend,
     replyingTo,
@@ -408,6 +490,8 @@ export function useChatComposer({
     cancelEdit,
     selectGif,
     removeSelectedGif,
+    selectSticker,
+    removeSelectedSticker,
     handleComposerKeyDown,
   };
 }

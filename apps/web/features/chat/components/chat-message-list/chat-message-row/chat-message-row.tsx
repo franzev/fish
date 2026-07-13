@@ -22,6 +22,7 @@ import {
   MessageMeta,
   MessageImages,
   MessageGif,
+  StickerMedia,
   MessageStatus,
   QuotedMessage,
   Reactions,
@@ -41,6 +42,7 @@ export interface ChatMessageActions {
     clearComposer?: boolean,
     attachmentIds?: string[],
     images?: NonNullable<LocalMessage["images"]>,
+    stickerId?: LocalMessage["stickerId"],
     gif?: LocalMessage["gif"]
   ) => Promise<void>;
 }
@@ -156,6 +158,9 @@ export function ChatMessageRow({
       {Boolean(message.images?.length) && !message.deletedAt && (
         <MessageImages images={message.images ?? []} authorName={getAuthorName(message)} mine={mine} />
       )}
+      {message.stickerId && !message.deletedAt && (
+        <StickerMedia stickerId={message.stickerId} />
+      )}
       {message.gif && !message.deletedAt && <MessageGif gif={message.gif} />}
       <div
         className={cn(
@@ -256,6 +261,7 @@ export function ChatMessageRow({
                   false,
                   message.images?.map((image) => image.id) ?? [],
                   message.images ?? [],
+                  message.stickerId,
                   message.gif
                 )
               }
@@ -331,7 +337,11 @@ export function ChatMessageRow({
             <div
               className={cn(
                 "flex max-w-message flex-col",
-                (Boolean(message.images?.length) || Boolean(message.gif)) && "w-full",
+                (
+                  Boolean(message.images?.length)
+                  || Boolean(message.gif)
+                  || Boolean(message.stickerId)
+                ) && "w-full",
                 mine && "items-end"
               )}
             >

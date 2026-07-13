@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Dialog } from "@base-ui/react/dialog";
 import { IconDownload, IconFileText, IconRefresh, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isAquaticStickerFileName } from "../sticker-picker/sticker-catalog";
 
 interface MessageImagesProps {
   images: ClientChatImage[];
@@ -26,6 +27,7 @@ function MessageImage({
   mine: boolean;
   wrapped?: boolean;
 }) {
+  const isSticker = isAquaticStickerFileName(image.originalName);
   const width = image.width ?? 1;
   const height = image.height ?? 1;
   const previewAspectRatio = wrapped
@@ -116,15 +118,76 @@ function MessageImage({
     };
   }, [localPreviewUrl]);
 
+  const previewContent = (
+    <>
+      {thumbnailUrl && (
+        /* Supabase already serves this immutable private variant through its CDN. */
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={thumbnailUrl}
+          alt={`Image shared by ${authorName}`}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoadedThumbnailUrl(thumbnailUrl)}
+          onError={() => setFailedThumbnailUrl(thumbnailUrl)}
+          className={cn(
+            "size-full transition-image-load duration-message",
+            isSticker ? "object-contain" : "object-cover",
+            thumbnailState === "loaded" &&
+              !(progressivelyLoads && displayState === "loaded")
+              ? "opacity-100"
+              : "opacity-0",
+            progressivelyLoads && displayState === "loading" &&
+              "scale-110 blur-md"
+          )}
+          data-image-quality={progressivelyLoads ? "preview" : "full"}
+        />
+      )}
+      {progressivelyLoads && displayUrl && (
+        /* The private display variant fades over the intentionally blurred LQIP. */
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={displayUrl}
+          alt=""
+          aria-hidden="true"
+          width={width}
+          height={height}
+          decoding="async"
+          onLoad={() => setLoadedDisplayUrl(displayUrl)}
+          onError={() => setFailedDisplayUrl(displayUrl)}
+          className={cn(
+            "absolute inset-0 size-full transition-opacity duration-message",
+            isSticker ? "object-contain" : "object-cover",
+            displayState === "loaded" ? "opacity-100" : "opacity-0"
+          )}
+          data-image-quality="full"
+        />
+      )}
+      {thumbnailState === "loading" && (
+        <span
+          className={cn(
+            "absolute inset-0 animate-pulse",
+            !isSticker && "bg-surface-2"
+          )}
+          aria-label="Loading image"
+        />
+      )}
+    </>
+  );
+
   return (
     <Dialog.Root>
       <div
         className={cn(
-          "relative block overflow-hidden rounded-control bg-surface-2 text-left",
-          wrapped
+          "relative block overflow-hidden rounded-control text-left",
+          isSticker
+            ? "w-full max-w-sticker-tile"
+            : wrapped
             ? "max-h-chat-image-preview w-auto max-w-full shrink-0"
             : "w-full max-h-chat-image-max-height max-w-chat-image",
-          mine && "bg-surface-3"
+          !isSticker && (mine ? "bg-surface-3" : "bg-surface-2")
         )}
         style={{
           aspectRatio: previewAspectRatio,
@@ -145,61 +208,20 @@ function MessageImage({
               Try again
             </button>
           </div>
+        ) : isSticker ? (
+          <div className="absolute inset-0 block size-full">
+            {previewContent}
+          </div>
         ) : (
           <Dialog.Trigger
             aria-label={`Open image shared by ${authorName}`}
             className="absolute inset-0 block size-full"
           >
-            {thumbnailUrl && (
-              /* Supabase already serves this immutable private variant through its CDN. */
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={thumbnailUrl}
-                alt={`Image shared by ${authorName}`}
-                width={width}
-                height={height}
-                loading="lazy"
-                decoding="async"
-                onLoad={() => setLoadedThumbnailUrl(thumbnailUrl)}
-                onError={() => setFailedThumbnailUrl(thumbnailUrl)}
-                className={cn(
-                  "size-full object-cover transition-image-load duration-message",
-                  thumbnailState === "loaded" &&
-                    !(progressivelyLoads && displayState === "loaded")
-                    ? "opacity-100"
-                    : "opacity-0",
-                  progressivelyLoads && displayState === "loading" &&
-                    "scale-110 blur-md"
-                )}
-                data-image-quality={progressivelyLoads ? "preview" : "full"}
-              />
-            )}
-            {progressivelyLoads && displayUrl && (
-              /* The private display variant fades over the intentionally blurred LQIP. */
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={displayUrl}
-                alt=""
-                aria-hidden="true"
-                width={width}
-                height={height}
-                decoding="async"
-                onLoad={() => setLoadedDisplayUrl(displayUrl)}
-                onError={() => setFailedDisplayUrl(displayUrl)}
-                className={cn(
-                  "absolute inset-0 size-full object-cover transition-opacity duration-message",
-                  displayState === "loaded" ? "opacity-100" : "opacity-0"
-                )}
-                data-image-quality="full"
-              />
-            )}
-            {thumbnailState === "loading" && (
-              <span className="absolute inset-0 animate-pulse bg-surface-2" aria-label="Loading image" />
-            )}
+            {previewContent}
           </Dialog.Trigger>
         )}
       </div>
-      <Dialog.Portal>
+      {!isSticker && <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-scrim" />
         <Dialog.Popup className="fixed inset-0 z-50 m-auto flex h-fit max-h-filters-sheet w-full max-w-image-viewer flex-col p-md outline-none">
           <Dialog.Title className="sr-only">Image shared by {authorName}</Dialog.Title>
@@ -237,7 +259,7 @@ function MessageImage({
             )}
           </div>
         </Dialog.Popup>
-      </Dialog.Portal>
+      </Dialog.Portal>}
     </Dialog.Root>
   );
 }

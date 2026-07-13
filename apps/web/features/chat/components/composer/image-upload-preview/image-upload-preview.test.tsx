@@ -17,11 +17,12 @@ function pending(overrides: Partial<PendingChatImage> = {}): PendingChatImage {
 }
 
 describe("ImageUploadPreview", () => {
-  it("shows visual upload progress and removal", () => {
+  it("shows quiet linear upload progress and removal", () => {
     const remove = vi.fn();
     render(<ImageUploadPreview images={[pending()]} onRemove={remove} onRetry={vi.fn()} />);
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
-    expect(screen.getByRole("progressbar")).toHaveAttribute("data-shape", "circular");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("data-density", "compact");
+    expect(screen.getByRole("progressbar")).toHaveClass("h-3xs");
     expect(screen.queryByText("Preparing")).not.toBeInTheDocument();
     expect(screen.queryByText("Uploading")).not.toBeInTheDocument();
     const removeButton = screen.getByRole("button", { name: "Remove photo.png" });
@@ -69,4 +70,5 @@ describe("ImageUploadPreview", () => {
     render(<ImageUploadPreview images={[pending({ status: "ready" })]} onRemove={vi.fn()} onRetry={vi.fn()} />);
     expect(screen.getByRole("listitem")).toHaveClass("w-chat-image-preview");
   });
+
 });

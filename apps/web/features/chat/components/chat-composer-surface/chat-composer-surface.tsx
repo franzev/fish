@@ -7,6 +7,7 @@ import { IconX } from "@tabler/icons-react";
 import type { KeyboardEvent } from "react";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
 import type { ClientChatGif } from "@/lib/services";
+import type { ChatStickerId } from "@fish/core/chat";
 import { Composer, QuotedMessage } from "../visual";
 
 interface ChatComposerSurfaceProps {
@@ -33,6 +34,9 @@ interface ChatComposerSurfaceProps {
   selectedGif: ClientChatGif | null;
   selectGif: (gif: ClientChatGif, query: string) => void;
   removeSelectedGif: () => void;
+  selectedStickerId: ChatStickerId | null;
+  selectSticker: (stickerId: ChatStickerId) => void;
+  removeSelectedSticker: () => void;
 }
 
 export function ChatComposerSurface({
@@ -59,6 +63,9 @@ export function ChatComposerSurface({
   selectedGif,
   selectGif,
   removeSelectedGif,
+  selectedStickerId,
+  selectSticker,
+  removeSelectedSticker,
 }: ChatComposerSurfaceProps) {
   return (
     <>
@@ -140,11 +147,27 @@ export function ChatComposerSurface({
           onSelectImages={addImages}
           onRemoveImage={(id) => void removeImage(id)}
           onRetryImage={retryImage}
-          imageSelectionDisabled={Boolean(editingMessage) || isOffline || Boolean(selectedGif)}
+          imageSelectionDisabled={
+            Boolean(editingMessage)
+            || isOffline
+            || Boolean(selectedGif)
+            || Boolean(selectedStickerId)
+          }
           selectedGif={selectedGif}
           onSelectGif={selectGif}
           onRemoveGif={removeSelectedGif}
-          gifSelectionDisabled={Boolean(editingMessage) || isOffline || images.length > 0}
+          gifSelectionDisabled={
+            Boolean(editingMessage)
+            || isOffline
+            || images.length > 0
+            || Boolean(selectedStickerId)
+          }
+          selectedStickerId={selectedStickerId}
+          onRemoveSticker={removeSelectedSticker}
+          onSelectSticker={(sticker) => selectSticker(sticker.id)}
+          stickerSelectionDisabled={
+            Boolean(editingMessage) || isOffline || Boolean(selectedGif) || images.length > 0
+          }
         />
       </div>
     </>

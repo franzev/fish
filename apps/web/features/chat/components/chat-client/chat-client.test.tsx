@@ -715,7 +715,7 @@ describe("ChatClient", () => {
     ).toBeGreaterThan(1);
   });
 
-  it("opens the implemented GIF picker without a coming-soon notice", () => {
+  it("opens GIFs inside the unified media picker without a coming-soon notice", () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
@@ -728,9 +728,13 @@ describe("ChatClient", () => {
 
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add a GIF" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add emoji, GIF, or sticker" }));
+    fireEvent.click(screen.getByRole("tab", { name: /GIFs/ }));
 
-    expect(screen.getByRole("dialog", { name: "Choose a GIF" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Choose emoji, GIF, or sticker" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Browse GIFs" })).toBeInTheDocument();
     expect(screen.queryByText(/coming soon/i)).toBeNull();
   });
 

@@ -5,15 +5,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { gifProvider, type GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
-import { Popover } from "@base-ui/react/popover";
-import { IconGif, IconSearch } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
+import { IconSearch } from "@tabler/icons-react";
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { GifMedia } from "../gif-media";
 
@@ -22,9 +20,16 @@ type PickerStatus = "loading" | "ready" | "empty" | "notice";
 interface GifPickerProps {
   onSelect: (gif: ClientChatGif, query: string) => void;
   provider?: GifProvider;
+  className?: string;
+  embedded?: boolean;
 }
 
-export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) {
+export function GifPicker({
+  onSelect,
+  provider = gifProvider,
+  className,
+  embedded = false,
+}: GifPickerProps) {
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<ClientChatGif[]>([]);
   const [next, setNext] = useState<string | null>(null);
@@ -83,20 +88,28 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
   }, [load, loadingMore, next, status]);
 
   const resultLabel = query.trim() ? `GIF results for ${query.trim()}` : "Trending GIFs";
+  const PickerRoot = embedded ? "div" : Card;
 
   return (
-    <Card
-      role="dialog"
-      aria-label="Choose a GIF"
-      className="flex h-gif-panel-h w-gif-panel flex-col overflow-hidden border border-divider p-0"
+    <PickerRoot
+      role={embedded ? "region" : "dialog"}
+      aria-label={embedded ? "Browse GIFs" : "Choose a GIF"}
+      className={cn(
+        "flex flex-col overflow-hidden bg-surface",
+        embedded
+          ? "h-full min-h-0 w-full"
+          : "h-gif-panel-h w-gif-panel border border-divider p-0",
+        className
+      )}
     >
-      <div className="shrink-0 p-xs">
+      <div className="shrink-0 px-xs py-2xs">
         <Input
           id="gif-search"
           type="search"
           label="Search GIFs"
           labelVisuallyHidden
           reserveMessageSpace={false}
+          density="compact"
           placeholder="Search KLIPY"
           value={query}
           maxLength={50}
@@ -107,7 +120,7 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
 
       <ScrollArea
         className="flex-1"
-        viewportClassName="flex flex-col px-xs pb-xs"
+        viewportClassName="flex scroll-smooth flex-col px-xs pb-xs"
       >
         {status === "loading" && (
           <p className="mb-xs text-ui-xs text-muted" role="status" aria-live="polite">
@@ -193,50 +206,6 @@ export function GifPicker({ onSelect, provider = gifProvider }: GifPickerProps) 
       >
         Powered by KLIPY
       </a>
-    </Card>
+    </PickerRoot>
   );
 }
-
-interface GifPickerButtonProps {
-  onSelect: (gif: ClientChatGif, query: string) => void;
-  disabled?: boolean;
-  className?: string;
-  children?: ReactNode;
-  provider?: GifProvider;
-}
-
-export const GifPickerButton = forwardRef<HTMLButtonElement, GifPickerButtonProps>(
-  function GifPickerButton({ onSelect, disabled, className, children, provider }, ref) {
-    const [open, setOpen] = useState(false);
-    return (
-      <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Trigger
-          ref={ref}
-          aria-label="Add a GIF"
-          disabled={disabled}
-          className={className}
-        >
-          {children ?? <IconGif size={20} stroke={1.75} aria-hidden="true" />}
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Positioner
-            side="top"
-            align="end"
-            sideOffset={4}
-            className="gif-picker-positioner z-20"
-          >
-            <Popover.Popup initialFocus={false}>
-              <GifPicker
-                provider={provider}
-                onSelect={(gif, query) => {
-                  onSelect(gif, query);
-                  setOpen(false);
-                }}
-              />
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
-    );
-  }
-);

@@ -12,7 +12,7 @@ test("client sends a message and it persists as exactly one row after reload", a
 
   await expect(page).toHaveURL(/\/home$/);
 
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
   await page.getByRole("textbox", { name: "Message", exact: true }).fill(body);
   await page.getByRole("button", { name: "Send message" }).click();
 

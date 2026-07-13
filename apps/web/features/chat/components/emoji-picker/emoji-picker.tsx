@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { IconTabStrip, type IconTabStripItem } from "@/components/ui/icon-tab-strip";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -53,9 +54,16 @@ const groupIcons: Record<string, Icon> = {
   Flags: IconFlag,
 };
 
+const groupTabs: readonly IconTabStripItem[] = emojiGroups.map((group) => ({
+  value: group.slug,
+  label: group.name,
+  Icon: groupIcons[group.name] ?? IconMoodSmile,
+}));
+
 interface EmojiPickerProps {
   onSelect: (emoji: string) => void;
   className?: string;
+  embedded?: boolean;
 }
 
 /** Grouped + searchable monochrome emoji panel. Composed entirely of native
@@ -63,7 +71,7 @@ interface EmojiPickerProps {
  *  ring already work without extra wiring. When search is empty the 9
  *  categories are organized into Base UI Tabs; typing a query flattens
  *  results across every category. */
-export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
+export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPickerProps) {
   const [query, setQuery] = useState("");
 
   const results = useMemo(() => {
@@ -78,21 +86,27 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
       );
   }, [query]);
 
+  const PickerRoot = embedded ? "div" : Card;
+
   return (
-    <Card
+    <PickerRoot
       className={cn(
-        "flex h-emoji-panel-h w-emoji-panel flex-col overflow-hidden border border-divider p-0",
+        "flex flex-col overflow-hidden bg-surface",
+        embedded
+          ? "h-full min-h-0 w-full"
+          : "h-emoji-panel-h w-emoji-panel border border-divider p-0",
         className
       )}
-      role="dialog"
-      aria-label="Choose an emoji"
+      role={embedded ? "region" : "dialog"}
+      aria-label={embedded ? "Browse emoji" : "Choose an emoji"}
     >
-      <div className="shrink-0 p-xs">
+      <div className="shrink-0 px-xs py-2xs">
         <Input
           type="search"
           label="Search emoji"
           labelVisuallyHidden
           reserveMessageSpace={false}
+          density="compact"
           placeholder="Search emoji"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -100,7 +114,7 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
         />
       </div>
       {results ? (
-        <ScrollArea className="flex-1" viewportClassName="p-xs">
+        <ScrollArea className="flex-1" viewportClassName="scroll-smooth p-xs">
           {results.length === 0 ? (
             <p className="p-xs text-ui-sm text-muted">
               No emoji match that yet.
@@ -124,34 +138,15 @@ export function EmojiPicker({ onSelect, className }: EmojiPickerProps) {
               value={group.slug}
               className="flex min-h-0 flex-1 flex-col"
             >
-              <ScrollArea className="flex-1" viewportClassName="p-xs">
+              <ScrollArea className="flex-1" viewportClassName="scroll-smooth p-xs">
                 <EmojiGroupList emojis={group.emojis} onSelect={onSelect} />
               </ScrollArea>
             </Tabs.Panel>
           ))}
-          {/* Tab strip lives below the grid (thumb-reach on mobile) and
-              distributes evenly — nine fixed categories, no horizontal
-              scrolling. */}
-          <Tabs.List className="flex shrink-0 border-t border-divider bg-surface px-nudge py-2xs">
-            {emojiGroups.map((group) => {
-              const GroupIcon = groupIcons[group.name] ?? IconMoodSmile;
-              return (
-                <Tabs.Tab
-                  key={group.slug}
-                  value={group.slug}
-                  aria-label={group.name}
-                  className="group flex h-10 flex-1 items-center justify-center rounded-control text-muted data-[active]:text-foreground"
-                >
-                  <span className="flex size-7 items-center justify-center rounded-pill group-hover:bg-surface-2 group-data-[active]:bg-surface-2">
-                    <GroupIcon size={18} stroke={1.75} aria-hidden="true" />
-                  </span>
-                </Tabs.Tab>
-              );
-            })}
-          </Tabs.List>
+          <IconTabStrip items={groupTabs} ariaLabel="Emoji category" />
         </Tabs.Root>
       )}
-    </Card>
+    </PickerRoot>
   );
 }
 
@@ -174,7 +169,7 @@ function EmojiGroupList({
             type="button"
             aria-label={entry.name}
             onClick={() => onSelect(entry.emoji)}
-            className="flex size-10 items-center justify-center rounded-control hover:bg-surface-2"
+            className="flex min-h-target-touch w-full items-center justify-center rounded-control hover:bg-surface-2"
           >
             <span aria-hidden="true" className="text-emoji">
               {entry.emoji}

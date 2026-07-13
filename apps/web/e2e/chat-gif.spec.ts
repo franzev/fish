@@ -41,7 +41,7 @@ test("client searches, previews, sends, and reloads a GIF message", async ({ pag
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
   await expect(
     page
       .getByRole("log", { name: "Community messages" })
@@ -50,8 +50,11 @@ test("client searches, previews, sends, and reloads a GIF message", async ({ pag
   ).toBeVisible();
   const gifsBeforeSend = await page.getByRole("link", { name: "Via KLIPY" }).count();
 
-  await page.getByRole("button", { name: "Add a GIF" }).click();
-  await expect(page.getByRole("dialog", { name: "Choose a GIF" })).toBeVisible();
+  await page.getByRole("button", { name: "Add emoji, GIF, or sticker" }).click();
+  await page.getByRole("tab", { name: /GIFs/ }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Choose emoji, GIF, or sticker" })
+  ).toBeVisible();
   await page.getByRole("button", { name: `Choose ${gifDescription}` }).click();
 
   await expect(page.getByText("GIF selected")).toBeVisible();

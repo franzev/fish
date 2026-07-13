@@ -8,14 +8,18 @@ export const inputVariants = cva(
     // A quiet surface-step well, not an outlined box — the same borderless
     // field idiom the chat composer uses. The constant (transparent) border
     // keeps the box stable when a feedback tier colors it in.
-    "w-full rounded-control bg-surface-2 px-md",
-    "min-h-control text-copy text-foreground",
+    "w-full rounded-control bg-surface-2",
+    "text-foreground",
     "border border-transparent placeholder:text-muted",
     "transition-colors",
     "disabled:opacity-50",
   ],
   {
     variants: {
+      density: {
+        default: "min-h-control px-md text-copy",
+        compact: "min-h-control px-sm text-ui-sm sm:min-h-search-control",
+      },
       feedback: {
         default: null,
         notice: "border-border-strong",
@@ -23,6 +27,7 @@ export const inputVariants = cva(
       },
     },
     defaultVariants: {
+      density: "default",
       feedback: "default",
     },
   }
@@ -45,6 +50,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   trailingControl?: ReactNode;
   /** Optional decorative icon shown at the start of the field. */
   leadingIcon?: ReactNode;
+  /** Compact product-control density on desktop while preserving touch size on mobile. */
+  density?: "default" | "compact";
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -61,6 +68,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       reserveMessageSpace = true,
       trailingControl,
       leadingIcon,
+      density = "default",
       ...props
     },
     ref
@@ -96,9 +104,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               id={inputId}
               disabled={disabled}
               className={cn(
-                inputVariants({ feedback }),
-                leadingIcon && "pl-control",
-                trailingControl && "pr-control",
+                inputVariants({ feedback, density }),
+                leadingIcon && (
+                  density === "compact"
+                    ? "pl-control sm:pl-search-control"
+                    : "pl-control"
+                ),
+                trailingControl && (
+                  density === "compact"
+                    ? "pr-control sm:pr-search-control"
+                    : "pr-control"
+                ),
                 className
               )}
               {...props}
@@ -106,12 +122,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               aria-invalid={ariaInvalid}
             />
             {leadingIcon && (
-              <div className="pointer-events-none absolute left-0 top-0 flex min-h-control min-w-control items-center justify-center text-muted">
+              <div className={cn(
+                "pointer-events-none absolute left-0 top-0 flex min-h-control min-w-control items-center justify-center text-muted",
+                density === "compact" && "sm:min-h-search-control sm:min-w-search-control"
+              )}>
                 {leadingIcon}
               </div>
             )}
             {trailingControl && (
-              <div className="absolute right-0 top-0 flex min-h-control min-w-control items-center justify-center">
+              <div className={cn(
+                "absolute right-0 top-0 flex min-h-control min-w-control items-center justify-center",
+                density === "compact" && "sm:min-h-search-control sm:min-w-search-control"
+              )}>
                 {trailingControl}
               </div>
             )}
@@ -122,7 +144,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             disabled={disabled}
             className={cn(
-              inputVariants({ feedback }),
+              inputVariants({ feedback, density }),
               className
             )}
             {...props}

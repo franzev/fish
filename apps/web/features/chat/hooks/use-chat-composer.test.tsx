@@ -126,3 +126,29 @@ describe("useChatComposer GIF selection", () => {
     expect(result.current.selectedGif).toBeNull();
   });
 });
+
+describe("useChatComposer sticker selection", () => {
+  beforeEach(() => {
+    resetChatStoreForTests();
+  });
+
+  it("enables and sends a sticker id without an attachment", async () => {
+    const sendMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+    }));
+    const { result } = renderHook(() =>
+      useChatComposer(options(conversationA, sendMessageAction))
+    );
+
+    act(() => result.current.selectSticker("aquatic-hello-otter"));
+    expect(result.current.canSend).toBe(true);
+    await act(async () => result.current.handleSend());
+
+    expect(sendMessageAction).toHaveBeenCalledWith(expect.objectContaining({
+      body: "",
+      attachmentIds: [],
+      stickerId: "aquatic-hello-otter",
+    }));
+  });
+});

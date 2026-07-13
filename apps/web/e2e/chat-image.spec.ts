@@ -52,7 +52,7 @@ test("client prepares, sends, and opens a private image", async ({ page }) => {
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
   const imagesBeforeSend = await page.getByAltText(/Image shared by/).count();
 
   await page.getByLabel("Choose files").setInputFiles({
@@ -89,7 +89,7 @@ test("mixed image aspect ratios flow from left to right and wrap", async ({ page
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
   const galleriesBeforeSend = await page.locator('[data-image-layout="wrap"]').count();
 
   await page.getByLabel("Choose files").setInputFiles([
@@ -142,7 +142,7 @@ test("two medium images complete server processing without competing for the Edg
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
 
   await page.getByLabel("Choose files").setInputFiles([
     { name: "medium-portrait.png", mimeType: "image/png", buffer: pngFixture(1200, 1600, [80, 110, 180]) },
@@ -160,7 +160,7 @@ test("client sends and opens a private text attachment", async ({ page }) => {
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
 
   await page.getByLabel("Choose files").setInputFiles({
     name: "coaching-notes.txt",

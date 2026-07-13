@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
-  await page.goto("/channels/22222222-2222-4222-8222-222222222222");
+  await page.goto("/channels/general");
 });
 
 test("from: suggests channel members, searches the full history, and is individually removable", async ({
@@ -71,7 +71,7 @@ test("plain text search returns matches while the final word is still partial", 
 
   const results = page.getByRole("complementary", { name: "Search results" });
   await expect(
-    results.getByText(/tips for phone calls/i, { exact: false })
+    results.getByText(/tips for phone calls/i, { exact: false }).first()
   ).toBeVisible();
   await expect(results.getByText("No messages match this search.")).toHaveCount(0);
 });

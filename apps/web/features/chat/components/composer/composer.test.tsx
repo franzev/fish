@@ -88,15 +88,33 @@ describe("Composer", () => {
     expect(onRemoveGif).toHaveBeenCalledOnce();
   });
 
-  it("keeps the image, GIF, sticker, and + menu affordances visible", () => {
+  it("previews a bundled sticker with an immediately enabled Send action", () => {
+    const onRemoveSticker = vi.fn();
+    render(
+      <Composer
+        {...baseProps}
+        canSend
+        selectedStickerId="aquatic-hello-otter"
+        onRemoveSticker={onRemoveSticker}
+      />
+    );
+
+    expect(screen.getByRole("img", { name: /sea otter/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
+    const removeSticker = screen.getByRole("button", { name: "Remove sticker" });
+    expect(removeSticker).toHaveClass("absolute", "right-3xs", "top-3xs");
+    fireEvent.click(removeSticker);
+    expect(onRemoveSticker).toHaveBeenCalledOnce();
+  });
+
+  it("keeps one expression picker and the + menu affordance visible", () => {
     render(<Composer {...baseProps} />);
 
     expect(
-      screen.getByRole("button", { name: "Add a GIF" })
+      screen.getByRole("button", { name: "Add emoji, GIF, or sticker" })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Add a sticker" })
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add a GIF" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add a sticker" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
     expect(

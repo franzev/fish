@@ -1,11 +1,10 @@
 "use client";
 
-import { EmojiPickerButton } from "../emoji-picker";
 import { Button } from "@/components/ui/button";
 import {
   IconMoodSmile,
   IconSend,
-  IconSticker,
+  IconX,
 } from "@tabler/icons-react";
 import { useState, type DragEvent, type KeyboardEvent } from "react";
 import { AddMenu } from "./add-menu";
@@ -13,8 +12,11 @@ import { composerIconButtonClass } from "./icon-button-class";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
 import { ImageUploadPreview } from "./image-upload-preview";
 import type { ClientChatGif } from "@/lib/services";
-import { GifPickerButton } from "../gif-picker";
 import { GifSelectionPreview } from "../gif-selection-preview";
+import { MediaPickerButton } from "../media-picker";
+import type { ChatSticker } from "../sticker-picker";
+import type { ChatStickerId } from "@fish/core/chat";
+import { StickerMedia } from "../sticker-media";
 
 export interface ComposerProps {
   /** Community channel name for the placeholder; direct chats omit it. */
@@ -35,6 +37,10 @@ export interface ComposerProps {
   onSelectGif?: (gif: ClientChatGif, query: string) => void;
   onRemoveGif?: () => void;
   gifSelectionDisabled?: boolean;
+  onSelectSticker?: (sticker: ChatSticker) => void;
+  selectedStickerId?: ChatStickerId | null;
+  onRemoveSticker?: () => void;
+  stickerSelectionDisabled?: boolean;
 }
 
 /** The message composer: one borderless surface-2 bar holding every input
@@ -59,10 +65,17 @@ export function Composer({
   onSelectGif = () => undefined,
   onRemoveGif = () => undefined,
   gifSelectionDisabled,
+  onSelectSticker = () => undefined,
+  selectedStickerId,
+  onRemoveSticker = () => undefined,
+  stickerSelectionDisabled,
 }: ComposerProps) {
   const [dragActive, setDragActive] = useState(false);
   const hasSendContent =
-    draft.trim().length > 0 || images.length > 0 || Boolean(selectedGif);
+    draft.trim().length > 0
+    || images.length > 0
+    || Boolean(selectedGif)
+    || Boolean(selectedStickerId);
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragActive(false);
@@ -80,6 +93,21 @@ export function Composer({
     >
       <div className="rounded-control bg-surface-2">
         <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
+        {selectedStickerId && (
+          <div className="relative w-fit px-xs pt-xs">
+            <StickerMedia stickerId={selectedStickerId} />
+            <button
+              type="button"
+              aria-label="Remove sticker"
+              onClick={onRemoveSticker}
+              className="absolute right-3xs top-3xs inline-flex min-h-control min-w-control items-start justify-end rounded-control p-2xs text-body"
+            >
+              <span className="inline-flex size-md items-center justify-center rounded-pill bg-surface">
+                <IconX size={16} stroke={1.75} aria-hidden="true" />
+              </span>
+            </button>
+          </div>
+        )}
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
         <div className="flex items-end gap-xs p-xs">
         <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
@@ -94,27 +122,16 @@ export function Composer({
           placeholder={channelName ? `Message #${channelName}` : "Message"}
           className="min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-copy text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
         />
-        <GifPickerButton
-          onSelect={onSelectGif}
-          disabled={gifSelectionDisabled}
-          className={composerIconButtonClass}
-        >
-          <span className="text-ui-xs font-semibold" aria-hidden="true">GIF</span>
-        </GifPickerButton>
-        <button
-          type="button"
-          aria-label="Add a sticker"
-          className={composerIconButtonClass}
-        >
-          <IconSticker size={20} stroke={1.75} aria-hidden="true" />
-        </button>
-        <EmojiPickerButton
-          label="Add an emoji"
-          onSelect={onSelectEmoji}
+        <MediaPickerButton
+          onSelectEmoji={onSelectEmoji}
+          onSelectGif={onSelectGif}
+          onSelectSticker={onSelectSticker}
+          gifDisabled={gifSelectionDisabled}
+          stickerDisabled={stickerSelectionDisabled}
           className={composerIconButtonClass}
         >
           <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
-        </EmojiPickerButton>
+        </MediaPickerButton>
         {hasSendContent && (
           <Button
             type="button"

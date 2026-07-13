@@ -19,6 +19,16 @@ describe("Progress", () => {
     expect(queryByText("40%")).toBeNull();
   });
 
+  it("supports a compact rail with a visually hidden label", () => {
+    const { getByRole, getByText } = render(
+      <Progress value={20} label="Uploading file" labelVisuallyHidden density="compact" />
+    );
+
+    expect(getByRole("progressbar")).toHaveClass("h-3xs");
+    expect(getByRole("progressbar")).toHaveAttribute("data-density", "compact");
+    expect(getByText("Uploading file")).toHaveClass("sr-only");
+  });
+
   it.each([
     { value: -10, expected: "0" },
     { value: 110, expected: "100" },

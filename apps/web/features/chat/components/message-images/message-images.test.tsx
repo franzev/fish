@@ -47,6 +47,25 @@ describe("MessageImages", () => {
     expect(screen.getByRole("link", { name: "Open notes.pdf" })).toHaveAttribute("target", "_blank");
   });
 
+  it("renders a bundled sticker at quarter-size on a transparent frame", () => {
+    const { container } = render(<MessageImages
+      images={[{
+        ...image,
+        originalName: "aquatic-awesome-dolphin.webp",
+        thumbnailUrl: "blob:sticker",
+        displayUrl: "blob:sticker",
+      }]}
+      authorName="Alex"
+      mine={false}
+    />);
+
+    const frame = container.querySelector('[data-image-layout="single"]')?.firstElementChild;
+    expect(frame).toHaveClass("max-w-sticker-tile");
+    expect(frame).not.toHaveClass("bg-surface-2", "bg-surface-3");
+    expect(screen.getByAltText("Image shared by Alex")).toHaveClass("object-contain");
+    expect(screen.queryByRole("button", { name: "Open image shared by Alex" })).toBeNull();
+  });
+
   it("crossfades from a blurred thumbnail to the sharp display image", () => {
     const { container } = render(<MessageImages
       images={[{

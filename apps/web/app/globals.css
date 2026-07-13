@@ -168,6 +168,9 @@
   --spacing-emoji-panel-h: 337px; /* emoji picker popover height */
   --spacing-gif-panel: 384px;     /* focused two-column GIF picker */
   --spacing-gif-panel-h: min(70dvh, 520px);
+  --spacing-media-panel: 360px;   /* compact shared emoji, GIF, and sticker picker */
+  --spacing-media-panel-h: min(70dvh, 440px);
+  --spacing-sticker-tile: 96px;   /* three calm, compact sticker tiles per picker row */
   --spacing-filters-sheet: 85dvh; /* Filters bottom-sheet max height on small screens */
   --spacing-search-suggestions: 360px;
   --spacing-search-discovery: min(70dvh, 640px);
