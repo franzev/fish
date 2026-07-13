@@ -1037,6 +1037,93 @@ async function checkChatReactionsSoftDeleteAndIntegrity(): Promise<void> {
   report("CHAT-08 reactions: mismatched conversation insert is rejected", !!integrityError, integrityError?.message ?? "insert succeeded");
 }
 
+async function checkChatGifBoundaries(): Promise<void> {
+  const member = await signInAs(client1.email, client1.password);
+  const outsider = await signInAs(client2.email, client2.password);
+  const conversation = await getClientOneConversationFixture("CHAT-09 GIF boundary");
+  if (!conversation) return;
+
+  const { data: sendData, error: sendError } = await member.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "",
+    p_client_request_id: "verify-chat-gif-message",
+    p_gif: {
+      provider: "klipy",
+      providerId: "verify-gif",
+      title: "Verification GIF",
+      description: "A GIF used to verify chat access boundaries",
+      sourceUrl: "https://klipy.com/gifs/verify-gif",
+      posterUrl: "https://static.klipy.com/verify-gif.jpg",
+      previewUrl: "https://static1.klipy.com/verify-gif-preview.mp4",
+      mediaUrl: "https://static2.klipy.com/verify-gif.mp4",
+      width: 480,
+      height: 270,
+    },
+  });
+  checkNoRecursion("CHAT-09 GIF boundary: setup send", sendError);
+  if (sendError) {
+    report("CHAT-09 GIF boundary: member can send a GIF", false, sendError.message);
+    return;
+  }
+  const messageId = toChatMessage(sendData)?.id;
+  if (!messageId) {
+    report("CHAT-09 GIF boundary: resolves message id", false);
+    return;
+  }
+
+  const { data: memberRows, error: memberReadError } = await member
+    .from("message_gifs")
+    .select("message_id, provider_content_id")
+    .eq("message_id", messageId);
+  checkNoRecursion("CHAT-09 GIF boundary: member read", memberReadError);
+  report(
+    "CHAT-09 GIF boundary: conversation member reads the GIF",
+    !memberReadError && memberRows?.[0]?.provider_content_id === "verify-gif",
+    memberReadError?.message
+  );
+
+  const { data: outsiderRows, error: outsiderReadError } = await outsider
+    .from("message_gifs")
+    .select("message_id")
+    .eq("message_id", messageId);
+  checkNoRecursion("CHAT-09 GIF boundary: outsider read", outsiderReadError);
+  report(
+    "CHAT-09 GIF boundary: non-member reads no GIF row",
+    !outsiderReadError && (outsiderRows ?? []).length === 0,
+    outsiderReadError?.message ?? `got ${(outsiderRows ?? []).length}`
+  );
+
+  const { error: reportError } = await member.rpc("report_message_gif", {
+    p_message_id: messageId,
+  });
+  checkNoRecursion("CHAT-09 GIF boundary: member report", reportError);
+  report(
+    "CHAT-09 GIF boundary: member can report the GIF",
+    !reportError,
+    reportError?.message
+  );
+
+  const { data: reportRows, error: reportReadError } = await member
+    .from("message_gif_reports")
+    .select("message_id, reason")
+    .eq("message_id", messageId);
+  checkNoRecursion("CHAT-09 GIF boundary: report read", reportReadError);
+  report(
+    "CHAT-09 GIF boundary: generic report is classified as other",
+    !reportReadError && reportRows?.[0]?.reason === "other",
+    reportReadError?.message ?? `reason=${reportRows?.[0]?.reason ?? "missing"}`
+  );
+
+  const { error: outsiderReportError } = await outsider.rpc("report_message_gif", {
+    p_message_id: messageId,
+  });
+  report(
+    "CHAT-09 GIF boundary: non-member report is rejected",
+    !!outsiderReportError,
+    outsiderReportError?.message ?? "report succeeded"
+  );
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
@@ -1062,6 +1149,7 @@ async function main(): Promise<void> {
   await checkChatDeliveredOnlyReadState();
   await checkChatReadStateMonotonic();
   await checkChatReactionsSoftDeleteAndIntegrity();
+  await checkChatGifBoundaries();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);
