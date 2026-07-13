@@ -20,3 +20,4 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .superpowers/
+.vercel/
