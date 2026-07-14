@@ -8,7 +8,6 @@ import { IconChecks } from "@tabler/icons-react";
 export interface UnreadMessageBannerProps {
   count: number;
   oldestUnreadAt: string | null;
-  loading?: boolean;
   notice?: string | null;
   onMarkRead: () => void | Promise<void>;
 }
@@ -16,7 +15,6 @@ export interface UnreadMessageBannerProps {
 export function UnreadMessageBanner({
   count,
   oldestUnreadAt,
-  loading = false,
   notice = null,
   onMarkRead,
 }: UnreadMessageBannerProps) {
@@ -46,7 +44,6 @@ export function UnreadMessageBanner({
         <Button
           type="button"
           variant="ghost"
-          loading={loading}
           onClick={() => void onMarkRead()}
           className="shrink-0 px-xs text-ui-xs font-medium md:min-h-search-control"
         >

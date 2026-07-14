@@ -85,22 +85,17 @@ describe("UnreadMessageBanner", () => {
     expect(button).not.toHaveClass("hover:bg-surface-3");
   });
 
-  it("stays layout-stable and explains a failed acknowledgment calmly", () => {
+  it("explains a failed acknowledgment calmly", () => {
     render(
       <UnreadMessageBanner
         count={2}
         oldestUnreadAt={null}
-        loading
         notice="Messages weren’t marked as read. Try again."
         onMarkRead={vi.fn()}
       />
     );
 
-    expect(screen.getByRole("button", { name: "Mark as read" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Mark as read" })).toHaveAttribute(
-      "aria-busy",
-      "true"
-    );
+    expect(screen.getByRole("button", { name: "Mark as read" })).toBeEnabled();
     expect(screen.getByRole("status")).toHaveTextContent(
       "Messages weren’t marked as read. Try again."
     );

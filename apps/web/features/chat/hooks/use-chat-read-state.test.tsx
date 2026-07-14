@@ -80,7 +80,6 @@ function Harness({
       <span data-testid="read-notice">{state.unreadNotice}</span>
       <button
         type="button"
-        disabled={state.isMarkingUnreadMessages}
         onClick={() => void state.markUnreadMessagesRead()}
       >
         Mark as read
@@ -115,26 +114,46 @@ describe("useChatReadState", () => {
     expect(screen.getByTestId("unread-count")).toHaveTextContent("1");
   });
 
-  it("advances the read marker only after the explicit action", async () => {
-    const markReadStateAction = vi.fn(async (value: unknown) => {
+  it("hides unread messages immediately while persisting the read marker", async () => {
+    let resolveRead!: (result: MarkReadStateActionState) => void;
+    const pendingRead = new Promise<MarkReadStateActionState>((resolve) => {
+      resolveRead = resolve;
+    });
+    const markReadStateAction = vi.fn((value: unknown) => {
       const input = value as MarkReadStateInput;
-      return {
-        status: "sent" as const,
-        values: input,
-        readState: readStateFor(input),
-      };
+      return input.lastReadMessageId
+        ? pendingRead
+        : Promise.resolve({
+            status: "sent" as const,
+            values: input,
+            readState: readStateFor(input),
+          });
     });
 
     render(<Harness markReadStateAction={markReadStateAction} />);
     await waitFor(() => expect(markReadStateAction).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
 
-    await waitFor(() => expect(screen.getByTestId("unread-count")).toHaveTextContent("0"));
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
     expect(markReadStateAction).toHaveBeenNthCalledWith(2, {
       conversationId,
       lastDeliveredMessageId: "message-1",
       lastReadMessageId: "message-1",
     });
+
+    await act(async () => {
+      resolveRead({
+        status: "sent",
+        values: {},
+        readState: readStateFor({
+          conversationId,
+          lastDeliveredMessageId: "message-1",
+          lastReadMessageId: "message-1",
+        }),
+      });
+      await pendingRead;
+    });
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
   });
 
   it("keeps unread state visible with calm guidance when marking fails", async () => {

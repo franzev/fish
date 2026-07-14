@@ -42,7 +42,6 @@ interface ChatMessageListProps {
     latestMineRequestId: string | null;
     unreadSummary: ClientChatUnreadSummary;
     showUnreadBanner: boolean;
-    isMarkingUnreadMessages: boolean;
     unreadNotice: string | null;
     markUnreadMessagesRead: () => Promise<void>;
     friendActionsEnabled: boolean;
@@ -75,7 +74,6 @@ export function ChatMessageList({
     latestMineRequestId,
     unreadSummary,
     showUnreadBanner,
-    isMarkingUnreadMessages,
     unreadNotice,
     markUnreadMessagesRead,
     friendActionsEnabled,
@@ -94,7 +92,6 @@ export function ChatMessageList({
         <UnreadMessageBanner
           count={unreadSummary.count}
           oldestUnreadAt={unreadSummary.oldestUnreadAt}
-          loading={isMarkingUnreadMessages}
           notice={unreadNotice}
           onMarkRead={markUnreadMessagesRead}
         />

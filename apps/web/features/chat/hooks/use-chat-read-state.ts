@@ -329,14 +329,24 @@ export function useChatReadState({
 
   const markUnreadMessagesRead = useCallback(async () => {
     const conversationId = chat.conversationId;
-    const targetMessageId = activeUnreadState.summary.latestUnreadMessageId;
+    const previousSummary = activeUnreadState.summary;
+    const targetMessageId = previousSummary.latestUnreadMessageId;
     if (!markReadStateAction || !targetMessageId || activeUnreadState.isMarking) {
       return;
     }
 
     setUnreadState((current) =>
       current.conversationId === conversationId
-        ? { ...current, isMarking: true, notice: null }
+        ? {
+            ...current,
+            summary: {
+              count: 0,
+              oldestUnreadAt: null,
+              latestUnreadMessageId: null,
+            },
+            isMarking: true,
+            notice: null,
+          }
         : current
     );
 
@@ -354,6 +364,8 @@ export function useChatReadState({
         current.conversationId === conversationId
           ? {
               ...current,
+              summary:
+                current.summary.count > 0 ? current.summary : previousSummary,
               isMarking: false,
               notice: "Messages weren’t marked as read. Try again.",
             }
@@ -383,7 +395,7 @@ export function useChatReadState({
     void refreshUnreadSummary();
   }, [
     activeUnreadState.isMarking,
-    activeUnreadState.summary.latestUnreadMessageId,
+    activeUnreadState.summary,
     chat.conversationId,
     chat.currentUserId,
     markReadStateAction,
@@ -400,7 +412,6 @@ export function useChatReadState({
     currentUserReadState,
     participantReadState,
     unreadSummary: activeUnreadState.summary,
-    isMarkingUnreadMessages: activeUnreadState.isMarking,
     unreadNotice: activeUnreadState.notice,
     markUnreadMessagesRead,
   };

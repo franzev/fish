@@ -20,10 +20,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const Loading: Story = {
-  args: { loading: true },
-};
-
 export const Retry: Story = {
   args: { notice: "Messages weren’t marked as read. Try again." },
 };
