@@ -48,6 +48,8 @@ export interface ComposerProps {
   selectedStickerId?: ChatStickerId | null;
   onRemoveSticker?: () => void;
   stickerSelectionDisabled?: boolean;
+  isEditing?: boolean;
+  onCancelEdit?: () => void;
 }
 
 function getSendDisabledReason(images: PendingChatImage[]): string | null {
@@ -109,6 +111,8 @@ export function Composer({
   selectedStickerId,
   onRemoveSticker = () => undefined,
   stickerSelectionDisabled,
+  isEditing = false,
+  onCancelEdit = () => undefined,
 }: ComposerProps) {
   const [dragActive, setDragActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -157,73 +161,90 @@ export function Composer({
         )}
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
         <div className="flex items-end gap-xs p-xs">
-        <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
-        <textarea
-          ref={textareaRef}
-          aria-label="Message"
-          value={draft}
-          onChange={(event) => {
-            resizeComposer(event.currentTarget);
-            onDraftChange(event.currentTarget.value);
-          }}
-          onKeyDown={onKeyDown}
-          onBlur={onBlur}
-          rows={1}
-          enterKeyHint="send"
-          placeholder={channelName ? `Message #${channelName}` : "Message"}
-          className="max-h-chat-composer-max-height min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
-        />
-        <MediaPickerButton
-          onSelectEmoji={onSelectEmoji}
-          onSelectGif={onSelectGif}
-          onSelectSticker={onSelectSticker}
-          gifDisabled={gifSelectionDisabled}
-          stickerDisabled={stickerSelectionDisabled}
-          className={composerIconButtonClass}
-        >
-          <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
-        </MediaPickerButton>
-        {hasSendContent && (
-          <Tooltip.Provider delay={400} closeDelay={0}>
-            <Tooltip.Root disabled={!sendDisabledReason}>
-              <Tooltip.Trigger
-                render={
-                  <span
-                    tabIndex={sendDisabledReason ? 0 : undefined}
-                    aria-label={sendDisabledReason
-                      ? `Send unavailable: ${sendDisabledReason}`
-                      : undefined}
-                    className="inline-flex shrink-0 rounded-control"
-                  >
-                    <Button
-                      type="button"
-                      fullWidth={false}
-                      onClick={onSend}
-                      disabled={!canSend}
-                      className="w-control shrink-0 px-0"
-                      style={{ minHeight: "var(--size-control)" }}
-                      aria-label="Send message"
+          {isEditing ? (
+            <span className="shrink-0 self-center px-2xs text-ui-xs text-muted">
+              Editing
+            </span>
+          ) : (
+            <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
+          )}
+          <textarea
+            ref={textareaRef}
+            aria-label="Message"
+            value={draft}
+            onChange={(event) => {
+              resizeComposer(event.currentTarget);
+              onDraftChange(event.currentTarget.value);
+            }}
+            onKeyDown={onKeyDown}
+            onBlur={onBlur}
+            rows={1}
+            enterKeyHint="send"
+            placeholder={channelName ? `Message #${channelName}` : "Message"}
+            className="max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs py-field-y text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
+          />
+          {isEditing ? (
+            <button
+              type="button"
+              aria-label="Cancel edit"
+              onClick={onCancelEdit}
+              className={composerIconButtonClass}
+            >
+              <IconX size={18} stroke={1.75} aria-hidden="true" />
+            </button>
+          ) : (
+            <MediaPickerButton
+              onSelectEmoji={onSelectEmoji}
+              onSelectGif={onSelectGif}
+              onSelectSticker={onSelectSticker}
+              gifDisabled={gifSelectionDisabled}
+              stickerDisabled={stickerSelectionDisabled}
+              className={composerIconButtonClass}
+            >
+              <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
+            </MediaPickerButton>
+          )}
+          {hasSendContent && (
+            <Tooltip.Provider delay={400} closeDelay={0}>
+              <Tooltip.Root disabled={!sendDisabledReason}>
+                <Tooltip.Trigger
+                  render={
+                    <span
+                      tabIndex={sendDisabledReason ? 0 : undefined}
+                      aria-label={sendDisabledReason
+                        ? `Send unavailable: ${sendDisabledReason}`
+                        : undefined}
+                      className="inline-flex shrink-0 rounded-control"
                     >
-                      <IconSend size={20} stroke={1.75} aria-hidden="true" />
-                    </Button>
-                  </span>
-                }
-              />
-              {sendDisabledReason && (
-                <Tooltip.Portal>
-                  <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
-                    <Tooltip.Popup
-                      role="tooltip"
-                      className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
-                    >
-                      {sendDisabledReason}
-                    </Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              )}
-            </Tooltip.Root>
-          </Tooltip.Provider>
-        )}
+                      <Button
+                        type="button"
+                        fullWidth={false}
+                        onClick={onSend}
+                        disabled={!canSend}
+                        className="w-control shrink-0 px-0"
+                        style={{ minHeight: "var(--size-control)" }}
+                        aria-label="Send message"
+                      >
+                        <IconSend size={20} stroke={1.75} aria-hidden="true" />
+                      </Button>
+                    </span>
+                  }
+                />
+                {sendDisabledReason && (
+                  <Tooltip.Portal>
+                    <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
+                      <Tooltip.Popup
+                        role="tooltip"
+                        className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+                      >
+                        {sendDisabledReason}
+                      </Tooltip.Popup>
+                    </Tooltip.Positioner>
+                  </Tooltip.Portal>
+                )}
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          )}
         </div>
       </div>
       {dragActive && !imageSelectionDisabled && (

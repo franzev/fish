@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
 import type { ClientChatData } from "@/lib/services";
 import { ChatComposerSurface } from "./chat-composer-surface";
 
@@ -50,5 +51,23 @@ describe("ChatComposerSurface stickers", () => {
 
     expect(viewProps.selectSticker).toHaveBeenCalledWith("aquatic-thank-you-octopus");
     expect(viewProps.addImages).not.toHaveBeenCalled();
+  });
+
+  it("keeps edit context and cancellation inside the composer", () => {
+    const viewProps = props();
+    render(
+      <ChatComposerSurface
+        {...viewProps}
+        draft="A message to revise"
+        canSend
+        editingMessage={{ id: "message-1" } as LocalMessage}
+      />
+    );
+
+    expect(screen.getByText("Editing")).toBeInTheDocument();
+    expect(screen.queryByText("Editing message")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel edit" }));
+    expect(viewProps.cancelEdit).toHaveBeenCalledOnce();
   });
 });

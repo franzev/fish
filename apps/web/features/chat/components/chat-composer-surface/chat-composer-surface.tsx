@@ -87,46 +87,31 @@ export function ChatComposerSurface({
         </Alert>
       )}
 
-      {(replyingTo || editingMessage) && (
+      {replyingTo && (
         <div className="border-t border-border bg-surface px-md py-sm">
-          {replyingTo && (
-            <div className="flex items-center gap-xs">
-              <div className="min-w-0 flex-1">
-                <p className="text-ui-xs text-muted">
-                  Replying to{" "}
-                  {replyingTo.senderId === chat.currentUserId
-                    ? "your message"
-                    : getMessageAuthorName(replyingTo)}
-                </p>
-                <QuotedMessage
-                  authorName={getMessageAuthorName(replyingTo)}
-                  snippet={getMessageSnippet(replyingTo)}
-                  className="mb-0 mt-2xs"
-                />
-              </div>
-              <button
-                type="button"
-                aria-label="Cancel reply"
-                onClick={cancelReply}
-                className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-              >
-                <IconX size={18} stroke={1.75} aria-hidden="true" />
-              </button>
+          <div className="flex items-center gap-xs">
+            <div className="min-w-0 flex-1">
+              <p className="text-ui-xs text-muted">
+                Replying to{" "}
+                {replyingTo.senderId === chat.currentUserId
+                  ? "your message"
+                  : getMessageAuthorName(replyingTo)}
+              </p>
+              <QuotedMessage
+                authorName={getMessageAuthorName(replyingTo)}
+                snippet={getMessageSnippet(replyingTo)}
+                className="mb-0 mt-2xs"
+              />
             </div>
-          )}
-          {editingMessage && (
-            <div className="flex items-center gap-xs text-ui-sm text-muted">
-              <span className="min-w-0 flex-1">Editing message</span>
-              <button
-                type="button"
-                aria-label="Cancel edit"
-                onClick={cancelEdit}
-                className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-              >
-                <IconX size={18} stroke={1.75} aria-hidden="true" />
-              </button>
-            </div>
-          )}
+            <button
+              type="button"
+              aria-label="Cancel reply"
+              onClick={cancelReply}
+              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+            >
+              <IconX size={18} stroke={1.75} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -168,6 +153,8 @@ export function ChatComposerSurface({
           stickerSelectionDisabled={
             Boolean(editingMessage) || isOffline || Boolean(selectedGif) || images.length > 0
           }
+          isEditing={Boolean(editingMessage)}
+          onCancelEdit={cancelEdit}
         />
       </div>
     </>
