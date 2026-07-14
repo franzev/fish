@@ -15,6 +15,7 @@ import {
 } from "@/features/chat/server";
 import { authRedirects } from "@/features/auth/redirects";
 import { getChatPageData } from "@/features/chat/server/page-data";
+import { friendsFeatureEnabled } from "@/features/friends/server";
 import {
   findCommunityChannel,
 } from "@/lib/channels";
@@ -59,6 +60,7 @@ export default async function ChannelPage({
   return (
     <ChatClient
       chat={data.chat}
+      friendActionsEnabled={friendsFeatureEnabled()}
       focusMessageId={focusMessageId ?? null}
       sendMessageAction={sendMessageAction}
       searchMessagesAction={searchChatMessagesAction}

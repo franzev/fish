@@ -3,6 +3,7 @@ import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
 import type { ClientChatData, ClientChatReadState } from "@/lib/services";
 import { IconArrowDown } from "@tabler/icons-react";
 import type { RefObject } from "react";
+import type { CommunityMemberProfile } from "../member-profile-popover";
 import { TypingIndicator } from "../visual";
 import {
   ChatMessageRow,
@@ -33,9 +34,11 @@ interface ChatMessageListProps {
     chat: ClientChatData;
     participantReadState?: ClientChatReadState;
     latestMineRequestId: string | null;
+    friendActionsEnabled: boolean;
     focusMessageId?: string | null;
     getAuthorName: (message: LocalMessage) => string;
     getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
+    getAuthorMember: (message: LocalMessage) => CommunityMemberProfile;
   };
   actions: ChatMessageActions;
 }
@@ -57,9 +60,11 @@ export function ChatMessageList({
     chat,
     participantReadState,
     latestMineRequestId,
+    friendActionsEnabled,
     focusMessageId,
     getAuthorName,
     getAuthorAvatar,
+    getAuthorMember,
   } = transcript;
   const emptyMessage = isCommunity
     ? "No messages yet. Say hello to the community."
@@ -101,12 +106,15 @@ export function ChatMessageList({
                   next={visibleMessages[index + 1]}
                   messages={allMessages}
                   currentUserId={chat.currentUserId}
+                  currentUserRole={chat.currentUserRole}
                   isCommunity={isCommunity}
+                  friendActionsEnabled={friendActionsEnabled}
                   participantReadState={participantReadState}
                   latestMineRequestId={latestMineRequestId}
                   isFocused={message.id === focusMessageId}
                   getAuthorName={getAuthorName}
                   getAuthorAvatar={getAuthorAvatar}
+                  getAuthorMember={getAuthorMember}
                   actions={actions}
                 />
               ))}

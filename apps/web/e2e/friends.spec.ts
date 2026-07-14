@@ -85,23 +85,49 @@ test.describe.serial("client friendships", () => {
         signIn(samPage, "client2@fish.dev"),
       ]);
 
-      await franzPage.getByRole("link", { name: "Friends", exact: true }).click();
-      await franzPage.getByRole("link", { name: "Add a friend" }).click();
-      await franzPage.getByLabel("Username").fill(sam.username);
-      await franzPage.getByRole("button", { name: "Search" }).click();
-      await expect(franzPage.getByText("Sam Okafor")).toBeVisible();
+      await franzPage.goto("/channels/general");
+      const samProfileTrigger = franzPage
+        .getByRole("button", { name: "View Sam Okafor profile" })
+        .last();
+      await samProfileTrigger.scrollIntoViewIfNeeded();
+      await samProfileTrigger.focus();
+      await samProfileTrigger.press("Enter");
+      await expect(
+        franzPage.getByRole("dialog", { name: "Sam Okafor" })
+      ).toBeVisible();
       await franzPage.getByRole("button", { name: "Add friend" }).click();
       await expect(franzPage.getByText(/Request sent/)).toBeVisible();
 
-      await samPage.getByRole("link", { name: "Friends", exact: true }).click();
+      await samPage.getByRole("link", { name: /^Friends/ }).click();
       await samPage.getByRole("link", { name: /friend request is waiting/i }).click();
       await samPage.getByRole("link", { name: /Franz Eva/ }).click();
       await samPage.getByRole("button", { name: "Accept request" }).click();
       await expect(samPage).toHaveURL(/\/friends$/);
-      await samPage.getByRole("link", { name: /Franz Eva/ }).click();
-      await samPage.getByRole("button", { name: `Block @${franz.username}` }).click();
-      await samPage.getByRole("button", { name: "Block", exact: true }).click();
 
+      await samPage.goto("/channels/general");
+      const franzProfileTrigger = samPage
+        .getByRole("button", { name: "View Franz Eva profile" })
+        .last();
+      await franzProfileTrigger.scrollIntoViewIfNeeded();
+      await franzProfileTrigger.focus();
+      await franzProfileTrigger.press("Enter");
+      await samPage
+        .getByRole("button", { name: "More actions for Franz Eva" })
+        .click();
+      await samPage.getByRole("menuitem", { name: "Block member" }).click();
+      await expect(
+        samPage.getByText(/still see each other’s community messages/i)
+      ).toBeVisible();
+      await samPage.getByRole("button", { name: "Block", exact: true }).click();
+      await expect(
+        samPage.getByText(/Franz Eva is blocked/i)
+      ).toBeVisible();
+
+      await samPage
+        .getByRole("button", { name: "Close Franz Eva profile" })
+        .click();
+      await samPage.getByRole("link", { name: /^Friends/ }).click();
+      await samPage.getByRole("link", { name: "Blocked people" }).click();
       await expect(samPage).toHaveURL(/\/friends\/blocked$/);
       await expect(samPage.getByText("Franz Eva")).toBeVisible();
       await samPage.getByRole("button", { name: "Unblock" }).click();

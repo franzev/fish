@@ -78,6 +78,8 @@ function createSearchRequest(
 export interface ChatClientProps {
   chat: ClientChatData;
   focusMessageId?: string | null;
+  /** Presentation gate only; the Friends backend remains authoritative. */
+  friendActionsEnabled?: boolean;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
   searchMessagesAction?: (input: unknown) => Promise<ChatSearchActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
@@ -111,6 +113,7 @@ export interface ChatClientProps {
 export function ChatClient({
   chat,
   focusMessageId,
+  friendActionsEnabled = false,
   sendMessageAction,
   searchMessagesAction,
   editMessageAction,
@@ -178,6 +181,18 @@ export function ChatClient({
     ?? (!isCommunity && message.senderId === chat.participant.id
       ? chat.participant.avatarUrl
       : undefined);
+  const getMessageAuthorMember = (message: ClientChatMessage) => {
+    const directoryMember = searchMembers.find(
+      (member) => member.id === message.senderId
+    );
+    return {
+      id: message.senderId,
+      displayName: getMessageAuthorName(message),
+      username: directoryMember?.username,
+      role: message.senderRole,
+      avatarUrl: getMessageAuthorAvatar(message),
+    };
+  };
   const {
     participantTyping,
     sendLocalTyping,
@@ -494,9 +509,11 @@ export function ChatClient({
           chat,
           participantReadState,
           latestMineRequestId,
+          friendActionsEnabled,
           focusMessageId,
           getAuthorName: getMessageAuthorName,
           getAuthorAvatar: getMessageAuthorAvatar,
+          getAuthorMember: getMessageAuthorMember,
         }}
         actions={{
           reply: startReplyingToMessage,

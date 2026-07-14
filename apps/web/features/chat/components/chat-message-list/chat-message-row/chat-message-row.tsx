@@ -29,6 +29,10 @@ import {
   Reactions,
 } from "../../visual";
 import { visibleMessageBody } from "../../message-presentation";
+import {
+  MemberProfilePopover,
+  type CommunityMemberProfile,
+} from "../../member-profile-popover";
 
 export interface ChatMessageActions {
   reply: (message: LocalMessage) => void;
@@ -54,12 +58,15 @@ interface ChatMessageRowProps {
   next?: LocalMessage;
   messages: LocalMessage[];
   currentUserId: string;
+  currentUserRole: "client" | "coach";
   isCommunity: boolean;
+  friendActionsEnabled: boolean;
   participantReadState?: ClientChatReadState;
   latestMineRequestId: string | null;
   isFocused?: boolean;
   getAuthorName: (message: LocalMessage) => string;
   getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
+  getAuthorMember: (message: LocalMessage) => CommunityMemberProfile;
   actions: ChatMessageActions;
 }
 
@@ -70,12 +77,15 @@ export function ChatMessageRow({
   next,
   messages,
   currentUserId,
+  currentUserRole,
   isCommunity,
+  friendActionsEnabled,
   participantReadState,
   latestMineRequestId,
   isFocused = false,
   getAuthorName,
   getAuthorAvatar,
+  getAuthorMember,
   actions,
 }: ChatMessageRowProps) {
   const mine = message.senderId === currentUserId;
@@ -121,6 +131,7 @@ export function ChatMessageRow({
       : null;
   const showMessageActions =
     message.localStatus === "sent" && !message.deletedAt;
+  const authorMember = getAuthorMember(message);
 
   const rowContent = (
     <>
@@ -150,6 +161,15 @@ export function ChatMessageRow({
           authorName={getAuthorName(message)}
           sentAt={message.createdAt}
           tag={message.senderRole === "coach" ? "Coach" : undefined}
+          authorControl={
+            <MemberProfilePopover
+              member={authorMember}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              friendActionsEnabled={friendActionsEnabled}
+              trigger="name"
+            />
+          }
         />
       )}
       {!isCommunity && replyMessage && (
@@ -278,12 +298,12 @@ export function ChatMessageRow({
   );
 
   const communityAvatarSlot = showParticipantAvatar ? (
-    <Avatar
-      profileId={message.senderId}
-      src={getAuthorAvatar(message) ?? undefined}
-      name={getAuthorName(message)}
-      size="sm"
-      alt=""
+    <MemberProfilePopover
+      member={authorMember}
+      currentUserId={currentUserId}
+      currentUserRole={currentUserRole}
+      friendActionsEnabled={friendActionsEnabled}
+      trigger="avatar"
       className={cn(replyMessage && "mt-lg")}
     />
   ) : (
@@ -308,7 +328,7 @@ export function ChatMessageRow({
         id={`message-${message.id}`}
         className={cn(
           "scroll-mt-md",
-          isFocused && "bg-surface-2",
+          isFocused && !isCommunity && "bg-chat-active",
           !isCommunity && "group relative flex items-end",
           !isCommunity &&
             previous &&
@@ -323,6 +343,9 @@ export function ChatMessageRow({
             startsGroup={startsCommunityGroup}
             hasPrecedingRow={Boolean(previous)}
             interactive
+            className={cn(
+              isFocused && "bg-chat-active hover:bg-chat-active"
+            )}
           >
             {rowContent}
           </CommunityMessageRowLayout>

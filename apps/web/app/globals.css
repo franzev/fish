@@ -32,6 +32,7 @@
   --color-surface: light-dark(oklch(0.99 0 0), oklch(0.18 0 0));       /* cards, inputs, elevated containers — kept close to the canvas for calm separation */
   --color-surface-2: light-dark(oklch(0.96 0 0), oklch(0.20 0 0));     /* alt rows, subtle wells, progress track */
   --color-chat-hover: light-dark(oklch(0.94 0 0), oklch(0.22 0 0));   /* quiet transcript-row interaction state */
+  --color-chat-active: light-dark(oklch(0.92 0 0), oklch(0.25 0 0));  /* reached transcript row, one quiet step beyond hover */
   --color-avatar: light-dark(oklch(0.90 0 0), oklch(0.27 0 0));       /* identity marker — distinct from both the canvas and chat hover */
   --color-surface-3: light-dark(oklch(0.88 0 0), oklch(0.33 0 0));     /* selected wells — e.g. the viewer's own reaction chip; state by fill step, not border or hue */
   --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* semantic control boundaries — retains 3:1 contrast */
@@ -205,6 +206,8 @@
   --container-search-pop: 488px;    /* command and autocomplete panel */
   --container-notifications: 420px; /* focused notification popover */
   --container-notifications-mobile: calc(100vw - (var(--spacing-page) * 2));
+  --container-member-profile: 360px; /* compact community identity and relationship preview */
+  --container-member-profile-mobile: calc(100vw - (var(--spacing-page) * 2));
   --container-search-pop-mobile: calc(100vw - (var(--spacing-page) * 2));
   --container-filters-dialog: 936px; /* detailed desktop filter editor */
   --container-calendar: 600px;
@@ -455,6 +458,18 @@
    screens the same popover becomes a thumb-reachable bottom sheet without
    changing component semantics or mounting a second picker. */
 @media (max-width: 639px) {
+  .member-profile-positioner {
+    position: fixed !important;
+    inset: auto var(--spacing-page)
+      max(var(--spacing-page), env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    transform: none !important;
+  }
+
+  .member-profile-positioner [role="dialog"] {
+    width: 100%;
+  }
+
   .gif-picker-positioner {
     position: fixed !important;
     inset: auto var(--spacing-page)

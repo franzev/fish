@@ -17,6 +17,21 @@ test("client opens seeded channels from the full community rail", async ({
     "I’m",
   );
 
+  const profileTrigger = page
+    .getByRole("button", { name: "View Sam Okafor profile" })
+    .last();
+  await profileTrigger.scrollIntoViewIfNeeded();
+  await profileTrigger.click();
+  await expect(
+    page.getByRole("dialog", { name: "Sam Okafor" })
+  ).toBeVisible();
+  await expect(page.getByText("Community member")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("dialog", { name: "Sam Okafor" })
+  ).toBeHidden();
+  await expect(profileTrigger).toBeFocused();
+
   const channelNavigation = page.getByRole("navigation", { name: "Channels" });
   await expect(channelNavigation.getByRole("link")).toHaveCount(15);
   await channelNavigation

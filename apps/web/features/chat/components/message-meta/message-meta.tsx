@@ -5,7 +5,7 @@ import {
   useTimeFormatPreference,
 } from "@/lib/prefs/time-format";
 import { cn } from "@/lib/utils";
-import { HTMLAttributes } from "react";
+import { HTMLAttributes, type ReactNode } from "react";
 
 interface MessageMetaProps extends HTMLAttributes<HTMLDivElement> {
   authorName: string;
@@ -13,11 +13,20 @@ interface MessageMetaProps extends HTMLAttributes<HTMLDivElement> {
   /** Optional role tag ("Coach") rendered as a quiet monochrome pill —
    *  hierarchy before color, so roles read by shape, not hue. */
   tag?: string;
+  /** Optional interactive author control for community identity previews. */
+  authorControl?: ReactNode;
 }
 
 /** Username + timestamp caption above a message group. Quiet, muted tokens —
  *  this is metadata, not content. */
-export function MessageMeta({ authorName, sentAt, tag, className, ...props }: MessageMetaProps) {
+export function MessageMeta({
+  authorName,
+  sentAt,
+  tag,
+  authorControl,
+  className,
+  ...props
+}: MessageMetaProps) {
   const timeFormat = useTimeFormatPreference();
 
   return (
@@ -29,7 +38,11 @@ export function MessageMeta({ authorName, sentAt, tag, className, ...props }: Me
           the custom text-ui-* scale, so a size on the cn() container is
           swallowed by the text color class. Name reads at the message body
           size; the timestamp stays a quiet caption beside it. */}
-      <span className="text-ui-sm font-medium leading-none text-body">{authorName}</span>
+      {authorControl ?? (
+        <span className="text-ui-sm font-medium leading-none text-body">
+          {authorName}
+        </span>
+      )}
       {tag && (
         <span className="rounded-pill bg-surface-2 px-xs text-ui-2xs font-medium text-body">
           {tag}

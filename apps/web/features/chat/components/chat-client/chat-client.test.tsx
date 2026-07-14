@@ -277,9 +277,40 @@ describe("ChatClient", () => {
     );
 
     const target = document.getElementById("message-message-1");
-    expect(target).toHaveClass("bg-surface-2");
+    expect(target).toHaveClass("bg-chat-active");
     await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
     HTMLElement.prototype.scrollIntoView = previousScrollIntoView;
+  });
+
+  it("uses the full-width hover geometry for a focused community message", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      participantPresence: undefined,
+    };
+
+    render(
+      <ChatClient
+        chat={communityChat}
+        sendMessageAction={vi.fn()}
+        focusMessageId="message-1"
+      />
+    );
+
+    const listItem = document.getElementById("message-message-1");
+    const row = listItem?.querySelector('[data-layout="community-message-row"]');
+
+    expect(listItem).not.toHaveClass("bg-chat-active");
+    expect(row).toHaveClass(
+      "-mx-md",
+      "px-md",
+      "bg-chat-active",
+      "hover:bg-chat-active"
+    );
   });
 
   it("renders the direct assigned conversation without an inbox", () => {
@@ -288,9 +319,10 @@ describe("ChatClient", () => {
     expect(screen.getByText("Coach Dana")).toBeInTheDocument();
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /View Coach Dana profile/ })).toBeNull();
   });
 
-  it("renders the fixed demo conversation as a community room", () => {
+  it("renders the fixed demo conversation as a community room", async () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
@@ -313,6 +345,13 @@ describe("ChatClient", () => {
           clientRequestId: "seed-2",
         },
       ],
+      searchMembers: [
+        {
+          id: "client-2",
+          displayName: "Sam Okafor",
+          username: "sam_okafor",
+        },
+      ],
       participantPresence: undefined,
     };
 
@@ -325,6 +364,16 @@ describe("ChatClient", () => {
     expect(screen.getByText("Sam Okafor")).toBeInTheDocument();
     expect(screen.getByText("Can anyone share a short intro?")).toBeInTheDocument();
     expect(screen.getByLabelText("Community messages")).toBeInTheDocument();
+    const profileTriggers = screen.getAllByRole("button", {
+      name: "View Sam Okafor profile",
+    });
+    expect(profileTriggers).toHaveLength(2);
+
+    fireEvent.click(profileTriggers[1]);
+    await waitFor(() =>
+      expect(screen.getByRole("dialog", { name: "Sam Okafor" })).toBeVisible()
+    );
+    expect(screen.getByText("@sam_okafor")).toBeVisible();
   });
 
   it("renders a simplified channel header with a search field and no subtitle line", () => {
