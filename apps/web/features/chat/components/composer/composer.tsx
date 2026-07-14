@@ -24,6 +24,7 @@ import { MediaPickerButton } from "../media-picker";
 import type { ChatSticker } from "../sticker-picker";
 import type { ChatStickerId } from "@fish/core/chat";
 import { StickerMedia } from "../sticker-media";
+import { cn } from "@/lib/utils";
 
 export interface ComposerProps {
   /** Community channel name for the placeholder; direct chats omit it. */
@@ -117,6 +118,11 @@ export function Composer({
     || images.length > 0
     || Boolean(selectedGif)
     || Boolean(selectedStickerId);
+  const isStickerOnly =
+    Boolean(selectedStickerId)
+    && draft.trim().length === 0
+    && images.length === 0
+    && !selectedGif;
   const sendDisabledReason = !canSend ? getSendDisabledReason(images) : null;
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -138,10 +144,16 @@ export function Composer({
       }}
       onDrop={handleDrop}
     >
-      <div className="rounded-control bg-surface-2">
+      <div className={cn(
+        "rounded-control",
+        !isStickerOnly && "bg-surface-2"
+      )}>
         <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
         {selectedStickerId && (
-          <div className="relative w-fit px-xs pt-xs">
+          <div className={cn(
+            "relative w-fit shrink-0 px-xs pt-xs",
+            isStickerOnly && "mb-xs rounded-control bg-surface-2 pb-xs"
+          )}>
             <StickerMedia stickerId={selectedStickerId} />
             <button
               type="button"
@@ -156,7 +168,10 @@ export function Composer({
           </div>
         )}
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
-        <div className="flex items-end gap-xs p-xs">
+        <div className={cn(
+          "flex items-end gap-xs p-xs",
+          isStickerOnly && "rounded-control bg-surface-2"
+        )}>
           <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
           <textarea
             ref={textareaRef}
@@ -200,8 +215,7 @@ export function Composer({
                         fullWidth={false}
                         onClick={onSend}
                         disabled={!canSend}
-                        className="w-control shrink-0 px-0"
-                        style={{ minHeight: "var(--size-control)" }}
+                        className="min-h-control w-control shrink-0 px-0"
                         aria-label="Send message"
                       >
                         <IconSend size={20} stroke={1.75} aria-hidden="true" />

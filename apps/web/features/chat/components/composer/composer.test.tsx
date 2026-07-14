@@ -100,10 +100,11 @@ describe("Composer", () => {
     expect(sendButton).toBeInTheDocument();
     expect(sendButton).toHaveClass(
       "w-control",
+      "min-h-control",
       "px-0"
     );
     expect(sendButton).not.toHaveClass("px-md");
-    expect(sendButton).toHaveStyle({ minHeight: "var(--size-control)" });
+    expect(sendButton).not.toHaveAttribute("style");
   });
 
   it("explains why Send is disabled while an attachment is uploading", async () => {
@@ -198,8 +199,37 @@ describe("Composer", () => {
     expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
     const removeSticker = screen.getByRole("button", { name: "Remove sticker" });
     expect(removeSticker).toHaveClass("absolute", "right-3xs", "top-3xs");
+    expect(removeSticker.parentElement).toHaveClass(
+      "w-fit",
+      "mb-xs",
+      "rounded-control",
+      "bg-surface-2"
+    );
+    expect(screen.getByRole("textbox", { name: "Message" }).parentElement).toHaveClass(
+      "rounded-control",
+      "bg-surface-2"
+    );
+    expect(removeSticker.parentElement?.parentElement).not.toHaveClass("bg-surface-2");
     fireEvent.click(removeSticker);
     expect(onRemoveSticker).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a sticker with message text in the stacked composer layout", () => {
+    render(
+      <Composer
+        {...baseProps}
+        draft="Love this"
+        canSend
+        selectedStickerId="aquatic-love-you-angelfish"
+      />
+    );
+
+    const removeSticker = screen.getByRole("button", { name: "Remove sticker" });
+    expect(removeSticker.parentElement).not.toHaveClass("mb-xs", "pb-xs");
+    expect(screen.getByRole("textbox", { name: "Message" }).parentElement).not.toHaveClass(
+      "bg-surface-2"
+    );
+    expect(removeSticker.parentElement?.parentElement).toHaveClass("bg-surface-2");
   });
 
   it("keeps one expression picker and the + menu affordance visible", () => {
