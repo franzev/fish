@@ -63,7 +63,7 @@ export const buttonVariants = cva(
 
 type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: NonNullable<ButtonVariantProps["variant"]>;
   /** Fixed 44px icon controls use square; labeled actions keep default. */
   controlSize?: NonNullable<ButtonVariantProps["controlSize"]>;
