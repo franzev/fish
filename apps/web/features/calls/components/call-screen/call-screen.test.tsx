@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createEmptyCallState } from "@fish/core/call-state";
+import type { RemoteVideoTrack } from "livekit-client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { pushMock, useCallMock } = vi.hoisted(() => ({
@@ -36,7 +37,7 @@ function activeCallValue() {
     localMicrophoneActive: true,
     remoteSpeaking: false,
     localVideoStream: null,
-    remoteVideoStream: null,
+    remoteVideoTrack: null as RemoteVideoTrack | null,
     answer: vi.fn(async () => undefined),
     decline: vi.fn(async () => undefined),
     cancel: vi.fn(async () => undefined),
@@ -110,6 +111,25 @@ describe("CallScreen", () => {
     expect(
       screen.getByRole("button", { name: "Turn camera off" })
     ).toBeInTheDocument();
+  });
+
+  it("attaches remote video through LiveKit so adaptive quality tracks the stage", () => {
+    const value = activeCallValue();
+    const attach = vi.fn();
+    const detach = vi.fn();
+    const remoteVideoTrack = { attach, detach } as unknown as RemoteVideoTrack;
+    value.state.current.kind = "video";
+    value.remoteVideoTrack = remoteVideoTrack;
+    useCallMock.mockReturnValue(value);
+
+    const view = render(<CallScreen callId="call-1" />);
+    const remoteVideo = screen.getByLabelText("Alex video");
+
+    expect(attach).toHaveBeenCalledWith(remoteVideo);
+
+    view.unmount();
+
+    expect(detach).toHaveBeenCalledWith(remoteVideo);
   });
 
   it("makes video consent explicit when answering", () => {

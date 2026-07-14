@@ -7,6 +7,19 @@ async function signIn(page: Page, email: string, password: string) {
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
+async function expectHdVideo(page: Page, label: string) {
+  const video = page.getByLabel(label);
+  await expect(video).toBeVisible();
+  await expect.poll(
+    () => video.evaluate((element) => (element as HTMLVideoElement).videoWidth),
+    { timeout: 20_000 }
+  ).toBeGreaterThanOrEqual(1280);
+  await expect.poll(
+    () => video.evaluate((element) => (element as HTMLVideoElement).videoHeight),
+    { timeout: 20_000 }
+  ).toBeGreaterThanOrEqual(720);
+}
+
 async function callPair(browser: Browser) {
   const coachContext = await browser.newContext();
   const clientContext = await browser.newContext();
@@ -86,8 +99,10 @@ test.describe.serial("one-to-one calls", () => {
         .toBeVisible();
       await expect(pair.client.getByRole("heading", { name: "Video call with Patty Cake" }))
         .toBeVisible();
-      await expect(pair.client.getByLabel("Your video preview")).toBeVisible();
-      await expect(pair.client.getByLabel("Patty Cake video")).toBeVisible();
+      await Promise.all([
+        expectHdVideo(pair.client, "Your video preview"),
+        expectHdVideo(pair.client, "Patty Cake video"),
+      ]);
       await pair.client.getByRole("button", { name: "Turn camera off" }).click();
       await expect(pair.client.getByRole("button", { name: "Turn camera on" }))
         .toBeVisible();

@@ -16,6 +16,7 @@ import type {
   CallRealtimeService,
   ClientCall,
 } from "@/lib/services";
+import type { RemoteVideoTrack } from "livekit-client";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
@@ -46,7 +47,7 @@ interface CallContextValue {
   localMicrophoneActive: boolean;
   remoteSpeaking: boolean;
   localVideoStream: MediaStream | null;
-  remoteVideoStream: MediaStream | null;
+  remoteVideoTrack: RemoteVideoTrack | null;
   startCall(
     recipientId: string,
     recipientName: string,
@@ -99,8 +100,8 @@ export function CallProvider({
   });
   const [localVideoStream, setLocalVideoStream] =
     useState<MediaStream | null>(null);
-  const [remoteVideoStream, setRemoteVideoStream] =
-    useState<MediaStream | null>(null);
+  const [remoteVideoTrack, setRemoteVideoTrack] =
+    useState<RemoteVideoTrack | null>(null);
   const stateRef = useRef(state);
   const previousPathnameRef = useRef(pathname);
   const ignoredCallIdsRef = useRef(new Set<string>());
@@ -142,8 +143,8 @@ export function CallProvider({
       onLocalVideoChanged(stream) {
         setLocalVideoStream(stream);
       },
-      onRemoteVideoChanged(stream) {
-        setRemoteVideoStream(stream);
+      onRemoteVideoChanged(track) {
+        setRemoteVideoTrack(track);
       },
       onCameraChanged(enabled) {
         dispatch({ type: "cameraChanged", enabled });
@@ -371,7 +372,7 @@ export function CallProvider({
     localMicrophoneActive: speaking.localMicrophoneActive,
     remoteSpeaking: speaking.remoteSpeaking,
     localVideoStream,
-    remoteVideoStream,
+    remoteVideoTrack,
     startCall: async (recipientId, recipientName, kind) => run(async () => {
       if (selectHasLiveCall(stateRef.current)) {
         setNotice("Finish the current call before starting another one.");
@@ -510,7 +511,7 @@ export function CallProvider({
         remoteSpeaking: false,
       });
       setLocalVideoStream(null);
-      setRemoteVideoStream(null);
+      setRemoteVideoTrack(null);
       dispatch({ type: "clearCall" });
     },
     microphones: async () => {
@@ -528,7 +529,7 @@ export function CallProvider({
         setNotice("That microphone isn’t available. The current one still works.");
       }
     },
-  }), [audioBlocked, busy, commands, failMediaConnection, homeHref, leaveSurface, loadCall, localVideoStream, media, notice, remoteVideoStream, router, run, speaking, state]);
+  }), [audioBlocked, busy, commands, failMediaConnection, homeHref, leaveSurface, loadCall, localVideoStream, media, notice, remoteVideoTrack, router, run, speaking, state]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }

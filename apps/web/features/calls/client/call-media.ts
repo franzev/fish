@@ -5,8 +5,10 @@ import {
   Room,
   RoomEvent,
   Track,
+  VideoPresets,
   type LocalTrackPublication,
   type RemoteTrack,
+  type RemoteVideoTrack,
 } from "livekit-client";
 
 export interface CallMediaCallbacks {
@@ -20,7 +22,7 @@ export interface CallMediaCallbacks {
     state: { localMicrophoneActive: boolean; remoteSpeaking: boolean }
   ): void;
   onLocalVideoChanged(stream: MediaStream | null): void;
-  onRemoteVideoChanged(stream: MediaStream | null): void;
+  onRemoteVideoChanged(track: RemoteVideoTrack | null): void;
   onCameraChanged(enabled: boolean): void;
 }
 
@@ -58,7 +60,18 @@ export class LiveKitCallMedia {
       }
     }
     await this.disconnect();
-    const room = new Room({ adaptiveStream: true, dynacast: true });
+    const room = new Room({
+      adaptiveStream: { pixelDensity: "screen" },
+      dynacast: true,
+      videoCaptureDefaults: {
+        resolution: VideoPresets.h1080.resolution,
+      },
+      publishDefaults: {
+        simulcast: true,
+        videoEncoding: VideoPresets.h1080.encoding,
+        videoSimulcastLayers: [VideoPresets.h360, VideoPresets.h720],
+      },
+    });
     this.room = room;
     this.callId = callId;
     this.canPublishMicrophone = publish.microphone;
@@ -208,9 +221,7 @@ export class LiveKitCallMedia {
     });
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
       if (track.kind === Track.Kind.Video) {
-        this.callbacks.onRemoteVideoChanged(
-          new MediaStream([track.mediaStreamTrack])
-        );
+        this.callbacks.onRemoteVideoChanged(track as RemoteVideoTrack);
         return;
       }
       if (track.kind !== Track.Kind.Audio) return;
@@ -269,7 +280,7 @@ export class LiveKitCallMedia {
           publication.track
         ) {
           this.callbacks.onRemoteVideoChanged(
-            new MediaStream([publication.track.mediaStreamTrack])
+            publication.track as RemoteVideoTrack
           );
         }
       }

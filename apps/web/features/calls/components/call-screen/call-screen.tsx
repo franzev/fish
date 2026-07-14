@@ -7,6 +7,7 @@ import {
   IconMicrophone,
   IconMicrophoneOff,
   IconPhone,
+  IconPhoneOff,
   IconVideo,
   IconVideoOff,
 } from "@tabler/icons-react";
@@ -25,7 +26,7 @@ export function CallScreen({ callId }: { callId: string }) {
     localMicrophoneActive,
     remoteSpeaking,
     localVideoStream,
-    remoteVideoStream,
+    remoteVideoTrack,
     answer,
     decline,
     cancel,
@@ -61,10 +62,6 @@ export function CallScreen({ callId }: { callId: string }) {
     if (localVideo.current) localVideo.current.srcObject = localVideoStream;
   }, [localVideoStream]);
 
-  useEffect(() => {
-    if (remoteVideo.current) remoteVideo.current.srcObject = remoteVideoStream;
-  }, [remoteVideoStream]);
-
   async function toggleAudioSettings() {
     const nextOpen = !audioSettingsOpen;
     setAudioSettingsOpen(nextOpen);
@@ -81,6 +78,20 @@ export function CallScreen({ callId }: { callId: string }) {
     "missed",
     "failed",
   ].includes(call.status);
+  const inProgress = ["connecting", "active", "reconnecting"].includes(
+    call.status
+  );
+  const videoStage = call.kind === "video" && inProgress;
+
+  useEffect(() => {
+    const element = remoteVideo.current;
+    if (!element || !remoteVideoTrack || !videoStage) return;
+    remoteVideoTrack.attach(element);
+    return () => {
+      remoteVideoTrack.detach(element);
+    };
+  }, [remoteVideoTrack, videoStage]);
+
   const heading = call.status === "ringing"
     ? call.direction === "incoming"
       ? call.kind === "video"
@@ -104,10 +115,167 @@ export function CallScreen({ callId }: { callId: string }) {
     : call.status === "failed"
     ? "The call didn’t connect"
     : "Call ended";
+  const subline = call.status === "ringing" && call.direction === "outgoing"
+    ? "They’ll join when they’re ready."
+    : call.status === "connecting"
+    ? "Keep this page open for a moment."
+    : call.status === "reconnecting"
+    ? "Your call will continue when the connection returns."
+    : call.status === "active"
+    ? call.muted
+      ? "Your microphone is muted."
+      : "Your microphone is on."
+    : terminal
+    ? "Messages are still available."
+    : "Preparing your call.";
 
   function leave() {
     clear();
     router.push(homeHref);
+  }
+
+  const microphoneSelect = audioSettingsOpen && microphoneOptions.length > 0 && (
+    <label className="flex w-full flex-col gap-xs text-left text-ui-sm text-body">
+      Microphone
+      <select
+        className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui text-foreground"
+        value={microphoneId}
+        onChange={(event) => {
+          setMicrophoneId(event.target.value);
+          void switchMicrophone(event.target.value);
+        }}
+      >
+        {microphoneOptions.map((option) => (
+          <option key={option.deviceId} value={option.deviceId}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  if (videoStage) {
+    /* An in-progress video call owns the whole viewport: the other person
+       fills the stage, your preview sits flush in the bottom-right corner,
+       and everything else — who you're talking to, notices, and controls —
+       lives in one dock at the bottom. */
+    return (
+      <div className="flex min-h-0 w-full flex-1 flex-col">
+        <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-2">
+          {!remoteVideoTrack && (
+            <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
+              <IconVideoOff size={28} aria-hidden="true" />
+              <span className="text-ui-sm">
+                {call.counterpartName ?? "Your call partner"}&apos;s camera is off
+              </span>
+            </div>
+          )}
+          <video
+            ref={remoteVideo}
+            aria-label={`${call.counterpartName ?? "Your call partner"} video`}
+            autoPlay
+            muted
+            playsInline
+            className={`absolute inset-0 h-full w-full object-cover ${
+              remoteVideoTrack ? "block" : "hidden"
+            }`}
+          />
+          <div className="absolute bottom-0 right-0 aspect-video w-1/3 overflow-hidden bg-bg sm:w-1/4 lg:w-1/5">
+            {!localVideoStream && (
+              <div className="flex h-full items-center justify-center gap-2xs text-ui-xs text-muted">
+                <IconVideoOff size={16} aria-hidden="true" />
+                Camera off
+              </div>
+            )}
+            <video
+              ref={localVideo}
+              aria-label="Your video preview"
+              autoPlay
+              muted
+              playsInline
+              className={`h-full w-full -scale-x-100 object-cover ${
+                localVideoStream ? "block" : "hidden"
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="flex w-full shrink-0 flex-col gap-xs px-page py-sm">
+          {notice && (
+            <Alert tone="notice" className="text-left">
+              {notice}
+            </Alert>
+          )}
+          {audioBlocked && call.status === "active" && (
+            <>
+              <Alert tone="notice" className="text-left">
+                Your browser is waiting for permission to play the call.
+              </Alert>
+              <Button variant="secondary" onClick={() => void hearCall()}>
+                Hear call
+              </Button>
+            </>
+          )}
+          {microphoneSelect}
+          <div className="flex flex-wrap items-center gap-sm">
+            <div className="flex min-w-0 flex-col gap-3xs text-left">
+              <h1 className="text-heading-sm">{heading}</h1>
+              <p className="text-ui-sm text-body">{subline}</p>
+            </div>
+            <div className="ml-auto flex flex-wrap items-center gap-xs">
+              {call.status !== "connecting" && (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void toggleMute()}
+                  >
+                    {call.muted ? (
+                      <span className="inline-flex items-center gap-xs">
+                        <IconMicrophone size={20} aria-hidden="true" />
+                        Unmute
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-xs">
+                        <IconMicrophoneOff size={20} aria-hidden="true" />
+                        Mute
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void toggleCamera()}
+                  >
+                    <span className="inline-flex items-center gap-xs">
+                      {call.cameraEnabled ? (
+                        <IconVideoOff size={20} aria-hidden="true" />
+                      ) : (
+                        <IconVideo size={20} aria-hidden="true" />
+                      )}
+                      {call.cameraEnabled ? "Turn camera off" : "Turn camera on"}
+                    </span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    aria-expanded={audioSettingsOpen}
+                    onClick={() => void toggleAudioSettings()}
+                  >
+                    Audio settings
+                  </Button>
+                </>
+              )}
+              <Button
+                aria-label="End call"
+                loading={busy}
+                onClick={() => void end()}
+                className="min-w-control-primary rounded-pill bg-error px-0 hover:bg-error active:bg-error"
+              >
+                <IconPhoneOff size={24} aria-hidden="true" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -118,64 +286,8 @@ export function CallScreen({ callId }: { callId: string }) {
         </span>
         <div className="flex flex-col gap-xs">
           <h1 className="text-heading-sm">{heading}</h1>
-          <p className="text-body">
-            {call.status === "ringing" && call.direction === "outgoing"
-              ? "They’ll join when they’re ready."
-              : call.status === "connecting"
-              ? "Keep this page open for a moment."
-              : call.status === "reconnecting"
-              ? "Your call will continue when the connection returns."
-              : call.status === "active"
-              ? call.muted
-                ? "Your microphone is muted."
-                : "Your microphone is on."
-              : terminal
-              ? "Messages are still available."
-              : "Preparing your call."}
-          </p>
+          <p className="text-body">{subline}</p>
         </div>
-
-        {call.kind === "video" &&
-          ["connecting", "active", "reconnecting"].includes(call.status) && (
-          <div className="relative aspect-video w-full overflow-hidden rounded-card bg-surface-2">
-            {!remoteVideoStream && (
-              <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
-                <IconVideoOff size={28} aria-hidden="true" />
-                <span className="text-ui-sm">
-                  {call.counterpartName ?? "Your call partner"}&apos;s camera is off
-                </span>
-              </div>
-            )}
-            <video
-              ref={remoteVideo}
-              aria-label={`${call.counterpartName ?? "Your call partner"} video`}
-              autoPlay
-              muted
-              playsInline
-              className={`h-full w-full object-cover ${
-                remoteVideoStream ? "block" : "hidden"
-              }`}
-            />
-            <div className="absolute bottom-sm right-sm aspect-video w-1/3 overflow-hidden rounded-control bg-bg">
-              {!localVideoStream && (
-                <div className="flex h-full items-center justify-center gap-2xs text-ui-xs text-muted">
-                  <IconVideoOff size={16} aria-hidden="true" />
-                  Camera off
-                </div>
-              )}
-              <video
-                ref={localVideo}
-                aria-label="Your video preview"
-                autoPlay
-                muted
-                playsInline
-                className={`h-full w-full -scale-x-100 object-cover ${
-                  localVideoStream ? "block" : "hidden"
-                }`}
-              />
-            </div>
-          </div>
-        )}
 
         {["active", "reconnecting"].includes(call.status) && (
           <div className="grid w-full gap-xs text-left sm:grid-cols-2">
@@ -261,7 +373,7 @@ export function CallScreen({ callId }: { callId: string }) {
               Cancel call
             </Button>
           )}
-          {["connecting", "active", "reconnecting"].includes(call.status) && (
+          {inProgress && (
             <>
               {call.status !== "connecting" && (
                 <>
@@ -282,22 +394,6 @@ export function CallScreen({ callId }: { callId: string }) {
                       </span>
                     )}
                   </Button>
-                  {call.kind === "video" && (
-                    <Button
-                      variant="secondary"
-                      fullWidth
-                      onClick={() => void toggleCamera()}
-                    >
-                      <span className="inline-flex items-center gap-xs">
-                        {call.cameraEnabled ? (
-                          <IconVideoOff size={20} aria-hidden="true" />
-                        ) : (
-                          <IconVideo size={20} aria-hidden="true" />
-                        )}
-                        {call.cameraEnabled ? "Turn camera off" : "Turn camera on"}
-                      </span>
-                    </Button>
-                  )}
                   <Button
                     variant="ghost"
                     fullWidth
@@ -306,25 +402,7 @@ export function CallScreen({ callId }: { callId: string }) {
                   >
                     Audio settings
                   </Button>
-                  {audioSettingsOpen && microphoneOptions.length > 0 && (
-                    <label className="flex w-full flex-col gap-xs text-left text-ui-sm text-body">
-                      Microphone
-                      <select
-                        className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui text-foreground"
-                        value={microphoneId}
-                        onChange={(event) => {
-                          setMicrophoneId(event.target.value);
-                          void switchMicrophone(event.target.value);
-                        }}
-                      >
-                        {microphoneOptions.map((option) => (
-                          <option key={option.deviceId} value={option.deviceId}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                  {microphoneSelect}
                 </>
               )}
               <Button fullWidth loading={busy} onClick={() => void end()}>
