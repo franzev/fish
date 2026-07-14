@@ -78,6 +78,7 @@ function createSearchRequest(
 export interface ChatClientProps {
   chat: ClientChatData;
   focusMessageId?: string | null;
+  presentation?: "full" | "embedded";
   /** Presentation gate only; the Friends backend remains authoritative. */
   friendActionsEnabled?: boolean;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
@@ -116,6 +117,7 @@ export interface ChatClientProps {
 export function ChatClient({
   chat,
   focusMessageId,
+  presentation = "full",
   friendActionsEnabled = false,
   sendMessageAction,
   searchMessagesAction,
@@ -422,6 +424,8 @@ export function ChatClient({
   }, [chat.conversationId, searchMessagesAction, updateSearchUrl]);
 
   useEffect(() => {
+    if (presentation === "embedded") return;
+
     const restoreSearchFromUrl = () => {
       if (restoredUrlRef.current === window.location.href) return;
       restoredUrlRef.current = window.location.href;
@@ -465,7 +469,7 @@ export function ChatClient({
     restoreSearchFromUrl();
     window.addEventListener("popstate", restoreSearchFromUrl);
     return () => window.removeEventListener("popstate", restoreSearchFromUrl);
-  }, [runSearch, searchChannels, searchMembers]);
+  }, [presentation, runSearch, searchChannels, searchMembers]);
   const latestMineRequestId = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
@@ -482,24 +486,28 @@ export function ChatClient({
       className="flex min-h-0 w-full flex-1 flex-col"
       aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
-      <ChatHeader
-        chatTitle={chatTitle}
-        participantId={chat.participant.id}
-        avatarUrl={chat.participant.avatarUrl}
-        channelName={chat.channelName}
-        isCommunity={isCommunity}
-        memberCount={memberCount}
-        presenceStatus={participantPresence.status}
-        presenceLabel={participantPresence.label}
-        search={search}
-        onSearchChange={setSearch}
-        criteria={searchCriteria}
-        onCriteriaChange={setSearchCriteria}
-        members={searchMembers}
-        channels={searchChannels}
-        onSearchSubmit={(query, criteria) => void runSearch(query, criteria, 1, searchSort)}
-        onOpenFilters={() => setFiltersOpen(true)}
-      />
+      {presentation === "full" && (
+        <ChatHeader
+          chatTitle={chatTitle}
+          participantId={chat.participant.id}
+          avatarUrl={chat.participant.avatarUrl}
+          channelName={chat.channelName}
+          isCommunity={isCommunity}
+          memberCount={memberCount}
+          presenceStatus={participantPresence.status}
+          presenceLabel={participantPresence.label}
+          search={search}
+          onSearchChange={setSearch}
+          criteria={searchCriteria}
+          onCriteriaChange={setSearchCriteria}
+          members={searchMembers}
+          channels={searchChannels}
+          onSearchSubmit={(query, criteria) =>
+            void runSearch(query, criteria, 1, searchSort)
+          }
+          onOpenFilters={() => setFiltersOpen(true)}
+        />
+      )}
 
       <div className="flex min-h-0 flex-1">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -587,43 +595,51 @@ export function ChatClient({
         removeSelectedSticker={removeSelectedSticker}
       />
       </div>
-      {searchResultsOpen && <SearchResultsSidebar
-        messages={searchResults}
-        totalCount={searchTotalCount}
-        page={searchPage}
-        pageSize={searchPageSize}
-        sortDirection={searchSort}
-        filterCount={committedSearchCriteria.length}
-        isSearching={isSearching}
-        notice={searchNotice}
-        currentUserId={chat.currentUserId}
-        members={searchMembers}
-        channels={searchChannels}
-        onClose={() => {
-          setSearchResultsOpen(false);
-          const nextUrl = createChatSearchUrl(window.location.href, null);
-          window.history.replaceState(null, "", nextUrl);
-          restoredUrlRef.current = window.location.href;
-        }}
-        onOpenFilters={() => setFiltersOpen(true)}
-        onSortChange={(direction) => void runSearch(committedSearch, committedSearchCriteria, 1, direction)}
-        onPageChange={(page) => void runSearch(committedSearch, committedSearchCriteria, page, searchSort)}
-      />}
+      {presentation === "full" && searchResultsOpen && (
+        <SearchResultsSidebar
+          messages={searchResults}
+          totalCount={searchTotalCount}
+          page={searchPage}
+          pageSize={searchPageSize}
+          sortDirection={searchSort}
+          filterCount={committedSearchCriteria.length}
+          isSearching={isSearching}
+          notice={searchNotice}
+          currentUserId={chat.currentUserId}
+          members={searchMembers}
+          channels={searchChannels}
+          onClose={() => {
+            setSearchResultsOpen(false);
+            const nextUrl = createChatSearchUrl(window.location.href, null);
+            window.history.replaceState(null, "", nextUrl);
+            restoredUrlRef.current = window.location.href;
+          }}
+          onOpenFilters={() => setFiltersOpen(true)}
+          onSortChange={(direction) =>
+            void runSearch(committedSearch, committedSearchCriteria, 1, direction)
+          }
+          onPageChange={(page) =>
+            void runSearch(committedSearch, committedSearchCriteria, page, searchSort)
+          }
+        />
+      )}
       </div>
-      <FiltersDialog
-        open={filtersOpen}
-        onOpenChange={setFiltersOpen}
-        query={search}
-        criteria={searchCriteria}
-        members={searchMembers}
-        channels={searchChannels}
-        onApply={(query, criteria) => {
-          setSearch(query);
-          setSearchCriteria(criteria);
-          setFiltersOpen(false);
-          void runSearch(query, criteria, 1, searchSort);
-        }}
-      />
+      {presentation === "full" && (
+        <FiltersDialog
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+          query={search}
+          criteria={searchCriteria}
+          members={searchMembers}
+          channels={searchChannels}
+          onApply={(query, criteria) => {
+            setSearch(query);
+            setSearchCriteria(criteria);
+            setFiltersOpen(false);
+            void runSearch(query, criteria, 1, searchSort);
+          }}
+        />
+      )}
     </section>
   );
 }

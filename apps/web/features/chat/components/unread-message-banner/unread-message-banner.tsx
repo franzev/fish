@@ -33,12 +33,12 @@ export function UnreadMessageBanner({
   return (
     <section
       aria-label="Unread messages"
-      className="absolute inset-x-0 top-0 z-10 mx-md rounded-b-control bg-surface-2 px-sm"
+      className="mx-md shrink-0 rounded-b-control bg-surface-2 px-sm"
     >
-      <div className="flex min-h-control flex-wrap items-center justify-between gap-2xs sm:min-h-search-control">
+      <div className="flex flex-col items-start gap-2xs py-xs md:min-h-search-control md:flex-row md:items-center md:justify-between md:py-0">
         <p
           aria-live="polite"
-          className="text-ui-xs font-semibold text-foreground"
+          className="min-w-0 text-ui-xs font-semibold text-foreground"
         >
           {count} {messageLabel}
           {oldestUnreadTime ? ` since ${oldestUnreadTime}` : ""}
@@ -48,7 +48,7 @@ export function UnreadMessageBanner({
           variant="ghost"
           loading={loading}
           onClick={() => void onMarkRead()}
-          className="shrink-0 px-xs text-ui-xs font-medium sm:min-h-search-control"
+          className="shrink-0 px-xs text-ui-xs font-medium md:min-h-search-control"
         >
           <span className="inline-flex items-center gap-3xs">
             Mark as read

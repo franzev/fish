@@ -207,6 +207,7 @@
   --container-conversation-list: 304px; /* desktop direct-message conversation rail */
   --container-conversation-details: 280px; /* quiet participant context beside a direct thread */
   --container-menu: 224px;        /* floating action menus (composer +) */
+  --container-audio-settings: 336px; /* room for readable microphone names */
   --container-form: 440px;
   --container-content: 640px;
   --container-marketing: 1120px;  /* landing page shell */

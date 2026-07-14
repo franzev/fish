@@ -396,6 +396,27 @@ describe("ChatClient", () => {
     expect(screen.queryByRole("button", { name: /View Coach Dana profile/ })).toBeNull();
   });
 
+  it("keeps embedded conversations focused on the transcript and composer", () => {
+    const searchMessagesAction = vi.fn();
+    window.history.replaceState(null, "", "/calls/call-1?search=practice");
+
+    render(
+      <ChatClient
+        chat={chat}
+        presentation="embedded"
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+
+    expect(screen.queryByRole("heading", { name: "Coach Dana" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Search messages" })).toBeNull();
+    expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
+    expect(screen.getByLabelText("Message")).toBeInTheDocument();
+    expect(searchMessagesAction).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?search=practice");
+  });
+
   it("renders the fixed demo conversation as a community room", async () => {
     const communityChat: ClientChatData = {
       ...chat,

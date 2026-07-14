@@ -38,7 +38,7 @@ describe("UnreadMessageBanner", () => {
     expect(onMarkRead).toHaveBeenCalledTimes(1);
   });
 
-  it("uses a compact desktop footprint while preserving the mobile touch target", () => {
+  it("stacks without covering the transcript and becomes compact on wider screens", () => {
     render(
       <UnreadMessageBanner
         count={2}
@@ -52,23 +52,35 @@ describe("UnreadMessageBanner", () => {
     const button = screen.getByRole("button", { name: "Mark as read" });
 
     expect(banner).toHaveClass(
-      "absolute",
-      "inset-x-0",
-      "top-0",
-      "z-10",
       "mx-md",
+      "shrink-0",
       "rounded-b-control",
       "bg-surface-2",
       "px-sm"
     );
-    expect(banner).not.toHaveClass("shrink-0", "rounded-control", "top-xs");
-    expect(layout).toHaveClass("min-h-control", "sm:min-h-search-control");
+    expect(banner).not.toHaveClass(
+      "absolute",
+      "inset-x-0",
+      "top-0",
+      "z-10",
+      "rounded-control"
+    );
+    expect(layout).toHaveClass(
+      "flex-col",
+      "items-start",
+      "py-xs",
+      "md:min-h-search-control",
+      "md:flex-row",
+      "md:items-center",
+      "md:justify-between",
+      "md:py-0"
+    );
     expect(button).toHaveClass(
       "bg-transparent",
       "text-muted",
       "hover:text-body",
       "text-ui-xs",
-      "sm:min-h-search-control"
+      "md:min-h-search-control"
     );
     expect(button).not.toHaveClass("hover:bg-surface-3");
   });

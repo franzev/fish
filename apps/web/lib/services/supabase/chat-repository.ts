@@ -80,6 +80,55 @@ async function fetchConversationReactions(
 export class SupabaseChatRepository implements ChatRepository {
   constructor(private readonly client: AppSupabaseClient) {}
 
+  async getConversationForCall(
+    callId: string
+  ): Promise<ServiceResult<ClientChatData | null>> {
+    return safely("chat.getConversationForCall", async () => {
+      const { data: call, error: callError } = (await this.client
+        .from("calls")
+        .select("coach_id, client_id")
+        .eq("id", callId)
+        .maybeSingle()) as SupabaseResponse<{
+          coach_id: string;
+          client_id: string;
+        }>;
+
+      if (callError) {
+        return serviceFailure(
+          mapSupabaseError(callError, {
+            code: "database",
+            fallbackMessage: "Could not load the call conversation.",
+            operation: "chat.getConversationForCall.call",
+            recoverable: true,
+          })
+        );
+      }
+      if (!call) return serviceSuccess(null);
+
+      const { data: conversation, error: conversationError } =
+        (await this.client
+          .from("conversations")
+          .select("id")
+          .eq("coach_id", call.coach_id)
+          .eq("client_id", call.client_id)
+          .maybeSingle()) as SupabaseResponse<Pick<ConversationRow, "id">>;
+
+      if (conversationError) {
+        return serviceFailure(
+          mapSupabaseError(conversationError, {
+            code: "database",
+            fallbackMessage: "Could not load the call conversation.",
+            operation: "chat.getConversationForCall.conversation",
+            recoverable: true,
+          })
+        );
+      }
+      if (!conversation) return serviceSuccess(null);
+
+      return this.getAssignedConversation(undefined, conversation.id);
+    });
+  }
+
   async getUnreadSummary(
     conversationId: string
   ): Promise<ServiceResult<ClientChatUnreadSummary>> {

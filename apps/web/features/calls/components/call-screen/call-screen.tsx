@@ -3,8 +3,11 @@
 import { Alert } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
+import { Tooltip } from "@base-ui/react/tooltip";
 import {
+  IconMessages,
   IconMicrophone,
   IconMicrophoneOff,
   IconPhone,
@@ -13,10 +16,16 @@ import {
   IconVideoOff,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useCall } from "../call-provider";
 
-export function CallScreen({ callId }: { callId: string }) {
+export function CallScreen({
+  callId,
+  chatSidebar,
+}: {
+  callId: string;
+  chatSidebar?: ReactNode;
+}) {
   const router = useRouter();
   const {
     state,
@@ -50,6 +59,7 @@ export function CallScreen({ callId }: { callId: string }) {
     Array<{ deviceId: string; label: string }>
   >([]);
   const [microphoneId, setMicrophoneId] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if (loadedId.current === callId) return;
@@ -161,43 +171,73 @@ export function CallScreen({ callId }: { callId: string }) {
        lives in one dock at the bottom. */
     return (
       <div className="flex min-h-0 w-full flex-1 flex-col">
-        <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-2">
-          {!remoteVideoTrack && (
-            <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
-              <IconVideoOff size={28} aria-hidden="true" />
-              <span className="text-ui-sm">
-                {call.counterpartName ?? "Your call partner"}&apos;s camera is off
-              </span>
-            </div>
-          )}
-          <video
-            ref={remoteVideo}
-            aria-label={`${call.counterpartName ?? "Your call partner"} video`}
-            autoPlay
-            muted
-            playsInline
-            className={`absolute inset-0 h-full w-full object-cover ${
-              remoteVideoTrack ? "block" : "hidden"
-            }`}
-          />
-          <div className="absolute bottom-0 right-0 aspect-video w-1/3 overflow-hidden bg-bg sm:w-1/4 lg:w-1/5">
-            {!localVideoStream && (
-              <div className="flex h-full items-center justify-center gap-2xs text-ui-xs text-muted">
-                <IconVideoOff size={16} aria-hidden="true" />
-                Camera off
+        <div className="flex min-h-0 flex-1">
+          <div
+            className={cn(
+              "relative min-h-0 flex-1 overflow-hidden bg-surface-2",
+              chatSidebar && chatOpen && "hidden lg:block"
+            )}
+          >
+            {!remoteVideoTrack && (
+              <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
+                <IconVideoOff size={28} aria-hidden="true" />
+                <span className="text-ui-sm">
+                  {call.counterpartName ?? "Your call partner"}&apos;s camera is off
+                </span>
               </div>
             )}
             <video
-              ref={localVideo}
-              aria-label="Your video preview"
+              ref={remoteVideo}
+              aria-label={`${call.counterpartName ?? "Your call partner"} video`}
               autoPlay
               muted
               playsInline
-              className={`h-full w-full -scale-x-100 object-cover ${
-                localVideoStream ? "block" : "hidden"
+              className={`absolute inset-0 h-full w-full object-cover ${
+                remoteVideoTrack ? "block" : "hidden"
               }`}
             />
+            <div className="absolute bottom-0 right-0 aspect-video w-1/3 overflow-hidden bg-bg sm:w-1/4 lg:w-1/5">
+              {!localVideoStream && (
+                <div className="flex h-full items-center justify-center gap-2xs text-ui-xs text-muted">
+                  <IconVideoOff size={16} aria-hidden="true" />
+                  Camera off
+                </div>
+              )}
+              <video
+                ref={localVideo}
+                aria-label="Your video preview"
+                autoPlay
+                muted
+                playsInline
+                className={`h-full w-full -scale-x-100 object-cover ${
+                  localVideoStream ? "block" : "hidden"
+                }`}
+              />
+            </div>
           </div>
+
+          {chatSidebar && (
+            <aside
+              id="call-messages"
+              aria-label={`Messages with ${
+                call.counterpartName ?? "your call partner"
+              }`}
+              className={cn(
+                "min-h-0 w-full flex-col border-l border-divider bg-surface lg:w-chat-preview lg:shrink-0",
+                chatOpen ? "flex" : "hidden"
+              )}
+            >
+              <div className="flex h-chat-header shrink-0 flex-col justify-center border-b border-divider px-md">
+                <h2 className="font-sans text-ui-md font-semibold text-foreground">
+                  Messages
+                </h2>
+                <p className="text-ui-xs text-muted">
+                  {call.counterpartName ?? "Your call partner"}
+                </p>
+              </div>
+              <div className="flex min-h-0 flex-1">{chatSidebar}</div>
+            </aside>
+          )}
         </div>
 
         <div className="flex w-full shrink-0 flex-col gap-xs px-page py-sm">
@@ -216,39 +256,86 @@ export function CallScreen({ callId }: { callId: string }) {
               </Button>
             </>
           )}
-          <div className="flex flex-wrap items-center gap-sm">
-            <div className="ml-auto flex flex-wrap items-center gap-xs">
+          <Tooltip.Provider delay={400} closeDelay={0}>
+            <div className="flex flex-wrap items-center justify-center gap-xs">
+              {chatSidebar && (
+                <Button
+                  variant="secondary"
+                  aria-label={chatOpen ? "Close chat" : "Open chat"}
+                  aria-controls="call-messages"
+                  aria-expanded={chatOpen}
+                  aria-pressed={chatOpen}
+                  onClick={() => setChatOpen((open) => !open)}
+                  className={cn(
+                    "min-w-control px-0",
+                    chatOpen && "bg-surface-3"
+                  )}
+                >
+                  <IconMessages size={20} aria-hidden="true" />
+                </Button>
+              )}
               {call.status !== "connecting" && (
                 <>
-                  <Button
-                    variant="secondary"
-                    onClick={() => void toggleMute()}
-                  >
-                    {call.muted ? (
-                      <span className="inline-flex items-center gap-xs">
-                        <IconMicrophone size={20} aria-hidden="true" />
-                        Unmute
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-xs">
-                        <IconMicrophoneOff size={20} aria-hidden="true" />
-                        Mute
-                      </span>
-                    )}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => void toggleCamera()}
-                  >
-                    <span className="inline-flex items-center gap-xs">
-                      {call.cameraEnabled ? (
-                        <IconVideoOff size={20} aria-hidden="true" />
-                      ) : (
-                        <IconVideo size={20} aria-hidden="true" />
-                      )}
-                      {call.cameraEnabled ? "Turn camera off" : "Turn camera on"}
-                    </span>
-                  </Button>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger
+                      render={
+                        <Button
+                          variant="secondary"
+                          aria-label={call.muted ? "Unmute" : "Mute"}
+                          onClick={() => void toggleMute()}
+                          className="min-w-control px-0"
+                        >
+                          {call.muted ? (
+                            <IconMicrophone size={20} aria-hidden="true" />
+                          ) : (
+                            <IconMicrophoneOff size={20} aria-hidden="true" />
+                          )}
+                        </Button>
+                      }
+                    />
+                    <Tooltip.Portal>
+                      <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
+                        <Tooltip.Popup
+                          role="tooltip"
+                          className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+                        >
+                          {call.muted ? "Unmute" : "Mute"}
+                        </Tooltip.Popup>
+                      </Tooltip.Positioner>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger
+                      render={
+                        <Button
+                          variant="secondary"
+                          aria-label={call.cameraEnabled
+                            ? "Turn camera off"
+                            : "Turn camera on"}
+                          onClick={() => void toggleCamera()}
+                          className="min-w-control px-0"
+                        >
+                          {call.cameraEnabled ? (
+                            <IconVideoOff size={20} aria-hidden="true" />
+                          ) : (
+                            <IconVideo size={20} aria-hidden="true" />
+                          )}
+                        </Button>
+                      }
+                    />
+                    <Tooltip.Portal>
+                      <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
+                        <Tooltip.Popup
+                          role="tooltip"
+                          className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+                        >
+                          {call.cameraEnabled
+                            ? "Turn camera off"
+                            : "Turn camera on"}
+                        </Tooltip.Popup>
+                      </Tooltip.Positioner>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
                   <Popover.Root
                     open={audioSettingsOpen}
                     onOpenChange={(nextOpen) =>
@@ -269,7 +356,7 @@ export function CallScreen({ callId }: { callId: string }) {
                       >
                         <Popover.Popup
                           initialFocus={false}
-                          className="w-menu rounded-control border border-divider bg-surface p-md outline-none"
+                          className="w-audio-settings rounded-control border border-divider bg-surface p-md outline-none"
                         >
                           {microphoneSelect ?? (
                             <p role="status" className="text-ui-sm text-body">
@@ -292,7 +379,7 @@ export function CallScreen({ callId }: { callId: string }) {
                 <IconPhoneOff size={20} aria-hidden="true" />
               </Button>
             </div>
-          </div>
+          </Tooltip.Provider>
         </div>
       </div>
     );

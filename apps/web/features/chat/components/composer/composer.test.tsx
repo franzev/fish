@@ -206,6 +206,8 @@ describe("Composer", () => {
       "bg-surface-2"
     );
     expect(screen.getByRole("textbox", { name: "Message" }).parentElement).toHaveClass(
+      "w-fit",
+      "max-w-full",
       "rounded-control",
       "bg-surface-2"
     );

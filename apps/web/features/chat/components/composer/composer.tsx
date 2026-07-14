@@ -170,7 +170,7 @@ export function Composer({
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
         <div className={cn(
           "flex items-end gap-xs p-xs",
-          isStickerOnly && "rounded-control bg-surface-2"
+          isStickerOnly && "w-fit max-w-full rounded-control bg-surface-2"
         )}>
           <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
           <textarea

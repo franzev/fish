@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createSupabaseServices } from "./core";
+import { SupabaseChatRepository } from "./chat-repository";
+import type { ClientChatData } from "../contracts";
 import type { AppSupabaseClient } from "./types";
 
 function createQueryResult<T>(value: T) {
@@ -53,6 +55,93 @@ function createUnreadSummaryRpc(
     error: null,
   }));
 }
+
+describe("SupabaseChatRepository call conversations", () => {
+  const directChat: ClientChatData = {
+    conversationId: "conversation-1",
+    kind: "direct",
+    currentUserId: "client-1",
+    currentUserRole: "client",
+    currentUserDisplayName: "Alex",
+    participant: {
+      id: "coach-1",
+      displayName: "Coach Dana",
+      role: "coach",
+    },
+    messages: [],
+  };
+
+  it("loads the existing direct conversation for an RLS-visible call", async () => {
+    const rows: Record<string, unknown> = {
+      calls: { coach_id: "coach-1", client_id: "client-1" },
+      conversations: { id: "conversation-1" },
+    };
+    const client = {
+      from: vi.fn((table: string) => createChainStub(rows[table] ?? null)),
+    } as unknown as AppSupabaseClient;
+    const repository = new SupabaseChatRepository(client);
+    const loadConversation = vi
+      .spyOn(repository, "getAssignedConversation")
+      .mockResolvedValue({ ok: true, data: directChat });
+
+    await expect(repository.getConversationForCall("call-1")).resolves.toEqual({
+      ok: true,
+      data: directChat,
+    });
+    expect(loadConversation).toHaveBeenCalledWith(undefined, "conversation-1");
+  });
+
+  it("returns no chat when the call is unavailable or has no existing conversation", async () => {
+    for (const rows of [
+      { calls: null },
+      {
+        calls: { coach_id: "client-low", client_id: "client-high" },
+        conversations: null,
+      },
+    ]) {
+      const client = {
+        from: vi.fn((table: string) =>
+          createChainStub((rows as Record<string, unknown>)[table] ?? null)
+        ),
+      } as unknown as AppSupabaseClient;
+      const repository = new SupabaseChatRepository(client);
+      const loadConversation = vi.spyOn(repository, "getAssignedConversation");
+
+      await expect(repository.getConversationForCall("call-1")).resolves.toEqual({
+        ok: true,
+        data: null,
+      });
+      expect(loadConversation).not.toHaveBeenCalled();
+    }
+  });
+
+  it("maps call lookup failures without attempting to load a conversation", async () => {
+    const result = {
+      data: null,
+      error: { message: "permission denied", code: "42501" },
+    };
+    const builder: Record<string, unknown> = {
+      maybeSingle: vi.fn(async () => result),
+    };
+    for (const method of ["select", "eq"]) {
+      builder[method] = vi.fn(() => builder);
+    }
+    const client = {
+      from: vi.fn(() => builder),
+    } as unknown as AppSupabaseClient;
+    const repository = new SupabaseChatRepository(client);
+    const loadConversation = vi.spyOn(repository, "getAssignedConversation");
+
+    const outcome = await repository.getConversationForCall("call-1");
+
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) {
+      expect(outcome.error.code).toBe("database");
+      expect(outcome.error.operation).toBe("chat.getConversationForCall.call");
+    }
+    expect(loadConversation).not.toHaveBeenCalled();
+  });
+});
 
 describe("Supabase service registry", () => {
   it("exposes cohesive auth, database, storage, and realtime services over one injected client", async () => {

@@ -109,9 +109,14 @@ describe("CallScreen", () => {
     expect(screen.queryByText("Your microphone is on.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Alex video")).toBeInTheDocument();
     expect(screen.getByLabelText("Your video preview")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Turn camera off" })
-    ).toBeInTheDocument();
+    const muteButton = screen.getByRole("button", { name: "Mute" });
+    const cameraButton = screen.getByRole("button", {
+      name: "Turn camera off",
+    });
+    expect(muteButton).not.toHaveTextContent("Mute");
+    expect(cameraButton).not.toHaveTextContent("Turn camera off");
+    expect(muteButton).toHaveClass("min-w-control", "px-0");
+    expect(cameraButton).toHaveClass("min-w-control", "px-0");
     expect(screen.getByRole("button", { name: "End call" })).toHaveClass(
       "min-h-control",
       "min-w-control",
@@ -124,6 +129,58 @@ describe("CallScreen", () => {
       await screen.findByRole("combobox", { name: "Microphone" })
     ).toBeInTheDocument();
     expect(value.microphones).toHaveBeenCalledOnce();
+  });
+
+  it("toggles chat in the video call sidebar", () => {
+    const value = activeCallValue();
+    value.state.current.kind = "video";
+    useCallMock.mockReturnValue(value);
+
+    render(
+      <CallScreen
+        callId="call-1"
+        chatSidebar={<div>Persistent conversation</div>}
+      />
+    );
+
+    expect(
+      screen.getByRole("complementary", { name: "Messages with Alex" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Persistent conversation")).toBeInTheDocument();
+
+    const sidebar = screen.getByRole("complementary", {
+      name: "Messages with Alex",
+    });
+    expect(sidebar).toHaveClass("hidden");
+
+    const toggle = screen.getByRole("button", { name: "Open chat" });
+    expect(toggle).toHaveAttribute("aria-controls", "call-messages");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).not.toHaveClass("lg:hidden");
+
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole("button", { name: "Close chat" })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(sidebar).toHaveClass("flex");
+  });
+
+  it("does not expose a supplied chat surface during an audio call", () => {
+    const value = activeCallValue();
+    useCallMock.mockReturnValue(value);
+
+    render(
+      <CallScreen
+        callId="call-1"
+        chatSidebar={<div>Persistent conversation</div>}
+      />
+    );
+
+    expect(screen.queryByText("Persistent conversation")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open chat" })).toBeNull();
   });
 
   it("attaches remote video through LiveKit so adaptive quality tracks the stage", () => {
