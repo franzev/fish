@@ -45,23 +45,19 @@ export async function getFriendsPageData(
       friends: [],
       nextCursor: null,
       incomingRequestCount: 0,
-      acceptedNotifications: [],
     };
   }
 
-  const [friendsResult, requestCountResult, notificationsResult] =
+  const [friendsResult, requestCountResult] =
     await Promise.all([
       services.database.friends.listFriends(),
       services.database.friends.countIncomingRequests(),
-      services.database.friends.listNotifications(),
     ]);
   if (!friendsResult.ok) throw friendsResult.error;
   if (!requestCountResult.ok) throw requestCountResult.error;
-  if (!notificationsResult.ok) throw notificationsResult.error;
 
   const urls = await avatarMap(services, [
     ...friendsResult.data.friends.map((item) => item.friend.id),
-    ...notificationsResult.data.map((item) => item.actor.id),
   ]);
 
   return {
@@ -73,17 +69,6 @@ export async function getFriendsPageData(
     })),
     nextCursor: friendsResult.data.nextCursor,
     incomingRequestCount: requestCountResult.data,
-    acceptedNotifications: notificationsResult.data.filter(
-      (notification) =>
-        notification.kind === "friendRequestAccepted" &&
-        notification.readAt === null
-    ).map((notification) => ({
-      ...notification,
-      actor: {
-        ...notification.actor,
-        avatarUrl: urls.get(notification.actor.id) ?? null,
-      },
-    })),
   };
 }
 

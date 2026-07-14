@@ -1,6 +1,5 @@
 import type {
   FriendListItem,
-  FriendNotification,
   FriendProfile,
   IncomingFriendRequest,
 } from "@/lib/services";
@@ -12,7 +11,6 @@ export interface FriendsPageData {
   friends: FriendListItem[];
   nextCursor: { createdAt: string; id: string } | null;
   incomingRequestCount: number;
-  acceptedNotifications: FriendNotification[];
 }
 
 export interface AddFriendPageData {

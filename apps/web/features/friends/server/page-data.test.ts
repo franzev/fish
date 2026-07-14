@@ -6,7 +6,6 @@ const listFriendsMock = vi.fn();
 const listIncomingRequestsMock = vi.fn();
 const getIncomingRequestMock = vi.fn();
 const countIncomingRequestsMock = vi.fn();
-const listNotificationsMock = vi.fn();
 const listBlockedUsersMock = vi.fn();
 const searchCandidateMock = vi.fn();
 
@@ -21,7 +20,6 @@ vi.mock("@/lib/services/supabase/server", () => ({
         listIncomingRequests: listIncomingRequestsMock,
         getIncomingRequest: getIncomingRequestMock,
         countIncomingRequests: countIncomingRequestsMock,
-        listNotifications: listNotificationsMock,
         listBlockedUsers: listBlockedUsersMock,
       },
     },
@@ -55,7 +53,6 @@ afterEach(() => {
   listIncomingRequestsMock.mockReset();
   getIncomingRequestMock.mockReset();
   countIncomingRequestsMock.mockReset();
-  listNotificationsMock.mockReset();
   listBlockedUsersMock.mockReset();
   searchCandidateMock.mockReset();
 });
@@ -93,12 +90,11 @@ describe("getFriendsPageData", () => {
       friends: [],
       nextCursor: null,
       incomingRequestCount: 0,
-      acceptedNotifications: [],
     });
     expect(listFriendsMock).not.toHaveBeenCalled();
   });
 
-  it("aggregates friends, the request count, and only unread accepted notes", async () => {
+  it("aggregates friends and the pending request count", async () => {
     signedInAs("client");
     listFriendsMock.mockResolvedValue({
       ok: true,
@@ -108,41 +104,10 @@ describe("getFriendsPageData", () => {
       },
     });
     countIncomingRequestsMock.mockResolvedValue({ ok: true, data: 1 });
-    listNotificationsMock.mockResolvedValue({
-      ok: true,
-      data: [
-        {
-          id: "n-1",
-          kind: "friendRequestAccepted",
-          actor: sam,
-          entityId: "req-0",
-          readAt: null,
-          createdAt: "2026-07-11",
-        },
-        {
-          id: "n-2",
-          kind: "friendRequestAccepted",
-          actor: sam,
-          entityId: "req-x",
-          readAt: "2026-07-11",
-          createdAt: "2026-07-11",
-        },
-        {
-          id: "n-3",
-          kind: "friendRequestReceived",
-          actor: sam,
-          entityId: "req-1",
-          readAt: null,
-          createdAt: "2026-07-11",
-        },
-      ],
-    });
-
     const data = await getFriendsPageData();
 
     expect(data?.friends).toHaveLength(1);
     expect(data?.incomingRequestCount).toBe(1);
-    expect(data?.acceptedNotifications.map((n) => n.id)).toEqual(["n-1"]);
   });
 });
 

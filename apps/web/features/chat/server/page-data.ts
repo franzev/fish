@@ -8,6 +8,7 @@ import { resolveAvatarUrlsSafely, type AppServices } from "@/lib/services";
 export async function getChatPageData(
   injected?: AppServices,
   channelSlug?: string,
+  conversationId?: string,
 ): Promise<ChatPageData | null> {
   const services = injected ?? (await getServerServices());
   const profile = await getCurrentProfile({
@@ -19,7 +20,10 @@ export async function getChatPageData(
     return null;
   }
 
-  const chatResult = await services.database.chat.getAssignedConversation(channelSlug);
+  const chatResult = await services.database.chat.getAssignedConversation(
+    channelSlug,
+    conversationId
+  );
   if (!chatResult.ok) {
     throw chatResult.error;
   }

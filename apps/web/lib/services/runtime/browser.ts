@@ -9,6 +9,9 @@ import type {
   ChatRealtimeService,
   FriendCommandService,
   FriendRealtimeService,
+  NotificationCommandService,
+  NotificationRealtimeService,
+  AttentionRealtimeService,
 } from "../contracts";
 import { SupabaseCallCommandService } from "../supabase/call-command-service";
 import { supabaseCallRealtimeService } from "../supabase/call-realtime";
@@ -20,6 +23,9 @@ import { supabaseChatRealtimeService } from "../supabase/chat-realtime";
 import { chatImageService } from "../supabase/chat-images";
 import { SupabaseFriendCommandService } from "../supabase/friend-command-service";
 import { supabaseFriendRealtimeService } from "../supabase/friend-realtime";
+import { SupabaseNotificationCommandService } from "../supabase/notification-command-service";
+import { supabaseNotificationRealtimeService } from "../supabase/notification-realtime";
+import { supabaseAttentionRealtimeService } from "../supabase/attention-realtime";
 
 let services: AppServices | null = null;
 
@@ -64,4 +70,22 @@ export function getFriendRealtimeService(
   override?: FriendRealtimeService
 ): FriendRealtimeService {
   return override ?? supabaseFriendRealtimeService;
+}
+
+export function getNotificationCommandService(
+  override?: NotificationCommandService
+): NotificationCommandService {
+  return override ?? new SupabaseNotificationCommandService(createBrowserSupabaseClient());
+}
+
+export function getNotificationRealtimeService(
+  override?: NotificationRealtimeService
+): NotificationRealtimeService {
+  return override ?? supabaseNotificationRealtimeService;
+}
+
+export function getAttentionRealtimeService(
+  override?: AttentionRealtimeService
+): AttentionRealtimeService {
+  return override ?? supabaseAttentionRealtimeService;
 }

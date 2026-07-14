@@ -1,5 +1,11 @@
 import type { ServiceResult } from "./errors";
 import type { ChatGif, ChatStickerId } from "@fish/core/chat";
+import type {
+  NotificationChange,
+  NotificationFilter,
+  NotificationPage,
+  NotificationSummary,
+} from "@fish/core/notification-state";
 
 export interface AuthUser {
   id: string;
@@ -151,7 +157,10 @@ export interface ClientChatData {
   hasMoreOlder?: boolean; oldestCursor?: { createdAt: string; id: string } | null;
 }
 export interface ChatRepository {
-  getAssignedConversation(channelSlug?: string): Promise<ServiceResult<ClientChatData | null>>;
+  getAssignedConversation(
+    channelSlug?: string,
+    conversationId?: string
+  ): Promise<ServiceResult<ClientChatData | null>>;
 }
 export interface ChatSearchResult {
   messages: ClientChatMessage[];
@@ -183,6 +192,8 @@ export interface DatabaseServices {
   chat: ChatRepository;
   chatSearch: ChatSearchRepository;
   friends: FriendRepository;
+  notifications: NotificationRepository;
+  attention: NavigationAttentionRepository;
 }
 export interface AvatarUploadAuthorization {
   uploadId: string;
@@ -224,6 +235,71 @@ export interface AppServices {
   auth: AuthService;
   database: DatabaseServices;
   avatars: AvatarCommandService;
+}
+
+export interface NotificationRepository {
+  getSummary(): Promise<ServiceResult<NotificationSummary>>;
+  listPage(input: {
+    filter: NotificationFilter;
+    cursor?: NotificationPage["nextCursor"];
+    limit?: number;
+  }): Promise<ServiceResult<NotificationPage>>;
+  listChanges(afterChangeSeq: number): Promise<ServiceResult<NotificationChange[]>>;
+}
+
+export type NotificationCommand =
+  | {
+      action: "mark-seen" | "mark-read";
+      notificationIds: string[];
+      throughChangeSeq: number;
+    }
+  | { action: "mark-all-read" | "archive-read"; throughChangeSeq: number }
+  | { action: "restore"; archiveBatchId: string }
+  | { action: "acknowledge-moderation"; moderationActionId: string };
+
+export type NotificationCommandResult =
+  | { ok: true; updated: number; archiveBatchId?: string }
+  | { ok: false; code: string; notice: string };
+
+export interface NotificationCommandService {
+  execute(command: NotificationCommand): Promise<NotificationCommandResult>;
+}
+
+export interface NotificationRealtimeHint {
+  itemId: string;
+  changeSeq: number;
+  reason: string;
+  occurredAt: string;
+}
+
+export interface NotificationRealtimeService {
+  subscribe(
+    userId: string,
+    onHint: (hint: NotificationRealtimeHint) => void,
+    onRecovery?: () => void,
+    onStatus?: (status: "connected" | "disconnected") => void
+  ): () => void;
+}
+
+export interface NavigationAttention {
+  surface: "channel" | "direct" | "friends";
+  entityId: string | null;
+  conversationId: string | null;
+  unreadCount: number;
+  mentionCount: number;
+  newActivity: boolean;
+}
+
+export interface NavigationAttentionRepository {
+  list(): Promise<ServiceResult<NavigationAttention[]>>;
+}
+
+export interface AttentionRealtimeService {
+  subscribe(
+    conversationIds: string[],
+    onChange: (conversationId: string) => void,
+    onRecovery?: () => void
+  ): () => void;
 }
 
 export interface ChatImageUploadAuthorization {

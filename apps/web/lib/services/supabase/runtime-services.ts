@@ -1,6 +1,8 @@
 import { SupabaseChatRepository } from "./chat-repository";
 import { SupabaseChatSearchRepository } from "./chat-search-repository";
 import { SupabaseFriendRepository } from "./friend-repository";
+import { SupabaseNotificationRepository } from "./notification-repository";
+import { SupabaseNavigationAttentionRepository } from "./navigation-attention-repository";
 import {
   SupabaseClientProfileRepository,
   SupabaseCoachClientRepository,
@@ -13,6 +15,8 @@ import type {
   CoachClientRepository,
   DatabaseServices,
   FriendRepository,
+  NotificationRepository,
+  NavigationAttentionRepository,
   ProfileRepository,
 } from "../contracts";
 import type { AppSupabaseClient } from "./types";
@@ -24,6 +28,8 @@ export class SupabaseDatabaseServiceImpl implements DatabaseServices {
   readonly chat: ChatRepository;
   readonly chatSearch: ChatSearchRepository;
   readonly friends: FriendRepository;
+  readonly notifications: NotificationRepository;
+  readonly attention: NavigationAttentionRepository;
 
   constructor(readonly client: AppSupabaseClient) {
     this.profiles = new SupabaseProfileRepository(client);
@@ -32,5 +38,7 @@ export class SupabaseDatabaseServiceImpl implements DatabaseServices {
     this.chat = new SupabaseChatRepository(client);
     this.chatSearch = new SupabaseChatSearchRepository(client);
     this.friends = new SupabaseFriendRepository(client);
+    this.notifications = new SupabaseNotificationRepository(client);
+    this.attention = new SupabaseNavigationAttentionRepository(client);
   }
 }

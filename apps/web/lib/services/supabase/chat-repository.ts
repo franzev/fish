@@ -81,7 +81,10 @@ async function fetchConversationReactions(
 export class SupabaseChatRepository implements ChatRepository {
   constructor(private readonly client: AppSupabaseClient) {}
 
-  async getAssignedConversation(channelSlug?: string): Promise<ServiceResult<ClientChatData | null>> {
+  async getAssignedConversation(
+    channelSlug?: string,
+    conversationId?: string
+  ): Promise<ServiceResult<ClientChatData | null>> {
     return safely("chat.getAssignedConversation", async () => {
       const { data: userData, error: userError } = await this.client.auth.getUser();
       if (userError) {
@@ -130,6 +133,17 @@ export class SupabaseChatRepository implements ChatRepository {
               slug: string;
               conversation_id: string;
             }>
+        : conversationId
+        ? (await this.client
+            .from("channels")
+            .select("id, name, slug, conversation_id")
+            .eq("conversation_id", conversationId)
+            .maybeSingle()) as SupabaseResponse<{
+              id: string;
+              name: string;
+              slug: string;
+              conversation_id: string;
+            }>
         : { data: null, error: null };
       if (requestedChannelError) {
         return serviceFailure(
@@ -147,7 +161,10 @@ export class SupabaseChatRepository implements ChatRepository {
         (await this.client
           .from("conversations")
           .select("*")
-          .eq("id", requestedChannel?.conversation_id ?? demoCommunityConversationId)
+          .eq(
+            "id",
+            conversationId ?? requestedChannel?.conversation_id ?? demoCommunityConversationId
+          )
           .maybeSingle()) as SupabaseResponse<ConversationRow>;
 
       if (demoConversationError) {
@@ -163,7 +180,7 @@ export class SupabaseChatRepository implements ChatRepository {
 
       let conversation = demoConversation;
 
-      if (!conversation && !requestedChannel) {
+      if (!conversation && !requestedChannel && !conversationId) {
         const { data: conversations, error: conversationError } = (await this.client
           .from("conversations")
           .select("*")
