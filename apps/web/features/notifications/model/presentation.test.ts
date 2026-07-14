@@ -39,6 +39,11 @@ describe("notification presentation", () => {
       .toBe("2 missed calls from Sam");
   });
 
+  it("confirms when a friend request is accepted", () => {
+    expect(notificationTitle({ ...base, kind: "friendRequestAccepted" }))
+      .toBe("Sam accepted your friend request");
+  });
+
   it("prefers system body, then the message snippet, then channel context", () => {
     expect(notificationContext({ ...base, body: "Planned maintenance" }))
       .toBe("Planned maintenance");

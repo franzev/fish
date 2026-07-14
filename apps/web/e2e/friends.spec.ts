@@ -116,6 +116,16 @@ test.describe.serial("client friendships", () => {
       await samPage.getByRole("button", { name: "Accept request" }).click();
       await expect(samPage).toHaveURL(/\/friends$/);
 
+      await expect(
+        franzPage.getByRole("button", { name: /Notifications, 1 unread/i })
+      ).toBeVisible();
+      await franzPage
+        .getByRole("button", { name: /Notifications, 1 unread/i })
+        .click();
+      await expect(
+        franzPage.getByText("Sam Okafor accepted your friend request")
+      ).toBeVisible();
+
       await samPage.goto("/channels/general");
       const franzProfileTrigger = samPage
         .getByRole("button", { name: "View Franz Eva profile" })

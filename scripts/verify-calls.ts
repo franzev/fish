@@ -25,6 +25,7 @@ if (
 const users = {
   coach: { email: "coach@fish.dev", password: "fish-coach-dev" },
   client: { email: "client1@fish.dev", password: "fish-client-dev" },
+  friend: { email: "client2@fish.dev", password: "fish-client-dev" },
   unrelatedCoach: { email: "coach2@fish.dev", password: "fish-coach-dev" },
 };
 
@@ -90,6 +91,7 @@ async function sendLiveKitWebhook(input: {
 async function main() {
   const coach = await signIn(users.coach.email, users.coach.password);
   const client = await signIn(users.client.email, users.client.password);
+  const friend = await signIn(users.friend.email, users.friend.password);
   const unrelated = await signIn(
     users.unrelatedCoach.email,
     users.unrelatedCoach.password,
@@ -259,6 +261,77 @@ async function main() {
       !videoEndError && videoEnded?.status === "ended",
       videoEndError?.message,
     );
+  }
+
+  const [friendLowId, friendHighId] = [client.userId, friend.userId].sort();
+  const { data: existingFriendship, error: friendshipLookupError } = await admin
+    .from("friendships")
+    .select("id")
+    .eq("user_low_id", friendLowId)
+    .eq("user_high_id", friendHighId)
+    .maybeSingle();
+  if (friendshipLookupError) {
+    throw new Error(`Cannot inspect friend call fixture: ${friendshipLookupError.message}`);
+  }
+  const { error: friendshipError } = await admin.from("friendships").upsert({
+    user_low_id: friendLowId,
+    user_high_id: friendHighId,
+  }, { onConflict: "user_low_id,user_high_id" });
+  if (friendshipError) {
+    throw new Error(`Cannot create friend call fixture: ${friendshipError.message}`);
+  }
+
+  const { data: friendCall, error: friendCallError } = await client.client.rpc(
+    "initiate_call",
+    {
+      p_recipient_id: friend.userId,
+      p_kind: "video",
+      p_client_request_id: crypto.randomUUID(),
+    },
+  );
+  report(
+    "accepted friends can initiate a video call",
+    !friendCallError &&
+      friendCall?.relationship_kind === "friend" &&
+      friendCall.status === "ringing",
+    friendCallError?.message,
+  );
+  if (friendCall) {
+    const { data: friendAccepted, error: friendAcceptError } =
+      await friend.client.rpc("accept_call", { p_call_id: friendCall.id });
+    report(
+      "a friend can accept the call",
+      !friendAcceptError && friendAccepted?.status === "connecting",
+      friendAcceptError?.message,
+    );
+    await client.client.rpc("end_call", { p_call_id: friendCall.id });
+  }
+
+  const { error: removeFriendshipError } = await admin.from("friendships")
+    .delete()
+    .eq("user_low_id", friendLowId)
+    .eq("user_high_id", friendHighId);
+  if (removeFriendshipError) {
+    throw new Error(`Cannot remove friend call fixture: ${removeFriendshipError.message}`);
+  }
+  const { error: formerFriendCallError } = await client.client.rpc(
+    "initiate_call",
+    {
+      p_recipient_id: friend.userId,
+      p_kind: "audio",
+      p_client_request_id: crypto.randomUUID(),
+    },
+  );
+  report("people who are no longer friends cannot call", !!formerFriendCallError);
+  if (existingFriendship) {
+    const { error: restoreFriendshipError } = await admin.from("friendships").insert({
+      id: existingFriendship.id,
+      user_low_id: friendLowId,
+      user_high_id: friendHighId,
+    });
+    if (restoreFriendshipError) {
+      throw new Error(`Cannot restore friend call fixture: ${restoreFriendshipError.message}`);
+    }
   }
 
   const { data: webhookCall, error: webhookInitiateError } = await coach.client.rpc(

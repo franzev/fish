@@ -9,6 +9,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/features/chat";
 import { PresenceSummary } from "@/features/presence/components/presence-summary/presence-summary";
+import { CallEntryAction } from "@/features/calls";
 
 export default async function FriendDetailPage({
   params,
@@ -62,7 +63,14 @@ export default async function FriendDetailPage({
       <p className="mb-lg text-ui-sm text-muted">
         @{data.friend.friend.username}
       </p>
-      <FriendSafetyActions friend={data.friend.friend} />
+      <div className="flex flex-col gap-lg">
+        <CallEntryAction
+          recipientId={data.friend.friend.id}
+          recipientName={data.friend.friend.displayName}
+          label={`Call ${data.friend.friend.displayName}`}
+        />
+        <FriendSafetyActions friend={data.friend.friend} />
+      </div>
       <p className="mt-lg text-center text-ui-sm text-muted">
         <Link href="/friends" className="text-body underline">
           Back to friends
