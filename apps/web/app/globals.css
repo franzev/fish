@@ -240,6 +240,12 @@
 
 }
 
+/* Status choices keep their indicator, copy, and selected marker aligned
+   without embedding a one-off grid template in component markup. */
+@utility grid-cols-status-option {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 /* ---- Base ---- */
 @layer base {
   html {

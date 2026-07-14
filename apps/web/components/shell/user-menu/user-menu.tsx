@@ -152,7 +152,7 @@ export function UserMenu({
                           value={option.preference}
                           closeOnClick={false}
                           disabled={presence.changing}
-                          className="grid min-h-control cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
+                          className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
                           onClick={() => void chooseStatus(option.preference)}
                         >
                           <PresenceIndicator

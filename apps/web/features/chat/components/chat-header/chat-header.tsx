@@ -4,9 +4,8 @@ import type {
   ChatSearchChannel,
   ChatSearchMember,
 } from "@/features/chat/model/search";
-import { Avatar } from "../avatar";
 import {
-  PresenceIndicator,
+  PresenceAvatar,
   type PresenceDisplayStatus,
 } from "@/features/presence";
 
@@ -19,7 +18,6 @@ interface ChatHeaderProps {
   memberCount: number;
   presenceStatus: PresenceDisplayStatus;
   presenceLabel: string;
-  presenceDetail?: string | null;
   search: string;
   onSearchChange: (value: string) => void;
   criteria: ChatFilterCriterion[];
@@ -39,7 +37,6 @@ export function ChatHeader({
   memberCount,
   presenceStatus,
   presenceLabel,
-  presenceDetail,
   search,
   onSearchChange,
   criteria,
@@ -52,30 +49,27 @@ export function ChatHeader({
   return (
     <div className="border-b border-divider bg-surface px-md py-xs">
       <div className="flex items-center justify-between gap-sm">
-        <div className="flex min-w-0 items-center gap-2xs">
+        <div className="flex min-w-0 items-center gap-sm">
           {!isCommunity && (
-            <Avatar
+            <PresenceAvatar
               profileId={participantId}
               src={avatarUrl ?? undefined}
               name={chatTitle}
               size="md"
               alt=""
+              status={presenceStatus}
+              statusLabel={presenceLabel}
             />
           )}
-          <div className="flex min-w-0 items-baseline gap-2xs">
-          <h1 className="truncate font-sans text-heading text-foreground">
-            {isCommunity ? `# ${channelName ?? chatTitle}` : chatTitle}
-          </h1>
-          <span className="flex shrink-0 items-center gap-nudge text-ui-sm text-muted">
-            {!isCommunity && (
-              <PresenceIndicator status={presenceStatus} />
-            )}
-            <span>
+          <div className="flex min-w-0 flex-col gap-3xs">
+            <h1 className="truncate font-sans text-ui-md font-semibold text-foreground">
+              {isCommunity ? `# ${channelName ?? chatTitle}` : chatTitle}
+            </h1>
+            <span className="truncate text-ui-xs text-muted">
               {isCommunity
                 ? `· ${memberCount} ${memberCount === 1 ? "member" : "members"}`
-                : `${presenceLabel}${presenceDetail ? ` · ${presenceDetail}` : ""}`}
+                : presenceLabel}
             </span>
-          </span>
           </div>
         </div>
         <SearchFilterPopover

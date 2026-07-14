@@ -10,9 +10,9 @@
  *   - text pairs must meet WCAG 2.1 AA 4.5:1
  *   - UI-component pairs (borders) must meet 3:1
  *   - every STRUCTURAL token must be pure monochrome (oklch chroma = 0 — TOKN-01)
- *   - the three semantic feedback tones (error/warning/success, D-08) are the
- *     one deliberate exception: calm, desaturated hues instead of monochrome,
- *     still gated at the same 4.5:1 / 3:1 thresholds below.
+ *   - semantic feedback and presence tones are deliberate exceptions: calm,
+ *     desaturated hues instead of monochrome. Feedback remains contrast-gated
+ *     below, and every hue is bounded to prevent saturated status colors.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -61,11 +61,24 @@ const expectedTokenNames = [
   "error",
   "warning",
   "success",
+  "presence-online",
+  "presence-idle",
+  "presence-away",
+  "presence-busy",
+  "presence-offline",
 ] as const;
 
-/** D-08: these three semantic feedback tones are the deliberate exception to
- *  pure monochrome — calm, desaturated hues, still WCAG-gated below. */
-const hueTones = ["error", "warning", "success"] as const;
+/** Semantic state tones are the deliberate exception to pure monochrome.
+ *  Offline remains neutral, while active states use calm, desaturated hues. */
+const hueTones = [
+  "error",
+  "warning",
+  "success",
+  "presence-online",
+  "presence-idle",
+  "presence-away",
+  "presence-busy",
+] as const;
 
 type Theme = keyof TokenPair;
 const themes: Theme[] = ["light", "dark"];
@@ -103,7 +116,7 @@ describe("monochrome token ladder (globals.css @theme)", () => {
     }
   });
 
-  it("keeps the semantic feedback tones calm and desaturated, never neon/pure-hue (D-08)", () => {
+  it("keeps semantic status tones calm and desaturated, never neon or pure-hue (D-08)", () => {
     for (const name of hueTones) {
       for (const theme of themes) {
         const chroma = new Color(tokens[name][theme]).coords[1];

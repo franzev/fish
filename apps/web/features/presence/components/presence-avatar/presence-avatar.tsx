@@ -14,13 +14,13 @@ export function PresenceAvatar({
   ...avatarProps
 }: PresenceAvatarProps) {
   return (
-    <span className="relative inline-flex shrink-0">
+    <span className="relative inline-flex shrink-0 overflow-visible">
       <Avatar {...avatarProps} />
-      <span className="absolute -bottom-3xs -right-3xs inline-flex rounded-pill bg-surface p-3xs">
+      <span className="absolute bottom-0 right-0 z-10 inline-flex rounded-pill bg-surface">
         <PresenceIndicator
           status={status}
           label={statusLabel}
-          size={10}
+          size={8}
         />
       </span>
     </span>
