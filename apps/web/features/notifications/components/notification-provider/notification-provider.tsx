@@ -42,6 +42,7 @@ interface NotificationContextValue {
   archiveBatchId: string | null;
   attention: NavigationAttention[];
   refresh(): Promise<void>;
+  refreshAndMarkLoadedSeen(): Promise<void>;
   setFilter(filter: NotificationFilter): Promise<void>;
   loadOlder(): Promise<void>;
   markLoadedSeen(): Promise<void>;
@@ -56,6 +57,7 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 const browserTabBaseTitle = "FISH";
 const browserTabCountLimit = 9;
+const markSeenSnapshotRetryLimit = 3;
 
 function countUnreadConversations(attention: NavigationAttention[]): number {
   return new Set(
@@ -304,6 +306,82 @@ export function NotificationProvider({
     if (ids.length > 0) await runItemOperation("seen", ids);
   }, [runItemOperation]);
 
+  const refreshAndMarkLoadedSeen = useCallback(async () => {
+    const filter = stateRef.current.filter;
+    setIsRefreshing(true);
+    const [page, summary, nextAttention] = await Promise.all([
+      repository.listPage({ filter }),
+      repository.getSummary(),
+      attentionRepository.list(),
+    ]);
+
+    if (!page.ok || !summary.ok) {
+      setIsRefreshing(false);
+      setNotice("Notifications will catch up when the connection settles.");
+      return;
+    }
+
+    if (nextAttention.ok) setAttention(nextAttention.data);
+    let nextPage = page.data;
+    let nextSummary = summary.data;
+    let nextNotice: string | null = null;
+
+    for (let attempt = 0; attempt < markSeenSnapshotRetryLimit; attempt += 1) {
+      const unseenIds = nextPage.items
+        .filter((item) => item.seenAt === null)
+        .map((item) => item.id);
+      if (unseenIds.length === 0) break;
+      const throughChangeSeq = Math.max(
+        nextSummary.latestChangeSeq,
+        ...nextPage.items.map((item) => item.changeSeq)
+      );
+      const result = await commands.execute({
+        action: "mark-seen",
+        notificationIds: unseenIds,
+        throughChangeSeq,
+      });
+      if (result.ok) {
+        const seenAt = new Date().toISOString();
+        const unseenIdSet = new Set(unseenIds);
+        const optimisticPage = {
+          ...nextPage,
+          items: nextPage.items.map((item) =>
+            unseenIdSet.has(item.id) ? { ...item, seenAt } : item
+          ),
+        };
+        const [settledPage, settledSummary] = await Promise.all([
+          repository.listPage({ filter }),
+          repository.getSummary(),
+        ]);
+        if (!settledPage.ok || !settledSummary.ok) {
+          nextNotice = "Notifications will catch up when the connection settles.";
+          if (result.updated >= unseenIds.length) {
+            nextPage = optimisticPage;
+            nextSummary = {
+              ...nextSummary,
+              unseenCount: Math.max(0, nextSummary.unseenCount - unseenIds.length),
+            };
+          }
+          break;
+        }
+        nextPage = settledPage.data;
+        nextSummary = settledSummary.data;
+      } else {
+        nextNotice = result.notice;
+        break;
+      }
+    }
+
+    dispatch({
+      type: "hydrate",
+      page: nextPage,
+      summary: nextSummary,
+      filter,
+    });
+    setNotice(nextNotice);
+    setIsRefreshing(false);
+  }, [attentionRepository, commands, repository]);
+
   const markRead = useCallback(async (item: NotificationItem) => {
     if (item.readAt === null) await runItemOperation("read", [item.id]);
   }, [runItemOperation]);
@@ -406,6 +484,7 @@ export function NotificationProvider({
     isRefreshing,
     archiveBatchId,
     refresh,
+    refreshAndMarkLoadedSeen,
     setFilter,
     loadOlder,
     markLoadedSeen,
@@ -425,6 +504,7 @@ export function NotificationProvider({
     markRead,
     notice,
     refresh,
+    refreshAndMarkLoadedSeen,
     setFilter,
     state,
     undoArchive,

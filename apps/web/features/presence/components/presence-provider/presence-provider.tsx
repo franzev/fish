@@ -68,10 +68,22 @@ export function PresenceProvider({
   const [now, setNow] = useState(() => new Date());
   const [changing, setChanging] = useState(false);
   const changingRef = useRef(false);
+  const visibleSubjectIdsRef = useRef(new Set([userId]));
+  const sessionRef = useRef<ReturnType<PresenceRealtimeService["startSession"]> | null>(
+    null
+  );
   const [commandNotice, setCommandNotice] = useState<string | null>(null);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const realtime = useMemo(
+    () => getPresenceRealtimeService(realtimeOverride),
+    [realtimeOverride]
+  );
 
   const mergeSnapshot = useCallback((snapshot: PresenceSnapshot) => {
+    if (
+      snapshot.userId !== userId &&
+      !visibleSubjectIdsRef.current.has(snapshot.userId)
+    ) return;
     setSnapshots((current) => {
       const previous = current.get(snapshot.userId);
       if (previous && previous.revision >= snapshot.revision) return current;
@@ -80,7 +92,7 @@ export function PresenceProvider({
       return next;
     });
     setNow(new Date());
-  }, []);
+  }, [userId]);
 
   const refresh = useCallback(async () => {
     const repository = repositoryOverride ?? getBrowserServices().database.presence;
@@ -89,6 +101,10 @@ export function PresenceProvider({
       repository.getOwnPreference(),
     ]);
     if (visible.ok) {
+      visibleSubjectIdsRef.current = new Set([
+        userId,
+        ...visible.data.map((snapshot) => snapshot.userId),
+      ]);
       setSnapshots((current) => {
         const next = new Map<string, PresenceSnapshot>();
         visible.data.forEach((snapshot) => {
@@ -109,15 +125,31 @@ export function PresenceProvider({
       });
     }
     setNow(new Date());
-  }, [repositoryOverride]);
+  }, [repositoryOverride, userId]);
 
   useEffect(() => {
-    const realtime = getPresenceRealtimeService(realtimeOverride);
     const session = realtime.startSession(mergeSnapshot, () => {
       setSessionNotice("Status is reconnecting. We’ll keep trying.");
     });
+    sessionRef.current = session;
+    const initialRefresh = window.setTimeout(() => void refresh(), 0);
+    return () => {
+      window.clearTimeout(initialRefresh);
+      sessionRef.current = null;
+      session.stop();
+    };
+  }, [mergeSnapshot, realtime, refresh]);
+
+  const subscriptionKey = useMemo(
+    () => Array.from(new Set([userId, ...snapshots.keys()])).sort().join("|"),
+    [snapshots, userId]
+  );
+
+  useEffect(() => {
+    const subjectIds = subscriptionKey ? subscriptionKey.split("|") : [userId];
     const unsubscribe = realtime.subscribe(
       userId,
+      subjectIds,
       mergeSnapshot,
       (nextPreference, revision) => {
         setPreferenceRevision((current) => {
@@ -128,7 +160,7 @@ export function PresenceProvider({
       },
       () => {
         setSessionNotice(null);
-        session.markActive();
+        sessionRef.current?.markActive();
         void refresh();
       },
       (status) => {
@@ -137,13 +169,8 @@ export function PresenceProvider({
         }
       }
     );
-    const initialRefresh = window.setTimeout(() => void refresh(), 0);
-    return () => {
-      window.clearTimeout(initialRefresh);
-      unsubscribe();
-      session.stop();
-    };
-  }, [mergeSnapshot, realtimeOverride, refresh, userId]);
+    return unsubscribe;
+  }, [mergeSnapshot, realtime, refresh, subscriptionKey, userId]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 15_000);

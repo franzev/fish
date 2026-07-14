@@ -55,4 +55,28 @@ describe("MessagesWorkspace", () => {
     expect(screen.queryByText("Archived")).not.toBeInTheDocument();
     expect(screen.queryByText(/rating/i)).not.toBeInTheDocument();
   });
+
+  it("describes a coach's direct conversation as their assigned client", () => {
+    render(
+      <MessagesWorkspace
+        chat={{
+          ...chat,
+          currentUserId: "coach-1",
+          currentUserRole: "coach",
+          participant: {
+            id: "client-1",
+            displayName: "Alex Rivera",
+            role: "client",
+          },
+        }}
+      >
+        <div>Active conversation</div>
+      </MessagesWorkspace>
+    );
+
+    expect(screen.getByText("Your client")).toBeInTheDocument();
+    expect(screen.getByText("Your assigned client")).toBeInTheDocument();
+    expect(screen.getByText("Only you and your client can take part.")).toBeInTheDocument();
+    expect(screen.queryByText("Your assigned coach")).not.toBeInTheDocument();
+  });
 });

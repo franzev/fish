@@ -150,6 +150,39 @@ async function main() {
     item.kind === "system_announcement" && item.title === "Notification verify announcement" && item.action_href === "/home"
   ));
 
+  const { data: expiringAnnouncement, error: expiringAnnouncementError } =
+    await admin.rpc("publish_system_announcement", {
+      p_kind: "product_update",
+      p_title: "Notification verify expiring update",
+      p_body: "This update should leave the inbox when it expires.",
+      p_audience_role: "client",
+      p_expires_at: new Date(Date.now() + 60_000).toISOString(),
+    });
+  if (expiringAnnouncementError) throw expiringAnnouncementError;
+  const { data: summaryBeforeExpiry } = await a.client.rpc("get_notification_summary");
+  const visibleBeforeExpiry = (await list(a.client)).some((item) =>
+    item.title === "Notification verify expiring update"
+  );
+  const expiredAt = new Date(Date.now() - 1_000);
+  const { error: expireError } = await admin
+    .from("system_announcements")
+    .update({
+      starts_at: new Date(expiredAt.getTime() - 60_000).toISOString(),
+      expires_at: expiredAt.toISOString(),
+    })
+    .eq("id", expiringAnnouncement.id);
+  if (expireError) throw expireError;
+  const { data: summaryAfterExpiry } = await a.client.rpc("get_notification_summary");
+  report(
+    "expired announcements leave both the feed and attention summary",
+    visibleBeforeExpiry &&
+      !(await list(a.client)).some((item) =>
+        item.title === "Notification verify expiring update"
+      ) &&
+      Number(summaryAfterExpiry?.[0]?.unseen_count ?? 0) <
+        Number(summaryBeforeExpiry?.[0]?.unseen_count ?? 0),
+  );
+
   const { data: moderation, error: moderationError } = await admin.rpc(
     "create_moderation_action",
     {

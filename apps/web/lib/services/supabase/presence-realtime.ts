@@ -56,15 +56,39 @@ function makeSessionId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `presence-${Date.now()}`;
 }
 
+function chunks<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
+}
+
 export const supabasePresenceRealtimeService: PresenceRealtimeService = {
-  subscribe(userId, onSnapshot, onPreference, onRecovery, onStatus) {
+  subscribe(userId, subjectIds, onSnapshot, onPreference, onRecovery, onStatus) {
     const client = createBrowserSupabaseClient();
-    const channel = client
+    const connectedChannels = new Set<string>();
+    let expectedChannelCount = 0;
+    let fullyConnected = false;
+    let active = true;
+
+    function markConnected(topic: string) {
+      connectedChannels.add(topic);
+      if (!fullyConnected && connectedChannels.size === expectedChannelCount) {
+        fullyConnected = true;
+        onStatus?.("connected");
+        onRecovery?.();
+      }
+    }
+
+    function markDisconnected(topic: string) {
+      connectedChannels.delete(topic);
+      fullyConnected = false;
+      onStatus?.("disconnected");
+    }
+
+    const preferenceChannel = client
       .channel(`presence:user:${userId}`, { config: { private: true } })
-      .on("broadcast", { event: "presence.changed" }, ({ payload }) => {
-        const snapshot = readSnapshot(payload);
-        if (snapshot) onSnapshot(snapshot);
-      })
       .on("broadcast", { event: "presence.preference.changed" }, ({ payload }) => {
         const value = payload as { mode?: unknown; revision?: unknown };
         if (
@@ -74,26 +98,63 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
         ) {
           onPreference(value.mode as PresencePreference, value.revision);
         }
+      })
+      .on("broadcast", { event: "presence.subjects.changed" }, () => {
+        onRecovery?.();
       });
-    let active = true;
+    const subscriptionId = makeSessionId();
+    const snapshotChannels = chunks(
+      Array.from(new Set([userId, ...subjectIds])),
+      100
+    ).map((ids, index) => {
+      const channel = client.channel(
+        `presence:snapshots:${userId}:${subscriptionId}:${index}`,
+        { config: { broadcast: { replication_ready: true } } }
+      );
+      channel
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "presence_snapshots",
+            filter: `user_id=in.(${ids.join(",")})`,
+          },
+          ({ new: value }) => {
+            const snapshot = readSnapshot(value);
+            if (snapshot) onSnapshot(snapshot);
+          }
+        )
+        .on("system", {}, (payload) => {
+          if (payload.status === "ok") {
+            markConnected(channel.topic);
+          } else {
+            markDisconnected(channel.topic);
+          }
+        });
+      return channel;
+    });
+    const channels = [preferenceChannel, ...snapshotChannels];
+    expectedChannelCount = channels.length;
     void client.realtime.setAuth().then(() => {
       if (!active) return;
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          onStatus?.("connected");
-          onRecovery?.();
-        } else if (
-          status === "CHANNEL_ERROR" ||
-          status === "TIMED_OUT" ||
-          status === "CLOSED"
-        ) {
-          onStatus?.("disconnected");
-        }
+      channels.forEach((channel) => {
+        channel.subscribe((status) => {
+          if (status === "SUBSCRIBED" && channel === preferenceChannel) {
+            markConnected(channel.topic);
+          } else if (
+            status === "CHANNEL_ERROR" ||
+            status === "TIMED_OUT" ||
+            status === "CLOSED"
+          ) {
+            markDisconnected(channel.topic);
+          }
+        });
       });
     });
     return () => {
       active = false;
-      void client.removeChannel(channel);
+      channels.forEach((channel) => void client.removeChannel(channel));
     };
   },
 

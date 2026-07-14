@@ -44,13 +44,16 @@ function Probe() {
 
 function createHarness(command: PresenceCommandService) {
   let onSnapshot: (value: PresenceSnapshot) => void = () => {};
+  let onRecovery: () => void = () => {};
+  let visibleSnapshots = [snapshot(2, "online")];
   const repository: PresenceRepository = {
-    listVisible: async () => ({ ok: true, data: [snapshot(2, "online")] }),
+    listVisible: async () => ({ ok: true, data: visibleSnapshots }),
     getOwnPreference: async () => ({ ok: true, data: "away" }),
   };
   const realtime: PresenceRealtimeService = {
-    subscribe: vi.fn((_id, nextSnapshot) => {
+    subscribe: vi.fn((_id, _subjectIds, nextSnapshot, _nextPreference, recover) => {
       onSnapshot = nextSnapshot;
+      onRecovery = recover ?? (() => {});
       return () => {};
     }),
     startSession: vi.fn(() => ({ markActive: vi.fn(), stop: vi.fn() })),
@@ -65,7 +68,14 @@ function createHarness(command: PresenceCommandService) {
       <Probe />
     </PresenceProvider>
   );
-  return { pushSnapshot: (value: PresenceSnapshot) => act(() => onSnapshot(value)) };
+  return {
+    realtime,
+    pushSnapshot: (value: PresenceSnapshot) => act(() => onSnapshot(value)),
+    setVisibleSnapshots: (values: PresenceSnapshot[]) => {
+      visibleSnapshots = values;
+    },
+    recover: () => act(() => onRecovery()),
+  };
 }
 
 describe("PresenceProvider", () => {
@@ -75,6 +85,14 @@ describe("PresenceProvider", () => {
     };
     const harness = createHarness(command);
     await waitFor(() => expect(screen.getByText("Friend: Online")).toBeInTheDocument());
+    await waitFor(() => expect(harness.realtime.subscribe).toHaveBeenCalledWith(
+      userId,
+      [userId, friendId].sort(),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    ));
     expect(screen.getByText("Preference: away")).toBeInTheDocument();
 
     harness.pushSnapshot(snapshot(1, "offline"));
@@ -103,5 +121,34 @@ describe("PresenceProvider", () => {
     expect(screen.getByText("Preference: away")).toBeInTheDocument();
     expect(screen.getByText("Your status could not change. Try again."))
       .toBeInTheDocument();
+  });
+
+  it("refreshes authoritative subjects when relationships change", async () => {
+    const command: PresenceCommandService = {
+      setMode: async () => ({ ok: false, code: "unused", notice: "Unused" }),
+    };
+    const harness = createHarness(command);
+    await waitFor(() => expect(harness.realtime.subscribe).toHaveBeenCalledWith(
+      userId,
+      [userId, friendId].sort(),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    ));
+
+    harness.setVisibleSnapshots([]);
+    harness.recover();
+
+    await waitFor(() => expect(harness.realtime.subscribe).toHaveBeenLastCalledWith(
+      userId,
+      [userId],
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    ));
+    harness.pushSnapshot(snapshot(99, "online"));
+    expect(screen.getByText("Friend: Offline")).toBeInTheDocument();
   });
 });

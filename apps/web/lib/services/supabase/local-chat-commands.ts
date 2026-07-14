@@ -25,6 +25,7 @@ import {
   toClientChatMessage,
   toClientReadState,
 } from "./chat-mapping";
+import { loadSenderDisplayNames } from "./chat-sender-profiles";
 
 async function getLocalFallbackContext(): Promise<{
   client: Awaited<ReturnType<typeof createServerSupabaseClient>>;
@@ -139,32 +140,7 @@ async function addSenderDisplayNames(
   context: NonNullable<Awaited<ReturnType<typeof getLocalFallbackContext>>>,
   messages: MessageResponseRow[]
 ): Promise<MessageResponseRow[]> {
-  const senderIds = Array.from(new Set(messages.map((message) => message.sender_id)));
-  if (senderIds.length === 0) {
-    return messages;
-  }
-
-  let response: {
-    data: Array<{ id: string; display_name: string }> | null;
-    error: unknown;
-  };
-
-  try {
-    response = await context.client
-      .from("profiles")
-      .select("id, display_name")
-      .in("id", senderIds);
-  } catch {
-    return messages;
-  }
-
-  if (response.error) {
-    return messages;
-  }
-
-  const displayNames = new Map(
-    (response.data ?? []).map((profile) => [profile.id, profile.display_name])
-  );
+  const displayNames = await loadSenderDisplayNames(context.client, messages);
 
   return messages.map((message) => ({
     ...message,

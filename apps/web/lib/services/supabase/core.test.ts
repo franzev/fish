@@ -31,17 +31,25 @@ function createUnreadSummaryRpc(
     unread_count: number;
     oldest_unread_at: string | null;
     latest_unread_message_id: string | null;
-  }> = {}
+  }> = {},
+  channelProfiles: Array<{
+    id: string;
+    display_name: string;
+    username: string;
+  }> = []
 ) {
   return vi.fn(async (name: string) => ({
-    data: name === "get_chat_unread_summary"
-      ? [{
-          unread_count: 0,
-          oldest_unread_at: null,
-          latest_unread_message_id: null,
-          ...overrides,
-        }]
-      : null,
+    data:
+      name === "get_chat_unread_summary"
+        ? [{
+            unread_count: 0,
+            oldest_unread_at: null,
+            latest_unread_message_id: null,
+            ...overrides,
+          }]
+        : name === "list_channel_member_profiles"
+          ? channelProfiles
+          : null,
     error: null,
   }));
 }
@@ -217,6 +225,11 @@ describe("Supabase service registry", () => {
       message_reads: [],
       presence_sessions: [],
     };
+    const rpc = createUnreadSummaryRpc({}, [{
+      id: "user-1",
+      display_name: "Franz Fish",
+      username: "franz",
+    }]);
     const client = {
       auth: {
         getUser: vi.fn(async () => ({
@@ -224,7 +237,7 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
-      rpc: createUnreadSummaryRpc(),
+      rpc,
       from: vi.fn((table: string) => createChainStub(tables[table])),
     } as unknown as AppSupabaseClient;
 
@@ -244,6 +257,13 @@ describe("Supabase service registry", () => {
       });
       expect(result.data?.subtitle).toBeUndefined();
       expect(client.from).not.toHaveBeenCalledWith("message_reactions");
+      expect(rpc).toHaveBeenCalledWith("list_channel_member_profiles", {
+        p_channel_id: "22222222-2222-4222-8222-222222222222",
+      });
+      expect(client.from).toHaveBeenCalledWith("profiles");
+      expect(
+        vi.mocked(client.from).mock.calls.filter(([table]) => table === "profiles")
+      ).toHaveLength(1);
     }
   });
 
@@ -487,10 +507,14 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
-      rpc: vi.fn(async () => ({
-        data: null,
-        error: { code: "PGRST202", message: "function unavailable" },
-      })),
+      rpc: vi.fn(async (name: string) =>
+        name === "list_channel_member_profiles"
+          ? { data: [], error: null }
+          : {
+              data: null,
+              error: { code: "PGRST202", message: "function unavailable" },
+            }
+      ),
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           const queue = queues.profiles;

@@ -3,6 +3,7 @@ import {
   toClientChatMessage,
   type MessageResponseRow,
 } from "./chat-mapping";
+import { loadSenderDisplayNames } from "./chat-sender-profiles";
 import type { AppSupabaseClient } from "./types";
 
 export async function hydrateClientChatMessages(
@@ -11,14 +12,7 @@ export async function hydrateClientChatMessages(
 ): Promise<ClientChatMessage[]> {
   if (messages.length === 0) return [];
 
-  const senderIds = Array.from(new Set(messages.map((message) => message.sender_id)));
-  const { data: profiles } = await client
-    .from("profiles")
-    .select("id, display_name")
-    .in("id", senderIds);
-  const displayNames = new Map(
-    (profiles ?? []).map((profile) => [profile.id, profile.display_name])
-  );
+  const displayNames = await loadSenderDisplayNames(client, messages);
 
   const { data: userData } = await client.auth.getUser();
   const currentUserId = userData.user?.id ?? "";

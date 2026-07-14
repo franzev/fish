@@ -1,14 +1,16 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { NotificationItem } from "@fish/core/notification-state";
-import type {
-  AttentionRealtimeService,
-  NavigationAttention,
-  NavigationAttentionRepository,
-  NotificationCommandResult,
-  NotificationCommandService,
-  NotificationRealtimeHint,
-  NotificationRealtimeService,
-  NotificationRepository,
+import {
+  ServiceError,
+  serviceFailure,
+  type AttentionRealtimeService,
+  type NavigationAttention,
+  type NavigationAttentionRepository,
+  type NotificationCommandResult,
+  type NotificationCommandService,
+  type NotificationRealtimeHint,
+  type NotificationRealtimeService,
+  type NotificationRepository,
 } from "@/lib/services";
 import { resolvedService } from "@/lib/services/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -93,11 +95,16 @@ function conversationAttention(
 }
 
 function Harness() {
-  const { state, markRead } = useNotifications();
+  const { state, notice, markRead, refreshAndMarkLoadedSeen } = useNotifications();
   return (
     <div>
       <output aria-label="Unread count">{state.summary.unreadCount}</output>
+      <output aria-label="Unseen count">{state.summary.unseenCount}</output>
+      {notice && <output aria-label="Notification notice">{notice}</output>}
       <button type="button" onClick={() => void markRead(state.items[0])}>Read</button>
+      <button type="button" onClick={() => void refreshAndMarkLoadedSeen()}>
+        Open notifications
+      </button>
     </div>
   );
 }
@@ -215,6 +222,123 @@ describe("NotificationProvider", () => {
     renderProvider(deps);
     fireEvent.click(screen.getByRole("button", { name: "Read" }));
     await waitFor(() => expect(screen.getByLabelText("Unread count")).toHaveTextContent("1"));
+  });
+
+  it("marks notifications returned by the opening refresh as seen", async () => {
+    const execute = vi.fn(async () => ({ ok: true as const, updated: 1 }));
+    const deps = dependencies(execute);
+    const refreshed = {
+      ...notification,
+      id: "notification-2",
+      changeSeq: 2,
+    };
+    vi.mocked(deps.repository.listPage)
+      .mockReturnValueOnce(
+        resolvedService({ items: [refreshed], nextCursor: null })
+      )
+      .mockReturnValueOnce(
+        resolvedService({
+          items: [{ ...refreshed, seenAt: "2026-07-14T01:00:00.000Z" }],
+          nextCursor: null,
+        })
+      );
+    vi.mocked(deps.repository.getSummary)
+      .mockReturnValueOnce(
+        resolvedService({ unreadCount: 1, unseenCount: 1, latestChangeSeq: 2 })
+      )
+      .mockReturnValueOnce(
+        resolvedService({ unreadCount: 1, unseenCount: 0, latestChangeSeq: 3 })
+      );
+    renderProvider(deps);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open notifications" }));
+
+    await waitFor(() => expect(execute).toHaveBeenCalledWith({
+      action: "mark-seen",
+      notificationIds: ["notification-2"],
+      throughChangeSeq: 2,
+    }));
+    expect(screen.getByLabelText("Unseen count")).toHaveTextContent("0");
+  });
+
+  it("retries when a notification changes during the mark-seen snapshot", async () => {
+    const execute = vi.fn()
+      .mockResolvedValueOnce({ ok: true as const, updated: 0 })
+      .mockResolvedValueOnce({ ok: true as const, updated: 1 });
+    const deps = dependencies(execute);
+    const firstSnapshot = {
+      ...notification,
+      id: "notification-2",
+      changeSeq: 2,
+    };
+    const changedSnapshot = { ...firstSnapshot, changeSeq: 3 };
+    vi.mocked(deps.repository.listPage)
+      .mockReturnValueOnce(
+        resolvedService({ items: [firstSnapshot], nextCursor: null })
+      )
+      .mockReturnValueOnce(
+        resolvedService({ items: [changedSnapshot], nextCursor: null })
+      )
+      .mockReturnValueOnce(
+        resolvedService({
+          items: [{ ...changedSnapshot, seenAt: "2026-07-14T01:00:00.000Z" }],
+          nextCursor: null,
+        })
+      );
+    vi.mocked(deps.repository.getSummary)
+      .mockReturnValueOnce(
+        resolvedService({ unreadCount: 1, unseenCount: 1, latestChangeSeq: 2 })
+      )
+      .mockReturnValueOnce(
+        resolvedService({ unreadCount: 1, unseenCount: 1, latestChangeSeq: 3 })
+      )
+      .mockReturnValueOnce(
+        resolvedService({ unreadCount: 1, unseenCount: 0, latestChangeSeq: 4 })
+      );
+    renderProvider(deps);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open notifications" }));
+
+    await waitFor(() => expect(execute).toHaveBeenCalledTimes(2));
+    expect(execute).toHaveBeenNthCalledWith(1, {
+      action: "mark-seen",
+      notificationIds: ["notification-2"],
+      throughChangeSeq: 2,
+    });
+    expect(execute).toHaveBeenNthCalledWith(2, {
+      action: "mark-seen",
+      notificationIds: ["notification-2"],
+      throughChangeSeq: 3,
+    });
+    expect(screen.getByLabelText("Unseen count")).toHaveTextContent("0");
+  });
+
+  it("keeps canonical unseen state when no rows update and the refetch fails", async () => {
+    const execute = vi.fn(async () => ({ ok: true as const, updated: 0 }));
+    const deps = dependencies(execute);
+    const failure = serviceFailure(new ServiceError({
+      code: "network",
+      message: "Connection interrupted.",
+      recoverable: true,
+    }));
+    vi.mocked(deps.repository.listPage)
+      .mockReturnValueOnce(
+        resolvedService({ items: [notification], nextCursor: null })
+      )
+      .mockReturnValueOnce(Promise.resolve(failure));
+    vi.mocked(deps.repository.getSummary)
+      .mockReturnValueOnce(
+        resolvedService({ unreadCount: 1, unseenCount: 1, latestChangeSeq: 1 })
+      )
+      .mockReturnValueOnce(Promise.resolve(failure));
+    renderProvider(deps);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open notifications" }));
+
+    await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByLabelText("Notification notice"))
+      .toHaveTextContent("Notifications will catch up when the connection settles."));
+    expect(screen.getByLabelText("Unseen count")).toHaveTextContent("1");
   });
 
   it("treats realtime as a wakeup hint and re-anchors on canonical data", async () => {

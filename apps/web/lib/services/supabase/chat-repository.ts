@@ -318,8 +318,31 @@ export class SupabaseChatRepository implements ChatRepository {
         new Set(messages.map((message) => message.sender_id))
       );
       const senderDisplayNames = new Map<string, string>();
+      const { data: communityMemberProfiles, error: communityMemberProfileError } =
+        isCommunity
+          ? await this.client.rpc("list_channel_member_profiles", {
+              p_channel_id: activeChannel.id,
+            })
+          : { data: [], error: null };
 
-      if (senderIds.length > 0) {
+      if (communityMemberProfileError) {
+        return serviceFailure(
+          mapSupabaseError(communityMemberProfileError, {
+            code: "database",
+            fallbackMessage: "Could not load channel members.",
+            operation: "chat.getAssignedConversation.channelMemberProfiles",
+            recoverable: true,
+          })
+        );
+      }
+
+      if (isCommunity) {
+        for (const memberProfile of communityMemberProfiles ?? []) {
+          if (senderIds.includes(memberProfile.id)) {
+            senderDisplayNames.set(memberProfile.id, memberProfile.display_name);
+          }
+        }
+      } else if (senderIds.length > 0) {
         const { data: senderProfiles, error: senderProfileError } =
           (await this.client
             .from("profiles")
@@ -463,35 +486,13 @@ export class SupabaseChatRepository implements ChatRepository {
           })
         );
       }
-      const { data: channelMemberRows, error: channelMemberError } =
-        isCommunity
-          ? (await this.client
-              .from("channel_members")
-              .select("user_id")
-              .eq("channel_id", activeChannel.id)) as {
-              data: Array<{ user_id: string }> | null;
-              error: SupabaseResponse<unknown>["error"];
-            }
-          : { data: [], error: null };
-      if (channelMemberError) {
-        return serviceFailure(
-          mapSupabaseError(channelMemberError, {
-            code: "database",
-            fallbackMessage: "Could not load channel members.",
-            operation: "chat.getAssignedConversation.channelMembers",
-            recoverable: true,
-          })
-        );
-      }
-      const searchMemberIds = isCommunity
-        ? Array.from(new Set((channelMemberRows ?? []).map((row) => row.user_id)))
-        : Array.from(new Set([userId, participant.id]));
       const { data: searchMemberProfiles, error: searchMemberError } =
-        searchMemberIds.length > 0
-          ? (await this.client
+        isCommunity
+          ? { data: communityMemberProfiles ?? [], error: null }
+          : (await this.client
               .from("profiles")
               .select("id, display_name, username")
-              .in("id", searchMemberIds)
+              .in("id", Array.from(new Set([userId, participant.id])))
               .order("display_name")) as {
               data: Array<{
                 id: string;
@@ -499,8 +500,7 @@ export class SupabaseChatRepository implements ChatRepository {
                 username: string;
               }> | null;
               error: SupabaseResponse<unknown>["error"];
-            }
-          : { data: [], error: null };
+            };
 
       if (searchMemberError) {
         return serviceFailure(

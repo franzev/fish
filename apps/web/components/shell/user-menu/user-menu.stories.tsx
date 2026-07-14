@@ -31,7 +31,14 @@ const realtime: PresenceRealtimeService = {
   startSession: () => ({ markActive: () => {}, stop: () => {} }),
 };
 const reconnectingRealtime: PresenceRealtimeService = {
-  subscribe: (_userId, _onSnapshot, _onPreference, _onRecovery, onStatus) => {
+  subscribe: (
+    _userId,
+    _subjectIds,
+    _onSnapshot,
+    _onPreference,
+    _onRecovery,
+    onStatus
+  ) => {
     const timer = window.setTimeout(() => onStatus?.("disconnected"), 0);
     return () => window.clearTimeout(timer);
   },

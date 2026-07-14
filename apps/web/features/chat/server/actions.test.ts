@@ -109,6 +109,10 @@ function messageRow(overrides: Partial<{
 function createChainStub(value: unknown) {
   const result = { data: value, error: null };
   const builder: Record<string, unknown> = {
+    maybeSingle: vi.fn(async () => ({
+      data: Array.isArray(value) ? value[0] ?? null : value,
+      error: null,
+    })),
     then: (
       resolve: (outcome: typeof result) => unknown,
       reject?: (reason: unknown) => unknown
@@ -122,6 +126,17 @@ function createChainStub(value: unknown) {
 
 function stubChatTables(tables: Record<string, unknown>) {
   fromMock.mockImplementation((table: string) => createChainStub(tables[table] ?? []));
+  rpcMock.mockImplementation(async (name: string) => ({
+    data: name === "list_conversation_member_profiles"
+      ? ((tables.profiles as Array<{ id: string; display_name: string }> | undefined) ?? [])
+          .map((profile) => ({
+            conversation_id: validInput.conversationId,
+            ...profile,
+            username: profile.id,
+          }))
+      : null,
+    error: null,
+  }));
 }
 
 function paginationMessageRow(position: number) {

@@ -5,11 +5,10 @@ import { NotificationList } from "../notification-list";
 import { useNotifications } from "../notification-provider";
 
 export function NotificationsScreen() {
-  const { markLoadedSeen, refresh } = useNotifications();
+  const { refreshAndMarkLoadedSeen } = useNotifications();
   useEffect(() => {
-    void refresh();
-    void markLoadedSeen();
-  }, [markLoadedSeen, refresh]);
+    void refreshAndMarkLoadedSeen();
+  }, [refreshAndMarkLoadedSeen]);
 
   return (
     <div className="mx-auto w-full max-w-content overflow-hidden rounded-card border border-divider bg-surface">

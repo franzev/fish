@@ -27,6 +27,7 @@ const client1 = { email: "client1@fish.dev", password: "fish-client-dev" };
 const coach2Unassigned = { email: "coach2@fish.dev", password: "fish-coach-dev" };
 const client2 = { email: "client2@fish.dev", password: "fish-client-dev" };
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
+const generalChannelId = "22222222-2222-4222-8222-222222222222";
 
 let failures = 0;
 
@@ -49,12 +50,31 @@ async function signInAs(email: string, password: string) {
 async function getCommunityProfileIds(
   supabase: Awaited<ReturnType<typeof signInAs>>,
 ): Promise<Set<string>> {
-  const { data, error } = await supabase
-    .from("message_reads")
-    .select("user_id")
-    .eq("conversation_id", demoCommunityConversationId);
+  const { data, error } = await supabase.rpc("list_channel_member_profiles", {
+    p_channel_id: generalChannelId,
+  });
   if (error) throw error;
-  return new Set((data ?? []).map((row) => row.user_id));
+  const safeRows = data ?? [];
+  report(
+    "DB-03 community directory: exposes display-safe fields only",
+    safeRows.every((row) =>
+      Object.keys(row).every((key) => ["id", "display_name", "username"].includes(key))
+    ),
+  );
+  const { data: conversationRows, error: conversationError } = await supabase.rpc(
+    "list_conversation_member_profiles",
+    { p_conversation_ids: [demoCommunityConversationId] },
+  );
+  if (conversationError) throw conversationError;
+  report(
+    "DB-03 community hydration: bulk projection stays display-safe",
+    (conversationRows ?? []).every((row) =>
+      Object.keys(row).every((key) =>
+        ["conversation_id", "id", "display_name", "username"].includes(key)
+      )
+    ),
+  );
+  return new Set(safeRows.map((row) => row.id));
 }
 
 /** Any 42P17 (recursion) anywhere is a hard failure regardless of which assertion hit it. */
@@ -73,9 +93,8 @@ async function checkClientBoundary(): Promise<void> {
   }
   const ownId = userData.user.id;
 
-  // Direct assignment and community membership both legitimately widen the
-  // profile read. Resolve the direct coach and the community membership set,
-  // then prove no identity outside that exact union is visible.
+  // The base profiles table contains email, so only the user and their direct
+  // coach may be visible. Community identities come from the safe RPC above.
   const { data: assignment, error: assignmentError } = await supabase
     .from("coach_clients")
     .select("coach_id")
@@ -94,20 +113,23 @@ async function checkClientBoundary(): Promise<void> {
     return;
   }
   const rows = data ?? [];
-  const allowedIds = await getCommunityProfileIds(supabase);
-  allowedIds.add(ownId);
-  allowedIds.add(coachId);
+  const communityIds = await getCommunityProfileIds(supabase);
+  const allowedIds = new Set([ownId, coachId]);
   const returnedIds = new Set(rows.map((row) => row.id));
   const exactlyAllowed =
     returnedIds.size === allowedIds.size &&
     Array.from(returnedIds).every((id) => allowedIds.has(id));
   report(
-    "DB-03 client boundary: sees exactly the direct and community profile set",
+    "DB-03 client boundary: base table exposes only direct profiles",
     exactlyAllowed,
     `got ${rows.length} rows; expected ${allowedIds.size}`,
   );
   const leaked = rows.some((row) => !allowedIds.has((row as { id?: string }).id ?? ""));
   report("DB-03 client boundary: no other accounts visible", !leaked, leaked ? "row(s) with a foreign id returned" : undefined);
+  report(
+    "DB-03 client boundary: community-only emails stay private",
+    rows.every((row) => !communityIds.has(row.id) || allowedIds.has(row.id)),
+  );
 }
 
 async function checkCoachBoundary(): Promise<void> {
@@ -132,21 +154,25 @@ async function checkCoachBoundary(): Promise<void> {
     report("DB-03 coach boundary: resolve assigned client ids", false, assignmentError.message);
     return;
   }
-  const allowedIds = await getCommunityProfileIds(supabase);
-  allowedIds.add(userData.user.id);
+  const communityIds = await getCommunityProfileIds(supabase);
+  const allowedIds = new Set([userData.user.id]);
   for (const assignment of assignments ?? []) allowedIds.add(assignment.client_id);
   const returnedIds = new Set(rows.map((row) => row.id));
   const exactlyAllowed =
     returnedIds.size === allowedIds.size &&
     Array.from(returnedIds).every((id) => allowedIds.has(id));
   report(
-    "DB-03 coach boundary: sees exactly the assigned and community profile set",
+    "DB-03 coach boundary: base table exposes only assigned profiles",
     exactlyAllowed,
     `got ${rows.length} rows; expected ${allowedIds.size}`,
   );
   report(
     "DB-03 coach boundary: no profile outside the allowed set",
     rows.every((row) => allowedIds.has(row.id)),
+  );
+  report(
+    "DB-03 coach boundary: community-only emails stay private",
+    rows.every((row) => !communityIds.has(row.id) || allowedIds.has(row.id)),
   );
 }
 

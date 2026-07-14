@@ -30,7 +30,7 @@ export function NotificationBell() {
       </Link>
     );
   }
-  const { state, markLoadedSeen, refresh } = notifications;
+  const { state, refreshAndMarkLoadedSeen } = notifications;
   const label = state.summary.unreadCount > 0
     ? `Notifications, ${state.summary.unreadCount} unread`
     : "Notifications";
@@ -47,8 +47,7 @@ export function NotificationBell() {
           onOpenChange={(nextOpen) => {
             setOpen(nextOpen);
             if (nextOpen) {
-              void refresh();
-              void markLoadedSeen();
+              void refreshAndMarkLoadedSeen();
             }
           }}
         >
