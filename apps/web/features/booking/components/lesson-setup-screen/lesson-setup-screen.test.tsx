@@ -187,8 +187,8 @@ describe("LessonSetupScreen", () => {
     });
     expect(muteButton).not.toHaveTextContent("Mute");
     expect(cameraButton).not.toHaveTextContent("Turn camera off");
-    expect(muteButton).toHaveClass("min-w-control", "px-0");
-    expect(cameraButton).toHaveClass("min-w-control", "px-0");
+    expect(muteButton).toHaveClass("size-control", "min-h-control", "px-0");
+    expect(cameraButton).toHaveClass("size-control", "min-h-control", "px-0");
     expect(screen.getByTestId("lesson-microphone-on-icon")).toBeInTheDocument();
     expect(screen.getByTestId("lesson-camera-on-icon")).toBeInTheDocument();
 
