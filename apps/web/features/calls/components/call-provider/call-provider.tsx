@@ -53,6 +53,11 @@ interface CallContextValue {
     recipientName: string,
     kind: CallKind
   ): Promise<void>;
+  startLessonCall(
+    lessonId: string,
+    coachId: string,
+    coachName: string
+  ): Promise<void>;
   answer(): Promise<void>;
   decline(): Promise<void>;
   cancel(): Promise<void>;
@@ -419,6 +424,51 @@ export function CallProvider({
         counterpartId: recipientId,
         counterpartName: recipientName,
         kind,
+        expiresAt: result.call.expiresAt,
+      });
+      router.push(`/calls/${result.call.id}`);
+    }),
+    startLessonCall: async (lessonId, coachId, coachName) => run(async () => {
+      if (selectHasLiveCall(stateRef.current)) {
+        setNotice("Finish the current call before joining your lesson.");
+        return;
+      }
+      dispatch({
+        type: "permissionRequested",
+        counterpartId: coachId,
+        counterpartName: coachName,
+        kind: "video",
+      });
+      const permission = await requestMediaPermission("video");
+      if (permission !== "granted") {
+        dispatch({
+          type: "permissionDenied",
+          reason: permission === "denied"
+            ? "permissionDenied"
+            : "deviceUnavailable",
+        });
+        setNotice(
+          permission === "denied"
+            ? "Allow camera and microphone access, then join your lesson again."
+            : "We couldn’t find a camera and microphone. Check your devices and try again."
+        );
+        return;
+      }
+      const result = await commands.initiateLesson({
+        lessonId,
+        clientRequestId: crypto.randomUUID(),
+      });
+      if (!result.ok) {
+        dispatch({ type: "callFailed", reason: "providerUnavailable" });
+        setNotice(result.notice);
+        return;
+      }
+      dispatch({
+        type: "outgoingCallCreated",
+        callId: result.call.id,
+        counterpartId: coachId,
+        counterpartName: coachName,
+        kind: "video",
         expiresAt: result.call.expiresAt,
       });
       router.push(`/calls/${result.call.id}`);

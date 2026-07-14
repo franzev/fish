@@ -4,6 +4,7 @@ import type { CallRow } from "@fish/supabase";
 export function toClientCall(row: CallRow): ClientCall {
   return {
     id: row.id,
+    lessonSlotId: row.lesson_slot_id,
     coachId: row.coach_id,
     clientId: row.client_id,
     initiatedBy: row.initiated_by,

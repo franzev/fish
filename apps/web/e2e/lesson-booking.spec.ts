@@ -26,8 +26,10 @@ test("client books a lesson in the saved 24-hour format", async ({ page }) => {
     page.getByRole("link", { name: "Book a lesson" }).click(),
   ]);
   await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
+  await expect(page.getByRole("table").first()).toBeVisible();
+  await expect.poll(() => page.locator("table button").count()).toBeGreaterThan(10);
 
-  const time = page.getByRole("button", { name: /^\d{2}:\d{2}$/ }).first();
+  const time = page.locator("table button").first();
   const selectedTime = await time.textContent();
   await time.click();
   await page.getByRole("button", { name: "Book lesson" }).click();
@@ -40,4 +42,20 @@ test("client books a lesson in the saved 24-hour format", async ({ page }) => {
   await page.getByRole("link", { name: "Back to home" }).click();
   await expect(page.getByText("Your next lesson")).toBeVisible();
   await expect(page.getByRole("link", { name: "Book a lesson" })).toHaveCount(0);
+
+  const setup = page.getByRole("link", {
+    name: /Check camera and microphone|Join lesson/,
+  });
+  await expect(setup).toBeVisible();
+  await setup.click();
+  await expect(page).toHaveURL(/\/book\/[^/]+\/setup$/);
+  await expect(page.getByRole("heading", { name: "Lesson setup" })).toBeVisible();
+  await expect(page.getByLabel("Your camera preview")).toBeAttached();
+  await expect(page.getByText(/^Lesson with /i)).toBeVisible();
+  await expect(page.getByText("Connection is ready")).toBeVisible({
+    timeout: 20_000,
+  });
+
+  await page.getByRole("link", { name: "Close lesson setup" }).click();
+  await expect(page).toHaveURL(/\/home$/);
 });

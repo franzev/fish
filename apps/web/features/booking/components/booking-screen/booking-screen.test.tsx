@@ -33,11 +33,11 @@ describe("BookingScreen", () => {
     render(<BookingScreen {...props} bookAction={action} />);
 
     expect(screen.getByRole("heading", { name: "Book your lesson" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "18:30" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "18:30" })).toHaveLength(2);
     expect(screen.queryByText("6:30 PM")).not.toBeInTheDocument();
     expect(screen.getByText(/Times shown in Asia\/Manila \(UTC\+8\)/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "18:30" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "18:30" })[0]!);
     fireEvent.click(screen.getByRole("button", { name: "Book lesson" }));
     await waitFor(() => expect(action).toHaveBeenCalled());
     const submitted = action.mock.calls[0]?.[1];

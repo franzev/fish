@@ -281,7 +281,7 @@ async function backfillClientProfile(clientId: string, level: string): Promise<v
   if (localeError) throw localeError;
 }
 
-/** Publishes two fixed 50-minute lesson times on each of the next ten weekdays. */
+/** Publishes the reference weekly schedule across the next fourteen calendar days. */
 async function seedLessonSlots(coachId: string): Promise<void> {
   const { error: deleteError } = await supabase
     .from("lesson_slots")
@@ -289,10 +289,48 @@ async function seedLessonSlots(coachId: string): Promise<void> {
     .eq("coach_id", coachId);
   if (deleteError) throw deleteError;
 
-  const localTimes = [
-    { hour: 9, minute: 30 },
-    { hour: 18, minute: 30 },
-  ];
+  const localTimesByWeekday: Record<number, Array<{ hour: number; minute: number }>> = {
+    0: [
+      { hour: 8, minute: 0 },
+      { hour: 9, minute: 30 },
+      { hour: 11, minute: 0 },
+      { hour: 13, minute: 0 },
+      { hour: 16, minute: 0 },
+      { hour: 18, minute: 30 },
+    ],
+    1: [
+      { hour: 11, minute: 0 },
+      { hour: 16, minute: 0 },
+    ],
+    2: [],
+    3: [
+      { hour: 8, minute: 0 },
+      { hour: 9, minute: 30 },
+      { hour: 11, minute: 0 },
+      { hour: 14, minute: 30 },
+      { hour: 16, minute: 0 },
+      { hour: 18, minute: 30 },
+      { hour: 20, minute: 0 },
+    ],
+    4: [
+      { hour: 8, minute: 0 },
+      { hour: 9, minute: 30 },
+      { hour: 11, minute: 0 },
+      { hour: 16, minute: 0 },
+    ],
+    5: [
+      { hour: 13, minute: 0 },
+      { hour: 14, minute: 30 },
+      { hour: 18, minute: 30 },
+      { hour: 20, minute: 0 },
+    ],
+    6: [
+      { hour: 9, minute: 30 },
+      { hour: 11, minute: 0 },
+      { hour: 18, minute: 30 },
+      { hour: 20, minute: 0 },
+    ],
+  };
   const slots: Array<{
     coach_id: string;
     starts_at: string;
@@ -302,13 +340,12 @@ async function seedLessonSlots(coachId: string): Promise<void> {
   const cursor = new Date();
   cursor.setUTCHours(0, 0, 0, 0);
 
-  for (let daysAdded = 0, offset = 1; daysAdded < 10; offset += 1) {
+  for (let offset = 1; offset <= 14; offset += 1) {
     const date = new Date(cursor);
     date.setUTCDate(cursor.getUTCDate() + offset);
     const weekday = date.getUTCDay();
-    if (weekday === 0 || weekday === 6) continue;
 
-    for (const time of localTimes) {
+    for (const time of localTimesByWeekday[weekday] ?? []) {
       // Asia/Manila is UTC+8 year-round. Seed timestamps are stored as UTC;
       // the product formats them in each client's saved timezone.
       const startsAt = new Date(Date.UTC(
@@ -325,7 +362,6 @@ async function seedLessonSlots(coachId: string): Promise<void> {
         duration_minutes: 50,
       });
     }
-    daysAdded += 1;
   }
 
   const { error } = await supabase.from("lesson_slots").insert(slots);

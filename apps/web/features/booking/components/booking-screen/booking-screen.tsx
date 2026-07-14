@@ -7,7 +7,7 @@ import { Avatar } from "@/features/chat";
 import { cn } from "@/lib/utils";
 import { IconCheck, IconX } from "@tabler/icons-react";
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useState } from "react";
 import type {
   BookLessonAction,
   BookingCoach,
@@ -17,9 +17,9 @@ import {
   formatLessonDate,
   formatLessonTime,
   formatTimeZoneLabel,
-  lessonDateKey,
 } from "../../format";
 import type { LessonSlot } from "@/lib/services";
+import { AvailabilityTable } from "../availability-table";
 
 interface BookingScreenProps extends Omit<BookingClientContext, "clientId"> {
   coach: BookingCoach | null;
@@ -40,16 +40,6 @@ export function BookingScreen({
   const [selectedId, setSelectedId] = useState("");
   const [state, formAction, pending] = useActionState(bookAction, { status: "idle" });
   const selected = slots.find((slot) => slot.id === selectedId) ?? null;
-  const grouped = useMemo(() => {
-    const groups = new Map<string, LessonSlot[]>();
-    for (const slot of slots) {
-      const key = lessonDateKey(slot.startsAt, timeZone);
-      const group = groups.get(key) ?? [];
-      group.push(slot);
-      groups.set(key, group);
-    }
-    return [...groups.values()];
-  }, [slots, timeZone]);
 
   return (
     <div className="flex min-h-full w-full flex-col bg-bg">
@@ -113,35 +103,14 @@ export function BookingScreen({
                 <p className="mt-xs text-body">Available times with {coach.displayName}</p>
               </div>
 
-              <div className="flex flex-col gap-xl">
-                {grouped.map((group) => {
-                  const first = group[0];
-                  if (!first) return null;
-                  const dateLabel = formatLessonDate(first.startsAt, { locale, timeZone });
-                  return (
-                    <section key={lessonDateKey(first.startsAt, timeZone)} aria-label={dateLabel}>
-                      <h3 className="mb-sm text-ui font-semibold text-foreground">{dateLabel}</h3>
-                      <div className="flex flex-wrap gap-xs">
-                        {group.map((slot) => {
-                          const active = slot.id === selectedId;
-                          return (
-                            <Button
-                              key={slot.id}
-                              type="button"
-                              variant="secondary"
-                              aria-pressed={active}
-                              className={cn(active && "bg-surface-3 font-semibold")}
-                              onClick={() => setSelectedId(slot.id)}
-                            >
-                              {formatLessonTime(slot.startsAt, timeFormatPref, { locale, timeZone })}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
+              <AvailabilityTable
+                slots={slots}
+                selectedId={selectedId}
+                locale={locale}
+                timeZone={timeZone}
+                timeFormatPref={timeFormatPref}
+                onSelect={setSelectedId}
+              />
 
               <p className="mt-xl text-ui-sm text-muted">
                 Times shown in {formatTimeZoneLabel(timeZone, slots[0]?.startsAt ?? new Date())}.

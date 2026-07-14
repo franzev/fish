@@ -31,7 +31,8 @@ function query(data: unknown) {
 
 describe("SupabaseLessonRepository", () => {
   it("lists and maps available slots", async () => {
-    const from = vi.fn(() => query([row]));
+    const lessonQuery = query([row]);
+    const from = vi.fn(() => lessonQuery);
     const repository = new SupabaseLessonRepository({ from } as unknown as AppSupabaseClient);
     const result = await repository.listAvailable("coach-1", "2026-07-14T00:00:00.000Z");
     expect(result).toEqual({
@@ -47,6 +48,7 @@ describe("SupabaseLessonRepository", () => {
       }],
     });
     expect(from).toHaveBeenCalledWith("lesson_slots");
+    expect(lessonQuery.limit).toHaveBeenCalledWith(120);
   });
 
   it("returns the earliest active booking for the client", async () => {

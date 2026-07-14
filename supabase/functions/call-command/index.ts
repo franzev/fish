@@ -23,6 +23,12 @@ const commandSchema = z.discriminatedUnion("action", [
     kind: z.enum(["audio", "video"]),
     clientRequestId: z.string().trim().min(1).max(128),
   }),
+  z.object({
+    action: z.literal("initiateLesson"),
+    lessonId: z.uuid(),
+    clientRequestId: z.string().trim().min(1).max(128),
+  }),
+  z.object({ action: z.literal("checkMedia"), lessonId: z.uuid() }),
   z.object({ action: z.literal("accept"), callId: z.uuid() }),
   z.object({ action: z.literal("reject"), callId: z.uuid() }),
   z.object({ action: z.literal("cancel"), callId: z.uuid() }),
@@ -32,6 +38,7 @@ const commandSchema = z.discriminatedUnion("action", [
 
 type CallRow = {
   id: string;
+  lesson_slot_id: string | null;
   coach_id: string;
   client_id: string;
   initiated_by: string;
@@ -67,6 +74,7 @@ function unwrapCall(value: unknown): CallRow | null {
 function clientCall(call: CallRow) {
   return {
     id: call.id,
+    lessonSlotId: call.lesson_slot_id,
     coachId: call.coach_id,
     clientId: call.client_id,
     initiatedBy: call.initiated_by,
@@ -101,6 +109,16 @@ function rpcError(message: string): Response {
   if (normalized.includes("already finished")) {
     return calmError("call_already_finished", "This call has ended.", 409);
   }
+  if (normalized.includes("lesson call is too early")) {
+    return calmError(
+      "lesson_not_open",
+      "Your lesson will be ready to join 10 minutes before it starts.",
+      409,
+    );
+  }
+  if (normalized.includes("lesson call has ended")) {
+    return calmError("lesson_finished", "This lesson has ended.", 409);
+  }
   if (normalized.includes("not allowed") || normalized.includes("not found")) {
     return calmError(
       "call_not_allowed",
@@ -122,7 +140,15 @@ function rpcError(message: string): Response {
   );
 }
 
-async function connectionFor(call: CallRow, userId: string) {
+async function connectionForRoom(
+  roomName: string,
+  userId: string,
+  options: {
+    canSubscribe: boolean;
+    ttl: "2m" | "5m";
+    sources: TrackSource[];
+  }
+) {
   const serverUrl = Deno.env.get("LIVEKIT_URL")?.trim();
   const apiKey = Deno.env.get("LIVEKIT_API_KEY")?.trim();
   const apiSecret = Deno.env.get("LIVEKIT_API_SECRET")?.trim();
@@ -130,20 +156,28 @@ async function connectionFor(call: CallRow, userId: string) {
 
   const token = new AccessToken(apiKey, apiSecret, {
     identity: userId,
-    ttl: "5m",
+    ttl: options.ttl,
   });
   token.addGrant({
     roomJoin: true,
-    room: call.provider_room_name,
-    canSubscribe: true,
+    room: roomName,
+    canSubscribe: options.canSubscribe,
     canPublish: true,
     canPublishData: false,
-    canPublishSources: call.kind === "video"
-      ? [TrackSource.MICROPHONE, TrackSource.CAMERA]
-      : [TrackSource.MICROPHONE],
+    canPublishSources: options.sources,
   });
 
   return { serverUrl, participantToken: await token.toJwt() };
+}
+
+function connectionFor(call: CallRow, userId: string) {
+  return connectionForRoom(call.provider_room_name, userId, {
+    canSubscribe: true,
+    ttl: "5m",
+    sources: call.kind === "video"
+      ? [TrackSource.MICROPHONE, TrackSource.CAMERA]
+      : [TrackSource.MICROPHONE],
+  });
 }
 
 Deno.serve(async (request) => {
@@ -180,8 +214,50 @@ Deno.serve(async (request) => {
   }
 
   const command = parsed.data;
+  if (command.action === "checkMedia") {
+    const { error: authorizationError } = await caller.rpc(
+      "authorize_lesson_media_check",
+      { p_lesson_slot_id: command.lessonId },
+    );
+    const authorizationMessage = authorizationError?.message.toLowerCase() ?? "";
+    if (authorizationMessage.includes("rate limited")) {
+      return calmError(
+        "media_check_rate_limited",
+        "Pause for a moment before checking the connection again.",
+        429,
+      );
+    }
+    if (authorizationMessage.includes("has ended")) {
+      return calmError("media_check_finished", "This lesson has ended.", 409);
+    }
+    if (authorizationError) {
+      return calmError(
+        "media_check_not_allowed",
+        "This lesson is no longer available for a setup check.",
+        403,
+      );
+    }
+    const roomName = `check_${user.id.replaceAll("-", "")}_${
+      crypto.randomUUID().replaceAll("-", "")
+    }`;
+    const connection = await connectionForRoom(roomName, user.id, {
+      canSubscribe: false,
+      ttl: "2m",
+      sources: [TrackSource.MICROPHONE, TrackSource.CAMERA],
+    });
+    if (!connection) {
+      return calmError(
+        "media_unavailable",
+        "We couldn’t check the call connection right now. Your camera and microphone check still works.",
+        503,
+      );
+    }
+    return Response.json({ connection }, { headers: jsonHeaders });
+  }
   const rpcName = command.action === "initiate"
     ? "initiate_call"
+    : command.action === "initiateLesson"
+    ? "initiate_lesson_call"
     : command.action === "accept"
     ? "accept_call"
     : command.action === "reject"
@@ -195,6 +271,11 @@ Deno.serve(async (request) => {
     ? {
       p_recipient_id: command.recipientId,
       p_kind: command.kind,
+      p_client_request_id: command.clientRequestId,
+    }
+    : command.action === "initiateLesson"
+    ? {
+      p_lesson_slot_id: command.lessonId,
       p_client_request_id: command.clientRequestId,
     }
     : { p_call_id: command.callId };

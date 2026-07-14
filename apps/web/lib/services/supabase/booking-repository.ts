@@ -46,7 +46,7 @@ export class SupabaseLessonRepository implements LessonRepository {
         .is("booked_by_client_id", null)
         .gt("starts_at", afterIso)
         .order("starts_at", { ascending: true })
-        .limit(40)) as SupabaseResponse<LessonSlotRow[]>;
+        .limit(120)) as SupabaseResponse<LessonSlotRow[]>;
 
       if (error) {
         return readFailure(

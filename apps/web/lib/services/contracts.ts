@@ -197,6 +197,9 @@ export interface ChatRepository {
     channelSlug?: string,
     conversationId?: string
   ): Promise<ServiceResult<ClientChatData | null>>;
+  getConversationForCall(
+    callId: string
+  ): Promise<ServiceResult<ClientChatData | null>>;
   getUnreadSummary(
     conversationId: string
   ): Promise<ServiceResult<ClientChatUnreadSummary>>;
@@ -530,6 +533,7 @@ export type ClientCallStatus =
 
 export interface ClientCall {
   id: string;
+  lessonSlotId: string | null;
   coachId: string;
   clientId: string;
   initiatedBy: string;
@@ -553,12 +557,21 @@ export type CallCommandResult =
   | { ok: true; call: ClientCall; connection?: CallConnection }
   | { ok: false; code: string; notice: string };
 
+export type MediaCheckCommandResult =
+  | { ok: true; connection: CallConnection }
+  | { ok: false; code: string; notice: string };
+
 export interface CallCommandService {
   initiate(input: {
     recipientId: string;
     kind: "audio" | "video";
     clientRequestId: string;
   }): Promise<CallCommandResult>;
+  initiateLesson(input: {
+    lessonId: string;
+    clientRequestId: string;
+  }): Promise<CallCommandResult>;
+  checkMedia(lessonId: string): Promise<MediaCheckCommandResult>;
   accept(callId: string): Promise<CallCommandResult>;
   reject(callId: string): Promise<CallCommandResult>;
   cancel(callId: string): Promise<CallCommandResult>;

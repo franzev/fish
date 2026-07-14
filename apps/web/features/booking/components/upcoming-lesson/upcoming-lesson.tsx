@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import type { UpcomingLessonData } from "../../contracts";
-import { formatLessonDate, formatLessonTime, formatTimeZoneLabel, isLessonJoinable } from "../../format";
-import { LessonCallAction } from "../lesson-call-action";
+import { formatLessonDate, formatLessonTime, formatTimeZoneLabel } from "../../format";
+import { LessonSetupAction } from "../lesson-setup-action";
 
 interface UpcomingLessonProps {
   data: UpcomingLessonData;
@@ -9,7 +9,6 @@ interface UpcomingLessonProps {
 }
 
 export function UpcomingLesson({ data, now = new Date() }: UpcomingLessonProps) {
-  const joinable = isLessonJoinable(data.lesson, now);
   return (
     <Card>
       <p className="text-ui-sm text-muted">Your next lesson</p>
@@ -23,9 +22,12 @@ export function UpcomingLesson({ data, now = new Date() }: UpcomingLessonProps) 
       <p className="mt-sm text-ui-sm text-muted">
         50 minutes · {formatTimeZoneLabel(data.timeZone, data.lesson.startsAt)}
       </p>
-      {joinable && (
-        <LessonCallAction coachId={data.coach.id} coachName={data.coach.displayName} />
-      )}
+      <LessonSetupAction
+        lessonId={data.lesson.id}
+        startsAt={data.lesson.startsAt}
+        endsAt={data.lesson.endsAt}
+        initialNow={now.toISOString()}
+      />
     </Card>
   );
 }

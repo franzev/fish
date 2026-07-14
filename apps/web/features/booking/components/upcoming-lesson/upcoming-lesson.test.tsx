@@ -24,15 +24,23 @@ const data = {
 };
 
 describe("UpcomingLesson", () => {
-  it("keeps the call action hidden before the join window", () => {
+  it("offers one private setup action before the join window", () => {
     render(<UpcomingLesson data={data} now={new Date("2026-07-21T10:19:59.000Z")} />);
     expect(screen.getByText(/18:30 with Patricia/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Join lesson" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Check camera and microphone" }))
+      .toHaveAttribute("href", "/book/slot-1/setup");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
   it("shows one join action when the lesson window opens", () => {
     render(<UpcomingLesson data={data} now={new Date("2026-07-21T10:20:00.000Z")} />);
-    expect(screen.getByRole("button", { name: "Join lesson" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Join lesson" }))
+      .toHaveAttribute("href", "/book/slot-1/setup");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+
+  it("removes the action after the lesson ends", () => {
+    render(<UpcomingLesson data={data} now={new Date("2026-07-21T11:20:00.000Z")} />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });
