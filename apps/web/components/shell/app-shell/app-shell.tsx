@@ -234,7 +234,7 @@ export function AppShell({
           className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center"
         >
           <Image
-            src="/logo.svg"
+            src="/icon.svg"
             alt="FISH"
             width={40}
             height={40}
