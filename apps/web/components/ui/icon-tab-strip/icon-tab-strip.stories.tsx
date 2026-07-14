@@ -49,6 +49,7 @@ export const StickerStyles: Story = {
     items: stickerItems,
     selectionMode: "filter",
     value: "all",
+    onValueChange: () => undefined,
   },
 };
 
@@ -61,7 +62,15 @@ function IconTabStripPreview(args: ComponentProps<typeof IconTabStrip>) {
     <div className="w-emoji-panel overflow-hidden rounded-card bg-surface">
       <Tabs.Root defaultValue={args.items[0]?.value}>
         <div className="min-h-control bg-surface-2" />
-        <IconTabStrip {...args} value={value} onValueChange={setValue} />
+        {args.selectionMode === "filter" ? (
+          <IconTabStrip
+            {...args}
+            value={value ?? ""}
+            onValueChange={setValue}
+          />
+        ) : (
+          <IconTabStrip {...args} />
+        )}
       </Tabs.Root>
     </div>
   );

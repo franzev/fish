@@ -11,14 +11,27 @@ export interface IconTabStripItem {
   Icon: TablerIcon;
 }
 
-interface IconTabStripProps {
+interface IconTabStripBaseProps {
   items: readonly IconTabStripItem[];
   ariaLabel: string;
   className?: string;
-  selectionMode?: "tabs" | "filter";
-  value?: string;
-  onValueChange?: (value: string) => void;
 }
+
+interface IconTabStripTabsProps extends IconTabStripBaseProps {
+  selectionMode?: "tabs";
+  value?: never;
+  onValueChange?: never;
+}
+
+interface IconTabStripFilterProps extends IconTabStripBaseProps {
+  selectionMode: "filter";
+  value: string;
+  onValueChange: (value: string) => void;
+}
+
+export type IconTabStripProps =
+  | IconTabStripTabsProps
+  | IconTabStripFilterProps;
 
 /** A bottom-aligned icon strip for compact categories and filters. Tab mode
  * must be rendered inside a Tabs.Root; filter mode uses pressed buttons.
