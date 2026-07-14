@@ -112,6 +112,11 @@ describe("CallScreen", () => {
     expect(
       screen.getByRole("button", { name: "Turn camera off" })
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "End call" })).toHaveClass(
+      "min-h-control",
+      "min-w-control",
+      "rounded-control"
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Audio settings" }));
 

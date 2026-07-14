@@ -284,11 +284,12 @@ export function CallScreen({ callId }: { callId: string }) {
               )}
               <Button
                 aria-label="End call"
+                variant="secondary"
                 loading={busy}
                 onClick={() => void end()}
-                className="min-w-control-primary rounded-pill bg-error px-0 hover:bg-error active:bg-error"
+                className="min-w-control bg-error px-0 text-on-primary hover:bg-error active:bg-error"
               >
-                <IconPhoneOff size={24} aria-hidden="true" />
+                <IconPhoneOff size={20} aria-hidden="true" />
               </Button>
             </div>
           </div>
