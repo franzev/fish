@@ -1,0 +1,32 @@
+[
+  {
+    "name": "hydrateUnreadFeed",
+    "events": [{ "type": "hydrate" }],
+    "expected": { "itemIds": ["action", "direct"], "unreadCount": 2, "needsRefresh": false }
+  },
+  {
+    "name": "markAllReadSnapshot",
+    "events": [
+      { "type": "hydrate" },
+      { "type": "optimisticOperation", "operationKind": "markAllRead", "throughChangeSeq": 10 }
+    ],
+    "expected": { "itemIds": ["action", "direct"], "unreadCount": 1, "unreadItemIds": ["direct"] }
+  },
+  {
+    "name": "unknownRealtimeChangeRequestsRefresh",
+    "events": [
+      { "type": "hydrate" },
+      { "type": "changesApplied", "notificationId": "not-loaded", "changeSeq": 14 }
+    ],
+    "expected": { "needsRefresh": true, "latestChangeSeq": 14 }
+  },
+  {
+    "name": "failedOperationRestoresSnapshot",
+    "events": [
+      { "type": "hydrate" },
+      { "type": "optimisticOperation", "operationKind": "read", "notificationIds": ["action"], "throughChangeSeq": 12 },
+      { "type": "operationFailed" }
+    ],
+    "expected": { "unreadCount": 2, "unreadItemIds": ["action", "direct"], "needsRefresh": true }
+  }
+]

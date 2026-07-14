@@ -8,6 +8,8 @@
     "./chat": "./src/chat.ts",
     "./chat-state": "./src/chat-state/index.ts",
     "./call-state": "./src/call-state/index.ts",
+    "./notification-state": "./src/notification-state/index.ts",
+    "./notification-state/fixtures/notification-state-vectors.json": "./src/notification-state/fixtures/notification-state-vectors.json",
     "./roles": "./src/roles.ts"
   },
   "scripts": {
