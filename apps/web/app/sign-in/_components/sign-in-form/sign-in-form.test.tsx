@@ -63,6 +63,20 @@ describe("SignInForm", () => {
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
+  it("prefills credentials supplied by the server", () => {
+    render(
+      <SignInForm
+        defaultCredentials={{
+          email: "client1@fish.dev",
+          password: "fish-client-dev",
+        }}
+      />
+    );
+
+    expect(screen.getByLabelText("Email")).toHaveValue("client1@fish.dev");
+    expect(screen.getByLabelText("Password")).toHaveValue("fish-client-dev");
+  });
+
   it("adds autofill and enter-key hints that reduce typing effort", () => {
     render(<SignInForm />);
     expect(screen.getByLabelText("Email")).toHaveAttribute(

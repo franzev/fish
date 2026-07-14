@@ -20,13 +20,20 @@ import { FormEvent, useState } from "react";
    showing an error, so sign-in never scolds, it just routes. Bad credentials
    never reveal which field is wrong (T-02-19). */
 export interface SignInFormProps {
+  defaultCredentials?: {
+    email: string;
+    password: string;
+  };
   showGoogleAuth?: boolean;
 }
 
-export function SignInForm({ showGoogleAuth = false }: SignInFormProps) {
+export function SignInForm({
+  defaultCredentials,
+  showGoogleAuth = false,
+}: SignInFormProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(defaultCredentials?.email ?? "");
+  const [password, setPassword] = useState(defaultCredentials?.password ?? "");
   const [passwordError, setPasswordError] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);

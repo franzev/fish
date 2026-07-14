@@ -1,5 +1,6 @@
 import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
 import {
+  getDevLoginCredentials,
   isGoogleAuthAvailable,
   redirectIfSignedIn,
 } from "@/features/auth/server";
@@ -16,7 +17,10 @@ export default async function SignInPage() {
       message="Your conversations are right where you left them. Continue when you're ready."
       illustrationSrc="/illustrations/sign-in-fish-bowl.svg"
     >
-      <SignInForm showGoogleAuth={isGoogleAuthAvailable()} />
+      <SignInForm
+        defaultCredentials={getDevLoginCredentials()}
+        showGoogleAuth={isGoogleAuthAvailable()}
+      />
     </AuthSplitLayout>
   );
 }
