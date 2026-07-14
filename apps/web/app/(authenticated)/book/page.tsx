@@ -11,7 +11,6 @@ export default async function BookingPage() {
     <BookingScreen
       coach={data.coach}
       slots={data.slots}
-      upcomingLesson={data.upcomingLesson}
       locale={data.locale}
       timeZone={data.timeZone}
       timeFormatPref={data.timeFormatPref}

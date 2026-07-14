@@ -15,6 +15,7 @@ import type {
   BookingPageData,
   UpcomingLessonData,
 } from "../contracts";
+import { getLessonJoinWindowMinutes } from "./join-window";
 
 function validTimeZone(value: string | null): string {
   if (!value) return "UTC";
@@ -92,14 +93,11 @@ export async function getBookingPageData(
   const context = await clientContext(services, profile.userId);
   const coach = await coachForClient(services, profile.userId);
   if (!coach) {
-    return { role: "client", coach: null, slots: [], upcomingLesson: null, ...context };
+    return { role: "client", coach: null, slots: [], ...context };
   }
-  const [slots, upcomingLesson] = await Promise.all([
-    services.database.lessons.listAvailable(coach.id),
-    loadUpcoming(services, profile.userId),
-  ]);
+  const slots = await services.database.lessons.listAvailable(coach.id);
   if (!slots.ok) throw slots.error;
-  return { role: "client", coach, slots: slots.data, upcomingLesson, ...context };
+  return { role: "client", coach, slots: slots.data, ...context };
 }
 
 export async function getBookingConfirmationData(
@@ -118,7 +116,13 @@ export async function getBookingConfirmationData(
   );
   if (!lesson.ok) throw lesson.error;
   const coach = lesson.data ? await coachById(services, lesson.data.coachId) : null;
-  return { role: "client", coach, lesson: lesson.data, ...context };
+  return {
+    role: "client",
+    coach,
+    lesson: lesson.data,
+    joinWindowMinutes: getLessonJoinWindowMinutes(),
+    ...context,
+  };
 }
 
 export async function getUpcomingLessonData(
@@ -134,5 +138,12 @@ export async function getUpcomingLessonData(
     clientContext(services, profile.userId),
     coachById(services, lesson.coachId),
   ]);
-  return coach ? { coach, lesson, ...context } : null;
+  return coach
+    ? {
+        coach,
+        lesson,
+        joinWindowMinutes: getLessonJoinWindowMinutes(),
+        ...context,
+      }
+    : null;
 }

@@ -21,7 +21,6 @@ const props = {
     avatarUrl: null,
   },
   slots,
-  upcomingLesson: null,
   locale: "en-US",
   timeZone: "Asia/Manila",
   timeFormatPref: "24h" as const,
@@ -56,20 +55,9 @@ describe("BookingScreen", () => {
     expect(await screen.findByText("Choose an available lesson time.")).toBeInTheDocument();
   });
 
-  it("shows the existing lesson instead of another slot picker", () => {
-    render(
-      <BookingScreen
-        {...props}
-        slots={[]}
-        upcomingLesson={{ ...slots[0]!, bookedByClientId: "client-1", bookedAt: "2026-07-14T00:00:00.000Z" }}
-        bookAction={vi.fn()}
-      />
-    );
-    expect(screen.getByRole("heading", { name: "Your lesson is already booked" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Book lesson" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View your lesson" })).toHaveAttribute(
-      "href",
-      `/book/confirmed/${slots[0]?.id}`
-    );
+  it("keeps the slot picker available for additional bookings", () => {
+    render(<BookingScreen {...props} bookAction={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Choose a time" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Book lesson" })).toBeInTheDocument();
   });
 });

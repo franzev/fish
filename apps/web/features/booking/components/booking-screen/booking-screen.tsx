@@ -5,7 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/features/chat";
 import { cn } from "@/lib/utils";
-import { IconCheck, IconX } from "@tabler/icons-react";
+import { IconX } from "@tabler/icons-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import type {
@@ -24,14 +24,12 @@ import { AvailabilityTable } from "../availability-table";
 interface BookingScreenProps extends Omit<BookingClientContext, "clientId"> {
   coach: BookingCoach | null;
   slots: LessonSlot[];
-  upcomingLesson: LessonSlot | null;
   bookAction: BookLessonAction;
 }
 
 export function BookingScreen({
   coach,
   slots,
-  upcomingLesson,
   locale,
   timeZone,
   timeFormatPref,
@@ -55,43 +53,21 @@ export function BookingScreen({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {!coach || upcomingLesson || slots.length === 0 ? (
+        {!coach || slots.length === 0 ? (
           <main className="mx-auto flex min-h-full w-full max-w-content flex-col justify-center px-page py-xl">
-            {upcomingLesson && coach ? (
-              <Card>
-                <div className="flex items-start gap-sm">
-                  <IconCheck className="mt-3xs shrink-0 text-success" size={24} aria-hidden="true" />
-                  <div>
-                    <h2 className="text-heading-sm">Your lesson is already booked</h2>
-                    <p className="mt-xs text-body">
-                      {formatLessonDate(upcomingLesson.startsAt, { locale, timeZone })} at{" "}
-                      {formatLessonTime(upcomingLesson.startsAt, timeFormatPref, { locale, timeZone })}
-                      {" "}with {coach.displayName}.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/book/confirmed/${upcomingLesson.id}`}
-                  className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}
-                >
-                  View your lesson
-                </Link>
-              </Card>
-            ) : (
-              <Card>
-                <h2 className="text-heading-sm">
-                  {coach ? "No lesson times are available yet" : "Booking is not ready yet"}
-                </h2>
-                <p className="mt-xs text-body">
-                  {coach
-                    ? `${coach.displayName} will add more times soon.`
-                    : "Your coach connection is still being prepared."}
-                </p>
-                <Link href="/home" className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}>
-                  Back to home
-                </Link>
-              </Card>
-            )}
+            <Card>
+              <h2 className="text-heading-sm">
+                {coach ? "No lesson times are available yet" : "Booking is not ready yet"}
+              </h2>
+              <p className="mt-xs text-body">
+                {coach
+                  ? `${coach.displayName} will add more times soon.`
+                  : "Your coach connection is still being prepared."}
+              </p>
+              <Link href="/home" className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}>
+                Back to home
+              </Link>
+            </Card>
           </main>
         ) : (
           <main className="mx-auto flex w-full max-w-marketing flex-col gap-xl px-page py-xl lg:flex-row lg:items-start lg:gap-2xl">

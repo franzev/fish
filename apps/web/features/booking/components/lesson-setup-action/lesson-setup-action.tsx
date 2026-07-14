@@ -10,6 +10,7 @@ interface LessonSetupActionProps {
   lessonId: string;
   startsAt: string;
   endsAt: string;
+  joinWindowMinutes: number;
   initialNow: string;
 }
 
@@ -17,6 +18,7 @@ export function LessonSetupAction({
   lessonId,
   startsAt,
   endsAt,
+  joinWindowMinutes,
   initialNow,
 }: LessonSetupActionProps) {
   const offset = useRef(0);
@@ -31,7 +33,11 @@ export function LessonSetupAction({
   }, [initialNow]);
 
   if (now.getTime() >= new Date(endsAt).getTime()) return null;
-  const joinable = isLessonJoinable({ startsAt, endsAt }, now);
+  const joinable = isLessonJoinable(
+    { startsAt, endsAt },
+    joinWindowMinutes,
+    now
+  );
 
   return (
     <Link

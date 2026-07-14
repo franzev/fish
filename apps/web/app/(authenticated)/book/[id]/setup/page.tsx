@@ -19,6 +19,7 @@ export default async function LessonSetupPage({
       locale={data.locale}
       timeZone={data.timeZone}
       timeFormatPref={data.timeFormatPref}
+      joinWindowMinutes={data.joinWindowMinutes}
       initialNow={new Date().toISOString()}
     />
   );

@@ -26,6 +26,7 @@ export function UpcomingLesson({ data, now = new Date() }: UpcomingLessonProps) 
         lessonId={data.lesson.id}
         startsAt={data.lesson.startsAt}
         endsAt={data.lesson.endsAt}
+        joinWindowMinutes={data.joinWindowMinutes}
         initialNow={now.toISOString()}
       />
     </Card>

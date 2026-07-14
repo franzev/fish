@@ -88,7 +88,7 @@ describe("ClientHomePage", () => {
     ).toHaveAttribute("href", "/book");
   });
 
-  it("shows the upcoming lesson instead of another booking action", async () => {
+  it("shows the next lesson and a quieter action to book another", async () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
       firstName: "Alex",
@@ -98,7 +98,8 @@ describe("ClientHomePage", () => {
     getUpcomingLessonDataMock.mockResolvedValueOnce({ lesson: { id: "lesson-1" } });
     render(await ClientHomePage());
     expect(screen.getByText("Your next lesson card")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Book a lesson" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book another lesson" }))
+      .toHaveAttribute("href", "/book");
   });
 
   it("keeps the assigned call as the only forward action and avoids choice lists", () => {

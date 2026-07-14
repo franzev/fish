@@ -2033,7 +2033,11 @@ export type Database = {
         }
       }
       initiate_lesson_call: {
-        Args: { p_client_request_id: string; p_lesson_slot_id: string }
+        Args: {
+          p_client_request_id: string
+          p_join_window_minutes: number
+          p_lesson_slot_id: string
+        }
         Returns: {
           accepted_at: string | null
           client_id: string

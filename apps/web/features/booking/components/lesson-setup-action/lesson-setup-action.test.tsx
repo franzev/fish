@@ -13,6 +13,7 @@ describe("LessonSetupAction", () => {
         lessonId="slot-1"
         startsAt="2026-07-21T10:30:00.000Z"
         endsAt="2026-07-21T11:20:00.000Z"
+        joinWindowMinutes={10}
         initialNow="2026-07-21T10:19:59.000Z"
       />
     );

@@ -25,15 +25,21 @@ describe("scheduled lesson media boundary", () => {
     expect(migration).toContain(") >= 10 then");
   });
 
-  it("authorizes real calls through the booking and server-side join window", () => {
-    const source = readFileSync(
-      join(repositoryRoot, "supabase/migrations/0038_lesson_calls.sql"),
+  it("authorizes real calls through the booking and environment join window", () => {
+    const migration = readFileSync(
+      join(repositoryRoot, "supabase/migrations/0041_multiple_lesson_bookings.sql"),
       "utf8"
     );
-    expect(source).toContain("references public.lesson_slots (id)");
-    expect(source).toContain("v_user_id not in (v_slot.coach_id, v_slot.booked_by_client_id)");
-    expect(source).toContain("v_slot.starts_at - interval '10 minutes'");
-    expect(source).toContain("now() >= v_slot.ends_at");
-    expect(source).toContain("public.initiate_call(");
+    const command = readFileSync(
+      join(repositoryRoot, "supabase/functions/call-command/index.ts"),
+      "utf8"
+    );
+    expect(migration).toContain("v_user_id not in (v_slot.coach_id, v_slot.booked_by_client_id)");
+    expect(migration).toContain("p_join_window_minutes smallint");
+    expect(migration).toContain("make_interval(mins => p_join_window_minutes)");
+    expect(migration).toContain("now() >= v_slot.ends_at");
+    expect(migration).toContain("public.initiate_call(");
+    expect(command).toContain('Deno.env.get("LESSON_JOIN_WINDOW_MINUTES")');
+    expect(command).toContain("p_join_window_minutes: configuredJoinWindowMinutes");
   });
 });

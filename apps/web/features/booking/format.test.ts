@@ -35,14 +35,14 @@ describe("lesson formatting", () => {
       .toBe("America/New_York (UTC-4)");
   });
 
-  it("opens the join window ten minutes before start and closes at lesson end", () => {
+  it("opens the configured join window before start and closes at lesson end", () => {
     const lesson = {
       startsAt: "2026-07-21T10:30:00.000Z",
       endsAt: "2026-07-21T11:20:00.000Z",
     };
-    expect(isLessonJoinable(lesson, new Date("2026-07-21T10:19:59.000Z"))).toBe(false);
-    expect(isLessonJoinable(lesson, new Date("2026-07-21T10:20:00.000Z"))).toBe(true);
-    expect(isLessonJoinable(lesson, new Date("2026-07-21T11:19:59.000Z"))).toBe(true);
-    expect(isLessonJoinable(lesson, new Date("2026-07-21T11:20:00.000Z"))).toBe(false);
+    expect(isLessonJoinable(lesson, 15, new Date("2026-07-21T10:14:59.000Z"))).toBe(false);
+    expect(isLessonJoinable(lesson, 15, new Date("2026-07-21T10:15:00.000Z"))).toBe(true);
+    expect(isLessonJoinable(lesson, 15, new Date("2026-07-21T11:19:59.000Z"))).toBe(true);
+    expect(isLessonJoinable(lesson, 15, new Date("2026-07-21T11:20:00.000Z"))).toBe(false);
   });
 });

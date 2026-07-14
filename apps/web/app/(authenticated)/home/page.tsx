@@ -33,7 +33,18 @@ export default async function ClientHomePage() {
     <>
       <h1 className="mb-lg text-heading-sm">Welcome back, {data.firstName}</h1>
       {upcomingLesson ? (
-        <UpcomingLesson data={upcomingLesson} />
+        <>
+          <UpcomingLesson data={upcomingLesson} />
+          <Link
+            href="/book"
+            className={cn(
+              buttonVariants({ variant: "secondary", fullWidth: true }),
+              "mt-lg"
+            )}
+          >
+            Book another lesson
+          </Link>
+        </>
       ) : (
         <>
           <EmptyState Icon={IconSparkles}>

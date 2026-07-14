@@ -3,6 +3,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const lessonJoinWindowMinutes = Number.parseInt(
+  process.env.LESSON_JOIN_WINDOW_MINUTES ?? "10",
+  10,
+);
 if (!url || !publishableKey || !serviceRoleKey) {
   throw new Error("Missing local Supabase environment for booking verification.");
 }
@@ -57,7 +61,7 @@ const retry = await winner.rpc("book_lesson_slot", { p_slot_id: slotId });
 assert(!retry.error, "Retrying the winning booking should be idempotent.");
 
 const secondBooking = await winner.rpc("book_lesson_slot", { p_slot_id: slots[1]!.id });
-assert(Boolean(secondBooking.error), "A client with an upcoming lesson must not book another.");
+assert(!secondBooking.error, "A client must be able to book more than one upcoming lesson.");
 
 const { data: winnerRows, error: winnerReadError } = await winner
   .from("lesson_slots")
@@ -105,6 +109,7 @@ assert(
 const tooEarly = await winner.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: crypto.randomUUID(),
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 assert(Boolean(tooEarly.error), "A scheduled lesson call must stay closed before its join window.");
 
@@ -133,10 +138,12 @@ const lessonRequestId = crypto.randomUUID();
 const firstLessonCall = await winner.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: lessonRequestId,
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 const retriedLessonCall = await winner.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: lessonRequestId,
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 assert(
   !firstLessonCall.error &&
@@ -153,11 +160,13 @@ assert(
 const unrelatedLessonCall = await unassigned.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: crypto.randomUUID(),
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 assert(Boolean(unrelatedLessonCall.error), "An unrelated user must not join a booked lesson.");
 const otherClientLessonCall = await loser.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: crypto.randomUUID(),
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 assert(
   Boolean(otherClientLessonCall.error),
@@ -172,6 +181,7 @@ if (finishCallError) throw finishCallError;
 const coachLessonCall = await coach.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: crypto.randomUUID(),
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 assert(
   !coachLessonCall.error &&
@@ -205,6 +215,7 @@ if (endWindowError) throw endWindowError;
 const endedLessonCall = await winner.rpc("initiate_lesson_call", {
   p_lesson_slot_id: slotId,
   p_client_request_id: crypto.randomUUID(),
+  p_join_window_minutes: lessonJoinWindowMinutes,
 });
 assert(Boolean(endedLessonCall.error), "An ended booking must not authorize another call.");
 const endedMediaCheck = await winner.rpc("authorize_lesson_media_check", {

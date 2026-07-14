@@ -57,7 +57,8 @@ function services(role: "client" | "coach" = "client") {
 
 describe("booking page data", () => {
   it("loads fixed coach availability with the saved timezone and 24-hour preference", async () => {
-    const data = await getBookingPageData(services());
+    const injected = services();
+    const data = await getBookingPageData(injected);
     expect(data).toMatchObject({
       role: "client",
       locale: "en-PH",
@@ -66,6 +67,7 @@ describe("booking page data", () => {
       coach: { id: "coach-1", displayName: "Patricia" },
       slots: [{ id: lesson.id }],
     });
+    expect(injected.database.lessons.findUpcomingForClient).not.toHaveBeenCalled();
   });
 
   it("loads only the signed-in client's booked lesson for confirmation", async () => {
@@ -73,6 +75,7 @@ describe("booking page data", () => {
     expect(data).toMatchObject({
       role: "client",
       lesson: { id: lesson.id, bookedByClientId: "client-1" },
+      joinWindowMinutes: 10,
     });
   });
 

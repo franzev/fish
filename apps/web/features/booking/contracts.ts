@@ -21,7 +21,6 @@ export type BookingPageData =
       role: "client";
       coach: BookingCoach | null;
       slots: LessonSlot[];
-      upcomingLesson: LessonSlot | null;
     } & BookingClientContext);
 
 export type BookingConfirmationData =
@@ -30,6 +29,7 @@ export type BookingConfirmationData =
       role: "client";
       coach: BookingCoach | null;
       lesson: LessonSlot | null;
+      joinWindowMinutes: number;
     } & BookingClientContext);
 
 export interface UpcomingLessonData {
@@ -38,6 +38,7 @@ export interface UpcomingLessonData {
   locale: string;
   timeZone: string;
   timeFormatPref: TimeFormatPref;
+  joinWindowMinutes: number;
 }
 
 export type BookLessonActionState =

@@ -41,7 +41,7 @@ test("client books a lesson in the saved 24-hour format", async ({ page }) => {
 
   await page.getByRole("link", { name: "Back to home" }).click();
   await expect(page.getByText("Your next lesson")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Book a lesson" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Book another lesson" })).toBeVisible();
 
   const setup = page.getByRole("link", {
     name: /Check camera and microphone|Join lesson/,

@@ -71,11 +71,15 @@ export function formatTimeZoneLabel(
 
 export function isLessonJoinable(
   lesson: Pick<LessonSlot, "startsAt" | "endsAt">,
+  joinWindowMinutes: number,
   now = new Date()
 ): boolean {
   const startsAt = new Date(lesson.startsAt).getTime();
   const endsAt = new Date(lesson.endsAt).getTime();
   const current = now.getTime();
   if ([startsAt, endsAt, current].some(Number.isNaN)) return false;
-  return current >= startsAt - 10 * 60 * 1000 && current < endsAt;
+  if (!Number.isSafeInteger(joinWindowMinutes) || joinWindowMinutes < 0) {
+    return false;
+  }
+  return current >= startsAt - joinWindowMinutes * 60 * 1000 && current < endsAt;
 }

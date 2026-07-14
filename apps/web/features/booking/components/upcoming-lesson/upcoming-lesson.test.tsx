@@ -21,6 +21,7 @@ const data = {
   locale: "en-US",
   timeZone: "Asia/Manila",
   timeFormatPref: "24h" as const,
+  joinWindowMinutes: 10,
 };
 
 describe("UpcomingLesson", () => {

@@ -62,6 +62,22 @@ type CallRow = {
   updated_at: string;
 };
 
+const defaultLessonJoinWindowMinutes = 10;
+const maxLessonJoinWindowMinutes = 24 * 60;
+
+function lessonJoinWindowMinutes(): number {
+  const value = Deno.env.get("LESSON_JOIN_WINDOW_MINUTES")?.trim();
+  if (!value || !/^\d+$/.test(value)) return defaultLessonJoinWindowMinutes;
+  const minutes = Number(value);
+  return Number.isSafeInteger(minutes) && minutes <= maxLessonJoinWindowMinutes
+    ? minutes
+    : defaultLessonJoinWindowMinutes;
+}
+
+function joinWindowLabel(minutes: number): string {
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+}
+
 function calmError(code: string, error: string, status: number): Response {
   return Response.json({ code, error }, { status, headers: jsonHeaders });
 }
@@ -90,7 +106,7 @@ function clientCall(call: CallRow) {
   };
 }
 
-function rpcError(message: string): Response {
+function rpcError(message: string, joinWindowMinutes: number): Response {
   const normalized = message.toLowerCase();
   if (normalized.includes("participant busy")) {
     return calmError(
@@ -112,7 +128,7 @@ function rpcError(message: string): Response {
   if (normalized.includes("lesson call is too early")) {
     return calmError(
       "lesson_not_open",
-      "Your lesson will be ready to join 10 minutes before it starts.",
+      `Your lesson will be ready to join ${joinWindowLabel(joinWindowMinutes)} before it starts.`,
       409,
     );
   }
@@ -214,6 +230,7 @@ Deno.serve(async (request) => {
   }
 
   const command = parsed.data;
+  const configuredJoinWindowMinutes = lessonJoinWindowMinutes();
   if (command.action === "checkMedia") {
     const { error: authorizationError } = await caller.rpc(
       "authorize_lesson_media_check",
@@ -277,6 +294,7 @@ Deno.serve(async (request) => {
     ? {
       p_lesson_slot_id: command.lessonId,
       p_client_request_id: command.clientRequestId,
+      p_join_window_minutes: configuredJoinWindowMinutes,
     }
     : { p_call_id: command.callId };
 
@@ -286,7 +304,7 @@ Deno.serve(async (request) => {
       action: command.action,
       code: error.code,
     });
-    return rpcError(error.message);
+    return rpcError(error.message, configuredJoinWindowMinutes);
   }
 
   const call = unwrapCall(data);

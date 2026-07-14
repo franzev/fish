@@ -73,17 +73,14 @@ Deno.serve(async (request) => {
   });
   if (error) {
     console.error("lesson booking failed", { code: error.code });
-    const existing = error.message.includes("already booked");
     const conflict = error.message.includes("unavailable") ||
       error.message.includes("conflicts");
     return calmError(
-      existing ? "existing_booking" : conflict ? "slot_unavailable" : "booking_unavailable",
-      existing
-        ? "You already have an upcoming lesson."
-        : conflict
+      conflict ? "slot_unavailable" : "booking_unavailable",
+      conflict
         ? "That time was just booked. Choose another available time."
         : "Booking is taking a break. Your lesson was not booked yet.",
-      existing || conflict ? 409 : 503,
+      conflict ? 409 : 503,
     );
   }
 
