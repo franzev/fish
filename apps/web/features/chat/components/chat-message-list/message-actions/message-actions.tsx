@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -20,7 +20,7 @@ export interface MessageActionResult {
   notice?: string;
 }
 
-interface MessageActionsProps {
+export interface MessageActionsProps {
   mine: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -34,8 +34,10 @@ interface MessageActionsProps {
 
 type MoreView = "actions" | "reactions" | "delete";
 
-const toolbarButtonClass =
-  "inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-body";
+const toolbarButtonClass = cn(
+  buttonVariants({ variant: "ghost", controlSize: "square" }),
+  "hover:bg-surface-2"
+);
 
 const popoverActionClass =
   "flex min-h-control w-full items-center gap-sm rounded-control px-sm text-left text-ui-sm text-foreground hover:bg-surface-2";
@@ -242,7 +244,7 @@ export function MessageActions({
                   <p className="text-ui-sm font-medium text-foreground">
                     Delete this message?
                   </p>
-                  <p className="mt-2xs text-ui-xs text-muted">
+                  <p className="mt-2xs text-ui-xs text-body">
                     It will remain in the conversation as Message deleted.
                   </p>
                   <p
@@ -262,6 +264,7 @@ export function MessageActions({
                         setView("actions");
                         setDeleteNotice(null);
                       }}
+                      className="text-body"
                     >
                       Cancel
                     </Button>
@@ -271,7 +274,7 @@ export function MessageActions({
                       fullWidth
                       loading={deleting}
                       onClick={() => void confirmDelete()}
-                      className="text-notice"
+                      className="text-body"
                     >
                       Delete message
                     </Button>

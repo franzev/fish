@@ -32,7 +32,7 @@ export function BookingConfirmationScreen({
         <Link
           href="/home"
           aria-label="Close confirmation"
-          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:text-foreground"
+          className={buttonVariants({ variant: "ghost", controlSize: "square" })}
         >
           <IconX size={24} stroke={1.75} aria-hidden="true" />
         </Link>

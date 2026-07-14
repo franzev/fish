@@ -2578,7 +2578,7 @@ describe("ChatClient", () => {
 
     for (const action of [react, edit, more]) {
       expect(action.className).toContain("min-h-control");
-      expect(action.className).toContain("min-w-control");
+      expect(action.className).toContain("size-control");
       expect(action.className).not.toContain("size-10");
     }
 

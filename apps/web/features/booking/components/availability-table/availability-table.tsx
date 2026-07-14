@@ -158,8 +158,8 @@ export function AvailabilityTable({
         <Button
           type="button"
           variant="ghost"
+          controlSize="square"
           aria-label="Previous week"
-          className="min-w-control px-0"
           disabled={activeWeekIndex === 0}
           onClick={() => setWeekIndex(Math.max(activeWeekIndex - 1, 0))}
         >
@@ -175,8 +175,8 @@ export function AvailabilityTable({
         <Button
           type="button"
           variant="ghost"
+          controlSize="square"
           aria-label="Next week"
-          className="min-w-control px-0"
           disabled={activeWeekIndex === weeks.length - 1}
           onClick={() => setWeekIndex(
             Math.min(activeWeekIndex + 1, weeks.length - 1)

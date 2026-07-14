@@ -12,7 +12,7 @@ import {
   type KeyboardEvent,
 } from "react";
 
-interface MessageEditorProps {
+export interface MessageEditorProps {
   originalBody: string;
   draft: string;
   notice: string | null;
@@ -111,23 +111,23 @@ export function MessageEditor({
           <Button
             type="button"
             variant="ghost"
+            controlSize="square"
             fullWidth={false}
             disabled={saving}
             onClick={onCancel}
             aria-label="Cancel"
             title="Cancel"
-            className="size-control min-h-control px-0"
           >
             <IconX size={20} stroke={1.75} aria-hidden="true" />
           </Button>
           <Button
             type="submit"
+            controlSize="square"
             fullWidth={false}
             disabled={!canSave}
             loading={saving}
             aria-label="Save changes"
             title="Save changes"
-            className="size-control min-h-control px-0"
           >
             <IconCheck size={20} stroke={1.75} aria-hidden="true" />
           </Button>
