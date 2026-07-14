@@ -13,7 +13,8 @@ export default async function SignInPage() {
   return (
     <AuthSplitLayout
       headline="Welcome back."
-      message="Your chat is where you left it. No catching up required."
+      message="Your conversations are right where you left them. Continue when you're ready."
+      illustrationSrc="/illustrations/sign-in-fish-bowl.svg"
     >
       <SignInForm showGoogleAuth={isGoogleAuthAvailable()} />
     </AuthSplitLayout>

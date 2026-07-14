@@ -1,18 +1,22 @@
 import { Wordmark } from "@/components/brand/wordmark";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { ReactNode } from "react";
 
 /* Shared shell for every signed-out page (/sign-in, /signup, /forgot-password,
  *  /reset-password, /check-inbox, /expired-link). Split screen on large
  *  viewports: the form column stays first in DOM and on screen; a calm brand
  *  panel sits beside it with a short welcome. The panel is supportive, never
- *  competing — monochrome fills only, so the page's single primary action
- *  (inside the form) keeps the strongest contrast. On small screens the
- *  panel disappears and the form column owns the viewport. */
+ *  competing, so the page's single primary action inside the form keeps the
+ *  strongest contrast. On small screens the panel disappears and the form
+ *  column owns the viewport. */
 export interface AuthSplitLayoutProps {
   /** Short serif headline on the large-screen brand panel. */
   headline: string;
   /** One supportive sentence under the headline. */
   message: string;
+  /** Optional decorative artwork for a route-specific brand panel. */
+  illustrationSrc?: string;
   children: ReactNode;
 }
 
@@ -60,20 +64,44 @@ function SchoolOfFish() {
 export function AuthSplitLayout({
   headline,
   message,
+  illustrationSrc,
   children,
 }: AuthSplitLayoutProps) {
   return (
-    <main className="lg:grid lg:min-h-dvh lg:grid-cols-2">
-      <div className="flex min-h-dvh flex-col px-page py-page lg:min-h-full lg:px-2xl">
+    <main className="lg:grid lg:h-dvh lg:grid-cols-2 lg:overflow-hidden">
+      <div className="flex min-h-dvh flex-col px-page py-page lg:h-full lg:min-h-0 lg:overflow-y-auto lg:px-2xl">
         <Wordmark className="self-start" />
-        <div className="flex flex-1 items-center justify-center py-2xl">
+        <div className="flex flex-1 items-center justify-center py-2xl lg:min-h-0">
           <div className="w-full max-w-form">{children}</div>
         </div>
       </div>
-      <aside className="hidden bg-surface-2 lg:flex lg:flex-col lg:justify-center lg:gap-2xl lg:px-2xl lg:py-2xl xl:px-4xl">
-        <SchoolOfFish />
-        <div>
-          <p className="font-serif text-display font-semibold text-foreground">
+      <aside
+        className={cn(
+          "hidden bg-surface-2 lg:min-h-0 lg:px-2xl lg:py-2xl xl:px-4xl",
+          illustrationSrc
+            ? "relative overflow-hidden lg:flex lg:flex-col lg:justify-center"
+            : "lg:flex lg:flex-col lg:justify-center lg:gap-2xl"
+        )}
+      >
+        {illustrationSrc ? (
+          <Image
+            src={illustrationSrc}
+            alt=""
+            width={500}
+            height={500}
+            sizes="(min-width: 1024px) 50vw, 0px"
+            className="pointer-events-none absolute right-0 bottom-0 h-auto w-full max-w-content object-contain opacity-20 saturate-0 select-none"
+          />
+        ) : (
+          <SchoolOfFish />
+        )}
+        <div className="relative z-10 max-w-form">
+          <p
+            className={cn(
+              "font-serif font-semibold text-foreground",
+              illustrationSrc ? "text-hero" : "text-display"
+            )}
+          >
             {headline}
           </p>
           <p className="mt-md max-w-form text-lead text-body">{message}</p>
