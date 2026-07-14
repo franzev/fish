@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-13T12:14:31Z",
+  "title": "Design System: FISH",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Open Water",
+        "canonical": "light-dark(oklch(0.98 0 0), oklch(0.15 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.38 0 0)", "oklch(0.50 0 0)", "oklch(0.64 0 0)", "oklch(0.78 0 0)", "oklch(0.90 0 0)", "oklch(0.98 0 0)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Near Surface",
+        "canonical": "light-dark(oklch(0.99 0 0), oklch(0.18 0 0))",
+        "tonalRamp": ["oklch(0.18 0 0)", "oklch(0.28 0 0)", "oklch(0.40 0 0)", "oklch(0.52 0 0)", "oklch(0.66 0 0)", "oklch(0.80 0 0)", "oklch(0.92 0 0)", "oklch(0.99 0 0)"]
+      },
+      "surface-subtle": {
+        "role": "neutral",
+        "displayName": "Shallow Step",
+        "canonical": "light-dark(oklch(0.96 0 0), oklch(0.20 0 0))",
+        "tonalRamp": ["oklch(0.20 0 0)", "oklch(0.30 0 0)", "oklch(0.42 0 0)", "oklch(0.54 0 0)", "oklch(0.66 0 0)", "oklch(0.78 0 0)", "oklch(0.88 0 0)", "oklch(0.96 0 0)"]
+      },
+      "surface-hover": {
+        "role": "neutral",
+        "displayName": "Interaction Step",
+        "canonical": "light-dark(oklch(0.94 0 0), oklch(0.22 0 0))",
+        "tonalRamp": ["oklch(0.22 0 0)", "oklch(0.32 0 0)", "oklch(0.44 0 0)", "oklch(0.56 0 0)", "oklch(0.68 0 0)", "oklch(0.78 0 0)", "oklch(0.86 0 0)", "oklch(0.94 0 0)"]
+      },
+      "surface-avatar": {
+        "role": "neutral",
+        "displayName": "Identity Step",
+        "canonical": "light-dark(oklch(0.90 0 0), oklch(0.27 0 0))",
+        "tonalRamp": ["oklch(0.17 0 0)", "oklch(0.27 0 0)", "oklch(0.39 0 0)", "oklch(0.51 0 0)", "oklch(0.63 0 0)", "oklch(0.73 0 0)", "oklch(0.82 0 0)", "oklch(0.90 0 0)"]
+      },
+      "surface-selected": {
+        "role": "neutral",
+        "displayName": "Selected Step",
+        "canonical": "light-dark(oklch(0.88 0 0), oklch(0.33 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.33 0 0)", "oklch(0.45 0 0)", "oklch(0.57 0 0)", "oklch(0.68 0 0)", "oklch(0.78 0 0)", "oklch(0.88 0 0)"]
+      },
+      "border-control": {
+        "role": "neutral",
+        "displayName": "Calm Boundary",
+        "canonical": "light-dark(oklch(0.64 0 0), oklch(0.55 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.22 0 0)", "oklch(0.30 0 0)", "oklch(0.38 0 0)", "oklch(0.46 0 0)", "oklch(0.55 0 0)", "oklch(0.60 0 0)", "oklch(0.64 0 0)"]
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Firm Boundary",
+        "canonical": "light-dark(oklch(0.55 0 0), oklch(0.65 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.22 0 0)", "oklch(0.30 0 0)", "oklch(0.38 0 0)", "oklch(0.46 0 0)", "oklch(0.55 0 0)", "oklch(0.60 0 0)", "oklch(0.65 0 0)"]
+      },
+      "divider": {
+        "role": "neutral",
+        "displayName": "Quiet Hairline",
+        "canonical": "light-dark(oklch(0.15 0 0 / 0.1), oklch(0.98 0 0 / 0.12))",
+        "tonalRamp": ["oklch(0.15 0 0 / 0.04)", "oklch(0.15 0 0 / 0.06)", "oklch(0.15 0 0 / 0.08)", "oklch(0.15 0 0 / 0.10)", "oklch(0.15 0 0 / 0.12)", "oklch(0.15 0 0 / 0.14)", "oklch(0.15 0 0 / 0.16)", "oklch(0.15 0 0 / 0.18)"]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Full-contrast Current",
+        "canonical": "light-dark(oklch(0.15 0 0), oklch(0.98 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.38 0 0)", "oklch(0.50 0 0)", "oklch(0.64 0 0)", "oklch(0.78 0 0)", "oklch(0.90 0 0)", "oklch(0.98 0 0)"]
+      },
+      "primary-press": {
+        "role": "primary",
+        "displayName": "Pressed Current",
+        "canonical": "light-dark(oklch(0.25 0 0), oklch(0.90 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.35 0 0)", "oklch(0.47 0 0)", "oklch(0.59 0 0)", "oklch(0.70 0 0)", "oklch(0.80 0 0)", "oklch(0.90 0 0)"]
+      },
+      "on-primary": {
+        "role": "neutral",
+        "displayName": "Current Text",
+        "canonical": "light-dark(oklch(0.98 0 0), oklch(0.15 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.38 0 0)", "oklch(0.50 0 0)", "oklch(0.64 0 0)", "oklch(0.78 0 0)", "oklch(0.90 0 0)", "oklch(0.98 0 0)"]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Strong Ink",
+        "canonical": "light-dark(oklch(0.15 0 0), oklch(0.97 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.25 0 0)", "oklch(0.38 0 0)", "oklch(0.50 0 0)", "oklch(0.63 0 0)", "oklch(0.76 0 0)", "oklch(0.88 0 0)", "oklch(0.97 0 0)"]
+      },
+      "body": {
+        "role": "neutral",
+        "displayName": "Readable Ink",
+        "canonical": "light-dark(oklch(0.32 0 0), oklch(0.88 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.24 0 0)", "oklch(0.32 0 0)", "oklch(0.43 0 0)", "oklch(0.54 0 0)", "oklch(0.66 0 0)", "oklch(0.77 0 0)", "oklch(0.88 0 0)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Distant Ink",
+        "canonical": "light-dark(oklch(0.50 0 0), oklch(0.68 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.23 0 0)", "oklch(0.31 0 0)", "oklch(0.39 0 0)", "oklch(0.47 0 0)", "oklch(0.55 0 0)", "oklch(0.62 0 0)", "oklch(0.68 0 0)"]
+      },
+      "notice": {
+        "role": "neutral",
+        "displayName": "Neutral Notice",
+        "canonical": "light-dark(oklch(0.40 0 0), oklch(0.80 0 0))",
+        "tonalRamp": ["oklch(0.15 0 0)", "oklch(0.24 0 0)", "oklch(0.32 0 0)", "oklch(0.40 0 0)", "oklch(0.50 0 0)", "oklch(0.60 0 0)", "oklch(0.70 0 0)", "oklch(0.80 0 0)"]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Soft Rose",
+        "canonical": "light-dark(oklch(0.45 0.14 20), oklch(0.78 0.11 20))",
+        "tonalRamp": ["oklch(0.15 0.04 20)", "oklch(0.25 0.07 20)", "oklch(0.35 0.10 20)", "oklch(0.45 0.14 20)", "oklch(0.56 0.13 20)", "oklch(0.68 0.12 20)", "oklch(0.78 0.11 20)", "oklch(0.92 0.05 20)"]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Soft Amber",
+        "canonical": "light-dark(oklch(0.42 0.12 80), oklch(0.78 0.12 80))",
+        "tonalRamp": ["oklch(0.15 0.03 80)", "oklch(0.24 0.06 80)", "oklch(0.33 0.09 80)", "oklch(0.42 0.12 80)", "oklch(0.54 0.12 80)", "oklch(0.66 0.12 80)", "oklch(0.78 0.12 80)", "oklch(0.92 0.05 80)"]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Soft Green",
+        "canonical": "light-dark(oklch(0.40 0.11 150), oklch(0.75 0.12 150))",
+        "tonalRamp": ["oklch(0.15 0.03 150)", "oklch(0.23 0.05 150)", "oklch(0.31 0.08 150)", "oklch(0.40 0.11 150)", "oklch(0.52 0.11 150)", "oklch(0.64 0.12 150)", "oklch(0.75 0.12 150)", "oklch(0.92 0.05 150)"]
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "Deep Water Scrim",
+        "canonical": "light-dark(oklch(0.15 0 0 / 0.4), oklch(0 0 0 / 0.6))",
+        "tonalRamp": ["oklch(0.05 0 0 / 0.65)", "oklch(0.08 0 0 / 0.60)", "oklch(0.10 0 0 / 0.55)", "oklch(0.12 0 0 / 0.50)", "oklch(0.15 0 0 / 0.40)", "oklch(0.20 0 0 / 0.32)", "oklch(0.28 0 0 / 0.24)", "oklch(0.38 0 0 / 0.16)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Product-level titles and compact brand statements." },
+      "heading": { "displayName": "Heading", "purpose": "Screen and section headings." },
+      "body": { "displayName": "Body", "purpose": "Readable explanations, guidance, and conversation copy." },
+      "ui": { "displayName": "UI", "purpose": "Menus and compact interface copy." },
+      "label": { "displayName": "Label", "purpose": "Field labels and important compact guidance." },
+      "caption": { "displayName": "Caption", "purpose": "Secondary metadata only." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "fade", "value": "200ms ease-out", "purpose": "Calm opacity-only feedback." },
+      { "name": "message", "value": "200ms ease-out", "purpose": "New chat message opacity and 6px translate settle." },
+      { "name": "reaction", "value": "180ms ease-out", "purpose": "Brief scale confirmation after adding a reaction." },
+      { "name": "progress", "value": "500ms", "purpose": "Progress-fill width changes." },
+      { "name": "skeleton", "value": "1400ms ease-in-out", "purpose": "Opacity-only loading pulse, never shimmer." },
+      { "name": "reduced-motion", "value": "0.001ms", "purpose": "Clamps all animation and transition durations." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single forward action in a focused view.",
+      "html": "<button class=\"ds-btn-primary\">Get started</button>",
+      "css": ".ds-btn-primary { min-height: var(--size-control-primary); display: inline-flex; align-items: center; justify-content: center; padding: 0 var(--spacing-md); border: 1px solid transparent; border-radius: var(--radius-control); background: var(--color-primary); color: var(--color-on-primary); font-family: var(--font-sans); font-size: var(--text-ui); font-weight: 600; transition: background-color var(--duration-fade) ease-out, opacity var(--duration-fade) ease-out; } .ds-btn-primary:hover, .ds-btn-primary:active { background: var(--color-primary-press); } .ds-btn-primary:focus-visible { opacity: var(--opacity-focus); outline: none; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A quieter alternative action when one is genuinely needed.",
+      "html": "<button class=\"ds-btn-secondary\">I already have an account</button>",
+      "css": ".ds-btn-secondary { min-height: var(--size-control); display: inline-flex; align-items: center; justify-content: center; padding: 0 var(--spacing-md); border: 1px solid transparent; border-radius: var(--radius-control); background: var(--color-surface-2); color: var(--color-foreground); font-family: var(--font-sans); font-size: var(--text-ui); transition: background-color var(--duration-fade) ease-out, opacity var(--duration-fade) ease-out; } .ds-btn-secondary:hover, .ds-btn-secondary:active { background: var(--color-surface-3); } .ds-btn-secondary:focus-visible { opacity: var(--opacity-focus); outline: none; } .ds-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "A low-emphasis text action such as Back or Need help.",
+      "html": "<button class=\"ds-btn-ghost\">Need help?</button>",
+      "css": ".ds-btn-ghost { min-height: var(--size-control); display: inline-flex; align-items: center; justify-content: center; padding: 0 var(--spacing-md); border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--color-muted); font-family: var(--font-sans); font-size: var(--text-ui); transition: color var(--duration-fade) ease-out, opacity var(--duration-fade) ease-out; } .ds-btn-ghost:hover, .ds-btn-ghost:active { color: var(--color-body); } .ds-btn-ghost:focus-visible { opacity: var(--opacity-focus); outline: none; } .ds-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "A visible label and a quiet tonal field well.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Email</span><input class=\"ds-input\" type=\"email\" placeholder=\"you@example.com\"></label>",
+      "css": ".ds-field { display: block; width: 100%; color: var(--color-foreground); font-family: var(--font-sans); } .ds-field-label { display: block; margin-bottom: var(--spacing-xs); font-size: var(--text-ui-sm); font-weight: 500; } .ds-input { width: 100%; min-height: var(--size-control); padding: 0 var(--spacing-md); border: 1px solid transparent; border-radius: var(--radius-control); background: var(--color-surface-2); color: var(--color-foreground); font-family: var(--font-sans); font-size: var(--text-copy); transition: background-color var(--duration-fade) ease-out, opacity var(--duration-fade) ease-out; } .ds-input::placeholder { color: var(--color-muted); } .ds-input:hover { background: var(--color-chat-hover); } .ds-input:focus-visible { background: var(--color-surface-3); opacity: var(--opacity-focus-field); outline: none; } .ds-input:disabled { opacity: 0.5; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A calm container separated from the canvas by one surface step.",
+      "html": "<section class=\"ds-card\">A calm container for one subject.</section>",
+      "css": ".ds-card { padding: var(--spacing-md); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-body); font-family: var(--font-sans); font-size: var(--text-copy); line-height: 1.55; box-shadow: none; }"
+    },
+    {
+      "name": "Progress",
+      "kind": "custom",
+      "refersTo": "progress-track",
+      "description": "Visual step progress that never presents a grade.",
+      "html": "<div class=\"ds-progress-group\"><span class=\"ds-progress-label\">Step 2 of 5</span><div class=\"ds-progress\" role=\"progressbar\" aria-valuenow=\"40\" aria-valuemin=\"0\" aria-valuemax=\"100\"><span class=\"ds-progress-fill\"></span></div></div>",
+      "css": ".ds-progress-group { width: 100%; font-family: var(--font-sans); } .ds-progress-label { display: block; margin-bottom: var(--spacing-xs); color: var(--color-muted); font-size: var(--text-ui-sm); } .ds-progress { width: 100%; height: 12px; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-surface-2); } .ds-progress-fill { display: block; width: 40%; height: 100%; border-radius: var(--radius-pill); background: var(--color-primary); transition: width var(--duration-progress); }"
+    },
+    {
+      "name": "Notice Alert",
+      "kind": "custom",
+      "refersTo": "alert-notice",
+      "description": "Calm, icon-supported guidance with the next useful step.",
+      "html": "<div class=\"ds-alert\" role=\"status\"><svg class=\"ds-alert-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"></circle><path d=\"M12 11v5M12 8h.01\"></path></svg><span>That does not look like an email yet. Check the spelling?</span></div>",
+      "css": ".ds-alert { display: flex; align-items: flex-start; gap: var(--spacing-xs); padding: var(--spacing-md); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-body); font-family: var(--font-sans); font-size: var(--text-ui); line-height: 1.5; } .ds-alert-icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "description": "A labeled, role-appropriate destination with a quiet tonal active state.",
+      "html": "<a class=\"ds-nav-item ds-nav-item-active\" href=\"#\" aria-current=\"page\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 11 12 4l9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z\"></path></svg><span>Home</span></a>",
+      "css": ".ds-nav-item { min-height: var(--size-control); display: inline-flex; align-items: center; gap: var(--spacing-2xs); padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--radius-control); color: var(--color-muted); font-family: var(--font-sans); font-size: var(--text-ui-sm); text-decoration: none; transition: background-color var(--duration-fade) ease-out, color var(--duration-fade) ease-out, opacity var(--duration-fade) ease-out; } .ds-nav-item:hover, .ds-nav-item-active { background: var(--color-surface-2); color: var(--color-foreground); } .ds-nav-item-active { font-weight: 600; } .ds-nav-item:focus-visible { opacity: var(--opacity-focus); outline: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: var(--spacing-2xs); } .ds-nav-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Current",
+    "overview": "FISH should feel like moving with a gentle current: the direction is clear, the pace is calm, and the interface never asks the user to steer around avoidable choices. It is a sparse coaching product for neurodivergent professionals, so hierarchy, spacing, familiar controls, and plain language carry more weight than decoration.\n\nThe visual system is restrained and primarily monochrome. Near-white and near-black canvases reverse across light and dark themes, while small tonal steps separate surfaces without visual noise. The single primary action is a full-contrast inversion, not a colorful accent. Calm, desaturated semantic hues appear only when status needs to be recognized quickly.\n\nThe system explicitly rejects noisy course marketplaces, gamified streak trackers, dashboards that expose every possible option, decorative SaaS patterns, competing calls to action, alarming error treatments, punitive progress, plan galleries, and interaction patterns that demand unnecessary decisions from clients.",
+    "keyCharacteristics": [
+      "One unmistakable action and quietly subordinated alternatives.",
+      "Monochrome hierarchy supported by generous, token-based spacing.",
+      "Warm Fraunces headings paired with highly readable Lexend UI text.",
+      "Flat surfaces separated by lightness steps and hairline dividers.",
+      "Accessible, layout-stable controls with calm state feedback.",
+      "Single-column client flows, constrained text widths, and predictable navigation."
+    ],
+    "rules": [
+      { "name": "The One Clear Direction Rule", "body": "Every view has at most one primary action. Remove or quiet every competing choice until the next useful step is obvious.", "section": "overview" },
+      { "name": "The Monochrome First Rule", "body": "A screen must remain understandable before semantic hues are applied. Color clarifies status; it never decorates.", "section": "colors" },
+      { "name": "The Full-Contrast Action Rule", "body": "Primary is an inversion, not a brand hue. Use it once per view and never on inactive or decorative elements.", "section": "colors" },
+      { "name": "The Calm Feedback Rule", "body": "Never rely on color alone. Semantic hues must remain desaturated and appear with an icon, weight change, label, or message.", "section": "colors" },
+      { "name": "The Small Ladder Rule", "body": "Most product screens use three or four text styles. Do not add near-duplicate sizes or viewport-scaled product typography.", "section": "typography" },
+      { "name": "The Sentence Case Rule", "body": "Buttons, labels, notices, and navigation use sentence case. All caps is reserved for very short, low-priority orientation labels.", "section": "typography" },
+      { "name": "The Surface Step Rule", "body": "Move one deliberate surface step to express containment, hover, or selection. Never invent an isolated fill value inside a component.", "section": "elevation" },
+      { "name": "The No Shadow Rule", "body": "Box shadows and text shadows are prohibited. If a component needs separation, fix its spacing, surface role, border semantics, or information hierarchy.", "section": "elevation" },
+      { "name": "The Layout Stability Rule", "body": "Hover, focus, validation, loading, and disabled states must preserve the component's geometry.", "section": "elevation" },
+      { "name": "The Familiar Control Rule", "body": "Buttons look like buttons, links navigate, fields have labels, and navigation remains visible. Novel interaction patterns require a task-specific accessibility reason.", "section": "components" }
+    ],
+    "dos": [
+      "Do reduce each screen to one obvious next action and at most one primary button.",
+      "Do use only CSS-first tokens from apps/web/app/globals.css; add a named token before introducing a genuinely new visual value.",
+      "Do use the existing Button, Input, Card, Progress, and Alert components before creating another pattern.",
+      "Do keep touch-first and frequently used controls at least 44 by 44px, with focused primary actions at 56px when prominence supports focus.",
+      "Do use surface steps, whitespace, and hairline dividers instead of shadows.",
+      "Do keep client flows assigned rather than browsed, narrow, and single-column by default.",
+      "Do pair status color with an icon, message, weight, or shape so meaning never depends on hue alone.",
+      "Do write sentence-case, direct, non-scolding copy that explains the next useful step.",
+      "Do respect OS and saved light, dark, text-size, and reduced-motion preferences."
+    ],
+    "donts": [
+      "Don't resemble a noisy course marketplace, a gamified streak tracker, or a dashboard that exposes every possible option at once.",
+      "Don't add decorative SaaS patterns, competing calls to action, alarming error treatments, punitive progress, plan galleries, or interaction patterns that demand unnecessary decisions from clients.",
+      "Don't let clients browse menus, galleries, or multi-choice pickers for learning plans or templates.",
+      "Don't use more than one primary button per view.",
+      "Don't use raw hex values, arbitrary Tailwind values, one-off numeric spacing utilities, or a tailwind.config.js in the web app.",
+      "Don't use box shadows, text shadows, glows, glassmorphism, neumorphism, aurora backgrounds, loud outlines, or nested cards.",
+      "Don't use a colored side stripe, gradient text, decorative blur, or a modal as the first solution.",
+      "Don't use pure black and pure white as hard-coded colors. Use the theme-aware OKLCH tokens.",
+      "Don't use Fraunces in buttons, form labels, navigation, data, or other dense UI.",
+      "Don't use placeholders as labels, vague action copy, raw technical errors, scolding language, or hue as the only state cue.",
+      "Don't animate layout properties, use bounce or elastic easing, run decorative motion, or ignore reduced-motion preferences.",
+      "Don't show scores, percentages as judgement, broken streaks, or any reset-to-zero punishment."
+    ]
+  }
+}
