@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
+import { useState, type ComponentProps } from "react";
 import { Switch } from "./switch";
 
 const meta = {
@@ -12,14 +13,15 @@ const meta = {
     disabled: false,
     onCheckedChange: fn(),
   },
+  render: (args) => <SwitchPreview {...args} />,
 } satisfies Meta<typeof Switch>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Automatic: Story = {};
+export const Off: Story = {};
 
-export const DataSaver: Story = {
+export const On: Story = {
   args: {
     checked: true,
   },
@@ -30,3 +32,21 @@ export const Disabled: Story = {
     disabled: true,
   },
 };
+
+export const DisabledOn: Story = {
+  args: { checked: true, disabled: true },
+};
+
+function SwitchPreview(args: ComponentProps<typeof Switch>) {
+  const [checked, setChecked] = useState(args.checked);
+  return (
+    <Switch
+      {...args}
+      checked={checked}
+      onCheckedChange={(nextChecked) => {
+        setChecked(nextChecked);
+        args.onCheckedChange(nextChecked);
+      }}
+    />
+  );
+}

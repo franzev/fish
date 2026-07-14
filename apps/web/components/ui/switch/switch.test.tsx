@@ -49,4 +49,21 @@ describe("Switch", () => {
     fireEvent.click(screen.getByRole("switch"));
     expect(onCheckedChange).not.toHaveBeenCalled();
   });
+
+  it("participates in native form submission", () => {
+    render(
+      <form aria-label="Preferences">
+        <Switch
+          aria-label="Use less data"
+          name="videoQuality"
+          value="data-saver"
+          checked
+          onCheckedChange={() => undefined}
+        />
+      </form>
+    );
+
+    const form = screen.getByRole("form", { name: "Preferences" }) as HTMLFormElement;
+    expect(new FormData(form).get("videoQuality")).toBe("data-saver");
+  });
 });

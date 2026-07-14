@@ -1,27 +1,26 @@
 import { cn } from "@/lib/utils";
-import {
-  forwardRef,
-  type ButtonHTMLAttributes,
-} from "react";
+import { Switch as BaseSwitch } from "@base-ui/react/switch";
+import { forwardRef } from "react";
 
-export interface SwitchProps
-  extends Omit<
-    ButtonHTMLAttributes<HTMLButtonElement>,
-    "aria-checked" | "children" | "onClick" | "role"
-  > {
+export type SwitchProps = Omit<
+  BaseSwitch.Root.Props,
+  "children" | "className" | "nativeButton" | "onCheckedChange" | "render"
+> & {
+  className?: string;
   checked: boolean;
   onCheckedChange(checked: boolean): void;
-}
+};
 
 export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ checked, className, onCheckedChange, type = "button", ...props }, ref) => (
-    <button
+  ({ checked, className, onCheckedChange, ...props }, ref) => (
+    <BaseSwitch.Root
       {...props}
       ref={ref}
-      type={type}
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onCheckedChange(!checked)}
+      render={<button type="button" />}
+      nativeButton
+      checked={checked}
+      onCheckedChange={(nextChecked) => onCheckedChange(nextChecked)}
+      data-slot="switch"
       className={cn(
         "inline-flex min-h-control min-w-control items-center justify-center rounded-pill transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-50",
@@ -35,7 +34,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
           checked ? "bg-primary" : "bg-surface-3"
         )}
       >
-        <span
+        <BaseSwitch.Thumb
           className={cn(
             "absolute left-2xs top-2xs size-md rounded-pill transition-transform",
             checked
@@ -44,7 +43,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
           )}
         />
       </span>
-    </button>
+    </BaseSwitch.Root>
   )
 );
 Switch.displayName = "Switch";
