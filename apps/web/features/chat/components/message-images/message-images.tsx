@@ -316,7 +316,10 @@ export function MessageImages({ images, authorName, mine }: MessageImagesProps) 
       {imageAttachments.length > 0 && (
         <div
           data-image-layout={wrapped ? "wrap" : "single"}
-          className="flex flex-wrap gap-nudge"
+          className={cn(
+            "flex flex-wrap gap-nudge",
+            mine ? "justify-end" : "justify-start"
+          )}
         >
           {imageAttachments.map((image) => (
             <MessageImage

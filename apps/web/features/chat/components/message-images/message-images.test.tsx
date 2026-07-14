@@ -135,4 +135,23 @@ describe("MessageImages", () => {
     expect(items?.[0]).toHaveStyle({ aspectRatio: String(2 / 3) });
     expect(items?.[1]).toHaveStyle({ aspectRatio: "2" });
   });
+
+  it.each([
+    { mine: false, alignment: "justify-start", opposite: "justify-end" },
+    { mine: true, alignment: "justify-end", opposite: "justify-start" },
+  ])("aligns image previews with the message bubble when mine is $mine", ({ mine, alignment, opposite }) => {
+    const { container } = render(<MessageImages
+      images={[{
+        ...image,
+        thumbnailUrl: "blob:aligned-image",
+        displayUrl: "blob:aligned-image",
+      }]}
+      authorName={mine ? "You" : "Alex"}
+      mine={mine}
+    />);
+
+    const gallery = container.querySelector('[data-image-layout="single"]');
+    expect(gallery).toHaveClass(alignment);
+    expect(gallery).not.toHaveClass(opposite);
+  });
 });
