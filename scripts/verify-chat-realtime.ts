@@ -16,6 +16,10 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const coachCreds = { email: "coach@fish.dev", password: "fish-coach-dev" };
+const unassignedCoachCreds = {
+  email: "coach2@fish.dev",
+  password: "fish-coach-dev",
+};
 const clientCreds = { email: "client1@fish.dev", password: "fish-client-dev" };
 const runId = `verify-realtime-${Date.now()}`;
 
@@ -194,6 +198,27 @@ async function chatCommand<T>(session: SignedInUser, body: JsonRecord): Promise<
   return edgeRequest<T>("chat-command", session, body);
 }
 
+async function getUnreadSummary(
+  session: SignedInUser,
+  conversationId: string,
+): Promise<{
+  unread_count: number;
+  oldest_unread_at: string | null;
+  latest_unread_message_id: string | null;
+}> {
+  const { data, error } = await session.client.rpc("get_chat_unread_summary", {
+    p_conversation_id: conversationId,
+  });
+  if (error || !data?.[0]) {
+    throw new Error(error?.message ?? "Unread summary was unavailable");
+  }
+  return data[0] as {
+    unread_count: number;
+    oldest_unread_at: string | null;
+    latest_unread_message_id: string | null;
+  };
+}
+
 async function subscribeChannel(channel: RealtimeChannel, label: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -301,6 +326,33 @@ async function main(): Promise<void> {
     throw new Error(conversationError?.message ?? "Seeded conversation missing");
   }
   const conversationId = conversation.id as string;
+
+  await checked("Unread summary is restricted to conversation members", async () => {
+    const anonymous = createClient(supabaseUrl!, publishableKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const anonymousResult = await anonymous.rpc("get_chat_unread_summary", {
+      p_conversation_id: conversationId,
+    });
+    assertCondition(
+      Boolean(anonymousResult.error),
+      "anonymous caller unexpectedly received unread metadata",
+    );
+
+    const unassignedCoach = await signInAs(unassignedCoachCreds);
+    try {
+      const outsiderResult = await unassignedCoach.client.rpc(
+        "get_chat_unread_summary",
+        { p_conversation_id: conversationId },
+      );
+      assertCondition(
+        Boolean(outsiderResult.error),
+        "non-member unexpectedly received unread metadata",
+      );
+    } finally {
+      await unassignedCoach.client.auth.signOut();
+    }
+  });
 
   const coachMessageEvents = await createPostgresCollector(
     coach,
@@ -547,6 +599,7 @@ async function main(): Promise<void> {
   let replyMessage: MessageRow | null = null;
   await checked("Replies, edits, reactions, read receipts, and deletes update in real time", async () => {
     assertCondition(firstMessage, "first message missing");
+    const unreadBeforeReply = await getUnreadSummary(client, conversationId);
     replyMessage = await sendMessage(
       coach,
       conversationId,
@@ -555,6 +608,70 @@ async function main(): Promise<void> {
       firstMessage.id,
     );
     assertCondition(replyMessage.reply_to_message_id === firstMessage.id, "reply target was not preserved");
+
+    const unreadAfterReply = await getUnreadSummary(client, conversationId);
+    assertCondition(
+      unreadAfterReply.unread_count === unreadBeforeReply.unread_count + 1,
+      `incoming reply should add exactly one unread message, got ${unreadAfterReply.unread_count}`,
+    );
+    assertCondition(
+      unreadAfterReply.latest_unread_message_id === replyMessage.id,
+      "unread summary did not identify the newest incoming message",
+    );
+    assertCondition(
+      Boolean(unreadAfterReply.oldest_unread_at),
+      "unread summary did not include the oldest unread timestamp",
+    );
+
+    await chatCommand(client, {
+      action: "mark-read-state",
+      conversationId,
+      lastDeliveredMessageId: replyMessage.id,
+      lastReadMessageId: null,
+    });
+    const unreadAfterDelivery = await getUnreadSummary(client, conversationId);
+    assertCondition(
+      unreadAfterDelivery.unread_count === unreadAfterReply.unread_count,
+      "delivery-only update must not clear unread messages",
+    );
+
+    await chatCommand(client, {
+      action: "mark-read-state",
+      conversationId,
+      lastDeliveredMessageId: replyMessage.id,
+      lastReadMessageId: replyMessage.id,
+    });
+    const unreadAfterRead = await getUnreadSummary(client, conversationId);
+    assertCondition(
+      unreadAfterRead.unread_count === 0 &&
+        unreadAfterRead.oldest_unread_at === null &&
+        unreadAfterRead.latest_unread_message_id === null,
+      "explicit read update did not clear the unread summary",
+    );
+
+    const deletedUnread = await sendMessage(
+      coach,
+      conversationId,
+      "Temporary unread message for delete verification",
+      `${runId}-deleted-unread`,
+    );
+    const unreadBeforeDelete = await getUnreadSummary(client, conversationId);
+    assertCondition(
+      unreadBeforeDelete.unread_count === 1 &&
+        unreadBeforeDelete.latest_unread_message_id === deletedUnread.id,
+      "new incoming message did not become unread before deletion",
+    );
+    await chatCommand(coach, {
+      action: "delete-message",
+      messageId: deletedUnread.id,
+    });
+    const unreadAfterDelete = await getUnreadSummary(client, conversationId);
+    assertCondition(
+      unreadAfterDelete.unread_count === 0 &&
+        unreadAfterDelete.oldest_unread_at === null &&
+        unreadAfterDelete.latest_unread_message_id === null,
+      "deleted messages must not remain in the unread summary",
+    );
 
     const edited = unwrapMessage(
       await chatCommand(coach, {
