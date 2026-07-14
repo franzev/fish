@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { signOutMock, pushMock } = vi.hoisted(() => ({
@@ -27,22 +27,47 @@ describe("UserMenu", () => {
     resetChatStoreForTests();
   });
 
-  it("opens on click and shows Profile + Sign out for a client", () => {
-    render(<UserMenu displayName="Alex Rivera" role="client" />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Account menu for Alex Rivera" })
+  it("uses an avatar-only trigger and keeps status inside one submenu", () => {
+    render(
+      <UserMenu
+        displayName="Alex Rivera"
+        role="client"
+        friendsNavEnabled
+      />
     );
+
+    const trigger = screen.getByRole("button", {
+      name: "Account menu for Alex Rivera",
+    });
+    expect(within(trigger).queryByText("Alex Rivera")).not.toBeInTheDocument();
+    fireEvent.click(trigger);
 
     const profileLink = screen.getByRole("menuitem", { name: "Profile" });
     expect(profileLink).toHaveAttribute("href", "/profile");
-    expect(
-      screen.getByRole("menuitem", { name: "Sign out" })
-    ).toBeInTheDocument();
+    const friendsLink = screen.getByRole("menuitem", { name: "Friends" });
+    expect(friendsLink).toHaveAttribute("href", "/friends");
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Profile",
+      "Friends",
+      "StatusOffline",
+      "Sign out",
+    ]);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
+    expect(screen.getByRole("menuitemradio", { name: /Online/ }))
+      .toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("menuitemradio", { name: /Away/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: /Busy/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: /Invisible/ }))
+      .toBeInTheDocument();
   });
 
-  it("shows Profile and Sign out for a coach", () => {
-    render(<UserMenu displayName="Coach Dana" role="coach" />);
+  it("shows Profile and Sign out, but not client-only Friends, for a coach", () => {
+    render(
+      <UserMenu displayName="Coach Dana" role="coach" friendsNavEnabled />
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Account menu for Coach Dana" })
@@ -53,6 +78,9 @@ describe("UserMenu", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Profile" }))
       .toHaveAttribute("href", "/profile");
+    expect(
+      screen.queryByRole("menuitem", { name: "Friends" })
+    ).not.toBeInTheDocument();
   });
 
   it("clicking Sign out signs out, clears the chat store, and pushes /sign-in (CR-01)", async () => {

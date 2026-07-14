@@ -26,7 +26,7 @@ describe("AppShell", () => {
     delete document.documentElement.dataset.timeFormat;
   });
 
-  it("renders the muted display name (D-09) as the menu trigger, with Sign out reachable via the menu", () => {
+  it("renders an avatar-only account trigger, with Sign out reachable via the menu", () => {
     render(
       <AppShell displayName="Alex Rivera" role="client">
         Content
@@ -36,7 +36,7 @@ describe("AppShell", () => {
     const trigger = screen.getByRole("button", {
       name: "Account menu for Alex Rivera",
     });
-    expect(trigger.className).toContain("text-muted");
+    expect(within(trigger).queryByText("Alex Rivera")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
@@ -192,8 +192,13 @@ describe("AppShell", () => {
     );
 
     const primaryNav = screen.getByRole("navigation", { name: "Primary" });
+    const mobilePrimaryNav = screen.getByRole("navigation", {
+      name: "Mobile primary",
+    });
     expect(primaryNav).toHaveTextContent("Home");
     expect(primaryNav).toHaveTextContent("Community");
+    expect(primaryNav).not.toHaveTextContent("Messages");
+    expect(mobilePrimaryNav).not.toHaveTextContent("Messages");
     expect(primaryNav).not.toHaveTextContent("Profile");
     expect(primaryNav).not.toHaveTextContent("Progress");
     const community = within(primaryNav).getByRole("link", { name: "Community" });
@@ -233,6 +238,8 @@ describe("AppShell", () => {
     const primaryNav = screen.getByRole("navigation", { name: "Primary" });
     expect(primaryNav).toHaveTextContent("Clients");
     expect(primaryNav).toHaveTextContent("Community");
+    expect(screen.queryByRole("link", { name: "Messages" }))
+      .not.toBeInTheDocument();
     expect(primaryNav).not.toHaveTextContent("Profile");
     expect(within(primaryNav).getByRole("link", { name: "Clients" })).toHaveAttribute(
       "href",

@@ -27,8 +27,7 @@ interface AppShellProps {
   avatarUrl?: string | null;
   profileId?: string;
   role: UserRole;
-  /** Server-resolved pilot flag; the Friends nav entry stays hidden until
-      the coach-validated rollout turns it on. */
+  /** Server-resolved pilot flag for the Friends entry in the account menu. */
   friendsNavEnabled?: boolean;
   preferences?: {
     themePref?: ThemePref;
@@ -64,7 +63,7 @@ function AttentionBadge({ value }: { value?: AttentionBadgeValue }) {
     : `${value.count} new`;
   return (
     <span
-      className="inline-flex min-w-badge shrink-0 items-center justify-center rounded-pill bg-primary px-2xs py-3xs text-ui-3xs font-semibold text-on-primary"
+      className="inline-flex min-w-badge shrink-0 items-center justify-center rounded-pill bg-primary px-3xs py-3xs text-ui-3xs font-semibold text-on-primary"
       aria-label={label}
     >
       {value.kind === "mention" ? "@" : ""}{value.count > 99 ? "99+" : value.count}
@@ -74,14 +73,6 @@ function AttentionBadge({ value }: { value?: AttentionBadgeValue }) {
 
 const clientNavItems: NavItem[] = [
   { href: "/home", label: "Home", Icon: IconHome },
-  { href: "/messages", label: "Messages", Icon: IconMessages },
-  { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
-];
-
-const clientNavItemsWithFriends: NavItem[] = [
-  { href: "/home", label: "Home", Icon: IconHome },
-  { href: "/messages", label: "Messages", Icon: IconMessages },
-  { href: "/friends", label: "Friends", Icon: IconUsers },
   { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
 
@@ -90,9 +81,8 @@ const coachNavItems: NavItem[] = [
   { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
 
-function getNavItems(role: UserRole, friendsNavEnabled: boolean) {
-  if (role === "coach") return coachNavItems;
-  return friendsNavEnabled ? clientNavItemsWithFriends : clientNavItems;
+function getNavItems(role: UserRole) {
+  return role === "coach" ? coachNavItems : clientNavItems;
 }
 
 function isActivePath(pathname: string, href: string) {
@@ -166,7 +156,7 @@ function NavLinks({
 
 /* Sketch 001/007: labeled navigation, top bar on wider web and bottom nav on
    mobile. Progress stays out until a coach validates that tracking technique.
-   Account actions (Profile, Sign out) live behind the UserMenu trigger, so
+   Account actions (Profile, Friends, Sign out) live behind the UserMenu trigger, so
    the shell adds no primary action. */
 export function AppShell({
   displayName,
@@ -179,8 +169,7 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const attention = useOptionalNotifications()?.attention ?? [];
-  const navItems = getNavItems(role, friendsNavEnabled);
-  const friendsAttention = attention.find((item) => item.surface === "friends");
+  const navItems = getNavItems(role);
   const channelAttention = attention.filter((item) => item.surface === "channel");
   const directUnread = attention
     .filter((item) => item.surface === "direct")
@@ -191,12 +180,6 @@ export function AppShell({
   );
   const communityUnread = channelAttention.some((item) => item.newActivity);
   const navBadges: Record<string, AttentionBadgeValue | undefined> = {
-    "/friends": friendsAttention?.unreadCount
-      ? { count: friendsAttention.unreadCount, kind: "count" }
-      : undefined,
-    "/messages": directUnread > 0
-      ? { count: directUnread, kind: "count" }
-      : undefined,
     [generalChannelHref]: communityMentions > 0
       ? { count: communityMentions, kind: "mention" }
       : communityUnread
@@ -233,6 +216,9 @@ export function AppShell({
         timeFormatPref={preferences?.timeFormatPref}
       />
 
+      {/* A call takes the whole screen: no header, no nav, one clear surface.
+          The call screen owns its own exit (End call / Back to home). */}
+      {!callSurface && (
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md md:py-sm">
         <Link
           href={role === "coach" ? "/coach" : "/home"}
@@ -252,14 +238,46 @@ export function AppShell({
         >
           <NavLinks items={navItems} pathname={pathname} placement="top" badges={navBadges} />
         </nav>
-        <div className="hidden flex-1 md:block" aria-hidden="true" />
-        <NotificationBell />
+        <div className="flex-1" aria-hidden="true" />
+        <div className="flex shrink-0 items-center gap-3xs">
+          {role === "client" && (
+            <Link
+              href="/messages"
+              aria-label={
+                directUnread > 0
+                  ? `Messages, ${directUnread} unread`
+                  : "Messages"
+              }
+              aria-current={messageSurface ? "page" : undefined}
+              className={cn(
+                "relative flex size-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground",
+                messageSurface && "bg-surface-2 text-foreground"
+              )}
+            >
+              <IconMessages size={22} stroke={1.75} aria-hidden="true" />
+              {directUnread > 0 && (
+                <span
+                  className="absolute -right-3xs -top-3xs flex"
+                  aria-hidden="true"
+                >
+                  <AttentionBadge
+                    value={{ count: directUnread, kind: "count" }}
+                  />
+                </span>
+              )}
+            </Link>
+          )}
+          <NotificationBell />
+        </div>
         <UserMenu
           displayName={displayName}
           avatarUrl={avatarUrl}
           profileId={profileId}
+          role={role}
+          friendsNavEnabled={friendsNavEnabled}
         />
       </header>
+      )}
 
       <main
         className={cn(
