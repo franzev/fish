@@ -23,7 +23,7 @@ describe("sticker catalog boundaries", () => {
       "utf8"
     );
     const migration = readFileSync(
-      join(repositoryRoot, "supabase/migrations/0030_chat_stickers.sql"),
+      join(repositoryRoot, "supabase/migrations/0033_chat_sticker_batch_2.sql"),
       "utf8"
     );
 

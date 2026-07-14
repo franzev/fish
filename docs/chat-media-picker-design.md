@@ -13,7 +13,7 @@ span multiple real themes. This avoids a redundant `Aquatic` choice while
 every available sticker is aquatic.
 
 Recently used and favorites are intentionally deferred. Neither feature exists
-in the current Emoji or GIF picker, and the initial 24-sticker catalog does not
+in the current Emoji or GIF picker, and the initial 32-sticker catalog does not
 justify new management controls. Add a single `Recent` section after real usage
 provides meaningful history. Add favorites only if user testing shows that
 search plus recent use is still too slow.
@@ -51,7 +51,7 @@ composer.
 
 ## Sample art direction
 
-The first six assets established the visual language for the 24-sticker pack:
+The first six assets established the visual language for the 32-sticker pack:
 
 - `Thank you`: grateful coral octopus, exactly eight visible arms.
 - `Good night`: sleepy blue whale with two pectoral flippers and a horizontal
@@ -100,17 +100,22 @@ batches.
 | Welcome back | Sea lion | External ear flaps and four flippers in an open welcoming pose |
 | See you soon | Sea turtle | Four flippers, shell, head, and short tail in a friendly wave |
 | Nice! | Nudibranch | Two rhinophores and one feathery branchial plume in a proud pose |
+| You got this | Reef shark | Five visible gill slits, paired pectoral fins, and a vertical heterocercal tail |
+| On it | Tuna | Torpedo-shaped body, two dorsal fins, finlets, and a rigid lunate tail |
+| Sounds good | Blue tang | Compressed oval body, black palette marking, and a yellow caudal fin |
+| Be right back | Sailfish | Long bill, full-height dorsal sail, paired fins, and a forked vertical tail |
+| Keep going | Salmon | Main dorsal plus a separate adipose fin, paired fins, and a forked tail |
+| Thinking… | Cuttlefish | Broad mantle, continuous fin fringe, W-shaped pupils, and eight visible arms; feeding tentacles retracted |
+| Take your time | Koi carp | Exactly two mouth barbels, one long dorsal fin, paired fins, and one forked tail |
+| I’m here | Orca | True eyes below white eye patches, saddle patch, two pectoral flippers, and horizontal tail flukes |
 
-Useful next phrases after the core set:
+Potential future phrases after the core set:
 
 | Phrase | Character | Why it earns a place |
 | --- | --- | --- |
-| You got this | Sea turtle | Supportive coaching and work conversations |
-| Sounds good | Dolphin | Fast agreement without a graded tone |
-| Be right back | Crab | Common conversational status |
-| On my way | Manta ray | Useful for appointments and meetups |
-| Take care | Whale | Warm conversation close |
-| Thinking of you | Jellyfish | Gentle support and reconnection |
+| On my way | Flying fish | Useful for appointments and meetups |
+| Take care | Sea robin | Warm conversation close |
+| Thinking of you | Leafy sea dragon | Gentle support and reconnection |
 
 ## Discovery and scale recommendations
 

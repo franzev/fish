@@ -8,7 +8,7 @@ describe("StickerPicker", () => {
     render(<StickerPicker onSelect={() => undefined} />);
 
     expect(screen.getByTestId("sticker-grid")).toHaveClass("grid-cols-3");
-    expect(screen.getAllByRole("button", { name: /^Add .* sticker$/ })).toHaveLength(24);
+    expect(screen.getAllByRole("button", { name: /^Add .* sticker$/ })).toHaveLength(32);
     expect(screen.getByRole("button", { name: "Add Hello! sticker" })).toHaveClass(
       "size-sticker-tile"
     );
