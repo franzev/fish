@@ -272,6 +272,65 @@ async function backfillClientProfile(clientId: string, level: string): Promise<v
     .from("client_profiles")
     .upsert({ id: clientId, level }, { onConflict: "id" });
   if (error) throw error;
+
+  const { error: localeError } = await supabase
+    .from("client_profiles")
+    .update({ locale: "en-PH", timezone: "Asia/Manila" })
+    .eq("id", clientId)
+    .is("timezone", null);
+  if (localeError) throw localeError;
+}
+
+/** Publishes two fixed 50-minute lesson times on each of the next ten weekdays. */
+async function seedLessonSlots(coachId: string): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from("lesson_slots")
+    .delete()
+    .eq("coach_id", coachId);
+  if (deleteError) throw deleteError;
+
+  const localTimes = [
+    { hour: 9, minute: 30 },
+    { hour: 18, minute: 30 },
+  ];
+  const slots: Array<{
+    coach_id: string;
+    starts_at: string;
+    ends_at: string;
+    duration_minutes: number;
+  }> = [];
+  const cursor = new Date();
+  cursor.setUTCHours(0, 0, 0, 0);
+
+  for (let daysAdded = 0, offset = 1; daysAdded < 10; offset += 1) {
+    const date = new Date(cursor);
+    date.setUTCDate(cursor.getUTCDate() + offset);
+    const weekday = date.getUTCDay();
+    if (weekday === 0 || weekday === 6) continue;
+
+    for (const time of localTimes) {
+      // Asia/Manila is UTC+8 year-round. Seed timestamps are stored as UTC;
+      // the product formats them in each client's saved timezone.
+      const startsAt = new Date(Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        time.hour - 8,
+        time.minute,
+      ));
+      slots.push({
+        coach_id: coachId,
+        starts_at: startsAt.toISOString(),
+        ends_at: new Date(startsAt.getTime() + 50 * 60 * 1000).toISOString(),
+        duration_minutes: 50,
+      });
+    }
+    daysAdded += 1;
+  }
+
+  const { error } = await supabase.from("lesson_slots").insert(slots);
+  if (error) throw error;
+  console.log(`Seeded ${slots.length} lesson slots for ${coach.displayName}.`);
 }
 
 
@@ -874,6 +933,7 @@ async function main(): Promise<void> {
   });
   await seedThreeImageMessage(directConversations, clientIds[0]);
   await seedCommunityChannels(coachId, coach2Id, clientIds, extraIds);
+  await seedLessonSlots(coachId);
 
   console.log("\nSeed complete. Dev credentials (local only):");
   console.log(`  Coach: ${coach.email} / ${coach.password}`);

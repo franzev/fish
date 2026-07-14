@@ -1,10 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  formatTimeOfDay,
-  useTimeFormatPreference,
-} from "@/lib/prefs/time-format";
+import { formatTimeOfDay } from "@/lib/prefs/time-format";
+import { useTimeFormatPreference } from "@/lib/prefs/use-time-format-preference";
 import { IconChecks } from "@tabler/icons-react";
 
 export interface UnreadMessageBannerProps {

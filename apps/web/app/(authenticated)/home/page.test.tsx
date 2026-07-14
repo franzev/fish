@@ -14,14 +14,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-const { getClientHomeDataMock } = vi.hoisted(() => ({
+const { getClientHomeDataMock, getUpcomingLessonDataMock } = vi.hoisted(() => ({
   getClientHomeDataMock: vi.fn(),
+  getUpcomingLessonDataMock: vi.fn(),
 }));
 vi.mock("@/features/auth/server", () => ({
   getClientHomeData: getClientHomeDataMock,
 }));
-vi.mock("@/features/calls", () => ({
-  CallEntryAction: ({ label }: { label: string }) => <button>{label}</button>,
+vi.mock("@/features/booking/server", () => ({
+  getUpcomingLessonData: getUpcomingLessonDataMock,
+}));
+vi.mock("@/features/booking", () => ({
+  UpcomingLesson: () => <div>Your next lesson card</div>,
 }));
 
 import ClientHomePage from "./page";
@@ -30,6 +34,8 @@ describe("ClientHomePage", () => {
   afterEach(() => {
     redirectMock.mockClear();
     getClientHomeDataMock.mockReset();
+    getUpcomingLessonDataMock.mockReset();
+    getUpcomingLessonDataMock.mockResolvedValue(null);
   });
 
   it("silently forwards a coach to /coach (D-03 wrong door)", async () => {
@@ -62,7 +68,7 @@ describe("ClientHomePage", () => {
     expect(screen.queryByText(/Coach Dana/)).not.toBeInTheDocument();
   });
 
-  it("renders the assigned empty state naming the coach (D-16)", async () => {
+  it("offers booking as the assigned client's one forward action", async () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
       firstName: "Alex",
@@ -75,11 +81,24 @@ describe("ClientHomePage", () => {
 
     expect(screen.getByText("Welcome back, Alex")).toBeInTheDocument();
     expect(
-      screen.getByText("Your coach Coach Dana is setting things up.")
+      screen.getByText("Your next lesson is ready to book.")
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Call Coach Dana" })
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "Book a lesson" })
+    ).toHaveAttribute("href", "/book");
+  });
+
+  it("shows the upcoming lesson instead of another booking action", async () => {
+    getClientHomeDataMock.mockResolvedValueOnce({
+      role: "client",
+      firstName: "Alex",
+      coachId: "coach-id",
+      coachName: "Coach Dana",
+    });
+    getUpcomingLessonDataMock.mockResolvedValueOnce({ lesson: { id: "lesson-1" } });
+    render(await ClientHomePage());
+    expect(screen.getByText("Your next lesson card")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Book a lesson" })).not.toBeInTheDocument();
   });
 
   it("keeps the assigned call as the only forward action and avoids choice lists", () => {

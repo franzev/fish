@@ -11,6 +11,8 @@ The web application currently includes:
 - Email/password authentication, recovery, verified sessions, and client/coach roles.
 - Client profiles and coach-visible client details protected by Supabase RLS.
 - A shared monochrome UI system with accessible light and dark themes.
+- Focused single-lesson booking with coach availability, conflict-safe writes,
+  local timezone display, 12/24-hour preferences, confirmation, and upcoming lessons.
 - A single seeded community channel at `/channels/:id` with persisted messages,
   replies, reactions, read state, presence, typing, bounded history loading, and
   realtime recovery.
@@ -55,6 +57,7 @@ pnpm build-storybook
 pnpm verify:rls
 pnpm verify:chat-realtime
 pnpm verify:friends
+pnpm verify:bookings
 ```
 
 `verify:friends` exercises both database/RLS behavior and the production Edge

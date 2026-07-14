@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       avatar_uploads: {
@@ -601,6 +576,57 @@ export type Database = {
           {
             foreignKeyName: "friendships_user_low_id_fkey"
             columns: ["user_low_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_slots: {
+        Row: {
+          booked_at: string | null
+          booked_by_client_id: string | null
+          coach_id: string
+          created_at: string
+          duration_minutes: number
+          ends_at: string
+          id: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          booked_at?: string | null
+          booked_by_client_id?: string | null
+          coach_id: string
+          created_at?: string
+          duration_minutes?: number
+          ends_at: string
+          id?: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          booked_at?: string | null
+          booked_by_client_id?: string | null
+          coach_id?: string
+          created_at?: string
+          duration_minutes?: number
+          ends_at?: string
+          id?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_slots_booked_by_client_id_fkey"
+            columns: ["booked_by_client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_slots_coach_id_fkey"
+            columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1628,6 +1654,26 @@ export type Database = {
         Returns: Json
       }
       block_user: { Args: { p_target_id: string }; Returns: boolean }
+      book_lesson_slot: {
+        Args: { p_slot_id: string }
+        Returns: {
+          booked_at: string | null
+          booked_by_client_id: string | null
+          coach_id: string
+          created_at: string
+          duration_minutes: number
+          ends_at: string
+          id: string
+          starts_at: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "lesson_slots"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_call: {
         Args: { p_call_id: string }
         Returns: {
@@ -2022,6 +2068,23 @@ export type Database = {
         Returns: {
           display_name: string
           user_id: string
+          username: string
+        }[]
+      }
+      list_channel_member_profiles: {
+        Args: { p_channel_id: string }
+        Returns: {
+          display_name: string
+          id: string
+          username: string
+        }[]
+      }
+      list_conversation_member_profiles: {
+        Args: { p_conversation_ids: string[] }
+        Returns: {
+          conversation_id: string
+          display_name: string
+          id: string
           username: string
         }[]
       }
@@ -2628,9 +2691,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       call_end_reason: [

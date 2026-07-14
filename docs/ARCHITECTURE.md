@@ -1,6 +1,6 @@
 # FISH Architecture
 
-Last verified: 2026-07-11
+Last verified: 2026-07-14
 
 FISH is a pnpm monorepo with one production application: a Next.js App Router
 web app backed directly by Supabase. It deliberately has no standalone
@@ -122,6 +122,8 @@ authoritative Postgres state after missed or duplicated events.
 Core tables include:
 
 - `profiles`, `client_profiles`, and `coach_clients`
+- `lesson_slots`, which begins as coach availability and becomes the durable
+  booking through an atomic command RPC
 - `channels` and `conversations`
 - `messages`, `message_reads`, and `message_reactions`
 - `presence_sessions`
@@ -140,6 +142,9 @@ types are committed in `packages/supabase/src/database.generated.ts`.
   composition roots and delegate immediately.
 - Simple authorized reads use repositories over RLS-protected Supabase access.
 - Sensitive writes use actions, Edge Functions, and database RPCs.
+- Lesson booking uses the `booking-command` Edge Function and the
+  `book_lesson_slot` RPC so RLS, idempotency, and slot conflicts are enforced
+  at the database boundary.
 - `packages/core` must not import React, Next.js, Zustand, or Supabase.
 - Client chat state is a cache and interaction model, never an authorization source.
 - Message windows and recovery reads remain bounded.

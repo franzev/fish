@@ -20,6 +20,7 @@
     "verify:rls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-rls.ts",
     "verify:chat-realtime": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-realtime.ts",
     "verify:calls": "node --experimental-strip-types --env-file=apps/web/.env.local --env-file=supabase/functions/.env.local scripts/verify-calls.ts",
+    "verify:bookings": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-bookings.ts",
     "verify:friends": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-friends.ts",
     "verify:notifications": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-notifications.ts",
     "verify:presence": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-presence.ts",

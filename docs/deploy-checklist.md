@@ -27,21 +27,29 @@ is done.
 ## 3. Push migrations to the hosted database
 
 - [ ] Run `supabase db push` against the linked project. This applies every
-      committed migrations through `0025_avatar_photos.sql`, including profiles,
+      committed migration through `0036_lesson_booking.sql`, including profiles,
       client profiles, assignments, chat, realtime features, reactions, the
-      seeded `general` channel, and the call control plane.
+      seeded `general` channel, call control plane, presence, notifications,
+      and conflict-safe lesson slots.
 - [ ] Spot-check that RLS is enabled on `profiles`, `client_profiles`,
       `coach_clients`, `channels`, `conversations`, `messages`,
-      `message_reads`, `message_reactions`, and `presence_sessions`.
+      `message_reads`, `message_reactions`, `presence_sessions`, and
+      `lesson_slots`.
 - [ ] Deploy the chat command functions:
       `supabase functions deploy send-message` and
       `supabase functions deploy chat-command`.
 - [ ] Confirm both functions require JWT verification and preserve the caller's
       bearer token when invoking PostgREST/RPCs.
+- [ ] Deploy `presence-command` with JWT verification, then change a staging
+      user's status through the account menu and confirm a trusted viewer sees
+      the update.
 - [ ] Create a LiveKit Cloud project and set `LIVEKIT_URL`, `LIVEKIT_API_KEY`,
       and `LIVEKIT_API_SECRET` as Supabase Edge Function secrets.
 - [ ] Deploy `call-command` with JWT verification and `livekit-webhook` without
       Supabase JWT verification; the webhook validates LiveKit's signature.
+- [ ] Deploy `booking-command` with JWT verification. Create the initial
+      production coach availability through a trusted service-role or SQL
+      administration path; never run the local development seed in production.
 - [ ] Add the deployed webhook URL in LiveKit and send a test event before
       enabling calls for users.
 - [ ] Confirm the `expire-stale-calls` pg_cron job exists and runs once per
@@ -127,7 +135,8 @@ is done.
       staging-only credentials and disposable test users.
 - [ ] Verify signup, confirmation, sign-in, password recovery, profile editing,
       client and coach avatar upload/removal, channel loading, message send,
-      reaction, read state, and realtime recovery.
+      reaction, read state, presence status changes, lesson booking and conflict
+      handling, upcoming-lesson display, and realtime recovery.
 - [ ] Do not point destructive reset or seed commands at production.
 
 ---

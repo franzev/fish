@@ -71,6 +71,20 @@ describe("AppShell", () => {
     expect(container.firstElementChild?.className).toContain("h-dvh");
   });
 
+  it("gives booking its full focused pane without shell navigation", () => {
+    pathname = "/book";
+    const { container } = render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Booking content
+      </AppShell>
+    );
+
+    expect(container.querySelector("main")?.className).toContain("min-h-0");
+    expect(container.querySelector("main")?.className).not.toContain("max-w-content");
+    expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Mobile primary" })).not.toBeInTheDocument();
+  });
+
   it("renders the channel column with the active room and the two focused community rooms", () => {
     pathname = generalChannelHref;
 

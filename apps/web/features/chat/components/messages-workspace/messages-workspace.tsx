@@ -6,7 +6,8 @@ import {
   selectMessagesForConversation,
   useChatStore,
 } from "@/features/chat/model/store";
-import { formatTimeOfDay, useTimeFormatPreference } from "@/lib/prefs/time-format";
+import { formatTimeOfDay } from "@/lib/prefs/time-format";
+import { useTimeFormatPreference } from "@/lib/prefs/use-time-format-preference";
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
 import {
   IconLanguage,
@@ -22,8 +23,8 @@ export interface MessagesWorkspaceProps {
 }
 
 /**
- * Frames a direct conversation with desktop-only context. The client still
- * has one assigned coach, so the rail is intentionally a single destination
+ * Frames a direct conversation with desktop-only context. Each direct route
+ * has one assigned relationship, so the rail stays a single destination
  * rather than a marketplace-style inbox with unsupported filters and actions.
  */
 export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
@@ -42,6 +43,15 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
   const preview = latestMessage?.senderId === chat.currentUserId
     ? `You: ${latestSnippet}`
     : latestSnippet;
+  const participantLabel = chat.currentUserRole === "coach"
+    ? "Your client"
+    : "Your coach";
+  const assignedParticipantLabel = chat.currentUserRole === "coach"
+    ? "Your assigned client"
+    : "Your assigned coach";
+  const privacyCopy = chat.currentUserRole === "coach"
+    ? "Only you and your client can take part."
+    : "Only you and your coach can take part.";
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 bg-bg">
@@ -113,7 +123,7 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
             <h3 className="mt-sm font-sans text-heading-sm font-semibold text-foreground">
               {chat.participant.displayName}
             </h3>
-            <p className="mt-2xs text-ui-sm text-muted">Your coach</p>
+            <p className="mt-2xs text-ui-sm text-muted">{participantLabel}</p>
           </div>
 
           <dl className="mt-xl divide-y divide-divider">
@@ -126,7 +136,9 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
               />
               <div>
                 <dt className="text-ui text-foreground">One-to-one coaching</dt>
-                <dd className="mt-2xs text-ui-sm text-muted">Your assigned coach</dd>
+                <dd className="mt-2xs text-ui-sm text-muted">
+                  {assignedParticipantLabel}
+                </dd>
               </div>
             </div>
             <div className="flex gap-sm py-md">
@@ -151,7 +163,7 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
               <div>
                 <dt className="text-ui text-foreground">Private conversation</dt>
                 <dd className="mt-2xs text-ui-sm text-muted">
-                  Only you and your coach can take part.
+                  {privacyCopy}
                 </dd>
               </div>
             </div>

@@ -6,7 +6,8 @@ import type {
   MessagePopoverActionState,
   MessagePopoverPreview,
 } from "@/features/chat/contracts";
-import { formatTimeOfDay, useTimeFormatPreference } from "@/lib/prefs/time-format";
+import { formatTimeOfDay } from "@/lib/prefs/time-format";
+import { useTimeFormatPreference } from "@/lib/prefs/use-time-format-preference";
 import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import { IconArrowsDiagonal, IconMessages, IconX } from "@tabler/icons-react";

@@ -11,6 +11,7 @@ export type Database = GeneratedDatabase;
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type CoachClientRow = Database["public"]["Tables"]["coach_clients"]["Row"];
 export type ClientProfileRow = Database["public"]["Tables"]["client_profiles"]["Row"];
+export type LessonSlotRow = Database["public"]["Tables"]["lesson_slots"]["Row"];
 export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 export type MessageAttachmentRow =

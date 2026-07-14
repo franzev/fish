@@ -119,6 +119,31 @@ export interface CoachClientRepository {
   listAssignedClients(): Promise<ServiceResult<CoachClientListItem[]>>;
 }
 
+export interface LessonSlot {
+  id: string;
+  coachId: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  bookedByClientId: string | null;
+  bookedAt: string | null;
+}
+
+export interface LessonRepository {
+  listAvailable(
+    coachId: string,
+    afterIso?: string
+  ): Promise<ServiceResult<LessonSlot[]>>;
+  findUpcomingForClient(
+    clientId: string,
+    afterIso?: string
+  ): Promise<ServiceResult<LessonSlot | null>>;
+  findBookedByIdForClient(
+    slotId: string,
+    clientId: string
+  ): Promise<ServiceResult<LessonSlot | null>>;
+}
+
 export interface ClientChatReaction { emoji: string; count: number; byMe: boolean }
 export interface ClientChatAttachment {
   id: string; status: "ready"; kind?: "image" | "file"; originalName: string;
@@ -210,6 +235,7 @@ export interface DatabaseServices {
   profiles: ProfileRepository;
   coachClients: CoachClientRepository;
   clientProfiles: ClientProfileRepository;
+  lessons: LessonRepository;
   chat: ChatRepository;
   chatSearch: ChatSearchRepository;
   friends: FriendRepository;
@@ -314,6 +340,7 @@ export interface PresenceCommandService {
 export interface PresenceRealtimeService {
   subscribe(
     userId: string,
+    subjectIds: string[],
     onSnapshot: (snapshot: PresenceSnapshot) => void,
     onPreference: (preference: PresencePreference, revision: number) => void,
     onRecovery?: () => void,
@@ -561,6 +588,14 @@ export interface CallRealtimeService {
   >;
 }
 
+export type BookingCommandResult =
+  | { ok: true; slot: LessonSlot }
+  | { ok: false; code: string; notice: string };
+
+export interface BookingCommandService {
+  bookSlot(slotId: string): Promise<BookingCommandResult>;
+}
+
 export interface FriendProfile {
   id: string;
   displayName: string;
@@ -687,6 +722,7 @@ export interface FriendRealtimeService {
 
 export interface ServerServices extends AppServices {
   chatCommands: ChatCommandService;
+  bookingCommands: BookingCommandService;
 }
 
 export interface ConversationTypingController { sendTyping(typing: boolean): void; unsubscribe(): void }

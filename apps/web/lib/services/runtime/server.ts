@@ -1,10 +1,12 @@
 import "server-only";
 
 import type {
+  BookingCommandService,
   ChatCommandService,
   ServerServices,
 } from "../contracts";
 import { SupabaseChatCommandService } from "../supabase/chat-command-service";
+import { SupabaseBookingCommandService } from "../supabase/booking-command-service";
 import {
   createServerSupabaseClient,
   createServerSupabaseServices,
@@ -33,10 +35,21 @@ function lazyChatCommands(): ChatCommandService {
   };
 }
 
+function lazyBookingCommands(): BookingCommandService {
+  async function adapter() {
+    return new SupabaseBookingCommandService(await createServerSupabaseClient());
+  }
+
+  return {
+    bookSlot: async (slotId) => (await adapter()).bookSlot(slotId),
+  };
+}
+
 export async function getServerServices(): Promise<ServerServices> {
   const services = await createServerSupabaseServices();
   return {
     ...services,
     chatCommands: lazyChatCommands(),
+    bookingCommands: lazyBookingCommands(),
   };
 }

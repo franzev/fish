@@ -4,6 +4,7 @@ import { SupabaseFriendRepository } from "./friend-repository";
 import { SupabaseNotificationRepository } from "./notification-repository";
 import { SupabaseNavigationAttentionRepository } from "./navigation-attention-repository";
 import { SupabasePresenceRepository } from "./presence-repository";
+import { SupabaseLessonRepository } from "./booking-repository";
 import {
   SupabaseClientProfileRepository,
   SupabaseCoachClientRepository,
@@ -16,6 +17,7 @@ import type {
   CoachClientRepository,
   DatabaseServices,
   FriendRepository,
+  LessonRepository,
   NotificationRepository,
   NavigationAttentionRepository,
   PresenceRepository,
@@ -27,6 +29,7 @@ export class SupabaseDatabaseServiceImpl implements DatabaseServices {
   readonly profiles: ProfileRepository;
   readonly coachClients: CoachClientRepository;
   readonly clientProfiles: ClientProfileRepository;
+  readonly lessons: LessonRepository;
   readonly chat: ChatRepository;
   readonly chatSearch: ChatSearchRepository;
   readonly friends: FriendRepository;
@@ -38,6 +41,7 @@ export class SupabaseDatabaseServiceImpl implements DatabaseServices {
     this.profiles = new SupabaseProfileRepository(client);
     this.coachClients = new SupabaseCoachClientRepository(client);
     this.clientProfiles = new SupabaseClientProfileRepository(client);
+    this.lessons = new SupabaseLessonRepository(client);
     this.chat = new SupabaseChatRepository(client);
     this.chatSearch = new SupabaseChatSearchRepository(client);
     this.friends = new SupabaseFriendRepository(client);

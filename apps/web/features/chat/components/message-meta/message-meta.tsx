@@ -1,9 +1,7 @@
 "use client";
 
-import {
-  formatTimeOfDay,
-  useTimeFormatPreference,
-} from "@/lib/prefs/time-format";
+import { formatTimeOfDay } from "@/lib/prefs/time-format";
+import { useTimeFormatPreference } from "@/lib/prefs/use-time-format-preference";
 import { cn } from "@/lib/utils";
 import { HTMLAttributes, type ReactNode } from "react";
 

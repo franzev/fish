@@ -4,7 +4,10 @@ import { getClientHomeData } from "@/features/auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconSparkles } from "@tabler/icons-react";
-import { CallEntryAction } from "@/features/calls";
+import { UpcomingLesson } from "@/features/booking";
+import { getUpcomingLessonData } from "@/features/booking/server";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /* Server Component (NOT "use client") — the (authenticated) layout already
    ran getUser(), redirected signed-out visitors, and resolved role/shell.
@@ -24,24 +27,31 @@ export default async function ClientHomePage() {
     redirect(authRedirects.coachHome);
   }
 
+  const upcomingLesson = await getUpcomingLessonData();
+
   return (
     <>
       <h1 className="mb-lg text-heading-sm">Welcome back, {data.firstName}</h1>
-      <EmptyState Icon={IconSparkles}>
-        {data.coachName ? (
-          <p>Your coach {data.coachName} is setting things up.</p>
-        ) : (
-          <p>We&apos;re getting things ready for you.</p>
-        )}
-      </EmptyState>
-      {data.coachId && data.coachName && (
-        <div className="mt-lg">
-          <CallEntryAction
-            recipientId={data.coachId}
-            recipientName={data.coachName}
-            label={`Call ${data.coachName}`}
-          />
-        </div>
+      {upcomingLesson ? (
+        <UpcomingLesson data={upcomingLesson} />
+      ) : (
+        <>
+          <EmptyState Icon={IconSparkles}>
+            {data.coachName ? (
+              <p>Your next lesson is ready to book.</p>
+            ) : (
+              <p>We&apos;re getting things ready for you.</p>
+            )}
+          </EmptyState>
+          {data.coachId && data.coachName && (
+            <Link
+              href="/book"
+              className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}
+            >
+              Book a lesson
+            </Link>
+          )}
+        </>
       )}
       <p className="mt-lg text-center text-ui-sm text-muted">
         <Link href="/profile" className="text-body underline">

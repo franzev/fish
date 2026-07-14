@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 export type TimeFormatPref = "12h" | "24h" | null;
 
 export const TIME_FORMAT_PREF_CHANGE_EVENT = "fish:time-format-pref-change";
@@ -43,33 +41,10 @@ export function formatTimeOfDay(
   return new Intl.DateTimeFormat(options.locale, formatOptions).format(date);
 }
 
-function getAppliedTimeFormatPref(): TimeFormatPref {
-  if (typeof document === "undefined") {
-    return null;
-  }
-
-  return normalizeTimeFormatPref(document.documentElement.dataset.timeFormat);
-}
-
-function subscribe(onStoreChange: () => void): () => void {
-  if (typeof window === "undefined") {
-    return () => undefined;
-  }
-
-  window.addEventListener(TIME_FORMAT_PREF_CHANGE_EVENT, onStoreChange);
-  return () => {
-    window.removeEventListener(TIME_FORMAT_PREF_CHANGE_EVENT, onStoreChange);
-  };
-}
-
 export function notifyTimeFormatPrefChanged(): void {
   if (typeof window === "undefined") {
     return;
   }
 
   window.dispatchEvent(new Event(TIME_FORMAT_PREF_CHANGE_EVENT));
-}
-
-export function useTimeFormatPreference(): TimeFormatPref {
-  return useSyncExternalStore(subscribe, getAppliedTimeFormatPref, () => null);
 }

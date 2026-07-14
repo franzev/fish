@@ -205,8 +205,10 @@ export function AppShell({
   const channelSurface = isActivePath(pathname, "/channels");
   const messageSurface = isActivePath(pathname, "/messages");
   const callSurface = isActivePath(pathname, "/calls");
+  const bookingSurface = isActivePath(pathname, "/book");
   const conversationSurface = channelSurface || messageSurface;
-  const immersive = conversationSurface || callSurface;
+  const focusedSurface = callSurface || bookingSurface;
+  const immersive = conversationSurface || focusedSurface;
 
   return (
     <div
@@ -224,7 +226,7 @@ export function AppShell({
 
       {/* A call takes the whole screen: no header, no nav, one clear surface.
           The call screen owns its own exit (End call / Back to home). */}
-      {!callSurface && (
+      {!focusedSurface && (
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md md:py-sm">
         <Link
           href={role === "coach" ? "/coach" : "/home"}
@@ -338,7 +340,7 @@ export function AppShell({
           {children}
         </div>
       </main>
-      {!callSurface && (
+      {!focusedSurface && (
         <nav
           aria-label="Mobile primary"
           className="fixed inset-x-0 bottom-0 flex border-t border-divider bg-surface px-xs py-xs md:hidden"
