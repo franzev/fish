@@ -108,7 +108,7 @@ describe("LiveKitCallMedia", () => {
     setCameraEnabledMock.mockRejectedValue(new Error("camera unavailable"));
   });
 
-  it("requests a 1080p camera layer and preserves adaptive simulcast", async () => {
+  it("uses one smooth 720p stream for one-to-one calls", async () => {
     const media = new LiveKitCallMedia(callbacks());
 
     await expect(
@@ -120,24 +120,15 @@ describe("LiveKitCallMedia", () => {
     ).resolves.toBeUndefined();
 
     expect(roomOptions[0]).toMatchObject({
-      adaptiveStream: { pixelDensity: "screen" },
-      dynacast: true,
+      adaptiveStream: false,
+      dynacast: false,
       videoCaptureDefaults: {
-        resolution: { width: 1920, height: 1080, frameRate: 30 },
+        resolution: { width: 1280, height: 720, frameRate: 30 },
       },
       publishDefaults: {
-        simulcast: true,
-        videoEncoding: { maxBitrate: 3_000_000, maxFramerate: 30 },
-        videoSimulcastLayers: [
-          {
-            encoding: { maxBitrate: 450_000, maxFramerate: 20 },
-            resolution: { width: 640, height: 360, frameRate: 20 },
-          },
-          {
-            encoding: { maxBitrate: 1_700_000, maxFramerate: 30 },
-            resolution: { width: 1280, height: 720, frameRate: 30 },
-          },
-        ],
+        simulcast: false,
+        videoEncoding: { maxBitrate: 1_700_000, maxFramerate: 30 },
+        degradationPreference: "maintain-resolution",
       },
     });
   });

@@ -95,7 +95,7 @@ describe("CallScreen", () => {
     expect(screen.getByText("Speaking")).toBeInTheDocument();
   });
 
-  it("shows video surfaces and camera controls only for a video call", () => {
+  it("shows video surfaces, camera controls, and popover audio settings for a video call", async () => {
     const value = activeCallValue();
     value.state.current.kind = "video";
     value.state.current.cameraEnabled = true;
@@ -112,6 +112,13 @@ describe("CallScreen", () => {
     expect(
       screen.getByRole("button", { name: "Turn camera off" })
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Audio settings" }));
+
+    expect(
+      await screen.findByRole("combobox", { name: "Microphone" })
+    ).toBeInTheDocument();
+    expect(value.microphones).toHaveBeenCalledOnce();
   });
 
   it("attaches remote video through LiveKit so adaptive quality tracks the stage", () => {

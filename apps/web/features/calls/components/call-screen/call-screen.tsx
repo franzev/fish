@@ -1,8 +1,9 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Popover } from "@base-ui/react/popover";
 import {
   IconMicrophone,
   IconMicrophoneOff,
@@ -62,8 +63,7 @@ export function CallScreen({ callId }: { callId: string }) {
     if (localVideo.current) localVideo.current.srcObject = localVideoStream;
   }, [localVideoStream]);
 
-  async function toggleAudioSettings() {
-    const nextOpen = !audioSettingsOpen;
+  async function handleAudioSettingsOpenChange(nextOpen: boolean) {
     setAudioSettingsOpen(nextOpen);
     if (!nextOpen || microphoneOptions.length > 0) return;
     const options = await microphones();
@@ -134,7 +134,7 @@ export function CallScreen({ callId }: { callId: string }) {
     router.push(homeHref);
   }
 
-  const microphoneSelect = audioSettingsOpen && microphoneOptions.length > 0 && (
+  const microphoneSelect = microphoneOptions.length > 0 && (
     <label className="flex w-full flex-col gap-xs text-left text-ui-sm text-body">
       Microphone
       <select
@@ -216,7 +216,6 @@ export function CallScreen({ callId }: { callId: string }) {
               </Button>
             </>
           )}
-          {microphoneSelect}
           <div className="flex flex-wrap items-center gap-sm">
             <div className="min-w-0 text-left">
               <h1 className="text-heading-sm">{heading}</h1>
@@ -253,13 +252,37 @@ export function CallScreen({ callId }: { callId: string }) {
                       {call.cameraEnabled ? "Turn camera off" : "Turn camera on"}
                     </span>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    aria-expanded={audioSettingsOpen}
-                    onClick={() => void toggleAudioSettings()}
+                  <Popover.Root
+                    open={audioSettingsOpen}
+                    onOpenChange={(nextOpen) =>
+                      void handleAudioSettingsOpenChange(nextOpen)
+                    }
                   >
-                    Audio settings
-                  </Button>
+                    <Popover.Trigger
+                      className={buttonVariants({ variant: "ghost" })}
+                    >
+                      Audio settings
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                      <Popover.Positioner
+                        side="top"
+                        align="end"
+                        sideOffset={4}
+                        className="z-50"
+                      >
+                        <Popover.Popup
+                          initialFocus={false}
+                          className="w-menu rounded-control border border-divider bg-surface p-md outline-none"
+                        >
+                          {microphoneSelect ?? (
+                            <p role="status" className="text-ui-sm text-body">
+                              Finding microphones…
+                            </p>
+                          )}
+                        </Popover.Popup>
+                      </Popover.Positioner>
+                    </Popover.Portal>
+                  </Popover.Root>
                 </>
               )}
               <Button
@@ -397,11 +420,13 @@ export function CallScreen({ callId }: { callId: string }) {
                     variant="ghost"
                     fullWidth
                     aria-expanded={audioSettingsOpen}
-                    onClick={() => void toggleAudioSettings()}
+                    onClick={() =>
+                      void handleAudioSettingsOpenChange(!audioSettingsOpen)
+                    }
                   >
                     Audio settings
                   </Button>
-                  {microphoneSelect}
+                  {audioSettingsOpen && microphoneSelect}
                 </>
               )}
               <Button fullWidth loading={busy} onClick={() => void end()}>

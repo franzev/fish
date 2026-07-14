@@ -61,15 +61,15 @@ export class LiveKitCallMedia {
     }
     await this.disconnect();
     const room = new Room({
-      adaptiveStream: { pixelDensity: "screen" },
-      dynacast: true,
+      adaptiveStream: false,
+      dynacast: false,
       videoCaptureDefaults: {
-        resolution: VideoPresets.h1080.resolution,
+        resolution: VideoPresets.h720.resolution,
       },
       publishDefaults: {
-        simulcast: true,
-        videoEncoding: VideoPresets.h1080.encoding,
-        videoSimulcastLayers: [VideoPresets.h360, VideoPresets.h720],
+        simulcast: false,
+        videoEncoding: VideoPresets.h720.encoding,
+        degradationPreference: "maintain-resolution",
       },
     });
     this.room = room;
