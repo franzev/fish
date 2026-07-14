@@ -57,6 +57,7 @@ interface ChatMessageRowProps {
   isCommunity: boolean;
   participantReadState?: ClientChatReadState;
   latestMineRequestId: string | null;
+  isFocused?: boolean;
   getAuthorName: (message: LocalMessage) => string;
   getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
   actions: ChatMessageActions;
@@ -72,6 +73,7 @@ export function ChatMessageRow({
   isCommunity,
   participantReadState,
   latestMineRequestId,
+  isFocused = false,
   getAuthorName,
   getAuthorAvatar,
   actions,
@@ -303,7 +305,10 @@ export function ChatMessageRow({
         </li>
       )}
       <li
+        id={`message-${message.id}`}
         className={cn(
+          "scroll-mt-md",
+          isFocused && "bg-surface-2",
           !isCommunity && "group relative flex items-end",
           !isCommunity &&
             previous &&

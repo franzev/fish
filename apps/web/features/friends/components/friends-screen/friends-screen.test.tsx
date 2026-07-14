@@ -1,8 +1,7 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { resolvedService } from "@/lib/services/testing";
 import type {
-  FriendCommandService,
   FriendListItem,
   FriendRealtimeEvent,
   FriendRealtimeService,
@@ -51,18 +50,6 @@ function makeRepository(
   };
 }
 
-function makeCommands(): FriendCommandService {
-  return {
-    sendRequest: vi.fn(),
-    respondRequest: vi.fn(),
-    cancelRequest: vi.fn(),
-    removeFriend: vi.fn(),
-    blockUser: vi.fn(),
-    unblockUser: vi.fn(),
-    markNotificationsRead: vi.fn(async () => ({ ok: true as const, data: 1 })),
-  } as FriendCommandService;
-}
-
 function makeRealtime() {
   let handler: ((event: FriendRealtimeEvent) => void) | null = null;
   const service: FriendRealtimeService = {
@@ -87,9 +74,7 @@ describe("FriendsScreen", () => {
         initialFriends={[sam]}
         initialNextCursor={null}
         initialIncomingRequestCount={0}
-        initialAcceptedNotifications={[]}
         repository={makeRepository([[sam]])}
-        commands={makeCommands()}
         realtime={makeRealtime().service}
       />
     );
@@ -115,9 +100,7 @@ describe("FriendsScreen", () => {
         initialFriends={[]}
         initialNextCursor={null}
         initialIncomingRequestCount={1}
-        initialAcceptedNotifications={[]}
         repository={makeRepository([[]], 1)}
-        commands={makeCommands()}
         realtime={makeRealtime().service}
       />
     );
@@ -136,9 +119,7 @@ describe("FriendsScreen", () => {
         initialFriends={[sam]}
         initialNextCursor={null}
         initialIncomingRequestCount={0}
-        initialAcceptedNotifications={[]}
         repository={repository}
-        commands={makeCommands()}
         realtime={realtime.service}
       />
     );
@@ -157,36 +138,4 @@ describe("FriendsScreen", () => {
     expect(repository.listFriends).toHaveBeenCalled();
   });
 
-  it("shows accepted notes and quietly marks them read once", async () => {
-    const commands = makeCommands();
-    render(
-      <FriendsScreen
-        userId="me"
-        initialFriends={[sam]}
-        initialNextCursor={null}
-        initialIncomingRequestCount={0}
-        initialAcceptedNotifications={[
-          {
-            id: "n-1",
-            kind: "friendRequestAccepted",
-            actor: sam.friend,
-            entityId: "req-1",
-            readAt: null,
-            createdAt: sam.since,
-          },
-        ]}
-        repository={makeRepository([[sam]])}
-        commands={commands}
-        realtime={makeRealtime().service}
-      />
-    );
-
-    expect(
-      screen.getByText("Sam Lee accepted your friend request.")
-    ).toBeVisible();
-    await waitFor(() =>
-      expect(commands.markNotificationsRead).toHaveBeenCalledWith(["n-1"])
-    );
-    expect(commands.markNotificationsRead).toHaveBeenCalledTimes(1);
-  });
 });

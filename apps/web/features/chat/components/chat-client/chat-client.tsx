@@ -77,6 +77,7 @@ function createSearchRequest(
 
 export interface ChatClientProps {
   chat: ClientChatData;
+  focusMessageId?: string | null;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
   searchMessagesAction?: (input: unknown) => Promise<ChatSearchActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
@@ -109,6 +110,7 @@ export interface ChatClientProps {
 
 export function ChatClient({
   chat,
+  focusMessageId,
   sendMessageAction,
   searchMessagesAction,
   editMessageAction,
@@ -197,6 +199,7 @@ export function ChatClient({
     currentUserId: chat.currentUserId,
   });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const requestedFocusMessageRef = useRef<string | null>(null);
   const { hasOlderLoadError, loadOlderAndPreserveScroll } = useLoadOlderMessages({
     viewportRef,
     sentinelRef,
@@ -205,6 +208,30 @@ export function ChatClient({
     hasLoadError,
     onLoadOlder: loadOlderMessages,
   });
+  useEffect(() => {
+    if (!focusMessageId || messages.some((message) => message.id === focusMessageId)) {
+      return;
+    }
+    if (requestedFocusMessageRef.current === focusMessageId) return;
+    requestedFocusMessageRef.current = focusMessageId;
+    void refreshMessages([focusMessageId]);
+  }, [focusMessageId, messages, refreshMessages]);
+
+  useEffect(() => {
+    if (!focusMessageId || !messages.some((message) => message.id === focusMessageId)) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      document.getElementById(`message-${focusMessageId}`)?.scrollIntoView({
+        block: "center",
+        behavior: reducedMotion ? "auto" : "smooth",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusMessageId, messages]);
   // "Reconnecting…" is only calm/true once the conversation has genuinely
   // connected before — the very first mount also passes through
   // "connecting", and that ordinary initial load must never read as a
@@ -467,6 +494,7 @@ export function ChatClient({
           chat,
           participantReadState,
           latestMineRequestId,
+          focusMessageId,
           getAuthorName: getMessageAuthorName,
           getAuthorAvatar: getMessageAuthorAvatar,
         }}

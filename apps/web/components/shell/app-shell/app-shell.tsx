@@ -2,11 +2,14 @@
 
 import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
 import { UserMenu } from "@/components/shell/user-menu";
+import { NotificationBell } from "@/features/notifications";
+import { useOptionalNotifications } from "@/features/notifications";
 import { communityChannels, generalChannelHref } from "@/lib/channels";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@fish/core/roles";
 import {
   IconHome,
+  IconMessages,
   IconUsers,
   IconUsersGroup,
   type Icon,
@@ -42,13 +45,42 @@ interface NavItem {
   Icon: Icon;
 }
 
+interface AttentionBadgeValue {
+  count: number;
+  kind: "count" | "mention" | "activity";
+}
+
+function AttentionBadge({ value }: { value?: AttentionBadgeValue }) {
+  if (!value || value.count <= 0) return null;
+  if (value.kind === "activity") {
+    return (
+      <span className="size-2xs shrink-0 rounded-pill bg-foreground" title="New activity">
+        <span className="sr-only">New activity</span>
+      </span>
+    );
+  }
+  const label = value.kind === "mention"
+    ? `${value.count} ${value.count === 1 ? "mention" : "mentions"}`
+    : `${value.count} new`;
+  return (
+    <span
+      className="inline-flex min-w-badge shrink-0 items-center justify-center rounded-pill bg-primary px-2xs py-3xs text-ui-3xs font-semibold text-on-primary"
+      aria-label={label}
+    >
+      {value.kind === "mention" ? "@" : ""}{value.count > 99 ? "99+" : value.count}
+    </span>
+  );
+}
+
 const clientNavItems: NavItem[] = [
   { href: "/home", label: "Home", Icon: IconHome },
+  { href: "/messages", label: "Messages", Icon: IconMessages },
   { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
 
 const clientNavItemsWithFriends: NavItem[] = [
   { href: "/home", label: "Home", Icon: IconHome },
+  { href: "/messages", label: "Messages", Icon: IconMessages },
   { href: "/friends", label: "Friends", Icon: IconUsers },
   { href: generalChannelHref, label: "Community", Icon: IconUsersGroup },
 ];
@@ -71,10 +103,12 @@ function NavLinks({
   items,
   pathname,
   placement,
+  badges,
 }: {
   items: NavItem[];
   pathname: string;
   placement: "top" | "bottom";
+  badges: Record<string, AttentionBadgeValue | undefined>;
 }) {
   return (
     <>
@@ -103,7 +137,26 @@ function NavLinks({
             >
               <Icon size={20} stroke={1.75} aria-hidden="true" />
             </span>
-            <span>{label}</span>
+            <span className={placement === "top" ? "grid" : undefined}>
+              {placement === "top" && (
+                <span
+                  aria-hidden="true"
+                  className="invisible col-start-1 row-start-1 font-semibold"
+                >
+                  {label}
+                </span>
+              )}
+              <span className={placement === "top" ? "col-start-1 row-start-1" : undefined}>
+                {label}
+              </span>
+            </span>
+            {placement === "top" ? (
+              <span className="inline-flex w-nav-badge-slot shrink-0 justify-end">
+                <AttentionBadge value={badges[href]} />
+              </span>
+            ) : (
+              <AttentionBadge value={badges[href]} />
+            )}
           </Link>
         );
       })}
@@ -125,12 +178,46 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const pathname = usePathname();
+  const attention = useOptionalNotifications()?.attention ?? [];
   const navItems = getNavItems(role, friendsNavEnabled);
+  const friendsAttention = attention.find((item) => item.surface === "friends");
+  const channelAttention = attention.filter((item) => item.surface === "channel");
+  const directUnread = attention
+    .filter((item) => item.surface === "direct")
+    .reduce((total, item) => total + item.unreadCount, 0);
+  const communityMentions = channelAttention.reduce(
+    (total, item) => total + item.mentionCount,
+    0
+  );
+  const communityUnread = channelAttention.some((item) => item.newActivity);
+  const navBadges: Record<string, AttentionBadgeValue | undefined> = {
+    "/friends": friendsAttention?.unreadCount
+      ? { count: friendsAttention.unreadCount, kind: "count" }
+      : undefined,
+    "/messages": directUnread > 0
+      ? { count: directUnread, kind: "count" }
+      : undefined,
+    [generalChannelHref]: communityMentions > 0
+      ? { count: communityMentions, kind: "mention" }
+      : communityUnread
+      ? { count: 1, kind: "activity" }
+      : undefined,
+  };
+  const channelBadges = new Map(channelAttention.map((item) => [
+    item.entityId,
+    item.mentionCount > 0
+      ? { count: item.mentionCount, kind: "mention" as const }
+      : item.newActivity
+      ? { count: 1, kind: "activity" as const }
+      : undefined,
+  ]));
   /* Channels and calls are immersive surfaces: each owns the available pane
      and scrolls internally, so the shell locks to the viewport there. */
   const channelSurface = isActivePath(pathname, "/channels");
+  const messageSurface = isActivePath(pathname, "/messages");
   const callSurface = isActivePath(pathname, "/calls");
-  const immersive = channelSurface || callSurface;
+  const conversationSurface = channelSurface || messageSurface;
+  const immersive = conversationSurface || callSurface;
 
   return (
     <div
@@ -163,9 +250,10 @@ export function AppShell({
           aria-label="Primary"
           className="hidden items-center gap-3xs md:flex"
         >
-          <NavLinks items={navItems} pathname={pathname} placement="top" />
+          <NavLinks items={navItems} pathname={pathname} placement="top" badges={navBadges} />
         </nav>
         <div className="hidden flex-1 md:block" aria-hidden="true" />
+        <NotificationBell />
         <UserMenu
           displayName={displayName}
           avatarUrl={avatarUrl}
@@ -203,6 +291,7 @@ export function AppShell({
                   )}
                 >
                   <span aria-hidden="true">#</span> {channel.name}
+                  <span className="ml-auto"><AttentionBadge value={channelBadges.get(channel.id)} /></span>
                 </Link>
               ))}
             </nav>
@@ -213,7 +302,7 @@ export function AppShell({
           className={cn(
             "flex min-w-0 flex-1 flex-col",
             immersive && "min-h-0",
-            channelSurface && "pb-mobile-nav-offset md:pb-0"
+            conversationSurface && "pb-mobile-nav-offset md:pb-0"
           )}
         >
           {channelSurface && (
@@ -236,6 +325,7 @@ export function AppShell({
                   )}
                 >
                   <span aria-hidden="true">#</span> {channel.name}
+                  <AttentionBadge value={channelBadges.get(channel.id)} />
                 </Link>
               ))}
             </nav>
@@ -248,7 +338,7 @@ export function AppShell({
           aria-label="Mobile primary"
           className="fixed inset-x-0 bottom-0 flex border-t border-divider bg-surface px-xs py-xs md:hidden"
         >
-          <NavLinks items={navItems} pathname={pathname} placement="bottom" />
+          <NavLinks items={navItems} pathname={pathname} placement="bottom" badges={navBadges} />
         </nav>
       )}
     </div>

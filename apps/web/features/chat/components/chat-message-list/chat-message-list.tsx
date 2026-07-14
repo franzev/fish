@@ -33,6 +33,7 @@ interface ChatMessageListProps {
     chat: ClientChatData;
     participantReadState?: ClientChatReadState;
     latestMineRequestId: string | null;
+    focusMessageId?: string | null;
     getAuthorName: (message: LocalMessage) => string;
     getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
   };
@@ -56,6 +57,7 @@ export function ChatMessageList({
     chat,
     participantReadState,
     latestMineRequestId,
+    focusMessageId,
     getAuthorName,
     getAuthorAvatar,
   } = transcript;
@@ -102,6 +104,7 @@ export function ChatMessageList({
                   isCommunity={isCommunity}
                   participantReadState={participantReadState}
                   latestMineRequestId={latestMineRequestId}
+                  isFocused={message.id === focusMessageId}
                   getAuthorName={getAuthorName}
                   getAuthorAvatar={getAuthorAvatar}
                   actions={actions}

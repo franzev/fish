@@ -5,18 +5,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   getBrowserServices,
-  getFriendCommandService,
 } from "@/lib/services/runtime/browser";
 import type {
-  FriendCommandService,
   FriendListItem,
-  FriendNotification,
   FriendRealtimeService,
   FriendRepository,
 } from "@/lib/services";
 import { IconChevronRight, IconUserPlus } from "@tabler/icons-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useFriendsRefresh } from "../../hooks/use-friends-refresh";
 import { Avatar } from "@/features/chat";
 import { resolveAvatarUrlsSafely } from "@/features/profile/image/resolve-avatar-urls";
@@ -26,9 +23,7 @@ interface FriendsScreenProps {
   initialFriends: FriendListItem[];
   initialNextCursor: { createdAt: string; id: string } | null;
   initialIncomingRequestCount: number;
-  initialAcceptedNotifications: FriendNotification[];
   repository?: FriendRepository;
-  commands?: FriendCommandService;
   realtime?: FriendRealtimeService;
 }
 
@@ -37,26 +32,18 @@ export function FriendsScreen({
   initialFriends,
   initialNextCursor,
   initialIncomingRequestCount,
-  initialAcceptedNotifications,
   repository: repositoryOverride,
-  commands: commandsOverride,
   realtime: realtimeOverride,
 }: FriendsScreenProps) {
   const repository = useMemo(
     () => repositoryOverride ?? getBrowserServices().database.friends,
     [repositoryOverride]
   );
-  const commands = useMemo(
-    () => getFriendCommandService(commandsOverride),
-    [commandsOverride]
-  );
-
   const [friends, setFriends] = useState(initialFriends);
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [incomingRequestCount, setIncomingRequestCount] = useState(
     initialIncomingRequestCount
   );
-  const [acceptedNotifications] = useState(initialAcceptedNotifications);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Deliberately a bounded first-page refresh: wake-up hints and reconnects
@@ -83,17 +70,6 @@ export function FriendsScreen({
   }
 
   useFriendsRefresh(userId, refresh, realtimeOverride);
-
-  // The accepted notes were already rendered from server data; marking them
-  // read once keeps them from reappearing on the next visit.
-  const markedRead = useRef(false);
-  useEffect(() => {
-    if (markedRead.current || acceptedNotifications.length === 0) return;
-    markedRead.current = true;
-    void commands.markNotificationsRead(
-      acceptedNotifications.map((notification) => notification.id)
-    );
-  }, [acceptedNotifications, commands]);
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;
@@ -130,11 +106,6 @@ export function FriendsScreen({
             <span className="text-ui-sm text-muted">Review</span>
           </Link>
         )}
-        {acceptedNotifications.map((notification) => (
-          <p key={notification.id} className="text-ui-sm text-muted">
-            {notification.actor.displayName} accepted your friend request.
-          </p>
-        ))}
       </div>
 
       {friends.length === 0 ? (

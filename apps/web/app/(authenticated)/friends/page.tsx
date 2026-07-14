@@ -29,7 +29,6 @@ export default async function FriendsPage() {
         initialFriends={data.friends}
         initialNextCursor={data.nextCursor}
         initialIncomingRequestCount={data.incomingRequestCount}
-        initialAcceptedNotifications={data.acceptedNotifications}
       />
     </>
   );

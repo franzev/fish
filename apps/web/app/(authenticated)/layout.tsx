@@ -5,6 +5,8 @@ import { getAuthenticatedShellProfile } from "@/features/auth/server";
 import { friendsFeatureEnabled } from "@/features/friends/server";
 import { redirect } from "next/navigation";
 import { CallProvider } from "@/features/calls";
+import { NotificationProvider } from "@/features/notifications";
+import { getNotificationShellData } from "@/features/notifications/server";
 
 /* D-06 default-deny: every route inside this (authenticated) group requires
    a session. getUser() is the only server-verified read (never
@@ -29,27 +31,36 @@ export default async function AuthenticatedLayout({
     redirect(authRedirects.signedOut);
   }
 
+  const notifications = await getNotificationShellData();
+
   return (
-    <CallProvider
+    <NotificationProvider
       userId={profile.userId}
-      homeHref={profile.role === "coach" ? "/coach" : "/home"}
+      initialPage={notifications.page}
+      initialSummary={notifications.summary}
+      initialAttention={notifications.attention}
     >
-      <ChatIdentityGuard userId={profile.userId} />
-      <AppShell
-        displayName={profile.displayName}
-        avatarUrl={profile.avatarUrl}
-        profileId={profile.userId}
-        role={profile.role}
-        friendsNavEnabled={friendsFeatureEnabled()}
-        preferences={{
-          themePref: profile.themePref,
-          textSizePref: profile.textSizePref,
-          reducedMotionPref: profile.reducedMotionPref,
-          timeFormatPref: profile.timeFormatPref,
-        }}
+      <CallProvider
+        userId={profile.userId}
+        homeHref={profile.role === "coach" ? "/coach" : "/home"}
       >
-        {children}
-      </AppShell>
-    </CallProvider>
+        <ChatIdentityGuard userId={profile.userId} />
+        <AppShell
+          displayName={profile.displayName}
+          avatarUrl={profile.avatarUrl}
+          profileId={profile.userId}
+          role={profile.role}
+          friendsNavEnabled={friendsFeatureEnabled()}
+          preferences={{
+            themePref: profile.themePref,
+            textSizePref: profile.textSizePref,
+            reducedMotionPref: profile.reducedMotionPref,
+            timeFormatPref: profile.timeFormatPref,
+          }}
+        >
+          {children}
+        </AppShell>
+      </CallProvider>
+    </NotificationProvider>
   );
 }

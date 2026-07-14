@@ -28,11 +28,32 @@ vi.mock("@/features/calls", () => ({
   CallProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+vi.mock("@/features/notifications/server", () => ({
+  getNotificationShellData: vi.fn(async () => ({
+    page: { items: [], nextCursor: null },
+    summary: { unreadCount: 0, unseenCount: 0, latestChangeSeq: 0 },
+    attention: [],
+  })),
+}));
+
 // ChatIdentityGuard (CR-01) now mounts alongside AppShell and calls this on
 // mount -- mock it so the real Supabase browser client (and its required
 // env vars) is never constructed in this unit test.
 vi.mock("@/lib/services/runtime/browser", () => ({
-  getBrowserServices: () => ({ auth: { subscribe: () => () => {} } }),
+  getBrowserServices: () => ({
+    auth: { subscribe: () => () => {} },
+    database: {
+      notifications: {
+        listPage: vi.fn(),
+        getSummary: vi.fn(),
+        listChanges: vi.fn(),
+      },
+      attention: { list: vi.fn() },
+    },
+  }),
+  getNotificationCommandService: () => ({ execute: vi.fn() }),
+  getNotificationRealtimeService: () => ({ subscribe: () => () => {} }),
+  getAttentionRealtimeService: () => ({ subscribe: () => () => {} }),
 }));
 
 import AuthenticatedLayout from "./layout";

@@ -263,6 +263,25 @@ describe("ChatClient", () => {
     realtimeMock.client.from.mockReturnValue(realtimeMock.table);
   });
 
+  it("visually emphasizes a message reached from a notification", async () => {
+    const previousScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        focusMessageId="message-1"
+      />
+    );
+
+    const target = document.getElementById("message-message-1");
+    expect(target).toHaveClass("bg-surface-2");
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    HTMLElement.prototype.scrollIntoView = previousScrollIntoView;
+  });
+
   it("renders the direct assigned conversation without an inbox", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 

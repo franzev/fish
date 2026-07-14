@@ -158,6 +158,7 @@
   --spacing-skeleton-word-29: 29%;
   --spacing-field-message: 22px;
   --spacing-badge: 20px;
+  --spacing-nav-badge-slot: 40px; /* stable header room for the widest capped attention count */
   /* Reply spline: gap-md + half sm avatar — anchors the L-stem on avatar centre. */
   --spacing-reply-spline-left: 32px;
   --spacing-emoji-panel: 288px;   /* emoji picker popover width */
@@ -175,6 +176,7 @@
   --spacing-search-suggestions: 360px;
   --spacing-search-discovery: min(70dvh, 640px);
   --spacing-search-results: 520px;
+  --spacing-notifications-panel-h: min(70dvh, 560px);
   --spacing-search-control: 36px; /* compact desktop chat-toolbar search field */
   --spacing-filter-options: 312px;
   --spacing-chat-demo: 520px;
@@ -201,6 +203,8 @@
   --container-skeleton-author: 96px;
   --container-search-header: 360px; /* compact command search field */
   --container-search-pop: 488px;    /* command and autocomplete panel */
+  --container-notifications: 420px; /* focused notification popover */
+  --container-notifications-mobile: calc(100vw - (var(--spacing-page) * 2));
   --container-search-pop-mobile: calc(100vw - (var(--spacing-page) * 2));
   --container-filters-dialog: 936px; /* detailed desktop filter editor */
   --container-calendar: 600px;
