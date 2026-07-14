@@ -186,7 +186,7 @@ export function Composer({
             rows={1}
             enterKeyHint="send"
             placeholder={channelName ? `Message #${channelName}` : "Message"}
-            className="max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs py-field-y text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
+            className="h-control max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs py-compact text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
           />
           <MediaPickerButton
             onSelectEmoji={onSelectEmoji}
@@ -208,14 +208,15 @@ export function Composer({
                       aria-label={sendDisabledReason
                         ? `Send unavailable: ${sendDisabledReason}`
                         : undefined}
-                      className="inline-flex shrink-0 rounded-control"
+                      className="inline-flex size-control shrink-0 rounded-control"
                     >
                       <Button
                         type="button"
+                        controlSize="square"
                         fullWidth={false}
                         onClick={onSend}
                         disabled={!canSend}
-                        className="min-h-control w-control shrink-0 px-0"
+                        className="shrink-0"
                         aria-label="Send message"
                       >
                         <IconSend size={20} stroke={1.75} aria-hidden="true" />

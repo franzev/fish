@@ -99,12 +99,31 @@ describe("Composer", () => {
 
     expect(sendButton).toBeInTheDocument();
     expect(sendButton).toHaveClass(
-      "w-control",
+      "size-control",
       "min-h-control",
       "px-0"
     );
     expect(sendButton).not.toHaveClass("px-md");
     expect(sendButton).not.toHaveAttribute("style");
+  });
+
+  it("keeps every action square without enlarging the first text line", () => {
+    render(<Composer {...baseProps} draft="Hello" canSend />);
+
+    expect(screen.getByRole("button", { name: "Add to message" })).toHaveClass(
+      "size-control"
+    );
+    expect(
+      screen.getByRole("button", { name: "Add emoji, GIF, or sticker" })
+    ).toHaveClass("size-control");
+    expect(screen.getByRole("button", { name: "Send message" })).toHaveClass(
+      "size-control"
+    );
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveClass(
+      "h-control",
+      "min-h-control",
+      "py-compact"
+    );
   });
 
   it("explains why Send is disabled while an attachment is uploading", async () => {
