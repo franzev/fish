@@ -5,7 +5,10 @@
 // (see docs/deploy-checklist.md).
 import { createClient } from "@supabase/supabase-js";
 import { chatStickerIds, type ChatStickerId } from "../packages/core/src/chat.ts";
-import { buildSeedReactionRows } from "./seed-reaction-randomizer.ts";
+import {
+  buildCommunitySeedTimeline,
+  buildSeedReactionRows,
+} from "./seed-reaction-randomizer.ts";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -839,6 +842,25 @@ function communityMessageBody(
   return fixtures[index % fixtures.length].replaceAll("{name}", senderName);
 }
 
+async function clearCommunityNotificationProjection(
+  conversationId: string,
+): Promise<void> {
+  const { data: events, error: eventError } = await supabase
+    .from("notification_events")
+    .select("item_id")
+    .eq("conversation_id", conversationId);
+  if (eventError) throw eventError;
+
+  const itemIds = [...new Set((events ?? []).map((event) => event.item_id))];
+  if (itemIds.length === 0) return;
+
+  const { error: itemError } = await supabase
+    .from("notification_items")
+    .delete()
+    .in("id", itemIds);
+  if (itemError) throw itemError;
+}
+
 async function seedCommunityChannels(
   coachId: string,
   coach2Id: string,
@@ -860,13 +882,19 @@ async function seedCommunityChannels(
   const coachParticipants = participants.filter((participant) => participant.role === "coach");
   const searchUsername =
     profiles?.find((profile) => profile.id === clientIds[0])?.username ?? "client1";
+  const messagesPerChannel = 100;
+  const timeline = buildCommunitySeedTimeline({
+    channelCount: communityChannelSeeds.length,
+    messagesPerChannel,
+  });
 
   for (let channelIndex = 0; channelIndex < communityChannelSeeds.length; channelIndex += 1) {
     const channel = communityChannelSeeds[channelIndex];
     if (!channel) continue;
 
-    const start = Date.UTC(2026, 5, 1 + channelIndex * 7, 8, 0, 0);
-    const rows: CommunitySeedMessage[] = Array.from({ length: 100 }, (_, index) => {
+    const start = timeline[channelIndex]?.firstMessageAt;
+    if (start === undefined) throw new Error(`No seed timeline available for ${channel.slug}`);
+    const rows: CommunitySeedMessage[] = Array.from({ length: messagesPerChannel }, (_, index) => {
       const introductionAuthor = clientParticipants[Math.floor(index / 2) % clientParticipants.length];
       const introductionCoach = coachParticipants[index % coachParticipants.length];
       const defaultAuthor = participants[index % participants.length];
@@ -897,6 +925,8 @@ async function seedCommunityChannels(
           : {}),
       };
     });
+
+    await clearCommunityNotificationProjection(channel.conversationId);
 
     const { error: deleteError } = await supabase
       .from("messages")

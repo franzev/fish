@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildSeedReactionRows } from "../../../scripts/seed-reaction-randomizer";
+import {
+  buildCommunitySeedTimeline,
+  buildSeedReactionRows,
+} from "../../../scripts/seed-reaction-randomizer";
 
 const conversationId = "11111111-1111-4111-8111-111111111111";
 
@@ -102,5 +105,22 @@ describe("buildSeedReactionRows", () => {
     expect(countsByEmoji.size).toBeLessThanOrEqual(30);
     expect(Array.from(countsByEmoji.values()).every((count) => count >= 9 && count <= 20)).toBe(true);
     expect(new Set(countsByEmoji.values()).size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("buildCommunitySeedTimeline", () => {
+  it("keeps every seeded message safely in the past", () => {
+    const now = Date.UTC(2026, 6, 14, 12);
+    const timeline = buildCommunitySeedTimeline({
+      channelCount: 15,
+      messagesPerChannel: 100,
+      now,
+    });
+
+    expect(timeline).toHaveLength(15);
+    expect(Math.max(...timeline.map((channel) => channel.lastMessageAt)))
+      .toBeLessThanOrEqual(now - 60 * 60 * 1000);
+    expect(timeline.every((channel) => channel.firstMessageAt <= channel.lastMessageAt))
+      .toBe(true);
   });
 });

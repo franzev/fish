@@ -24,6 +24,43 @@ type BuildSeedReactionRowsOptions = {
   maxReactionsPerMessage?: number;
 };
 
+type BuildCommunitySeedTimelineOptions = {
+  channelCount: number;
+  messagesPerChannel: number;
+  now?: number;
+};
+
+export type CommunitySeedChannelTimeline = {
+  firstMessageAt: number;
+  lastMessageAt: number;
+};
+
+const channelSpacingMs = 7 * 24 * 60 * 60 * 1000;
+const messageSpacingMs = 45 * 60 * 1000;
+const recentActivityBufferMs = 60 * 60 * 1000;
+
+export function buildCommunitySeedTimeline({
+  channelCount,
+  messagesPerChannel,
+  now = Date.now(),
+}: BuildCommunitySeedTimelineOptions): CommunitySeedChannelTimeline[] {
+  if (channelCount <= 0 || messagesPerChannel <= 0) return [];
+
+  const lastMessageOffset = (messagesPerChannel - 1) * messageSpacingMs;
+  const firstChannelStart = now
+    - recentActivityBufferMs
+    - (channelCount - 1) * channelSpacingMs
+    - lastMessageOffset;
+
+  return Array.from({ length: channelCount }, (_, channelIndex) => {
+    const firstMessageAt = firstChannelStart + channelIndex * channelSpacingMs;
+    return {
+      firstMessageAt,
+      lastMessageAt: firstMessageAt + lastMessageOffset,
+    };
+  });
+}
+
 const defaultReactionEmojis = [
   "👍",
   "❤️",
