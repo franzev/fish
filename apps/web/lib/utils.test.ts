@@ -14,4 +14,10 @@ describe("cn", () => {
   it("lets later Tailwind utilities win when classes conflict", () => {
     expect(cn("px-lg text-body", "px-md")).toBe("text-body px-md");
   });
+
+  it("keeps the smallest badge font token alongside a text color", () => {
+    expect(cn("text-ui-3xs", "text-on-primary")).toBe(
+      "text-ui-3xs text-on-primary"
+    );
+  });
 });

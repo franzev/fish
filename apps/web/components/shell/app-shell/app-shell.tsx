@@ -2,6 +2,7 @@
 
 import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
 import { UserMenu } from "@/components/shell/user-menu";
+import { CountBadge } from "@/components/ui/count-badge";
 import { MessagesPopover } from "@/features/chat";
 import type { MessagePopoverActionState } from "@/features/chat/contracts";
 import { NotificationBell } from "@/features/notifications";
@@ -66,12 +67,11 @@ function AttentionBadge({ value }: { value?: AttentionBadgeValue }) {
     ? `${value.count} ${value.count === 1 ? "mention" : "mentions"}`
     : `${value.count} new`;
   return (
-    <span
-      className="inline-flex min-w-badge shrink-0 items-center justify-center rounded-pill bg-primary px-3xs py-3xs text-ui-3xs font-semibold text-on-primary"
+    <CountBadge
+      count={value.count}
+      prefix={value.kind === "mention" ? "@" : ""}
       aria-label={label}
-    >
-      {value.kind === "mention" ? "@" : ""}{value.count > 99 ? "99+" : value.count}
-    </span>
+    />
   );
 }
 

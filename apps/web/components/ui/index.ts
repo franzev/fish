@@ -2,6 +2,7 @@ export * from "./alert";
 export * from "./button";
 export * from "./card";
 export * from "./circular-progress";
+export * from "./count-badge";
 export * from "./input";
 export * from "./icon-tab-strip";
 export * from "./password-input";

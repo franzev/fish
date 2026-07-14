@@ -4,6 +4,7 @@ import { Popover } from "@base-ui/react/popover";
 import { IconBell } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
+import { CountBadge } from "@/components/ui/count-badge";
 import { NotificationList } from "../notification-list";
 import { useOptionalNotifications } from "../notification-provider";
 
@@ -11,11 +12,11 @@ function BellContents({ unreadCount }: { unreadCount: number }) {
   return (
     <>
       <IconBell size={22} stroke={1.75} aria-hidden="true" />
-      {unreadCount > 0 && (
-        <span className="absolute -right-3xs -top-3xs flex size-badge items-center justify-center rounded-pill bg-primary text-ui-3xs font-semibold text-on-primary" aria-hidden="true">
-          {unreadCount > 99 ? "99+" : unreadCount}
-        </span>
-      )}
+      <CountBadge
+        count={unreadCount}
+        className="absolute -right-3xs -top-3xs"
+        aria-hidden="true"
+      />
     </>
   );
 }

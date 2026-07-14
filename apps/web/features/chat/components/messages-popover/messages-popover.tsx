@@ -1,6 +1,7 @@
 "use client";
 
 import { PopoverHeader } from "@/components/ui/popover-header";
+import { CountBadge } from "@/components/ui/count-badge";
 import { Avatar } from "../avatar";
 import type {
   MessagePopoverActionState,
@@ -108,14 +109,11 @@ export function MessagesPopover({
         className={triggerClass}
       >
         <IconMessages size={22} stroke={1.75} aria-hidden="true" />
-        {unreadCount > 0 && (
-          <span
-            className="absolute -right-3xs -top-3xs inline-flex min-w-badge items-center justify-center rounded-pill bg-primary px-3xs py-3xs text-ui-3xs font-semibold text-on-primary"
-            aria-hidden="true"
-          >
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
+        <CountBadge
+          count={unreadCount}
+          className="absolute -right-3xs -top-3xs"
+          aria-hidden="true"
+        />
       </Link>
     );
   }
@@ -138,14 +136,11 @@ export function MessagesPopover({
         className={cn(triggerClass, "md:hidden")}
       >
         <IconMessages size={22} stroke={1.75} aria-hidden="true" />
-        {unreadCount > 0 && (
-          <span
-            className="absolute -right-3xs -top-3xs inline-flex min-w-badge items-center justify-center rounded-pill bg-primary px-3xs py-3xs text-ui-3xs font-semibold text-on-primary"
-            aria-hidden="true"
-          >
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
+        <CountBadge
+          count={unreadCount}
+          className="absolute -right-3xs -top-3xs"
+          aria-hidden="true"
+        />
       </Link>
 
       <span className="hidden md:inline-flex">
@@ -165,14 +160,11 @@ export function MessagesPopover({
             className={triggerClass}
           >
             <IconMessages size={22} stroke={1.75} aria-hidden="true" />
-            {unreadCount > 0 && (
-              <span
-                className="absolute -right-3xs -top-3xs inline-flex min-w-badge items-center justify-center rounded-pill bg-primary px-3xs py-3xs text-ui-3xs font-semibold text-on-primary"
-                aria-hidden="true"
-              >
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
+            <CountBadge
+              count={unreadCount}
+              className="absolute -right-3xs -top-3xs"
+              aria-hidden="true"
+            />
           </Popover.Trigger>
 
           <Popover.Portal>
@@ -296,14 +288,10 @@ export function MessagesPopover({
                           <span className="min-w-0 flex-1 truncate text-ui-sm text-muted">
                             {latestText}
                           </span>
-                          {unreadCount > 0 && (
-                            <span
-                              className="inline-flex min-w-badge shrink-0 items-center justify-center rounded-pill bg-primary px-3xs py-3xs text-ui-3xs font-semibold text-on-primary"
-                              aria-label={`${unreadCount} unread`}
-                            >
-                              {unreadCount > 99 ? "99+" : unreadCount}
-                            </span>
-                          )}
+                          <CountBadge
+                            count={unreadCount}
+                            aria-label={`${unreadCount} unread`}
+                          />
                         </span>
                       </span>
                     </Link>

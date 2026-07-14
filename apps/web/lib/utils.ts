@@ -29,6 +29,7 @@ const SPACING_TOKENS = [
    color tokens — `text-body` and `text-ui-sm` both fall into its default
    font-size bucket, so whichever comes later silently swallows the other. */
 const FONT_SIZE_TOKENS = [
+  "ui-3xs",
   "ui-2xs",
   "ui-xs",
   "ui-sm",
