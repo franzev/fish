@@ -200,6 +200,8 @@
 
   /* ---- Layout widths ---- */
   --container-channel-col: 232px; /* channel list column beside immersive content */
+  --container-conversation-list: 304px; /* desktop direct-message conversation rail */
+  --container-conversation-details: 280px; /* quiet participant context beside a direct thread */
   --container-menu: 224px;        /* floating action menus (composer +) */
   --container-form: 440px;
   --container-content: 640px;

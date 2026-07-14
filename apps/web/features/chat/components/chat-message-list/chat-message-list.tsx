@@ -1,6 +1,10 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
-import type { ClientChatData, ClientChatReadState } from "@/lib/services";
+import type {
+  ClientChatData,
+  ClientChatReadState,
+  ClientChatUnreadSummary,
+} from "@/lib/services";
 import { IconArrowDown } from "@tabler/icons-react";
 import type { RefObject } from "react";
 import type { CommunityMemberProfile } from "../member-profile-popover";
@@ -10,6 +14,7 @@ import {
   type ChatMessageActions,
 } from "./chat-message-row";
 import { OlderMessagesControl } from "./older-messages-control";
+import { UnreadMessageBanner } from "../unread-message-banner";
 
 interface ChatMessageListProps {
   viewport: {
@@ -34,6 +39,11 @@ interface ChatMessageListProps {
     chat: ClientChatData;
     participantReadState?: ClientChatReadState;
     latestMineRequestId: string | null;
+    unreadSummary: ClientChatUnreadSummary;
+    showUnreadBanner: boolean;
+    isMarkingUnreadMessages: boolean;
+    unreadNotice: string | null;
+    markUnreadMessagesRead: () => Promise<void>;
     friendActionsEnabled: boolean;
     focusMessageId?: string | null;
     getAuthorName: (message: LocalMessage) => string;
@@ -60,6 +70,11 @@ export function ChatMessageList({
     chat,
     participantReadState,
     latestMineRequestId,
+    unreadSummary,
+    showUnreadBanner,
+    isMarkingUnreadMessages,
+    unreadNotice,
+    markUnreadMessagesRead,
     friendActionsEnabled,
     focusMessageId,
     getAuthorName,
@@ -72,6 +87,15 @@ export function ChatMessageList({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
+      {showUnreadBanner && (
+        <UnreadMessageBanner
+          count={unreadSummary.count}
+          oldestUnreadAt={unreadSummary.oldestUnreadAt}
+          loading={isMarkingUnreadMessages}
+          notice={unreadNotice}
+          onMarkRead={markUnreadMessagesRead}
+        />
+      )}
       <ScrollArea
         className="flex-1"
         viewportRef={viewport.ref}

@@ -1,0 +1,54 @@
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { ClientChatData } from "@/lib/services";
+import { resetChatStoreForTests } from "@/features/chat/model/store";
+import { MessagesWorkspace } from "./messages-workspace";
+
+const chat: ClientChatData = {
+  conversationId: "11111111-1111-4111-8111-111111111111",
+  currentUserId: "client-1",
+  currentUserRole: "client",
+  currentUserDisplayName: "Alex Rivera",
+  participant: {
+    id: "coach-1",
+    displayName: "Coach Dana",
+    role: "coach",
+  },
+  messages: [
+    {
+      id: "message-1",
+      conversationId: "11111111-1111-4111-8111-111111111111",
+      senderId: "client-1",
+      senderRole: "client",
+      body: "I will send my notes this afternoon.",
+      clientRequestId: "seed-1",
+      createdAt: "2026-07-14T08:33:00.000Z",
+    },
+  ],
+};
+
+describe("MessagesWorkspace", () => {
+  beforeEach(() => {
+    resetChatStoreForTests();
+  });
+
+  it("frames the active direct conversation with calm desktop context", () => {
+    render(
+      <MessagesWorkspace chat={chat}>
+        <div>Active conversation</div>
+      </MessagesWorkspace>
+    );
+
+    expect(screen.getByRole("heading", { name: "Messages" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Coach Dana/ })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+    expect(screen.getByText("You: I will send my notes this afternoon.")).toBeInTheDocument();
+    expect(screen.getByText("Active conversation")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Details" })).toBeInTheDocument();
+    expect(screen.getByText("Only you and your coach can take part.")).toBeInTheDocument();
+    expect(screen.queryByText("Archived")).not.toBeInTheDocument();
+    expect(screen.queryByText(/rating/i)).not.toBeInTheDocument();
+  });
+});

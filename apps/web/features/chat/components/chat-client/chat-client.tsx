@@ -6,12 +6,12 @@ import type {
   ClientChatMessage,
   ClientChatReadState,
 } from "@/lib/services";
-import { useTimeFormatPreference } from "@/lib/prefs/time-format";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChatSearchActionState,
   ReportGifActionState,
   SendMessageActionState,
+  UnreadSummaryActionState,
 } from "@/features/chat/contracts";
 import {
   createChatSearchUrl,
@@ -30,7 +30,7 @@ import {
   toLocalMessage,
   useChatMessages,
 } from "@/features/chat/hooks/use-chat-messages";
-import { useChatPresence } from "@/features/chat/hooks/use-chat-presence";
+import { usePresence } from "@/features/presence";
 import { useChatReadState } from "@/features/chat/hooks/use-chat-read-state";
 import { useChatRealtime } from "@/features/chat/hooks/use-chat-realtime";
 import { useLoadOlderMessages } from "@/features/chat/hooks/use-load-older-messages";
@@ -92,6 +92,9 @@ export interface ChatClientProps {
     notice?: string;
     readState?: ClientChatReadState;
   }>;
+  refreshUnreadSummaryAction?: (
+    input: unknown
+  ) => Promise<UnreadSummaryActionState>;
   refreshMessagesAction?: (input: unknown) => Promise<{
     status: "sent" | "notice";
     values: unknown;
@@ -121,6 +124,7 @@ export function ChatClient({
   toggleReactionAction,
   reportGifAction,
   markReadStateAction,
+  refreshUnreadSummaryAction,
   refreshMessagesAction,
   refreshConversationAction,
   loadOlderMessagesAction,
@@ -148,10 +152,18 @@ export function ChatClient({
     backfillMessagesAction,
     loadNewestMessagesAction,
   });
-  const { mergeReadState, participantReadState } = useChatReadState({
+  const {
+    mergeReadState,
+    participantReadState,
+    unreadSummary,
+    isMarkingUnreadMessages,
+    unreadNotice,
+    markUnreadMessagesRead,
+  } = useChatReadState({
     chat,
     messages,
     markReadStateAction,
+    refreshUnreadSummaryAction,
   });
   const [search, setSearch] = useState("");
   const [searchCriteria, setSearchCriteria] = useState<ChatFilterCriterion[]>([]);
@@ -169,7 +181,6 @@ export function ChatClient({
   const restoredUrlRef = useRef<string | null>(null);
   const searchMembers = chat.searchMembers ?? emptySearchMembers;
   const searchChannels = chat.searchChannels ?? emptySearchChannels;
-  const timeFormatPref = useTimeFormatPreference();
   const isCommunity = chat.kind === "community";
   const chatTitle = chat.title ?? chat.participant.displayName;
   const activityName = isCommunity ? "Someone" : chat.participant.displayName;
@@ -206,7 +217,9 @@ export function ChatClient({
     refreshConversation,
     applyGapBackfill,
   });
-  const { presenceStatus } = useChatPresence({ chat, timeFormatPref });
+  const participantPresence = usePresence(
+    isCommunity ? undefined : chat.participant.id
+  );
   // Full messages array (not filteredMessages): search filtering must never
   // trigger scroll behavior.
   const { viewportRef, showNewMessages, scrollToBottom } = useStickToBottom({
@@ -471,8 +484,9 @@ export function ChatClient({
         channelName={chat.channelName}
         isCommunity={isCommunity}
         memberCount={memberCount}
-        presenceLabel={presenceStatus.label}
-        showOnlineDot={presenceStatus.showOnlineDot}
+        presenceStatus={participantPresence.status}
+        presenceLabel={participantPresence.label}
+        presenceDetail={participantPresence.detail}
         search={search}
         onSearchChange={setSearch}
         criteria={searchCriteria}
@@ -509,6 +523,11 @@ export function ChatClient({
           chat,
           participantReadState,
           latestMineRequestId,
+          unreadSummary,
+          showUnreadBanner: Boolean(markReadStateAction),
+          isMarkingUnreadMessages,
+          unreadNotice,
+          markUnreadMessagesRead,
           friendActionsEnabled,
           focusMessageId,
           getAuthorName: getMessageAuthorName,

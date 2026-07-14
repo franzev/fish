@@ -56,6 +56,12 @@ vi.mock("@/lib/services/supabase/browser", () => ({
   createBrowserSupabaseClient: () => realtimeMock.client,
 }));
 
+const usePresenceMock = vi.hoisted(() => vi.fn());
+vi.mock("@/features/presence", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/presence")>()),
+  usePresence: usePresenceMock,
+}));
+
 const chat: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
   currentUserId: "client-1",
@@ -143,11 +149,11 @@ describe("ChatClient hook boundaries", () => {
     expect(chatClientSource).toContain("useChatReadState(");
   });
 
-  it("delegates realtime and presence behavior to focused hooks", () => {
+  it("delegates realtime locally and consumes app-wide presence", () => {
     expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-realtime`);
     expect(chatClientSource).toContain("useChatRealtime(");
-    expect(chatClientSource).toContain(`@/features/chat/hooks/use-chat-presence`);
-    expect(chatClientSource).toContain("useChatPresence(");
+    expect(chatClientSource).toContain(`@/features/presence`);
+    expect(chatClientSource).toContain("usePresence(");
   });
 
   it("delegates composer command behavior to a focused hook", () => {
@@ -203,6 +209,12 @@ describe("ChatClient hook boundaries", () => {
 
 describe("ChatClient", () => {
   beforeEach(() => {
+    usePresenceMock.mockImplementation(() => ({
+      snapshot: null,
+      status: "offline",
+      label: "Offline",
+      detail: null,
+    }));
     window.history.replaceState(null, "", "/channels/general");
     resetChatStoreForTests();
     realtimeMock.messageHandlers.length = 0;
@@ -261,6 +273,67 @@ describe("ChatClient", () => {
     realtimeMock.client.removeChannel.mockResolvedValue(undefined);
     realtimeMock.table.upsert.mockResolvedValue({ data: null, error: null });
     realtimeMock.client.from.mockReturnValue(realtimeMock.table);
+  });
+
+  it("shows the exact unread banner and reads only after its explicit action", async () => {
+    const markReadStateAction = vi.fn(async (value: unknown) => {
+      const input = value as {
+        lastDeliveredMessageId: string | null;
+        lastReadMessageId: string | null;
+      };
+      return {
+        status: "sent" as const,
+        values: value,
+        readState: {
+          userId: chat.currentUserId,
+          lastDeliveredMessageId: input.lastDeliveredMessageId,
+          deliveredAt: "2026-07-14T07:30:00.000Z",
+          lastReadMessageId: input.lastReadMessageId,
+          readAt: input.lastReadMessageId
+            ? "2026-07-14T07:30:01.000Z"
+            : null,
+        },
+      };
+    });
+    const refreshUnreadSummaryAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: { conversationId: chat.conversationId },
+      unreadSummary: {
+        count: 0,
+        oldestUnreadAt: null,
+        latestUnreadMessageId: null,
+      },
+    });
+
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          unreadSummary: {
+            count: 11,
+            oldestUnreadAt: "2026-07-05T00:00:00.000Z",
+            latestUnreadMessageId: "message-1",
+          },
+        }}
+        sendMessageAction={vi.fn()}
+        markReadStateAction={markReadStateAction}
+        refreshUnreadSummaryAction={refreshUnreadSummaryAction}
+      />
+    );
+
+    expect(screen.getByText(/11 new messages since/)).toBeInTheDocument();
+    expect(markReadStateAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Unread messages")).toBeNull()
+    );
+    expect(markReadStateAction).toHaveBeenNthCalledWith(1, {
+      conversationId: chat.conversationId,
+      lastDeliveredMessageId: "message-1",
+      lastReadMessageId: "message-1",
+    });
   });
 
   it("visually emphasizes a message reached from a notification", async () => {
@@ -856,6 +929,19 @@ describe("ChatClient", () => {
   });
 
   it("renders realtime presence directly below the participant name", () => {
+    usePresenceMock.mockReturnValue({
+      snapshot: {
+        userId: "coach-1",
+        status: "online",
+        lastHeartbeatAt: new Date().toISOString(),
+        lastSeenAt: new Date().toISOString(),
+        revision: 1,
+        updatedAt: new Date().toISOString(),
+      },
+      status: "online",
+      label: "Online",
+      detail: null,
+    });
     render(
       <ChatClient
         chat={{
@@ -877,11 +963,19 @@ describe("ChatClient", () => {
       />
     );
 
-    expect(screen.getByText("Active now")).toBeInTheDocument();
-    expect(screen.getByLabelText("Participant is online")).toHaveClass("bg-success");
+    expect(screen.getByText("Online")).toBeInTheDocument();
+    expect(screen.getByText("Online").previousSibling).toHaveClass(
+      "text-presence-online"
+    );
   });
 
   it("resets participant presence when the assigned participant changes without remounting", async () => {
+    usePresenceMock.mockImplementation((userId: string) => ({
+      snapshot: null,
+      status: userId === "coach-1" ? "online" : "offline",
+      label: userId === "coach-1" ? "Online" : "Offline",
+      detail: null,
+    }));
     const { rerender } = render(
       <ChatClient
         chat={{
@@ -903,7 +997,7 @@ describe("ChatClient", () => {
       />
     );
 
-    expect(screen.getByText("Active now")).toBeInTheDocument();
+    expect(screen.getByText("Online")).toBeInTheDocument();
 
     rerender(
       <ChatClient
@@ -924,7 +1018,8 @@ describe("ChatClient", () => {
     );
 
     expect(screen.getByText("Coach Lee")).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("Active now")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("Online")).toBeNull());
+    expect(screen.getByText("Offline")).toBeInTheDocument();
   });
 
   it("renders the participant avatar next to a received message bubble", () => {

@@ -1,4 +1,4 @@
-import { ChatClient, EmptyState } from "@/features/chat";
+import { ChatClient, EmptyState, MessagesWorkspace } from "@/features/chat";
 import {
   backfillMessagesAction,
   deleteMessageAction,
@@ -8,6 +8,7 @@ import {
   markReadStateAction,
   refreshConversationAction,
   refreshMessagesAction,
+  refreshUnreadSummaryAction,
   reportGifAction,
   searchChatMessagesAction,
   sendMessageAction,
@@ -38,21 +39,24 @@ export default async function DirectMessagePage({
   if (data.chat.kind !== "direct") notFound();
 
   return (
-    <ChatClient
-      chat={data.chat}
-      focusMessageId={focusMessageId ?? null}
-      sendMessageAction={sendMessageAction}
-      searchMessagesAction={searchChatMessagesAction}
-      editMessageAction={editMessageAction}
-      deleteMessageAction={deleteMessageAction}
-      toggleReactionAction={toggleReactionAction}
-      reportGifAction={reportGifAction}
-      markReadStateAction={markReadStateAction}
-      refreshMessagesAction={refreshMessagesAction}
-      refreshConversationAction={refreshConversationAction}
-      loadOlderMessagesAction={loadOlderMessagesAction}
-      backfillMessagesAction={backfillMessagesAction}
-      loadNewestMessagesAction={loadNewestMessagesAction}
-    />
+    <MessagesWorkspace chat={data.chat}>
+      <ChatClient
+        chat={data.chat}
+        focusMessageId={focusMessageId ?? null}
+        sendMessageAction={sendMessageAction}
+        searchMessagesAction={searchChatMessagesAction}
+        editMessageAction={editMessageAction}
+        deleteMessageAction={deleteMessageAction}
+        toggleReactionAction={toggleReactionAction}
+        reportGifAction={reportGifAction}
+        markReadStateAction={markReadStateAction}
+        refreshUnreadSummaryAction={refreshUnreadSummaryAction}
+        refreshMessagesAction={refreshMessagesAction}
+        refreshConversationAction={refreshConversationAction}
+        loadOlderMessagesAction={loadOlderMessagesAction}
+        backfillMessagesAction={backfillMessagesAction}
+        loadNewestMessagesAction={loadNewestMessagesAction}
+      />
+    </MessagesWorkspace>
   );
 }
