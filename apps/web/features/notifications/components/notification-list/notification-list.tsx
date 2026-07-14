@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { PopoverHeader } from "@/components/ui/popover-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "@/features/chat";
 import { cn } from "@/lib/utils";
@@ -157,37 +158,39 @@ export function NotificationList({ compact = false, onNavigate }: NotificationLi
 
   return (
     <div className={cn("flex min-h-0 flex-col", compact && "h-notifications-panel-h") }>
-      <div className="flex shrink-0 items-center gap-xs border-b border-divider px-md py-sm">
-        <h2 className="min-w-0 flex-1 text-heading-sm">Notifications</h2>
-        <Menu.Root>
-          <Menu.Trigger
-            aria-label="Notification actions"
-            className="flex size-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground"
-          >
-            <IconDots size={20} stroke={1.75} aria-hidden="true" />
-          </Menu.Trigger>
-          <Menu.Portal>
-            <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-50">
-              <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
-                <Menu.Item
-                  onClick={() => void markAllRead()}
-                  disabled={state.summary.unreadCount === 0}
-                  className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[highlighted]:bg-surface-2"
-                >
-                  <IconCheck size={20} stroke={1.75} aria-hidden="true" />
-                  Mark all as read
-                </Menu.Item>
-                <Menu.Item
-                  onClick={() => void archiveRead()}
-                  className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2"
-                >
-                  Clear read notifications
-                </Menu.Item>
-              </Menu.Popup>
-            </Menu.Positioner>
-          </Menu.Portal>
-        </Menu.Root>
-      </div>
+      <PopoverHeader
+        title={<h2 className="text-heading-sm">Notifications</h2>}
+        actions={
+          <Menu.Root>
+            <Menu.Trigger
+              aria-label="Notification actions"
+              className="flex size-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground"
+            >
+              <IconDots size={20} stroke={1.75} aria-hidden="true" />
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-50">
+                <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
+                  <Menu.Item
+                    onClick={() => void markAllRead()}
+                    disabled={state.summary.unreadCount === 0}
+                    className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[highlighted]:bg-surface-2"
+                  >
+                    <IconCheck size={20} stroke={1.75} aria-hidden="true" />
+                    Mark all as read
+                  </Menu.Item>
+                  <Menu.Item
+                    onClick={() => void archiveRead()}
+                    className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2"
+                  >
+                    Clear read notifications
+                  </Menu.Item>
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
+        }
+      />
 
       <div className="flex shrink-0 gap-xs border-b border-divider px-md py-xs" aria-label="Notification filter">
         {(["all", "unread"] as const).map((filter) => (
