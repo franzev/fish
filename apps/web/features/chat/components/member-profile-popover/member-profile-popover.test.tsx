@@ -234,6 +234,19 @@ describe("MemberProfilePopover", () => {
     ).toBeVisible();
   });
 
+  it("shows calm guidance when relationship lookup rejects", async () => {
+    const repository = {
+      ...makeRepository().repository,
+      searchCandidate: vi.fn(async () => { throw new Error("offline"); }),
+    } as FriendRepository;
+    renderPopover({ repository });
+
+    expect(await screen.findByText(
+      "Friend status isn’t available yet. Give it a moment and try again."
+    )).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Add friend" })).toBeNull();
+  });
+
   it("reuses one request id across a calm retry", async () => {
     const { repository } = makeRepository(friendCandidate("none"));
     const sendRequest = vi
@@ -288,6 +301,23 @@ describe("MemberProfilePopover", () => {
     const review = await screen.findByRole("link", { name: "Review request" });
     expect(review).toHaveAttribute("href", "/friends/requests/request-10");
     expect(searchCandidate).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the add action available when its command rejects", async () => {
+    const { repository } = makeRepository(friendCandidate("none"));
+    renderPopover({
+      repository,
+      commands: makeCommands({
+        sendRequest: vi.fn(async () => { throw new Error("offline"); }),
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Add friend" }));
+
+    expect(await screen.findByText(
+      "That friend request didn’t send yet. Try again."
+    )).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add friend" })).toBeEnabled();
   });
 
   it.each([
@@ -371,5 +401,25 @@ describe("MemberProfilePopover", () => {
     ).toBeVisible();
     expect(screen.getByRole("button", { name: /^Block$/ })).toBeVisible();
     expect(screen.getByRole("button", { name: "Go back" })).toBeVisible();
+  });
+
+  it("keeps the confirmation available when blocking rejects", async () => {
+    const { repository } = makeRepository(friendCandidate("friends"));
+    renderPopover({
+      repository,
+      commands: makeCommands({
+        blockUser: vi.fn(async () => { throw new Error("offline"); }),
+      }),
+    });
+
+    fireEvent.click(await screen.findByRole("button", {
+      name: `More actions for ${member.displayName}`,
+    }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Block member" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Block$/ }));
+
+    expect(await screen.findByText("That member wasn’t blocked yet. Try again."))
+      .toBeVisible();
+    expect(screen.getByRole("button", { name: /^Block$/ })).toBeEnabled();
   });
 });

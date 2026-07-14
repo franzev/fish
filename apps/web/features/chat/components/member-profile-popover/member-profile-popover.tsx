@@ -81,7 +81,16 @@ export function MemberProfilePopover({
     setLoadingRelationship(true);
     const repository =
       repositoryOverride ?? getBrowserServices().database.friends;
-    const result = await repository.searchCandidate(member.username);
+    let result;
+    try {
+      result = await repository.searchCandidate(member.username);
+    } catch {
+      if (sequence !== asyncSequence.current) return;
+      setLoadingRelationship(false);
+      setCandidate(null);
+      setNotice(friendStatusNotice);
+      return;
+    }
     if (sequence !== asyncSequence.current) return;
 
     setLoadingRelationship(false);
@@ -127,10 +136,18 @@ export function MemberProfilePopover({
     const sequence = ++asyncSequence.current;
     setSendingRequest(true);
     setNotice(null);
-    const result = await getFriendCommandService(commandsOverride).sendRequest({
-      targetId: member.id,
-      clientRequestId,
-    });
+    let result;
+    try {
+      result = await getFriendCommandService(commandsOverride).sendRequest({
+        targetId: member.id,
+        clientRequestId,
+      });
+    } catch {
+      if (sequence !== asyncSequence.current) return;
+      setSendingRequest(false);
+      setNotice("That friend request didn’t send yet. Try again.");
+      return;
+    }
     if (sequence !== asyncSequence.current) return;
 
     setSendingRequest(false);
@@ -181,9 +198,17 @@ export function MemberProfilePopover({
     const sequence = ++asyncSequence.current;
     setBlocking(true);
     setNotice(null);
-    const result = await getFriendCommandService(commandsOverride).blockUser(
-      member.id
-    );
+    let result;
+    try {
+      result = await getFriendCommandService(commandsOverride).blockUser(
+        member.id
+      );
+    } catch {
+      if (sequence !== asyncSequence.current) return;
+      setBlocking(false);
+      setNotice("That member wasn’t blocked yet. Try again.");
+      return;
+    }
     if (sequence !== asyncSequence.current) return;
 
     setBlocking(false);
@@ -326,7 +351,10 @@ export function MemberProfilePopover({
                     <Menu.Trigger
                       ref={moreRef}
                       aria-label={`More actions for ${member.displayName}`}
-                      className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                      className={cn(
+                        buttonVariants({ variant: "ghost", controlSize: "square" }),
+                        "hover:bg-surface-2"
+                      )}
                     >
                       <IconDots size={20} stroke={1.75} aria-hidden="true" />
                     </Menu.Trigger>
@@ -352,7 +380,10 @@ export function MemberProfilePopover({
                 <Popover.Close
                   ref={closeRef}
                   aria-label={`Close ${member.displayName} profile`}
-                  className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+                  className={cn(
+                    buttonVariants({ variant: "ghost", controlSize: "square" }),
+                    "hover:bg-surface-2"
+                  )}
                 >
                   <IconX size={20} stroke={1.75} aria-hidden="true" />
                 </Popover.Close>

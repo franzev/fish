@@ -55,6 +55,14 @@ function repository(status: FriendCandidate["status"]): FriendRepository {
   } as unknown as FriendRepository;
 }
 
+const pendingRepository = {
+  searchCandidate: async () => new Promise(() => undefined),
+} as unknown as FriendRepository;
+
+const failingRepository = {
+  searchCandidate: async () => { throw new Error("offline"); },
+} as unknown as FriendRepository;
+
 const commands = {
   sendRequest: async () => ({ ok: true as const, data: request }),
   blockUser: async () => ({ ok: true as const, data: undefined }),
@@ -114,6 +122,26 @@ export const RequestSent: Story = {
   play: async ({ canvasElement }) => openProfile(canvasElement, member.displayName),
 };
 
+export const IncomingRequest: Story = {
+  args: { repository: repository("incomingPending") },
+  play: async ({ canvasElement }) => openProfile(canvasElement, member.displayName),
+};
+
+export const LoadingRelationship: Story = {
+  args: { repository: pendingRepository },
+  play: async ({ canvasElement }) => openProfile(canvasElement, member.displayName),
+};
+
+export const RelationshipError: Story = {
+  args: { repository: failingRepository },
+  play: async ({ canvasElement }) => openProfile(canvasElement, member.displayName),
+};
+
+export const FriendActionsDisabled: Story = {
+  args: { friendActionsEnabled: false },
+  play: async ({ canvasElement }) => openProfile(canvasElement, member.displayName),
+};
+
 export const Friend: Story = {
   args: { repository: repository("friends") },
   play: async ({ canvasElement }) => openProfile(canvasElement, member.displayName),
@@ -133,6 +161,38 @@ export const LongNameWithoutUsername: Story = {
 
 export const Blocked: Story = {
   args: { repository: repository("friends") },
+  play: async ({ canvasElement }) => {
+    await openProfile(canvasElement, member.displayName);
+    const body = within(canvasElement.ownerDocument.body);
+    await body.getByRole("button", { name: `More actions for ${member.displayName}` }).click();
+    await body.getByRole("menuitem", { name: "Block member" }).click();
+    await body.getByRole("button", { name: /^Block$/ }).click();
+  },
+};
+
+export const SendRequestError: Story = {
+  args: {
+    commands: {
+      ...commands,
+      sendRequest: async () => { throw new Error("offline"); },
+    } as unknown as FriendCommandService,
+  },
+  play: async ({ canvasElement }) => {
+    await openProfile(canvasElement, member.displayName);
+    const body = within(canvasElement.ownerDocument.body);
+    await body.findByRole("button", { name: "Add friend" });
+    await body.getByRole("button", { name: "Add friend" }).click();
+  },
+};
+
+export const BlockError: Story = {
+  args: {
+    repository: repository("friends"),
+    commands: {
+      ...commands,
+      blockUser: async () => { throw new Error("offline"); },
+    } as unknown as FriendCommandService,
+  },
   play: async ({ canvasElement }) => {
     await openProfile(canvasElement, member.displayName);
     const body = within(canvasElement.ownerDocument.body);
