@@ -120,7 +120,7 @@
   --size-target-touch: 44px;      /* touch-first and frequently used targets */
   --size-control-primary: 56px;   /* focused primary actions                 */
   --size-control: var(--size-target-touch); /* default control compatibility */
-  --size-chat-header: calc(var(--size-control-primary) + 1px); /* content row plus divider */
+  --size-chat-header: 64px;       /* shared pane header; accommodates two-line chat identity */
   /* Reserved height for the older-page feedback region (WR-07): sized to
      the tallest state (the paragraph-shaped loading skeleton) so idle / loading /
      failure / retry-success never change the region's height and the

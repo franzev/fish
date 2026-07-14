@@ -389,7 +389,8 @@ describe("ChatClient", () => {
   it("renders the direct assigned conversation without an inbox", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 
-    expect(screen.getByText("Coach Dana")).toBeInTheDocument();
+    const heading = screen.getByRole("heading", { name: "Coach Dana" });
+    expect(heading.closest("div.h-chat-header")).toBeInTheDocument();
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /View Coach Dana profile/ })).toBeNull();

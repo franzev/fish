@@ -47,8 +47,8 @@ export function ChatHeader({
   onOpenFilters,
 }: ChatHeaderProps) {
   return (
-    <div className="border-b border-divider bg-surface px-md py-xs">
-      <div className="flex items-center justify-between gap-sm">
+    <div className="flex h-chat-header shrink-0 items-center border-b border-divider bg-surface px-md">
+      <div className="flex w-full items-center justify-between gap-sm">
         <div className="flex min-w-0 items-center gap-sm">
           {!isCommunity && (
             <PresenceAvatar
