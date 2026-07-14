@@ -43,7 +43,7 @@ describe("Composer", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps Send visible but disabled while an attachment is preparing", () => {
+  it("explains why Send is disabled while an attachment is uploading", async () => {
     const file = new File(["image"], "photo.png", { type: "image/png" });
     render(<Composer
       {...baseProps}
@@ -60,6 +60,38 @@ describe("Composer", () => {
     />);
 
     expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+    const disabledReason = screen.getByLabelText(
+      "Send unavailable: Still uploading your photo"
+    );
+    fireEvent.focus(disabledReason);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Still uploading your photo"
+    );
+  });
+
+  it("explains how to resolve a failed upload before sending", async () => {
+    const file = new File(["document"], "notes.pdf", { type: "application/pdf" });
+    render(<Composer
+      {...baseProps}
+      images={[{
+        clientUploadId: "upload-1",
+        file,
+        kind: "file",
+        sourceMimeType: "application/pdf",
+        previewUrl: "blob:preview",
+        progress: 0.5,
+        status: "failed",
+      }]}
+      canSend={false}
+    />);
+
+    const disabledReason = screen.getByLabelText(
+      "Send unavailable: Retry or remove the upload that didn't finish"
+    );
+    fireEvent.focus(disabledReason);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Retry or remove the upload that didn't finish"
+    );
   });
 
   it("previews a selected GIF and keeps sending behind the existing Send action", () => {

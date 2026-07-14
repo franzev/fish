@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@base-ui/react/tooltip";
 import {
   IconMoodSmile,
   IconSend,
@@ -43,6 +44,30 @@ export interface ComposerProps {
   stickerSelectionDisabled?: boolean;
 }
 
+function getSendDisabledReason(images: PendingChatImage[]): string | null {
+  if (images.some((image) => image.status === "failed")) {
+    return "Retry or remove the upload that didn't finish";
+  }
+
+  const pending = images.filter((image) => image.status !== "ready");
+  if (pending.length === 0) return null;
+
+  const subject = pending.length > 1
+    ? "files"
+    : pending[0]?.kind === "image"
+      ? "photo"
+      : "file";
+
+  if (pending.some((image) => image.status === "preparing")) {
+    return `Still preparing your ${subject}`;
+  }
+  if (pending.some((image) => image.status === "uploading")) {
+    return `Still uploading your ${subject}`;
+  }
+
+  return `Still finishing your ${subject}`;
+}
+
 /** The message composer: one borderless surface-2 bar holding every input
  *  affordance. The Send button only exists while there is something to send
  *  — with an empty draft the bar has no primary action at all, keeping the
@@ -76,6 +101,7 @@ export function Composer({
     || images.length > 0
     || Boolean(selectedGif)
     || Boolean(selectedStickerId);
+  const sendDisabledReason = !canSend ? getSendDisabledReason(images) : null;
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setDragActive(false);
@@ -133,16 +159,44 @@ export function Composer({
           <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
         </MediaPickerButton>
         {hasSendContent && (
-          <Button
-            type="button"
-            fullWidth={false}
-            onClick={onSend}
-            disabled={!canSend}
-            className="shrink-0 px-md"
-            aria-label="Send message"
-          >
-            <IconSend size={20} stroke={1.75} aria-hidden="true" />
-          </Button>
+          <Tooltip.Provider delay={400} closeDelay={0}>
+            <Tooltip.Root disabled={!sendDisabledReason}>
+              <Tooltip.Trigger
+                render={
+                  <span
+                    tabIndex={sendDisabledReason ? 0 : undefined}
+                    aria-label={sendDisabledReason
+                      ? `Send unavailable: ${sendDisabledReason}`
+                      : undefined}
+                    className="inline-flex shrink-0 rounded-control"
+                  >
+                    <Button
+                      type="button"
+                      fullWidth={false}
+                      onClick={onSend}
+                      disabled={!canSend}
+                      className="shrink-0 px-md"
+                      aria-label="Send message"
+                    >
+                      <IconSend size={20} stroke={1.75} aria-hidden="true" />
+                    </Button>
+                  </span>
+                }
+              />
+              {sendDisabledReason && (
+                <Tooltip.Portal>
+                  <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
+                    <Tooltip.Popup
+                      role="tooltip"
+                      className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+                    >
+                      {sendDisabledReason}
+                    </Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
+              )}
+            </Tooltip.Root>
+          </Tooltip.Provider>
         )}
         </div>
       </div>
