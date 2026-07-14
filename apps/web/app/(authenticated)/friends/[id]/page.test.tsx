@@ -43,6 +43,7 @@ describe("FriendDetailPage", () => {
           avatarUrl: null,
         },
       },
+      conversationId: "11111111-1111-4111-8111-111111111111",
     });
   });
 
@@ -51,5 +52,9 @@ describe("FriendDetailPage", () => {
 
     expect(screen.getByRole("button", { name: "Call Sam Okafor" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Video call Sam Okafor" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Message Sam Okafor" })).toHaveAttribute(
+      "href",
+      "/messages/11111111-1111-4111-8111-111111111111"
+    );
   });
 });

@@ -8,6 +8,7 @@ const getIncomingRequestMock = vi.fn();
 const countIncomingRequestsMock = vi.fn();
 const listBlockedUsersMock = vi.fn();
 const searchCandidateMock = vi.fn();
+const listDirectConversationsMock = vi.fn();
 
 vi.mock("@/lib/services/supabase/server", () => ({
   createServerSupabaseServices: async () => ({
@@ -22,6 +23,7 @@ vi.mock("@/lib/services/supabase/server", () => ({
         countIncomingRequests: countIncomingRequestsMock,
         listBlockedUsers: listBlockedUsersMock,
       },
+      chat: { listDirectConversations: listDirectConversationsMock },
     },
   }),
 }));
@@ -55,6 +57,7 @@ afterEach(() => {
   countIncomingRequestsMock.mockReset();
   listBlockedUsersMock.mockReset();
   searchCandidateMock.mockReset();
+  listDirectConversationsMock.mockReset();
 });
 
 describe("friendsFeatureEnabled", () => {
@@ -179,10 +182,20 @@ describe("getFriendDetailData", () => {
           nextCursor: null,
         },
       });
+    listDirectConversationsMock.mockResolvedValue({
+      ok: true,
+      data: [{
+        conversationId: "conversation-noor",
+        participant: { id: "user-noor", displayName: "Noor", role: "client" },
+        latestMessage: null,
+        unreadCount: 0,
+      }],
+    });
 
     const data = await getFriendDetailData("user-noor");
 
     expect(data?.friend?.friendshipId).toBe("f-2");
+    expect(data?.conversationId).toBe("conversation-noor");
     expect(listFriendsMock).toHaveBeenNthCalledWith(1, null);
     expect(listFriendsMock).toHaveBeenNthCalledWith(2, cursor);
   });
@@ -193,6 +206,7 @@ describe("getFriendDetailData", () => {
       ok: true,
       data: { friends: [], nextCursor: null },
     });
+    listDirectConversationsMock.mockResolvedValue({ ok: true, data: [] });
 
     const data = await getFriendDetailData("user-ghost");
     expect(data?.friend).toBeNull();

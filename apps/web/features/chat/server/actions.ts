@@ -15,8 +15,7 @@ import type {
 } from "@/lib/services";
 import { createChatActionHandlers } from "./action-handlers";
 import { searchChatMessagesSchema, unreadSummarySchema } from "./schemas";
-import { getChatPageData } from "./page-data";
-import { getMessageSnippet } from "@/features/chat/model/chat-state";
+import { getDirectConversationPreviews } from "./page-data";
 
 export type * from "@/features/chat/contracts";
 
@@ -120,48 +119,20 @@ export async function refreshUnreadSummaryAction(
 export async function loadMessagePopoverAction(
   input: unknown
 ): Promise<MessagePopoverActionState> {
-  const parsed = unreadSummarySchema.safeParse(input);
-  if (!parsed.success) {
+  try {
+    const previews = await getDirectConversationPreviews();
+    return {
+      status: "sent",
+      values: input,
+      previews,
+    };
+  } catch {
     return {
       status: "notice",
       values: input,
-      notice: "That conversation is not available.",
+      notice: "Messages are still catching up.",
     };
   }
-
-  const data = await getChatPageData(
-    undefined,
-    undefined,
-    parsed.data.conversationId
-  );
-  if (!data?.chat || data.chat.kind !== "direct") {
-    return {
-      status: "notice",
-      values: parsed.data,
-      notice: "That conversation is not available.",
-    };
-  }
-
-  const latestMessage = data.chat.messages.at(-1);
-  return {
-    status: "sent",
-    values: parsed.data,
-    preview: {
-      conversationId: data.chat.conversationId,
-      participant: {
-        id: data.chat.participant.id,
-        displayName: data.chat.participant.displayName,
-        avatarUrl: data.chat.participant.avatarUrl,
-      },
-      latestMessage: latestMessage
-        ? {
-            senderId: latestMessage.senderId,
-            text: getMessageSnippet(latestMessage),
-            createdAt: latestMessage.createdAt,
-          }
-        : null,
-    },
-  };
 }
 
 export async function refreshMessagesAction(input: unknown): Promise<{

@@ -3,6 +3,7 @@ import type {
   ClientChatMessage,
   ClientChatReadState,
   ClientChatUnreadSummary,
+  ClientDirectConversationPreview,
 } from "@/lib/services";
 
 export interface SendMessageActionState {
@@ -26,25 +27,13 @@ export interface UnreadSummaryActionState {
   unreadSummary?: ClientChatUnreadSummary;
 }
 
-export interface MessagePopoverPreview {
-  conversationId: string;
-  participant: {
-    id: string;
-    displayName: string;
-    avatarUrl?: string | null;
-  };
-  latestMessage: {
-    senderId: string;
-    text: string;
-    createdAt: string;
-  } | null;
-}
+export type MessagePopoverPreview = ClientDirectConversationPreview;
 
 export interface MessagePopoverActionState {
   status: "sent" | "notice";
   values: unknown;
   notice?: string;
-  preview?: MessagePopoverPreview;
+  previews?: MessagePopoverPreview[];
 }
 
 export interface ReportGifActionState {

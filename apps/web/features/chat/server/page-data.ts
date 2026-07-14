@@ -7,6 +7,7 @@ import {
   resolveAvatarUrlsSafely,
   type AppServices,
   type ClientChatData,
+  type ClientDirectConversationPreview,
 } from "@/lib/services";
 
 const UUID_RE =
@@ -43,6 +44,29 @@ async function resolveChatAvatars(
       avatarUrl: avatarUrls.get(member.id),
     })),
   };
+}
+
+export async function getDirectConversationPreviews(
+  injected?: AppServices
+): Promise<ClientDirectConversationPreview[]> {
+  const services = injected ?? (await getServerServices());
+  const result = await services.database.chat.listDirectConversations();
+  if (!result.ok) throw result.error;
+
+  const avatarItems = await resolveAvatarUrlsSafely(
+    services.avatars,
+    result.data.map((preview) => preview.participant.id)
+  );
+  const avatarUrls = new Map(
+    avatarItems.map((item) => [item.profileId, item.url])
+  );
+  return result.data.map((preview) => ({
+    ...preview,
+    participant: {
+      ...preview.participant,
+      avatarUrl: avatarUrls.get(preview.participant.id) ?? null,
+    },
+  }));
 }
 
 export async function getChatPageData(

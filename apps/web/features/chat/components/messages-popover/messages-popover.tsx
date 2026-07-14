@@ -18,14 +18,12 @@ import { useRef, useState } from "react";
 type MessageFilter = "all" | "unread";
 
 interface PreviewLoadState {
-  conversationId: string | null;
   loading: boolean;
   notice: string | null;
-  preview: MessagePopoverPreview | null;
+  previews: MessagePopoverPreview[];
 }
 
 export interface MessagesPopoverProps {
-  conversationId: string | null;
   unreadCount: number;
   active?: boolean;
   loadPreviewAction?: (
@@ -35,7 +33,6 @@ export interface MessagesPopoverProps {
 
 /** A focused desktop inbox preview; mobile keeps direct page navigation. */
 export function MessagesPopover({
-  conversationId,
   unreadCount,
   active = false,
   loadPreviewAction,
@@ -43,10 +40,9 @@ export function MessagesPopover({
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<MessageFilter>("all");
   const [loadState, setLoadState] = useState<PreviewLoadState>({
-    conversationId: null,
     loading: false,
     notice: null,
-    preview: null,
+    previews: [],
   });
   const requestRef = useRef(0);
   const label = unreadCount > 0
@@ -57,44 +53,36 @@ export function MessagesPopover({
     "relative shrink-0 hover:bg-surface-2 hover:text-foreground",
     active && "bg-surface-2 text-foreground"
   );
-  const canPreview = Boolean(conversationId && loadPreviewAction);
-  const activePreview = loadState.conversationId === conversationId
-    ? loadState.preview
-    : null;
-  const isLoading = loadState.conversationId === conversationId
-    && loadState.loading;
-  const notice = loadState.conversationId === conversationId
-    ? loadState.notice
-    : null;
+  const canPreview = Boolean(loadPreviewAction);
+  const visiblePreviews = filter === "unread"
+    ? loadState.previews.filter((preview) => preview.unreadCount > 0)
+    : loadState.previews;
 
   async function loadPreview() {
-    if (!conversationId || !loadPreviewAction) return;
+    if (!loadPreviewAction) return;
     const requestId = ++requestRef.current;
     setLoadState({
-      conversationId,
       loading: true,
       notice: null,
-      preview: null,
+      previews: [],
     });
 
     try {
-      const result = await loadPreviewAction({ conversationId });
+      const result = await loadPreviewAction({});
       if (requestRef.current !== requestId) return;
       setLoadState({
-        conversationId,
         loading: false,
         notice: result.status === "notice"
           ? result.notice ?? "Messages are still catching up."
           : null,
-        preview: result.status === "sent" ? result.preview ?? null : null,
+        previews: result.status === "sent" ? result.previews ?? [] : [],
       });
     } catch {
       if (requestRef.current !== requestId) return;
       setLoadState({
-        conversationId,
         loading: false,
         notice: "Messages are still catching up.",
-        preview: null,
+        previews: [],
       });
     }
   }
@@ -116,12 +104,6 @@ export function MessagesPopover({
       </Link>
     );
   }
-
-  const latestMessage = activePreview?.latestMessage;
-  const latestText = latestMessage
-    ? `${latestMessage.senderId === activePreview?.participant.id ? "" : "You: "}${latestMessage.text}`
-    : "Start the conversation";
-  const showConversation = filter === "all" || unreadCount > 0;
 
   return (
     <>
@@ -234,7 +216,7 @@ export function MessagesPopover({
                     value={filter}
                     className="max-h-notifications-panel-h min-h-pagination-slot overflow-y-auto"
                   >
-                  {isLoading ? (
+                  {loadState.loading ? (
                     <div
                       role="status"
                       aria-label="Loading messages"
@@ -246,27 +228,36 @@ export function MessagesPopover({
                         <span className="h-skeleton-text w-full animate-pulse rounded-pill bg-surface-2" />
                       </span>
                     </div>
-                  ) : notice ? (
+                  ) : loadState.notice ? (
                     <div role="status" className="px-md py-lg text-center text-ui-sm text-muted">
-                      {notice} Open messages to continue.
+                      {loadState.notice} Open messages to continue.
                     </div>
-                  ) : !showConversation ? (
+                  ) : filter === "unread" && visiblePreviews.length === 0 ? (
                     <div className="px-md py-lg text-center">
                       <p className="text-ui text-foreground">No unread messages</p>
                       <p className="mt-2xs text-ui-sm text-muted">You’re all caught up.</p>
                     </div>
-                  ) : activePreview ? (
-                    <ConversationPreviewRow
-                      href={`/messages/${activePreview.conversationId}`}
-                      participant={activePreview.participant}
-                      preview={latestText}
-                      latestMessageAt={latestMessage?.createdAt}
-                      unreadCount={unreadCount}
-                      onNavigate={() => setOpen(false)}
-                    />
+                  ) : visiblePreviews.length > 0 ? (
+                    visiblePreviews.map((preview) => {
+                      const latestMessage = preview.latestMessage;
+                      const latestText = latestMessage
+                        ? `${latestMessage.senderId === preview.participant.id ? "" : "You: "}${latestMessage.text}`
+                        : "Start the conversation";
+                      return (
+                        <ConversationPreviewRow
+                          key={preview.conversationId}
+                          href={`/messages/${preview.conversationId}`}
+                          participant={preview.participant}
+                          preview={latestText}
+                          latestMessageAt={latestMessage?.createdAt}
+                          unreadCount={preview.unreadCount}
+                          onNavigate={() => setOpen(false)}
+                        />
+                      );
+                    })
                   ) : (
                     <div className="px-md py-lg text-center text-ui-sm text-muted">
-                      Your coach conversation will appear here.
+                      Direct conversations will appear here.
                     </div>
                   )}
                   </Tabs.Panel>
