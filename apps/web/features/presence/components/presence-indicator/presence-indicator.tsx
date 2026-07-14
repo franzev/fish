@@ -9,7 +9,7 @@ import {
 } from "@tabler/icons-react";
 import type { PresenceDisplayStatus } from "../../model/presentation";
 
-interface PresenceIndicatorProps {
+export interface PresenceIndicatorProps {
   status: PresenceDisplayStatus;
   label?: string;
   className?: string;
@@ -44,6 +44,7 @@ export function PresenceIndicator({
   return (
     <span
       className={cn("inline-flex shrink-0 items-center justify-center", colors[status], className)}
+      role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >

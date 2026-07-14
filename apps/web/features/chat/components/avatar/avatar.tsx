@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { getAvatarCommandService } from "@/lib/services/runtime/browser";
 
 export const avatarVariants = cva(
-  "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-avatar font-medium text-body",
+  "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill bg-avatar font-medium text-foreground",
   {
     variants: {
       size: {
@@ -102,7 +102,7 @@ export function Avatar({
       ) : initials ? (
         <span aria-hidden="true">{initials}</span>
       ) : (
-        <IconUser size={20} stroke={1.75} aria-hidden="true" className="text-muted" />
+        <IconUser size={20} stroke={1.75} aria-hidden="true" className="text-foreground" />
       )}
       {!showImage && !initials && <span className="sr-only">User avatar</span>}
     </div>

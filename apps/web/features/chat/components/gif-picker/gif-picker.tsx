@@ -131,7 +131,7 @@ export function GifPicker({
           </div>
         )}
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-2xs" aria-label="Loading GIFs">
+          <div className="grid grid-cols-2 gap-2xs" aria-hidden="true">
             {Array.from({ length: 6 }, (_, index) => (
               <span key={index} className="aspect-gif-tile animate-pulse rounded-control bg-surface-2" />
             ))}
