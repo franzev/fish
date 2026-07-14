@@ -1,12 +1,9 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { gifProvider, type GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
 import { cn } from "@/lib/utils";
-import { IconSearch } from "@tabler/icons-react";
 import {
   useCallback,
   useEffect,
@@ -14,6 +11,8 @@ import {
   useState,
 } from "react";
 import { GifMedia } from "../gif-media";
+import { MediaPickerScrollArea } from "../media-picker-scroll-area";
+import { MediaPickerSearch } from "../media-picker-search";
 
 type PickerStatus = "loading" | "ready" | "empty" | "notice";
 
@@ -102,26 +101,15 @@ export function GifPicker({
         className
       )}
     >
-      <div className="shrink-0 px-xs py-2xs">
-        <Input
-          id="gif-search"
-          type="search"
-          label="Search GIFs"
-          labelVisuallyHidden
-          reserveMessageSpace={false}
-          density="compact"
-          placeholder="Search KLIPY"
-          value={query}
-          maxLength={50}
-          onChange={(event) => setQuery(event.target.value)}
-          leadingIcon={<IconSearch size={16} stroke={1.75} aria-hidden="true" />}
-        />
-      </div>
+      <MediaPickerSearch
+        id="gif-search"
+        label="Search GIFs"
+        placeholder="Search KLIPY"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
 
-      <ScrollArea
-        className="flex-1"
-        viewportClassName="flex scroll-smooth flex-col px-xs pb-xs"
-      >
+      <MediaPickerScrollArea viewportClassName="flex flex-col">
         {status === "loading" && (
           <p className="mb-xs text-ui-xs text-muted" role="status" aria-live="polite">
             Finding GIFs…
@@ -197,7 +185,7 @@ export function GifPicker({
         )}
         <div ref={loadMoreRef} className="h-xs shrink-0" aria-hidden="true" />
         {loadingMore && <p className="py-xs text-center text-ui-xs text-muted">Finding more GIFs…</p>}
-      </ScrollArea>
+      </MediaPickerScrollArea>
       <a
         href="https://klipy.com"
         target="_blank"

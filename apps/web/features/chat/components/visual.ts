@@ -6,6 +6,8 @@ export * from "./gif-media";
 export * from "./gif-picker";
 export * from "./gif-selection-preview";
 export * from "./media-picker";
+export * from "./media-picker-scroll-area";
+export * from "./media-picker-search";
 export * from "./empty-state";
 export * from "./message-body";
 export * from "./message-meta";

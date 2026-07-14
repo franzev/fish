@@ -18,7 +18,7 @@ const callbacks = {
 };
 
 describe("MediaPicker", () => {
-  it("shares one dialog across emoji, GIF, and sticker tabs", () => {
+  it("shares one dialog and search layout across emoji, GIF, and sticker tabs", () => {
     render(<MediaPicker {...callbacks} gifProvider={provider} />);
 
     expect(screen.getByRole("dialog", { name: "Choose emoji, GIF, or sticker" })).toBeInTheDocument();
@@ -31,10 +31,12 @@ describe("MediaPicker", () => {
       "🦀Stickers",
     ]);
 
+    expectSharedPickerSearch("Search emoji");
+    fireEvent.click(screen.getByRole("tab", { name: "GIFs" }));
+    expectSharedPickerSearch("Search GIFs");
     fireEvent.click(screen.getByRole("tab", { name: "Stickers" }));
-    expect(screen.getByRole("searchbox", { name: "Search stickers" })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Sticker style" })).toBeInTheDocument();
-    expect(screen.queryByRole("group", { name: "Sticker theme" })).toBeNull();
+    expectSharedPickerSearch("Search stickers");
+    expect(screen.queryByRole("group", { name: "Sticker style" })).toBeNull();
   });
 
   it("uses one composer trigger and closes after a sticker is selected", async () => {
@@ -59,3 +61,9 @@ describe("MediaPicker", () => {
     ).toBeNull());
   });
 });
+
+function expectSharedPickerSearch(name: string) {
+  const search = screen.getByRole("searchbox", { name });
+  expect(search).toHaveClass("rounded-control");
+  expect(search.closest('[data-slot="media-picker-search"]')).toHaveClass("p-xs");
+}

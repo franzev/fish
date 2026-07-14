@@ -3,8 +3,6 @@
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { IconTabStrip, type IconTabStripItem } from "@/components/ui/icon-tab-strip";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Icon,
   IconBallBasketball,
@@ -15,13 +13,14 @@ import {
   IconHash,
   IconMoodSmile,
   IconPaw,
-  IconSearch,
   IconToolsKitchen2,
 } from "@tabler/icons-react";
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
 import groups from "unicode-emoji-json/data-by-group.json";
 import { ReactNode, forwardRef, useMemo, useState } from "react";
+import { MediaPickerScrollArea } from "../media-picker-scroll-area";
+import { MediaPickerSearch } from "../media-picker-search";
 
 interface EmojiEntry {
   emoji: string;
@@ -100,21 +99,14 @@ export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPick
       role={embedded ? "region" : "dialog"}
       aria-label={embedded ? "Browse emoji" : "Choose an emoji"}
     >
-      <div className="shrink-0 px-xs py-2xs">
-        <Input
-          type="search"
-          label="Search emoji"
-          labelVisuallyHidden
-          reserveMessageSpace={false}
-          density="compact"
-          placeholder="Search emoji"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          leadingIcon={<IconSearch size={16} stroke={1.75} aria-hidden="true" />}
-        />
-      </div>
+      <MediaPickerSearch
+        label="Search emoji"
+        placeholder="Search emoji"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
       {results ? (
-        <ScrollArea className="flex-1" viewportClassName="scroll-smooth p-xs">
+        <MediaPickerScrollArea>
           {results.length === 0 ? (
             <p className="p-xs text-ui-sm text-muted">
               No emoji match that yet.
@@ -126,7 +118,7 @@ export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPick
               onSelect={onSelect}
             />
           )}
-        </ScrollArea>
+        </MediaPickerScrollArea>
       ) : (
         <Tabs.Root
           defaultValue={emojiGroups[0]?.slug}
@@ -138,9 +130,9 @@ export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPick
               value={group.slug}
               className="flex min-h-0 flex-1 flex-col"
             >
-              <ScrollArea className="flex-1" viewportClassName="scroll-smooth p-xs">
+              <MediaPickerScrollArea>
                 <EmojiGroupList emojis={group.emojis} onSelect={onSelect} />
-              </ScrollArea>
+              </MediaPickerScrollArea>
             </Tabs.Panel>
           ))}
           <IconTabStrip items={groupTabs} ariaLabel="Emoji category" />

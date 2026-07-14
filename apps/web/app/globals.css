@@ -178,7 +178,9 @@
   --spacing-gif-panel: 384px;     /* focused two-column GIF picker */
   --spacing-gif-panel-h: min(70dvh, 520px);
   --spacing-media-panel: 360px;   /* compact shared emoji, GIF, and sticker picker */
-  --spacing-media-panel-h: min(70dvh, 440px);
+  /* At full width, 460px lands the sticker viewport after three complete
+     square rows with an xs inset below, matching the search-to-grid inset. */
+  --spacing-media-panel-h: min(70dvh, 460px);
   --spacing-sticker-tile: 96px;   /* three calm, compact sticker tiles per picker row */
   --spacing-filters-sheet: 85dvh; /* Filters bottom-sheet max height on small screens */
   --spacing-search-suggestions: 360px;

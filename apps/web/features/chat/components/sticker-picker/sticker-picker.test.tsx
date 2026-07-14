@@ -4,15 +4,26 @@ import { aquaticStickers } from "./sticker-catalog";
 import { StickerPicker } from "./sticker-picker";
 
 describe("StickerPicker", () => {
-  it("keeps the default pack in a compact three-column grid", () => {
+  it("keeps the default pack in a compact edge-aligned three-column grid", () => {
     render(<StickerPicker onSelect={() => undefined} />);
 
-    expect(screen.getByTestId("sticker-grid")).toHaveClass("grid-cols-3");
-    expect(screen.getAllByRole("button", { name: /^Add .* sticker$/ })).toHaveLength(32);
+    expect(screen.getByTestId("sticker-grid")).toHaveClass("grid", "grid-cols-3");
+    const stickerButtons = screen.getAllByRole("button", { name: /^Add .* sticker$/ });
+    expect(stickerButtons).toHaveLength(32);
     expect(screen.getByRole("button", { name: "Add Hello! sticker" })).toHaveClass(
-      "size-sticker-tile"
+      "aspect-square",
+      "w-full",
+      "items-center",
+      "justify-center",
+      "rounded-control"
     );
-    expect(screen.getByRole("img", { name: /sea otter/i })).toHaveClass("size-sticker-tile");
+    expect(screen.getByRole("searchbox", { name: "Search stickers" })).toHaveClass(
+      "rounded-control"
+    );
+    expect(screen.getByRole("img", { name: /sea otter/i })).toHaveClass(
+      "size-full",
+      "object-contain"
+    );
   });
 
   it("uses one unique animal for every default sticker", () => {
@@ -39,24 +50,10 @@ describe("StickerPicker", () => {
     }));
   });
 
-  it("filters the samples by style", () => {
+  it("does not add a second style-filter navigation to the sticker panel", () => {
     render(<StickerPicker onSelect={() => undefined} />);
 
-    const expressiveFilter = screen.getByRole("button", { name: "Expressive" });
-    expect(expressiveFilter.querySelector("svg")).toBeInTheDocument();
-    expect(expressiveFilter).not.toHaveTextContent("Expressive");
-    fireEvent.click(expressiveFilter);
-
-    expect(screen.getByRole("button", { name: "Add Great job sticker" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add Good night sticker" })).toBeNull();
-    expect(expressiveFilter).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("shows a Base UI tooltip when a style receives focus", async () => {
-    render(<StickerPicker onSelect={() => undefined} />);
-
-    fireEvent.focus(screen.getByRole("button", { name: "Expressive" }));
-
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Expressive");
+    expect(screen.queryByRole("group", { name: "Sticker style" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Expressive" })).toBeNull();
   });
 });
