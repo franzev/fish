@@ -34,6 +34,18 @@ describe("Button", () => {
     );
   });
 
+  it("supports square icon actions without the primary minimum height", () => {
+    const { getByRole } = render(
+      <Button controlSize="square" aria-label="Send message">
+        Send
+      </Button>
+    );
+    const button = getByRole("button", { name: "Send message" });
+
+    expect(button).toHaveClass("size-control", "min-h-control", "px-0");
+    expect(button).not.toHaveClass("min-h-control-primary");
+  });
+
   it("secondary variant renders its quiet surface-step well tokens", () => {
     const { getByRole } = render(
       <Button variant="secondary">I already have an account</Button>

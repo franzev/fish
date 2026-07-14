@@ -17,15 +17,19 @@ export const buttonVariants = cva(
       variant: {
         // The ONE action on a screen. Use at most one primary per view.
         primary:
-          "min-h-control-primary bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
+          "bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press font-semibold",
         // A quieter alternative action when genuinely needed. A surface-step
         // well, not an outline — state and affordance come from the fill
         // (same idiom as the chat controls); the transparent border from the
         // base classes keeps the box model constant across variants.
         secondary:
-          "min-h-control bg-surface-2 text-foreground hover:bg-surface-3",
+          "bg-surface-2 text-foreground hover:bg-surface-3",
         // Low-emphasis text actions ("Back", "Need help?").
-        ghost: "min-h-control bg-transparent text-muted hover:text-body",
+        ghost: "bg-transparent text-muted hover:text-body",
+      },
+      controlSize: {
+        default: null,
+        square: "size-control min-h-control px-0",
       },
       fullWidth: {
         true: "w-full",
@@ -36,8 +40,21 @@ export const buttonVariants = cva(
         false: null,
       },
     },
+    compoundVariants: [
+      {
+        variant: "primary",
+        controlSize: "default",
+        className: "min-h-control-primary",
+      },
+      {
+        variant: ["secondary", "ghost"],
+        controlSize: "default",
+        className: "min-h-control",
+      },
+    ],
     defaultVariants: {
       variant: "primary",
+      controlSize: "default",
       fullWidth: false,
       loading: false,
     },
@@ -48,6 +65,8 @@ type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: NonNullable<ButtonVariantProps["variant"]>;
+  /** Fixed 44px icon controls use square; labeled actions keep default. */
+  controlSize?: NonNullable<ButtonVariantProps["controlSize"]>;
   /** Opt into full-width when a focused flow needs one big action. */
   fullWidth?: boolean;
   /** Busy state: dims, guards its own click, and shows a quiet spinner. */
@@ -59,6 +78,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     {
       className,
       variant = "primary",
+      controlSize = "default",
       fullWidth = false,
       loading = false,
       disabled,
@@ -98,7 +118,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         onClick={onClick ? handleClick : undefined}
         className={cn(
-          buttonVariants({ variant, fullWidth, loading }),
+          buttonVariants({ variant, controlSize, fullWidth, loading }),
           className
         )}
         {...props}
