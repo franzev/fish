@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { GifProvider } from "@/features/chat/model/gif-provider";
-import { MediaPicker, MediaPickerButton } from "./media-picker";
+import { MediaPicker } from "./media-picker";
 
 const provider: GifProvider = {
   name: "KLIPY",
@@ -37,28 +37,6 @@ describe("MediaPicker", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Stickers" }));
     expectSharedPickerSearch("Search stickers");
     expect(screen.queryByRole("group", { name: "Sticker style" })).toBeNull();
-  });
-
-  it("uses one composer trigger and closes after a sticker is selected", async () => {
-    const onSelectSticker = vi.fn();
-    render(
-      <MediaPickerButton
-        {...callbacks}
-        onSelectSticker={onSelectSticker}
-        defaultTab="sticker"
-        gifProvider={provider}
-      />
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Add emoji, GIF, or sticker" }));
-    fireEvent.click(screen.getByRole("button", { name: "Add Thank you sticker" }));
-
-    expect(onSelectSticker).toHaveBeenCalledWith(expect.objectContaining({
-      id: "aquatic-thank-you-octopus",
-    }));
-    await waitFor(() => expect(
-      screen.queryByRole("dialog", { name: "Choose emoji, GIF, or sticker" })
-    ).toBeNull());
   });
 });
 

@@ -1,20 +1,19 @@
 "use client";
 
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "../avatar";
+import { ConversationPreviewRow } from "../conversation-preview-row";
 import { getMessageSnippet } from "@/features/chat/model/chat-state";
 import {
   selectMessagesForConversation,
   useChatStore,
 } from "@/features/chat/model/store";
-import { formatTimeOfDay } from "@/lib/prefs/time-format";
-import { useTimeFormatPreference } from "@/lib/prefs/use-time-format-preference";
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
 import {
   IconLanguage,
   IconLock,
   IconUserCheck,
 } from "@tabler/icons-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 export interface MessagesWorkspaceProps {
@@ -33,10 +32,6 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
   ) as ClientChatMessage[];
   const messages = storedMessages.length > 0 ? storedMessages : chat.messages;
   const latestMessage = messages.at(-1);
-  const timeFormat = useTimeFormatPreference();
-  const latestTime = latestMessage
-    ? formatTimeOfDay(latestMessage.createdAt, timeFormat)
-    : "";
   const latestSnippet = latestMessage
     ? getMessageSnippet(latestMessage)
     : "Start the conversation";
@@ -66,37 +61,14 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
         </div>
 
         <nav aria-label="Direct conversations" className="p-2xs">
-          <Link
+          <ConversationPreviewRow
             href={`/messages/${chat.conversationId}`}
-            aria-current="page"
-            className="flex min-h-control items-start gap-xs rounded-control bg-surface-2 p-xs text-body transition-colors hover:bg-surface-3"
-          >
-            <Avatar
-              profileId={chat.participant.id}
-              src={chat.participant.avatarUrl ?? undefined}
-              name={chat.participant.displayName}
-              size="md"
-              alt=""
-            />
-            <span className="min-w-0 flex-1">
-              <span className="flex items-baseline justify-between gap-xs">
-                <span className="truncate text-ui font-semibold text-foreground">
-                  {chat.participant.displayName}
-                </span>
-                {latestTime && (
-                  <time
-                    dateTime={latestMessage?.createdAt}
-                    className="shrink-0 text-ui-2xs text-muted"
-                  >
-                    {latestTime}
-                  </time>
-                )}
-              </span>
-              <span className="mt-3xs block truncate text-ui-sm text-muted">
-                {preview}
-              </span>
-            </span>
-          </Link>
+            participant={chat.participant}
+            preview={preview}
+            latestMessageAt={latestMessage?.createdAt}
+            active
+            presentation="rail"
+          />
         </nav>
       </aside>
 
@@ -112,7 +84,7 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
           </h2>
         </div>
 
-        <div className="overflow-y-auto px-md py-lg">
+        <ScrollArea className="min-h-0 flex-1" viewportClassName="px-md py-lg">
           <div className="flex flex-col items-center text-center">
             <Avatar
               profileId={chat.participant.id}
@@ -168,7 +140,7 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
               </div>
             </div>
           </dl>
-        </div>
+        </ScrollArea>
       </aside>
     </div>
   );

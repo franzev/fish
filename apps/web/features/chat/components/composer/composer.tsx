@@ -20,7 +20,7 @@ import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uplo
 import { ImageUploadPreview } from "./image-upload-preview";
 import type { ClientChatGif } from "@/lib/services";
 import { GifSelectionPreview } from "../gif-selection-preview";
-import { MediaPickerButton } from "../media-picker";
+import { MediaPickerButton } from "../media-picker-button";
 import type { ChatSticker } from "../sticker-picker";
 import type { ChatStickerId } from "@fish/core/chat";
 import { StickerMedia } from "../sticker-media";

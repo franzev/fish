@@ -1,11 +1,13 @@
 /** Reusable visual contracts for the chat feature. */
 export * from "./avatar";
 export * from "./composer";
+export * from "./conversation-preview-row";
 export * from "./emoji-picker";
 export * from "./gif-media";
 export * from "./gif-picker";
 export * from "./gif-selection-preview";
 export * from "./media-picker";
+export * from "./media-picker-button";
 export * from "./media-picker-scroll-area";
 export * from "./media-picker-search";
 export * from "./empty-state";

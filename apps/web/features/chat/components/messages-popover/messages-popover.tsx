@@ -2,18 +2,18 @@
 
 import { PopoverHeader } from "@/components/ui/popover-header";
 import { CountBadge } from "@/components/ui/count-badge";
-import { Avatar } from "../avatar";
+import { buttonVariants } from "@/components/ui/button";
+import { ConversationPreviewRow } from "../conversation-preview-row";
 import type {
   MessagePopoverActionState,
   MessagePopoverPreview,
 } from "@/features/chat/contracts";
-import { formatTimeOfDay } from "@/lib/prefs/time-format";
-import { useTimeFormatPreference } from "@/lib/prefs/use-time-format-preference";
 import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
+import { Tabs } from "@base-ui/react/tabs";
 import { IconArrowsDiagonal, IconMessages, IconX } from "@tabler/icons-react";
 import Link from "next/link";
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 type MessageFilter = "all" | "unread";
 
@@ -49,13 +49,12 @@ export function MessagesPopover({
     preview: null,
   });
   const requestRef = useRef(0);
-  const tabsId = useId();
-  const timeFormat = useTimeFormatPreference();
   const label = unreadCount > 0
     ? `Messages, ${unreadCount} unread`
     : "Messages";
   const triggerClass = cn(
-    "relative flex size-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground",
+    buttonVariants({ variant: "ghost", controlSize: "square" }),
+    "relative shrink-0 hover:bg-surface-2 hover:text-foreground",
     active && "bg-surface-2 text-foreground"
   );
   const canPreview = Boolean(conversationId && loadPreviewAction);
@@ -119,9 +118,6 @@ export function MessagesPopover({
   }
 
   const latestMessage = activePreview?.latestMessage;
-  const latestTime = latestMessage
-    ? formatTimeOfDay(latestMessage.createdAt, timeFormat)
-    : "";
   const latestText = latestMessage
     ? `${latestMessage.senderId === activePreview?.participant.id ? "" : "You: "}${latestMessage.text}`
     : "Start the conversation";
@@ -190,13 +186,19 @@ export function MessagesPopover({
                         href="/messages"
                         aria-label="Open messages"
                         onClick={() => setOpen(false)}
-                        className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground"
+                        className={cn(
+                          buttonVariants({ variant: "ghost", controlSize: "square" }),
+                          "hover:bg-surface-2 hover:text-foreground"
+                        )}
                       >
                         <IconArrowsDiagonal size={20} stroke={1.75} aria-hidden="true" />
                       </Link>
                       <Popover.Close
                         aria-label="Close messages"
-                        className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground"
+                        className={cn(
+                          buttonVariants({ variant: "ghost", controlSize: "square" }),
+                          "hover:bg-surface-2 hover:text-foreground"
+                        )}
                       >
                         <IconX size={20} stroke={1.75} aria-hidden="true" />
                       </Popover.Close>
@@ -204,38 +206,34 @@ export function MessagesPopover({
                   }
                 />
 
-                <div
-                  role="tablist"
-                  aria-label="Message filters"
-                  className="flex border-b border-divider px-md"
+                <Tabs.Root
+                  value={filter}
+                  onValueChange={(value) => setFilter(value as MessageFilter)}
                 >
-                  {(["all", "unread"] as const).map((item) => (
-                    <button
-                      key={item}
-                      id={`${tabsId}-${item}`}
-                      type="button"
-                      role="tab"
-                      aria-selected={filter === item}
-                      aria-controls={`${tabsId}-panel`}
-                      onClick={() => setFilter(item)}
-                      className={cn(
-                        "min-h-control border-b-2 px-sm text-ui-sm font-medium transition-colors",
-                        filter === item
-                          ? "border-foreground text-foreground"
-                          : "border-transparent text-muted hover:text-body"
-                      )}
-                    >
-                      {item === "all" ? "All" : "Unread"}
-                    </button>
-                  ))}
-                </div>
+                  <Tabs.List
+                    aria-label="Message filters"
+                    className="flex border-b border-divider px-md"
+                  >
+                    {(["all", "unread"] as const).map((item) => (
+                      <Tabs.Tab
+                        key={item}
+                        value={item}
+                        className={cn(
+                          "min-h-control border-b-2 px-sm text-ui-sm font-medium transition-colors",
+                          filter === item
+                            ? "border-foreground text-foreground"
+                            : "border-transparent text-muted hover:text-body"
+                        )}
+                      >
+                        {item === "all" ? "All" : "Unread"}
+                      </Tabs.Tab>
+                    ))}
+                  </Tabs.List>
 
-                <div
-                  id={`${tabsId}-panel`}
-                  role="tabpanel"
-                  aria-labelledby={`${tabsId}-${filter}`}
-                  className="max-h-notifications-panel-h min-h-pagination-slot overflow-y-auto"
-                >
+                  <Tabs.Panel
+                    value={filter}
+                    className="max-h-notifications-panel-h min-h-pagination-slot overflow-y-auto"
+                  >
                   {isLoading ? (
                     <div
                       role="status"
@@ -258,49 +256,21 @@ export function MessagesPopover({
                       <p className="mt-2xs text-ui-sm text-muted">You’re all caught up.</p>
                     </div>
                   ) : activePreview ? (
-                    <Link
+                    <ConversationPreviewRow
                       href={`/messages/${activePreview.conversationId}`}
-                      onClick={() => setOpen(false)}
-                      className="flex min-h-control items-start gap-sm px-md py-md transition-colors hover:bg-surface-2"
-                    >
-                      <Avatar
-                        profileId={activePreview.participant.id}
-                        src={activePreview.participant.avatarUrl ?? undefined}
-                        name={activePreview.participant.displayName}
-                        size="md"
-                        alt=""
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline justify-between gap-xs">
-                          <span className="truncate text-ui font-semibold text-foreground">
-                            {activePreview.participant.displayName}
-                          </span>
-                          {latestTime && (
-                            <time
-                              dateTime={latestMessage?.createdAt}
-                              className="shrink-0 text-ui-2xs text-muted"
-                            >
-                              {latestTime}
-                            </time>
-                          )}
-                        </span>
-                        <span className="mt-2xs flex items-center gap-xs">
-                          <span className="min-w-0 flex-1 truncate text-ui-sm text-muted">
-                            {latestText}
-                          </span>
-                          <CountBadge
-                            count={unreadCount}
-                            aria-label={`${unreadCount} unread`}
-                          />
-                        </span>
-                      </span>
-                    </Link>
+                      participant={activePreview.participant}
+                      preview={latestText}
+                      latestMessageAt={latestMessage?.createdAt}
+                      unreadCount={unreadCount}
+                      onNavigate={() => setOpen(false)}
+                    />
                   ) : (
                     <div className="px-md py-lg text-center text-ui-sm text-muted">
                       Your coach conversation will appear here.
                     </div>
                   )}
-                </div>
+                  </Tabs.Panel>
+                </Tabs.Root>
               </Popover.Popup>
             </Popover.Positioner>
           </Popover.Portal>
