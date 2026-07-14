@@ -3,7 +3,7 @@ import type { ComponentProps } from "react";
 import type { PresenceDisplayStatus } from "../../model/presentation";
 import { PresenceIndicator } from "../presence-indicator";
 
-interface PresenceAvatarProps extends ComponentProps<typeof Avatar> {
+export interface PresenceAvatarProps extends ComponentProps<typeof Avatar> {
   status: PresenceDisplayStatus;
   statusLabel: string;
 }

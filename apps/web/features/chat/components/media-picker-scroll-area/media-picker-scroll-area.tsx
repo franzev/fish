@@ -2,7 +2,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
-interface MediaPickerScrollAreaProps {
+export interface MediaPickerScrollAreaProps {
   children: ReactNode;
   className?: string;
   viewportClassName?: string;

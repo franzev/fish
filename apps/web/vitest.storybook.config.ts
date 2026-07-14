@@ -29,13 +29,16 @@ export default defineConfig({
       "@base-ui/react/menu",
       "@base-ui/react/popover",
       "@base-ui/react/scroll-area",
+      "@base-ui/react/switch",
       "@base-ui/react/tabs",
+      "@base-ui/react/tooltip",
       "next/headers",
       "zod",
     ],
   },
   test: {
     name: "storybook",
+    fileParallelism: false,
     browser: {
       enabled: true,
       provider: playwright({}),

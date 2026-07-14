@@ -62,7 +62,7 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                 />
               )}
               {image.status === "failed" ? (
-                <Menu.Root>
+                <Menu.Root modal={false}>
                   <Menu.Trigger
                     aria-label={`Upload failed for ${image.file.name}. Show options`}
                     className="absolute inset-0 flex size-full items-center justify-center bg-scrim text-notice"
@@ -81,7 +81,7 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                         </Menu.Item>
                         <Menu.Item
                           onClick={() => onRemove(image.clientUploadId)}
-                          className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-notice data-[highlighted]:bg-surface-2"
+                          className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-body data-[highlighted]:bg-surface-2"
                         >
                           <IconTrash size={20} stroke={1.75} aria-hidden="true" />
                           Remove

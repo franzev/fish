@@ -72,9 +72,12 @@ export const Failed: Story = {
     const body = within(canvasElement.ownerDocument.body);
     await expect(await body.findByRole("menuitem", { name: "Retry" })).toBeInTheDocument();
     const remove = await body.findByRole("menuitem", { name: "Remove" });
-    await expect(remove).toHaveClass("text-notice");
+    await expect(remove).toHaveClass("text-body");
     await userEvent.click(remove);
     await expect(args.onRemove).toHaveBeenCalledWith("storybook-upload");
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
   },
 };
 

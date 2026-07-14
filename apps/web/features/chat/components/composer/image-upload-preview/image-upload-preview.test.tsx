@@ -32,7 +32,7 @@ describe("ImageUploadPreview", () => {
     expect(remove).toHaveBeenCalledWith("upload-1");
   });
 
-  it("opens retry and notice-colored remove actions from a failed preview", () => {
+  it("opens retry and calm remove actions from a failed preview", () => {
     const retry = vi.fn();
     const remove = vi.fn();
     render(<ImageUploadPreview images={[pending({ status: "failed" })]} onRemove={remove} onRetry={retry} />);
@@ -44,7 +44,7 @@ describe("ImageUploadPreview", () => {
     expect(retry).toHaveBeenCalledWith("upload-1");
     fireEvent.click(trigger);
     const removeAction = screen.getByRole("menuitem", { name: "Remove" });
-    expect(removeAction).toHaveClass("text-notice", "min-h-control");
+    expect(removeAction).toHaveClass("text-body", "min-h-control");
     fireEvent.click(removeAction);
     expect(remove).toHaveBeenCalledWith("upload-1");
     expect(screen.getByAltText("Preview of image to send")).toBeInTheDocument();

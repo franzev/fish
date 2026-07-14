@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { IconSearch } from "@tabler/icons-react";
 import { forwardRef, type ChangeEventHandler } from "react";
 
-interface MediaPickerSearchProps {
+export interface MediaPickerSearchProps {
   id?: string;
   label: string;
   placeholder: string;

@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { getChatSticker } from "../sticker-picker/sticker-catalog";
 
-interface StickerMediaProps {
+export interface StickerMediaProps {
   stickerId: string;
   className?: string;
 }
