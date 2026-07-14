@@ -223,30 +223,6 @@ describe("Composer", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps edit controls inside the composer row", () => {
-    const onCancelEdit = vi.fn();
-    render(
-      <Composer
-        {...baseProps}
-        draft="A message to revise"
-        canSend
-        isEditing
-        onCancelEdit={onCancelEdit}
-      />
-    );
-
-    expect(screen.getByText("Editing")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add to message" })).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Add emoji, GIF, or sticker" })
-    ).toBeNull();
-
-    const cancelEdit = screen.getByRole("button", { name: "Cancel edit" });
-    expect(cancelEdit).toHaveClass("min-h-control", "min-w-control");
-    fireEvent.click(cancelEdit);
-    expect(onCancelEdit).toHaveBeenCalledOnce();
-  });
-
   it("reports draft changes from the textarea", () => {
     const onDraftChange = vi.fn();
     render(<Composer {...baseProps} onDraftChange={onDraftChange} />);

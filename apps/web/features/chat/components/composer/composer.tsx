@@ -48,8 +48,6 @@ export interface ComposerProps {
   selectedStickerId?: ChatStickerId | null;
   onRemoveSticker?: () => void;
   stickerSelectionDisabled?: boolean;
-  isEditing?: boolean;
-  onCancelEdit?: () => void;
 }
 
 function getSendDisabledReason(images: PendingChatImage[]): string | null {
@@ -111,8 +109,6 @@ export function Composer({
   selectedStickerId,
   onRemoveSticker = () => undefined,
   stickerSelectionDisabled,
-  isEditing = false,
-  onCancelEdit = () => undefined,
 }: ComposerProps) {
   const [dragActive, setDragActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -161,13 +157,7 @@ export function Composer({
         )}
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
         <div className="flex items-end gap-xs p-xs">
-          {isEditing ? (
-            <span className="shrink-0 self-center px-2xs text-ui-xs text-muted">
-              Editing
-            </span>
-          ) : (
-            <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
-          )}
+          <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
           <textarea
             ref={textareaRef}
             aria-label="Message"
@@ -183,27 +173,16 @@ export function Composer({
             placeholder={channelName ? `Message #${channelName}` : "Message"}
             className="max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs py-field-y text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
           />
-          {isEditing ? (
-            <button
-              type="button"
-              aria-label="Cancel edit"
-              onClick={onCancelEdit}
-              className={composerIconButtonClass}
-            >
-              <IconX size={18} stroke={1.75} aria-hidden="true" />
-            </button>
-          ) : (
-            <MediaPickerButton
-              onSelectEmoji={onSelectEmoji}
-              onSelectGif={onSelectGif}
-              onSelectSticker={onSelectSticker}
-              gifDisabled={gifSelectionDisabled}
-              stickerDisabled={stickerSelectionDisabled}
-              className={composerIconButtonClass}
-            >
-              <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
-            </MediaPickerButton>
-          )}
+          <MediaPickerButton
+            onSelectEmoji={onSelectEmoji}
+            onSelectGif={onSelectGif}
+            onSelectSticker={onSelectSticker}
+            gifDisabled={gifSelectionDisabled}
+            stickerDisabled={stickerSelectionDisabled}
+            className={composerIconButtonClass}
+          >
+            <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
+          </MediaPickerButton>
           {hasSendContent && (
             <Tooltip.Provider delay={400} closeDelay={0}>
               <Tooltip.Root disabled={!sendDisabledReason}>

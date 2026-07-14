@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyTimeFormat } from "@/lib/prefs/apply-prefs";
 import { Avatar } from "./avatar";
 import { EmptyState } from "./empty-state";
@@ -95,6 +95,23 @@ describe("Reactions", () => {
     const theirs = screen.getByRole("button", { name: /🎉 reaction, 1 person/ });
     expect(theirs).toHaveAttribute("aria-pressed", "false");
     expect(theirs.className).toContain("bg-surface-2");
+  });
+
+  it("keeps reaction context visible but inactive during message editing", () => {
+    const onToggle = vi.fn();
+    render(
+      <Reactions
+        reactions={[{ emoji: "👍", count: 2, byMe: true }]}
+        onToggle={onToggle}
+        disabled
+      />
+    );
+
+    const reaction = screen.getByRole("button", { name: /including you/ });
+    expect(reaction).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Add a reaction" })).toBeNull();
+    fireEvent.click(reaction);
+    expect(onToggle).not.toHaveBeenCalled();
   });
 });
 

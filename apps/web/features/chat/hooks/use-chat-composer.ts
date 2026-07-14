@@ -37,6 +37,19 @@ interface StickerSelectionState {
   revision: number;
 }
 
+interface EditSessionState {
+  conversationId: string;
+  messageId: string;
+  draft: string;
+  notice: string | null;
+  saving: boolean;
+}
+
+interface MessageMutationResult {
+  ok: boolean;
+  notice?: string;
+}
+
 function makeRequestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
 }
@@ -56,6 +69,7 @@ export function useChatComposer({
   clearPendingImages,
 }: UseChatComposerOptions) {
   const [notice, setNotice] = useState<string | null>(null);
+  const [editSession, setEditSession] = useState<EditSessionState | null>(null);
   const [gifSelection, setGifSelection] = useState<GifSelectionState>({
     conversationId: chat.conversationId,
     gif: null,
@@ -90,14 +104,15 @@ export function useChatComposer({
   );
   const setDraft = useChatStore((state) => state.setDraft);
   const setReplyTarget = useChatStore((state) => state.setReplyTarget);
-  const setEditTarget = useChatStore((state) => state.setEditTarget);
   const sendOptimisticMessage = useChatStore((state) => state.sendOptimisticMessage);
   const confirmSentMessage = useChatStore((state) => state.confirmSentMessage);
   const markMessageFailed = useChatStore((state) => state.markMessageFailed);
   const mergeRemoteMessage = useChatStore((state) => state.mergeRemoteMessage);
 
-  const { draft, replyTargetId: replyingToId, editTargetId: editingMessageId } =
-    composer;
+  const { draft, replyTargetId: replyingToId } = composer;
+  const activeEdit = editSession?.conversationId === chat.conversationId
+    ? editSession
+    : null;
   const trimmedDraft = draft.trim();
   const readyImages = pendingImages.filter((image) => image.status === "ready");
   const imageUploadsSettled = pendingImages.every((image) => image.status === "ready");
@@ -117,10 +132,12 @@ export function useChatComposer({
   );
   const editingMessage = useMemo(
     () =>
-      editingMessageId
-        ? messages.find((message) => message.id === editingMessageId) ?? null
+      activeEdit
+        ? messages.find(
+            (message) => message.id === activeEdit.messageId && !message.deletedAt
+          ) ?? null
         : null,
-    [editingMessageId, messages]
+    [activeEdit, messages]
   );
 
   function handleDraftChange(value: string) {
@@ -242,29 +259,69 @@ export function useChatComposer({
     }
   }
 
-  async function handleEditMessage(body: string) {
-    if (!editingMessageId || !editMessageAction) {
+  async function handleSaveEdit() {
+    if (!activeEdit) return;
+
+    const body = activeEdit.draft.trim();
+    if (body.length === 0) {
+      setEditSession((current) => current
+        ? { ...current, notice: "Add some text before saving." }
+        : current
+      );
+      return;
+    }
+    if (body.length > chatLimits.messageBodyMaxLength) {
+      setEditSession((current) => current
+        ? {
+            ...current,
+            notice: "This message is a little long. Try shortening it.",
+          }
+        : current
+      );
+      return;
+    }
+    if (!editMessageAction) {
+      setEditSession((current) => current
+        ? { ...current, notice: "Editing is not available yet." }
+        : current
+      );
       return;
     }
 
-    setNotice(null);
+    const editingMessageId = activeEdit.messageId;
+    setEditSession((current) =>
+      current?.messageId === editingMessageId
+        ? { ...current, notice: null, saving: true }
+        : current
+    );
     const result = await editMessageAction({
       messageId: editingMessageId,
       body,
     }).catch(() => ({
       status: "notice" as const,
       values: {},
-      notice: "That did not save yet. Keep this open and try again.",
+      notice: "That didn’t save yet. Your changes are still here. Try again.",
     }));
 
     if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That did not save yet. Keep this open and try again.");
+      setEditSession((current) =>
+        current?.messageId === editingMessageId
+          ? {
+              ...current,
+              saving: false,
+              notice:
+                result.notice
+                ?? "That didn’t save yet. Your changes are still here. Try again.",
+            }
+          : current
+      );
       return;
     }
 
     mergeRemoteMessage(result.message!);
-    setDraft(chat.conversationId, "");
-    setEditTarget(chat.conversationId, null);
+    setEditSession((current) =>
+      current?.messageId === editingMessageId ? null : current
+    );
   }
 
   async function handleSend() {
@@ -285,11 +342,6 @@ export function useChatComposer({
 
     if (trimmedDraft.length > chatLimits.messageBodyMaxLength) {
       setNotice("This message is a little long. Try sending it in two parts.");
-      return;
-    }
-
-    if (editingMessageId) {
-      await handleEditMessage(trimmedDraft);
       return;
     }
 
@@ -323,23 +375,29 @@ export function useChatComposer({
     );
   }
 
-  async function handleDeleteMessage(message: LocalMessage) {
+  async function handleDeleteMessage(
+    message: LocalMessage
+  ): Promise<MessageMutationResult> {
     if (!deleteMessageAction) {
-      setNotice("That action is not available yet.");
-      return;
+      return { ok: false, notice: "Deleting is not available yet." };
     }
 
+    setNotice(null);
     const result = await deleteMessageAction({ messageId: message.id }).catch(() => ({
       status: "notice" as const,
       values: {},
-      notice: "That did not delete yet. Keep this open and try again.",
+      notice: "That didn’t delete yet. Keep this open and try again.",
     }));
     if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That did not delete yet. Keep this open and try again.");
-      return;
+      return {
+        ok: false,
+        notice:
+          result.notice ?? "That didn’t delete yet. Keep this open and try again.",
+      };
     }
 
     mergeRemoteMessage(result.message!);
+    return { ok: true };
   }
 
   async function handleToggleReaction(message: LocalMessage, emoji: string) {
@@ -382,26 +440,27 @@ export function useChatComposer({
 
   function startReplyingToMessage(message: LocalMessage) {
     setReplyTarget(chat.conversationId, message.id);
-    setEditTarget(chat.conversationId, null);
     setNotice(null);
   }
 
   function startEditingMessage(message: LocalMessage) {
-    setEditTarget(chat.conversationId, message.id);
     setReplyTarget(chat.conversationId, null);
-    setDraft(chat.conversationId, message.body);
-    setGifSelection((current) => ({
-      ...current,
-      gif: null,
-      query: "",
-      revision: current.revision + 1,
-    }));
-    setStickerSelection((current) => ({
-      ...current,
-      stickerId: null,
-      revision: current.revision + 1,
-    }));
+    setEditSession({
+      conversationId: chat.conversationId,
+      messageId: message.id,
+      draft: message.body,
+      notice: null,
+      saving: false,
+    });
     setNotice(null);
+  }
+
+  function handleEditDraftChange(value: string) {
+    setEditSession((current) =>
+      current?.conversationId === chat.conversationId
+        ? { ...current, draft: value, notice: null }
+        : current
+    );
   }
 
   function cancelReply() {
@@ -409,8 +468,9 @@ export function useChatComposer({
   }
 
   function cancelEdit() {
-    setEditTarget(chat.conversationId, null);
-    setDraft(chat.conversationId, "");
+    setEditSession((current) =>
+      current?.conversationId === chat.conversationId ? null : current
+    );
   }
 
   function selectGif(gif: ClientChatGif, query: string) {
@@ -478,6 +538,9 @@ export function useChatComposer({
     canSend,
     replyingTo,
     editingMessage,
+    editDraft: activeEdit?.draft ?? "",
+    editNotice: activeEdit?.notice ?? null,
+    isSavingEdit: activeEdit?.saving ?? false,
     handleDraftChange,
     handleSend,
     sendWithRequestId,
@@ -486,6 +549,8 @@ export function useChatComposer({
     handleReportGif,
     startReplyingToMessage,
     startEditingMessage,
+    handleEditDraftChange,
+    handleSaveEdit,
     cancelReply,
     cancelEdit,
     selectGif,

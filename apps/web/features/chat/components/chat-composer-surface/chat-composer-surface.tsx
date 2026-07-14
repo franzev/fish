@@ -20,7 +20,6 @@ interface ChatComposerSurfaceProps {
   canSend: boolean;
   getMessageAuthorName: (message: LocalMessage) => string;
   cancelReply: () => void;
-  cancelEdit: () => void;
   handleDraftChange: (value: string) => void;
   handleSend: () => Promise<void>;
   handleComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
@@ -49,7 +48,6 @@ export function ChatComposerSurface({
   canSend,
   getMessageAuthorName,
   cancelReply,
-  cancelEdit,
   handleDraftChange,
   handleSend,
   handleComposerKeyDown,
@@ -115,48 +113,51 @@ export function ChatComposerSurface({
         </div>
       )}
 
-      <div className={cn(isOffline && "opacity-60")}>
-        <Composer
-          channelName={chat.channelName}
-          draft={draft}
-          canSend={canSend}
-          onDraftChange={handleDraftChange}
-          onSend={() => {
-            scrollToBottom();
-            void handleSend();
-          }}
-          onKeyDown={handleComposerKeyDown}
-          onBlur={stopLocalTyping}
-          onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
-          images={images}
-          onSelectImages={addImages}
-          onRemoveImage={(id) => void removeImage(id)}
-          onRetryImage={retryImage}
-          imageSelectionDisabled={
-            Boolean(editingMessage)
-            || isOffline
-            || Boolean(selectedGif)
-            || Boolean(selectedStickerId)
-          }
-          selectedGif={selectedGif}
-          onSelectGif={selectGif}
-          onRemoveGif={removeSelectedGif}
-          gifSelectionDisabled={
-            Boolean(editingMessage)
-            || isOffline
-            || images.length > 0
-            || Boolean(selectedStickerId)
-          }
-          selectedStickerId={selectedStickerId}
-          onRemoveSticker={removeSelectedSticker}
-          onSelectSticker={(sticker) => selectSticker(sticker.id)}
-          stickerSelectionDisabled={
-            Boolean(editingMessage) || isOffline || Boolean(selectedGif) || images.length > 0
-          }
-          isEditing={Boolean(editingMessage)}
-          onCancelEdit={cancelEdit}
-        />
-      </div>
+      {editingMessage ? (
+        <div className="px-sm pt-sm md:pb-sm">
+          <div
+            role="status"
+            className="flex min-h-control items-center rounded-control bg-surface-2 px-md text-ui-sm text-muted"
+          >
+            Finish editing the message above
+          </div>
+        </div>
+      ) : (
+        <div className={cn(isOffline && "opacity-60")}>
+          <Composer
+            channelName={chat.channelName}
+            draft={draft}
+            canSend={canSend}
+            onDraftChange={handleDraftChange}
+            onSend={() => {
+              scrollToBottom();
+              void handleSend();
+            }}
+            onKeyDown={handleComposerKeyDown}
+            onBlur={stopLocalTyping}
+            onSelectEmoji={(emoji) => handleDraftChange(draft + emoji)}
+            images={images}
+            onSelectImages={addImages}
+            onRemoveImage={(id) => void removeImage(id)}
+            onRetryImage={retryImage}
+            imageSelectionDisabled={
+              isOffline || Boolean(selectedGif) || Boolean(selectedStickerId)
+            }
+            selectedGif={selectedGif}
+            onSelectGif={selectGif}
+            onRemoveGif={removeSelectedGif}
+            gifSelectionDisabled={
+              isOffline || images.length > 0 || Boolean(selectedStickerId)
+            }
+            selectedStickerId={selectedStickerId}
+            onRemoveSticker={removeSelectedSticker}
+            onSelectSticker={(sticker) => selectSticker(sticker.id)}
+            stickerSelectionDisabled={
+              isOffline || Boolean(selectedGif) || images.length > 0
+            }
+          />
+        </div>
+      )}
     </>
   );
 }

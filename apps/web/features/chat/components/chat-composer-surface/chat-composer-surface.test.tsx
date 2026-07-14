@@ -20,7 +20,6 @@ function props() {
     canSend: false,
     getMessageAuthorName: () => "Coach",
     cancelReply: vi.fn(),
-    cancelEdit: vi.fn(),
     handleDraftChange: vi.fn(),
     handleSend: vi.fn(async () => undefined),
     handleComposerKeyDown: vi.fn(),
@@ -53,7 +52,7 @@ describe("ChatComposerSurface stickers", () => {
     expect(viewProps.addImages).not.toHaveBeenCalled();
   });
 
-  it("keeps edit context and cancellation inside the composer", () => {
+  it("quiets the composer while a message is edited inline", () => {
     const viewProps = props();
     render(
       <ChatComposerSurface
@@ -64,10 +63,10 @@ describe("ChatComposerSurface stickers", () => {
       />
     );
 
-    expect(screen.getByText("Editing")).toBeInTheDocument();
-    expect(screen.queryByText("Editing message")).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Cancel edit" }));
-    expect(viewProps.cancelEdit).toHaveBeenCalledOnce();
+    expect(
+      screen.getByText("Finish editing the message above")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Message" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();
   });
 });

@@ -964,7 +964,7 @@ describe("ChatClient", () => {
     );
 
     expect(screen.getByText("Online")).toBeInTheDocument();
-    expect(screen.getByText("Online").previousSibling).toHaveClass(
+    expect(screen.getByLabelText("Online")).toHaveClass(
       "text-presence-online"
     );
   });
@@ -1414,7 +1414,7 @@ describe("ChatClient", () => {
     );
   });
 
-  it("edits and deletes the current user's messages through quiet actions", async () => {
+  it("edits inline without losing the composer draft and confirms deletion", async () => {
     const editMessageAction = vi.fn().mockResolvedValue({
       status: "sent",
       values: {},
@@ -1477,12 +1477,23 @@ describe("ChatClient", () => {
       />
     );
 
+    fireEvent.change(screen.getByRole("textbox", { name: "Message" }), {
+      target: { value: "An unsent draft." },
+    });
+
     fireEvent.click(screen.getByRole("button", { name: "Edit message" }));
-    expect(screen.getByLabelText("Message")).toHaveValue("Original text.");
-    fireEvent.change(screen.getByLabelText("Message"), {
+    expect(screen.getByRole("textbox", { name: "Edit message" })).toHaveValue(
+      "Original text."
+    );
+    expect(
+      screen.getByText("Finish editing the message above")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Message" })).toBeNull();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit message" }), {
       target: { value: "Edited text." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() =>
       expect(editMessageAction).toHaveBeenCalledWith({
@@ -1490,7 +1501,18 @@ describe("ChatClient", () => {
         body: "Edited text.",
       })
     );
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "An unsent draft."
+    );
 
+    const ownRow = screen.getByText("Edited text.").closest("li");
+    expect(ownRow).not.toBeNull();
+    expect(ownRow).toHaveFocus();
+    fireEvent.click(
+      within(ownRow!).getByRole("button", { name: "More actions for message" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
+    expect(deleteMessageAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
     await waitFor(() =>
       expect(deleteMessageAction).toHaveBeenCalledWith({ messageId: "message-2" })
@@ -2507,7 +2529,7 @@ describe("ChatClient", () => {
     expect(within(secondRow).getByText("SO")).toBeInTheDocument();
   });
 
-  it("sizes revealed message-action controls to the shared touch target", async () => {
+  it("sizes the compact own-message controls to the shared touch target", () => {
     render(
       <ChatClient
         chat={{
@@ -2528,16 +2550,18 @@ describe("ChatClient", () => {
       />
     );
 
-    const reply = screen.getByRole("button", { name: "Reply to message" });
     const react = screen.getByRole("button", { name: "Add a reaction" });
     const edit = screen.getByRole("button", { name: "Edit message" });
-    const remove = screen.getByRole("button", { name: "Delete message" });
+    const more = screen.getByRole("button", { name: "More actions for message" });
 
-    for (const action of [reply, react, edit, remove]) {
+    for (const action of [react, edit, more]) {
       expect(action.className).toContain("min-h-control");
       expect(action.className).toContain("min-w-control");
       expect(action.className).not.toContain("size-10");
     }
+
+    expect(screen.queryByRole("button", { name: "Reply to message" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete message" })).toBeNull();
   });
 
   it("resets realtime status to idle on unmount so a revisit is not mislabeled as reconnecting", () => {

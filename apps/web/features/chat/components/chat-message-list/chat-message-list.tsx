@@ -12,6 +12,7 @@ import { TypingIndicator } from "../visual";
 import {
   ChatMessageRow,
   type ChatMessageActions,
+  type ChatMessageEditingState,
 } from "./chat-message-row";
 import { OlderMessagesControl } from "./older-messages-control";
 import { UnreadMessageBanner } from "../unread-message-banner";
@@ -51,6 +52,7 @@ interface ChatMessageListProps {
     getAuthorMember: (message: LocalMessage) => CommunityMemberProfile;
   };
   actions: ChatMessageActions;
+  editing: ChatMessageEditingState;
 }
 
 /** Coordinates transcript scrolling and delegates pagination and row details
@@ -60,6 +62,7 @@ export function ChatMessageList({
   pagination,
   transcript,
   actions,
+  editing,
 }: ChatMessageListProps) {
   const {
     visibleMessages,
@@ -140,6 +143,7 @@ export function ChatMessageList({
                   getAuthorAvatar={getAuthorAvatar}
                   getAuthorMember={getAuthorMember}
                   actions={actions}
+                  editing={editing}
                 />
               ))}
               {participantTyping && (

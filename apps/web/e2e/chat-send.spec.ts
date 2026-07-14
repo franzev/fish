@@ -26,7 +26,7 @@ test("client sends a message and it persists as exactly one row after reload", a
   // is rendered only after the Server Action confirms the persisted row, so
   // wait for that stable UI contract before reloading the page.
   await expect(
-    sentRow.getByRole("button", { name: "Reply to message" })
+    sentRow.getByRole("button", { name: "More actions for message" })
   ).toHaveCount(1);
   await expect(page.getByText("Not sent yet")).toHaveCount(0);
   await expect(

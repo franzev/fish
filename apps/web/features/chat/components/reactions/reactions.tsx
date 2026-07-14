@@ -8,6 +8,7 @@ import type { Reaction } from "../types";
 interface ReactionsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"> {
   reactions?: Reaction[];
   onToggle?: (emoji: string) => void;
+  disabled?: boolean;
 }
 
 /** A row of emoji-count pills, plus a trailing circular add-reaction pill
@@ -16,7 +17,13 @@ interface ReactionsProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"
  *  Renders nothing for an empty/missing list — the hover-bar smiley handles
  *  a message's first reaction, so there is no empty pill row taking up
  *  space. */
-export function Reactions({ reactions, onToggle, className, ...props }: ReactionsProps) {
+export function Reactions({
+  reactions,
+  onToggle,
+  disabled = false,
+  className,
+  ...props
+}: ReactionsProps) {
   if (!reactions || reactions.length === 0) return null;
 
   return (
@@ -29,6 +36,7 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
             reaction.count === 1 ? "person" : "people"
           }${reaction.byMe ? ", including you" : ""}`}
           aria-pressed={reaction.byMe}
+          disabled={disabled}
           onClick={() => onToggle?.(reaction.emoji)}
           className={cn(
             // Compact reference geometry: a small emoji+count chip resting
@@ -52,7 +60,7 @@ export function Reactions({ reactions, onToggle, className, ...props }: Reaction
           </span>
         </button>
       ))}
-      {onToggle && (
+      {onToggle && !disabled && (
         <EmojiPickerButton
           label="Add a reaction"
           onSelect={(emoji) => onToggle(emoji)}

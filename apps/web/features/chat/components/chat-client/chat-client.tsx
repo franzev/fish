@@ -298,6 +298,9 @@ export function ChatClient({
     canSend,
     replyingTo,
     editingMessage,
+    editDraft,
+    editNotice,
+    isSavingEdit,
     handleDraftChange,
     handleSend,
     sendWithRequestId,
@@ -306,6 +309,8 @@ export function ChatClient({
     handleReportGif,
     startReplyingToMessage,
     startEditingMessage,
+    handleEditDraftChange,
+    handleSaveEdit,
     cancelReply,
     cancelEdit,
     selectGif,
@@ -486,7 +491,6 @@ export function ChatClient({
         memberCount={memberCount}
         presenceStatus={participantPresence.status}
         presenceLabel={participantPresence.label}
-        presenceDetail={participantPresence.detail}
         search={search}
         onSearchChange={setSearch}
         criteria={searchCriteria}
@@ -535,12 +539,23 @@ export function ChatClient({
           getAuthorMember: getMessageAuthorMember,
         }}
         actions={{
+          canDelete: Boolean(deleteMessageAction),
           reply: startReplyingToMessage,
           toggleReaction: handleToggleReaction,
           reportGif: handleReportGif,
-          edit: startEditingMessage,
           delete: handleDeleteMessage,
           retry: sendWithRequestId,
+        }}
+        editing={{
+          enabled: Boolean(editMessageAction),
+          messageId: editingMessage?.id ?? null,
+          draft: editDraft,
+          notice: editNotice,
+          saving: isSavingEdit,
+          start: startEditingMessage,
+          change: handleEditDraftChange,
+          save: () => void handleSaveEdit(),
+          cancel: cancelEdit,
         }}
       />
 
@@ -554,7 +569,6 @@ export function ChatClient({
         canSend={canSend}
         getMessageAuthorName={getMessageAuthorName}
         cancelReply={cancelReply}
-        cancelEdit={cancelEdit}
         handleDraftChange={handleDraftChange}
         handleSend={handleSend}
         handleComposerKeyDown={handleComposerKeyDown}

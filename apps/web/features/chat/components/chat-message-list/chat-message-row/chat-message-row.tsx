@@ -6,18 +6,11 @@ import {
 import { belongsToSameMessageGroup } from "@/features/chat/model/message-grouping";
 import type { ClientChatReadState } from "@/lib/services";
 import { cn } from "@/lib/utils";
-import {
-  IconMessageReply,
-  IconFlag,
-  IconMoodSmile,
-  IconPencil,
-  IconTrash,
-} from "@tabler/icons-react";
 import { isChatStickerId, type ChatStickerId } from "@fish/core/chat";
+import { useEffect, useRef } from "react";
 import {
   Avatar,
   CommunityMessageRowLayout,
-  EmojiPickerButton,
   getBubbleRadiusClasses,
   MessageBody,
   MessageMeta,
@@ -33,12 +26,17 @@ import {
   MemberProfilePopover,
   type CommunityMemberProfile,
 } from "../../member-profile-popover";
+import {
+  MessageActions,
+  type MessageActionResult,
+} from "../message-actions";
+import { MessageEditor } from "../message-editor";
 
 export interface ChatMessageActions {
+  canDelete: boolean;
   reply: (message: LocalMessage) => void;
   toggleReaction: (message: LocalMessage, emoji: string) => Promise<void>;
-  edit: (message: LocalMessage) => void;
-  delete: (message: LocalMessage) => Promise<void>;
+  delete: (message: LocalMessage) => Promise<MessageActionResult>;
   reportGif: (message: LocalMessage) => Promise<void>;
   retry: (
     body: string,
@@ -50,6 +48,18 @@ export interface ChatMessageActions {
     stickerId?: ChatStickerId,
     gif?: LocalMessage["gif"]
   ) => Promise<void>;
+}
+
+export interface ChatMessageEditingState {
+  enabled: boolean;
+  messageId: string | null;
+  draft: string;
+  notice: string | null;
+  saving: boolean;
+  start: (message: LocalMessage) => void;
+  change: (value: string) => void;
+  save: () => void;
+  cancel: () => void;
 }
 
 interface ChatMessageRowProps {
@@ -68,6 +78,7 @@ interface ChatMessageRowProps {
   getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
   getAuthorMember: (message: LocalMessage) => CommunityMemberProfile;
   actions: ChatMessageActions;
+  editing: ChatMessageEditingState;
 }
 
 /** Renders one transcript item and derives only row-local presentation state. */
@@ -87,8 +98,19 @@ export function ChatMessageRow({
   getAuthorAvatar,
   getAuthorMember,
   actions,
+  editing,
 }: ChatMessageRowProps) {
+  const rowRef = useRef<HTMLLIElement>(null);
   const mine = message.senderId === currentUserId;
+  const isEditing = editing.messageId === message.id;
+  const interactionDisabled = editing.messageId !== null;
+  const wasEditingRef = useRef(isEditing);
+
+  useEffect(() => {
+    if (wasEditingRef.current && !isEditing) rowRef.current?.focus();
+    wasEditingRef.current = isEditing;
+  }, [isEditing]);
+
   const groupedWithPrevious = belongsToSameMessageGroup(previous, message);
   const groupedWithNext = Boolean(
     next && belongsToSameMessageGroup(message, next)
@@ -130,7 +152,7 @@ export function ChatMessageRow({
         })
       : null;
   const showMessageActions =
-    message.localStatus === "sent" && !message.deletedAt;
+    message.localStatus === "sent" && !message.deletedAt && !interactionDisabled;
   const authorMember = getAuthorMember(message);
 
   const rowContent = (
@@ -185,81 +207,56 @@ export function ChatMessageRow({
         <StickerMedia stickerId={message.stickerId} />
       )}
       {message.gif && !message.deletedAt && <MessageGif gif={message.gif} />}
-      <div
-        className={cn(
-          "text-ui-sm break-words",
-          isCommunity
-            ? "text-body"
-            : cn(
-                "px-md py-compact",
-                mine
-                  ? "bg-primary text-on-primary"
-                  : "bg-surface text-body",
-                connectedBubbleRadius
-              ),
-          message.deletedAt && "italic text-muted",
-          !message.deletedAt && !visibleMessageBody(message) && "hidden"
-        )}
-      >
-        <MessageBody body={visibleMessageBody(message)} mine={mine} />
-      </div>
-      {message.editedAt && !message.deletedAt && (
+      {isEditing ? (
+        <MessageEditor
+          originalBody={message.body}
+          draft={editing.draft}
+          notice={editing.notice}
+          saving={editing.saving}
+          onChange={editing.change}
+          onSave={editing.save}
+          onCancel={editing.cancel}
+        />
+      ) : (
+        <div
+          className={cn(
+            "text-ui-sm break-words",
+            isCommunity
+              ? "text-body"
+              : cn(
+                  "px-md py-compact",
+                  mine
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface text-body",
+                  connectedBubbleRadius
+                ),
+            message.deletedAt && "italic text-muted",
+            !message.deletedAt && !visibleMessageBody(message) && "hidden"
+          )}
+        >
+          <MessageBody body={visibleMessageBody(message)} mine={mine} />
+        </div>
+      )}
+      {message.editedAt && !message.deletedAt && !isEditing && (
         <p className="mt-2xs text-ui-xs text-muted">Edited</p>
       )}
       {showMessageActions && (
-        <div className="pointer-events-none absolute -top-sm right-md flex items-center gap-3xs rounded-control border border-border bg-surface p-3xs opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100">
-          <button
-            type="button"
-            aria-label="Reply to message"
-            onClick={() => actions.reply(message)}
-            className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-          >
-            <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
-          </button>
-          <EmojiPickerButton
-            label="Add a reaction"
-            onSelect={(emoji) => void actions.toggleReaction(message, emoji)}
-            className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-          >
-            <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
-          </EmojiPickerButton>
-          {message.gif && (
-            <button
-              type="button"
-              aria-label="Report GIF"
-              onClick={() => void actions.reportGif(message)}
-              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-            >
-              <IconFlag size={18} stroke={1.75} aria-hidden="true" />
-            </button>
-          )}
-          {mine && (
-            <>
-              {Boolean(message.body.trim()) && (
-                <button
-                  type="button"
-                  aria-label="Edit message"
-                  onClick={() => actions.edit(message)}
-                  className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-                >
-                  <IconPencil size={18} stroke={1.75} aria-hidden="true" />
-                </button>
-              )}
-              <button
-                type="button"
-                aria-label="Delete message"
-                onClick={() => void actions.delete(message)}
-                className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-notice hover:bg-surface-2"
-              >
-                <IconTrash size={18} stroke={1.75} aria-hidden="true" />
-              </button>
-            </>
-          )}
-        </div>
+        <MessageActions
+          mine={mine}
+          canEdit={editing.enabled && Boolean(message.body.trim())}
+          canDelete={actions.canDelete}
+          canReportGif={Boolean(message.gif)}
+          onReply={() => actions.reply(message)}
+          onReact={(emoji) => void actions.toggleReaction(message, emoji)}
+          onEdit={() => editing.start(message)}
+          onDelete={() => actions.delete(message)}
+          onReportGif={() => void actions.reportGif(message)}
+        />
       )}
       <Reactions
         reactions={message.reactions}
         onToggle={(emoji) => void actions.toggleReaction(message, emoji)}
+        disabled={interactionDisabled}
         className="mt-2xs"
       />
       <div
@@ -325,6 +322,8 @@ export function ChatMessageRow({
         </li>
       )}
       <li
+        ref={rowRef}
+        tabIndex={-1}
         id={`message-${message.id}`}
         className={cn(
           "scroll-mt-md",
@@ -370,6 +369,7 @@ export function ChatMessageRow({
                   Boolean(message.images?.length)
                   || Boolean(message.gif)
                   || Boolean(message.stickerId)
+                  || isEditing
                 ) && "w-full",
                 mine && "items-end"
               )}

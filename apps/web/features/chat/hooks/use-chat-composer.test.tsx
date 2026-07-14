@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData, ClientChatGif } from "@/lib/services";
 import { resetChatStoreForTests } from "@/features/chat/model/store";
 import { useChatComposer } from "./use-chat-composer";
+import type { LocalMessage } from "./use-chat-messages";
 
 const conversationA: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
@@ -39,6 +40,22 @@ const gifB: ClientChatGif = {
   posterUrl: "https://static.klipy.com/gif-b.jpg",
   previewUrl: "https://static.klipy.com/gif-b-preview.mp4",
   mediaUrl: "https://static.klipy.com/gif-b.mp4",
+};
+
+const ownMessage: LocalMessage = {
+  id: "message-1",
+  conversationId: conversationA.conversationId,
+  senderId: conversationA.currentUserId,
+  senderRole: conversationA.currentUserRole,
+  senderDisplayName: conversationA.currentUserDisplayName,
+  body: "Original message",
+  clientRequestId: "seed-1",
+  createdAt: "2026-07-14T00:00:00.000Z",
+  editedAt: null,
+  deletedAt: null,
+  replyToMessageId: null,
+  reactions: [],
+  localStatus: "sent",
 };
 
 function options(
@@ -150,5 +167,97 @@ describe("useChatComposer sticker selection", () => {
       attachmentIds: [],
       stickerId: "aquatic-hello-otter",
     }));
+  });
+});
+
+describe("useChatComposer inline editing", () => {
+  beforeEach(() => {
+    resetChatStoreForTests();
+  });
+
+  it("keeps the unsent composer draft when editing is cancelled", () => {
+    const sendMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+    }));
+    const { result } = renderHook(() =>
+      useChatComposer({
+        ...options(conversationA, sendMessageAction),
+        messages: [ownMessage],
+      })
+    );
+
+    act(() => result.current.handleDraftChange("An unsent draft"));
+    act(() => result.current.startEditingMessage(ownMessage));
+
+    expect(result.current.draft).toBe("An unsent draft");
+    expect(result.current.editDraft).toBe("Original message");
+    expect(result.current.editingMessage?.id).toBe(ownMessage.id);
+
+    act(() => result.current.cancelEdit());
+    expect(result.current.draft).toBe("An unsent draft");
+    expect(result.current.editingMessage).toBeNull();
+  });
+
+  it("retains inline changes and a local notice when saving fails", async () => {
+    const sendMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+    }));
+    const editMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+      notice: "That didn’t save yet. Your changes are still here. Try again.",
+    }));
+    const { result } = renderHook(() =>
+      useChatComposer({
+        ...options(conversationA, sendMessageAction),
+        messages: [ownMessage],
+        editMessageAction,
+      })
+    );
+
+    act(() => result.current.startEditingMessage(ownMessage));
+    act(() => result.current.handleEditDraftChange("A careful revision"));
+    await act(async () => result.current.handleSaveEdit());
+
+    expect(editMessageAction).toHaveBeenCalledWith({
+      messageId: ownMessage.id,
+      body: "A careful revision",
+    });
+    expect(result.current.editDraft).toBe("A careful revision");
+    expect(result.current.editNotice).toBe(
+      "That didn’t save yet. Your changes are still here. Try again."
+    );
+    expect(result.current.isSavingEdit).toBe(false);
+  });
+
+  it("returns deletion failures to the message confirmation surface", async () => {
+    const sendMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+    }));
+    const deleteMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+      notice: "That didn’t delete yet. Keep this open and try again.",
+    }));
+    const { result } = renderHook(() =>
+      useChatComposer({
+        ...options(conversationA, sendMessageAction),
+        messages: [ownMessage],
+        deleteMessageAction,
+      })
+    );
+
+    let outcome: Awaited<ReturnType<typeof result.current.handleDeleteMessage>>;
+    await act(async () => {
+      outcome = await result.current.handleDeleteMessage(ownMessage);
+    });
+
+    expect(outcome!).toEqual({
+      ok: false,
+      notice: "That didn’t delete yet. Keep this open and try again.",
+    });
   });
 });
