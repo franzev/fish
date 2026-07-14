@@ -54,6 +54,29 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
+const browserTabBaseTitle = "FISH";
+const browserTabCountLimit = 9;
+
+function countUnreadConversations(attention: NavigationAttention[]): number {
+  return new Set(
+    attention.flatMap((item) =>
+      (item.surface === "direct" || item.surface === "channel") &&
+      item.conversationId &&
+      item.unreadCount > 0
+        ? [item.conversationId]
+        : []
+    )
+  ).size;
+}
+
+function formatBrowserTabTitle(unreadConversationCount: number): string {
+  if (unreadConversationCount === 0) return browserTabBaseTitle;
+  const count = unreadConversationCount > browserTabCountLimit
+    ? `${browserTabCountLimit}+`
+    : unreadConversationCount;
+  return `(${count}) ${browserTabBaseTitle}`;
+}
+
 interface NotificationProviderProps {
   userId: string;
   initialPage: NotificationPage;
@@ -128,10 +151,22 @@ export function NotificationProvider({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [archiveBatchId, setArchiveBatchId] = useState<string | null>(null);
   const [attention, setAttention] = useState(initialAttention);
+  const unreadConversationCount = countUnreadConversations(attention);
   const attentionConversationKey = attention
     .flatMap((item) => item.conversationId ? [item.conversationId] : [])
     .sort()
     .join("|");
+
+  useEffect(() => {
+    const initialTitle = document.title || browserTabBaseTitle;
+    return () => {
+      document.title = initialTitle;
+    };
+  }, []);
+
+  useEffect(() => {
+    document.title = formatBrowserTabTitle(unreadConversationCount);
+  }, [unreadConversationCount]);
 
   useEffect(() => {
     stateRef.current = state;

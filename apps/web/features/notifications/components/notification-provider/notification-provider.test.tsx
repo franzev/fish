@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { NotificationItem } from "@fish/core/notification-state";
 import type {
   AttentionRealtimeService,
+  NavigationAttention,
   NavigationAttentionRepository,
   NotificationCommandResult,
   NotificationCommandService,
@@ -10,7 +11,7 @@ import type {
   NotificationRepository,
 } from "@/lib/services";
 import { resolvedService } from "@/lib/services/testing";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NotificationProvider, useNotifications } from "./notification-provider";
 
 const notification: NotificationItem = {
@@ -40,6 +41,7 @@ const notification: NotificationItem = {
 
 function dependencies(command: NotificationCommandService["execute"]) {
   let onHint: ((hint: NotificationRealtimeHint) => void) | null = null;
+  let onAttentionChange: ((conversationId: string) => void) | null = null;
   const repository: NotificationRepository = {
     getSummary: vi.fn(() => resolvedService({ unreadCount: 1, unseenCount: 1, latestChangeSeq: 1 })),
     listPage: vi.fn(() => resolvedService({ items: [notification], nextCursor: null })),
@@ -55,7 +57,10 @@ function dependencies(command: NotificationCommandService["execute"]) {
     list: vi.fn(() => resolvedService([])),
   };
   const attentionRealtime: AttentionRealtimeService = {
-    subscribe: vi.fn(() => vi.fn()),
+    subscribe: vi.fn((_conversationIds, onChange) => {
+      onAttentionChange = onChange;
+      return vi.fn();
+    }),
   };
   return {
     repository,
@@ -66,6 +71,24 @@ function dependencies(command: NotificationCommandService["execute"]) {
     emit(hint: NotificationRealtimeHint) {
       onHint?.(hint);
     },
+    emitAttention(conversationId: string) {
+      onAttentionChange?.(conversationId);
+    },
+  };
+}
+
+function conversationAttention(
+  conversationId: string,
+  unreadCount: number,
+  surface: "direct" | "channel" = "direct"
+): NavigationAttention {
+  return {
+    surface,
+    entityId: conversationId,
+    conversationId,
+    unreadCount,
+    mentionCount: 0,
+    newActivity: unreadCount > 0,
   };
 }
 
@@ -80,14 +103,15 @@ function Harness() {
 }
 
 function renderProvider(
-  deps: ReturnType<typeof dependencies>
+  deps: ReturnType<typeof dependencies>,
+  initialAttention: NavigationAttention[] = []
 ) {
   return render(
     <NotificationProvider
       userId="user-1"
       initialPage={{ items: [notification], nextCursor: null }}
       initialSummary={{ unreadCount: 1, unseenCount: 1, latestChangeSeq: 1 }}
-      initialAttention={[]}
+      initialAttention={initialAttention}
       repository={deps.repository}
       commands={deps.commands}
       realtime={deps.realtime}
@@ -100,6 +124,70 @@ function renderProvider(
 }
 
 describe("NotificationProvider", () => {
+  afterEach(() => {
+    document.title = "";
+  });
+
+  it("shows the number of unread conversations in the browser tab, not the number of messages", () => {
+    document.title = "FISH";
+    const deps = dependencies(vi.fn(async () => ({ ok: true as const, updated: 0 })));
+    const view = renderProvider(deps, [
+      conversationAttention("direct-1", 596),
+      conversationAttention("channel-1", 4, "channel"),
+      conversationAttention("channel-1", 4, "channel"),
+      conversationAttention("read-conversation", 0),
+      {
+        surface: "friends",
+        entityId: null,
+        conversationId: null,
+        unreadCount: 8,
+        mentionCount: 0,
+        newActivity: true,
+      },
+    ]);
+
+    expect(document.title).toBe("(2) FISH");
+    view.unmount();
+    expect(document.title).toBe("FISH");
+  });
+
+  it("keeps the browser tab calm by capping counts at nine plus", () => {
+    const deps = dependencies(vi.fn(async () => ({ ok: true as const, updated: 0 })));
+    renderProvider(
+      deps,
+      Array.from({ length: 12 }, (_, index) =>
+        conversationAttention(`conversation-${index}`, 1)
+      )
+    );
+
+    expect(document.title).toBe("(9+) FISH");
+  });
+
+  it("updates and clears the browser tab from canonical realtime attention", async () => {
+    const deps = dependencies(vi.fn(async () => ({ ok: true as const, updated: 0 })));
+    const readConversation = conversationAttention("conversation-1", 0);
+    renderProvider(deps, [readConversation]);
+
+    expect(document.title).toBe("FISH");
+    expect(deps.attentionRealtime.subscribe).toHaveBeenCalledWith(
+      ["conversation-1"],
+      expect.any(Function),
+      expect.any(Function)
+    );
+
+    vi.mocked(deps.attentionRepository.list).mockReturnValueOnce(
+      resolvedService([conversationAttention("conversation-1", 3)])
+    );
+    act(() => deps.emitAttention("conversation-1"));
+    await waitFor(() => expect(document.title).toBe("(1) FISH"));
+
+    vi.mocked(deps.attentionRepository.list).mockReturnValueOnce(
+      resolvedService([readConversation])
+    );
+    act(() => deps.emitAttention("conversation-1"));
+    await waitFor(() => expect(document.title).toBe("FISH"));
+  });
+
   it("applies read commands optimistically and confirms them", async () => {
     let resolveCommand: (result: NotificationCommandResult) => void = () => undefined;
     const execute = vi.fn(() => new Promise<NotificationCommandResult>((resolve) => {
