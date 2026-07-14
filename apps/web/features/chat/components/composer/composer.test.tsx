@@ -31,6 +31,63 @@ describe("Composer", () => {
     );
   });
 
+  it("matches the chat message text size", () => {
+    render(<Composer {...baseProps} />);
+
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveClass(
+      "text-ui-sm"
+    );
+  });
+
+  it("grows the textarea with its content without showing a scroll area", () => {
+    render(<Composer {...baseProps} />);
+    const textarea = screen.getByRole("textbox", { name: "Message" });
+    Object.defineProperty(textarea, "scrollHeight", {
+      configurable: true,
+      value: 120,
+    });
+    Object.defineProperty(textarea, "clientHeight", {
+      configurable: true,
+      value: 120,
+    });
+
+    fireEvent.change(textarea, { target: { value: "A longer draft" } });
+
+    expect(textarea).toHaveStyle({ height: "120px" });
+    expect(textarea).toHaveStyle({ overflowY: "hidden" });
+    expect(textarea).toHaveClass("max-h-chat-composer-max-height");
+  });
+
+  it("enables its scroll area only when content exceeds the maximum height", () => {
+    render(<Composer {...baseProps} />);
+    const textarea = screen.getByRole("textbox", { name: "Message" });
+    Object.defineProperty(textarea, "scrollHeight", {
+      configurable: true,
+      value: 220,
+    });
+    Object.defineProperty(textarea, "clientHeight", {
+      configurable: true,
+      value: 160,
+    });
+
+    fireEvent.change(textarea, { target: { value: "A very long draft" } });
+
+    expect(textarea).toHaveStyle({ overflowY: "auto" });
+  });
+
+  it("resizes when a saved draft is restored", () => {
+    const { rerender } = render(<Composer {...baseProps} />);
+    const textarea = screen.getByRole("textbox", { name: "Message" });
+    Object.defineProperty(textarea, "scrollHeight", {
+      configurable: true,
+      value: 132,
+    });
+
+    rerender(<Composer {...baseProps} draft={"First line\nSecond line"} />);
+
+    expect(textarea).toHaveStyle({ height: "132px" });
+  });
+
   it("hides the Send button while the draft is empty", () => {
     render(<Composer {...baseProps} canSend={false} />);
     expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();
@@ -38,9 +95,15 @@ describe("Composer", () => {
 
   it("shows the Send button once there is something to send", () => {
     render(<Composer {...baseProps} draft="Hello" canSend />);
-    expect(
-      screen.getByRole("button", { name: "Send message" })
-    ).toBeInTheDocument();
+    const sendButton = screen.getByRole("button", { name: "Send message" });
+
+    expect(sendButton).toBeInTheDocument();
+    expect(sendButton).toHaveClass(
+      "w-control",
+      "px-0"
+    );
+    expect(sendButton).not.toHaveClass("px-md");
+    expect(sendButton).toHaveStyle({ minHeight: "var(--size-control)" });
   });
 
   it("explains why Send is disabled while an attachment is uploading", async () => {

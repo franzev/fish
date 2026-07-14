@@ -7,7 +7,13 @@ import {
   IconSend,
   IconX,
 } from "@tabler/icons-react";
-import { useState, type DragEvent, type KeyboardEvent } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+} from "react";
 import { AddMenu } from "./add-menu";
 import { composerIconButtonClass } from "./icon-button-class";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
@@ -68,6 +74,15 @@ function getSendDisabledReason(images: PendingChatImage[]): string | null {
   return `Still finishing your ${subject}`;
 }
 
+function resizeComposer(textarea: HTMLTextAreaElement) {
+  textarea.style.height = "auto";
+  const contentHeight = textarea.scrollHeight;
+  textarea.style.height = `${contentHeight}px`;
+  textarea.style.overflowY = contentHeight > textarea.clientHeight
+    ? "auto"
+    : "hidden";
+}
+
 /** The message composer: one borderless surface-2 bar holding every input
  *  affordance. The Send button only exists while there is something to send
  *  — with an empty draft the bar has no primary action at all, keeping the
@@ -96,6 +111,7 @@ export function Composer({
   stickerSelectionDisabled,
 }: ComposerProps) {
   const [dragActive, setDragActive] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasSendContent =
     draft.trim().length > 0
     || images.length > 0
@@ -107,9 +123,14 @@ export function Composer({
     setDragActive(false);
     if (!imageSelectionDisabled) onSelectImages(Array.from(event.dataTransfer.files));
   };
+
+  useLayoutEffect(() => {
+    if (textareaRef.current) resizeComposer(textareaRef.current);
+  }, [draft]);
+
   return (
     <div
-      className="relative p-sm"
+      className="relative px-sm pt-sm md:pb-sm"
       onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
       onDragOver={(event) => event.preventDefault()}
       onDragLeave={(event) => {
@@ -138,15 +159,19 @@ export function Composer({
         <div className="flex items-end gap-xs p-xs">
         <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
         <textarea
+          ref={textareaRef}
           aria-label="Message"
           value={draft}
-          onChange={(event) => onDraftChange(event.target.value)}
+          onChange={(event) => {
+            resizeComposer(event.currentTarget);
+            onDraftChange(event.currentTarget.value);
+          }}
           onKeyDown={onKeyDown}
           onBlur={onBlur}
           rows={1}
           enterKeyHint="send"
           placeholder={channelName ? `Message #${channelName}` : "Message"}
-          className="min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-copy text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
+          className="max-h-chat-composer-max-height min-h-control flex-1 resize-none border-none bg-transparent px-xs py-field-y text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
         />
         <MediaPickerButton
           onSelectEmoji={onSelectEmoji}
@@ -175,7 +200,8 @@ export function Composer({
                       fullWidth={false}
                       onClick={onSend}
                       disabled={!canSend}
-                      className="shrink-0 px-md"
+                      className="w-control shrink-0 px-0"
+                      style={{ minHeight: "var(--size-control)" }}
                       aria-label="Send message"
                     >
                       <IconSend size={20} stroke={1.75} aria-hidden="true" />

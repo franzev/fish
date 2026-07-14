@@ -188,6 +188,7 @@
   --aspect-chat-gallery: 4 / 3;
   --spacing-chat-image-thumb: 240px;
   --spacing-chat-gif-selection: 160px;
+  --spacing-chat-composer-max-height: 160px; /* keep long drafts from displacing the conversation */
   --aspect-gif-tile: 4 / 3;
   --spacing-motion-enter: 6px;
   --spacing-motion-typing: 4px;
