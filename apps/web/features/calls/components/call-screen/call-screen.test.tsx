@@ -106,6 +106,7 @@ describe("CallScreen", () => {
     expect(
       screen.getByRole("heading", { name: "Video call with Alex" })
     ).toBeInTheDocument();
+    expect(screen.queryByText("Your microphone is on.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Alex video")).toBeInTheDocument();
     expect(screen.getByLabelText("Your video preview")).toBeInTheDocument();
     expect(

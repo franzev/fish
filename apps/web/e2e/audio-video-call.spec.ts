@@ -1,4 +1,64 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
+
+async function capturePeerConnections(context: BrowserContext) {
+  await context.addInitScript(() => {
+    const NativePeerConnection = window.RTCPeerConnection;
+    const connections: RTCPeerConnection[] = [];
+    Object.defineProperty(window, "__fishPeerConnections", {
+      value: connections,
+    });
+    class TrackedPeerConnection extends NativePeerConnection {
+      constructor(configuration?: RTCConfiguration) {
+        super(configuration);
+        connections.push(this);
+      }
+    }
+    window.RTCPeerConnection = TrackedPeerConnection;
+  });
+}
+
+async function videoStats(page: Page) {
+  return page.evaluate(async () => {
+    const connections = (
+      window as typeof window & {
+        __fishPeerConnections?: RTCPeerConnection[];
+      }
+    ).__fishPeerConnections ?? [];
+    const samples: Array<Record<string, number | string>> = [];
+    for (const connection of connections) {
+      const report = await connection.getStats();
+      report.forEach((stat) => {
+        if (
+          ["inbound-rtp", "outbound-rtp", "remote-inbound-rtp", "candidate-pair"]
+            .includes(stat.type) &&
+          (stat.kind === "video" || stat.mediaType === "video" || stat.nominated)
+        ) {
+          samples.push({
+            id: stat.id,
+            type: stat.type,
+            timestamp: stat.timestamp,
+            bytesReceived: stat.bytesReceived ?? 0,
+            bytesSent: stat.bytesSent ?? 0,
+            framesDecoded: stat.framesDecoded ?? 0,
+            framesEncoded: stat.framesEncoded ?? 0,
+            framesPerSecond: stat.framesPerSecond ?? 0,
+            framesDropped: stat.framesDropped ?? 0,
+            packetsLost: stat.packetsLost ?? 0,
+            jitter: stat.jitter ?? 0,
+            roundTripTime: stat.currentRoundTripTime ?? stat.roundTripTime ?? 0,
+          });
+        }
+      });
+    }
+    return samples;
+  });
+}
 
 async function signIn(page: Page, email: string, password: string) {
   await page.goto("/sign-in");
@@ -23,6 +83,10 @@ async function expectHdVideo(page: Page, label: string) {
 async function callPair(browser: Browser) {
   const coachContext = await browser.newContext();
   const clientContext = await browser.newContext();
+  await Promise.all([
+    capturePeerConnections(coachContext),
+    capturePeerConnections(clientContext),
+  ]);
   await Promise.all([
     coachContext.grantPermissions(["microphone", "camera"], {
       origin: "http://localhost:3001",
@@ -103,6 +167,10 @@ test.describe.serial("one-to-one calls", () => {
         expectHdVideo(pair.client, "Your video preview"),
         expectHdVideo(pair.client, "Patty Cake video"),
       ]);
+      const firstStats = await videoStats(pair.client);
+      await pair.client.waitForTimeout(3_000);
+      const secondStats = await videoStats(pair.client);
+      console.log("[DEBUG-video-quality]", JSON.stringify({ firstStats, secondStats }));
       await pair.client.getByRole("button", { name: "Turn camera off" }).click();
       await expect(pair.client.getByRole("button", { name: "Turn camera on" }))
         .toBeVisible();

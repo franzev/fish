@@ -218,9 +218,8 @@ export function CallScreen({ callId }: { callId: string }) {
           )}
           {microphoneSelect}
           <div className="flex flex-wrap items-center gap-sm">
-            <div className="flex min-w-0 flex-col gap-3xs text-left">
+            <div className="min-w-0 text-left">
               <h1 className="text-heading-sm">{heading}</h1>
-              <p className="text-ui-sm text-body">{subline}</p>
             </div>
             <div className="ml-auto flex flex-wrap items-center gap-xs">
               {call.status !== "connecting" && (
