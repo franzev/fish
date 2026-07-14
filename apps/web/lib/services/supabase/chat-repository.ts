@@ -1,5 +1,6 @@
 import { generalChannelId, generalChannelName, generalChannelSlug } from "@/lib/channels";
 import { serviceFailure, serviceSuccess, type ServiceResult } from "@/lib/services/errors";
+import { getUnreadMessageSummary } from "@fish/core/chat-state";
 import type {
   ConversationRow,
   MessageAttachmentRow,
@@ -7,16 +8,16 @@ import type {
   MessageReactionRow,
   MessageReadRow,
   MessageRow,
-  PresenceSessionRow,
   ProfileRow,
 } from "@fish/supabase";
-import { mapSupabaseError, safely, type SupabaseResponse } from "./shared";
-import { readChatStickerId } from "./chat-mapping";
 import type {
   ChatRepository,
   ClientChatData,
   ClientChatMessage,
+  ClientChatUnreadSummary,
 } from "../contracts";
+import { readChatStickerId } from "./chat-mapping";
+import { mapSupabaseError, safely, type SupabaseResponse } from "./shared";
 import type { AppSupabaseClient } from "./types";
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
@@ -27,8 +28,6 @@ const reactionMessageBatchSize = 25;
 // reusable page size keeps the initial fetch and every later "load earlier"
 // page (Plan 10-02 actions.ts) consistent.
 const chatInitialWindowSize = 40;
-
-
 async function fetchConversationReactions(
   client: AppSupabaseClient,
   conversationId: string,
@@ -80,6 +79,33 @@ async function fetchConversationReactions(
 
 export class SupabaseChatRepository implements ChatRepository {
   constructor(private readonly client: AppSupabaseClient) {}
+
+  async getUnreadSummary(
+    conversationId: string
+  ): Promise<ServiceResult<ClientChatUnreadSummary>> {
+    return safely("chat.getUnreadSummary", async () => {
+      const { data, error } = await this.client.rpc("get_chat_unread_summary", {
+        p_conversation_id: conversationId,
+      });
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load unread messages.",
+            operation: "chat.getUnreadSummary",
+            recoverable: true,
+          })
+        );
+      }
+
+      const summary = data?.[0];
+      return serviceSuccess({
+        count: summary?.unread_count ?? 0,
+        oldestUnreadAt: summary?.oldest_unread_at ?? null,
+        latestUnreadMessageId: summary?.latest_unread_message_id ?? null,
+      });
+    });
+  }
 
   async getAssignedConversation(
     channelSlug?: string,
@@ -410,26 +436,7 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
 
-      const { data: presenceSessions, error: presenceError } = (await this.client
-        .from("presence_sessions")
-        .select("*")
-        .eq("user_id", participant.id)
-        .order("last_heartbeat_at", { ascending: false })
-        .limit(20)) as {
-        data: PresenceSessionRow[] | null;
-        error: SupabaseResponse<unknown>["error"];
-      };
-
-      if (presenceError) {
-        return serviceFailure(
-          mapSupabaseError(presenceError, {
-            code: "database",
-            fallbackMessage: "Could not load presence.",
-            operation: "chat.getAssignedConversation.presence",
-            recoverable: true,
-          })
-        );
-      }
+      const unreadSummary = await this.getUnreadSummary(conversation.id);
 
       const participantRole = participant.role === "client" ? "client" : "coach";
 
@@ -506,6 +513,19 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
 
+      const clientMessages = messages.map((message) =>
+        toClientChatMessage(
+          message,
+          reactions,
+          userId,
+          senderDisplayNames,
+          (attachmentRows ?? []).filter((image) => image.message_id === message.id),
+          imageUrls,
+          (gifRows ?? []).find((gif) => gif.message_id === message.id)
+        )
+      );
+      const clientReadStates = (readStates ?? []).map(toClientChatReadState);
+
       return serviceSuccess({
         conversationId: conversation.id,
         kind: isCommunity ? "community" : "direct",
@@ -521,22 +541,15 @@ export class SupabaseChatRepository implements ChatRepository {
           displayName: participant.display_name,
           role: participantRole,
         },
-        messages: messages.map((message) =>
-          toClientChatMessage(
-            message,
-            reactions,
-            userId,
-            senderDisplayNames,
-            (attachmentRows ?? []).filter((image) => image.message_id === message.id),
-            imageUrls,
-            (gifRows ?? []).find((gif) => gif.message_id === message.id)
-          )
-        ),
-        readStates: (readStates ?? []).map(toClientChatReadState),
-        participantPresence: {
-          sessions: (presenceSessions ?? []).map(toClientPresenceSession),
-          lastSeenAt: getLastSeenAt(presenceSessions ?? []),
-        },
+        messages: clientMessages,
+        readStates: clientReadStates,
+        unreadSummary: unreadSummary.ok
+          ? unreadSummary.data
+          : getUnreadMessageSummary(
+              clientMessages,
+              userId,
+              clientReadStates.find((state) => state.userId === userId)
+            ),
         searchMembers: (searchMemberProfiles ?? []).map((member) => ({
           id: member.id,
           displayName: member.display_name,
@@ -645,32 +658,4 @@ function toClientChatReadState(row: MessageReadRow) {
     lastReadMessageId: row.last_read_message_id,
     readAt: row.read_at,
   };
-}
-
-function toClientPresenceSession(row: PresenceSessionRow) {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    activeAt: row.active_at,
-    lastHeartbeatAt: row.last_heartbeat_at,
-    endedAt: row.ended_at,
-  };
-}
-
-function getLastSeenAt(rows: PresenceSessionRow[]): string | null {
-  let latest: string | null = null;
-
-  for (const row of rows) {
-    const ended = row.ended_at ? Date.parse(row.ended_at) : Number.NaN;
-    const heartbeat = Date.parse(row.last_heartbeat_at);
-    const value = Number.isNaN(ended) || ended < heartbeat
-      ? row.last_heartbeat_at
-      : row.ended_at ?? row.last_heartbeat_at;
-
-    if (!latest || Date.parse(latest) < Date.parse(value)) {
-      latest = value;
-    }
-  }
-
-  return latest;
 }

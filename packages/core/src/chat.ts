@@ -59,6 +59,14 @@ export const chatStickerIds = [
   "aquatic-cheers-walrus",
   "aquatic-welcome-back-sea-lion",
   "aquatic-nice-nudibranch",
+  "aquatic-you-got-this-shark",
+  "aquatic-on-it-tuna",
+  "aquatic-sounds-good-blue-tang",
+  "aquatic-be-right-back-sailfish",
+  "aquatic-keep-going-salmon",
+  "aquatic-thinking-cuttlefish",
+  "aquatic-take-your-time-koi",
+  "aquatic-im-here-orca",
 ] as const;
 
 export type ChatStickerId = (typeof chatStickerIds)[number];

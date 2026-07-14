@@ -5,6 +5,7 @@ const getSessionMock = vi.fn();
 const rpcMock = vi.fn();
 const fromMock = vi.fn();
 const fetchMock = vi.fn();
+const getUnreadSummaryMock = vi.fn();
 
 vi.mock("@/lib/services/env", () => ({
   getPublicEnv: () => ({ supabaseUrl: "http://127.0.0.1:54321" }),
@@ -21,6 +22,9 @@ vi.mock("@/lib/services/supabase/server", () => ({
           ? { ok: false, error: result.error }
           : { ok: true, data: result.data.session?.access_token ?? null };
       },
+    },
+    database: {
+      chat: { getUnreadSummary: getUnreadSummaryMock },
     },
   }),
   createServerSupabaseClient: async () => ({
@@ -47,6 +51,7 @@ import {
   markReadStateAction,
   refreshConversationAction,
   refreshMessagesAction,
+  refreshUnreadSummaryAction,
   sendMessageAction,
   toggleReactionAction,
 } from "./actions";
@@ -135,6 +140,7 @@ describe("sendMessageAction", () => {
     rpcMock.mockReset();
     fromMock.mockReset();
     fetchMock.mockReset();
+    getUnreadSummaryMock.mockReset();
   });
 
   it("returns a calm notice when signed out", async () => {
@@ -340,6 +346,7 @@ describe("chat command actions", () => {
     rpcMock.mockReset();
     fromMock.mockReset();
     fetchMock.mockReset();
+    getUnreadSummaryMock.mockReset();
   });
 
   it("edits a message through the chat command Edge Function", async () => {
@@ -485,6 +492,30 @@ describe("chat command actions", () => {
     });
   });
 
+  it("refreshes exact unread summary metadata through the chat repository", async () => {
+    getUnreadSummaryMock.mockResolvedValue({
+      ok: true,
+      data: {
+        count: 11,
+        oldestUnreadAt: "2026-07-14T07:25:00.000Z",
+        latestUnreadMessageId: "message-11",
+      },
+    });
+
+    await expect(
+      refreshUnreadSummaryAction({ conversationId: validInput.conversationId })
+    ).resolves.toEqual({
+      status: "sent",
+      values: { conversationId: validInput.conversationId },
+      unreadSummary: {
+        count: 11,
+        oldestUnreadAt: "2026-07-14T07:25:00.000Z",
+        latestUnreadMessageId: "message-11",
+      },
+    });
+    expect(getUnreadSummaryMock).toHaveBeenCalledWith(validInput.conversationId);
+  });
+
   it("refreshes messages with reactions through the chat command Edge Function", async () => {
     mockSignedIn();
     fetchMock.mockResolvedValueOnce({
@@ -586,6 +617,7 @@ describe("pagination, backfill, and reset-window actions", () => {
     rpcMock.mockReset();
     fromMock.mockReset();
     fetchMock.mockReset();
+    getUnreadSummaryMock.mockReset();
   });
 
   it("returns a bounded older page ascending with hasMoreOlder true past the boundary", async () => {

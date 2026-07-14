@@ -26,6 +26,26 @@ function createChainStub<T>(value: T) {
   return builder;
 }
 
+function createUnreadSummaryRpc(
+  overrides: Partial<{
+    unread_count: number;
+    oldest_unread_at: string | null;
+    latest_unread_message_id: string | null;
+  }> = {}
+) {
+  return vi.fn(async (name: string) => ({
+    data: name === "get_chat_unread_summary"
+      ? [{
+          unread_count: 0,
+          oldest_unread_at: null,
+          latest_unread_message_id: null,
+          ...overrides,
+        }]
+      : null,
+    error: null,
+  }));
+}
+
 describe("Supabase service registry", () => {
   it("exposes cohesive auth, database, storage, and realtime services over one injected client", async () => {
     const profile = {
@@ -204,6 +224,7 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
+      rpc: createUnreadSummaryRpc(),
       from: vi.fn((table: string) => createChainStub(tables[table])),
     } as unknown as AppSupabaseClient;
 
@@ -255,6 +276,7 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
+      rpc: createUnreadSummaryRpc(),
       from: vi.fn((table: string) => {
         const queue = queues[table] ?? [];
         return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
@@ -376,6 +398,7 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
+      rpc: createUnreadSummaryRpc(),
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           const queue = queues.profiles;
@@ -424,7 +447,7 @@ describe("Supabase service registry", () => {
     }
   });
 
-  it("returns every message and hasMoreOlder false for a short conversation", async () => {
+  it("falls back to the loaded unread state when exact summary refresh fails", async () => {
     const demoConversationId = "11111111-1111-4111-8111-111111111111";
     const messageRows = [0, 1, 2]
       .map((position) => ({
@@ -464,6 +487,10 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
+      rpc: vi.fn(async () => ({
+        data: null,
+        error: { code: "PGRST202", message: "function unavailable" },
+      })),
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           const queue = queues.profiles;
@@ -490,7 +517,37 @@ describe("Supabase service registry", () => {
         createdAt: "2026-07-05T00:00:00.000Z",
         id: "message-0",
       });
+      expect(result.data?.unreadSummary).toEqual({
+        count: 0,
+        oldestUnreadAt: null,
+        latestUnreadMessageId: null,
+      });
     }
+  });
+
+  it("maps exact unread summary metadata from the member-scoped RPC", async () => {
+    const rpc = createUnreadSummaryRpc({
+      unread_count: 11,
+      oldest_unread_at: "2026-07-14T07:25:00.000Z",
+      latest_unread_message_id: "message-11",
+    });
+    const client = { rpc } as unknown as AppSupabaseClient;
+
+    await expect(
+      createSupabaseServices(client).database.chat.getUnreadSummary(
+        "11111111-1111-4111-8111-111111111111"
+      )
+    ).resolves.toEqual({
+      ok: true,
+      data: {
+        count: 11,
+        oldestUnreadAt: "2026-07-14T07:25:00.000Z",
+        latestUnreadMessageId: "message-11",
+      },
+    });
+    expect(rpc).toHaveBeenCalledWith("get_chat_unread_summary", {
+      p_conversation_id: "11111111-1111-4111-8111-111111111111",
+    });
   });
 
   it("maps Google OAuth start failures into auth service failures", async () => {

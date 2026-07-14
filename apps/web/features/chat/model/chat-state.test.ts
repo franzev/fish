@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   countUnreadMessages,
+  getUnreadMessageSummary,
   getOutgoingMessageStatus,
   mergeChatMessage,
   toReplyPreview,
@@ -133,6 +134,56 @@ describe("chat-state", () => {
         readAt: "2026-07-06T04:01:00.000Z",
       })
     ).toBe(2);
+  });
+
+  it("summarizes unread boundaries and excludes own or deleted messages", () => {
+    const messages = [
+      message({
+        id: "m1",
+        senderId: "them",
+        body: "read already",
+        createdAt: "2026-07-06T04:01:00.000Z",
+      }),
+      message({
+        id: "m2",
+        senderId: "them",
+        body: "first unread",
+        createdAt: "2026-07-06T04:02:00.000Z",
+      }),
+      message({
+        id: "m3",
+        senderId: "me",
+        body: "mine",
+        createdAt: "2026-07-06T04:03:00.000Z",
+      }),
+      message({
+        id: "m4",
+        senderId: "them",
+        body: "deleted",
+        deletedAt: "2026-07-06T04:05:00.000Z",
+        createdAt: "2026-07-06T04:04:00.000Z",
+      }),
+      message({
+        id: "m5",
+        senderId: "them",
+        body: "latest unread",
+        createdAt: "2026-07-06T04:05:00.000Z",
+      }),
+    ];
+
+    expect(
+      getUnreadMessageSummary(messages, "me", {
+        userId: "me",
+        lastDeliveredMessageId: "m5",
+        deliveredAt: "2026-07-06T04:06:00.000Z",
+        lastReadMessageId: "m1",
+        readAt: "2026-07-06T04:01:30.000Z",
+      })
+    ).toEqual({
+      count: 2,
+      oldestUnreadAt: "2026-07-06T04:02:00.000Z",
+      latestUnreadMessageId: "m5",
+    });
   });
 
   it("builds reply previews and hides deleted message text", () => {

@@ -1,6 +1,7 @@
 export {
   compareChatMessages,
   countUnreadMessages,
+  getUnreadMessageSummary,
   getMessageSnippet,
   getOutgoingMessageStatus,
   mergeChatMessage,

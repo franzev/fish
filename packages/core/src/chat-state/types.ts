@@ -61,6 +61,12 @@ export interface ChatReadState {
   readAt: string | null;
 }
 
+export interface UnreadMessageSummary {
+  count: number;
+  oldestUnreadAt: string | null;
+  latestUnreadMessageId: string | null;
+}
+
 export interface ChatComposerState {
   draft: string;
   replyTargetId: ChatMessageId | null;

@@ -6,13 +6,14 @@ import type {
   MarkReadStateActionState,
   SendMessageActionState,
   ReportGifActionState,
+  UnreadSummaryActionState,
 } from "@/features/chat/contracts";
 import type {
   ClientChatMessage,
   ClientChatReadState,
 } from "@/lib/services";
 import { createChatActionHandlers } from "./action-handlers";
-import { searchChatMessagesSchema } from "./schemas";
+import { searchChatMessagesSchema, unreadSummarySchema } from "./schemas";
 
 export type * from "@/features/chat/contracts";
 
@@ -84,6 +85,33 @@ export async function markReadStateAction(
   input: unknown
 ): Promise<MarkReadStateActionState> {
   return (await handlers()).markReadState(input);
+}
+
+export async function refreshUnreadSummaryAction(
+  input: unknown
+): Promise<UnreadSummaryActionState> {
+  const parsed = unreadSummarySchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "notice",
+      values: input,
+      notice: "That conversation is not available.",
+    };
+  }
+
+  const { database } = await getServerServices();
+  const result = await database.chat.getUnreadSummary(parsed.data.conversationId);
+  return result.ok
+    ? {
+        status: "sent",
+        values: parsed.data,
+        unreadSummary: result.data,
+      }
+    : {
+        status: "notice",
+        values: parsed.data,
+        notice: "Unread messages are still catching up.",
+      };
 }
 
 export async function refreshMessagesAction(input: unknown): Promise<{

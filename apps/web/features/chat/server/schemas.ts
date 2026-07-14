@@ -85,6 +85,10 @@ export const markReadStateSchema = z.strictObject({
   lastReadMessageId: z.string().trim().min(1).nullable(),
 });
 
+export const unreadSummarySchema = z.strictObject({
+  conversationId: z.string().uuid(),
+});
+
 export const refreshMessagesSchema = z.strictObject({
   messageIds: z.array(z.string().trim().min(1)).min(1).max(50),
 });

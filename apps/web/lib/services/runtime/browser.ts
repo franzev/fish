@@ -12,6 +12,8 @@ import type {
   NotificationCommandService,
   NotificationRealtimeService,
   AttentionRealtimeService,
+  PresenceCommandService,
+  PresenceRealtimeService,
 } from "../contracts";
 import { SupabaseCallCommandService } from "../supabase/call-command-service";
 import { supabaseCallRealtimeService } from "../supabase/call-realtime";
@@ -26,6 +28,8 @@ import { supabaseFriendRealtimeService } from "../supabase/friend-realtime";
 import { SupabaseNotificationCommandService } from "../supabase/notification-command-service";
 import { supabaseNotificationRealtimeService } from "../supabase/notification-realtime";
 import { supabaseAttentionRealtimeService } from "../supabase/attention-realtime";
+import { SupabasePresenceCommandService } from "../supabase/presence-command-service";
+import { supabasePresenceRealtimeService } from "../supabase/presence-realtime";
 
 let services: AppServices | null = null;
 
@@ -88,4 +92,16 @@ export function getAttentionRealtimeService(
   override?: AttentionRealtimeService
 ): AttentionRealtimeService {
   return override ?? supabaseAttentionRealtimeService;
+}
+
+export function getPresenceCommandService(
+  override?: PresenceCommandService
+): PresenceCommandService {
+  return override ?? new SupabasePresenceCommandService(createBrowserSupabaseClient());
+}
+
+export function getPresenceRealtimeService(
+  override?: PresenceRealtimeService
+): PresenceRealtimeService {
+  return override ?? supabasePresenceRealtimeService;
 }

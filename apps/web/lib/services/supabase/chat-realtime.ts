@@ -1,6 +1,5 @@
 import type {
   ClientChatMessage,
-  ClientChatPresenceSession,
   ClientChatReadState,
 } from "@/lib/services";
 import type { ChatRealtimeService } from "../contracts";
@@ -42,19 +41,6 @@ export interface ConversationVoiceRecordingSubscription {
   sendRecording: (recording: boolean) => void;
   unsubscribe: () => void;
 }
-
-export interface PresenceSessionController {
-  markActive: () => void;
-  stop: () => void;
-}
-
-type PresenceSessionRow = {
-  id: string;
-  user_id: string;
-  active_at: string;
-  last_heartbeat_at: string;
-  ended_at: string | null;
-};
 
 interface DeferredChannel {
   getChannel: () => RealtimeChannel | null;
@@ -139,18 +125,6 @@ function toClientChatReadState(row: MessageReadRow): ClientChatReadState {
     deliveredAt: "delivered_at" in row ? row.delivered_at ?? null : null,
     lastReadMessageId: row.last_read_message_id,
     readAt: row.read_at,
-  };
-}
-
-function toClientPresenceSession(
-  row: PresenceSessionRow
-): ClientChatPresenceSession {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    activeAt: row.active_at,
-    lastHeartbeatAt: row.last_heartbeat_at,
-    endedAt: row.ended_at,
   };
 }
 
@@ -283,40 +257,6 @@ export function subscribeToConversationReactionChanges(
   return deferred.unsubscribe;
 }
 
-export function subscribeToParticipantPresence(
-  participantId: string,
-  onPresenceSession: (
-    session: ClientChatPresenceSession,
-    eventType: "INSERT" | "UPDATE" | "DELETE"
-  ) => void
-): () => void {
-  const deferred = subscribeAfterAuth((supabase) => supabase
-    .channel(`presence:${participantId}:sessions`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "presence_sessions",
-        filter: `user_id=eq.${participantId}`,
-      },
-      (payload: RealtimePostgresChangesPayload<PresenceSessionRow>) => {
-        const row = "new" in payload && payload.new ? payload.new : payload.old;
-        if (!row) {
-          return;
-        }
-
-        onPresenceSession(
-          toClientPresenceSession(row as PresenceSessionRow),
-          payload.eventType
-        );
-      }
-    )
-    .subscribe());
-
-  return deferred.unsubscribe;
-}
-
 export function subscribeToConversationTyping(
   conversationId: string,
   currentUserId: string,
@@ -399,85 +339,10 @@ export function subscribeToConversationVoiceRecording(
   };
 }
 
-function makePresenceSessionId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `presence-${Date.now()}`;
-}
-
-export function startPresenceSession(
-  currentUserId: string
-): PresenceSessionController {
-  const supabase = createBrowserSupabaseClient();
-  const sessionId = makePresenceSessionId();
-  let activeAt = new Date().toISOString();
-  let stopped = false;
-  let lastActiveSentAt = 0;
-
-  function writePresence(ended = false) {
-    const now = new Date().toISOString();
-    void supabase.from("presence_sessions").upsert(
-      {
-        id: sessionId,
-        user_id: currentUserId,
-        active_at: activeAt,
-        last_heartbeat_at: now,
-        ended_at: ended ? now : null,
-      },
-      { onConflict: "id" }
-    );
-  }
-
-  function markActive() {
-    if (stopped) {
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastActiveSentAt < 5000) {
-      return;
-    }
-
-    lastActiveSentAt = now;
-    activeAt = new Date(now).toISOString();
-    writePresence(false);
-  }
-
-  writePresence(false);
-  const interval = setInterval(() => writePresence(false), 25000);
-  const activityEvents = ["pointerdown", "keydown", "focus"] as const;
-  activityEvents.forEach((eventName) => {
-    window.addEventListener(eventName, markActive, { passive: true });
-  });
-
-  const stop = () => {
-    if (stopped) {
-      return;
-    }
-
-    stopped = true;
-    clearInterval(interval);
-    activityEvents.forEach((eventName) => {
-      window.removeEventListener(eventName, markActive);
-    });
-    writePresence(true);
-  };
-
-  window.addEventListener("pagehide", stop, { once: true });
-
-  return {
-    markActive,
-    stop() {
-      window.removeEventListener("pagehide", stop);
-      stop();
-    },
-  };
-}
-
 export const supabaseChatRealtimeService: ChatRealtimeService = {
   subscribeToMessages: subscribeToConversationMessages,
   subscribeToReadStates: subscribeToConversationReadStates,
   subscribeToReactionChanges: subscribeToConversationReactionChanges,
-  subscribeToParticipantPresence,
   subscribeToTyping: subscribeToConversationTyping,
   subscribeToRecording: subscribeToConversationVoiceRecording,
-  startPresenceSession,
 };

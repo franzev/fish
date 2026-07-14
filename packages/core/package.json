@@ -10,6 +10,7 @@
     "./call-state": "./src/call-state/index.ts",
     "./notification-state": "./src/notification-state/index.ts",
     "./notification-state/fixtures/notification-state-vectors.json": "./src/notification-state/fixtures/notification-state-vectors.json",
+    "./presence": "./src/presence/index.ts",
     "./roles": "./src/roles.ts"
   },
   "scripts": {

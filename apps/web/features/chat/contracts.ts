@@ -2,6 +2,7 @@ import type {
   ChatSearchInput,
   ClientChatMessage,
   ClientChatReadState,
+  ClientChatUnreadSummary,
 } from "@/lib/services";
 
 export interface SendMessageActionState {
@@ -16,6 +17,13 @@ export interface MarkReadStateActionState {
   values: unknown;
   notice?: string;
   readState?: ClientChatReadState;
+}
+
+export interface UnreadSummaryActionState {
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  unreadSummary?: ClientChatUnreadSummary;
 }
 
 export interface ReportGifActionState {

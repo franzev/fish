@@ -1,6 +1,11 @@
 import type { ServiceResult } from "./errors";
 import type { ChatGif, ChatStickerId } from "@fish/core/chat";
 import type {
+  EffectivePresenceStatus,
+  PresencePreference,
+  PresenceSnapshot,
+} from "@fish/core/presence";
+import type {
   NotificationChange,
   NotificationFilter,
   NotificationPage,
@@ -146,13 +151,19 @@ export interface ClientChatSearchChannel {
   id: string; name: string; slug: string; conversationId: string;
 }
 export interface ClientChatReadState { userId: string; lastDeliveredMessageId: string | null; deliveredAt: string | null; lastReadMessageId: string | null; readAt: string | null }
+export interface ClientChatUnreadSummary {
+  count: number;
+  oldestUnreadAt: string | null;
+  latestUnreadMessageId: string | null;
+}
 export interface ClientChatPresenceSession { id: string; userId: string; activeAt: string; lastHeartbeatAt: string; endedAt: string | null }
 export interface ClientChatPresence { sessions: ClientChatPresenceSession[]; lastSeenAt: string | null }
 export interface ClientChatData {
   conversationId: string; kind?: "direct" | "community"; channelId?: string; channelSlug?: string;
   channelName?: string; title?: string; subtitle?: string; currentUserId: string;
   currentUserRole: "client" | "coach"; currentUserDisplayName: string; participant: ClientChatParticipant;
-  messages: ClientChatMessage[]; readStates?: ClientChatReadState[]; participantPresence?: ClientChatPresence;
+  messages: ClientChatMessage[]; readStates?: ClientChatReadState[]; unreadSummary?: ClientChatUnreadSummary;
+  participantPresence?: ClientChatPresence;
   searchMembers?: ClientChatSearchMember[]; searchChannels?: ClientChatSearchChannel[];
   hasMoreOlder?: boolean; oldestCursor?: { createdAt: string; id: string } | null;
 }
@@ -161,6 +172,9 @@ export interface ChatRepository {
     channelSlug?: string,
     conversationId?: string
   ): Promise<ServiceResult<ClientChatData | null>>;
+  getUnreadSummary(
+    conversationId: string
+  ): Promise<ServiceResult<ClientChatUnreadSummary>>;
 }
 export interface ChatSearchResult {
   messages: ClientChatMessage[];
@@ -185,6 +199,13 @@ export interface ChatSearchInput {
 export interface ChatSearchRepository {
   search(input: ChatSearchInput): Promise<ChatOperationResult<ChatSearchResult>>;
 }
+export type { EffectivePresenceStatus, PresencePreference, PresenceSnapshot };
+
+export interface PresenceRepository {
+  listVisible(): Promise<ServiceResult<PresenceSnapshot[]>>;
+  getOwnPreference(): Promise<ServiceResult<PresencePreference>>;
+}
+
 export interface DatabaseServices {
   profiles: ProfileRepository;
   coachClients: CoachClientRepository;
@@ -194,6 +215,7 @@ export interface DatabaseServices {
   friends: FriendRepository;
   notifications: NotificationRepository;
   attention: NavigationAttentionRepository;
+  presence: PresenceRepository;
 }
 export interface AvatarUploadAuthorization {
   uploadId: string;
@@ -279,6 +301,33 @@ export interface NotificationRealtimeService {
     onRecovery?: () => void,
     onStatus?: (status: "connected" | "disconnected") => void
   ): () => void;
+}
+
+export type PresenceCommandResult =
+  | { ok: true; snapshot: PresenceSnapshot }
+  | { ok: false; code: string; notice: string };
+
+export interface PresenceCommandService {
+  setMode(mode: PresencePreference): Promise<PresenceCommandResult>;
+}
+
+export interface PresenceRealtimeService {
+  subscribe(
+    userId: string,
+    onSnapshot: (snapshot: PresenceSnapshot) => void,
+    onPreference: (preference: PresencePreference, revision: number) => void,
+    onRecovery?: () => void,
+    onStatus?: (status: "connected" | "disconnected") => void
+  ): () => void;
+  startSession(
+    onSnapshot?: (snapshot: PresenceSnapshot) => void,
+    onError?: () => void
+  ): AppPresenceSessionController;
+}
+
+export interface AppPresenceSessionController {
+  markActive(): void;
+  stop(): void;
 }
 
 export interface NavigationAttention {
@@ -642,13 +691,10 @@ export interface ServerServices extends AppServices {
 
 export interface ConversationTypingController { sendTyping(typing: boolean): void; unsubscribe(): void }
 export interface ConversationRecordingController { sendRecording(recording: boolean): void; unsubscribe(): void }
-export interface PresenceSessionController { markActive(): void; stop(): void }
 export interface ChatRealtimeService {
   subscribeToMessages(conversationId: string, onMessage: (message: ClientChatMessage) => void, onReconnected?: () => void, onDisconnected?: () => void): () => void;
   subscribeToReadStates(conversationId: string, onReadState: (state: ClientChatReadState) => void, onReconnected?: () => void): () => void;
   subscribeToReactionChanges(conversationId: string, onReactionChange: (messageId: string) => void, onReconnected?: () => void): () => void;
-  subscribeToParticipantPresence(participantId: string, onPresence: (session: ClientChatPresenceSession, event: "INSERT" | "UPDATE" | "DELETE") => void): () => void;
   subscribeToTyping(conversationId: string, currentUserId: string, onChange: (typing: boolean) => void): ConversationTypingController;
   subscribeToRecording(conversationId: string, currentUserId: string, onChange: (recording: boolean) => void): ConversationRecordingController;
-  startPresenceSession(currentUserId: string): PresenceSessionController;
 }

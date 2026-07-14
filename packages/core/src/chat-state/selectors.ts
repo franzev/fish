@@ -3,6 +3,7 @@ import type {
   ChatReadState,
   OutgoingMessageStatus,
   ReplyPreview,
+  UnreadMessageSummary,
 } from "./types";
 
 export function compareChatMessages(
@@ -190,6 +191,18 @@ export function countUnreadMessages(
   currentUserId: string,
   currentUserReadState: ChatReadState | null | undefined
 ): number {
+  return getUnreadMessageSummary(
+    messages,
+    currentUserId,
+    currentUserReadState
+  ).count;
+}
+
+export function getUnreadMessageSummary(
+  messages: ChatMessageState[],
+  currentUserId: string,
+  currentUserReadState: ChatReadState | null | undefined
+): UnreadMessageSummary {
   // A read marker id that findIndex can't locate means the reader's last-read
   // position is older than every currently loaded (newest-anchored)
   // message. The -1 fallback below then counts every loaded
@@ -201,9 +214,18 @@ export function countUnreadMessages(
       )
     : -1;
 
-  return messages.filter(
-    (message, index) => index > lastReadIndex && message.senderId !== currentUserId
-  ).length;
+  const unreadMessages = messages.filter(
+    (message, index) =>
+      index > lastReadIndex &&
+      message.senderId !== currentUserId &&
+      !message.deletedAt
+  );
+
+  return {
+    count: unreadMessages.length,
+    oldestUnreadAt: unreadMessages[0]?.createdAt ?? null,
+    latestUnreadMessageId: unreadMessages.at(-1)?.id ?? null,
+  };
 }
 
 // Snippets are measured in Unicode code points, not UTF-16 code units.
