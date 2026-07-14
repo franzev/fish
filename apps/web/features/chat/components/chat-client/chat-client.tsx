@@ -158,7 +158,6 @@ export function ChatClient({
     mergeReadState,
     participantReadState,
     unreadSummary,
-    isMarkingUnreadMessages,
     unreadNotice,
     markUnreadMessagesRead,
   } = useChatReadState({
@@ -537,7 +536,6 @@ export function ChatClient({
           latestMineRequestId,
           unreadSummary,
           showUnreadBanner: Boolean(markReadStateAction),
-          isMarkingUnreadMessages,
           unreadNotice,
           markUnreadMessagesRead,
           friendActionsEnabled,
