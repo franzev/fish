@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type {
   CallCommandService,
   CallRealtimeService,
@@ -45,17 +45,28 @@ const ringingCall: ClientCall = {
 };
 
 function Probe() {
-  const { state } = useCall();
+  const { answer, state } = useCall();
   return (
-    <output>
-      {state.current.status}:{state.current.counterpartName}
-    </output>
+    <>
+      <output>
+        {state.current.status}:{state.current.counterpartName}
+      </output>
+      <button type="button" onClick={() => void answer()}>Answer</button>
+    </>
   );
 }
 
 function services(call: ClientCall | null) {
   const found = call ? { call, counterpartName: "Coach Mina" } : null;
   const commands = {
+    accept: vi.fn(async () => ({
+      ok: true as const,
+      call: call ?? ringingCall,
+      connection: {
+        serverUrl: "wss://calls.example",
+        participantToken: "accepted-token",
+      },
+    })),
     join: vi.fn(async () => ({
       ok: true as const,
       call: call ?? ringingCall,
@@ -144,5 +155,51 @@ describe("CallProvider", () => {
 
     await waitFor(() => expect(connectMock).toHaveBeenCalledTimes(1));
     expect(commands.join).toHaveBeenCalledTimes(1);
+  });
+
+  it("coalesces an incoming answer with concurrent recovery", async () => {
+    let onRecovery: (() => void) | undefined;
+    let resolveAccept: ((result: Awaited<ReturnType<CallCommandService["accept"]>>) => void) | undefined;
+    const acceptedCall: ClientCall = {
+      ...ringingCall,
+      status: "connecting",
+      acceptedAt: "2030-01-01T00:00:01.000Z",
+    };
+    const { commands, realtime } = services(ringingCall);
+    vi.mocked(commands.accept).mockImplementation(() => new Promise((resolve) => {
+      resolveAccept = resolve;
+    }));
+    vi.mocked(realtime.subscribe).mockImplementation((_userId, _handler, recover) => {
+      onRecovery = recover;
+      return vi.fn();
+    });
+
+    render(
+      <CallProvider userId="client-1" commands={commands} realtime={realtime}>
+        <Probe />
+      </CallProvider>
+    );
+
+    expect(await screen.findByText("ringing:Coach Mina")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Answer" }));
+    await waitFor(() => expect(commands.accept).toHaveBeenCalledWith("call-1"));
+
+    vi.mocked(realtime.findCall).mockResolvedValue({
+      call: acceptedCall,
+      counterpartName: "Coach Mina",
+    });
+    onRecovery?.();
+    resolveAccept?.({
+      ok: true,
+      call: acceptedCall,
+      connection: {
+        serverUrl: "wss://calls.example",
+        participantToken: "accepted-token",
+      },
+    });
+
+    await waitFor(() => expect(connectMock).toHaveBeenCalledTimes(1));
+    expect(commands.accept).toHaveBeenCalledTimes(1);
+    expect(commands.join).not.toHaveBeenCalled();
   });
 });

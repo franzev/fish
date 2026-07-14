@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/runtime/browser";
 import type {
   CallCommandService,
+  CallCommandResult,
   CallRealtimeService,
   ClientCall,
 } from "@/lib/services";
@@ -127,7 +128,6 @@ export function CallProvider({
     new LiveKitCallMedia(
       {
         onConnected(callId) {
-          connectedCallIdRef.current = callId;
           dispatch({
             type: "mediaConnected",
             callId,
@@ -141,9 +141,6 @@ export function CallProvider({
           dispatch({ type: "reconnected", callId });
         },
         onDisconnected(callId) {
-          if (connectedCallIdRef.current === callId) {
-            connectedCallIdRef.current = null;
-          }
           dispatch({ type: "callFailed", callId, reason: "networkLost" });
         },
         onAudioPlaybackChanged(blocked) {
@@ -165,6 +162,12 @@ export function CallProvider({
       videoQualityPreference
     )
   );
+
+  useEffect(() => {
+    if (!selectHasLiveCall(state)) {
+      connectedCallIdRef.current = null;
+    }
+  }, [state]);
 
   const applyCall = useCallback((call: ClientCall, counterpartName: string) => {
     const counterpartId = call.coachId === userId ? call.clientId : call.coachId;
@@ -243,7 +246,11 @@ export function CallProvider({
     setNotice("The call didn’t connect. Messages still work.");
   }, [commands, media]);
 
-  const connectCall = useCallback((call: ClientCall): Promise<void> => {
+  const connectCall = useCallback((
+    call: Pick<ClientCall, "id" | "kind">,
+    connectCommand: () => Promise<CallCommandResult> = () => commands.join(call.id),
+    onConnected?: () => void,
+  ): Promise<void> => {
     if (connectedCallIdRef.current === call.id) {
       return Promise.resolve();
     }
@@ -252,8 +259,9 @@ export function CallProvider({
     if (activeAttempt) return activeAttempt;
 
     const attempt = (async () => {
-      const joined = await commands.join(call.id);
+      const joined = await connectCommand();
       if (joined.ok && joined.connection) {
+        onConnected?.();
         try {
           await media.connect(call.id, joined.connection, {
             microphone: true,
@@ -295,6 +303,7 @@ export function CallProvider({
 
   useEffect(() => {
     let active = true;
+    const connectionAttempts = connectionAttemptsRef.current;
     const recover = () => {
       const currentCallId = stateRef.current.current.callId;
       const lookup = currentCallId
@@ -322,7 +331,7 @@ export function CallProvider({
       active = false;
       unsubscribe();
       connectedCallIdRef.current = null;
-      connectionAttemptsRef.current.clear();
+      connectionAttempts.clear();
       dispatch({ type: "identityChanged" });
       void media.disconnect();
     };
@@ -484,21 +493,11 @@ export function CallProvider({
         );
         return;
       }
-      const result = await commands.accept(callId);
-      if (!result.ok || !result.connection) {
-        if (result.ok) await failMediaConnection(callId);
-        else setNotice(result.notice);
-        return;
-      }
-      dispatch({ type: "callAccepted", callId });
-      try {
-        await media.connect(callId, result.connection, {
-          microphone: true,
-          camera: callKind === "video",
-        });
-      } catch {
-        await failMediaConnection(callId);
-      }
+      await connectCall(
+        { id: callId, kind: callKind },
+        () => commands.accept(callId),
+        () => dispatch({ type: "callAccepted", callId }),
+      );
     }),
     decline: async () => run(async () => {
       const callId = stateRef.current.current.callId;
@@ -571,7 +570,7 @@ export function CallProvider({
       media.setVideoQualityPreference(preference);
       writeVideoQualityPreference(preference);
     },
-  }), [audioBlocked, busy, clearCall, commands, failMediaConnection, localVideoStream, media, notice, remoteVideoTrack, run, speaking, state, videoQualityPreference]);
+  }), [audioBlocked, busy, clearCall, commands, connectCall, localVideoStream, media, notice, remoteVideoTrack, run, speaking, state, videoQualityPreference]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }
