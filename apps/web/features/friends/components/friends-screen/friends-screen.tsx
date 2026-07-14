@@ -1,8 +1,6 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   getBrowserServices,
 } from "@/lib/services/runtime/browser";
@@ -162,19 +160,21 @@ export function FriendsScreen({
         </Button>
       )}
 
-      <Link
+      <Button
         href="/friends/add"
-        className={cn(buttonVariants({ variant: "primary" }), "gap-xs")}
+        variant="primary"
+        className="gap-xs"
       >
         <IconUserPlus size={20} stroke={1.75} aria-hidden="true" />
         Add a friend
-      </Link>
-      <Link
+      </Button>
+      <Button
         href="/friends/blocked"
-        className={cn(buttonVariants({ variant: "ghost", fullWidth: true }))}
+        variant="ghost"
+        fullWidth
       >
         Blocked people
-      </Link>
+      </Button>
     </div>
   );
 }

@@ -1,10 +1,9 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import {
   getBrowserServices,
   getFriendCommandService,
@@ -14,7 +13,6 @@ import type {
   FriendCommandService,
   FriendRepository,
 } from "@/lib/services";
-import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { Avatar } from "@/features/chat";
 import { resolveAvatarUrlsSafely } from "@/features/profile/image/resolve-avatar-urls";
@@ -192,16 +190,16 @@ export function AddFriendForm({
               <p className="text-ui text-body">
                 They already sent you a request.
               </p>
-              <Link
+              <Button
                 href={
                   candidate.requestId
                     ? `/friends/requests/${candidate.requestId}`
                     : "/friends/requests"
                 }
-                className={cn(buttonVariants({ variant: "primary" }))}
+                variant="primary"
               >
                 Review request
-              </Link>
+              </Button>
             </>
           ) : (
             <Button

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useActionState, useSyncExternalStore } from "react";
 import {
@@ -10,7 +10,6 @@ import {
 } from "@/features/profile/server/actions";
 import { Avatar } from "@/features/chat";
 import type { UserRole } from "@fish/core/roles";
-import Link from "next/link";
 
 // Locale/timezone never change during a session, so the external store never
 // emits -- subscribe is a no-op that returns an empty unsubscribe.
@@ -74,12 +73,12 @@ export function EditProfileForm({
               alt=""
             />
             {avatarEnabled && (
-              <Link
+              <Button
                 href="/profile/avatar"
-                className={buttonVariants({ variant: "ghost" })}
+                variant="ghost"
               >
                 Change photo
-              </Link>
+              </Button>
             )}
           </div>
           <Input

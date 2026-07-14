@@ -6,8 +6,7 @@ import Link from "next/link";
 import { IconSparkles } from "@tabler/icons-react";
 import { UpcomingLesson } from "@/features/booking";
 import { getUpcomingLessonData } from "@/features/booking/server";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 /* Server Component (NOT "use client") — the (authenticated) layout already
    ran getUser(), redirected signed-out visitors, and resolved role/shell.
@@ -35,15 +34,14 @@ export default async function ClientHomePage() {
       {upcomingLesson ? (
         <>
           <UpcomingLesson data={upcomingLesson} />
-          <Link
+          <Button
             href="/book"
-            className={cn(
-              buttonVariants({ variant: "secondary", fullWidth: true }),
-              "mt-lg"
-            )}
+            variant="secondary"
+            fullWidth
+            className="mt-lg"
           >
             Book another lesson
-          </Link>
+          </Button>
         </>
       ) : (
         <>
@@ -55,12 +53,13 @@ export default async function ClientHomePage() {
             )}
           </EmptyState>
           {data.coachId && data.coachName && (
-            <Link
+            <Button
               href="/book"
-              className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}
+              fullWidth
+              className="mt-lg"
             >
               Book a lesson
-            </Link>
+            </Button>
           )}
         </>
       )}

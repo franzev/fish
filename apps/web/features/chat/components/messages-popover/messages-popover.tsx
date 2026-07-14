@@ -2,7 +2,7 @@
 
 import { PopoverHeader } from "@/components/ui/popover-header";
 import { CountBadge } from "@/components/ui/count-badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ConversationPreviewRow } from "../conversation-preview-row";
 import type {
   MessagePopoverActionState,
@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
 import { IconArrowsDiagonal, IconMessages, IconX } from "@tabler/icons-react";
-import Link from "next/link";
 import { useRef, useState } from "react";
 
 type MessageFilter = "all" | "unread";
@@ -89,11 +88,16 @@ export function MessagesPopover({
 
   if (!canPreview) {
     return (
-      <Link
+      <Button
         href="/messages"
         aria-label={label}
         aria-current={active ? "page" : undefined}
-        className={triggerClass}
+        variant="ghost"
+        controlSize="square"
+        className={cn(
+          "relative shrink-0 hover:bg-surface-2 hover:text-foreground",
+          active && "bg-surface-2 text-foreground"
+        )}
       >
         <IconMessages size={22} stroke={1.75} aria-hidden="true" />
         <CountBadge
@@ -101,17 +105,22 @@ export function MessagesPopover({
           className="absolute -right-3xs -top-3xs"
           aria-hidden="true"
         />
-      </Link>
+      </Button>
     );
   }
 
   return (
     <>
-      <Link
+      <Button
         href="/messages"
         aria-label={label}
         aria-current={active ? "page" : undefined}
-        className={cn(triggerClass, "md:hidden")}
+        variant="ghost"
+        controlSize="square"
+        className={cn(
+          "relative shrink-0 hover:bg-surface-2 hover:text-foreground md:hidden",
+          active && "bg-surface-2 text-foreground"
+        )}
       >
         <IconMessages size={22} stroke={1.75} aria-hidden="true" />
         <CountBadge
@@ -119,7 +128,7 @@ export function MessagesPopover({
           className="absolute -right-3xs -top-3xs"
           aria-hidden="true"
         />
-      </Link>
+      </Button>
 
       <span className="hidden md:inline-flex">
         <Popover.Root
@@ -164,17 +173,16 @@ export function MessagesPopover({
                   }
                   actions={
                     <>
-                      <Link
+                      <Button
                         href="/messages"
                         aria-label="Open messages"
                         onClick={() => setOpen(false)}
-                        className={cn(
-                          buttonVariants({ variant: "ghost", controlSize: "square" }),
-                          "hover:bg-surface-2 hover:text-foreground"
-                        )}
+                        variant="ghost"
+                        controlSize="square"
+                        className="hover:bg-surface-2 hover:text-foreground"
                       >
                         <IconArrowsDiagonal size={20} stroke={1.75} aria-hidden="true" />
-                      </Link>
+                      </Button>
                       <Popover.Close
                         aria-label="Close messages"
                         className={cn(

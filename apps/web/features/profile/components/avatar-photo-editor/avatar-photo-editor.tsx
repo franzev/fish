@@ -1,15 +1,13 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar } from "@/features/chat";
 import { useAvatarUpload } from "@/features/profile/hooks/use-avatar-upload";
 import { validateAvatarFile, type PixelCrop } from "@/features/profile/image/avatar-image";
-import { cn } from "@/lib/utils";
 import Cropper, { type Area, type CropperProps } from "react-easy-crop";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, type ComponentType, useEffect, useId, useRef, useState } from "react";
 import type { AvatarCommandService } from "@/lib/services";
@@ -105,9 +103,9 @@ export function AvatarPhotoEditor({
     return (
       <div className="flex flex-col gap-md">
         <Alert tone="notice">Avatar updates are resting for a moment. Try again later.</Alert>
-        <Link href="/profile" className={buttonVariants({ variant: "ghost", fullWidth: true })}>
+        <Button href="/profile" variant="ghost" fullWidth>
           Back to profile
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -224,12 +222,14 @@ export function AvatarPhotoEditor({
           {selectionNotice ?? upload.notice}
         </p>
       )}
-      <Link
+      <Button
         href="/profile"
-        className={cn(buttonVariants({ variant: "ghost", fullWidth: true }), "mt-sm")}
+        variant="ghost"
+        fullWidth
+        className="mt-sm"
       >
         Back to profile
-      </Link>
+      </Button>
     </Card>
   );
 }

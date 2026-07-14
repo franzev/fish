@@ -1,5 +1,5 @@
 import { Wordmark } from "@/components/brand/wordmark";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
@@ -171,12 +171,13 @@ export function LandingPage() {
               FISH pairs you with a real coach in a calm, one-to-one chat. You
               get one next step at a time, never a wall of choices.
             </p>
-            <Link
+            <Button
               href="/signup"
-              className={cn(buttonVariants({ variant: "primary" }), "mt-xl px-lg")}
+              variant="primary"
+              className="mt-xl px-lg"
             >
               Create account
-            </Link>
+            </Button>
             <p className="mt-md text-ui-sm text-muted">
               No streaks. No leaderboards. No guilt.
             </p>
@@ -293,12 +294,13 @@ export function LandingPage() {
           <p className="mt-md text-lead text-body">
             One coach, one conversation, one next step at a time.
           </p>
-          <Link
+          <Button
             href="/signup"
-            className={cn(buttonVariants({ variant: "primary" }), "mt-xl px-lg")}
+            variant="primary"
+            className="mt-xl px-lg"
           >
             Create account
-          </Link>
+          </Button>
           <p className="mt-md text-ui-sm text-muted">
             Already coaching with us?{" "}
             <Link href="/sign-in" className="text-body underline">

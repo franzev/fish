@@ -1,8 +1,6 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { isLessonJoinable } from "../../format";
 
@@ -40,11 +38,12 @@ export function LessonSetupAction({
   );
 
   return (
-    <Link
+    <Button
       href={`/book/${lessonId}/setup`}
-      className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}
+      fullWidth
+      className="mt-lg"
     >
       {joinable ? "Join lesson" : "Check camera and microphone"}
-    </Link>
+    </Button>
   );
 }

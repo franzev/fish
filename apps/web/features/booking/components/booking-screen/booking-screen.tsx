@@ -1,12 +1,10 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/features/chat";
-import { cn } from "@/lib/utils";
 import { IconX } from "@tabler/icons-react";
-import Link from "next/link";
 import { useActionState, useState } from "react";
 import type {
   BookLessonAction,
@@ -43,13 +41,14 @@ export function BookingScreen({
     <div className="flex min-h-full w-full flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Book your lesson</h1>
-        <Link
+        <Button
           href="/home"
           aria-label="Close booking"
-          className={buttonVariants({ variant: "ghost", controlSize: "square" })}
+          variant="ghost"
+          controlSize="square"
         >
           <IconX size={24} stroke={1.75} aria-hidden="true" />
-        </Link>
+        </Button>
       </header>
 
       <div className="flex-1 overflow-y-auto">
@@ -64,9 +63,9 @@ export function BookingScreen({
                   ? `${coach.displayName} will add more times soon.`
                   : "Your coach connection is still being prepared."}
               </p>
-              <Link href="/home" className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}>
+              <Button href="/home" fullWidth className="mt-lg">
                 Back to home
-              </Link>
+              </Button>
             </Card>
           </main>
         ) : (

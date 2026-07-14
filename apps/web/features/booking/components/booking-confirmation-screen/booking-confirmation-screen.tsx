@@ -1,9 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Avatar } from "@/features/chat";
-import { cn } from "@/lib/utils";
 import { IconCircleCheck, IconX } from "@tabler/icons-react";
-import Link from "next/link";
 import type { BookingCoach } from "../../contracts";
 import { formatLessonDate, formatLessonTime, formatTimeZoneLabel } from "../../format";
 import type { LessonSlot } from "@/lib/services";
@@ -29,13 +27,14 @@ export function BookingConfirmationScreen({
     <div className="flex min-h-full w-full flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Lesson booking</h1>
-        <Link
+        <Button
           href="/home"
           aria-label="Close confirmation"
-          className={buttonVariants({ variant: "ghost", controlSize: "square" })}
+          variant="ghost"
+          controlSize="square"
         >
           <IconX size={24} stroke={1.75} aria-hidden="true" />
-        </Link>
+        </Button>
       </header>
 
       <main className="mx-auto flex min-h-full w-full max-w-content flex-1 flex-col justify-center px-page py-xl">
@@ -88,9 +87,9 @@ export function BookingConfirmationScreen({
           ) : (
             <p className="mt-xs text-body">Return home to see your upcoming lesson.</p>
           )}
-          <Link href="/home" className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}>
+          <Button href="/home" fullWidth className="mt-lg">
             Back to home
-          </Link>
+          </Button>
         </Card>
       </main>
     </div>

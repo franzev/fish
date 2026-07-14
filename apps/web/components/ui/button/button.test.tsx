@@ -1,4 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
+import { createRef, type MouseEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Button, buttonVariants } from "./button";
 
@@ -18,6 +19,64 @@ describe("Button", () => {
 
     rerender(<Button fullWidth={true}>Get started</Button>);
     expect(getByRole("button").className).toContain("w-full");
+  });
+
+  it("renders a Next.js link when href is present and merges its variants with custom classes", () => {
+    const { getByRole } = render(
+      <Button href="/profile" variant="ghost" fullWidth className="mt-lg">
+        View profile
+      </Button>
+    );
+    const link = getByRole("link", { name: "View profile" });
+
+    expect(link).toHaveAttribute("href", "/profile");
+    expect(link).toHaveClass("bg-transparent", "text-muted", "w-full", "mt-lg");
+  });
+
+  it("forwards the element-specific ref for both buttons and links", () => {
+    const buttonRef = createRef<HTMLButtonElement>();
+    const linkRef = createRef<HTMLAnchorElement>();
+    const { getByRole } = render(
+      <>
+        <Button ref={buttonRef}>Save</Button>
+        <Button ref={linkRef} href="/home">
+          Back to home
+        </Button>
+      </>
+    );
+
+    expect(buttonRef.current).toBe(getByRole("button", { name: "Save" }));
+    expect(linkRef.current).toBe(getByRole("link", { name: "Back to home" }));
+  });
+
+  it("forwards link click handlers with an anchor currentTarget", () => {
+    const onClick = vi.fn((event: MouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault();
+      expect(event.currentTarget.tagName).toBe("A");
+    });
+    const { getByRole } = render(
+      <Button href="/profile" prefetch={false} replace onClick={onClick}>
+        View profile
+      </Button>
+    );
+
+    fireEvent.click(getByRole("link", { name: "View profile" }));
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("keeps busy and disabled states exclusive to native buttons at the type boundary", () => {
+    const typeCheck = () => {
+      const action = <Button loading>Saving</Button>;
+      const link = <Button href="/home">Back to home</Button>;
+      // @ts-expect-error Link buttons preserve anchor semantics and cannot be disabled.
+      const disabledLink = <Button href="/home" disabled>Back to home</Button>;
+      // @ts-expect-error Link buttons do not expose the action-only busy state.
+      const loadingLink = <Button href="/home" loading>Back to home</Button>;
+
+      return { action, disabledLink, link, loadingLink };
+    };
+
+    expect(typeCheck).toBeTypeOf("function");
   });
 
   it("primary variant applies the inverted-block tokens", () => {

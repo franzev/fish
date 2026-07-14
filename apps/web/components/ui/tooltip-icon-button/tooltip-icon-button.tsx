@@ -1,12 +1,12 @@
 "use client";
 
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button, type ButtonActionProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { forwardRef, type ReactNode } from "react";
 
 export interface TooltipIconButtonProps
-  extends Omit<ButtonProps, "aria-label" | "children" | "controlSize"> {
+  extends Omit<ButtonActionProps, "aria-label" | "children" | "controlSize"> {
   label: string;
   icon: ReactNode;
   tooltipSide?: "top" | "right" | "bottom" | "left";

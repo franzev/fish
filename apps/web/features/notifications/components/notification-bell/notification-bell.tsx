@@ -2,9 +2,8 @@
 
 import { Popover } from "@base-ui/react/popover";
 import { IconBell } from "@tabler/icons-react";
-import Link from "next/link";
 import { useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CountBadge } from "@/components/ui/count-badge";
 import { cn } from "@/lib/utils";
 import { NotificationList } from "../notification-list";
@@ -28,16 +27,15 @@ export function NotificationBell() {
   const notifications = useOptionalNotifications();
   if (!notifications) {
     return (
-      <Link
+      <Button
         href="/notifications"
         aria-label="Notifications"
-        className={cn(
-          buttonVariants({ variant: "ghost", controlSize: "square" }),
-          "relative shrink-0 hover:bg-surface-2 hover:text-foreground"
-        )}
+        variant="ghost"
+        controlSize="square"
+        className="relative shrink-0 hover:bg-surface-2 hover:text-foreground"
       >
         {renderBellContents(0)}
-      </Link>
+      </Button>
     );
   }
   const { state, refreshAndMarkLoadedSeen } = notifications;
@@ -51,9 +49,15 @@ export function NotificationBell() {
 
   return (
     <>
-      <Link href="/notifications" aria-label={label} className={`${triggerClass} md:hidden`}>
+      <Button
+        href="/notifications"
+        aria-label={label}
+        variant="ghost"
+        controlSize="square"
+        className="relative shrink-0 hover:bg-surface-2 hover:text-foreground md:hidden"
+      >
         {renderBellContents(state.summary.unreadCount)}
-      </Link>
+      </Button>
       <span className="hidden md:inline-flex">
         <Popover.Root
           open={open}

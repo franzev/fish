@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { MediaDeviceSelect } from "@/components/ui/media-device-select";
 import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
 import { TooltipIconButton } from "@/components/ui/tooltip-icon-button";
@@ -20,7 +20,6 @@ import {
   IconVolume,
   IconX,
 } from "@tabler/icons-react";
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { LessonMediaDevice } from "../../client/lesson-setup-media";
 import type { BookingCoach } from "../../contracts";
@@ -90,7 +89,7 @@ export function LessonSetupView(props: LessonSetupViewProps) {
         <main className="mx-auto flex w-full max-w-form flex-1 flex-col justify-center px-page py-xl text-center">
           <h2 className="text-display">This lesson isn’t available</h2>
           <p className="mt-xs text-body">Return home to see your upcoming lesson.</p>
-          <Link href="/home" className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}>Back to home</Link>
+          <Button href="/home" fullWidth className="mt-lg">Back to home</Button>
         </main>
       </div>
     );
@@ -103,7 +102,7 @@ export function LessonSetupView(props: LessonSetupViewProps) {
         <main className="mx-auto flex w-full max-w-form flex-1 flex-col justify-center px-page py-xl text-center">
           <h2 className="text-display">This lesson has ended</h2>
           <p className="mt-xs text-body">Return home to see what’s next.</p>
-          <Link href="/home" className={cn(buttonVariants({ fullWidth: true }), "mt-lg")}>Back to home</Link>
+          <Button href="/home" fullWidth className="mt-lg">Back to home</Button>
         </main>
       </div>
     );
@@ -118,7 +117,7 @@ export function LessonSetupView(props: LessonSetupViewProps) {
     <div className="flex min-h-0 w-full flex-1 flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Lesson setup</h1>
-        <Link href="/home" aria-label="Close lesson setup" className={buttonVariants({ variant: "ghost", controlSize: "square" })}><IconX size={24} stroke={1.75} aria-hidden="true" /></Link>
+        <Button href="/home" aria-label="Close lesson setup" variant="ghost" controlSize="square"><IconX size={24} stroke={1.75} aria-hidden="true" /></Button>
       </header>
 
       <main className="mx-auto grid min-h-0 w-full max-w-marketing flex-1 gap-lg overflow-y-auto px-page py-lg lg:grid-cols-2 lg:items-center lg:py-xl">
@@ -171,7 +170,7 @@ export function LessonSetupView(props: LessonSetupViewProps) {
 
           {(notice || callNotice) && <Alert tone="notice" className="mt-md">{callNotice ?? notice}</Alert>}
           <div className="mt-lg">
-            {joinable ? <Button type="button" fullWidth loading={busy} onClick={onJoin}>Join lesson</Button> : <Link href="/home" className={buttonVariants({ fullWidth: true })}>Done</Link>}
+            {joinable ? <Button type="button" fullWidth loading={busy} onClick={onJoin}>Join lesson</Button> : <Button href="/home" fullWidth>Done</Button>}
           </div>
         </section>
       </main>

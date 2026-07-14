@@ -1,6 +1,15 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { ButtonHTMLAttributes, forwardRef, MouseEvent } from "react";
+import Link, { type LinkProps } from "next/link";
+import {
+  type ButtonHTMLAttributes,
+  type ComponentPropsWithoutRef,
+  type ForwardedRef,
+  forwardRef,
+  type MouseEvent,
+  type ReactElement,
+  type RefAttributes,
+} from "react";
 
 export const buttonVariants = cva(
   [
@@ -63,19 +72,78 @@ export const buttonVariants = cva(
 
 type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonStyleProps {
   variant?: NonNullable<ButtonVariantProps["variant"]>;
   /** Fixed 44px icon controls use square; labeled actions keep default. */
   controlSize?: NonNullable<ButtonVariantProps["controlSize"]>;
   /** Opt into full-width when a focused flow needs one big action. */
   fullWidth?: boolean;
-  /** Busy state: dims, guards its own click, and shows a quiet spinner. */
-  loading?: boolean;
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
+export type ButtonActionProps = ButtonStyleProps &
+  ButtonHTMLAttributes<HTMLButtonElement> & {
+    href?: never;
+    /** Busy state: dims, guards its own click, and shows a quiet spinner. */
+    loading?: boolean;
+  };
+
+export type ButtonLinkProps = ButtonStyleProps &
+  Omit<ComponentPropsWithoutRef<"a">, keyof LinkProps> &
+  LinkProps & {
+    /** Navigation remains a native link; busy and disabled are action-only states. */
+    loading?: never;
+    disabled?: never;
+  };
+
+export type ButtonProps = ButtonActionProps | ButtonLinkProps;
+
+type ButtonComponentProps =
+  | (ButtonActionProps & RefAttributes<HTMLButtonElement>)
+  | (ButtonLinkProps & RefAttributes<HTMLAnchorElement>);
+
+interface ButtonComponent {
+  (props: ButtonComponentProps): ReactElement;
+  displayName?: string;
+}
+
+const ButtonRoot = forwardRef<
+  HTMLButtonElement | HTMLAnchorElement,
+  ButtonProps
+>(function ButtonRoot(props, ref) {
+    if (props.href !== undefined) {
+      const {
+        className,
+        variant = "primary",
+        controlSize = "default",
+        fullWidth = false,
+        children,
+        loading: _loading,
+        disabled: _disabled,
+        ...linkProps
+      } = props;
+      void _loading;
+      void _disabled;
+
+      return (
+        <Link
+          ref={ref as ForwardedRef<HTMLAnchorElement>}
+          className={cn(
+            buttonVariants({
+              variant,
+              controlSize,
+              fullWidth,
+              loading: false,
+            }),
+            className
+          )}
+          {...linkProps}
+        >
+          {children}
+        </Link>
+      );
+    }
+
+    const {
       className,
       variant = "primary",
       controlSize = "default",
@@ -84,10 +152,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       onClick,
       children,
-      ...props
-    },
-    ref
-  ) => {
+      href: _href,
+      ...buttonProps
+    } = props;
+    void _href;
+
     // Non-activation, WHY: the native `disabled` attribute (passed through
     // via the prop below) blocks click AND keyboard for the disabled state.
     // Loading also disables native activation so submit buttons cannot fire
@@ -113,7 +182,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <button
-        ref={ref}
+        ref={ref as ForwardedRef<HTMLButtonElement>}
         aria-busy={loading || undefined}
         disabled={disabled || loading}
         onClick={onClick ? handleClick : undefined}
@@ -121,7 +190,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           buttonVariants({ variant, controlSize, fullWidth, loading }),
           className
         )}
-        {...props}
+        {...buttonProps}
       >
         {loading && (
           // Overlaid, not inline: the hidden label below keeps the width, so
@@ -135,6 +204,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <span className={cn(loading && "opacity-0")}>{children}</span>
       </button>
     );
-  }
-);
+});
+
+export const Button = ButtonRoot as ButtonComponent;
 Button.displayName = "Button";

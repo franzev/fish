@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
 import { IconBan, IconDots, IconX } from "@tabler/icons-react";
-import Link from "next/link";
 import { useRef, useState } from "react";
 import { Avatar } from "../avatar";
 
@@ -256,17 +255,18 @@ export function MemberProfilePopover({
 
     if (candidate?.status === "incomingPending") {
       return (
-        <Link
+        <Button
           href={
             candidate.requestId
               ? `/friends/requests/${candidate.requestId}`
               : "/friends/requests"
           }
           onClick={() => handleOpenChange(false)}
-          className={cn(buttonVariants({ variant: "secondary", fullWidth: true }))}
+          variant="secondary"
+          fullWidth
         >
           Review request
-        </Link>
+        </Button>
       );
     }
 
