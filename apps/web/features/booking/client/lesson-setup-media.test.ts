@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   connectMock,
@@ -93,6 +93,11 @@ describe("LessonSetupMediaSession", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it("keeps a local camera and microphone stream alive until cleanup", async () => {
     const audio = new FakeTrack("audio", "mic-1");
     const video = new FakeTrack("video", "cam-1");
@@ -109,6 +114,50 @@ describe("LessonSetupMediaSession", () => {
     session.stop();
     expect(audio.stop).toHaveBeenCalledOnce();
     expect(video.stop).toHaveBeenCalledOnce();
+  });
+
+  it("maps normal speech below the ceiling and eases the meter down", async () => {
+    const audio = new FakeTrack("audio", "mic-1");
+    installMediaDevices(vi.fn(async () => new FakeMediaStream([audio])));
+    let amplitude = 16;
+    let frame: FrameRequestCallback | null = null;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frame = callback;
+      return 1;
+    });
+    vi.stubGlobal("AudioContext", class AudioContext {
+      createAnalyser() {
+        return {
+          fftSize: 256,
+          getByteTimeDomainData(samples: Uint8Array) {
+            samples.forEach((_, index) => {
+              samples[index] = 128 + (index % 2 === 0 ? amplitude : -amplitude);
+            });
+          },
+        };
+      }
+      createMediaStreamSource() {
+        return { connect: vi.fn() };
+      }
+      close = vi.fn(async () => undefined);
+    });
+    const handlers = callbacks();
+    const session = new LessonSetupMediaSession(handlers);
+    const runFrame = (time: number) => {
+      const currentFrame = frame;
+      if (!currentFrame) throw new Error("Expected the microphone monitor frame");
+      currentFrame(time);
+    };
+
+    await session.start();
+    expect(frame).not.toBeNull();
+    runFrame(0);
+    expect(handlers.onMicrophoneLevel).toHaveBeenLastCalledWith(0.28);
+
+    amplitude = 0;
+    runFrame(16);
+    expect(handlers.onMicrophoneLevel).toHaveBeenLastCalledWith(0.25);
+    session.stop();
   });
 
   it("falls back to audio when no camera is available", async () => {

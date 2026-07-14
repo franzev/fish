@@ -47,8 +47,9 @@ function inputConstraint(deviceId?: string): MediaTrackConstraints {
 export class LessonSetupMediaSession {
   private stream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
-  private analyserTimer: ReturnType<typeof setInterval> | null = null;
+  private analyserFrame: number | null = null;
   private microphoneLevel = 0;
+  private smoothedMicrophoneLevel = 0;
 
   constructor(private readonly callbacks: LessonSetupMediaCallbacks) {}
 
@@ -289,29 +290,45 @@ export class LessonSetupMediaSession {
       this.audioContext.createMediaStreamSource(
         new MediaStream([audioTrack])
       ).connect(analyser);
-      const samples = new Uint8Array(analyser.frequencyBinCount);
-      this.analyserTimer = setInterval(() => {
-        analyser.getByteFrequencyData(samples);
-        let peak = 0;
-        for (const sample of samples) peak = Math.max(peak, sample);
+      const samples = new Uint8Array(analyser.fftSize);
+      const readLevel = () => {
+        analyser.getByteTimeDomainData(samples);
+        let sumOfSquares = 0;
+        for (const sample of samples) {
+          const amplitude = (sample - 128) / 128;
+          sumOfSquares += amplitude * amplitude;
+        }
 
-        // Ignore the analyser's quiet noise floor, then map normal speech to
-        // a stable 0..1 value for the setup meter.
-        const level = audioTrack.enabled
-          ? Math.min(1, Math.max(0, (peak - 12) / 72))
+        const rms = Math.sqrt(sumOfSquares / samples.length);
+        const decibels = 20 * Math.log10(Math.max(rms, 0.000_001));
+        const measuredLevel = audioTrack.enabled
+          ? Math.min(1, Math.max(0, (decibels + 50) / 40))
           : 0;
-        this.updateMicrophoneLevel(level);
-      }, 80);
+        const response = measuredLevel > this.smoothedMicrophoneLevel
+          ? 0.35
+          : 0.12;
+        this.smoothedMicrophoneLevel +=
+          (measuredLevel - this.smoothedMicrophoneLevel) * response;
+        if (this.smoothedMicrophoneLevel < 0.01) {
+          this.smoothedMicrophoneLevel = 0;
+        }
+        this.updateMicrophoneLevel(this.smoothedMicrophoneLevel);
+        this.analyserFrame = window.requestAnimationFrame(readLevel);
+      };
+      this.analyserFrame = window.requestAnimationFrame(readLevel);
     } catch {
       this.stopMicrophoneMonitor();
     }
   }
 
   private stopMicrophoneMonitor(): void {
-    if (this.analyserTimer) clearInterval(this.analyserTimer);
-    this.analyserTimer = null;
+    if (this.analyserFrame !== null) {
+      window.cancelAnimationFrame(this.analyserFrame);
+    }
+    this.analyserFrame = null;
     void this.audioContext?.close().catch(() => undefined);
     this.audioContext = null;
+    this.smoothedMicrophoneLevel = 0;
     this.updateMicrophoneLevel(0);
   }
 

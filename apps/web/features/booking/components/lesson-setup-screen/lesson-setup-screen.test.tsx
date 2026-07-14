@@ -1,22 +1,29 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CallCommandService, LessonSlot } from "@/lib/services";
+import type { LessonMediaDevice } from "../../client/lesson-setup-media";
 
 const {
   checkConnectionMock,
+  deviceChangeListeners,
   playTestSoundMock,
+  refreshDevicesMock,
   sessionStartMock,
   sessionStopMock,
   setEnabledMock,
   startLessonCallMock,
+  supportsSpeakerSelectionMock,
   mediaCallbacksRef,
 } = vi.hoisted(() => ({
   checkConnectionMock: vi.fn(async () => undefined),
+  deviceChangeListeners: new Set<EventListener>(),
   playTestSoundMock: vi.fn(async () => undefined),
+  refreshDevicesMock: vi.fn<() => Promise<LessonMediaDevice[]>>(async () => []),
   sessionStartMock: vi.fn(),
   sessionStopMock: vi.fn(),
   setEnabledMock: vi.fn(() => true),
   startLessonCallMock: vi.fn(async () => undefined),
+  supportsSpeakerSelectionMock: vi.fn(() => false),
   mediaCallbacksRef: { current: null as null | { onMicrophoneLevel(level: number): void } },
 }));
 
@@ -34,14 +41,14 @@ vi.mock("../../client/lesson-setup-media", async (importOriginal) => {
   >();
   return {
     ...actual,
-    supportsSpeakerSelection: () => false,
+    supportsSpeakerSelection: supportsSpeakerSelectionMock,
     LessonSetupMediaSession: vi.fn(function MockSession(callbacks) {
       mediaCallbacksRef.current = callbacks;
       return {
         start: sessionStartMock,
         stop: sessionStopMock,
         setEnabled: setEnabledMock,
-        refreshDevices: vi.fn(async () => []),
+        refreshDevices: refreshDevicesMock,
         switchInput: vi.fn(),
         checkConnection: checkConnectionMock,
         playTestSound: playTestSoundMock,
@@ -110,6 +117,7 @@ function renderScreen(initialNow: string, commandService = commands()) {
       locale="en-US"
       timeZone="Asia/Manila"
       timeFormatPref="24h"
+      joinWindowMinutes={10}
       initialNow={initialNow}
       commands={commandService}
     />
@@ -119,6 +127,19 @@ function renderScreen(initialNow: string, commandService = commands()) {
 describe("LessonSetupScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    deviceChangeListeners.clear();
+    supportsSpeakerSelectionMock.mockReturnValue(false);
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        addEventListener: vi.fn((event: string, listener: EventListener) => {
+          if (event === "devicechange") deviceChangeListeners.add(listener);
+        }),
+        removeEventListener: vi.fn((event: string, listener: EventListener) => {
+          if (event === "devicechange") deviceChangeListeners.delete(listener);
+        }),
+      },
+    });
     audioTrack.enabled = true;
     videoTrack.enabled = true;
     sessionStartMock.mockResolvedValue({
@@ -153,8 +174,71 @@ describe("LessonSetupScreen", () => {
     const meter = screen.getByText("We can hear you").nextElementSibling;
     expect(meter?.children).toHaveLength(3);
     expect(meter?.firstElementChild).toHaveClass("bg-success");
-    expect(meter?.firstElementChild).toHaveStyle({ transform: "scaleY(1)" });
-    expect(meter?.lastElementChild).toHaveStyle({ transform: "scaleY(0.92)" });
+    expect(meter?.firstElementChild).toHaveStyle({ transform: "scaleY(0.72)" });
+    expect(meter?.lastElementChild).toHaveStyle({ transform: "scaleY(0.69)" });
+  });
+
+  it("uses current-state icons and action labels for preview media controls", async () => {
+    renderScreen("2026-07-21T08:00:00.000Z");
+
+    const muteButton = await screen.findByRole("button", { name: "Mute" });
+    const cameraButton = screen.getByRole("button", {
+      name: "Turn camera off",
+    });
+    expect(muteButton).not.toHaveTextContent("Mute");
+    expect(cameraButton).not.toHaveTextContent("Turn camera off");
+    expect(muteButton).toHaveClass("min-w-control", "px-0");
+    expect(cameraButton).toHaveClass("min-w-control", "px-0");
+    expect(screen.getByTestId("lesson-microphone-on-icon")).toBeInTheDocument();
+    expect(screen.getByTestId("lesson-camera-on-icon")).toBeInTheDocument();
+
+    fireEvent.click(muteButton);
+    fireEvent.click(cameraButton);
+
+    expect(screen.getByRole("button", { name: "Unmute" })).toContainElement(
+      screen.getByTestId("lesson-microphone-off-icon")
+    );
+    expect(
+      screen.getByRole("button", { name: "Turn camera on" })
+    ).toContainElement(screen.getByTestId("lesson-camera-off-icon"));
+  });
+
+  it("refreshes available input and output devices when hardware is connected", async () => {
+    supportsSpeakerSelectionMock.mockReturnValue(true);
+    sessionStartMock.mockResolvedValueOnce({
+      stream,
+      devices: [
+        { deviceId: "built-in-mic", kind: "audioinput", label: "Built-in microphone" },
+        { deviceId: "default", kind: "audiooutput", label: "Built-in speakers" },
+      ],
+      microphoneId: "built-in-mic",
+      cameraId: "",
+    });
+    refreshDevicesMock.mockResolvedValueOnce([
+      { deviceId: "built-in-mic", kind: "audioinput", label: "Built-in microphone" },
+      { deviceId: "usb-mic", kind: "audioinput", label: "USB microphone" },
+      { deviceId: "default", kind: "audiooutput", label: "Built-in speakers" },
+      { deviceId: "usb-headset", kind: "audiooutput", label: "USB headset" },
+    ]);
+
+    renderScreen("2026-07-21T08:00:00.000Z");
+    await waitFor(() => expect(sessionStartMock).toHaveBeenCalledOnce());
+    expect(screen.queryByRole("combobox", { name: "Microphone" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Speaker" }))
+      .not.toBeInTheDocument();
+
+    await act(async () => {
+      deviceChangeListeners.forEach((listener) =>
+        listener(new Event("devicechange"))
+      );
+    });
+
+    expect(await screen.findByRole("combobox", { name: "Microphone" }))
+      .toHaveTextContent("USB microphone");
+    expect(screen.getByRole("combobox", { name: "Speaker" }))
+      .toHaveTextContent("USB headset");
+    expect(refreshDevicesMock).toHaveBeenCalledOnce();
   });
 
   it("hands the booked lesson to the booking-aware call action in the join window", async () => {

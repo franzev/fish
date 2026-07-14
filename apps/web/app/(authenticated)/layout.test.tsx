@@ -26,6 +26,7 @@ vi.mock("@/features/auth/client/browser", () => ({
 
 vi.mock("@/features/calls", () => ({
   CallProvider: ({ children }: { children: React.ReactNode }) => children,
+  CallPopover: () => <div data-testid="call-popover" />,
 }));
 
 vi.mock("@/features/notifications/server", () => ({
@@ -107,5 +108,6 @@ describe("AuthenticatedLayout", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
     expect(screen.getByText("Content")).toBeInTheDocument();
+    expect(screen.getByTestId("call-popover")).toBeInTheDocument();
   });
 });

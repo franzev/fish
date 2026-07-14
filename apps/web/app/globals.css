@@ -201,13 +201,17 @@
   --aspect-gif-tile: 4 / 3;
   --spacing-motion-enter: 6px;
   --spacing-motion-typing: 4px;
+  --spacing-switch-travel: 20px; /* switch thumb movement within the 44px track */
 
   /* ---- Layout widths ---- */
   --container-channel-col: 232px; /* channel list column beside immersive content */
   --container-conversation-list: 304px; /* desktop direct-message conversation rail */
   --container-conversation-details: 280px; /* quiet participant context beside a direct thread */
   --container-menu: 224px;        /* floating action menus (composer +) */
-  --container-audio-settings: 336px; /* room for readable microphone names */
+  --container-call-settings: 336px; /* room for readable device and quality settings */
+  --container-call-popover: 360px; /* persistent desktop audio/video call surface */
+  --container-call-popover-mobile: calc(100vw - (var(--spacing-page) * 2));
+  --container-call-preview: 112px; /* local camera inset within the call surface */
   --container-form: 440px;
   --container-content: 640px;
   --container-marketing: 1120px;  /* landing page shell */
@@ -249,6 +253,13 @@
    without embedding a one-off grid template in component markup. */
 @utility grid-cols-status-option {
   grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+@utility call-settings-popover {
+  width: min(
+    var(--container-call-settings),
+    var(--container-call-popover-mobile)
+  );
 }
 
 /* ---- Base ---- */

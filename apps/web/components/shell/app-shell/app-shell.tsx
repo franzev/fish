@@ -200,14 +200,13 @@ export function AppShell({
       ? { count: 1, kind: "activity" as const }
       : undefined,
   ]));
-  /* Channels and calls are immersive surfaces: each owns the available pane
-     and scrolls internally, so the shell locks to the viewport there. */
+  /* Conversation surfaces own the available pane and scroll internally.
+     Calls stay in a global modeless popover, so navigation remains available. */
   const channelSurface = isActivePath(pathname, "/channels");
   const messageSurface = isActivePath(pathname, "/messages");
-  const callSurface = isActivePath(pathname, "/calls");
   const bookingSurface = isActivePath(pathname, "/book");
   const conversationSurface = channelSurface || messageSurface;
-  const focusedSurface = callSurface || bookingSurface;
+  const focusedSurface = bookingSurface;
   const immersive = conversationSurface || focusedSurface;
 
   return (
@@ -224,8 +223,6 @@ export function AppShell({
         timeFormatPref={preferences?.timeFormatPref}
       />
 
-      {/* A call takes the whole screen: no header, no nav, one clear surface.
-          The call screen owns its own exit (End call / Back to home). */}
       {!focusedSurface && (
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md md:py-sm">
         <Link

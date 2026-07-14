@@ -17,7 +17,6 @@ import type {
   ClientCall,
 } from "@/lib/services";
 import type { RemoteVideoTrack } from "livekit-client";
-import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -34,20 +33,25 @@ import {
   type AudioDeviceOption,
 } from "../../client/call-media";
 import {
-  closeCallForNavigation,
+  readVideoQualityPreference,
+  writeVideoQualityPreference,
+  type VideoQualityPreference,
+} from "../../client/video-quality-preference";
+import {
   closeFailedMediaConnection,
 } from "./call-exit";
 
 interface CallContextValue {
   state: CallState;
-  homeHref: "/home" | "/coach";
   notice: string | null;
   busy: boolean;
   audioBlocked: boolean;
   localMicrophoneActive: boolean;
+  localMicrophoneLevel: number;
   remoteSpeaking: boolean;
   localVideoStream: MediaStream | null;
   remoteVideoTrack: RemoteVideoTrack | null;
+  videoQualityPreference: VideoQualityPreference;
   startCall(
     recipientId: string,
     recipientName: string,
@@ -65,18 +69,16 @@ interface CallContextValue {
   toggleMute(): Promise<void>;
   toggleCamera(): Promise<void>;
   hearCall(): Promise<void>;
-  loadCall(callId: string): Promise<void>;
-  leaveSurface(): void;
   clear(): void;
   microphones(): Promise<AudioDeviceOption[]>;
   switchMicrophone(deviceId: string): Promise<void>;
+  setVideoQualityPreference(preference: VideoQualityPreference): void;
 }
 
 const CallContext = createContext<CallContextValue | null>(null);
 
 interface CallProviderProps {
   userId: string;
-  homeHref?: "/home" | "/coach";
   children: React.ReactNode;
   commands?: CallCommandService;
   realtime?: CallRealtimeService;
@@ -84,13 +86,10 @@ interface CallProviderProps {
 
 export function CallProvider({
   userId,
-  homeHref = "/home",
   children,
   commands: commandsOverride,
   realtime: realtimeOverride,
 }: CallProviderProps) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [state, dispatch] = useReducer(
     reduceCallState,
     undefined,
@@ -101,15 +100,16 @@ export function CallProvider({
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [speaking, setSpeaking] = useState({
     localMicrophoneActive: false,
+    localMicrophoneLevel: 0,
     remoteSpeaking: false,
   });
   const [localVideoStream, setLocalVideoStream] =
     useState<MediaStream | null>(null);
   const [remoteVideoTrack, setRemoteVideoTrack] =
     useState<RemoteVideoTrack | null>(null);
+  const [videoQualityPreference, setVideoQualityPreferenceState] =
+    useState<VideoQualityPreference>(readVideoQualityPreference);
   const stateRef = useRef(state);
-  const previousPathnameRef = useRef(pathname);
-  const ignoredCallIdsRef = useRef(new Set<string>());
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
@@ -122,39 +122,42 @@ export function CallProvider({
     [realtimeOverride]
   );
   const [media] = useState(() =>
-    new LiveKitCallMedia({
-      onConnected(callId) {
-        dispatch({
-          type: "mediaConnected",
-          callId,
-          connectedAt: new Date().toISOString(),
-        });
+    new LiveKitCallMedia(
+      {
+        onConnected(callId) {
+          dispatch({
+            type: "mediaConnected",
+            callId,
+            connectedAt: new Date().toISOString(),
+          });
+        },
+        onReconnecting(callId) {
+          dispatch({ type: "reconnecting", callId });
+        },
+        onReconnected(callId) {
+          dispatch({ type: "reconnected", callId });
+        },
+        onDisconnected(callId) {
+          dispatch({ type: "callFailed", callId, reason: "networkLost" });
+        },
+        onAudioPlaybackChanged(blocked) {
+          setAudioBlocked(blocked);
+        },
+        onSpeakingChanged(_callId, speakingState) {
+          setSpeaking(speakingState);
+        },
+        onLocalVideoChanged(stream) {
+          setLocalVideoStream(stream);
+        },
+        onRemoteVideoChanged(track) {
+          setRemoteVideoTrack(track);
+        },
+        onCameraChanged(enabled) {
+          dispatch({ type: "cameraChanged", enabled });
+        },
       },
-      onReconnecting(callId) {
-        dispatch({ type: "reconnecting", callId });
-      },
-      onReconnected(callId) {
-        dispatch({ type: "reconnected", callId });
-      },
-      onDisconnected(callId) {
-        dispatch({ type: "callFailed", callId, reason: "networkLost" });
-      },
-      onAudioPlaybackChanged(blocked) {
-        setAudioBlocked(blocked);
-      },
-      onSpeakingChanged(_callId, speakingState) {
-        setSpeaking(speakingState);
-      },
-      onLocalVideoChanged(stream) {
-        setLocalVideoStream(stream);
-      },
-      onRemoteVideoChanged(track) {
-        setRemoteVideoTrack(track);
-      },
-      onCameraChanged(enabled) {
-        dispatch({ type: "cameraChanged", enabled });
-      },
-    })
+      videoQualityPreference
+    )
   );
 
   const applyCall = useCallback((call: ClientCall, counterpartName: string) => {
@@ -259,18 +262,15 @@ export function CallProvider({
     let active = true;
     const recover = () => {
       const currentCallId = stateRef.current.current.callId;
-      if (currentCallId && ignoredCallIdsRef.current.has(currentCallId)) return;
       const lookup = currentCallId
         ? realtime.findCall(currentCallId, userId)
         : realtime.findCurrentCall(userId);
       void lookup.then((found) => {
         if (!active || !found) return;
-        applyCall(found.call, found.counterpartName);
-        router.push(`/calls/${found.call.id}`);
+        void loadCall(found.call.id);
       });
     };
     const unsubscribe = realtime.subscribe(userId, (event) => {
-      if (ignoredCallIdsRef.current.has(event.callId)) return;
       void realtime.findCall(event.callId, userId).then((found) => {
         if (!active || !found) return;
         applyCall(found.call, found.counterpartName);
@@ -305,12 +305,6 @@ export function CallProvider({
             void failMediaConnection(found.call.id);
           });
         }
-        if (
-          found.call.initiatedBy !== userId &&
-          found.call.status === "ringing"
-        ) {
-          router.push(`/calls/${found.call.id}`);
-        }
       });
     }, recover);
     recover();
@@ -320,37 +314,30 @@ export function CallProvider({
       dispatch({ type: "identityChanged" });
       void media.disconnect();
     };
-  }, [applyCall, commands, failMediaConnection, media, realtime, router, userId]);
+  }, [applyCall, commands, failMediaConnection, loadCall, media, realtime, userId]);
 
-  const leaveSurface = useCallback(() => {
+  const disconnectMedia = useCallback(() => {
     void media.disconnect();
   }, [media]);
 
   useEffect(() => {
-    const handlePageHide = () => leaveSurface();
+    const handlePageHide = () => disconnectMedia();
     window.addEventListener("pagehide", handlePageHide);
     return () => window.removeEventListener("pagehide", handlePageHide);
-  }, [leaveSurface]);
+  }, [disconnectMedia]);
 
-  useEffect(() => {
-    const previousPathname = previousPathnameRef.current;
-    previousPathnameRef.current = pathname;
-    if (!previousPathname.startsWith("/calls/") || pathname.startsWith("/calls/")) {
-      return;
-    }
-
-    const call = stateRef.current.current;
-    if (!call.callId) {
-      leaveSurface();
-      dispatch({ type: "clearCall" });
-      return;
-    }
-
-    ignoredCallIdsRef.current.add(call.callId);
-    void closeCallForNavigation(call, commands, leaveSurface)
-      .catch(() => undefined)
-      .finally(() => dispatch({ type: "clearCall" }));
-  }, [commands, leaveSurface, pathname]);
+  const clearCall = useCallback(() => {
+    setNotice(null);
+    setAudioBlocked(false);
+    setSpeaking({
+      localMicrophoneActive: false,
+      localMicrophoneLevel: 0,
+      remoteSpeaking: false,
+    });
+    setLocalVideoStream(null);
+    setRemoteVideoTrack(null);
+    dispatch({ type: "clearCall" });
+  }, []);
 
   const run = useCallback(async (action: () => Promise<void>) => {
     if (busy) return;
@@ -370,14 +357,15 @@ export function CallProvider({
 
   const value = useMemo<CallContextValue>(() => ({
     state,
-    homeHref,
     notice,
     busy,
     audioBlocked,
     localMicrophoneActive: speaking.localMicrophoneActive,
+    localMicrophoneLevel: speaking.localMicrophoneLevel,
     remoteSpeaking: speaking.remoteSpeaking,
     localVideoStream,
     remoteVideoTrack,
+    videoQualityPreference,
     startCall: async (recipientId, recipientName, kind) => run(async () => {
       if (selectHasLiveCall(stateRef.current)) {
         setNotice("Finish the current call before starting another one.");
@@ -426,7 +414,6 @@ export function CallProvider({
         kind,
         expiresAt: result.call.expiresAt,
       });
-      router.push(`/calls/${result.call.id}`);
     }),
     startLessonCall: async (lessonId, coachId, coachName) => run(async () => {
       if (selectHasLiveCall(stateRef.current)) {
@@ -471,7 +458,6 @@ export function CallProvider({
         kind: "video",
         expiresAt: result.call.expiresAt,
       });
-      router.push(`/calls/${result.call.id}`);
     }),
     answer: async () => run(async () => {
       const callId = stateRef.current.current.callId;
@@ -533,6 +519,7 @@ export function CallProvider({
         setSpeaking((current) => ({
           ...current,
           localMicrophoneActive: false,
+          localMicrophoneLevel: 0,
         }));
       }
       dispatch({ type: "muteChanged", muted });
@@ -551,19 +538,7 @@ export function CallProvider({
       }
     },
     hearCall: async () => media.startAudio(),
-    loadCall,
-    leaveSurface,
-    clear: () => {
-      setNotice(null);
-      setAudioBlocked(false);
-      setSpeaking({
-        localMicrophoneActive: false,
-        remoteSpeaking: false,
-      });
-      setLocalVideoStream(null);
-      setRemoteVideoTrack(null);
-      dispatch({ type: "clearCall" });
-    },
+    clear: clearCall,
     microphones: async () => {
       try {
         return await media.microphones();
@@ -579,7 +554,12 @@ export function CallProvider({
         setNotice("That microphone isn’t available. The current one still works.");
       }
     },
-  }), [audioBlocked, busy, commands, failMediaConnection, homeHref, leaveSurface, loadCall, localVideoStream, media, notice, remoteVideoTrack, router, run, speaking, state]);
+    setVideoQualityPreference: (preference) => {
+      setVideoQualityPreferenceState(preference);
+      media.setVideoQualityPreference(preference);
+      writeVideoQualityPreference(preference);
+    },
+  }), [audioBlocked, busy, clearCall, commands, failMediaConnection, localVideoStream, media, notice, remoteVideoTrack, run, speaking, state, videoQualityPreference]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }

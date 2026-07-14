@@ -5,11 +5,14 @@ import {
   Room,
   RoomEvent,
   Track,
+  VideoQuality,
   VideoPresets,
   type LocalTrackPublication,
   type RemoteTrack,
+  type RemoteTrackPublication,
   type RemoteVideoTrack,
 } from "livekit-client";
+import type { VideoQualityPreference } from "./video-quality-preference";
 
 export interface CallMediaCallbacks {
   onConnected(callId: string): void;
@@ -19,7 +22,11 @@ export interface CallMediaCallbacks {
   onAudioPlaybackChanged(blocked: boolean): void;
   onSpeakingChanged(
     callId: string,
-    state: { localMicrophoneActive: boolean; remoteSpeaking: boolean }
+    state: {
+      localMicrophoneActive: boolean;
+      localMicrophoneLevel: number;
+      remoteSpeaking: boolean;
+    }
   ): void;
   onLocalVideoChanged(stream: MediaStream | null): void;
   onRemoteVideoChanged(track: RemoteVideoTrack | null): void;
@@ -37,12 +44,19 @@ export class LiveKitCallMedia {
   private intentionalDisconnect = false;
   private canPublishMicrophone = false;
   private canPublishCamera = false;
-  private speakingInterval: ReturnType<typeof setInterval> | null = null;
+  private speakingFrame: number | null = null;
   private localMicrophoneActive = false;
+  private localMicrophoneLevel = 0;
   private remoteSpeaking = false;
   private localActiveUntil = 0;
+  private videoQualityPreference: VideoQualityPreference;
 
-  constructor(private readonly callbacks: CallMediaCallbacks) {}
+  constructor(
+    private readonly callbacks: CallMediaCallbacks,
+    videoQualityPreference: VideoQualityPreference = "auto"
+  ) {
+    this.videoQualityPreference = videoQualityPreference;
+  }
 
   async connect(
     callId: string,
@@ -61,13 +75,13 @@ export class LiveKitCallMedia {
     }
     await this.disconnect();
     const room = new Room({
-      adaptiveStream: false,
-      dynacast: false,
+      adaptiveStream: true,
+      dynacast: true,
       videoCaptureDefaults: {
         resolution: VideoPresets.h720.resolution,
       },
       publishDefaults: {
-        simulcast: false,
+        simulcast: true,
         videoEncoding: VideoPresets.h720.encoding,
         degradationPreference: "maintain-resolution",
       },
@@ -84,6 +98,7 @@ export class LiveKitCallMedia {
       });
       if (publish.microphone) await this.enableMicrophone();
       if (publish.camera) await this.enableCamera();
+      this.applyVideoQuality(room);
       if (room.remoteParticipants.size > 0) this.callbacks.onConnected(callId);
       this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
     } catch (error) {
@@ -112,7 +127,7 @@ export class LiveKitCallMedia {
     });
     if (muted && this.callId) {
       this.localActiveUntil = 0;
-      this.updateSpeaking(this.callId, false, this.remoteSpeaking);
+      this.updateSpeaking(this.callId, false, this.remoteSpeaking, 0);
     }
   }
 
@@ -123,6 +138,7 @@ export class LiveKitCallMedia {
   async setCameraEnabled(enabled: boolean): Promise<void> {
     if (!this.room) return;
     await this.room.localParticipant.setCameraEnabled(enabled);
+    if (enabled) this.applyLocalVideoQuality(this.room);
     const publication = this.room.localParticipant.getTrackPublication(
       Track.Source.Camera
     );
@@ -132,6 +148,11 @@ export class LiveKitCallMedia {
         : null
     );
     this.callbacks.onCameraChanged(enabled);
+  }
+
+  setVideoQualityPreference(preference: VideoQualityPreference): void {
+    this.videoQualityPreference = preference;
+    if (this.room) this.applyVideoQuality(this.room);
   }
 
   async startAudio(): Promise<void> {
@@ -155,7 +176,7 @@ export class LiveKitCallMedia {
     const callId = this.callId;
     this.intentionalDisconnect = true;
     this.stopSpeakingMonitor();
-    if (callId) this.updateSpeaking(callId, false, false);
+    if (callId) this.updateSpeaking(callId, false, false, 0);
     this.room = null;
     this.callId = null;
     this.canPublishMicrophone = false;
@@ -219,20 +240,24 @@ export class LiveKitCallMedia {
     room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
       this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
     });
-    room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-      if (track.kind === Track.Kind.Video) {
-        this.callbacks.onRemoteVideoChanged(track as RemoteVideoTrack);
-        return;
+    room.on(
+      RoomEvent.TrackSubscribed,
+      (track: RemoteTrack, publication: RemoteTrackPublication) => {
+        if (track.kind === Track.Kind.Video) {
+          this.applyRemoteVideoQuality(publication);
+          this.callbacks.onRemoteVideoChanged(track as RemoteVideoTrack);
+          return;
+        }
+        if (track.kind !== Track.Kind.Audio) return;
+        const element = track.attach();
+        element.dataset.fishCallAudio = "true";
+        element.hidden = true;
+        document.body.append(element);
+        void element.play().catch(() => {
+          this.callbacks.onAudioPlaybackChanged(true);
+        });
       }
-      if (track.kind !== Track.Kind.Audio) return;
-      const element = track.attach();
-      element.dataset.fishCallAudio = "true";
-      element.hidden = true;
-      document.body.append(element);
-      void element.play().catch(() => {
-        this.callbacks.onAudioPlaybackChanged(true);
-      });
-    });
+    );
     room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
       if (track.kind === Track.Kind.Video) {
         this.callbacks.onRemoteVideoChanged(null);
@@ -247,6 +272,7 @@ export class LiveKitCallMedia {
           publication.source === Track.Source.Camera &&
           publication.track
         ) {
+          this.applyLocalVideoQuality(room);
           this.callbacks.onLocalVideoChanged(
             new MediaStream([publication.track.mediaStreamTrack])
           );
@@ -279,6 +305,7 @@ export class LiveKitCallMedia {
           publication.source === Track.Source.Camera &&
           publication.track
         ) {
+          this.applyRemoteVideoQuality(publication as RemoteTrackPublication);
           this.callbacks.onRemoteVideoChanged(
             publication.track as RemoteVideoTrack
           );
@@ -287,11 +314,53 @@ export class LiveKitCallMedia {
     );
   }
 
+  private applyVideoQuality(room: Room): void {
+    this.applyLocalVideoQuality(room);
+    room.remoteParticipants.forEach((participant) => {
+      participant.videoTrackPublications.forEach((publication) => {
+        if (publication.source === Track.Source.Camera) {
+          this.applyRemoteVideoQuality(publication);
+        }
+      });
+    });
+  }
+
+  private applyLocalVideoQuality(room: Room): void {
+    const publication = room.localParticipant.getTrackPublication(
+      Track.Source.Camera
+    );
+    publication?.videoTrack?.setPublishingQuality(
+      this.videoQualityPreference === "data-saver"
+        ? VideoQuality.MEDIUM
+        : VideoQuality.HIGH
+    );
+  }
+
+  private applyRemoteVideoQuality(publication: RemoteTrackPublication): void {
+    if (publication.source !== Track.Source.Camera) return;
+
+    if (this.videoQualityPreference === "data-saver") {
+      publication.setVideoDimensions({
+        width: VideoPresets.h360.width,
+        height: VideoPresets.h360.height,
+      });
+      return;
+    }
+
+    publication.setVideoQuality(VideoQuality.HIGH);
+  }
+
   private startSpeakingMonitor(room: Room, callId: string) {
-    if (this.speakingInterval) return;
-    this.speakingInterval = setInterval(() => {
+    if (this.speakingFrame !== null) return;
+    const readLevel = () => {
       if (this.room !== room) return;
       const now = Date.now();
+      const measuredLevel = room.localParticipant.isMicrophoneEnabled
+        ? Math.min(1, room.localParticipant.audioLevel / 0.3)
+        : 0;
+      const response = measuredLevel > this.localMicrophoneLevel ? 0.35 : 0.12;
+      const smoothedLevel = this.localMicrophoneLevel +
+        (measuredLevel - this.localMicrophoneLevel) * response;
       if (
         room.localParticipant.isMicrophoneEnabled &&
         room.localParticipant.audioLevel >= 0.025
@@ -301,29 +370,43 @@ export class LiveKitCallMedia {
       const microphoneActive =
         room.localParticipant.isMicrophoneEnabled &&
         now < this.localActiveUntil;
-      this.updateSpeaking(callId, microphoneActive, this.remoteSpeaking);
-    }, 100);
+      this.updateSpeaking(
+        callId,
+        microphoneActive,
+        this.remoteSpeaking,
+        smoothedLevel < 0.01 ? 0 : smoothedLevel
+      );
+      this.speakingFrame = window.requestAnimationFrame(readLevel);
+    };
+    this.speakingFrame = window.requestAnimationFrame(readLevel);
   }
 
   private stopSpeakingMonitor() {
-    if (this.speakingInterval) clearInterval(this.speakingInterval);
-    this.speakingInterval = null;
+    if (this.speakingFrame !== null) {
+      window.cancelAnimationFrame(this.speakingFrame);
+    }
+    this.speakingFrame = null;
     this.localActiveUntil = 0;
   }
 
   private updateSpeaking(
     callId: string,
     localMicrophoneActive: boolean,
-    remoteSpeaking: boolean
+    remoteSpeaking: boolean,
+    localMicrophoneLevel = this.localMicrophoneLevel
   ) {
+    const nextLevel = Math.round(localMicrophoneLevel * 100) / 100;
     if (
       localMicrophoneActive === this.localMicrophoneActive &&
+      nextLevel === this.localMicrophoneLevel &&
       remoteSpeaking === this.remoteSpeaking
     ) return;
     this.localMicrophoneActive = localMicrophoneActive;
+    this.localMicrophoneLevel = nextLevel;
     this.remoteSpeaking = remoteSpeaking;
     this.callbacks.onSpeakingChanged(callId, {
       localMicrophoneActive,
+      localMicrophoneLevel: nextLevel,
       remoteSpeaking,
     });
   }

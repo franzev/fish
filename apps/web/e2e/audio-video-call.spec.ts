@@ -57,33 +57,35 @@ async function expectHdVideo(page: Page, label: string) {
   await expect(video).toBeVisible();
   await expect.poll(
     () => video.evaluate((element) => (element as HTMLVideoElement).videoWidth),
-    { timeout: 20_000 }
+    { message: `${label} should reach HD width`, timeout: 20_000 }
   ).toBeGreaterThanOrEqual(1280);
   await expect.poll(
     () => video.evaluate((element) => (element as HTMLVideoElement).videoHeight),
-    { timeout: 20_000 }
+    { message: `${label} should reach HD height`, timeout: 20_000 }
   ).toBeGreaterThanOrEqual(720);
 }
 
-async function closeRecoveredCall(page: Page, destination: "/home" | "/coach") {
-  if (!new URL(page.url()).pathname.startsWith("/calls/")) return;
+async function expectPlayingVideo(page: Page, label: string) {
+  const video = page.getByLabel(label);
+  await expect(video).toBeVisible();
+  await expect.poll(
+    () => video.evaluate((element) => (element as HTMLVideoElement).videoWidth),
+    { timeout: 20_000 }
+  ).toBeGreaterThan(0);
+  await expect.poll(
+    () => video.evaluate((element) => (element as HTMLVideoElement).videoHeight),
+    { timeout: 20_000 }
+  ).toBeGreaterThan(0);
+}
 
+async function closeRecoveredCall(page: Page, destination: "/home" | "/coach") {
   const close = page.getByRole("button", {
     name: /^(End call|Cancel call|Not now)$/,
   }).first();
-  await expect(close).toBeVisible();
-  await close.click();
-  await expect(
-    page.getByRole("heading", { name: /^(Call ended|Call declined)$/ })
-  ).toBeVisible();
+  if (await close.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    await close.click();
+  }
   await page.goto(destination);
-}
-
-async function openIncomingCall(caller: Page, recipient: Page) {
-  const callPath = new URL(caller.url()).pathname;
-  await recipient.waitForURL(/\/calls\//, { timeout: 5_000 }).catch(async () => {
-    await recipient.goto(callPath);
-  });
 }
 
 async function callPair(browser: Browser) {
@@ -104,12 +106,12 @@ async function callPair(browser: Browser) {
   // server. Concurrent sign-in requests can race its initial route render and
   // briefly hydrate one context with the other participant's shell.
   await signIn(coach, "coach@fish.dev", "fish-coach-dev");
-  await expect(coach).toHaveURL(/\/(?:home|coach|calls\/[^/]+)$/, {
+  await expect(coach).toHaveURL(/\/(?:home|coach)$/, {
     timeout: 20_000,
   });
   await closeRecoveredCall(coach, "/coach");
   await signIn(client, "client1@fish.dev", "fish-client-dev");
-  await expect(client).toHaveURL(/\/(?:home|calls\/[^/]+)$/, {
+  await expect(client).toHaveURL(/\/home$/, {
     timeout: 20_000,
   });
   await closeRecoveredCall(client, "/home");
@@ -134,15 +136,17 @@ test.describe.serial("one-to-one calls", () => {
     const pair = await callPair(browser);
     try {
       await pair.coach.getByRole("link", { name: /Franz Eva/ }).click();
-      await pair.coach.getByRole("button", {
+      const audioCall = pair.coach.getByRole("button", {
         name: "Call Franz Eva",
         exact: true,
-      }).click();
+      });
+      await expect(audioCall).toBeVisible();
+      const callStartPath = new URL(pair.coach.url()).pathname;
+      await audioCall.click();
       await expect(pair.coach.getByRole("heading", { name: "Calling Franz Eva" }))
         .toBeVisible();
+      await expect(pair.coach).toHaveURL(callStartPath);
 
-      await expect(pair.coach).toHaveURL(/\/calls\//);
-      await openIncomingCall(pair.coach, pair.client);
       await expect(pair.client.getByRole("heading", { name: "Patty Cake is calling" }))
         .toBeVisible();
       await pair.client.getByRole("button", { name: "Answer call" }).click();
@@ -157,6 +161,10 @@ test.describe.serial("one-to-one calls", () => {
       await pair.coach.getByRole("button", { name: "End call" }).click();
       await expect(pair.coach.getByRole("heading", { name: "Call ended" })).toBeVisible();
       await expect(pair.client.getByRole("heading", { name: "Call ended" })).toBeVisible();
+      await expect(pair.coach.getByRole("heading", { name: "Call ended" })).not
+        .toBeVisible({ timeout: 7_000 });
+      await expect(pair.client.getByRole("heading", { name: "Call ended" })).not
+        .toBeVisible({ timeout: 7_000 });
     } finally {
       await pair.close();
     }
@@ -170,28 +178,18 @@ test.describe.serial("one-to-one calls", () => {
       await expect(pair.coach.getByRole("heading", { name: "Video calling Franz Eva" }))
         .toBeVisible();
 
-      await expect(pair.coach).toHaveURL(/\/calls\//);
-      await openIncomingCall(pair.coach, pair.client);
       await expect(pair.client.getByRole("heading", { name: "Video call from Patty Cake" }))
         .toBeVisible();
       await pair.client.getByRole("button", { name: "Answer video call" }).click();
 
       await Promise.all([
         expectHdVideo(pair.coach, "Your video preview"),
-        expectHdVideo(pair.coach, "Franz Eva video"),
+        expectPlayingVideo(pair.coach, "Franz Eva video"),
       ]);
 
-      const callMessage = `Call note ${Date.now()}`;
-      await pair.coach.setViewportSize({ width: 800, height: 900 });
-      await pair.coach.getByRole("button", { name: "Open chat" }).click();
-      await expect(
-        pair.coach.getByRole("button", { name: "Close chat" })
-      ).toBeVisible();
-      await pair.coach.getByLabel("Message", { exact: true }).fill(callMessage);
-      await pair.coach.getByRole("button", { name: "Send message" }).click();
-      await expect(pair.client.getByText(callMessage)).toBeVisible();
-      await pair.coach.getByRole("button", { name: "Close chat" }).click();
-      await expect(pair.coach.getByLabel("Franz Eva video")).toBeVisible();
+      await pair.client.goto("/messages");
+      await expect(pair.client).toHaveURL(/\/messages\//);
+      await expect(pair.client.getByLabel("Patty Cake video")).toBeVisible();
 
       await pair.coach.getByRole("button", { name: "Turn camera off" }).click();
       await expect(pair.coach.getByRole("button", { name: "Turn camera on" }))
@@ -200,17 +198,59 @@ test.describe.serial("one-to-one calls", () => {
       await pair.client.getByRole("button", { name: "End call" }).click();
       await expect(pair.coach.getByRole("heading", { name: "Call ended" })).toBeVisible();
       await expect(pair.client.getByRole("heading", { name: "Call ended" })).toBeVisible();
-
-      await pair.client.goto("/messages");
-      await expect(
-        pair.client.getByLabel("Conversation messages").getByText(callMessage)
-      ).toBeVisible();
     } finally {
       await pair.close();
     }
   });
 
-  test("leaving the call route stops media and ends the call", async ({ browser }) => {
+  test("video quality switches without reconnecting the call", async ({ browser }) => {
+    const pair = await callPair(browser);
+    try {
+      await pair.coach.getByRole("link", { name: /Franz Eva/ }).click();
+      await pair.coach.getByRole("button", { name: "Video call Franz Eva" }).click();
+      await expect(pair.coach.getByRole("heading", { name: "Video calling Franz Eva" }))
+        .toBeVisible();
+      await expect(pair.client.getByRole("heading", { name: "Video call from Patty Cake" }))
+        .toBeVisible();
+      await pair.client.getByRole("button", { name: "Answer video call" }).click();
+
+      await expectPlayingVideo(pair.coach, "Franz Eva video");
+
+      await pair.coach.getByRole("button", { name: "Call settings" }).click();
+      const dataSaver = pair.coach.getByRole("switch", {
+        name: "Use less data",
+      });
+      await expect(dataSaver).toHaveAttribute("aria-checked", "false");
+      await dataSaver.click();
+      await expect(dataSaver).toHaveAttribute("aria-checked", "true");
+      await expect.poll(
+        () => pair.coach.evaluate(() =>
+          window.localStorage.getItem("fish.video-quality-preference")
+        )
+      ).toBe("data-saver");
+      await expectPlayingVideo(pair.coach, "Franz Eva video");
+      await expect(pair.coach.getByRole("heading", { name: "In call with Franz Eva" }))
+        .toBeVisible();
+
+      await dataSaver.click();
+      await expect(dataSaver).toHaveAttribute("aria-checked", "false");
+      await expect.poll(
+        () => pair.coach.evaluate(() =>
+          window.localStorage.getItem("fish.video-quality-preference")
+        )
+      ).toBe("auto");
+      await expectPlayingVideo(pair.coach, "Franz Eva video");
+      await expect(pair.coach.getByRole("heading", { name: "In call with Franz Eva" }))
+        .toBeVisible();
+
+      await pair.client.getByRole("button", { name: "End call" }).click();
+      await expect(pair.coach.getByRole("heading", { name: "Call ended" })).toBeVisible();
+    } finally {
+      await pair.close();
+    }
+  });
+
+  test("the call stays active while navigating and stays above mobile navigation", async ({ browser }) => {
     const pair = await callPair(browser);
     try {
       await pair.coach.getByRole("link", { name: /Franz Eva/ }).click();
@@ -218,16 +258,33 @@ test.describe.serial("one-to-one calls", () => {
         name: "Call Franz Eva",
         exact: true,
       }).click();
-      await expect(pair.coach).toHaveURL(/\/calls\//);
-      await openIncomingCall(pair.coach, pair.client);
+      await expect(pair.client.getByRole("heading", { name: "Patty Cake is calling" }))
+        .toBeVisible();
       await pair.client.getByRole("button", { name: "Answer call" }).click();
       await expect(pair.client.getByRole("heading", { name: "In call with Patty Cake" }))
         .toBeVisible();
 
-      await pair.client.goto("/home");
+      await pair.client.setViewportSize({ width: 390, height: 844 });
+      await pair.client.goto("/messages");
 
-      await expect(pair.client).toHaveURL(/\/home$/);
-      await expect(pair.coach.getByRole("heading", { name: "Call ended" })).toBeVisible();
+      await expect(pair.client).toHaveURL(/\/messages\//);
+      await expect(pair.client.getByRole("heading", { name: "In call with Patty Cake" }))
+        .toBeVisible();
+      await expect(pair.coach.getByRole("heading", { name: "In call with Franz Eva" }))
+        .toBeVisible();
+
+      const callPanel = await pair.client.getByRole("complementary").boundingBox();
+      const mobileNavigation = await pair.client.getByRole("navigation", {
+        name: "Mobile primary",
+      }).boundingBox();
+      expect(callPanel).not.toBeNull();
+      expect(mobileNavigation).not.toBeNull();
+      expect(callPanel!.y + callPanel!.height).toBeLessThanOrEqual(
+        mobileNavigation!.y
+      );
+
+      await pair.client.getByRole("button", { name: "End call" }).click();
+      await expect(pair.client.getByRole("heading", { name: "Call ended" })).toBeVisible();
     } finally {
       await pair.close();
     }

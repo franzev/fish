@@ -85,6 +85,19 @@ describe("AppShell", () => {
     expect(screen.queryByRole("navigation", { name: "Mobile primary" })).not.toBeInTheDocument();
   });
 
+  it("keeps shell navigation visible on legacy call routes", () => {
+    pathname = "/calls/call-1";
+    const { container } = render(
+      <AppShell displayName="Alex Rivera" role="client">
+        Compatibility content
+      </AppShell>
+    );
+
+    expect(container.querySelector("main")?.className).toContain("max-w-content");
+    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Mobile primary" })).toBeInTheDocument();
+  });
+
   it("renders the channel column with the active room and the two focused community rooms", () => {
     pathname = generalChannelHref;
 

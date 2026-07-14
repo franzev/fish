@@ -2,10 +2,12 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
 import { useCall } from "@/features/calls";
 import type { CallCommandService, LessonSlot } from "@/lib/services";
 import { getCallCommandService } from "@/lib/services/runtime/browser";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@base-ui/react/tooltip";
 import {
   IconCamera,
   IconCameraOff,
@@ -47,6 +49,7 @@ interface LessonSetupScreenProps {
   locale: string;
   timeZone: string;
   timeFormatPref: TimeFormatPref;
+  joinWindowMinutes: number;
   initialNow: string;
   commands?: CallCommandService;
 }
@@ -64,6 +67,7 @@ export function LessonSetupScreen({
   locale,
   timeZone,
   timeFormatPref,
+  joinWindowMinutes,
   initialNow,
   commands: commandsOverride,
 }: LessonSetupScreenProps) {
@@ -91,7 +95,9 @@ export function LessonSetupScreen({
   const [speakerNotice, setSpeakerNotice] = useState<string | null>(null);
 
   const ended = !lesson || now.getTime() >= new Date(lesson.endsAt).getTime();
-  const joinable = lesson ? isLessonJoinable(lesson, now) : false;
+  const joinable = lesson
+    ? isLessonJoinable(lesson, joinWindowMinutes, now)
+    : false;
 
   useEffect(() => {
     clockOffset.current = new Date(initialNow).getTime() - Date.now();
@@ -290,12 +296,7 @@ export function LessonSetupScreen({
   const microphoneDevices = devicesByKind(devices, "audioinput");
   const cameraDevices = devicesByKind(devices, "videoinput");
   const speakerDevices = devicesByKind(devices, "audiooutput");
-  const microphoneActive = microphoneEnabled && microphoneLevel >= 0.08;
-  const meterLevels = [
-    Math.min(1, 0.25 + microphoneLevel * 2.5),
-    Math.min(1, 0.2 + Math.max(0, microphoneLevel - 0.12) * 2.4),
-    Math.min(1, 0.15 + Math.max(0, microphoneLevel - 0.3) * 2.2),
-  ].map((level) => Math.round(level * 100) / 100);
+  const microphoneActive = microphoneEnabled && microphoneLevel >= 0.15;
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-bg">
@@ -330,40 +331,92 @@ export function LessonSetupScreen({
                 cameraEnabled ? "block" : "hidden"
               )}
             />
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-xs p-sm">
-              <Button
-                type="button"
-                variant="secondary"
-                aria-pressed={!microphoneEnabled}
-                disabled={mediaStatus !== "ready" || stream?.getAudioTracks().length === 0}
-                onClick={toggleMicrophone}
-              >
-                <span className="inline-flex items-center gap-xs">
-                  {microphoneEnabled ? (
-                    <IconMicrophoneOff size={20} aria-hidden="true" />
-                  ) : (
-                    <IconMicrophone size={20} aria-hidden="true" />
-                  )}
-                  {microphoneEnabled ? "Mute" : "Unmute"}
-                </span>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                aria-pressed={!cameraEnabled}
-                disabled={mediaStatus !== "ready" || stream?.getVideoTracks().length === 0}
-                onClick={toggleCamera}
-              >
-                <span className="inline-flex items-center gap-xs">
-                  {cameraEnabled ? (
-                    <IconCameraOff size={20} aria-hidden="true" />
-                  ) : (
-                    <IconCamera size={20} aria-hidden="true" />
-                  )}
-                  {cameraEnabled ? "Camera off" : "Camera on"}
-                </span>
-              </Button>
-            </div>
+            <Tooltip.Provider delay={400} closeDelay={0}>
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-xs p-sm">
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        aria-label={microphoneEnabled ? "Mute" : "Unmute"}
+                        aria-pressed={!microphoneEnabled}
+                        disabled={mediaStatus !== "ready" || stream?.getAudioTracks().length === 0}
+                        onClick={toggleMicrophone}
+                        className="min-w-control px-0"
+                      >
+                        {microphoneEnabled ? (
+                          <IconMicrophone
+                            data-testid="lesson-microphone-on-icon"
+                            size={20}
+                            stroke={1.75}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <IconMicrophoneOff
+                            data-testid="lesson-microphone-off-icon"
+                            size={20}
+                            stroke={1.75}
+                            aria-hidden="true"
+                          />
+                        )}
+                      </Button>
+                    }
+                  />
+                  <Tooltip.Portal>
+                    <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
+                      <Tooltip.Popup
+                        role="tooltip"
+                        className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+                      >
+                        {microphoneEnabled ? "Mute" : "Unmute"}
+                      </Tooltip.Popup>
+                    </Tooltip.Positioner>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        aria-label={cameraEnabled ? "Turn camera off" : "Turn camera on"}
+                        aria-pressed={!cameraEnabled}
+                        disabled={mediaStatus !== "ready" || stream?.getVideoTracks().length === 0}
+                        onClick={toggleCamera}
+                        className="min-w-control px-0"
+                      >
+                        {cameraEnabled ? (
+                          <IconCamera
+                            data-testid="lesson-camera-on-icon"
+                            size={20}
+                            stroke={1.75}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <IconCameraOff
+                            data-testid="lesson-camera-off-icon"
+                            size={20}
+                            stroke={1.75}
+                            aria-hidden="true"
+                          />
+                        )}
+                      </Button>
+                    }
+                  />
+                  <Tooltip.Portal>
+                    <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
+                      <Tooltip.Popup
+                        role="tooltip"
+                        className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+                      >
+                        {cameraEnabled ? "Turn camera off" : "Turn camera on"}
+                      </Tooltip.Popup>
+                    </Tooltip.Positioner>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              </div>
+            </Tooltip.Provider>
           </div>
 
           <details className="rounded-control bg-surface">
@@ -473,19 +526,10 @@ export function LessonSetupScreen({
                     : "Speak to check your microphone"
                   : "Microphone is unavailable or muted"}
               </span>
-              <span className="flex items-end gap-3xs" aria-hidden="true">
-                {meterLevels.map((level, index) => (
-                  <span
-                    key={index}
-                    className={cn(
-                      "w-2xs origin-bottom rounded-pill transition-transform duration-message",
-                      index === 0 ? "h-xs" : index === 1 ? "h-sm" : "h-md",
-                      microphoneActive ? "bg-success" : "bg-foreground opacity-30"
-                    )}
-                    style={{ transform: `scaleY(${level})` }}
-                  />
-                ))}
-              </span>
+              <MicrophoneVolumeMeter
+                level={microphoneLevel}
+                active={microphoneActive}
+              />
             </div>
             <div className="flex items-center gap-sm py-sm">
               <IconPlugConnected size={20} aria-hidden="true" />

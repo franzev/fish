@@ -4,7 +4,7 @@ import { authRedirects } from "@/features/auth/redirects";
 import { getAuthenticatedShellProfile } from "@/features/auth/server";
 import { friendsFeatureEnabled } from "@/features/friends/server";
 import { redirect } from "next/navigation";
-import { CallProvider } from "@/features/calls";
+import { CallPopover, CallProvider } from "@/features/calls";
 import { NotificationProvider } from "@/features/notifications";
 import { getNotificationShellData } from "@/features/notifications/server";
 import { PresenceProvider } from "@/features/presence/components/presence-provider/presence-provider";
@@ -48,7 +48,6 @@ export default async function AuthenticatedLayout({
       >
         <CallProvider
           userId={profile.userId}
-          homeHref={profile.role === "coach" ? "/coach" : "/home"}
         >
           <ChatIdentityGuard userId={profile.userId} />
           <AppShell
@@ -67,6 +66,7 @@ export default async function AuthenticatedLayout({
           >
             {children}
           </AppShell>
+          <CallPopover />
         </CallProvider>
       </NotificationProvider>
     </PresenceProvider>
