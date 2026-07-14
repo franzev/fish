@@ -8,6 +8,7 @@ import {
   markReadStateAction,
   refreshConversationAction,
   refreshMessagesAction,
+  refreshUnreadSummaryAction,
   reportGifAction,
   sendMessageAction,
   searchChatMessagesAction,
@@ -69,6 +70,7 @@ export default async function ChannelPage({
       toggleReactionAction={toggleReactionAction}
       reportGifAction={reportGifAction}
       markReadStateAction={markReadStateAction}
+      refreshUnreadSummaryAction={refreshUnreadSummaryAction}
       refreshMessagesAction={refreshMessagesAction}
       refreshConversationAction={refreshConversationAction}
       loadOlderMessagesAction={loadOlderMessagesAction}
