@@ -11,6 +11,7 @@ import type { UserRole } from "@fish/core/roles";
 import { Menu } from "@base-ui/react/menu";
 import {
   IconCheck,
+  IconChevronLeft,
   IconChevronRight,
   IconLogout,
   IconUser,
@@ -93,7 +94,13 @@ export function UserMenu({
   }
 
   return (
-    <Menu.Root open={menuOpen} onOpenChange={setMenuOpen}>
+    <Menu.Root
+      open={menuOpen}
+      onOpenChange={(open) => {
+        setMenuOpen(open);
+        if (!open) setStatusOpen(false);
+      }}
+    >
       <Menu.Trigger
         aria-label={`Account menu for ${displayName}`}
         className="flex min-h-control min-w-control flex-none items-center justify-end rounded-control px-2xs md:max-w-control"
@@ -111,86 +118,63 @@ export function UserMenu({
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-20">
           <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
-            <Menu.Item
-              className={menuItemClass}
-              render={<Link href="/profile" />}
-            >
-              <IconUser size={20} stroke={1.75} aria-hidden="true" />
-              Profile
-            </Menu.Item>
-            {showFriends && (
-              <Menu.Item
-                className={menuItemClass}
-                render={<Link href="/friends" />}
-              >
-                <IconUsers size={20} stroke={1.75} aria-hidden="true" />
-                Friends
-              </Menu.Item>
-            )}
-            <Menu.SubmenuRoot open={statusOpen} onOpenChange={setStatusOpen}>
-              <Menu.SubmenuTrigger className={menuItemClass}>
-                <PresenceIndicator
-                  status={presence.displayStatus}
-                  label={presence.displayLabel}
-                  size={18}
-                />
-                <span className="flex min-w-0 flex-1 items-baseline justify-between gap-sm">
-                  <span>Status</span>
-                  <span className="truncate text-muted">
-                    {presence.displayLabel}
+            {statusOpen ? (
+              <>
+                <Menu.Item
+                  closeOnClick={false}
+                  className={menuItemClass}
+                  onClick={() => setStatusOpen(false)}
+                >
+                  <IconChevronLeft size={18} stroke={1.75} aria-hidden="true" />
+                  Back to account
+                </Menu.Item>
+                <Menu.RadioGroup aria-label="Status" value={presence.preference}>
+                  {statusOptions.map((option) => (
+                    <Menu.RadioItem
+                      key={option.preference}
+                      value={option.preference}
+                      closeOnClick={false}
+                      disabled={presence.changing}
+                      className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
+                      onClick={() => void chooseStatus(option.preference)}
+                    >
+                      <PresenceIndicator status={option.status} label={option.label} size={18} />
+                      <span className="min-w-0">
+                        <span className="block text-ui-sm">{option.label}</span>
+                        <span className="block text-ui-xs text-body">{option.detail}</span>
+                      </span>
+                      {presence.preference === option.preference && <IconCheck size={18} stroke={2} aria-label="Selected" />}
+                    </Menu.RadioItem>
+                  ))}
+                </Menu.RadioGroup>
+                {presence.notice && <p className="px-sm py-2xs text-ui-sm text-notice">{presence.notice}</p>}
+              </>
+            ) : (
+              <>
+                <Menu.Item className={menuItemClass} render={<Link href="/profile" />}>
+                  <IconUser size={20} stroke={1.75} aria-hidden="true" />
+                  Profile
+                </Menu.Item>
+                {showFriends && (
+                  <Menu.Item className={menuItemClass} render={<Link href="/friends" />}>
+                    <IconUsers size={20} stroke={1.75} aria-hidden="true" />
+                    Friends
+                  </Menu.Item>
+                )}
+                <Menu.Item closeOnClick={false} className={menuItemClass} onClick={() => setStatusOpen(true)}>
+                  <PresenceIndicator status={presence.displayStatus} label={presence.displayLabel} size={18} />
+                  <span className="flex min-w-0 flex-1 items-baseline justify-between gap-sm">
+                    <span>Status</span>
+                    <span className="truncate text-body">{presence.displayLabel}</span>
                   </span>
-                </span>
-                <IconChevronRight size={18} stroke={1.75} aria-hidden="true" />
-              </Menu.SubmenuTrigger>
-              <Menu.Portal>
-                <Menu.Positioner side="right" align="start" sideOffset={4} className="z-30">
-                  <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
-                    <Menu.RadioGroup value={presence.preference}>
-                      {statusOptions.map((option) => (
-                        <Menu.RadioItem
-                          key={option.preference}
-                          value={option.preference}
-                          closeOnClick={false}
-                          disabled={presence.changing}
-                          className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
-                          onClick={() => void chooseStatus(option.preference)}
-                        >
-                          <PresenceIndicator
-                            status={option.status}
-                            label={option.label}
-                            size={18}
-                          />
-                          <span className="min-w-0">
-                            <span className="block text-ui-sm">{option.label}</span>
-                            <span className="block text-ui-xs text-muted">
-                              {option.detail}
-                            </span>
-                          </span>
-                          {presence.preference === option.preference && (
-                            <IconCheck
-                              size={18}
-                              stroke={2}
-                              aria-label="Selected"
-                            />
-                          )}
-                        </Menu.RadioItem>
-                      ))}
-                    </Menu.RadioGroup>
-                    {presence.notice && (
-                      <p className="px-sm py-2xs text-ui-sm text-notice">
-                        {presence.notice}
-                      </p>
-                    )}
-                  </Menu.Popup>
-                </Menu.Positioner>
-              </Menu.Portal>
-            </Menu.SubmenuRoot>
-            <Menu.Item className={menuItemClass} onClick={signOut}>
-              <IconLogout size={20} stroke={1.75} aria-hidden="true" />
-              Sign out
-            </Menu.Item>
-            {notice && (
-              <p className="px-sm py-2xs text-ui-sm text-notice">{notice}</p>
+                  <IconChevronRight size={18} stroke={1.75} aria-hidden="true" />
+                </Menu.Item>
+                <Menu.Item className={menuItemClass} onClick={signOut}>
+                  <IconLogout size={20} stroke={1.75} aria-hidden="true" />
+                  Sign out
+                </Menu.Item>
+                {notice && <p className="px-sm py-2xs text-ui-sm text-notice">{notice}</p>}
+              </>
             )}
           </Menu.Popup>
         </Menu.Positioner>
