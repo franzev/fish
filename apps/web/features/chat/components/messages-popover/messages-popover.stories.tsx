@@ -5,18 +5,19 @@ import { MessagesPopover } from "./messages-popover";
 
 const preview: MessagePopoverPreview = {
   conversationId: "00000000-0000-4000-8000-000000000001",
-  participant: { id: "coach-dana", displayName: "Coach Dana" },
+  participant: { id: "coach-dana", displayName: "Coach Dana", role: "coach" },
   latestMessage: {
     senderId: "coach-dana",
     text: "You used that phrase naturally. Nice work.",
     createdAt: "2026-07-14T08:33:00.000Z",
   },
+  unreadCount: 3,
 };
 
 const loaded = async (): Promise<MessagePopoverActionState> => ({
   status: "sent",
   values: {},
-  preview,
+  previews: [preview],
 });
 
 async function openMessages(canvasElement: HTMLElement) {
@@ -28,7 +29,6 @@ const meta = {
   component: MessagesPopover,
   parameters: { layout: "centered" },
   args: {
-    conversationId: preview.conversationId,
     unreadCount: 3,
     loadPreviewAction: loaded,
   },
@@ -52,7 +52,7 @@ export const EmptyConversation: Story = {
     loadPreviewAction: async () => ({
       status: "sent",
       values: {},
-      preview: { ...preview, latestMessage: null },
+      previews: [{ ...preview, latestMessage: null }],
     }),
   },
   play: async ({ canvasElement }) => openMessages(canvasElement),
@@ -67,19 +67,17 @@ export const LoadFailure: Story = {
   args: { loadPreviewAction: async () => { throw new Error("offline"); } },
   play: async ({ canvasElement }) => openMessages(canvasElement),
 };
-export const LinkOnlyFallback: Story = {
-  args: { conversationId: null, loadPreviewAction: undefined },
-};
+export const LinkOnlyFallback: Story = { args: { loadPreviewAction: undefined } };
 export const HighUnreadAndLongName: Story = {
   args: {
     unreadCount: 128,
     loadPreviewAction: async () => ({
       status: "sent",
       values: {},
-      preview: {
+      previews: [{
         ...preview,
-        participant: { id: "coach-long", displayName: "Coach Alexandria Santos-Rivera" },
-      },
+        participant: { id: "coach-long", displayName: "Coach Alexandria Santos-Rivera", role: "coach" },
+      }],
     }),
   },
   play: async ({ canvasElement }) => openMessages(canvasElement),

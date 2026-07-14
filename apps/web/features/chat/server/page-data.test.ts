@@ -10,7 +10,10 @@ vi.mock("@/lib/services/runtime/server", () => ({
   getServerServices: getServerServicesMock,
 }));
 
-import { getCallChatData } from "./page-data";
+import {
+  getCallChatData,
+  getDirectConversationPreviews,
+} from "./page-data";
 
 const callId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
@@ -112,5 +115,44 @@ describe("getCallChatData", () => {
     );
 
     await expect(getCallChatData(callId)).rejects.toBe(error);
+  });
+});
+
+describe("getDirectConversationPreviews", () => {
+  it("resolves participant avatars without loading full conversations", async () => {
+    const listDirectConversations = vi.fn().mockResolvedValue({
+      ok: true,
+      data: [{
+        conversationId: "conversation-friend",
+        participant: {
+          id: "friend-1",
+          displayName: "Sam Okafor",
+          role: "client",
+        },
+        latestMessage: null,
+        unreadCount: 0,
+      }],
+    });
+    const resolveUrls = vi.fn().mockResolvedValue([
+      { profileId: "friend-1", url: "https://example.test/friend.png" },
+    ]);
+    const services = {
+      database: { chat: { listDirectConversations } },
+      avatars: { resolveUrls },
+    } as unknown as AppServices;
+
+    await expect(getDirectConversationPreviews(services)).resolves.toEqual([{
+      conversationId: "conversation-friend",
+      participant: {
+        id: "friend-1",
+        displayName: "Sam Okafor",
+        role: "client",
+        avatarUrl: "https://example.test/friend.png",
+      },
+      latestMessage: null,
+      unreadCount: 0,
+    }]);
+    expect(listDirectConversations).toHaveBeenCalledTimes(1);
+    expect(resolveUrls).toHaveBeenCalledWith(["friend-1"], "thumbnail");
   });
 });

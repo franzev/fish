@@ -176,7 +176,6 @@ export function AppShell({
   const attention = useOptionalNotifications()?.attention ?? [];
   const navItems = getNavItems(role);
   const channelAttention = attention.filter((item) => item.surface === "channel");
-  const directAttention = attention.find((item) => item.surface === "direct");
   const directUnread = attention
     .filter((item) => item.surface === "direct")
     .reduce((total, item) => total + item.unreadCount, 0);
@@ -247,7 +246,6 @@ export function AppShell({
         <div className="flex shrink-0 items-center gap-3xs">
           {role === "client" && (
             <MessagesPopover
-              conversationId={directAttention?.conversationId ?? null}
               unreadCount={directUnread}
               active={messageSurface}
               loadPreviewAction={loadMessagePopoverAction}

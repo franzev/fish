@@ -73,10 +73,15 @@ describe("MessagesPopover", () => {
   });
 
   it("shows a calm caught-up state in the Unread filter", async () => {
+    const caughtUp = previewResult();
+    caughtUp.previews = caughtUp.previews?.map((preview) => ({
+      ...preview,
+      unreadCount: 0,
+    }));
     render(
       <MessagesPopover
         unreadCount={0}
-        loadPreviewAction={vi.fn(async () => previewResult())}
+        loadPreviewAction={vi.fn(async () => caughtUp)}
       />
     );
 

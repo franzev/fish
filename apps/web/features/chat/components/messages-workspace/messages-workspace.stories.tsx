@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { ClientChatData } from "@/lib/services";
+import type { ClientChatData, ClientDirectConversationPreview } from "@/lib/services";
 import { MessagesWorkspace } from "./messages-workspace";
 
 const conversationId = "00000000-0000-4000-8000-000000000001";
@@ -21,6 +21,16 @@ const chat: ClientChatData = {
     },
   ],
 };
+const conversations: ClientDirectConversationPreview[] = [{
+  conversationId,
+  participant: chat.participant,
+  latestMessage: {
+    senderId: "client-1",
+    text: "I’ll practice that before our next lesson.",
+    createdAt: "2026-07-14T08:33:00.000Z",
+  },
+  unreadCount: 0,
+}];
 
 const meta = {
   title: "Chat/MessagesWorkspace",
@@ -28,6 +38,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     chat,
+    conversations,
     children: (
       <main className="flex min-h-chat-panel flex-1 items-center justify-center p-md">
         <p className="text-ui text-body">Conversation content</p>
@@ -48,6 +59,14 @@ export const CoachView: Story = {
       currentUserRole: "coach",
       currentUserDisplayName: "Coach Dana",
       participant: { id: "client-1", displayName: "Alex Rivera", role: "client" },
+    },
+  },
+};
+export const FriendView: Story = {
+  args: {
+    chat: {
+      ...chat,
+      participant: { id: "friend-1", displayName: "Sam Okafor", role: "client" },
     },
   },
 };
