@@ -1,7 +1,6 @@
 "use client";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useActionState, useSyncExternalStore } from "react";
 import {
@@ -62,11 +61,11 @@ export function EditProfileForm({
   );
 
   return (
-    <Card className="w-full max-w-form p-lg">
-      <h2 className="text-heading-sm">Edit profile</h2>
-      <form action={formAction} className="mt-lg space-y-lg">
-        <div className="flex items-center justify-between gap-sm">
-          <div className="flex items-center gap-sm">
+    <div className="w-full">
+      <h1 className="text-heading-sm">Edit profile</h1>
+      <form action={formAction} className="mt-xl">
+        <div className="space-y-lg">
+          <div className="flex items-center gap-md">
             <Avatar
               profileId={userId}
               src={avatarUrl ?? undefined}
@@ -74,58 +73,60 @@ export function EditProfileForm({
               size="lg"
               alt=""
             />
-            <span className="text-ui-sm font-medium text-foreground">Profile photo</span>
+            {avatarEnabled && (
+              <Link
+                href="/profile/avatar"
+                className={buttonVariants({ variant: "ghost" })}
+              >
+                Change photo
+              </Link>
+            )}
           </div>
-          {avatarEnabled && (
-            <Link
-              href="/profile/avatar"
-              className={buttonVariants({ variant: "secondary" })}
-            >
-              Change photo
-            </Link>
+          <Input
+            label="Display name"
+            name="displayName"
+            autoComplete="name"
+            defaultValue={state.values.displayName}
+            error={state.errors?.displayName?.[0]}
+            reserveMessageSpace={false}
+            required
+          />
+          {role === "client" && (
+            <Input
+              label="English goal"
+              name="goal"
+              defaultValue={state.values.goal}
+              hint="A quick note for your coach, optional."
+            />
+          )}
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="timezone" value={timezone} />
+          {role === "client" && (
+            <div className="flex flex-wrap items-baseline justify-between gap-xs text-ui-sm">
+              <span className="font-medium text-foreground">
+                Locale and timezone
+              </span>
+              <span className="text-muted">
+                {locale} · {timezone}
+              </span>
+            </div>
           )}
         </div>
-        <Input
-          label="Display name"
-          name="displayName"
-          autoComplete="name"
-          defaultValue={state.values.displayName}
-          error={state.errors?.displayName?.[0]}
-          reserveMessageSpace={false}
-          required
-        />
-        {role === "client" && (
-          <Input
-            label="What are you working toward with your English?"
-            name="goal"
-            defaultValue={state.values.goal}
-            hint="A quick note for your coach, optional."
-          />
-        )}
-        <input type="hidden" name="locale" value={locale} />
-        <input type="hidden" name="timezone" value={timezone} />
-        {role === "client" && (
-          <div className="w-full">
-            <span className="mb-xs block text-ui-sm font-medium text-foreground">
-              Locale &amp; timezone
-            </span>
-            <p className="text-ui text-body">
-              {locale} · {timezone}
-            </p>
-            <p className="mt-2xs text-ui-sm text-muted">
-              Detected from your browser.
-            </p>
-          </div>
-        )}
         {state.notice && (
-          <p className="flex items-center gap-nudge text-ui-sm text-notice">
+          <p className="mt-lg flex items-center gap-nudge text-ui-sm text-notice">
             {state.notice}
           </p>
         )}
-        <Button type="submit" variant="primary" fullWidth loading={pending}>
-          Save
+        <Button
+          type="submit"
+          variant="primary"
+          fullWidth
+          loading={pending}
+          className="mt-xl"
+        >
+          Save changes
         </Button>
       </form>
-    </Card>
+    </div>
   );
 }
