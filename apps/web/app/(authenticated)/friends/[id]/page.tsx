@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { Avatar } from "@/features/chat";
 import { PresenceSummary } from "@/features/presence/components/presence-summary/presence-summary";
 import { CallEntryAction } from "@/features/calls";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function FriendDetailPage({
   params,
@@ -64,10 +65,20 @@ export default async function FriendDetailPage({
         @{data.friend.friend.username}
       </p>
       <div className="flex flex-col gap-lg">
+        {data.conversationId && (
+          <Link
+            href={`/messages/${data.conversationId}`}
+            aria-label={`Message ${data.friend.friend.displayName}`}
+            className={buttonVariants({ variant: "primary", fullWidth: true })}
+          >
+            Message
+          </Link>
+        )}
         <CallEntryAction
           recipientId={data.friend.friend.id}
           recipientName={data.friend.friend.displayName}
           label={`Call ${data.friend.friend.displayName}`}
+          variant="secondary"
         />
         <FriendSafetyActions friend={data.friend.friend} />
       </div>

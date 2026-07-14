@@ -14,9 +14,13 @@ import {
   sendMessageAction,
   toggleReactionAction,
 } from "@/features/chat/server";
-import { getChatPageData } from "@/features/chat/server/page-data";
+import {
+  getChatPageData,
+  getDirectConversationPreviews,
+} from "@/features/chat/server/page-data";
 import { authRedirects } from "@/features/auth/redirects";
 import { notFound, redirect } from "next/navigation";
+import { getServerServices } from "@/lib/services/runtime/server";
 
 export default async function DirectMessagePage({
   params,
@@ -26,7 +30,11 @@ export default async function DirectMessagePage({
   searchParams: Promise<{ message?: string }>;
 }) {
   const [{ id }, { message: focusMessageId }] = await Promise.all([params, searchParams]);
-  const data = await getChatPageData(undefined, undefined, id);
+  const services = await getServerServices();
+  const [data, conversations] = await Promise.all([
+    getChatPageData(services, undefined, id),
+    getDirectConversationPreviews(services),
+  ]);
   if (!data) redirect(authRedirects.signedOut);
   if (!data.chat) {
     return (
@@ -39,7 +47,7 @@ export default async function DirectMessagePage({
   if (data.chat.kind !== "direct") notFound();
 
   return (
-    <MessagesWorkspace chat={data.chat}>
+    <MessagesWorkspace chat={data.chat} conversations={conversations}>
       <ChatClient
         chat={data.chat}
         focusMessageId={focusMessageId ?? null}

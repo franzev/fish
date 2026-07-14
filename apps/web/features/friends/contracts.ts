@@ -35,6 +35,7 @@ export interface FriendDetailData {
   role: UserRole;
   userId: string;
   friend: FriendListItem | null;
+  conversationId: string | null;
 }
 
 export interface BlockedPeoplePageData {

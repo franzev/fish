@@ -445,6 +445,50 @@ async function main() {
       friendsOfB?.[0]?.friend_id === a.userId,
   );
 
+  const { data: friendProfileRows, error: friendProfileError } = await a.client
+    .from("profiles")
+    .select("id, email")
+    .eq("id", b.userId);
+  report(
+    "friendship does not expose the other client's private profile row",
+    !friendProfileError && friendProfileRows?.length === 0,
+    friendProfileError?.message ?? JSON.stringify(friendProfileRows),
+  );
+
+  const { data: directPreviews, error: directPreviewsError } = await a.client.rpc(
+    "list_direct_conversation_previews",
+  );
+  const friendPreview = directPreviews?.find(
+    (preview) => preview.participant_id === b.userId,
+  );
+  report(
+    "accepted friends receive a display-safe direct-conversation preview",
+    !directPreviewsError &&
+      !!friendPreview &&
+      Object.keys(friendPreview).every((key) => [
+        "conversation_id",
+        "participant_id",
+        "participant_role",
+        "participant_display_name",
+        "latest_message_sender_id",
+        "latest_message_text",
+        "latest_message_created_at",
+        "unread_count",
+      ].includes(key)),
+    directPreviewsError?.message ?? JSON.stringify(friendPreview),
+  );
+  const friendConversationId = friendPreview?.conversation_id;
+  const { data: attentionWhileFriends } = await a.client.rpc(
+    "list_navigation_attention",
+  );
+  report(
+    "the active friend conversation appears in navigation attention",
+    !!friendConversationId && attentionWhileFriends?.some(
+      (item) => item.surface === "direct" &&
+        item.conversation_id === friendConversationId,
+    ),
+  );
+
   const { error: reAddError } = await a.client.rpc("send_friend_request", {
     p_target_id: b.userId,
     p_client_request_id: crypto.randomUUID(),
@@ -500,9 +544,24 @@ async function main() {
     p_target_id: b.userId,
   });
   const { data: friendsAfterRemove } = await b.client.rpc("list_friends", {});
+  const { data: previewsAfterRemove } = await a.client.rpc(
+    "list_direct_conversation_previews",
+  );
+  const { data: attentionAfterRemove } = await a.client.rpc(
+    "list_navigation_attention",
+  );
   report(
     "removing a friend works once and is quiet afterwards",
     removed === true && removedAgain === false && friendsAfterRemove?.length === 0,
+  );
+  report(
+    "ended relationships leave no stale direct preview or attention item",
+    !previewsAfterRemove?.some(
+      (preview) => preview.conversation_id === friendConversationId,
+    ) && !attentionAfterRemove?.some(
+      (item) => item.surface === "direct" &&
+        item.conversation_id === friendConversationId,
+    ),
   );
 
   // --- block wins ---------------------------------------------------------------

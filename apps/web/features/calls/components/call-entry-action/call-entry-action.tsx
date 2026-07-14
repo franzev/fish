@@ -11,12 +11,14 @@ interface CallEntryActionProps {
   recipientId: string;
   recipientName: string;
   label: string;
+  variant?: "primary" | "secondary";
 }
 
 export function CallEntryAction({
   recipientId,
   recipientName,
   label,
+  variant = "primary",
 }: CallEntryActionProps) {
   const { startCall, busy, notice } = useCall();
   const [pendingKind, setPendingKind] = useState<CallKind | null>(null);
@@ -33,6 +35,7 @@ export function CallEntryAction({
       {notice && <Alert tone="notice">{notice}</Alert>}
       <Button
         type="button"
+        variant={variant}
         fullWidth
         loading={pendingKind === "audio"}
         disabled={disabled}

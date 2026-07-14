@@ -70,7 +70,7 @@ async function getCommunityProfileIds(
     "DB-03 community hydration: bulk projection stays display-safe",
     (conversationRows ?? []).every((row) =>
       Object.keys(row).every((key) =>
-        ["conversation_id", "id", "display_name", "username"].includes(key)
+        ["conversation_id", "id", "role", "display_name", "username"].includes(key)
       )
     ),
   );

@@ -150,7 +150,12 @@ export async function getFriendDetailData(
   if (!profile) return null;
 
   if (profile.role !== "client") {
-    return { role: profile.role, userId: profile.userId, friend: null };
+    return {
+      role: profile.role,
+      userId: profile.userId,
+      friend: null,
+      conversationId: null,
+    };
   }
 
   let friend: FriendListItem | null = null;
@@ -167,13 +172,28 @@ export async function getFriendDetailData(
   }
 
   if (friend) {
-    const url = (await resolveAvatarUrlsSafely(
-      services.avatars,
-      [friend.friend.id]
-    ))[0]?.url ?? null;
+    const [avatarItems, conversationsResult] = await Promise.all([
+      resolveAvatarUrlsSafely(services.avatars, [friend.friend.id]),
+      services.database.chat.listDirectConversations(),
+    ]);
+    if (!conversationsResult.ok) throw conversationsResult.error;
+    const url = avatarItems[0]?.url ?? null;
     friend = { ...friend, friend: { ...friend.friend, avatarUrl: url } };
+    return {
+      role: profile.role,
+      userId: profile.userId,
+      friend,
+      conversationId: conversationsResult.data.find(
+        (preview) => preview.participant.id === friend?.friend.id
+      )?.conversationId ?? null,
+    };
   }
-  return { role: profile.role, userId: profile.userId, friend };
+  return {
+    role: profile.role,
+    userId: profile.userId,
+    friend,
+    conversationId: null,
+  };
 }
 
 export async function getBlockedPeoplePageData(
