@@ -51,7 +51,17 @@ describe("UnreadMessageBanner", () => {
     const layout = banner.firstElementChild;
     const button = screen.getByRole("button", { name: "Mark as read" });
 
-    expect(banner).toHaveClass("mt-2xs", "rounded-control", "px-sm");
+    expect(banner).toHaveClass(
+      "absolute",
+      "inset-x-0",
+      "top-0",
+      "z-10",
+      "mx-md",
+      "rounded-b-control",
+      "bg-surface-2",
+      "px-sm"
+    );
+    expect(banner).not.toHaveClass("shrink-0", "rounded-control", "top-xs");
     expect(layout).toHaveClass("min-h-control", "sm:min-h-search-control");
     expect(button).toHaveClass(
       "bg-transparent",

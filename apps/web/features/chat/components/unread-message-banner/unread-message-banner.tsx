@@ -35,7 +35,7 @@ export function UnreadMessageBanner({
   return (
     <section
       aria-label="Unread messages"
-      className="mx-md mt-2xs shrink-0 rounded-control bg-surface-2 px-sm"
+      className="absolute inset-x-0 top-0 z-10 mx-md rounded-b-control bg-surface-2 px-sm"
     >
       <div className="flex min-h-control flex-wrap items-center justify-between gap-2xs sm:min-h-search-control">
         <p
