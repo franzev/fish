@@ -194,8 +194,10 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -213,8 +215,10 @@ export type Database = {
           id?: string
           initiated_by: string
           kind?: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id?: string | null
           provider?: string
           provider_room_name: string
+          relationship_kind?: Database["public"]["Enums"]["call_relationship_kind"]
           status?: Database["public"]["Enums"]["call_status"]
           updated_at?: string
         }
@@ -232,8 +236,10 @@ export type Database = {
           id?: string
           initiated_by?: string
           kind?: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id?: string | null
           provider?: string
           provider_room_name?: string
+          relationship_kind?: Database["public"]["Enums"]["call_relationship_kind"]
           status?: Database["public"]["Enums"]["call_status"]
           updated_at?: string
         }
@@ -264,6 +270,13 @@ export type Database = {
             columns: ["initiated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_lesson_slot_id_fkey"
+            columns: ["lesson_slot_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_slots"
             referencedColumns: ["id"]
           },
         ]
@@ -1633,8 +1646,10 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -1652,6 +1667,10 @@ export type Database = {
       archive_read_notifications: {
         Args: { p_through_change_seq: number }
         Returns: Json
+      }
+      authorize_lesson_media_check: {
+        Args: { p_lesson_slot_id: string }
+        Returns: undefined
       }
       block_user: { Args: { p_target_id: string }; Returns: boolean }
       book_lesson_slot: {
@@ -1690,8 +1709,10 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -1831,8 +1852,10 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -1995,8 +2018,40 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
+          status: Database["public"]["Enums"]["call_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calls"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      initiate_lesson_call: {
+        Args: { p_client_request_id: string; p_lesson_slot_id: string }
+        Returns: {
+          accepted_at: string | null
+          client_id: string
+          client_request_id: string
+          coach_id: string
+          connected_at: string | null
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"] | null
+          ended_at: string | null
+          ended_by: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
+          provider: string
+          provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -2023,8 +2078,10 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -2316,8 +2373,10 @@ export type Database = {
           id: string
           initiated_by: string
           kind: Database["public"]["Enums"]["call_kind"]
+          lesson_slot_id: string | null
           provider: string
           provider_room_name: string
+          relationship_kind: Database["public"]["Enums"]["call_relationship_kind"]
           status: Database["public"]["Enums"]["call_status"]
           updated_at: string
         }
@@ -2539,6 +2598,7 @@ export type Database = {
       call_invitation_status: "invited" | "accepted" | "rejected"
       call_kind: "audio" | "video"
       call_participant_role: "host" | "invitee"
+      call_relationship_kind: "coach_client" | "friend"
       call_status:
         | "ringing"
         | "connecting"
@@ -2706,6 +2766,7 @@ export const Constants = {
       call_invitation_status: ["invited", "accepted", "rejected"],
       call_kind: ["audio", "video"],
       call_participant_role: ["host", "invitee"],
+      call_relationship_kind: ["coach_client", "friend"],
       call_status: [
         "ringing",
         "connecting",
