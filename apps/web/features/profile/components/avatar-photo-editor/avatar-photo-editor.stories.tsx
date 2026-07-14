@@ -26,7 +26,7 @@ const meta = {
   args: {
     enabled: true,
     userId: "user-1",
-    displayName: "Alex Rivera",
+    displayName: "Franz",
     currentAvatarUrl: null,
     hasAvatar: false,
     commands,

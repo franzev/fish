@@ -53,7 +53,7 @@ describe("ClientHomePage", () => {
   it("renders the unassigned empty state and greeting when no coach is assigned (SHEL-02)", async () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
-      firstName: "Alex",
+      firstName: "Franz",
       coachId: null,
       coachName: null,
     });
@@ -61,25 +61,25 @@ describe("ClientHomePage", () => {
     const Page = await ClientHomePage();
     render(Page);
 
-    expect(screen.getByText("Welcome back, Alex")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back, Franz")).toBeInTheDocument();
     expect(
       screen.getByText("We're getting things ready for you.")
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Coach Dana/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Gwyn/)).not.toBeInTheDocument();
   });
 
   it("offers booking as the assigned client's one forward action", async () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
-      firstName: "Alex",
+      firstName: "Franz",
       coachId: "coach-id",
-      coachName: "Coach Dana",
+      coachName: "Gwyn",
     });
 
     const Page = await ClientHomePage();
     render(Page);
 
-    expect(screen.getByText("Welcome back, Alex")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back, Franz")).toBeInTheDocument();
     expect(
       screen.getByText("Your next lesson is ready to book.")
     ).toBeInTheDocument();
@@ -91,9 +91,9 @@ describe("ClientHomePage", () => {
   it("shows the next lesson and a quieter action to book another", async () => {
     getClientHomeDataMock.mockResolvedValueOnce({
       role: "client",
-      firstName: "Alex",
+      firstName: "Franz",
       coachId: "coach-id",
-      coachName: "Coach Dana",
+      coachName: "Gwyn",
     });
     getUpcomingLessonDataMock.mockResolvedValueOnce({ lesson: { id: "lesson-1" } });
     render(await ClientHomePage());

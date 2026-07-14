@@ -11,7 +11,7 @@ function previewResult(): MessagePopoverActionState {
       conversationId: "11111111-1111-4111-8111-111111111111",
       participant: {
         id: "coach-1",
-        displayName: "Coach Dana",
+        displayName: "Gwyn",
         role: "coach",
       },
       latestMessage: {
@@ -60,7 +60,7 @@ describe("MessagesPopover", () => {
     expect(within(dialog).getByRole("button", { name: "Close messages" })).toBeInTheDocument();
 
     await waitFor(() => expect(loadPreviewAction).toHaveBeenCalledWith({}));
-    expect(await within(dialog).findByRole("link", { name: /Coach Dana/ })).toHaveAttribute(
+    expect(await within(dialog).findByRole("link", { name: /Gwyn/ })).toHaveAttribute(
       "href",
       "/messages/11111111-1111-4111-8111-111111111111"
     );
@@ -87,7 +87,7 @@ describe("MessagesPopover", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Messages" }));
     const dialog = await screen.findByRole("dialog");
-    await within(dialog).findByRole("link", { name: /Coach Dana/ });
+    await within(dialog).findByRole("link", { name: /Gwyn/ });
     fireEvent.click(within(dialog).getByRole("tab", { name: "Unread" }));
 
     expect(within(dialog).getByText("No unread messages")).toBeInTheDocument();

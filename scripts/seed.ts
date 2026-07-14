@@ -495,11 +495,11 @@ async function seedChatConversations(
 async function seedDirectMessages(
   coachId: string,
   directConversations: DirectConversation[],
-  clientIds: { alex: string; sam: string; priya: string },
+  clientIds: { franz: string; sam: string; priya: string },
 ): Promise<void> {
   const threads: Record<string, { sender: "coach" | "client"; body: string }[]> = {
-    [clientIds.alex]: [
-      { sender: "coach", body: "Hi Alex! How did the mock interview practice go yesterday?" },
+    [clientIds.franz]: [
+      { sender: "coach", body: "Hi Franz! How did the mock interview practice go yesterday?" },
       { sender: "client", body: `It went okay! I got stuck on "I have work there for two years" — I think it should be "worked"?` },
       { sender: "coach", body: `Exactly right. Past simple for a finished period: "I worked there for two years." Nice catch.` },
       { sender: "client", body: "Thank you! I keep mixing up have + past tense." },
@@ -517,7 +517,7 @@ async function seedDirectMessages(
       { sender: "client", body: "I like that." },
       { sender: "coach", body: "See you Thursday!" },
       { sender: "client", body: "Just wanted to say thank you, the interview went well today!" },
-      { sender: "coach", body: "That's wonderful news, Alex! How did the past tense practice feel in the moment?" },
+      { sender: "coach", body: "That's wonderful news, Franz! How did the past tense practice feel in the moment?" },
       { sender: "client", body: "It felt automatic actually, I didn't even think about it." },
       { sender: "coach", body: "That's the goal exactly — the grammar becomes invisible once it's practiced enough." },
       { sender: "client", body: "Should we start something new next week?" },
@@ -993,7 +993,7 @@ async function main(): Promise<void> {
 
   const directConversations = await seedChatConversations(coachId, coach2Id, clientIds, extraIds);
   await seedDirectMessages(coachId, directConversations, {
-    alex: clientIds[0],
+    franz: clientIds[0],
     sam: clientIds[1],
     priya: clientIds[2],
   });

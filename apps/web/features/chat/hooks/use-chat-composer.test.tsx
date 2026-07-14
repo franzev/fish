@@ -9,10 +9,10 @@ const conversationA: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
   currentUserId: "client-1",
   currentUserRole: "client",
-  currentUserDisplayName: "Alex Rivera",
+  currentUserDisplayName: "Franz",
   participant: {
     id: "coach-1",
-    displayName: "Coach Dana",
+    displayName: "Gwyn",
     role: "coach",
   },
   messages: [],

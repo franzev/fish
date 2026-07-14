@@ -7,8 +7,8 @@ const chat: ClientChatData = {
   conversationId,
   currentUserId: "client-1",
   currentUserRole: "client",
-  currentUserDisplayName: "Alex Rivera",
-  participant: { id: "coach-1", displayName: "Coach Dana", role: "coach" },
+  currentUserDisplayName: "Franz",
+  participant: { id: "coach-1", displayName: "Gwyn", role: "coach" },
   messages: [
     {
       id: "message-1",
@@ -57,8 +57,8 @@ export const CoachView: Story = {
       ...chat,
       currentUserId: "coach-1",
       currentUserRole: "coach",
-      currentUserDisplayName: "Coach Dana",
-      participant: { id: "client-1", displayName: "Alex Rivera", role: "client" },
+      currentUserDisplayName: "Gwyn",
+      participant: { id: "client-1", displayName: "Franz", role: "client" },
     },
   },
 };

@@ -93,7 +93,7 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
     getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "client-1" } });
     findProfileByIdMock.mockResolvedValue({
       ok: true,
-      data: { role: "client", displayName: "Alex Rivera" },
+      data: { role: "client", displayName: "Franz" },
     });
     findClientProfileByIdMock.mockResolvedValue({
       ok: true,
@@ -108,7 +108,7 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
     await expect(getAuthenticatedShellProfile()).resolves.toEqual({
       userId: "client-1",
       role: "client",
-      displayName: "Alex Rivera",
+      displayName: "Franz",
       avatarPath: null,
       avatarThumbnailPath: null,
       avatarUrl: null,

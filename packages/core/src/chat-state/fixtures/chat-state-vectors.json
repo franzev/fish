@@ -856,11 +856,11 @@
         "conversationId": "conversation-1",
         "messageId": "message-7",
         "currentUserId": "client-1",
-        "participantName": "Coach Dana",
-        "currentUserName": "Alex",
+        "participantName": "Gwyn",
+        "currentUserName": "Franz",
         "expected": {
           "id": "message-7",
-          "authorName": "Coach Dana",
+          "authorName": "Gwyn",
           "snippet": "Please repeat the final sentence."
         }
       }

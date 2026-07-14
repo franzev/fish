@@ -173,9 +173,9 @@ describe("MemberProfilePopover", () => {
   it("keeps coach-related previews informational", async () => {
     const coach = {
       ...member,
-      id: "coach-dana",
-      displayName: "Coach Dana",
-      username: "coach_dana",
+      id: "gwyn",
+      displayName: "Gwyn",
+      username: "gwyn",
       role: "coach" as const,
     };
     const { repository, searchCandidate } = makeRepository();

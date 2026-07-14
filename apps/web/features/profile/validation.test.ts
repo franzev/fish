@@ -21,7 +21,7 @@ describe("editProfileSchema", () => {
 
   it("accepts a valid payload", () => {
     const result = editProfileSchema.safeParse({
-      displayName: "Alex Rivera",
+      displayName: "Franz",
       goal: "Practice speaking in meetings",
       locale: "en-US",
       timezone: "America/New_York",
@@ -32,7 +32,7 @@ describe("editProfileSchema", () => {
 
   it("strips/ignores any level key (not in the schema, defense-in-depth)", () => {
     const result = editProfileSchema.safeParse({
-      displayName: "Alex Rivera",
+      displayName: "Franz",
       goal: "",
       locale: "en-US",
       timezone: "America/New_York",
@@ -47,7 +47,7 @@ describe("editProfileSchema", () => {
 
   it("trims displayName/goal/locale/timezone", () => {
     const result = editProfileSchema.safeParse({
-      displayName: "  Alex Rivera  ",
+      displayName: "  Franz  ",
       goal: "  Practice speaking  ",
       locale: "  en-US  ",
       timezone: "  America/New_York  ",
@@ -55,7 +55,7 @@ describe("editProfileSchema", () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.displayName).toBe("Alex Rivera");
+      expect(result.data.displayName).toBe("Franz");
       expect(result.data.goal).toBe("Practice speaking");
       expect(result.data.locale).toBe("en-US");
       expect(result.data.timezone).toBe("America/New_York");

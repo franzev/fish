@@ -5,9 +5,9 @@ import { MessagesPopover } from "./messages-popover";
 
 const preview: MessagePopoverPreview = {
   conversationId: "00000000-0000-4000-8000-000000000001",
-  participant: { id: "coach-dana", displayName: "Coach Dana", role: "coach" },
+  participant: { id: "gwyn", displayName: "Gwyn", role: "coach" },
   latestMessage: {
-    senderId: "coach-dana",
+    senderId: "gwyn",
     text: "You used that phrase naturally. Nice work.",
     createdAt: "2026-07-14T08:33:00.000Z",
   },

@@ -20,7 +20,7 @@ function callValue() {
     ...state.current,
     callId: "call-1",
     counterpartId: "client-1",
-    counterpartName: "Alex",
+    counterpartName: "Franz",
     direction: "outgoing",
     status: "active",
   };
@@ -91,7 +91,7 @@ describe("CallPopover", () => {
 
     render(<CallPopover />);
 
-    expect(screen.getByRole("heading", { name: "In call with Alex" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "In call with Franz" })).toBeVisible();
     expect(screen.getByText("Voice detected")).toBeVisible();
     expect(screen.getByText("Listening")).toBeVisible();
     expect(screen.getByRole("button", { name: "Mute" })).toBeVisible();
@@ -137,7 +137,7 @@ describe("CallPopover", () => {
 
     render(<CallPopover />);
 
-    expect(screen.getByLabelText("Alex video")).toBeVisible();
+    expect(screen.getByLabelText("Franz video")).toBeVisible();
     expect(screen.getByLabelText("Your video preview")).toBeInTheDocument();
     expect(screen.getByTestId("microphone-on-icon")).toBeInTheDocument();
     expect(screen.getByTestId("camera-on-icon")).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe("CallPopover", () => {
     useCallMock.mockReturnValue(value);
 
     const view = render(<CallPopover />);
-    const video = screen.getByLabelText("Alex video");
+    const video = screen.getByLabelText("Franz video");
     expect(attach).toHaveBeenCalledWith(video);
 
     view.unmount();

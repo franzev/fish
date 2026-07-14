@@ -8,7 +8,7 @@ const meta = {
   decorators: [(Story) => <div className="w-notifications bg-surface"><Story /></div>],
   args: {
     href: "/messages",
-    participant: { id: "coach-dana", displayName: "Coach Dana" },
+    participant: { id: "gwyn", displayName: "Gwyn" },
     preview: "You: I’ll practice that before our next lesson.",
     latestMessageAt: "2026-07-14T08:33:00.000Z",
     unreadCount: 3,

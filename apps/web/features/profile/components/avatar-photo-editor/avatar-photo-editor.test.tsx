@@ -38,7 +38,7 @@ describe("AvatarPhotoEditor", () => {
       <AvatarPhotoEditor
         enabled
         userId="user-1"
-        displayName="Alex Rivera"
+        displayName="Franz"
         currentAvatarUrl={null}
         hasAvatar
       />
@@ -59,7 +59,7 @@ describe("AvatarPhotoEditor", () => {
       <AvatarPhotoEditor
         enabled={false}
         userId="user-1"
-        displayName="Alex Rivera"
+        displayName="Franz"
         currentAvatarUrl={null}
         hasAvatar={false}
       />
@@ -75,7 +75,7 @@ describe("AvatarPhotoEditor", () => {
       <AvatarPhotoEditor
         enabled
         userId="user-1"
-        displayName="Alex Rivera"
+        displayName="Franz"
         currentAvatarUrl={null}
         hasAvatar={false}
       />

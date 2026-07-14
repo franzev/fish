@@ -26,7 +26,7 @@ describe("createProfileActionHandlers", () => {
           ok: true,
           data: {
             id: "client-1",
-            displayName: "Alex Rivera",
+            displayName: "Franz",
             email: "alex@example.com",
             role: "client",
             avatarPath: null,
@@ -42,7 +42,7 @@ describe("createProfileActionHandlers", () => {
       redirect,
     });
     const formData = new FormData();
-    formData.set("displayName", "Alex Rivera");
+    formData.set("displayName", "Franz");
     formData.set("goal", "Speak in meetings");
     formData.set("locale", "en-US");
     formData.set("timezone", "America/New_York");
@@ -63,7 +63,7 @@ describe("createProfileActionHandlers", () => {
 
     expect(updateDisplayName).toHaveBeenCalledWith(
       "client-1",
-      "Alex Rivera"
+      "Franz"
     );
     expect(updateSafeFields).toHaveBeenCalledWith("client-1", {
       goal: "Speak in meetings",

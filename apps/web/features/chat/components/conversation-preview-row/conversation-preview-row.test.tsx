@@ -8,7 +8,7 @@ describe("ConversationPreviewRow", () => {
     render(
       <ConversationPreviewRow
         href="/messages/conversation-1"
-        participant={{ id: "coach-1", displayName: "Coach Dana" }}
+        participant={{ id: "coach-1", displayName: "Gwyn" }}
         preview="How did practice feel?"
         latestMessageAt="2026-07-14T08:33:00.000Z"
         unreadCount={3}
@@ -18,7 +18,7 @@ describe("ConversationPreviewRow", () => {
       />
     );
 
-    const link = screen.getByRole("link", { name: /Coach Dana/ });
+    const link = screen.getByRole("link", { name: /Gwyn/ });
     expect(link).toHaveAttribute("href", "/messages/conversation-1");
     expect(link).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("How did practice feel?")).toBeVisible();

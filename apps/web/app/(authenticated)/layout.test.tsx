@@ -96,7 +96,7 @@ describe("AuthenticatedLayout", () => {
     getAuthenticatedShellProfileMock.mockResolvedValueOnce({
       userId: "user-1",
       role: "client",
-      displayName: "Alex Rivera",
+      displayName: "Franz",
     });
 
     const Layout = await AuthenticatedLayout({ children: <div>Content</div> });
@@ -104,9 +104,9 @@ describe("AuthenticatedLayout", () => {
 
     expect(redirectMock).not.toHaveBeenCalled();
     expect(
-      screen.getByRole("button", { name: "Account menu for Alex Rivera" })
+      screen.getByRole("button", { name: "Account menu for Franz" })
     ).toBeInTheDocument();
-    expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
+    expect(screen.queryByText("Franz")).not.toBeInTheDocument();
     expect(screen.getByText("Content")).toBeInTheDocument();
     expect(screen.getByTestId("call-popover")).toBeInTheDocument();
   });

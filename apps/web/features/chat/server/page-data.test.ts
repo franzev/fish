@@ -22,10 +22,10 @@ const chat: ClientChatData = {
   kind: "direct",
   currentUserId: "client-1",
   currentUserRole: "client",
-  currentUserDisplayName: "Alex",
+  currentUserDisplayName: "Franz",
   participant: {
     id: "coach-1",
-    displayName: "Coach Dana",
+    displayName: "Gwyn",
     role: "coach",
   },
   messages: [
@@ -42,8 +42,8 @@ const chat: ClientChatData = {
   searchMembers: [
     {
       id: "coach-1",
-      displayName: "Coach Dana",
-      username: "coach_dana",
+      displayName: "Gwyn",
+      username: "gwyn",
     },
   ],
 };

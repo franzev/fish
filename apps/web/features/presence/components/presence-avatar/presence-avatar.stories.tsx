@@ -6,9 +6,9 @@ const meta = {
   component: PresenceAvatar,
   parameters: { layout: "centered" },
   args: {
-    profileId: "coach-dana",
-    name: "Coach Dana",
-    alt: "Coach Dana",
+    profileId: "gwyn",
+    name: "Gwyn",
+    alt: "Gwyn",
     size: "md",
     status: "online",
     statusLabel: "Online",

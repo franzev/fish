@@ -9,8 +9,8 @@ const meta = {
   args: {
     call: {
       callId: "call-1",
-      counterpartId: "coach-dana",
-      counterpartName: "Coach Dana",
+      counterpartId: "gwyn",
+      counterpartName: "Gwyn",
       kind: "audio",
       status: "active",
       direction: "outgoing",

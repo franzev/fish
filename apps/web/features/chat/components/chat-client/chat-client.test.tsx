@@ -66,10 +66,10 @@ const chat: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
   currentUserId: "client-1",
   currentUserRole: "client",
-  currentUserDisplayName: "Alex Rivera",
+  currentUserDisplayName: "Franz",
   participant: {
     id: "coach-1",
-    displayName: "Coach Dana",
+    displayName: "Gwyn",
     role: "coach",
   },
   messages: [
@@ -389,11 +389,11 @@ describe("ChatClient", () => {
   it("renders the direct assigned conversation without an inbox", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 
-    const heading = screen.getByRole("heading", { name: "Coach Dana" });
+    const heading = screen.getByRole("heading", { name: "Gwyn" });
     expect(heading.closest("div.h-chat-header")).toBeInTheDocument();
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
-    expect(screen.queryByRole("button", { name: /View Coach Dana profile/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /View Gwyn profile/ })).toBeNull();
   });
 
   it("keeps embedded conversations focused on the transcript and composer", () => {
@@ -409,7 +409,7 @@ describe("ChatClient", () => {
       />
     );
 
-    expect(screen.queryByRole("heading", { name: "Coach Dana" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Gwyn" })).toBeNull();
     expect(screen.queryByRole("combobox", { name: "Search messages" })).toBeNull();
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
@@ -579,7 +579,7 @@ describe("ChatClient", () => {
     window.history.replaceState(
       null,
       "",
-      "/channels/general?search=from%3A+coach_dana"
+      "/channels/general?search=from%3A+gwyn"
     );
     const searchMessagesAction = vi.fn().mockResolvedValue({
       status: "sent",
@@ -595,8 +595,8 @@ describe("ChatClient", () => {
           ...chat,
           searchMembers: [{
             id: "coach-1",
-            displayName: "Coach Dana",
-            username: "coach_dana",
+            displayName: "Gwyn",
+            username: "gwyn",
           }],
         }}
         sendMessageAction={vi.fn()}
@@ -775,7 +775,7 @@ describe("ChatClient", () => {
           ...chat.messages[0],
           senderId: "client-1",
           senderRole: "client",
-          senderDisplayName: "Alex Rivera",
+          senderDisplayName: "Franz",
           body: "Hello everyone!",
           clientRequestId: "seed-own",
         },
@@ -787,7 +787,7 @@ describe("ChatClient", () => {
 
     // Own messages join the shared feed with the author's display name, flat
     // monochrome text — never the mine-right primary bubble from direct chat.
-    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+    expect(screen.getByText("Franz")).toBeInTheDocument();
     const body = screen.getByText("Hello everyone!");
     expect(body.className).not.toContain("bg-primary");
     const row = body.closest("li");
@@ -852,7 +852,7 @@ describe("ChatClient", () => {
           id: "message-2",
           senderId: "coach-1",
           senderRole: "coach",
-          senderDisplayName: "Coach Dana",
+          senderDisplayName: "Gwyn",
           body: "Welcome! Introductions are a great place to start.",
           clientRequestId: "seed-2",
           createdAt: "2026-07-06T10:00:00.000Z",
@@ -1049,7 +1049,7 @@ describe("ChatClient", () => {
 
     const messageRow = screen.getByText("How did practice feel today?").closest("li");
     expect(messageRow).not.toBeNull();
-    expect(within(messageRow as HTMLElement).getByText("CD")).toBeInTheDocument();
+    expect(within(messageRow as HTMLElement).getByText("G")).toBeInTheDocument();
   });
 
   it("optimistically sends and clears the draft after success", async () => {
@@ -1393,10 +1393,10 @@ describe("ChatClient", () => {
     });
 
     const typing = await screen.findByRole("status", {
-      name: "Coach Dana is typing",
+      name: "Gwyn is typing",
     });
     expect(typing.querySelectorAll(".animate-typing")).toHaveLength(3);
-    expect(screen.getByText("Coach Dana is typing")).toBeInTheDocument();
+    expect(screen.getByText("Gwyn is typing")).toBeInTheDocument();
   });
 
   it("sends a reply with the selected replied-to message id", async () => {
@@ -1421,7 +1421,7 @@ describe("ChatClient", () => {
     render(<ChatClient chat={chat} sendMessageAction={sendMessageAction} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Reply to message" }));
-    expect(screen.getByText("Replying to Coach Dana")).toBeInTheDocument();
+    expect(screen.getByText("Replying to Gwyn")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Message"), {
       target: { value: "It felt steady." },
     });
@@ -2657,7 +2657,7 @@ describe("ChatClient", () => {
     });
 
     expect(
-      await screen.findByRole("status", { name: "Coach Dana is typing" })
+      await screen.findByRole("status", { name: "Gwyn is typing" })
     ).toBeInTheDocument();
 
     const nextConversationId = "22222222-2222-4222-8222-222222222222";
@@ -2677,9 +2677,9 @@ describe("ChatClient", () => {
 
     // A's typing indicator does not bleed into B, the freshly switched
     // conversation on the same mounted client.
-    expect(screen.queryByText("Coach Dana is typing")).toBeNull();
+    expect(screen.queryByText("Gwyn is typing")).toBeNull();
     expect(
-      screen.queryByRole("status", { name: "Coach Dana is typing" })
+      screen.queryByRole("status", { name: "Gwyn is typing" })
     ).toBeNull();
   });
 

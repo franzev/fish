@@ -102,9 +102,9 @@ export const Client: Story = {
 export const Coach: Story = {
   args: {
     member: {
-      id: "coach-dana",
-      displayName: "Coach Dana",
-      username: "coach_dana",
+      id: "gwyn",
+      displayName: "Gwyn",
+      username: "gwyn",
       role: "coach",
     },
   },

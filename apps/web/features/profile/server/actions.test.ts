@@ -46,7 +46,7 @@ function formDataFrom(values: Record<string, string>): FormData {
 }
 
 const validValues = {
-  displayName: "Alex Rivera",
+  displayName: "Franz",
   goal: "Practice speaking in meetings",
   locale: "en-US",
   timezone: "America/New_York",
@@ -100,7 +100,7 @@ describe("updateProfileAction", () => {
 
     expect(updateDisplayNameMock).toHaveBeenCalledWith(
       "client-1",
-      "Alex Rivera"
+      "Franz"
     );
     expect(updateSafeFieldsMock).toHaveBeenCalledWith(
       "client-1",

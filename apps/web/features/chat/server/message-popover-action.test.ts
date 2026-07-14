@@ -21,7 +21,7 @@ describe("loadMessagePopoverAction", () => {
         conversationId: "11111111-1111-4111-8111-111111111111",
         participant: {
           id: "coach-1",
-          displayName: "Coach Dana",
+          displayName: "Gwyn",
           role: "coach",
           avatarUrl: "https://example.com/avatar.webp",
         },
@@ -41,7 +41,7 @@ describe("loadMessagePopoverAction", () => {
         conversationId: "11111111-1111-4111-8111-111111111111",
         participant: {
           id: "coach-1",
-          displayName: "Coach Dana",
+          displayName: "Gwyn",
           role: "coach",
           avatarUrl: "https://example.com/avatar.webp",
         },

@@ -21,7 +21,7 @@ function services(role: "client" | "coach" = "client") {
       profiles: {
         findById: vi.fn().mockResolvedValue({
           ok: true,
-          data: { role, displayName: role === "client" ? "Alex Rivera" : "Patricia" },
+          data: { role, displayName: role === "client" ? "Franz" : "Patricia" },
         }),
         findDisplayNameById: vi.fn().mockResolvedValue({
           ok: true,

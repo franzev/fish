@@ -28,15 +28,15 @@ describe("AppShell", () => {
 
   it("renders an avatar-only account trigger, with Sign out reachable via the menu", () => {
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
 
     const trigger = screen.getByRole("button", {
-      name: "Account menu for Alex Rivera",
+      name: "Account menu for Franz",
     });
-    expect(within(trigger).queryByText("Alex Rivera")).not.toBeInTheDocument();
+    expect(within(trigger).queryByText("Franz")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
@@ -45,7 +45,7 @@ describe("AppShell", () => {
 
   it("renders one centered content column with max-w-content and mx-auto (D-10)", () => {
     const { container } = render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -59,7 +59,7 @@ describe("AppShell", () => {
   it("gives channel routes the full pane instead of the centered column", () => {
     pathname = generalChannelHref;
     const { container } = render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -74,7 +74,7 @@ describe("AppShell", () => {
   it("gives booking its full focused pane without shell navigation", () => {
     pathname = "/book";
     const { container } = render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Booking content
       </AppShell>
     );
@@ -88,7 +88,7 @@ describe("AppShell", () => {
   it("keeps shell navigation visible on legacy call routes", () => {
     pathname = "/calls/call-1";
     const { container } = render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Compatibility content
       </AppShell>
     );
@@ -102,7 +102,7 @@ describe("AppShell", () => {
     pathname = generalChannelHref;
 
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -132,7 +132,7 @@ describe("AppShell", () => {
     pathname = "/home";
 
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -148,7 +148,7 @@ describe("AppShell", () => {
   it("hydrates persisted client preferences at the shell level", async () => {
     render(
       <AppShell
-        displayName="Alex Rivera"
+        displayName="Franz"
         role="client"
         preferences={{
           themePref: "dark",
@@ -192,7 +192,7 @@ describe("AppShell", () => {
 
   it("gives the logo link a centered accessible target (WR-09)", () => {
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -213,7 +213,7 @@ describe("AppShell", () => {
     pathname = generalChannelHref;
 
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -237,7 +237,7 @@ describe("AppShell", () => {
     pathname = "/home";
 
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
@@ -257,7 +257,7 @@ describe("AppShell", () => {
     pathname = "/coach";
 
     render(
-      <AppShell displayName="Coach Dana" role="coach">
+      <AppShell displayName="Gwyn" role="coach">
         Content
       </AppShell>
     );
@@ -276,13 +276,13 @@ describe("AppShell", () => {
 
   it("opens a menu with a Profile link to /profile for the client display name trigger", () => {
     render(
-      <AppShell displayName="Alex Rivera" role="client">
+      <AppShell displayName="Franz" role="client">
         Content
       </AppShell>
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Account menu for Alex Rivera" })
+      screen.getByRole("button", { name: "Account menu for Franz" })
     );
 
     const profileLink = screen.getByRole("menuitem", { name: "Profile" });
@@ -291,13 +291,13 @@ describe("AppShell", () => {
 
   it("opens the shared Profile view for a coach", () => {
     render(
-      <AppShell displayName="Coach Dana" role="coach">
+      <AppShell displayName="Gwyn" role="coach">
         Content
       </AppShell>
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Account menu for Coach Dana" })
+      screen.getByRole("button", { name: "Account menu for Gwyn" })
     );
 
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();

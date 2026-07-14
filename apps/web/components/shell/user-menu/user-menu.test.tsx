@@ -30,16 +30,16 @@ describe("UserMenu", () => {
   it("uses an avatar-only trigger and keeps status inside one submenu", () => {
     render(
       <UserMenu
-        displayName="Alex Rivera"
+        displayName="Franz"
         role="client"
         friendsNavEnabled
       />
     );
 
     const trigger = screen.getByRole("button", {
-      name: "Account menu for Alex Rivera",
+      name: "Account menu for Franz",
     });
-    expect(within(trigger).queryByText("Alex Rivera")).not.toBeInTheDocument();
+    expect(within(trigger).queryByText("Franz")).not.toBeInTheDocument();
     fireEvent.click(trigger);
 
     const profileLink = screen.getByRole("menuitem", { name: "Profile" });
@@ -66,11 +66,11 @@ describe("UserMenu", () => {
 
   it("shows Profile and Sign out, but not client-only Friends, for a coach", () => {
     render(
-      <UserMenu displayName="Coach Dana" role="coach" friendsNavEnabled />
+      <UserMenu displayName="Gwyn" role="coach" friendsNavEnabled />
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Account menu for Coach Dana" })
+      screen.getByRole("button", { name: "Account menu for Gwyn" })
     );
 
     expect(
@@ -84,10 +84,10 @@ describe("UserMenu", () => {
   });
 
   it("clicking Sign out signs out, clears the chat store, and pushes /sign-in (CR-01)", async () => {
-    render(<UserMenu displayName="Alex Rivera" role="client" />);
+    render(<UserMenu displayName="Franz" role="client" />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Account menu for Alex Rivera" })
+      screen.getByRole("button", { name: "Account menu for Franz" })
     );
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 

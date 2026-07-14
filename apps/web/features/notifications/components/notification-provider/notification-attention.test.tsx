@@ -54,7 +54,7 @@ describe("navigation attention badges", () => {
         attentionRepository={attentionRepository}
         attentionRealtime={attentionRealtime}
       >
-        <AppShell displayName="Alex" role="client" friendsNavEnabled>
+        <AppShell displayName="Franz" role="client" friendsNavEnabled>
           Content
         </AppShell>
       </NotificationProvider>

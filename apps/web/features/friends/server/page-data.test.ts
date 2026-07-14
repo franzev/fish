@@ -43,7 +43,7 @@ function signedInAs(role: "client" | "coach") {
   getCurrentUserMock.mockResolvedValue({ ok: true, data: { id: "me" } });
   findProfileByIdMock.mockResolvedValue({
     ok: true,
-    data: { role, displayName: "Alex Rivera" },
+    data: { role, displayName: "Franz" },
   });
 }
 

@@ -35,10 +35,10 @@ const chat: ClientChatData = {
   conversationId,
   currentUserId: "client-1",
   currentUserRole: "client",
-  currentUserDisplayName: "Alex Rivera",
+  currentUserDisplayName: "Franz",
   participant: {
     id: "coach-1",
-    displayName: "Coach Dana",
+    displayName: "Gwyn",
     role: "coach",
   },
   messages: [firstMessage],

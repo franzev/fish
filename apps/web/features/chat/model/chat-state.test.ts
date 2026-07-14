@@ -203,14 +203,14 @@ describe("chat-state", () => {
       }),
     ];
 
-    expect(toReplyPreview(messages[0], "me", "Coach Dana", "Alex")).toEqual({
+    expect(toReplyPreview(messages[0], "me", "Gwyn", "Franz")).toEqual({
       id: "m1",
-      authorName: "Coach Dana",
+      authorName: "Gwyn",
       snippet: "Please repeat the final sentence.",
     });
-    expect(toReplyPreview(messages[1], "me", "Coach Dana", "Alex")).toEqual({
+    expect(toReplyPreview(messages[1], "me", "Gwyn", "Franz")).toEqual({
       id: "m2",
-      authorName: "Coach Dana",
+      authorName: "Gwyn",
       snippet: "Message deleted",
     });
   });
@@ -235,6 +235,6 @@ describe("chat-state", () => {
     );
 
     expect(merged[0].images).toEqual(images);
-    expect(toReplyPreview(merged[0], "me", "Coach Dana", "Alex").snippet).toBe("Image");
+    expect(toReplyPreview(merged[0], "me", "Gwyn", "Franz").snippet).toBe("Image");
   });
 });

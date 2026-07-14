@@ -71,10 +71,10 @@ describe("SupabaseChatRepository call conversations", () => {
     kind: "direct",
     currentUserId: "client-1",
     currentUserRole: "client",
-    currentUserDisplayName: "Alex",
+    currentUserDisplayName: "Franz",
     participant: {
       id: "coach-1",
-      displayName: "Coach Dana",
+      displayName: "Gwyn",
       role: "coach",
     },
     messages: [],
@@ -401,8 +401,8 @@ describe("Supabase service registry", () => {
           conversation_id: "conversation-1",
           id: "coach-1",
           role: "coach",
-          display_name: "Coach Dana",
-          username: "coach_dana",
+          display_name: "Gwyn",
+          username: "gwyn",
         },
       ]),
       from: vi.fn((table: string) => {
@@ -426,7 +426,7 @@ describe("Supabase service registry", () => {
       expect(result.data?.channelName).toBeUndefined();
       expect(result.data?.participant).toEqual({
         id: "coach-1",
-        displayName: "Coach Dana",
+        displayName: "Gwyn",
         role: "coach",
       });
       expect(
@@ -452,7 +452,7 @@ describe("Supabase service registry", () => {
           conversation_id: "conversation-coach",
           participant_id: "coach-1",
           participant_role: "coach",
-          participant_display_name: "Coach Dana",
+          participant_display_name: "Gwyn",
           latest_message_sender_id: null,
           latest_message_text: null,
           latest_message_created_at: null,
@@ -484,7 +484,7 @@ describe("Supabase service registry", () => {
           conversationId: "conversation-coach",
           participant: {
             id: "coach-1",
-            displayName: "Coach Dana",
+            displayName: "Gwyn",
             role: "coach",
           },
           latestMessage: null,

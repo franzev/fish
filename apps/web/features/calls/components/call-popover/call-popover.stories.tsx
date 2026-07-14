@@ -5,8 +5,8 @@ import { CallPopoverView } from "../call-popover-view";
 
 const activeCall: CallSessionState = {
   callId: "call-1",
-  counterpartId: "coach-dana",
-  counterpartName: "Coach Dana",
+  counterpartId: "gwyn",
+  counterpartName: "Gwyn",
   kind: "audio",
   status: "active",
   direction: "outgoing",
