@@ -43,6 +43,7 @@ interface ChatMessageListProps {
     unreadSummary: ClientChatUnreadSummary;
     showUnreadBanner: boolean;
     unreadNotice: string | null;
+    unreadPending: boolean;
     markUnreadMessagesRead: () => Promise<void>;
     friendActionsEnabled: boolean;
     focusMessageId?: string | null;
@@ -75,6 +76,7 @@ export function ChatMessageList({
     unreadSummary,
     showUnreadBanner,
     unreadNotice,
+    unreadPending,
     markUnreadMessagesRead,
     friendActionsEnabled,
     focusMessageId,
@@ -93,6 +95,7 @@ export function ChatMessageList({
           count={unreadSummary.count}
           oldestUnreadAt={unreadSummary.oldestUnreadAt}
           notice={unreadNotice}
+          pending={unreadPending}
           onMarkRead={markUnreadMessagesRead}
         />
       )}

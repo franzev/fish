@@ -9,6 +9,7 @@ export interface UnreadMessageBannerProps {
   count: number;
   oldestUnreadAt: string | null;
   notice?: string | null;
+  pending?: boolean;
   onMarkRead: () => void | Promise<void>;
 }
 
@@ -16,6 +17,7 @@ export function UnreadMessageBanner({
   count,
   oldestUnreadAt,
   notice = null,
+  pending = false,
   onMarkRead,
 }: UnreadMessageBannerProps) {
   const timeFormat = useTimeFormatPreference();
@@ -44,6 +46,7 @@ export function UnreadMessageBanner({
         <Button
           type="button"
           variant="ghost"
+          loading={pending}
           onClick={() => void onMarkRead()}
           className="shrink-0 px-xs text-ui-xs font-medium md:min-h-search-control"
         >

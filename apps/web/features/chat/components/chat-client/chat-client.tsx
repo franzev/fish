@@ -159,6 +159,7 @@ export function ChatClient({
     participantReadState,
     unreadSummary,
     unreadNotice,
+    unreadPending,
     markUnreadMessagesRead,
   } = useChatReadState({
     chat,
@@ -537,6 +538,7 @@ export function ChatClient({
           unreadSummary,
           showUnreadBanner: Boolean(markReadStateAction),
           unreadNotice,
+          unreadPending,
           markUnreadMessagesRead,
           friendActionsEnabled,
           focusMessageId,

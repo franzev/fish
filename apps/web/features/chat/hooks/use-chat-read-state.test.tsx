@@ -78,6 +78,7 @@ function Harness({
     <div>
       <span data-testid="unread-count">{state.unreadSummary.count}</span>
       <span data-testid="read-notice">{state.unreadNotice}</span>
+      <span data-testid="unread-pending">{String(state.unreadPending)}</span>
       <button
         type="button"
         onClick={() => void state.markUnreadMessagesRead()}
@@ -114,7 +115,7 @@ describe("useChatReadState", () => {
     expect(screen.getByTestId("unread-count")).toHaveTextContent("1");
   });
 
-  it("hides unread messages immediately while persisting the read marker", async () => {
+  it("keeps unread context visible while persisting the read marker", async () => {
     let resolveRead!: (result: MarkReadStateActionState) => void;
     const pendingRead = new Promise<MarkReadStateActionState>((resolve) => {
       resolveRead = resolve;
@@ -134,7 +135,8 @@ describe("useChatReadState", () => {
     await waitFor(() => expect(markReadStateAction).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
 
-    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("1");
+    expect(screen.getByTestId("unread-pending")).toHaveTextContent("true");
     expect(markReadStateAction).toHaveBeenNthCalledWith(2, {
       conversationId,
       lastDeliveredMessageId: "message-1",
@@ -154,6 +156,7 @@ describe("useChatReadState", () => {
       await pendingRead;
     });
     expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
+    expect(screen.getByTestId("unread-pending")).toHaveTextContent("false");
   });
 
   it("keeps unread state visible with calm guidance when marking fails", async () => {

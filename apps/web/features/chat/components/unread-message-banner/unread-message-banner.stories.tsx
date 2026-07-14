@@ -23,3 +23,9 @@ export const Default: Story = {};
 export const Retry: Story = {
   args: { notice: "Messages weren’t marked as read. Try again." },
 };
+
+export const SingleMessage: Story = { args: { count: 1 } };
+export const WithoutTimestamp: Story = { args: { oldestUnreadAt: null } };
+export const HighCount: Story = { args: { count: 128 } };
+export const Pending: Story = { args: { pending: true } };
+export const Hidden: Story = { args: { count: 0 } };

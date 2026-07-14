@@ -339,11 +339,6 @@ export function useChatReadState({
       current.conversationId === conversationId
         ? {
             ...current,
-            summary: {
-              count: 0,
-              oldestUnreadAt: null,
-              latestUnreadMessageId: null,
-            },
             isMarking: true,
             notice: null,
           }
@@ -413,6 +408,7 @@ export function useChatReadState({
     participantReadState,
     unreadSummary: activeUnreadState.summary,
     unreadNotice: activeUnreadState.notice,
+    unreadPending: activeUnreadState.isMarking,
     markUnreadMessagesRead,
   };
 }
