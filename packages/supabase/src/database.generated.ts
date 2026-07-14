@@ -2146,7 +2146,21 @@ export type Database = {
           conversation_id: string
           display_name: string
           id: string
+          role: string
           username: string
+        }[]
+      }
+      list_direct_conversation_previews: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          latest_message_created_at: string | null
+          latest_message_sender_id: string | null
+          latest_message_text: string | null
+          participant_display_name: string
+          participant_id: string
+          participant_role: string
+          unread_count: number
         }[]
       }
       list_friend_notifications: {

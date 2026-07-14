@@ -38,6 +38,13 @@ function createUnreadSummaryRpc(
     id: string;
     display_name: string;
     username: string;
+  }> = [],
+  conversationProfiles: Array<{
+    conversation_id: string;
+    id: string;
+    role: string;
+    display_name: string;
+    username: string;
   }> = []
 ) {
   return vi.fn(async (name: string) => ({
@@ -51,6 +58,8 @@ function createUnreadSummaryRpc(
           }]
         : name === "list_channel_member_profiles"
           ? channelProfiles
+          : name === "list_conversation_member_profiles"
+            ? conversationProfiles
           : null,
     error: null,
   }));
@@ -357,17 +366,12 @@ describe("Supabase service registry", () => {
   });
 
   it("leaves channel identity unset for a direct 1-on-1 conversation", async () => {
-    // Each from() call per table consumes the next queued value: profiles is
-    // read for the current user then the participant; conversations misses
-    // the demo-community lookup, then returns the assigned direct one.
+    // Conversations misses the demo-community lookup, then returns the
+    // assigned direct one. The other member is projected by an RPC so the
+    // profile table remains visible only for the signed-in user's own row.
     const queues: Record<string, unknown[]> = {
       profiles: [
         { id: "user-1", role: "client", display_name: "Franz Fish" },
-        { id: "coach-1", role: "coach", display_name: "Coach Dana" },
-        [
-          { id: "user-1", display_name: "Franz Fish", username: "franz" },
-          { id: "coach-1", display_name: "Coach Dana", username: "coach_dana" },
-        ],
       ],
       conversations: [
         null,
@@ -385,7 +389,22 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
-      rpc: createUnreadSummaryRpc(),
+      rpc: createUnreadSummaryRpc({}, [], [
+        {
+          conversation_id: "conversation-1",
+          id: "user-1",
+          role: "client",
+          display_name: "Franz Fish",
+          username: "franz",
+        },
+        {
+          conversation_id: "conversation-1",
+          id: "coach-1",
+          role: "coach",
+          display_name: "Coach Dana",
+          username: "coach_dana",
+        },
+      ]),
       from: vi.fn((table: string) => {
         const queue = queues[table] ?? [];
         return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
@@ -405,7 +424,75 @@ describe("Supabase service registry", () => {
       expect(result.data?.channelId).toBeUndefined();
       expect(result.data?.channelSlug).toBeUndefined();
       expect(result.data?.channelName).toBeUndefined();
+      expect(result.data?.participant).toEqual({
+        id: "coach-1",
+        displayName: "Coach Dana",
+        role: "coach",
+      });
+      expect(
+        vi.mocked(client.from).mock.calls.filter(([table]) => table === "profiles")
+      ).toHaveLength(1);
     }
+  });
+
+  it("maps all member-scoped direct previews in one request", async () => {
+    const rpc = vi.fn(async () => ({
+      data: [
+        {
+          conversation_id: "conversation-friend",
+          participant_id: "friend-1",
+          participant_role: "client",
+          participant_display_name: "Sam Okafor",
+          latest_message_sender_id: "friend-1",
+          latest_message_text: "Want to practise tomorrow?",
+          latest_message_created_at: "2026-07-15T08:00:00.000Z",
+          unread_count: 2,
+        },
+        {
+          conversation_id: "conversation-coach",
+          participant_id: "coach-1",
+          participant_role: "coach",
+          participant_display_name: "Coach Dana",
+          latest_message_sender_id: null,
+          latest_message_text: null,
+          latest_message_created_at: null,
+          unread_count: 0,
+        },
+      ],
+      error: null,
+    }));
+    const repository = new SupabaseChatRepository({ rpc } as unknown as AppSupabaseClient);
+
+    await expect(repository.listDirectConversations()).resolves.toEqual({
+      ok: true,
+      data: [
+        {
+          conversationId: "conversation-friend",
+          participant: {
+            id: "friend-1",
+            displayName: "Sam Okafor",
+            role: "client",
+          },
+          latestMessage: {
+            senderId: "friend-1",
+            text: "Want to practise tomorrow?",
+            createdAt: "2026-07-15T08:00:00.000Z",
+          },
+          unreadCount: 2,
+        },
+        {
+          conversationId: "conversation-coach",
+          participant: {
+            id: "coach-1",
+            displayName: "Coach Dana",
+            role: "coach",
+          },
+          latestMessage: null,
+          unreadCount: 0,
+        },
+      ],
+    });
+    expect(rpc).toHaveBeenCalledWith("list_direct_conversation_previews");
   });
 
   it("bounds the initial message window to 40 and reports hasMoreOlder for a long conversation", async () => {

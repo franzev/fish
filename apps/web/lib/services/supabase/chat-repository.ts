@@ -13,6 +13,7 @@ import type {
 import type {
   ChatRepository,
   ClientChatData,
+  ClientDirectConversationPreview,
   ClientChatMessage,
   ClientChatUnreadSummary,
 } from "../contracts";
@@ -79,6 +80,55 @@ async function fetchConversationReactions(
 
 export class SupabaseChatRepository implements ChatRepository {
   constructor(private readonly client: AppSupabaseClient) {}
+
+  async listDirectConversations(): Promise<
+    ServiceResult<ClientDirectConversationPreview[]>
+  > {
+    return safely("chat.listDirectConversations", async () => {
+      const { data, error } = await this.client.rpc(
+        "list_direct_conversation_previews"
+      );
+      if (error) {
+        return serviceFailure(
+          mapSupabaseError(error, {
+            code: "database",
+            fallbackMessage: "Could not load direct conversations.",
+            operation: "chat.listDirectConversations",
+            recoverable: true,
+          })
+        );
+      }
+
+      const previews: ClientDirectConversationPreview[] = [];
+      for (const row of data ?? []) {
+        if (row.participant_role !== "client" && row.participant_role !== "coach") {
+          continue;
+        }
+        const hasLatestMessage = Boolean(
+          row.latest_message_sender_id &&
+          row.latest_message_text !== null &&
+          row.latest_message_created_at
+        );
+        previews.push({
+          conversationId: row.conversation_id,
+          participant: {
+            id: row.participant_id,
+            displayName: row.participant_display_name,
+            role: row.participant_role,
+          },
+          latestMessage: hasLatestMessage
+            ? {
+                senderId: row.latest_message_sender_id!,
+                text: row.latest_message_text!,
+                createdAt: row.latest_message_created_at!,
+              }
+            : null,
+          unreadCount: row.unread_count,
+        });
+      }
+      return serviceSuccess(previews);
+    });
+  }
 
   async getConversationForCall(
     callId: string
@@ -293,19 +343,22 @@ export class SupabaseChatRepository implements ChatRepository {
         role: "coach",
         display_name: demoCommunityTitle,
       };
+      let directMemberProfiles: Array<{
+        conversation_id: string;
+        id: string;
+        role: string;
+        display_name: string;
+        username: string;
+      }> = [];
 
       if (!isCommunity) {
         const participantId = conversation.client_id === userId
           ? conversation.coach_id
           : conversation.client_id;
-        const { data: directParticipant, error: participantError } =
-          (await this.client
-            .from("profiles")
-            .select("id, role, display_name")
-            .eq("id", participantId)
-            .maybeSingle()) as SupabaseResponse<
-            Pick<ProfileRow, "id" | "role" | "display_name">
-          >;
+        const { data: memberProfiles, error: participantError } =
+          await this.client.rpc("list_conversation_member_profiles", {
+            p_conversation_ids: [conversation.id],
+          });
 
         if (participantError) {
           return serviceFailure(
@@ -317,6 +370,11 @@ export class SupabaseChatRepository implements ChatRepository {
             })
           );
         }
+
+        directMemberProfiles = memberProfiles ?? [];
+        const directParticipant = directMemberProfiles.find(
+          (member) => member.id === participantId
+        );
 
         if (
           !directParticipant ||
@@ -392,27 +450,7 @@ export class SupabaseChatRepository implements ChatRepository {
           }
         }
       } else if (senderIds.length > 0) {
-        const { data: senderProfiles, error: senderProfileError } =
-          (await this.client
-            .from("profiles")
-            .select("id, display_name")
-            .in("id", senderIds)) as {
-            data: Array<Pick<ProfileRow, "id" | "display_name">> | null;
-            error: SupabaseResponse<unknown>["error"];
-          };
-
-        if (senderProfileError) {
-          return serviceFailure(
-            mapSupabaseError(senderProfileError, {
-              code: "database",
-              fallbackMessage: "Could not load message senders.",
-              operation: "chat.getAssignedConversation.senderProfiles",
-              recoverable: true,
-            })
-          );
-        }
-
-        for (const senderProfile of senderProfiles ?? []) {
+        for (const senderProfile of directMemberProfiles) {
           senderDisplayNames.set(senderProfile.id, senderProfile.display_name);
         }
       }
@@ -538,18 +576,7 @@ export class SupabaseChatRepository implements ChatRepository {
       const { data: searchMemberProfiles, error: searchMemberError } =
         isCommunity
           ? { data: communityMemberProfiles ?? [], error: null }
-          : (await this.client
-              .from("profiles")
-              .select("id, display_name, username")
-              .in("id", Array.from(new Set([userId, participant.id])))
-              .order("display_name")) as {
-              data: Array<{
-                id: string;
-                display_name: string;
-                username: string;
-              }> | null;
-              error: SupabaseResponse<unknown>["error"];
-            };
+          : { data: directMemberProfiles, error: null };
 
       if (searchMemberError) {
         return serviceFailure(

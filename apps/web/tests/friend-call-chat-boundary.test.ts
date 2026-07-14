@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -10,6 +10,10 @@ const migration = readFileSync(
 const profileMigration = readFileSync(
   join(repositoryRoot, "supabase/migrations/0040_friend_profile_visibility.sql"),
   "utf8"
+);
+const hardeningMigrationPath = join(
+  repositoryRoot,
+  "supabase/migrations/0042_direct_conversation_security.sql"
 );
 
 describe("friend call chat boundary", () => {
@@ -25,9 +29,26 @@ describe("friend call chat boundary", () => {
     expect(migration).toContain("private.is_user_conversation_member");
   });
 
-  it("lets direct chat hydrate the accepted friend's safe profile", () => {
+  it("replaces whole-row friend profile access with a safe direct-chat projection", () => {
     expect(profileMigration).toContain('create policy "friends read each other"');
-    expect(profileMigration).toContain("private.are_friends");
-    expect(profileMigration).toContain("private.is_blocked_pair");
+    expect(existsSync(hardeningMigrationPath)).toBe(true);
+
+    const hardeningMigration = readFileSync(hardeningMigrationPath, "utf8");
+    expect(hardeningMigration).toContain(
+      'drop policy if exists "friends read each other" on public.profiles'
+    );
+    expect(hardeningMigration).toContain(
+      "create or replace function public.list_direct_conversation_previews()"
+    );
+    expect(hardeningMigration).not.toMatch(/\bemail\b/i);
+  });
+
+  it("excludes direct attention after the relationship stops granting membership", () => {
+    expect(existsSync(hardeningMigrationPath)).toBe(true);
+
+    const hardeningMigration = readFileSync(hardeningMigrationPath, "utf8");
+    expect(hardeningMigration).toContain(
+      "and private.is_conversation_member(conversation.id)"
+    );
   });
 });

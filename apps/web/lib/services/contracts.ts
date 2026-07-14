@@ -169,6 +169,16 @@ export interface ClientChatParticipant {
   role: "client" | "coach";
   avatarUrl?: string | null;
 }
+export interface ClientDirectConversationPreview {
+  conversationId: string;
+  participant: ClientChatParticipant;
+  latestMessage: {
+    senderId: string;
+    text: string;
+    createdAt: string;
+  } | null;
+  unreadCount: number;
+}
 export interface ClientChatSearchMember {
   id: string; displayName: string; username: string; avatarUrl?: string;
 }
@@ -193,6 +203,9 @@ export interface ClientChatData {
   hasMoreOlder?: boolean; oldestCursor?: { createdAt: string; id: string } | null;
 }
 export interface ChatRepository {
+  listDirectConversations(): Promise<
+    ServiceResult<ClientDirectConversationPreview[]>
+  >;
   getAssignedConversation(
     channelSlug?: string,
     conversationId?: string
