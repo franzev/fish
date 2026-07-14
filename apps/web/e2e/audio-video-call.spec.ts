@@ -134,10 +134,6 @@ test.describe.serial("one-to-one calls", () => {
         .toBeVisible();
       await pair.coach.getByRole("button", { name: "Answer video call" }).click();
 
-      await expect(pair.coach.getByRole("heading", { name: "Video call with Franz Eva" }))
-        .toBeVisible();
-      await expect(pair.client.getByRole("heading", { name: "Video call with Patty Cake" }))
-        .toBeVisible();
       await Promise.all([
         expectHdVideo(pair.client, "Your video preview"),
         expectHdVideo(pair.client, "Patty Cake video"),

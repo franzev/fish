@@ -217,9 +217,6 @@ export function CallScreen({ callId }: { callId: string }) {
             </>
           )}
           <div className="flex flex-wrap items-center gap-sm">
-            <div className="min-w-0 text-left">
-              <h1 className="text-heading-sm">{heading}</h1>
-            </div>
             <div className="ml-auto flex flex-wrap items-center gap-xs">
               {call.status !== "connecting" && (
                 <>
