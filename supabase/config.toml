@@ -45,5 +45,8 @@ verify_jwt = true
 [functions.friend-command]
 verify_jwt = true
 
+[functions.notification-command]
+verify_jwt = true
+
 [functions.livekit-webhook]
 verify_jwt = false

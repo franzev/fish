@@ -1063,6 +1063,263 @@ export type Database = {
           },
         ]
       }
+      moderation_actions: {
+        Row: {
+          acknowledged_at: string | null
+          action_href: string | null
+          action_type: string
+          created_at: string
+          id: string
+          moderator_id: string | null
+          reason: string
+          recipient_id: string
+          requires_acknowledgement: boolean
+          subject_message_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          action_href?: string | null
+          action_type: string
+          created_at?: string
+          id?: string
+          moderator_id?: string | null
+          reason: string
+          recipient_id: string
+          requires_acknowledgement?: boolean
+          subject_message_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          action_href?: string | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          moderator_id?: string | null
+          reason?: string
+          recipient_id?: string
+          requires_acknowledgement?: boolean
+          subject_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_actions_moderator_id_fkey"
+            columns: ["moderator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_actions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_actions_subject_message_id_fkey"
+            columns: ["subject_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_events: {
+        Row: {
+          actor_id: string | null
+          announcement_id: string | null
+          call_id: string | null
+          conversation_id: string | null
+          created_at: string
+          dedupe_key: string
+          friend_request_id: string | null
+          id: string
+          item_id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          message_id: string | null
+          metadata: Json
+          moderation_action_id: string | null
+          occurred_at: string
+          payload_version: number
+          recipient_id: string
+          retracted_at: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          announcement_id?: string | null
+          call_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          friend_request_id?: string | null
+          id?: string
+          item_id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          message_id?: string | null
+          metadata?: Json
+          moderation_action_id?: string | null
+          occurred_at?: string
+          payload_version?: number
+          recipient_id: string
+          retracted_at?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          announcement_id?: string | null
+          call_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          friend_request_id?: string | null
+          id?: string
+          item_id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          message_id?: string | null
+          metadata?: Json
+          moderation_action_id?: string | null
+          occurred_at?: string
+          payload_version?: number
+          recipient_id?: string
+          retracted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "system_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_friend_request_id_fkey"
+            columns: ["friend_request_id"]
+            isOneToOne: false
+            referencedRelation: "friend_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "notification_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_moderation_action_id_fkey"
+            columns: ["moderation_action_id"]
+            isOneToOne: false
+            referencedRelation: "moderation_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_items: {
+        Row: {
+          aggregate_key: string
+          archive_batch_id: string | null
+          archived_at: string | null
+          category: Database["public"]["Enums"]["notification_category"]
+          change_seq: number
+          created_at: string
+          event_count: number
+          first_event_at: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_event_at: string
+          latest_event_id: string | null
+          read_at: string | null
+          recipient_id: string
+          seen_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          aggregate_key: string
+          archive_batch_id?: string | null
+          archived_at?: string | null
+          category: Database["public"]["Enums"]["notification_category"]
+          change_seq?: number
+          created_at?: string
+          event_count?: number
+          first_event_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_event_at?: string
+          latest_event_id?: string | null
+          read_at?: string | null
+          recipient_id: string
+          seen_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aggregate_key?: string
+          archive_batch_id?: string | null
+          archived_at?: string | null
+          category?: Database["public"]["Enums"]["notification_category"]
+          change_seq?: number
+          created_at?: string
+          event_count?: number
+          first_event_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          last_event_at?: string
+          latest_event_id?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          seen_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_items_latest_event_fk"
+            columns: ["latest_event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_items_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presence_sessions: {
         Row: {
           active_at: string
@@ -1136,6 +1393,59 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      system_announcements: {
+        Row: {
+          action_href: string | null
+          audience_role: string | null
+          body: string
+          category: Database["public"]["Enums"]["notification_category"]
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          published_by: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_href?: string | null
+          audience_role?: string | null
+          body: string
+          category?: Database["public"]["Enums"]["notification_category"]
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          published_by?: string | null
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_href?: string | null
+          audience_role?: string | null
+          body?: string
+          category?: Database["public"]["Enums"]["notification_category"]
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          published_by?: string | null
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_announcements_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_blocks: {
         Row: {
@@ -1248,6 +1558,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      acknowledge_moderation_action: {
+        Args: { p_action_id: string }
+        Returns: boolean
+      }
+      archive_read_notifications: {
+        Args: { p_through_change_seq: number }
+        Returns: Json
+      }
       block_user: { Args: { p_target_id: string }; Returns: boolean }
       cancel_call: {
         Args: { p_call_id: string }
@@ -1313,6 +1631,34 @@ export type Database = {
         Returns: number
       }
       count_incoming_friend_requests: { Args: never; Returns: number }
+      create_moderation_action: {
+        Args: {
+          p_action_href?: string
+          p_action_type: string
+          p_reason: string
+          p_recipient_id: string
+          p_requires_acknowledgement?: boolean
+          p_subject_message_id?: string
+        }
+        Returns: {
+          acknowledged_at: string | null
+          action_href: string | null
+          action_type: string
+          created_at: string
+          id: string
+          moderator_id: string | null
+          reason: string
+          recipient_id: string
+          requires_acknowledgement: boolean
+          subject_message_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "moderation_actions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_chat_message: {
         Args: { p_message_id: string }
         Returns: {
@@ -1431,6 +1777,14 @@ export type Database = {
           request_id: string
           sender_id: string
           username: string
+        }[]
+      }
+      get_notification_summary: {
+        Args: never
+        Returns: {
+          latest_change_seq: number
+          unread_count: number
+          unseen_count: number
         }[]
       }
       initialize_avatar_upload: {
@@ -1642,6 +1996,66 @@ export type Database = {
           username: string
         }[]
       }
+      list_navigation_attention: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          entity_id: string
+          mention_count: number
+          new_activity: boolean
+          surface: string
+          unread_count: number
+        }[]
+      }
+      list_notification_changes: {
+        Args: { p_after_change_seq?: number; p_limit?: number }
+        Returns: {
+          archived_at: string
+          change_seq: number
+          id: string
+          read_at: string
+          seen_at: string
+        }[]
+      }
+      list_notification_items: {
+        Args: {
+          p_cursor_category_rank?: number
+          p_cursor_id?: string
+          p_cursor_last_event_at?: string
+          p_filter?: string
+          p_limit?: number
+        }
+        Returns: {
+          action_href: string
+          actor_count: number
+          actor_display_name: string
+          actor_id: string
+          actor_username: string
+          body: string
+          call_id: string
+          category: string
+          category_rank: number
+          change_seq: number
+          channel_name: string
+          channel_slug: string
+          conversation_id: string
+          event_count: number
+          friend_request_id: string
+          id: string
+          kind: string
+          last_event_at: string
+          message_id: string
+          message_snippet: string
+          moderation_action_id: string
+          read_at: string
+          seen_at: string
+          title: string
+        }[]
+      }
+      mark_all_notifications_read: {
+        Args: { p_through_change_seq: number }
+        Returns: number
+      }
       mark_chat_read_state: {
         Args: {
           p_conversation_id: string
@@ -1668,6 +2082,14 @@ export type Database = {
         Args: { p_notification_ids: string[] }
         Returns: number
       }
+      mark_notifications_read: {
+        Args: { p_notification_ids: string[]; p_through_change_seq: number }
+        Returns: number
+      }
+      mark_notifications_seen: {
+        Args: { p_notification_ids: string[]; p_through_change_seq: number }
+        Returns: number
+      }
       publish_avatar_upload: {
         Args: {
           p_avatar_path: string
@@ -1684,6 +2106,38 @@ export type Database = {
           published: boolean
           published_at: string
         }[]
+      }
+      publish_system_announcement: {
+        Args: {
+          p_action_href?: string
+          p_audience_role?: string
+          p_body: string
+          p_category?: Database["public"]["Enums"]["notification_category"]
+          p_expires_at?: string
+          p_kind: Database["public"]["Enums"]["notification_kind"]
+          p_starts_at?: string
+          p_title: string
+        }
+        Returns: {
+          action_href: string | null
+          audience_role: string | null
+          body: string
+          category: Database["public"]["Enums"]["notification_category"]
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          published_by: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "system_announcements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reconcile_livekit_webhook: {
         Args: {
@@ -1760,6 +2214,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      restore_notification_batch: {
+        Args: { p_archive_batch_id: string }
+        Returns: number
+      }
+      restore_notifications: {
+        Args: { p_notification_ids: string[] }
+        Returns: number
       }
       search_chat_messages: {
         Args: {
@@ -1906,6 +2368,18 @@ export type Database = {
         | "friend_request_received"
         | "friend_request_accepted"
       friend_request_status: "pending" | "accepted" | "declined" | "cancelled"
+      notification_category: "action_required" | "direct" | "update"
+      notification_kind:
+        | "friend_request_received"
+        | "friend_request_accepted"
+        | "system_announcement"
+        | "product_update"
+        | "moderation_action"
+        | "call_missed"
+        | "call_completed"
+        | "message_mention"
+        | "message_reply"
+        | "message_reaction"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2064,6 +2538,19 @@ export const Constants = {
         "friend_request_accepted",
       ],
       friend_request_status: ["pending", "accepted", "declined", "cancelled"],
+      notification_category: ["action_required", "direct", "update"],
+      notification_kind: [
+        "friend_request_received",
+        "friend_request_accepted",
+        "system_announcement",
+        "product_update",
+        "moderation_action",
+        "call_missed",
+        "call_completed",
+        "message_mention",
+        "message_reply",
+        "message_reaction",
+      ],
     },
   },
 } as const

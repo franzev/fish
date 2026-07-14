@@ -32,6 +32,14 @@ export type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
 export type UserBlockRow = Database["public"]["Tables"]["user_blocks"]["Row"];
 export type UserNotificationRow =
   Database["public"]["Tables"]["user_notifications"]["Row"];
+export type NotificationItemRow =
+  Database["public"]["Tables"]["notification_items"]["Row"];
+export type NotificationEventRow =
+  Database["public"]["Tables"]["notification_events"]["Row"];
+export type SystemAnnouncementRow =
+  Database["public"]["Tables"]["system_announcements"]["Row"];
+export type ModerationActionRow =
+  Database["public"]["Tables"]["moderation_actions"]["Row"];
 
 // Re-exported for callers that still import UserRole via this module's historical surface.
 export type { UserRole };
