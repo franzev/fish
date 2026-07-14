@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { IconTabStrip, type IconTabStripItem } from "@/components/ui/icon-tab-strip";
 import {
-  Icon,
   IconBallBasketball,
   IconBulb,
   IconCar,
@@ -14,6 +13,7 @@ import {
   IconMoodSmile,
   IconPaw,
   IconToolsKitchen2,
+  type TablerIcon,
 } from "@tabler/icons-react";
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
@@ -41,7 +41,7 @@ const emojiGroups = groups as EmojiGroup[];
 // Monochrome Tabler icon per category — colored emoji glyphs as tab icons
 // competed with the grid; icons keep the tab strip quiet (structural UI
 // carries no color).
-const groupIcons: Record<string, Icon> = {
+const groupIcons: Record<string, TablerIcon> = {
   "Smileys & Emotion": IconMoodSmile,
   "People & Body": IconHandStop,
   "Animals & Nature": IconPaw,
