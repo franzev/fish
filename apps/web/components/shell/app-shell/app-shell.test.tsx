@@ -179,7 +179,7 @@ describe("AppShell", () => {
 
   it("WR-09: app-shell.tsx source contains no stale /chat route reference", () => {
     const shellSource = readFileSync(resolve(__dirname, "./app-shell.tsx"), "utf-8");
-    expect(shellSource).not.toMatch(/\/chat/);
+    expect(shellSource).not.toMatch(/["']\/chat(?:\/|["'])/);
   });
 
   it("renders labeled client navigation without the unvalidated Progress tab", () => {

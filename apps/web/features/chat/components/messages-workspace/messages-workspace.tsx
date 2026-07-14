@@ -49,7 +49,7 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
         aria-label="Conversations"
         className="hidden w-conversation-list shrink-0 flex-col border-r border-divider bg-surface lg:flex"
       >
-        <div className="border-b border-divider px-md py-md">
+        <div className="min-h-chat-header border-b border-divider px-md py-md">
           <h1 className="font-sans text-heading-sm font-semibold text-foreground">
             Messages
           </h1>
@@ -96,7 +96,7 @@ export function MessagesWorkspace({ chat, children }: MessagesWorkspaceProps) {
         aria-label="Conversation details"
         className="hidden w-conversation-details shrink-0 flex-col border-l border-divider bg-surface xl:flex"
       >
-        <div className="border-b border-divider px-md py-md">
+        <div className="min-h-chat-header border-b border-divider px-md py-md">
           <h2 className="font-sans text-heading-sm font-semibold text-foreground">
             Details
           </h2>

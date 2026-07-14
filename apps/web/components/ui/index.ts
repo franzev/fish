@@ -5,5 +5,6 @@ export * from "./circular-progress";
 export * from "./input";
 export * from "./icon-tab-strip";
 export * from "./password-input";
+export * from "./popover-header";
 export * from "./progress";
 export * from "./scroll-area";

@@ -39,14 +39,18 @@ describe("MessagesWorkspace", () => {
       </MessagesWorkspace>
     );
 
-    expect(screen.getByRole("heading", { name: "Messages" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Messages" }).parentElement).toHaveClass(
+      "min-h-chat-header"
+    );
     expect(screen.getByRole("link", { name: /Coach Dana/ })).toHaveAttribute(
       "aria-current",
       "page"
     );
     expect(screen.getByText("You: I will send my notes this afternoon.")).toBeInTheDocument();
     expect(screen.getByText("Active conversation")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Details" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Details" }).parentElement).toHaveClass(
+      "min-h-chat-header"
+    );
     expect(screen.getByText("Only you and your coach can take part.")).toBeInTheDocument();
     expect(screen.queryByText("Archived")).not.toBeInTheDocument();
     expect(screen.queryByText(/rating/i)).not.toBeInTheDocument();

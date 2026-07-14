@@ -26,6 +26,27 @@ export interface UnreadSummaryActionState {
   unreadSummary?: ClientChatUnreadSummary;
 }
 
+export interface MessagePopoverPreview {
+  conversationId: string;
+  participant: {
+    id: string;
+    displayName: string;
+    avatarUrl?: string | null;
+  };
+  latestMessage: {
+    senderId: string;
+    text: string;
+    createdAt: string;
+  } | null;
+}
+
+export interface MessagePopoverActionState {
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  preview?: MessagePopoverPreview;
+}
+
 export interface ReportGifActionState {
   status: "sent" | "notice";
   values: unknown;

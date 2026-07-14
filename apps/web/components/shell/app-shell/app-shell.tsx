@@ -2,6 +2,8 @@
 
 import { PreferenceHydrator } from "@/components/shell/preference-hydrator";
 import { UserMenu } from "@/components/shell/user-menu";
+import { MessagesPopover } from "@/features/chat";
+import type { MessagePopoverActionState } from "@/features/chat/contracts";
 import { NotificationBell } from "@/features/notifications";
 import { useOptionalNotifications } from "@/features/notifications";
 import { communityChannels, generalChannelHref } from "@/lib/channels";
@@ -9,7 +11,6 @@ import { cn } from "@/lib/utils";
 import type { UserRole } from "@fish/core/roles";
 import {
   IconHome,
-  IconMessages,
   IconUsers,
   IconUsersGroup,
   type Icon,
@@ -29,6 +30,9 @@ interface AppShellProps {
   role: UserRole;
   /** Server-resolved pilot flag for the Friends entry in the account menu. */
   friendsNavEnabled?: boolean;
+  loadMessagePopoverAction?: (
+    input: unknown
+  ) => Promise<MessagePopoverActionState>;
   preferences?: {
     themePref?: ThemePref;
     textSizePref?: TextSizePref;
@@ -164,6 +168,7 @@ export function AppShell({
   profileId,
   role,
   friendsNavEnabled = false,
+  loadMessagePopoverAction,
   preferences,
   children,
 }: AppShellProps) {
@@ -171,6 +176,7 @@ export function AppShell({
   const attention = useOptionalNotifications()?.attention ?? [];
   const navItems = getNavItems(role);
   const channelAttention = attention.filter((item) => item.surface === "channel");
+  const directAttention = attention.find((item) => item.surface === "direct");
   const directUnread = attention
     .filter((item) => item.surface === "direct")
     .reduce((total, item) => total + item.unreadCount, 0);
@@ -241,31 +247,12 @@ export function AppShell({
         <div className="flex-1" aria-hidden="true" />
         <div className="flex shrink-0 items-center gap-3xs">
           {role === "client" && (
-            <Link
-              href="/messages"
-              aria-label={
-                directUnread > 0
-                  ? `Messages, ${directUnread} unread`
-                  : "Messages"
-              }
-              aria-current={messageSurface ? "page" : undefined}
-              className={cn(
-                "relative flex size-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-foreground",
-                messageSurface && "bg-surface-2 text-foreground"
-              )}
-            >
-              <IconMessages size={22} stroke={1.75} aria-hidden="true" />
-              {directUnread > 0 && (
-                <span
-                  className="absolute -right-3xs -top-3xs flex"
-                  aria-hidden="true"
-                >
-                  <AttentionBadge
-                    value={{ count: directUnread, kind: "count" }}
-                  />
-                </span>
-              )}
-            </Link>
+            <MessagesPopover
+              conversationId={directAttention?.conversationId ?? null}
+              unreadCount={directUnread}
+              active={messageSurface}
+              loadPreviewAction={loadMessagePopoverAction}
+            />
           )}
           <NotificationBell />
         </div>
