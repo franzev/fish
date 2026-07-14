@@ -29,6 +29,7 @@ test.describe.serial("client friendships", () => {
   });
   let franz: { id: string; username: string };
   let sam: { id: string; username: string };
+  let originalFriendsEnabled = false;
 
   async function cleanupPair() {
     const pair = [franz.id, sam.id];
@@ -43,6 +44,14 @@ test.describe.serial("client friendships", () => {
   }
 
   test.beforeAll(async () => {
+    const { data: gateRow, error: gateReadError } = await admin
+      .from("feature_flags")
+      .select("enabled")
+      .eq("key", "friends")
+      .single();
+    if (gateReadError) throw gateReadError;
+    originalFriendsEnabled = gateRow.enabled;
+
     const { data, error } = await admin
       .from("profiles")
       .select("id, username, display_name")
@@ -65,7 +74,10 @@ test.describe.serial("client friendships", () => {
     await cleanupPair();
     await admin
       .from("feature_flags")
-      .update({ enabled: false, updated_at: new Date().toISOString() })
+      .update({
+        enabled: originalFriendsEnabled,
+        updated_at: new Date().toISOString(),
+      })
       .eq("key", "friends");
   });
 

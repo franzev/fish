@@ -58,9 +58,10 @@ pnpm verify:friends
 ```
 
 `verify:friends` exercises both database/RLS behavior and the production Edge
-Function command path. Run it while local functions are served with
-`FRIENDS_ENABLED=true` (the normal `pnpm dev` command does this after the local
-function environment is configured).
+Function command path. To use the friends surface locally, set
+`FRIENDS_ENABLED=true` in both `apps/web/.env.local` and
+`supabase/functions/.env.local`, then run `pnpm seed`. The seed command keeps
+the authoritative database gate aligned with the web flag.
 
 ## Product rules
 

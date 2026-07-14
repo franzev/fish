@@ -75,6 +75,12 @@ async function main() {
   const admin = createClient(supabaseUrl!, serviceRoleKey!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const { data: originalGate, error: originalGateError } = await admin
+    .from("feature_flags")
+    .select("enabled")
+    .eq("key", "friends")
+    .single();
+  if (originalGateError) throw originalGateError;
 
   const involved = [a.userId, b.userId, c.userId];
 
@@ -739,7 +745,10 @@ async function main() {
   await cleanup();
   const restoreGate = await admin
     .from("feature_flags")
-    .update({ enabled: false, updated_at: new Date().toISOString() })
+    .update({
+      enabled: originalGate.enabled,
+      updated_at: new Date().toISOString(),
+    })
     .eq("key", "friends");
   if (restoreGate.error) throw restoreGate.error;
   await b.client.removeChannel(bChannel);

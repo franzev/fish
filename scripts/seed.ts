@@ -9,6 +9,8 @@ import { buildSeedReactionRows } from "./seed-reaction-randomizer.ts";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const friendsEnabled =
+  process.env.FRIENDS_ENABLED?.trim().toLowerCase() === "true";
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error(
@@ -21,6 +23,15 @@ if (!supabaseUrl || !serviceRoleKey) {
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+
+/** Keeps the local database gate aligned with the web rollout switch. */
+async function syncLocalFeatureFlags(): Promise<void> {
+  const { error } = await supabase
+    .from("feature_flags")
+    .update({ enabled: friendsEnabled, updated_at: new Date().toISOString() })
+    .eq("key", "friends");
+  if (error) throw error;
+}
 
 // Fixed, documented dev credentials (D-10). Local only.
 const coach = {
@@ -826,6 +837,8 @@ async function seedCommunityChannels(
 }
 
 async function main(): Promise<void> {
+  await syncLocalFeatureFlags();
+
   const coachId = await upsertUser(coach.email, coach.password, coach.displayName);
 
   // ORDER MATTERS: promote the coach BEFORE any coach_clients insert — the
@@ -875,6 +888,7 @@ async function main(): Promise<void> {
   console.log(`Coach2 id (unassigned): ${coach2Id}`);
   console.log(`Client ids: ${clientIds.join(", ")}`);
   console.log(`Demo community conversation id: ${demoCommunityConversationId}`);
+  console.log(`Friends feature: ${friendsEnabled ? "enabled" : "disabled"}`);
 }
 
 await main();
