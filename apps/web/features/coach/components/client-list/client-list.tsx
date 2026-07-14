@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { Avatar } from "@/features/chat";
+import { PresenceSummary } from "@/features/presence/components/presence-summary/presence-summary";
 
 export interface Client {
   id: string;
@@ -36,7 +37,10 @@ export function ClientList({ clients }: { clients: Client[] }) {
             />
             <span>{client.displayName}</span>
           </span>
-          <span className="text-ui-sm text-muted">{client.email}</span>
+          <span className="flex flex-col gap-3xs text-ui-sm text-muted">
+            <span>{client.email}</span>
+            <PresenceSummary userId={client.id} />
+          </span>
         </Link>
       ))}
     </Card>

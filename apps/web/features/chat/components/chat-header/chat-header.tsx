@@ -5,6 +5,10 @@ import type {
   ChatSearchMember,
 } from "@/features/chat/model/search";
 import { Avatar } from "../avatar";
+import {
+  PresenceIndicator,
+  type PresenceDisplayStatus,
+} from "@/features/presence";
 
 interface ChatHeaderProps {
   chatTitle: string;
@@ -13,8 +17,9 @@ interface ChatHeaderProps {
   channelName?: string;
   isCommunity: boolean;
   memberCount: number;
+  presenceStatus: PresenceDisplayStatus;
   presenceLabel: string;
-  showOnlineDot: boolean;
+  presenceDetail?: string | null;
   search: string;
   onSearchChange: (value: string) => void;
   criteria: ChatFilterCriterion[];
@@ -32,8 +37,9 @@ export function ChatHeader({
   channelName,
   isCommunity,
   memberCount,
+  presenceStatus,
   presenceLabel,
-  showOnlineDot,
+  presenceDetail,
   search,
   onSearchChange,
   criteria,
@@ -61,16 +67,13 @@ export function ChatHeader({
             {isCommunity ? `# ${channelName ?? chatTitle}` : chatTitle}
           </h1>
           <span className="flex shrink-0 items-center gap-nudge text-ui-sm text-muted">
-            {!isCommunity && showOnlineDot && (
-              <span
-                aria-label="Participant is online"
-                className="size-2 rounded-pill bg-success"
-              />
+            {!isCommunity && (
+              <PresenceIndicator status={presenceStatus} />
             )}
             <span>
               {isCommunity
                 ? `· ${memberCount} ${memberCount === 1 ? "member" : "members"}`
-                : presenceLabel}
+                : `${presenceLabel}${presenceDetail ? ` · ${presenceDetail}` : ""}`}
             </span>
           </span>
           </div>

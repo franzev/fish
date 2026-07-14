@@ -17,6 +17,7 @@ import { useMemo, useState } from "react";
 import { useFriendsRefresh } from "../../hooks/use-friends-refresh";
 import { Avatar } from "@/features/chat";
 import { resolveAvatarUrlsSafely } from "@/features/profile/image/resolve-avatar-urls";
+import { PresenceSummary } from "@/features/presence";
 
 interface FriendsScreenProps {
   userId: string;
@@ -135,6 +136,7 @@ export function FriendsScreen({
                   <span className="truncate text-ui-sm text-muted">
                     @{item.friend.username}
                   </span>
+                  <PresenceSummary userId={item.friend.id} />
                   </span>
                 </span>
                 <IconChevronRight

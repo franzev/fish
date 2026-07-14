@@ -49,11 +49,20 @@ vi.mock("@/lib/services/runtime/browser", () => ({
         listChanges: vi.fn(),
       },
       attention: { list: vi.fn() },
+      presence: {
+        listVisible: vi.fn(async () => ({ ok: true, data: [] })),
+        getOwnPreference: vi.fn(async () => ({ ok: true, data: "automatic" })),
+      },
     },
   }),
   getNotificationCommandService: () => ({ execute: vi.fn() }),
   getNotificationRealtimeService: () => ({ subscribe: () => () => {} }),
   getAttentionRealtimeService: () => ({ subscribe: () => () => {} }),
+  getPresenceCommandService: () => ({ setMode: vi.fn() }),
+  getPresenceRealtimeService: () => ({
+    subscribe: () => () => {},
+    startSession: () => ({ markActive: vi.fn(), stop: vi.fn() }),
+  }),
 }));
 
 import AuthenticatedLayout from "./layout";
@@ -82,7 +91,7 @@ describe("AuthenticatedLayout", () => {
     expect(redirectMock).toHaveBeenCalledWith("/sign-in");
   });
 
-  it("resolves role + renders AppShell with the display name, no redirect, for a valid profile", async () => {
+  it("resolves role + renders an accessible avatar account trigger, no redirect, for a valid profile", async () => {
     getAuthenticatedShellProfileMock.mockResolvedValueOnce({
       userId: "user-1",
       role: "client",
@@ -93,7 +102,10 @@ describe("AuthenticatedLayout", () => {
     render(Layout);
 
     expect(redirectMock).not.toHaveBeenCalled();
-    expect(screen.getAllByText("Alex Rivera").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", { name: "Account menu for Alex Rivera" })
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
     expect(screen.getByText("Content")).toBeInTheDocument();
   });
 });
