@@ -120,4 +120,29 @@ describe("CallProvider", () => {
       { microphone: true, camera: false }
     );
   });
+
+  it("coalesces the initial and subscribed recovery callbacks into one media join", async () => {
+    const activeCall: ClientCall = {
+      ...ringingCall,
+      status: "active",
+      acceptedAt: "2030-01-01T00:00:01.000Z",
+      connectedAt: "2030-01-01T00:00:02.000Z",
+    };
+    const { commands, realtime } = services(activeCall);
+    vi.mocked(realtime.subscribe).mockImplementation(
+      (_userId, _onEvent, onRecovery) => {
+        onRecovery?.();
+        return vi.fn();
+      }
+    );
+
+    render(
+      <CallProvider userId="client-1" commands={commands} realtime={realtime}>
+        <Probe />
+      </CallProvider>
+    );
+
+    await waitFor(() => expect(connectMock).toHaveBeenCalledTimes(1));
+    expect(commands.join).toHaveBeenCalledTimes(1);
+  });
 });
