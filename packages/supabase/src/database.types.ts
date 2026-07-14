@@ -21,6 +21,10 @@ export type MessageReactionRow =
   Database["public"]["Tables"]["message_reactions"]["Row"];
 export type PresenceSessionRow =
   Database["public"]["Tables"]["presence_sessions"]["Row"];
+export type PresencePreferenceRow =
+  Database["public"]["Tables"]["presence_preferences"]["Row"];
+export type PresenceSnapshotRow =
+  Database["public"]["Tables"]["presence_snapshots"]["Row"];
 export type CallRow = Database["public"]["Tables"]["calls"]["Row"];
 export type CallParticipantRow =
   Database["public"]["Tables"]["call_participants"]["Row"];

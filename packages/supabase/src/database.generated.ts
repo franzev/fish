@@ -1320,6 +1320,32 @@ export type Database = {
           },
         ]
       }
+      presence_preferences: {
+        Row: {
+          mode: Database["public"]["Enums"]["presence_mode"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          mode?: Database["public"]["Enums"]["presence_mode"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          mode?: Database["public"]["Enums"]["presence_mode"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presence_sessions: {
         Row: {
           active_at: string
@@ -1350,6 +1376,41 @@ export type Database = {
             foreignKeyName: "presence_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presence_snapshots: {
+        Row: {
+          last_heartbeat_at: string | null
+          last_seen_at: string | null
+          revision: number
+          status: Database["public"]["Enums"]["presence_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_heartbeat_at?: string | null
+          last_seen_at?: string | null
+          revision?: number
+          status?: Database["public"]["Enums"]["presence_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_heartbeat_at?: string | null
+          last_seen_at?: string | null
+          revision?: number
+          status?: Database["public"]["Enums"]["presence_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1616,6 +1677,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cleanup_presence_sessions: { Args: never; Returns: number }
       count_chat_messages: {
         Args: {
           p_author_types?: string[]
@@ -1768,6 +1830,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_chat_unread_summary: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          latest_unread_message_id: string
+          oldest_unread_at: string
+          unread_count: number
+        }[]
       }
       get_incoming_friend_request: {
         Args: { p_request_id: string }
@@ -2052,6 +2122,23 @@ export type Database = {
           title: string
         }[]
       }
+      list_visible_presence: {
+        Args: never
+        Returns: {
+          last_heartbeat_at: string | null
+          last_seen_at: string | null
+          revision: number
+          status: Database["public"]["Enums"]["presence_status"]
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "presence_snapshots"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       mark_all_notifications_read: {
         Args: { p_through_change_seq: number }
         Returns: number
@@ -2316,6 +2403,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_presence_mode: {
+        Args: { p_mode: Database["public"]["Enums"]["presence_mode"] }
+        Returns: {
+          last_heartbeat_at: string | null
+          last_seen_at: string | null
+          revision: number
+          status: Database["public"]["Enums"]["presence_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "presence_snapshots"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       toggle_message_reaction: {
         Args: { p_emoji: string; p_message_id: string }
         Returns: {
@@ -2336,6 +2440,23 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      touch_presence_session: {
+        Args: { p_activity?: boolean; p_ended?: boolean; p_session_id: string }
+        Returns: {
+          last_heartbeat_at: string | null
+          last_seen_at: string | null
+          revision: number
+          status: Database["public"]["Enums"]["presence_status"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "presence_snapshots"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2380,6 +2501,8 @@ export type Database = {
         | "message_mention"
         | "message_reply"
         | "message_reaction"
+      presence_mode: "automatic" | "away" | "busy" | "invisible"
+      presence_status: "online" | "idle" | "away" | "busy" | "offline"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2551,6 +2674,8 @@ export const Constants = {
         "message_reply",
         "message_reaction",
       ],
+      presence_mode: ["automatic", "away", "busy", "invisible"],
+      presence_status: ["online", "idle", "away", "busy", "offline"],
     },
   },
 } as const
