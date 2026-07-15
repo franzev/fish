@@ -62,12 +62,15 @@ export const ActiveVideo: Story = { args: { call: { ...activeCall, kind: "video"
 export const IncomingVideo: Story = { args: { call: { ...activeCall, kind: "video", status: "ringing", direction: "incoming" } } };
 export const IncomingLongName: Story = { args: { call: { ...activeCall, counterpartName: "Alexandria Montgomery-Santos", kind: "video", status: "ringing", direction: "incoming" } } };
 export const OutgoingRinging: Story = { args: { call: { ...activeCall, status: "ringing", direction: "outgoing" } } };
+export const OutgoingVideo: Story = { args: { call: { ...activeCall, kind: "video", status: "ringing", direction: "outgoing" } } };
+export const OutgoingLongName: Story = { args: { call: { ...activeCall, counterpartName: "Alexandria Montgomery-Santos", kind: "video", status: "ringing", direction: "outgoing" } } };
 export const RequestingPermission: Story = { args: { call: { ...activeCall, status: "requestingPermission" } } };
 export const Connecting: Story = { args: { call: { ...activeCall, status: "connecting" } } };
 export const Reconnecting: Story = { args: { call: { ...activeCall, status: "reconnecting" } } };
 export const AudioBlocked: Story = { args: { audioBlocked: true } };
 export const Notice: Story = { args: { notice: "Your microphone changed. The call is still connected." } };
 export const BusyIncoming: Story = { args: { busy: true, call: { ...activeCall, status: "ringing", direction: "incoming" } } };
+export const BusyOutgoing: Story = { args: { busy: true, call: { ...activeCall, kind: "video", status: "ringing", direction: "outgoing" } } };
 export const AnsweringIncoming: Story = {
   args: {
     answer: fn(() => new Promise<void>(() => undefined)),
@@ -84,6 +87,15 @@ export const DecliningIncoming: Story = {
   },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button", { name: "Decline" }));
+  },
+};
+export const CancellingOutgoing: Story = {
+  args: {
+    cancel: fn(() => new Promise<void>(() => undefined)),
+    call: { ...activeCall, kind: "video", status: "ringing", direction: "outgoing" },
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Cancel" }));
   },
 };
 export const Failed: Story = { args: { call: { ...activeCall, status: "failed", failureReason: "connectFailed" } } };

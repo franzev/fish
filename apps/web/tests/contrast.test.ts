@@ -142,6 +142,8 @@ const textPairs: Array<[fg: string, bg: string]> = [
   ["muted", "bg"],
   ["notice", "surface"],
   ["error", "surface"],
+  ["error", "surface-2"],
+  ["error", "surface-3"],
   ["warning", "surface"],
   ["success", "surface"],
   // WR-04: rendered-but-previously-unasserted pairings (closes the gap noted
@@ -160,6 +162,8 @@ const uiPairs: Array<[fg: string, bg: string]> = [
   ["border", "surface"],
   ["border-strong", "surface"],
   ["error", "surface"], // Alert/Input error border
+  ["error", "surface-2"], // Decline button border at rest
+  ["error", "surface-3"], // Decline button border on hover/press
   ["warning", "surface"], // Alert warning border
   ["success", "surface"], // Alert success border
 ];

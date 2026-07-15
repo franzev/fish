@@ -80,7 +80,7 @@ async function expectPlayingVideo(page: Page, label: string) {
 
 async function closeRecoveredCall(page: Page, destination: "/home" | "/coach") {
   const close = page.getByRole("button", {
-    name: /^(End call|Cancel call|Decline)$/,
+    name: /^(End call|Cancel|Decline)$/,
   }).first();
   if (await close.isVisible({ timeout: 1_000 }).catch(() => false)) {
     await close.click();
@@ -175,7 +175,7 @@ test.describe.serial("one-to-one calls", () => {
     try {
       await pair.coach.getByRole("link", { name: /Franz Eva/ }).click();
       await pair.coach.getByRole("button", { name: "Video call Franz Eva" }).click();
-      await expect(pair.coach.getByRole("heading", { name: "Video calling Franz Eva" }))
+      await expect(pair.coach.getByRole("heading", { name: "Calling Franz Eva" }))
         .toBeVisible();
 
       await expect(pair.client.getByRole("heading", { name: "Patty Cake is calling" }))
@@ -213,7 +213,7 @@ test.describe.serial("one-to-one calls", () => {
     try {
       await pair.coach.getByRole("link", { name: /Franz Eva/ }).click();
       await pair.coach.getByRole("button", { name: "Video call Franz Eva" }).click();
-      await expect(pair.coach.getByRole("heading", { name: "Video calling Franz Eva" }))
+      await expect(pair.coach.getByRole("heading", { name: "Calling Franz Eva" }))
         .toBeVisible();
       await expect(pair.client.getByRole("heading", { name: "Patty Cake is calling" }))
         .toBeVisible();

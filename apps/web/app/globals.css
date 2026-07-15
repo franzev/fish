@@ -273,6 +273,13 @@
   );
 }
 
+@utility call-popover-width {
+  width: min(
+    var(--container-call-popover),
+    var(--container-call-popover-mobile)
+  );
+}
+
 /* ---- Base ---- */
 @layer base {
   html {

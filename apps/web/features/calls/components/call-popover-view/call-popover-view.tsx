@@ -29,6 +29,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CallContextValue } from "../call-provider";
+import { DraggableVideoPreview } from "../draggable-video-preview";
 
 export interface CallPopoverViewProps extends Omit<
   CallContextValue,
@@ -49,7 +50,10 @@ function getCallCopy(call: CallSessionState) {
     heading: `${call.counterpartName ?? "Your call partner"} is calling`,
     status: `${call.kind === "video" ? "Video" : "Audio"} call. Answer when you’re ready.`,
   };
-  if (call.status === "ringing") return { heading: call.kind === "video" ? `Video calling ${name}` : `Calling ${name}`, status: "They’ll join when they’re ready." };
+  if (call.status === "ringing") return {
+    heading: `Calling ${name}`,
+    status: `${call.kind === "video" ? "Video" : "Audio"} call. They’ll join when they’re ready.`,
+  };
   if (call.status === "connecting") return { heading: `Connecting with ${name}`, status: "This usually takes a moment." };
   if (call.status === "reconnecting") return { heading: `Reconnecting with ${name}`, status: "The call will continue when the connection returns." };
   if (call.status === "active") return { heading: `In call with ${name}`, status: call.muted ? "Your microphone is muted." : "Your microphone is on." };
@@ -89,22 +93,22 @@ export function CallPopoverView({
   setVideoQualityPreference,
   presentation = "popover",
 }: CallPopoverViewProps) {
-  const localVideo = useRef<HTMLVideoElement | null>(null);
   const remoteVideo = useRef<HTMLVideoElement | null>(null);
+  const videoStageRef = useRef<HTMLDivElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [microphoneOptions, setMicrophoneOptions] = useState<Array<{ deviceId: string; label: string }>>([]);
   const [microphoneId, setMicrophoneId] = useState("");
   const pendingIncomingActionRef = useRef<"answer" | "decline" | null>(null);
   const [pendingIncomingAction, setPendingIncomingAction] = useState<"answer" | "decline" | null>(null);
+  const pendingOutgoingCancelRef = useRef(false);
+  const [pendingOutgoingCancel, setPendingOutgoingCancel] = useState(false);
   const inProgress = ["connecting", "active", "reconnecting"].includes(call.status);
   const screen = presentation === "screen";
   const videoStage = screen && call.kind === "video" && inProgress;
   const incoming = call.status === "ringing" && call.direction === "incoming";
+  const outgoingRinging = call.status === "ringing" && call.direction === "outgoing";
+  const callPrompt = incoming || outgoingRinging;
   const copy = getCallCopy(call);
-
-  useEffect(() => {
-    if (localVideo.current) localVideo.current.srcObject = localVideoStream;
-  }, [localVideoStream]);
 
   useEffect(() => {
     const element = remoteVideo.current;
@@ -143,6 +147,18 @@ export function CallPopoverView({
     }
   }, [busy]);
 
+  const runOutgoingCancel = useCallback(async () => {
+    if (busy || pendingOutgoingCancelRef.current) return;
+    pendingOutgoingCancelRef.current = true;
+    setPendingOutgoingCancel(true);
+    try {
+      await cancel();
+    } finally {
+      pendingOutgoingCancelRef.current = false;
+      setPendingOutgoingCancel(false);
+    }
+  }, [busy, cancel]);
+
   if (call.status === "idle") return null;
 
   const Root = screen ? "section" : "aside";
@@ -153,7 +169,7 @@ export function CallPopoverView({
       className={cn(
         screen
           ? "fixed inset-0 z-40 h-dvh w-full bg-bg"
-          : "bottom-mobile-nav-offset left-page right-page w-auto sm:bottom-page sm:right-auto sm:w-full sm:max-w-call-popover",
+          : "call-popover-width bottom-mobile-nav-offset left-page sm:bottom-page",
         !screen && "fixed z-40"
       )}
     >
@@ -165,7 +181,7 @@ export function CallPopoverView({
       )}>
         {videoStage && (
           <div className="flex min-h-0 flex-1">
-            <div className={cn(
+            <div ref={videoStageRef} className={cn(
               "relative min-h-0 flex-1 overflow-hidden bg-surface-2",
               chatSidebar && chatOpen && "hidden lg:block"
             )}>
@@ -175,7 +191,7 @@ export function CallPopoverView({
                   <span className="max-w-full truncate px-md text-ui-sm">{call.counterpartName ?? "Your call partner"}&apos;s camera is off</span>
                 </div>
               )}
-              <video ref={remoteVideo} aria-label={`${call.counterpartName ?? "Your call partner"} video`} autoPlay muted playsInline className={cn("absolute inset-0 h-full w-full object-cover", remoteVideoTrack ? "block" : "hidden")} />
+              <video ref={remoteVideo} aria-label={`${call.counterpartName ?? "Your call partner"} video`} autoPlay muted playsInline className={cn("absolute inset-0 h-full w-full object-contain", remoteVideoTrack ? "block" : "hidden")} />
               {remoteSpeaking && !remoteMuted && (
                 <div
                   role="status"
@@ -194,10 +210,10 @@ export function CallPopoverView({
                   <span className="max-w-full truncate">{call.counterpartName ?? "Your call partner"} is muted</span>
                 </div>
               )}
-              <div className="absolute bottom-xs right-xs aspect-video w-full max-w-call-preview overflow-hidden rounded-control border border-divider bg-bg">
-                {!localVideoStream && <div className="flex h-full items-center justify-center text-muted"><IconVideoOff size={16} stroke={1.75} aria-label="Your camera is off" /></div>}
-                <video ref={localVideo} aria-label="Your video preview" autoPlay muted playsInline className={cn("h-full w-full -scale-x-100 object-cover", localVideoStream ? "block" : "hidden")} />
-              </div>
+              <DraggableVideoPreview
+                stageRef={videoStageRef}
+                stream={localVideoStream}
+              />
             </div>
 
             {chatSidebar && (
@@ -219,29 +235,29 @@ export function CallPopoverView({
           </div>
         )}
 
-        <div className={cn("flex flex-col", incoming ? "gap-lg p-page" : "gap-md p-md")}>
-          <div className={cn("min-w-0", !incoming && "flex items-center gap-sm", videoStage && "sr-only")}>
-            {!incoming && <span className="flex size-control shrink-0 items-center justify-center rounded-pill bg-surface-2 text-foreground">
+        <div className={cn("flex flex-col", callPrompt ? "gap-lg p-page" : "gap-md p-md")}>
+          <div className={cn("min-w-0", !callPrompt && "flex items-center gap-sm", videoStage && "sr-only")}>
+            {!callPrompt && <span className="flex size-control shrink-0 items-center justify-center rounded-pill bg-surface-2 text-foreground">
               {call.kind === "video" ? <IconVideo size={20} stroke={1.75} aria-hidden="true" /> : <IconPhone size={20} stroke={1.75} aria-hidden="true" />}
             </span>}
-            <div className={cn("min-w-0 flex-1", incoming && "flex flex-col gap-2xs")} role="status" aria-live={incoming ? "assertive" : "polite"} aria-atomic="true">
+            <div className={cn("min-w-0 flex-1", callPrompt && "flex flex-col gap-2xs")} role="status" aria-live={incoming ? "assertive" : "polite"} aria-atomic="true">
               <h2 id="call-popover-heading" className={cn(
                 "font-semibold text-foreground",
-                incoming ? "break-words font-serif text-heading-sm" : "truncate font-sans text-ui-md"
+                callPrompt ? "break-words font-serif text-heading-sm" : "truncate font-sans text-ui-md"
               )}>{copy.heading}</h2>
-              <p className={cn("text-body", incoming ? "text-ui-sm" : "truncate text-ui-xs")}>{copy.status}</p>
+              <p className={cn("text-body", callPrompt ? "text-ui-sm" : "truncate text-ui-xs")}>{copy.status}</p>
             </div>
           </div>
 
           {call.kind === "audio" && ["active", "reconnecting"].includes(call.status) && (
-            <dl role="group" aria-label="Call activity" className="grid grid-cols-2 divide-x divide-divider overflow-hidden rounded-control bg-surface-2 text-left">
+            <div role="group" aria-label="Call activity" className="grid grid-cols-2 divide-x divide-divider overflow-hidden rounded-control bg-surface-2 text-left">
               <div className="flex min-w-0 items-center gap-xs px-sm py-xs">
                 {call.muted
                   ? <IconMicrophoneOff size={16} stroke={1.75} className="shrink-0 text-muted" aria-hidden="true" />
                   : <IconMicrophone size={16} stroke={1.75} className={cn("shrink-0", localMicrophoneActive ? "text-success" : "text-muted")} aria-hidden="true" />}
                 <div className="min-w-0">
-                  <dt className="truncate text-ui-2xs font-medium text-muted">You</dt>
-                  <dd className="truncate text-ui-xs text-foreground">{call.muted ? "Muted" : localMicrophoneActive ? "Voice detected" : "Listening"}</dd>
+                  <span className="block truncate text-ui-2xs font-medium text-muted">You</span>
+                  <span className="block truncate text-ui-xs text-foreground">{call.muted ? "Muted" : localMicrophoneActive ? "Voice detected" : "Listening"}</span>
                 </div>
               </div>
               <div role="group" aria-label={`${call.counterpartName ?? "Call partner"} microphone`} className="flex min-w-0 items-center gap-xs px-sm py-xs">
@@ -249,11 +265,11 @@ export function CallPopoverView({
                   ? <IconMicrophoneOff size={16} stroke={1.75} className="shrink-0 text-muted" aria-hidden="true" />
                   : <MicrophoneVolumeMeter level={remoteMicrophoneLevel} active={remoteSpeaking} className="shrink-0" />}
                 <div className="min-w-0">
-                  <dt className="truncate text-ui-2xs font-medium text-muted">{call.counterpartName ?? "Call partner"}</dt>
-                  <dd role="status" aria-live="polite" aria-atomic="true" className="truncate text-ui-xs text-foreground">{remoteMuted ? "Muted" : remoteSpeaking ? "Speaking" : "Listening"}</dd>
+                  <span className="block truncate text-ui-2xs font-medium text-muted">{call.counterpartName ?? "Call partner"}</span>
+                  <span role="status" aria-live="polite" aria-atomic="true" className="block truncate text-ui-xs text-foreground">{remoteMuted ? "Muted" : remoteSpeaking ? "Speaking" : "Listening"}</span>
                 </div>
               </div>
-            </dl>
+            </div>
           )}
 
           {notice && <Alert tone="notice" className="text-left">{notice}</Alert>}
@@ -294,7 +310,22 @@ export function CallPopoverView({
               </Button>
             </div>
           )}
-          {call.status === "ringing" && call.direction === "outgoing" && <Button variant="secondary" fullWidth loading={busy} onClick={() => void cancel()}>Cancel call</Button>}
+          {outgoingRinging && (
+            <div className="flex justify-start">
+              <Button
+                variant="secondary"
+                loading={pendingOutgoingCancel}
+                disabled={busy}
+                onClick={() => void runOutgoingCancel()}
+                className="min-h-control-primary border-error text-error hover:bg-surface-3 active:bg-surface-3"
+              >
+                <span className="inline-flex items-center gap-xs">
+                  <IconPhoneOff size={20} stroke={1.75} aria-hidden="true" />
+                  <span>Cancel</span>
+                </span>
+              </Button>
+            </div>
+          )}
 
           {inProgress && (
             <Tooltip.Provider delay={400} closeDelay={0}>

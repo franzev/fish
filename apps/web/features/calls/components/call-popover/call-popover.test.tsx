@@ -134,16 +134,15 @@ describe("CallPopover", () => {
 
     const panel = screen.getByRole("complementary");
     expect(panel).toHaveClass(
+      "call-popover-width",
       "bottom-mobile-nav-offset",
       "left-page",
-      "right-page",
-      "sm:bottom-page",
-      "sm:w-full",
-      "sm:max-w-call-popover"
+      "sm:bottom-page"
     );
+    expect(panel).not.toHaveClass("right-page", "w-auto", "sm:w-full");
   });
 
-  it("shows a caller-first incoming prompt with one dominant answer action", () => {
+  it("shows a caller-first incoming prompt with one dominant answer action", async () => {
     const value = callValue();
     value.state.current.kind = "video";
     value.state.current.status = "ringing";
@@ -160,6 +159,7 @@ describe("CallPopover", () => {
 
     const answer = screen.getByRole("button", { name: "Answer" });
     const decline = screen.getByRole("button", { name: "Decline" });
+    expect(screen.getAllByRole("button")).toEqual([decline, answer]);
     expect(answer).toHaveClass(
       "min-h-control-primary",
       "rounded-control",
@@ -181,9 +181,136 @@ describe("CallPopover", () => {
     expect(screen.queryByLabelText("Franz video")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Your video preview")).not.toBeInTheDocument();
 
-    fireEvent.click(answer);
+    await act(async () => {
+      fireEvent.click(answer);
+    });
     expect(value.answer).toHaveBeenCalledOnce();
     expect(value.decline).not.toHaveBeenCalled();
+  });
+
+  it("uses the audio call copy and phone icon for an incoming audio call", () => {
+    const value = callValue();
+    value.state.current.kind = "audio";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "incoming";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    expect(screen.getByRole("heading", { name: "Franz is calling" })).toBeVisible();
+    expect(screen.getByText("Audio call. Answer when you’re ready.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Answer" }).querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("shows a compact caller-first outgoing video prompt with a quiet cancel action", async () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "outgoing";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    expect(screen.getByRole("heading", { name: "Calling Franz" })).toHaveClass(
+      "break-words",
+      "font-serif",
+      "text-heading-sm"
+    );
+    expect(screen.getByText("Video call. They’ll join when they’re ready.")).toHaveClass("text-ui-sm");
+    const cancelCall = screen.getByRole("button", { name: "Cancel" });
+    expect(cancelCall).toHaveClass(
+      "min-h-control-primary",
+      "rounded-control",
+      "border-error",
+      "text-error",
+      "bg-surface-2"
+    );
+    expect(cancelCall).not.toHaveClass("w-full", "bg-error", "font-semibold", "rounded-pill");
+    expect(cancelCall.parentElement).toHaveClass("flex", "justify-start");
+    expect(cancelCall.querySelector("svg")).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toEqual([cancelCall]);
+
+    await act(async () => {
+      fireEvent.click(cancelCall);
+    });
+    expect(value.cancel).toHaveBeenCalledOnce();
+  });
+
+  it("identifies an outgoing audio call without adding a decorative call badge", () => {
+    const value = callValue();
+    value.state.current.kind = "audio";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "outgoing";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    expect(screen.getByRole("heading", { name: "Calling Franz" })).toBeVisible();
+    expect(screen.getByText("Audio call. They’ll join when they’re ready.")).toBeVisible();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("shows stable progress on Cancel while cancellation is pending", async () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "outgoing";
+    let finishCancel: (() => void) | undefined;
+    value.cancel = vi.fn(() => new Promise<undefined>((resolve) => {
+      finishCancel = () => resolve(undefined);
+    }));
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    const cancelCall = screen.getByRole("button", { name: "Cancel" });
+    await act(async () => {
+      fireEvent.click(cancelCall);
+    });
+
+    expect(cancelCall).toHaveAttribute("aria-busy", "true");
+    expect(cancelCall).toBeDisabled();
+    expect(cancelCall.querySelector(".animate-spin")).not.toBeNull();
+
+    await act(async () => finishCancel?.());
+    expect(cancelCall).not.toHaveAttribute("aria-busy");
+    expect(cancelCall).toBeEnabled();
+  });
+
+  it("keeps long outgoing caller names readable without changing the action layout", () => {
+    const value = callValue();
+    value.state.current.counterpartName = "Alexandria Montgomery-Santos";
+    value.state.current.kind = "video";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "outgoing";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    const heading = screen.getByRole("heading", {
+      name: "Calling Alexandria Montgomery-Santos",
+    });
+    expect(heading).toHaveClass("break-words");
+    expect(heading).not.toHaveClass("truncate");
+    expect(screen.getByRole("button", { name: "Cancel" }).parentElement).toHaveClass(
+      "flex",
+      "justify-start"
+    );
+  });
+
+  it("disables outgoing cancellation while another call operation is busy", () => {
+    const value = callValue();
+    value.busy = true;
+    value.state.current.status = "ringing";
+    value.state.current.direction = "outgoing";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    const cancelCall = screen.getByRole("button", { name: "Cancel" });
+    expect(cancelCall).toBeDisabled();
+    expect(cancelCall).not.toHaveAttribute("aria-busy");
+    expect(cancelCall.querySelector(".animate-spin")).toBeNull();
   });
 
   it("shows progress only on the incoming action that was activated", async () => {
@@ -192,8 +319,8 @@ describe("CallPopover", () => {
     value.state.current.status = "ringing";
     value.state.current.direction = "incoming";
     let finishDecline: (() => void) | undefined;
-    value.decline = vi.fn(() => new Promise<void>((resolve) => {
-      finishDecline = resolve;
+    value.decline = vi.fn(() => new Promise<undefined>((resolve) => {
+      finishDecline = () => resolve(undefined);
     }));
     useCallMock.mockReturnValue(value);
 
@@ -201,7 +328,9 @@ describe("CallPopover", () => {
 
     const answer = screen.getByRole("button", { name: "Answer" });
     const decline = screen.getByRole("button", { name: "Decline" });
-    fireEvent.click(decline);
+    await act(async () => {
+      fireEvent.click(decline);
+    });
 
     expect(decline).toHaveAttribute("aria-busy", "true");
     expect(decline.querySelector(".animate-spin")).not.toBeNull();
@@ -211,6 +340,35 @@ describe("CallPopover", () => {
     await act(async () => finishDecline?.());
     expect(decline).not.toHaveAttribute("aria-busy");
     expect(answer).toBeEnabled();
+  });
+
+  it("shows progress only on Answer while an incoming answer is pending", async () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "incoming";
+    let finishAnswer: (() => void) | undefined;
+    value.answer = vi.fn(() => new Promise<undefined>((resolve) => {
+      finishAnswer = () => resolve(undefined);
+    }));
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    const answer = screen.getByRole("button", { name: "Answer" });
+    const decline = screen.getByRole("button", { name: "Decline" });
+    await act(async () => {
+      fireEvent.click(answer);
+    });
+
+    expect(answer).toHaveAttribute("aria-busy", "true");
+    expect(answer.querySelector(".animate-spin")).not.toBeNull();
+    expect(decline).toBeDisabled();
+    expect(decline).not.toHaveAttribute("aria-busy");
+
+    await act(async () => finishAnswer?.());
+    expect(answer).not.toHaveAttribute("aria-busy");
+    expect(decline).toBeEnabled();
   });
 
   it("shows when the other person is muted in audio and video calls", () => {
@@ -251,6 +409,8 @@ describe("CallPopover", () => {
 
     expect(screen.getByLabelText("Franz video")).toBeVisible();
     expect(screen.getByLabelText("Your video preview")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your video preview")).toHaveClass("object-contain");
+    expect(screen.getByLabelText("Franz video")).toHaveClass("object-contain");
     const remoteSpeakingStatus = screen.getByRole("status", {
       name: "Franz is speaking",
     });
@@ -286,6 +446,149 @@ describe("CallPopover", () => {
 
     fireEvent.click(dataSaver);
     expect(value.setVideoQualityPreference).toHaveBeenCalledWith("data-saver");
+  });
+
+  it("lets people move their video preview with the keyboard", () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.cameraEnabled = true;
+    useCallMock.mockReturnValue(value);
+
+    render(<CallScreen callId="call-1" />);
+
+    const preview = screen.getByRole("group", {
+      name: "Your movable video preview",
+    });
+    const resizeHandle = screen.getByRole("button", {
+      name: "Resize your video preview",
+    });
+    expect(preview).toHaveClass("rounded-none");
+    expect(preview).toHaveClass("border-0", "shadow-none");
+    expect(resizeHandle).toHaveClass("sr-only");
+    const stage = preview.parentElement as HTMLDivElement;
+    Object.defineProperties(stage, {
+      clientWidth: { configurable: true, value: 800 },
+      clientHeight: { configurable: true, value: 600 },
+    });
+    Object.defineProperties(preview, {
+      offsetWidth: { configurable: true, value: 200 },
+      offsetHeight: { configurable: true, value: 112 },
+    });
+    stage.getBoundingClientRect = () => ({
+      x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600,
+      width: 800, height: 600, toJSON: () => ({}),
+    });
+    preview.getBoundingClientRect = () => ({
+      x: 584, y: 472, left: 584, top: 472, right: 784, bottom: 584,
+      width: 200, height: 112, toJSON: () => ({}),
+    });
+
+    expect(preview).toHaveAccessibleDescription(
+      "Drag the center to move. Drag an edge or corner to resize. Use arrow keys when focused."
+    );
+    fireEvent.pointerMove(preview, {
+      pointerId: 1,
+      pointerType: "mouse",
+      clientX: 585,
+      clientY: 473,
+    });
+    expect(preview).toHaveClass("cursor-nwse-resize");
+    fireEvent.keyDown(preview, { key: "ArrowLeft" });
+
+    expect(preview).toHaveStyle({
+      transform: "translate3d(568px, 472px, 0)",
+    });
+  });
+
+  it("lets people resize their video preview with the keyboard", () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.cameraEnabled = true;
+    useCallMock.mockReturnValue(value);
+
+    render(<CallScreen callId="call-1" />);
+
+    const preview = screen.getByRole("group", {
+      name: "Your movable video preview",
+    });
+    const stage = preview.parentElement as HTMLDivElement;
+    Object.defineProperties(stage, {
+      clientWidth: { configurable: true, value: 800 },
+      clientHeight: { configurable: true, value: 600 },
+    });
+    Object.defineProperties(preview, {
+      offsetWidth: { configurable: true, value: 200 },
+      offsetHeight: { configurable: true, value: 112.5 },
+    });
+    stage.getBoundingClientRect = () => ({
+      x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600,
+      width: 800, height: 600, toJSON: () => ({}),
+    });
+    preview.getBoundingClientRect = () => ({
+      x: 584, y: 471.5, left: 584, top: 471.5, right: 784, bottom: 584,
+      width: 200, height: 112.5, toJSON: () => ({}),
+    });
+
+    fireEvent.keyDown(
+      screen.getByRole("button", { name: "Resize your video preview" }),
+      { key: "ArrowUp" }
+    );
+
+    expect(preview).toHaveStyle({
+      width: "216px",
+      height: "121.5px",
+      transform: "translate3d(568px, 462.5px, 0)",
+    });
+  });
+
+  it("resizes the video preview when its edge is dragged", () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.cameraEnabled = true;
+    useCallMock.mockReturnValue(value);
+
+    render(<CallScreen callId="call-1" />);
+
+    const preview = screen.getByRole("group", {
+      name: "Your movable video preview",
+    });
+    const stage = preview.parentElement as HTMLDivElement;
+    Object.defineProperties(stage, {
+      clientWidth: { configurable: true, value: 800 },
+      clientHeight: { configurable: true, value: 600 },
+    });
+    Object.defineProperties(preview, {
+      offsetWidth: { configurable: true, value: 200 },
+      offsetHeight: { configurable: true, value: 112.5 },
+      setPointerCapture: { configurable: true, value: vi.fn() },
+    });
+    stage.getBoundingClientRect = () => ({
+      x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600,
+      width: 800, height: 600, toJSON: () => ({}),
+    });
+    preview.getBoundingClientRect = () => ({
+      x: 584, y: 471.5, left: 584, top: 471.5, right: 784, bottom: 584,
+      width: 200, height: 112.5, toJSON: () => ({}),
+    });
+
+    fireEvent.pointerDown(preview, {
+      pointerId: 1,
+      pointerType: "mouse",
+      clientX: 783,
+      clientY: 528,
+    });
+    fireEvent.pointerMove(preview, {
+      pointerId: 1,
+      pointerType: "mouse",
+      clientX: 799,
+      clientY: 528,
+    });
+
+    expect(preview).toHaveStyle({
+      width: "216px",
+      height: "121.5px",
+      transform: "translate3d(584px, 471.5px, 0)",
+    });
   });
 
   it("leaves the dedicated video call route to CallScreen", () => {
