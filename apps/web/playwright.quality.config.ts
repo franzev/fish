@@ -1,25 +1,23 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3001";
+const baseURL = process.env.PLAYWRIGHT_QUALITY_BASE_URL ?? "http://localhost:3002";
 
 export default defineConfig({
-  testDir: "./e2e",
-  testIgnore: ["quality/**"],
-  timeout: 45_000,
-  expect: {
-    timeout: 10_000,
-  },
+  testDir: "./e2e/quality",
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   fullyParallel: false,
   reporter: [["list"]],
   use: {
+    ...devices["Desktop Chrome"],
     baseURL,
+    colorScheme: "light",
     trace: "retain-on-failure",
   },
   projects: [
     {
-      name: "chrome",
+      name: "quality-chromium",
       use: {
-        ...devices["Desktop Chrome"],
         channel: "chrome",
         launchOptions: {
           args: [
@@ -31,7 +29,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev",
+    command: "pnpm exec next start -p 3002",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
