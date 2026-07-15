@@ -50,6 +50,8 @@ export interface CallContextValue {
   localMicrophoneActive: boolean;
   localMicrophoneLevel: number;
   remoteSpeaking: boolean;
+  remoteMicrophoneLevel: number;
+  remoteMuted: boolean;
   localVideoStream: MediaStream | null;
   remoteVideoTrack: RemoteVideoTrack | null;
   videoQualityPreference: VideoQualityPreference;
@@ -103,7 +105,9 @@ export function CallProvider({
     localMicrophoneActive: false,
     localMicrophoneLevel: 0,
     remoteSpeaking: false,
+    remoteMicrophoneLevel: 0,
   });
+  const [remoteMuted, setRemoteMuted] = useState(false);
   const [localVideoStream, setLocalVideoStream] =
     useState<MediaStream | null>(null);
   const [remoteVideoTrack, setRemoteVideoTrack] =
@@ -148,6 +152,9 @@ export function CallProvider({
         },
         onSpeakingChanged(_callId, speakingState) {
           setSpeaking(speakingState);
+        },
+        onRemoteMuteChanged(_callId, muted) {
+          setRemoteMuted(muted);
         },
         onLocalVideoChanged(stream) {
           setLocalVideoStream(stream);
@@ -354,7 +361,9 @@ export function CallProvider({
       localMicrophoneActive: false,
       localMicrophoneLevel: 0,
       remoteSpeaking: false,
+      remoteMicrophoneLevel: 0,
     });
+    setRemoteMuted(false);
     setLocalVideoStream(null);
     setRemoteVideoTrack(null);
     dispatch({ type: "clearCall" });
@@ -384,6 +393,8 @@ export function CallProvider({
     localMicrophoneActive: speaking.localMicrophoneActive,
     localMicrophoneLevel: speaking.localMicrophoneLevel,
     remoteSpeaking: speaking.remoteSpeaking,
+    remoteMicrophoneLevel: speaking.remoteMicrophoneLevel,
+    remoteMuted,
     localVideoStream,
     remoteVideoTrack,
     videoQualityPreference,
@@ -570,7 +581,7 @@ export function CallProvider({
       media.setVideoQualityPreference(preference);
       writeVideoQualityPreference(preference);
     },
-  }), [audioBlocked, busy, clearCall, commands, connectCall, localVideoStream, media, notice, remoteVideoTrack, run, speaking, state, videoQualityPreference]);
+  }), [audioBlocked, busy, clearCall, commands, connectCall, localVideoStream, media, notice, remoteMuted, remoteVideoTrack, run, speaking, state, videoQualityPreference]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }

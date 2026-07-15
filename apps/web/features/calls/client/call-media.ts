@@ -27,8 +27,10 @@ export interface CallMediaCallbacks {
       localMicrophoneActive: boolean;
       localMicrophoneLevel: number;
       remoteSpeaking: boolean;
+      remoteMicrophoneLevel: number;
     }
   ): void;
+  onRemoteMuteChanged(callId: string, muted: boolean): void;
   onLocalVideoChanged(stream: MediaStream | null): void;
   onRemoteVideoChanged(track: RemoteVideoTrack | null): void;
   onCameraChanged(enabled: boolean): void;
@@ -49,6 +51,8 @@ export class LiveKitCallMedia {
   private localMicrophoneActive = false;
   private localMicrophoneLevel = 0;
   private remoteSpeaking = false;
+  private remoteMicrophoneLevel = 0;
+  private remoteMuted = false;
   private localActiveUntil = 0;
   private videoQualityPreference: VideoQualityPreference;
 
@@ -183,7 +187,8 @@ export class LiveKitCallMedia {
     const callId = this.callId;
     this.intentionalDisconnect = true;
     this.stopSpeakingMonitor();
-    if (callId) this.updateSpeaking(callId, false, false, 0);
+    if (callId) this.updateSpeaking(callId, false, false, 0, 0);
+    if (callId) this.updateRemoteMuted(callId, false);
     this.room = null;
     this.callId = null;
     this.canPublishMicrophone = false;
@@ -221,7 +226,14 @@ export class LiveKitCallMedia {
     });
     room.on(RoomEvent.ParticipantDisconnected, () => {
       if (room.remoteParticipants.size === 0) {
-        this.updateSpeaking(callId, this.localMicrophoneActive, false);
+        this.updateSpeaking(
+          callId,
+          this.localMicrophoneActive,
+          false,
+          undefined,
+          0
+        );
+        this.updateRemoteMuted(callId, false);
       }
     });
     room.on(RoomEvent.Reconnecting, () => {
@@ -239,6 +251,7 @@ export class LiveKitCallMedia {
         this.canPublishCamera = false;
         this.callbacks.onLocalVideoChanged(null);
         this.callbacks.onRemoteVideoChanged(null);
+        this.updateRemoteMuted(callId, false);
         this.callbacks.onCameraChanged(false);
         this.clearAttachedMedia();
         this.callbacks.onDisconnected(callId);
@@ -256,6 +269,7 @@ export class LiveKitCallMedia {
           return;
         }
         if (track.kind !== Track.Kind.Audio) return;
+        this.updateRemoteMuted(callId, publication.isMuted);
         const element = track.attach();
         element.dataset.fishCallAudio = "true";
         element.hidden = true;
@@ -298,6 +312,19 @@ export class LiveKitCallMedia {
       (publication, participant) => {
         if (
           participant.identity !== room.localParticipant.identity &&
+          publication.source === Track.Source.Microphone
+        ) {
+          this.updateSpeaking(
+            callId,
+            this.localMicrophoneActive,
+            false,
+            undefined,
+            0
+          );
+          this.updateRemoteMuted(callId, true);
+        }
+        if (
+          participant.identity !== room.localParticipant.identity &&
           publication.source === Track.Source.Camera
         ) {
           this.callbacks.onRemoteVideoChanged(null);
@@ -307,6 +334,12 @@ export class LiveKitCallMedia {
     room.on(
       RoomEvent.TrackUnmuted,
       (publication, participant) => {
+        if (
+          participant.identity !== room.localParticipant.identity &&
+          publication.source === Track.Source.Microphone
+        ) {
+          this.updateRemoteMuted(callId, false);
+        }
         if (
           participant.identity !== room.localParticipant.identity &&
           publication.source === Track.Source.Camera &&
@@ -368,6 +401,20 @@ export class LiveKitCallMedia {
       const response = measuredLevel > this.localMicrophoneLevel ? 0.35 : 0.12;
       const smoothedLevel = this.localMicrophoneLevel +
         (measuredLevel - this.localMicrophoneLevel) * response;
+      let measuredRemoteLevel = 0;
+      if (!this.remoteMuted) {
+        room.remoteParticipants.forEach((participant) => {
+          measuredRemoteLevel = Math.max(
+            measuredRemoteLevel,
+            Math.min(1, participant.audioLevel / 0.3)
+          );
+        });
+      }
+      const remoteResponse = measuredRemoteLevel > this.remoteMicrophoneLevel
+        ? 0.35
+        : 0.12;
+      const smoothedRemoteLevel = this.remoteMicrophoneLevel +
+        (measuredRemoteLevel - this.remoteMicrophoneLevel) * remoteResponse;
       if (
         room.localParticipant.isMicrophoneEnabled &&
         room.localParticipant.audioLevel >= 0.025
@@ -381,7 +428,8 @@ export class LiveKitCallMedia {
         callId,
         microphoneActive,
         this.remoteSpeaking,
-        smoothedLevel < 0.01 ? 0 : smoothedLevel
+        smoothedLevel < 0.01 ? 0 : smoothedLevel,
+        smoothedRemoteLevel < 0.01 ? 0 : smoothedRemoteLevel
       );
       this.speakingFrame = window.requestAnimationFrame(readLevel);
     };
@@ -400,22 +448,33 @@ export class LiveKitCallMedia {
     callId: string,
     localMicrophoneActive: boolean,
     remoteSpeaking: boolean,
-    localMicrophoneLevel = this.localMicrophoneLevel
+    localMicrophoneLevel = this.localMicrophoneLevel,
+    remoteMicrophoneLevel = this.remoteMicrophoneLevel
   ) {
     const nextLevel = Math.round(localMicrophoneLevel * 100) / 100;
+    const nextRemoteLevel = Math.round(remoteMicrophoneLevel * 100) / 100;
     if (
       localMicrophoneActive === this.localMicrophoneActive &&
       nextLevel === this.localMicrophoneLevel &&
-      remoteSpeaking === this.remoteSpeaking
+      remoteSpeaking === this.remoteSpeaking &&
+      nextRemoteLevel === this.remoteMicrophoneLevel
     ) return;
     this.localMicrophoneActive = localMicrophoneActive;
     this.localMicrophoneLevel = nextLevel;
     this.remoteSpeaking = remoteSpeaking;
+    this.remoteMicrophoneLevel = nextRemoteLevel;
     this.callbacks.onSpeakingChanged(callId, {
       localMicrophoneActive,
       localMicrophoneLevel: nextLevel,
       remoteSpeaking,
+      remoteMicrophoneLevel: nextRemoteLevel,
     });
+  }
+
+  private updateRemoteMuted(callId: string, muted: boolean): void {
+    if (muted === this.remoteMuted) return;
+    this.remoteMuted = muted;
+    this.callbacks.onRemoteMuteChanged(callId, muted);
   }
 }
 

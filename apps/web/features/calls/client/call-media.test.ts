@@ -69,7 +69,7 @@ vi.mock("livekit-client", () => {
     },
     Track: {
       Kind: { Audio: "audio", Video: "video" },
-      Source: { Camera: "camera" },
+      Source: { Camera: "camera", Microphone: "microphone" },
     },
     VideoQuality: { LOW: 0, MEDIUM: 1, HIGH: 2 },
     VideoPresets: {
@@ -105,6 +105,7 @@ function callbacks(): CallMediaCallbacks {
     onDisconnected: vi.fn(),
     onAudioPlaybackChanged: vi.fn(),
     onSpeakingChanged: vi.fn(),
+    onRemoteMuteChanged: vi.fn(),
     onLocalVideoChanged: vi.fn(),
     onRemoteVideoChanged: vi.fn(),
     onCameraChanged: vi.fn(),
@@ -154,7 +155,7 @@ describe("LiveKitCallMedia", () => {
     });
   });
 
-  it("reports a smoothed local microphone level during a call", async () => {
+  it("reports smoothed local and remote microphone levels during a call", async () => {
     let frame: FrameRequestCallback | null = null;
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
       frame = callback;
@@ -178,6 +179,13 @@ describe("LiveKitCallMedia", () => {
       isMicrophoneEnabled: boolean;
     };
     participant.audioLevel = 0.09;
+    remoteParticipantsMock.set("user-2", {
+      identity: "user-2",
+      audioLevel: 0.06,
+    });
+    roomEventHandlers.get("activeSpeakersChanged")?.([
+      { identity: "user-2" },
+    ]);
     runFrame(0);
 
     expect(mediaCallbacks.onSpeakingChanged).toHaveBeenLastCalledWith(
@@ -185,7 +193,8 @@ describe("LiveKitCallMedia", () => {
       {
         localMicrophoneActive: true,
         localMicrophoneLevel: 0.11,
-        remoteSpeaking: false,
+        remoteSpeaking: true,
+        remoteMicrophoneLevel: 0.07,
       }
     );
     await media.disconnect();
@@ -215,6 +224,32 @@ describe("LiveKitCallMedia", () => {
 
     expect(mediaCallbacks.onRemoteVideoChanged).toHaveBeenCalledWith(remoteTrack);
     expect(remotePublication.setVideoQuality).toHaveBeenCalledWith(2);
+  });
+
+  it("reports when the remote microphone is muted and unmuted", async () => {
+    const mediaCallbacks = callbacks();
+    const media = new LiveKitCallMedia(mediaCallbacks);
+    const remoteParticipant = { identity: "user-2" };
+    const remoteMicrophone = { source: "microphone" };
+
+    await media.connect(
+      "call-1",
+      { serverUrl: "wss://calls.example", participantToken: "token" },
+      { microphone: false, camera: false }
+    );
+    roomEventHandlers.get("trackMuted")?.(remoteMicrophone, remoteParticipant);
+    roomEventHandlers.get("trackUnmuted")?.(remoteMicrophone, remoteParticipant);
+
+    expect(mediaCallbacks.onRemoteMuteChanged).toHaveBeenNthCalledWith(
+      1,
+      "call-1",
+      true
+    );
+    expect(mediaCallbacks.onRemoteMuteChanged).toHaveBeenNthCalledWith(
+      2,
+      "call-1",
+      false
+    );
   });
 
   it("caps a remote camera that subscribes after data saver is selected", async () => {
