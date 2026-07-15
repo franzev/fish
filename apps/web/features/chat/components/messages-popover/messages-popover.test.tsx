@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MessagePopoverActionState } from "@/features/chat/contracts";
 import { MessagesPopover } from "./messages-popover";
 
@@ -34,6 +34,46 @@ function previewResult(): MessagePopoverActionState {
 }
 
 describe("MessagesPopover", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("preloads previews during browser idle time and reuses them when opened", async () => {
+    let runIdleCallback: IdleRequestCallback | undefined;
+    const loadPreviewAction = vi.fn(async () => previewResult());
+    vi.stubGlobal("requestIdleCallback", vi.fn((callback: IdleRequestCallback) => {
+      runIdleCallback = callback;
+      return 1;
+    }));
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+
+    render(
+      <MessagesPopover
+        unreadCount={3}
+        loadPreviewAction={loadPreviewAction}
+      />
+    );
+
+    if (!runIdleCallback) window.dispatchEvent(new Event("load"));
+    expect(runIdleCallback).toBeDefined();
+    expect(loadPreviewAction).not.toHaveBeenCalled();
+
+    act(() => {
+      runIdleCallback?.({
+        didTimeout: false,
+        timeRemaining: () => 50,
+      });
+    });
+    await waitFor(() => expect(loadPreviewAction).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "Messages, 3 unread" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("status", { name: "Loading messages" })).toBeNull();
+    expect(within(dialog).getByRole("link", { name: /Gwyn/ })).toBeInTheDocument();
+    expect(loadPreviewAction).toHaveBeenCalledTimes(1);
+  });
+
   it("opens a desktop inbox preview with filters, count, and page controls", async () => {
     const loadPreviewAction = vi.fn(async () => previewResult());
     render(
