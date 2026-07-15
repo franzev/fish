@@ -24,41 +24,60 @@ export function prepareChatImage(
     return prepareOnMainThread(file, onProgress);
   }
 
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
+  let worker: Worker;
+  try {
+    worker = new Worker(
       new URL("./prepare-chat-image.worker.ts", import.meta.url),
       { type: "module" }
     );
+  } catch {
+    return prepareOnMainThread(file, onProgress);
+  }
+
+  return new Promise((resolve, reject) => {
+    let finished = false;
     const timeout = window.setTimeout(() => {
-      worker.terminate();
-      reject(new Error("Preparing this image took too long. Try a smaller copy."));
+      fallbackToMainThread();
     }, preparationTimeoutMs);
 
-    const finish = () => {
+    const finishWorker = () => {
+      if (finished) return false;
+      finished = true;
       window.clearTimeout(timeout);
       worker.terminate();
+      return true;
     };
+
+    function fallbackToMainThread() {
+      if (!finishWorker()) return;
+      void prepareOnMainThread(file, onProgress).then(resolve, reject);
+    };
+
     worker.addEventListener("message", (event: MessageEvent<{
       kind: "progress" | "complete" | "error";
       progress?: number;
       file?: File;
       message?: string;
     }>) => {
+      if (finished) return;
       if (event.data.kind === "progress") {
         onProgress(event.data.progress ?? 0);
         return;
       }
-      finish();
       if (event.data.kind === "complete" && event.data.file) {
+        finishWorker();
         resolve(event.data.file);
       } else {
-        reject(new Error(event.data.message || "That image could not be prepared."));
+        fallbackToMainThread();
       }
     });
     worker.addEventListener("error", () => {
-      finish();
-      reject(new Error("That image could not be prepared. Try another copy."));
+      fallbackToMainThread();
     });
-    worker.postMessage({ file });
+    try {
+      worker.postMessage({ file });
+    } catch {
+      fallbackToMainThread();
+    }
   });
 }

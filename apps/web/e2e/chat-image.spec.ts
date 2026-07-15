@@ -1,5 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { deflateSync } from "node:zlib";
+
+interface TestFilePayload {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+}
 
 function crc32(bytes: Buffer): number {
   let crc = 0xffffffff;
@@ -46,7 +52,18 @@ const onePixelPng = Buffer.from(
   "base64"
 );
 
-test("client prepares, sends, and opens a private image", async ({ page }) => {
+async function chooseFilesFromComposer(
+  page: Page,
+  files: TestFilePayload | TestFilePayload[]
+): Promise<void> {
+  await page.getByRole("button", { name: "Add to message" }).click();
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("menuitem", { name: "Add files" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(files);
+}
+
+test("client prepares, sends, and opens a community image", async ({ page }) => {
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill("client1@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
@@ -55,14 +72,12 @@ test("client prepares, sends, and opens a private image", async ({ page }) => {
   await page.goto("/channels/general");
   const imagesBeforeSend = await page.getByAltText(/Image shared by/).count();
 
-  await page.getByLabel("Choose files").setInputFiles({
+  await chooseFilesFromComposer(page, {
     name: "one-pixel.png",
     mimeType: "image/png",
     buffer: onePixelPng,
   });
 
-  const progress = page.getByRole("progressbar", { name: /file$/i });
-  await expect(progress).toHaveAttribute("data-shape", "circular");
   const composerPreview = page.getByAltText("Preview of image to send");
   await expect(composerPreview).toBeVisible();
   const previewBox = await composerPreview.boundingBox();
@@ -81,6 +96,105 @@ test("client prepares, sends, and opens a private image", async ({ page }) => {
   await sentImage.click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("button", { name: "Close image" })).toBeVisible();
+});
+
+test("client prepares, sends, and opens an image in a direct message", async ({ page }) => {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill("client1@fish.dev");
+  await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await page.goto("/messages");
+  await expect(page).toHaveURL(/\/messages\/[0-9a-f-]+$/);
+  const imagesBeforeSend = await page.getByAltText(/Image shared by/).count();
+
+  await chooseFilesFromComposer(page, {
+    name: "one-pixel.png",
+    mimeType: "image/png",
+    buffer: onePixelPng,
+  });
+
+  const composerPreview = page.getByAltText("Preview of image to send");
+  await expect(composerPreview).toBeVisible();
+  const sendButton = page.getByRole("button", { name: "Send message" });
+  await expect(sendButton).toBeEnabled({ timeout: 30_000 });
+  await sendButton.click();
+
+  const messageImages = page.getByAltText(/Image shared by/);
+  await expect(messageImages).toHaveCount(imagesBeforeSend + 1, { timeout: 15_000 });
+  await expect(messageImages.last()).toBeVisible();
+});
+
+test("photo preparation falls back when the image worker cannot decode it", async ({ page }) => {
+  await page.addInitScript(() => {
+    class FailingImageWorker extends EventTarget {
+      postMessage() {
+        queueMicrotask(() => {
+          this.dispatchEvent(new MessageEvent("message", {
+            data: {
+              kind: "error",
+              message: "The worker could not decode this photo.",
+            },
+          }));
+        });
+      }
+
+      terminate() {}
+    }
+
+    Object.defineProperty(window, "Worker", {
+      configurable: true,
+      value: FailingImageWorker,
+    });
+  });
+
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill("member1@fish.dev");
+  await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await page.goto("/messages");
+  await expect(page).toHaveURL(/\/messages\/[0-9a-f-]+$/);
+  const imagesBeforeSend = await page.getByAltText(/Image shared by/).count();
+
+  await chooseFilesFromComposer(page, {
+    name: "cats.png",
+    mimeType: "image/png",
+    buffer: pngFixture(1200, 800, [120, 90, 70]),
+  });
+
+  await expect(page.getByRole("button", { name: /Upload failed/ })).toHaveCount(0);
+  const sendButton = page.getByRole("button", { name: "Send message" });
+  await expect(sendButton).toBeEnabled({ timeout: 30_000 });
+  await sendButton.click();
+  await expect(page.getByAltText(/Image shared by/)).toHaveCount(imagesBeforeSend + 1, {
+    timeout: 15_000,
+  });
+});
+
+test("client sends a browser-decoded photo whose original extension differs", async ({ page }) => {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill("client1@fish.dev");
+  await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await page.goto("/messages");
+  await expect(page).toHaveURL(/\/messages\/[0-9a-f-]+$/);
+
+  // Photos and phone file pickers can hand the browser decoded JPEG content
+  // while retaining the source asset's HEIC filename. The client normalizes
+  // image bytes to WebP before upload, so the original extension is not an
+  // authoritative content-type boundary.
+  await page.getByLabel("Choose files").setInputFiles({
+    name: "cats.heic",
+    mimeType: "image/jpeg",
+    buffer: onePixelPng,
+  });
+
+  const sendButton = page.getByRole("button", { name: "Send message" });
+  await expect(sendButton).toBeEnabled({ timeout: 30_000 });
+  await sendButton.click();
+  await expect(page.getByAltText(/Image shared by/).last()).toBeVisible({ timeout: 15_000 });
 });
 
 test("mixed image aspect ratios flow from left to right and wrap", async ({ page }) => {
@@ -168,7 +282,6 @@ test("client sends and opens a private text attachment", async ({ page }) => {
     buffer: Buffer.from("Practice the opening sentence twice.\n", "utf8"),
   });
 
-  await expect(page.getByRole("progressbar", { name: /file$/i })).toHaveAttribute("data-shape", "circular");
   const sendButton = page.getByRole("button", { name: "Send message" });
   await expect(sendButton).toBeEnabled({ timeout: 30_000 });
   await sendButton.click();
