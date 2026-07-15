@@ -14,9 +14,3 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Assigned: Story = {};
-
-export const PendingAssignment: Story = {
-  args: {
-    coachName: null,
-  },
-};

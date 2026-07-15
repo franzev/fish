@@ -39,7 +39,7 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      {data.role === "client" && (
+      {data.role === "client" && data.coachId && (
         <CoachCard
           coachId={data.coachId}
           coachName={data.coachName}
