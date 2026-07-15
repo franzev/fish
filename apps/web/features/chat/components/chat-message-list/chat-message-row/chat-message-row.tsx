@@ -151,6 +151,21 @@ export function ChatMessageRow({
   const showMessageActions =
     message.localStatus === "sent" && !message.deletedAt && !interactionDisabled;
   const authorMember = getAuthorMember(message);
+  const visualImageCount =
+    message.images?.filter((attachment) => attachment.kind !== "file").length ?? 0;
+  const messageSurfaceWidthClass = isEditing
+    ? "w-full max-w-message"
+    : visualImageCount === 1
+      ? "w-full max-w-chat-preview"
+      : visualImageCount > 1
+        ? "w-full max-w-message"
+        : message.images?.length
+          ? "w-full max-w-chat-image"
+          : message.gif
+            ? "w-full max-w-chat-gif"
+            : message.stickerId
+              ? "w-fit max-w-message"
+              : "max-w-message";
 
   const rowContent = (
     <>
@@ -366,13 +381,8 @@ export function ChatMessageRow({
               ))}
             <div
               className={cn(
-                "flex max-w-message flex-col",
-                (
-                  Boolean(message.images?.length)
-                  || Boolean(message.gif)
-                  || Boolean(message.stickerId)
-                  || isEditing
-                ) && "w-full",
+                "relative flex flex-col",
+                messageSurfaceWidthClass,
                 mine && "items-end"
               )}
             >
