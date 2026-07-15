@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TooltipIconButton } from "@/components/ui/tooltip-icon-button";
+import { IconButton } from "@/components/ui/icon-button";
 import type { CallKind } from "@fish/core/call-state";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { IconPhone, IconVideo } from "@tabler/icons-react";
@@ -46,9 +46,10 @@ export function CallButton({
 
   return (
     <Tooltip.Provider delay={400} closeDelay={0}>
-      <TooltipIconButton
+      <IconButton
         type="button"
         label={label}
+        tooltip
         tooltipSide="bottom"
         disabled={busy}
         className="shrink-0"

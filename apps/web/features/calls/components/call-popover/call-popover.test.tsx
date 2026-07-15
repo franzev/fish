@@ -463,7 +463,8 @@ describe("CallPopover", () => {
       name: "Resize your video preview",
     });
     expect(preview).toHaveClass("rounded-none");
-    expect(preview).toHaveClass("border-0", "shadow-none");
+    expect(preview).toHaveClass("border-0");
+    expect(preview).not.toHaveClass("shadow-none");
     expect(resizeHandle).toHaveClass("sr-only");
     const stage = preview.parentElement as HTMLDivElement;
     Object.defineProperties(stage, {

@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { MediaDeviceSelect } from "@/components/ui/media-device-select";
 import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
 import { Switch } from "@/components/ui/switch";
-import { TooltipIconButton } from "@/components/ui/tooltip-icon-button";
+import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 import type { CallSessionState } from "@fish/core/call-state";
 import { Popover } from "@base-ui/react/popover";
@@ -334,12 +334,13 @@ export function CallPopoverView({
                   <>
                     <span className="inline-flex items-center gap-2xs">
                       {call.kind === "video" && <MicrophoneVolumeMeter level={call.muted ? 0 : localMicrophoneLevel} active={!call.muted && localMicrophoneActive} />}
-                      <TooltipIconButton label={call.muted ? "Unmute" : "Mute"} onClick={() => void toggleMute()} icon={call.muted ? <IconMicrophoneOff data-testid="microphone-off-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconMicrophone data-testid="microphone-on-icon" size={20} stroke={1.75} aria-hidden="true" />} />
+                      <IconButton label={call.muted ? "Unmute" : "Mute"} tooltip onClick={() => void toggleMute()} icon={call.muted ? <IconMicrophoneOff data-testid="microphone-off-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconMicrophone data-testid="microphone-on-icon" size={20} stroke={1.75} aria-hidden="true" />} />
                     </span>
-                    {call.kind === "video" && <TooltipIconButton label={call.cameraEnabled ? "Turn camera off" : "Turn camera on"} onClick={() => void toggleCamera()} icon={call.cameraEnabled ? <IconVideo data-testid="camera-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconVideoOff data-testid="camera-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />}
+                    {call.kind === "video" && <IconButton label={call.cameraEnabled ? "Turn camera off" : "Turn camera on"} tooltip onClick={() => void toggleCamera()} icon={call.cameraEnabled ? <IconVideo data-testid="camera-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconVideoOff data-testid="camera-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />}
                     {(!screen || chatSidebar) && (
-                      <TooltipIconButton
+                      <IconButton
                         label={screen && chatOpen ? "Close chat" : "Open chat"}
+                        tooltip
                         loading={openingChat}
                         aria-controls={screen ? "call-messages" : undefined}
                         aria-expanded={screen ? chatOpen : undefined}
@@ -350,7 +351,7 @@ export function CallPopoverView({
                       />
                     )}
                     <Popover.Root open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshMicrophones(); }}>
-                      <Popover.Trigger render={<TooltipIconButton label="Call settings" icon={<IconSettings size={20} stroke={1.75} aria-hidden="true" />} />} />
+                      <Popover.Trigger render={<IconButton label="Call settings" tooltip icon={<IconSettings size={20} stroke={1.75} aria-hidden="true" />} />} />
                       <Popover.Portal>
                         <Popover.Positioner side="top" align="end" sideOffset={4} className="z-50">
                           <Popover.Popup aria-label="Call settings" initialFocus={false} className="call-settings-popover rounded-control border border-divider bg-surface p-md outline-none">
@@ -371,7 +372,7 @@ export function CallPopoverView({
                     </Popover.Root>
                   </>
                 )}
-                <TooltipIconButton label="End call" loading={busy} onClick={() => void end()} className="bg-error text-on-primary hover:bg-error active:bg-error" icon={<IconPhoneOff size={20} stroke={1.75} aria-hidden="true" />} />
+                <IconButton label="End call" tooltip tone="critical" loading={busy} onClick={() => void end()} icon={<IconPhoneOff size={20} stroke={1.75} aria-hidden="true" />} />
               </div>
             </Tooltip.Provider>
           )}

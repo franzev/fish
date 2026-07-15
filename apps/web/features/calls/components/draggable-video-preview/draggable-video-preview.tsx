@@ -306,7 +306,7 @@ export function DraggableVideoPreview({
       }}
       onKeyDown={handleKeyDown}
       className={cn(
-        "absolute z-20 aspect-video w-full max-w-call-preview touch-none select-none overflow-hidden rounded-none border-0 bg-bg shadow-none",
+        "absolute z-20 aspect-video w-full max-w-call-preview touch-none select-none overflow-hidden rounded-none border-0 bg-bg",
         "focus-visible:opacity-80",
         hoveredEdges?.left && hoveredEdges.top && "cursor-nwse-resize",
         hoveredEdges?.right && hoveredEdges.bottom && "cursor-nwse-resize",
