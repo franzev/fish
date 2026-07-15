@@ -16,6 +16,7 @@ const SPACING_TOKENS = [
   "2xl",
   "mobile-nav-offset",
   "control",
+  "search-control",
   "field-message",
   "badge",
   "chat-demo",

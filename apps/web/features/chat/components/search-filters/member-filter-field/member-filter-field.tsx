@@ -1,5 +1,7 @@
 "use client";
 
+import { IconButton } from "@/components/ui/icon-button";
+import { SearchOption } from "@/components/ui/search-option";
 import { Avatar } from "@/features/chat/components/avatar";
 import type { ChatSearchMember } from "@/features/chat/model/search";
 import { IconCheck, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
@@ -54,14 +56,13 @@ export function MemberFilterField({
             }}
             className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-ui text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
           />
-          <button
-            type="button"
-            aria-label={`${open ? "Close" : "Open"} ${label.toLowerCase()} suggestions`}
+          <IconButton
+            label={`${open ? "Close" : "Open"} ${label.toLowerCase()} suggestions`}
+            appearance="ghost"
+            tooltip={false}
             onClick={() => setOpen((current) => !current)}
-            className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted"
-          >
-            {open ? <IconChevronUp size={20} stroke={1.75} /> : <IconChevronDown size={20} stroke={1.75} />}
-          </button>
+            icon={open ? <IconChevronUp size={20} stroke={1.75} /> : <IconChevronDown size={20} stroke={1.75} />}
+          />
         </div>
         {open && (
           <div
@@ -76,13 +77,10 @@ export function MemberFilterField({
             ) : results.map((member) => {
               const selected = selectedIds.includes(member.id);
               return (
-                <button
+                <SearchOption
                   key={member.id}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
+                  selected={selected}
                   onClick={() => onToggle(member)}
-                  className={`flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left ${selected ? "bg-surface-3" : "hover:bg-surface-3"}`}
                 >
                   <Avatar size="md" name={member.displayName} src={member.avatarUrl} />
                   <span className="min-w-0 flex-1 truncate text-ui text-foreground">
@@ -91,11 +89,11 @@ export function MemberFilterField({
                   <span className="truncate text-ui-sm text-muted">{member.username}</span>
                   <span
                     aria-hidden="true"
-                    className={`flex size-10 shrink-0 items-center justify-center ${selected ? "text-foreground" : "text-transparent"}`}
+                    className={`flex size-nav-badge-slot shrink-0 items-center justify-center ${selected ? "text-foreground" : "text-transparent"}`}
                   >
                     <IconCheck size={20} stroke={2} />
                   </span>
-                </button>
+                </SearchOption>
               );
             })}
           </div>

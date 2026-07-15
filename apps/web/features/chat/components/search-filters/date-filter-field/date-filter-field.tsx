@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import type {
   ChatFilterCriterion,
   ChatSearchDateOperator,
@@ -50,14 +51,12 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
             value={criterion.date}
             onChange={(date) => update(criterion.id, { date, id: `${criterion.operator}:${date}` })}
           />
-          <button
-            type="button"
-            aria-label={`Remove date ${index + 1}`}
+          <IconButton
+            label={`Remove date ${index + 1}`}
+            appearance="ghost"
             onClick={() => onChange(criteria.filter((item) => item.id !== criterion.id))}
-            className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-          >
-            <IconTrash size={20} stroke={1.75} aria-hidden="true" />
-          </button>
+            icon={<IconTrash size={20} stroke={1.75} aria-hidden="true" />}
+          />
         </div>
       ))}
       <Button

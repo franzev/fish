@@ -127,7 +127,7 @@ export function SearchDiscoveryMenu({
 
       {from.length > 0 && (
         <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="from-user-heading">
-          <h2 id="from-user-heading" className="px-xs pb-xs text-ui-sm font-medium text-muted">
+          <h2 id="from-user-heading" className="px-xs pb-xs font-sans text-ui-sm font-medium text-muted">
             From user
           </h2>
           {from.map((selection) =>
@@ -151,7 +151,7 @@ export function SearchDiscoveryMenu({
 
       {inChannels.length > 0 && (
         <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="in-channel-heading">
-          <h2 id="in-channel-heading" className="px-xs pb-xs text-ui-sm font-medium text-muted">
+          <h2 id="in-channel-heading" className="px-xs pb-xs font-sans text-ui-sm font-medium text-muted">
             In channel
           </h2>
           {inChannels.map((selection) =>
@@ -159,13 +159,13 @@ export function SearchDiscoveryMenu({
               selection,
               <>
                 <IconHash size={20} stroke={1.75} className="shrink-0 text-muted" />
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-ui text-foreground">
-                    # {selection.channel.name}
-                  </span>
-                  <span className="truncate text-ui-sm text-muted">
-                    in: {selection.channel.slug}
-                  </span>
+                <span className="shrink-0 text-ui text-body">in:</span>
+                <span aria-hidden="true" className="shrink-0 text-ui text-muted">
+                  |
+                </span>
+                {" "}
+                <span className="truncate text-ui font-medium text-foreground">
+                  {selection.channel.name}
                 </span>
               </>
             )
@@ -175,7 +175,7 @@ export function SearchDiscoveryMenu({
 
       {mentions.length > 0 && (
         <section className="mt-xs border-t border-divider pt-sm" aria-labelledby="mentions-user-heading">
-          <h2 id="mentions-user-heading" className="px-xs pb-xs text-ui-sm font-medium text-muted">
+          <h2 id="mentions-user-heading" className="px-xs pb-xs font-sans text-ui-sm font-medium text-muted">
             Mentions user
           </h2>
           {mentions.map((selection) =>

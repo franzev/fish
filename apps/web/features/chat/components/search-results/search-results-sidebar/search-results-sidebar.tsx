@@ -1,6 +1,13 @@
 "use client";
 
-import { Menu } from "@base-ui/react/menu";
+import {
+  ActionMenuItem,
+  ActionMenuPopup,
+  ActionMenuRoot,
+  ActionMenuTrigger,
+} from "@/components/ui/action-menu";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { IconAdjustmentsHorizontal, IconArrowsSort, IconX } from "@tabler/icons-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
@@ -54,15 +61,17 @@ export function SearchResultsSidebar(props: SearchResultsSidebarProps) {
             {hasSettledResults && <span aria-hidden="true" className={`text-ui-sm font-medium text-muted ${isRefreshing ? "visible" : "invisible"}`}>Updating</span>}
           </h2>
           {isRefreshing && <span role="status" className="sr-only">Updating search results</span>}
-          <button type="button" onClick={props.onOpenFilters} className="inline-flex min-h-control shrink-0 items-center gap-xs whitespace-nowrap rounded-control bg-surface-2 px-sm text-ui-sm font-medium text-body hover:bg-surface-3"><IconAdjustmentsHorizontal size={20} aria-hidden="true" />Filters{props.filterCount > 0 ? ` (${props.filterCount})` : ""}</button>
-          <Menu.Root>
-            <Menu.Trigger className="inline-flex min-h-control shrink-0 items-center gap-xs whitespace-nowrap rounded-control bg-surface-2 px-sm text-ui-sm font-medium text-body hover:bg-surface-3"><IconArrowsSort size={20} aria-hidden="true" />Sort</Menu.Trigger>
-            <Menu.Portal><Menu.Positioner side="bottom" align="start" sideOffset={4} className="z-50"><Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
-              <Menu.Item onClick={() => props.onSortChange("desc")} className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui text-foreground data-[highlighted]:bg-surface-2">Newest first{props.sortDirection === "desc" ? " ✓" : ""}</Menu.Item>
-              <Menu.Item onClick={() => props.onSortChange("asc")} className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui text-foreground data-[highlighted]:bg-surface-2">Oldest first{props.sortDirection === "asc" ? " ✓" : ""}</Menu.Item>
-            </Menu.Popup></Menu.Positioner></Menu.Portal>
-          </Menu.Root>
-          <button type="button" aria-label="Close search results" onClick={props.onClose} className="icon-button-glyph inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"><IconX size={20} stroke={1.75} aria-hidden="true" /></button>
+          <Button type="button" variant="secondary" onClick={props.onOpenFilters} className="shrink-0 whitespace-nowrap px-sm text-ui-sm font-medium text-body">
+            <span className="inline-flex items-center gap-xs"><IconAdjustmentsHorizontal size={20} aria-hidden="true" />Filters{props.filterCount > 0 ? ` (${props.filterCount})` : ""}</span>
+          </Button>
+          <ActionMenuRoot>
+            <ActionMenuTrigger render={<Button type="button" variant="secondary" className="shrink-0 whitespace-nowrap px-sm text-ui-sm font-medium text-body"><span className="inline-flex items-center gap-xs"><IconArrowsSort size={20} aria-hidden="true" />Sort</span></Button>} />
+            <ActionMenuPopup align="start">
+              <ActionMenuItem onClick={() => props.onSortChange("desc")}>Newest first{props.sortDirection === "desc" ? " ✓" : ""}</ActionMenuItem>
+              <ActionMenuItem onClick={() => props.onSortChange("asc")}>Oldest first{props.sortDirection === "asc" ? " ✓" : ""}</ActionMenuItem>
+            </ActionMenuPopup>
+          </ActionMenuRoot>
+          <IconButton label="Close search results" appearance="ghost" onClick={props.onClose} className="shrink-0" icon={<IconX size={20} stroke={1.75} aria-hidden="true" />} />
         </div>
       </header>
       <ScrollArea className="flex-1" viewportClassName="p-sm">

@@ -1,3 +1,4 @@
+import { IconButton } from "@/components/ui/icon-button";
 import {
   IconAdjustmentsHorizontal,
   IconAt,
@@ -79,6 +80,7 @@ export function SearchCommandMenu({
           key={command.operator}
           type="button"
           role="menuitem"
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => onSelect(command.operator)}
           className="flex min-h-control w-full items-center gap-sm rounded-control px-xs py-xs text-left hover:bg-surface-2 focus-visible:bg-surface-2"
         >
@@ -104,19 +106,18 @@ export function SearchCommandMenu({
             <p id="search-history-heading" className="text-ui-sm font-medium text-muted">
               History
             </p>
-            <button
-              type="button"
-              aria-label="Clear search history"
+            <IconButton
+              label="Clear search history"
+              appearance="ghost"
               onClick={onClearHistory}
-              className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-            >
-              <IconTrash size={20} stroke={1.75} aria-hidden="true" />
-            </button>
+              icon={<IconTrash size={20} stroke={1.75} aria-hidden="true" />}
+            />
           </div>
           {history.map((entry) => (
             <button
               key={entry.id}
               type="button"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => onHistorySelect(entry)}
               className="flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left hover:bg-surface-2 focus-visible:bg-surface-2"
             >

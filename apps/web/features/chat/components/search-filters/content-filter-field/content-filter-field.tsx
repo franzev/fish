@@ -1,3 +1,4 @@
+import { SearchOption } from "@/components/ui/search-option";
 import type { ChatSearchContentKind } from "@/features/chat/model/search";
 import { IconCheck, IconFile, IconLink, IconPhoto, IconPlayerPlay, IconVideo } from "@tabler/icons-react";
 
@@ -25,17 +26,16 @@ export function ContentFilterField({ selected, onToggle }: ContentFilterFieldPro
         {options.map((option) => {
           const isSelected = selected.includes(option.value);
           return (
-            <button key={option.value} type="button" role="option" aria-selected={isSelected} onClick={() => onToggle(option.value)} className={`flex min-h-control w-full items-center gap-sm rounded-control px-xs text-left ${isSelected ? "bg-surface-3" : "hover:bg-surface-3"}`}>
+            <SearchOption key={option.value} selected={isSelected} onClick={() => onToggle(option.value)}>
               <option.icon size={20} stroke={1.75} className="text-muted" />
               <span className="flex-1 capitalize text-ui text-foreground">{option.value}</span>
-              <span aria-hidden="true" className={`flex size-10 items-center justify-center ${isSelected ? "text-foreground" : "text-transparent"}`}>
+              <span aria-hidden="true" className={`flex size-nav-badge-slot items-center justify-center ${isSelected ? "text-foreground" : "text-transparent"}`}>
                 <IconCheck size={20} stroke={2} />
               </span>
-            </button>
+            </SearchOption>
           );
         })}
       </div>
     </section>
   );
 }
-

@@ -1,5 +1,6 @@
 "use client";
 
+import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@base-ui/react/popover";
 import {
   IconCalendar,
@@ -101,28 +102,24 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
             className="w-search-pop-mobile rounded-card bg-surface p-sm sm:w-calendar sm:p-lg"
           >
             <div className="flex items-center justify-between border-b border-divider pb-md">
-              <button
-                type="button"
-                aria-label="Previous month"
+              <IconButton
+                label="Previous month"
+                appearance="ghost"
                 onClick={() => moveMonth(-1)}
-                className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
-              >
-                <IconChevronLeft size={20} stroke={1.75} aria-hidden="true" />
-              </button>
+                icon={<IconChevronLeft size={20} stroke={1.75} aria-hidden="true" />}
+              />
               <p className="text-ui font-medium text-foreground">
                 {visibleMonth.toLocaleDateString(undefined, {
                   month: "long",
                   year: "numeric",
                 })}
               </p>
-              <button
-                type="button"
-                aria-label="Next month"
+              <IconButton
+                label="Next month"
+                appearance="ghost"
                 onClick={() => moveMonth(1)}
-                className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
-              >
-                <IconChevronRight size={20} stroke={1.75} aria-hidden="true" />
-              </button>
+                icon={<IconChevronRight size={20} stroke={1.75} aria-hidden="true" />}
+              />
             </div>
             <div className="mt-sm grid grid-cols-7" role="row">
               {weekdays.map((weekday) => (

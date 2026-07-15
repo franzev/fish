@@ -46,3 +46,31 @@ export const FromSuggestions: Story = {
     ).toBeVisible();
   },
 };
+
+export const PlainTextBeforeFilter: Story = {
+  args: { value: "aac from: member4_6741f3" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const token = canvas.getByTestId("search-filter-token");
+    const precedingText = token.previousElementSibling;
+
+    await expect(precedingText).toBeInstanceOf(HTMLElement);
+    const precedingTextNode = (precedingText as HTMLElement).firstChild;
+    await expect(precedingTextNode).toBeInstanceOf(Text);
+
+    const visibleTextRange = document.createRange();
+    const visibleTextLength = (precedingTextNode as Text).data.trimEnd().length;
+    visibleTextRange.setStart(precedingTextNode as Text, 0);
+    visibleTextRange.setEnd(precedingTextNode as Text, visibleTextLength);
+
+    const tokenStyle = getComputedStyle(token);
+    const tokenPadding = getComputedStyle(document.documentElement)
+      .getPropertyValue("--spacing-2xs")
+      .trim();
+    await expect(tokenStyle.paddingInlineStart).toBe(tokenPadding);
+    await expect(parseFloat(tokenStyle.marginInlineStart)).toBe(-parseFloat(tokenPadding));
+    await expect(Math.ceil(token.getBoundingClientRect().left)).toBeGreaterThanOrEqual(
+      Math.floor(visibleTextRange.getBoundingClientRect().right)
+    );
+  },
+};

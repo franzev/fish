@@ -1,5 +1,6 @@
 "use client";
 
+import { IconButton } from "@/components/ui/icon-button";
 import { IconSearch, IconX } from "@tabler/icons-react";
 import {
   useMemo,
@@ -13,6 +14,7 @@ import {
   addChatSearchHistory,
   appendChatSearchOperator,
   clearChatSearchHistory,
+  criterionKey,
   parseChatSearchQuery,
   queryFromCriteria,
   readChatSearchHistory,
@@ -86,7 +88,7 @@ function renderTokenizedSearchValue(
       <span
         key={`${token.start}:${token.end}`}
         data-testid="search-filter-token"
-        className="-mx-xs rounded-control bg-surface-2 px-xs py-2xs text-foreground"
+        className="-mx-2xs rounded-control bg-surface-2 px-2xs py-2xs text-foreground"
       >
         {value.slice(token.start, token.end)}
       </span>
@@ -121,8 +123,14 @@ export function SearchFilterPopover({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const tokenLayerRef = useRef<HTMLDivElement | null>(null);
   const parsed = useMemo(() => parseChatSearchQuery(value, caret), [caret, value]);
-  const tokenModeToken = parsed.tokens.length === 1 && parsed.tokens[0]?.start === 0 && parsed.text.length === 0
+  const soleToken = parsed.tokens.length === 1 && parsed.tokens[0]?.start === 0 && parsed.text.length === 0
     ? parsed.tokens[0]
+    : null;
+  const soleTokenKey = soleToken?.value
+    ? `${soleToken.operator}:${soleToken.value.toLocaleLowerCase()}`
+    : null;
+  const tokenModeToken = soleToken && !criteria.some((criterion) => criterionKey(criterion) === soleTokenKey)
+    ? soleToken
     : null;
   const activeToken = parsed.activeToken ?? tokenModeToken;
   const tokenMode = tokenModeToken !== null;
@@ -174,6 +182,7 @@ export function SearchFilterPopover({
     onCriteriaChange?.(nextCriteria);
     setCaret(replacement.caret);
     setActiveIndex(0);
+    setPanelOpen(false);
     focusAt(replacement.caret);
   };
   const selectDiscovery = (selection: SearchDiscoverySelection) => {
@@ -267,7 +276,7 @@ export function SearchFilterPopover({
           />
         </div>
         {!value && <span className="pointer-events-none flex min-h-target-touch min-w-target-touch shrink-0 items-center justify-center text-muted sm:min-h-search-control sm:min-w-search-control"><IconSearch size={16} stroke={1.75} aria-hidden="true" /></span>}
-        {value && <button type="button" aria-label="Clear search" onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="icon-button-glyph inline-flex min-h-target-touch min-w-target-touch items-center justify-center rounded-control text-muted hover:text-body sm:min-h-search-control sm:min-w-search-control"><IconX size={20} stroke={1.75} aria-hidden="true" /></button>}
+        {value && <IconButton label="Clear search" appearance="ghost" tooltip={false} onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="sm:size-search-control sm:min-h-search-control" icon={<IconX size={20} stroke={1.75} aria-hidden="true" />} />}
       </div>
 
       {panelOpen && <div id="chat-search-panel" className="absolute right-0 top-full z-30 mt-2xs w-full">

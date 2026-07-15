@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, createEvent, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatFilterCriterion } from "@/features/chat/model/search";
@@ -79,8 +79,16 @@ describe("SearchFilterPopover", () => {
 
   it("inserts from: from the command menu and immediately shows channel members", () => {
     render(<Harness />);
-    openCommandMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /from a specific user/i }));
+    const input = screen.getByRole("combobox", { name: "Search messages" });
+    act(() => input.focus());
+    const fromCommand = screen.getByRole("menuitem", { name: /from a specific user/i });
+    const pointerDown = createEvent.mouseDown(fromCommand);
+    fireEvent(fromCommand, pointerDown);
+
+    expect(pointerDown.defaultPrevented).toBe(true);
+    expect(input).toHaveFocus();
+
+    fireEvent.click(fromCommand);
 
     expect(screen.getByText("from:")).toHaveClass("bg-surface-2");
     const list = screen.getByRole("listbox", { name: "From User" });
@@ -127,7 +135,7 @@ describe("SearchFilterPopover", () => {
     expect(within(list).queryByRole("option", { name: /Yoshibro/i })).toBeNull();
   });
 
-  it("keeps only the operator filled while editing a sole filter", () => {
+  it("finishes editing a sole filter after a keyboard selection", () => {
     render(<Harness />);
     const input = screen.getByRole<HTMLInputElement>("combobox", { name: "Search messages" });
     fireEvent.change(input, { target: { value: "from:" } });
@@ -141,10 +149,32 @@ describe("SearchFilterPopover", () => {
 
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(screen.getByRole("combobox", { name: "Search messages" })).toHaveValue("reganspor");
-    expect(screen.getByText("from:")).toHaveClass("bg-surface-2");
-    expect(screen.queryByTestId("search-filter-token")).toBeNull();
+    expect(screen.getByRole("combobox", { name: "Search messages" })).toHaveValue("from: reganspor ");
+    expect(screen.getByTestId("search-filter-token")).toHaveTextContent("from: reganspor");
     expect(screen.queryByLabelText("Applied filters")).toBeNull();
+    expect(screen.queryByRole("listbox", { name: "From User" })).toBeNull();
+  });
+
+  it("applies a From user when its suggestion is clicked", () => {
+    const onSubmit = vi.fn();
+    render(<Harness onSubmit={onSubmit} />);
+    const input = screen.getByRole<HTMLInputElement>("combobox", { name: "Search messages" });
+    fireEvent.change(input, { target: { value: "from:" } });
+    fireEvent.change(input, { target: { value: "reg" } });
+
+    const option = screen.getByRole("option", { name: /Sir Regan reganspor/i });
+    fireEvent.mouseDown(option);
+    fireEvent.click(option);
+
+    expect(input).toHaveValue("from: reganspor ");
+    expect(screen.getByTestId("search-filter-token")).toHaveTextContent("from: reganspor");
+    expect(screen.queryByRole("listbox", { name: "From User" })).toBeNull();
+
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSubmit).toHaveBeenCalledWith(
+      "from: reganspor ",
+      [expect.objectContaining({ kind: "from", member: members[1] })]
+    );
   });
 
   it("supports arrow-key navigation and Escape dismissal", () => {
@@ -173,6 +203,19 @@ describe("SearchFilterPopover", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("option", { name: "Search for practice" }));
     expect(onSubmit).toHaveBeenCalledWith("practice", []);
+  });
+
+  it("shows channel discovery results on one line without a duplicate hash", () => {
+    render(<Harness />);
+    const input = screen.getByRole("combobox", { name: "Search messages" });
+    fireEvent.change(input, { target: { value: "channel" } });
+
+    const list = screen.getByRole("listbox", { name: "Search suggestions" });
+    expect(
+      within(list).getByRole("option", { name: "in: general" })
+    ).toBeInTheDocument();
+    expect(within(list).queryByText("# general")).toBeNull();
+    expect(within(list).getAllByText("general")).toHaveLength(1);
   });
 });
 

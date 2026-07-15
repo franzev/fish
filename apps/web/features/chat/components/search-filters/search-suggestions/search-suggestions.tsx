@@ -1,3 +1,4 @@
+import { SearchOption } from "@/components/ui/search-option";
 import { Avatar } from "@/features/chat/components/avatar";
 import type {
   ChatSearchChannel,
@@ -92,16 +93,13 @@ export function SearchSuggestions({
             const selected = index === activeIndex;
             const label = suggestionLabel(suggestion);
             return (
-              <button
+              <SearchOption
                 key={`${suggestion.kind}:${label}`}
-                type="button"
-                role="option"
-                aria-selected={selected}
+                selected={selected}
+                selectedSurface="subtle"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => onSelect(suggestion)}
-                className={`flex min-h-control w-full items-center gap-xs rounded-control px-xs text-left ${
-                  selected ? "bg-surface-2" : "hover:bg-surface-2"
-                }`}
+                className="gap-xs"
               >
                 {suggestion.kind === "member" ? (
                   <>
@@ -154,7 +152,7 @@ export function SearchSuggestions({
                     <span className="text-ui text-foreground">{label}</span>
                   </>
                 )}
-              </button>
+              </SearchOption>
             );
           })}
         </div>

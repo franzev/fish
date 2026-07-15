@@ -9,6 +9,19 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/channels/general");
 });
 
+test("clicking From keeps the search focused and opens member suggestions", async ({
+  page,
+}) => {
+  const search = page.getByRole("combobox", { name: "Search messages" });
+  await search.focus();
+
+  const filters = page.getByRole("menu", { name: "Search filters" });
+  await filters.getByRole("menuitem", { name: /From a specific user/i }).click();
+
+  await expect(search).toBeFocused();
+  await expect(page.getByRole("listbox", { name: "From User" })).toBeVisible();
+});
+
 test("from: suggests channel members, searches the full history, and is individually removable", async ({
   page,
 }) => {
