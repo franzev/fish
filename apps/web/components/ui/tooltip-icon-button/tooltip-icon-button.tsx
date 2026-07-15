@@ -1,62 +1,36 @@
 "use client";
 
-import { Button, type ButtonActionProps } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Tooltip } from "@base-ui/react/tooltip";
-import { forwardRef, type ReactNode } from "react";
+import {
+  IconButton,
+  type IconButtonActionProps,
+} from "@/components/ui/icon-button";
+import { forwardRef } from "react";
 
 export interface TooltipIconButtonProps
-  extends Omit<ButtonActionProps, "aria-label" | "children" | "controlSize"> {
-  label: string;
-  icon: ReactNode;
-  tooltipSide?: "top" | "right" | "bottom" | "left";
-  tooltipClassName?: string;
+  extends Omit<IconButtonActionProps, "appearance"> {
+  variant?: "primary" | "secondary" | "ghost";
 }
 
-/** A shared square action with an accessible name and matching visual tooltip. */
+/** @deprecated Use IconButton. This compatibility wrapper has no visual logic. */
 export const TooltipIconButton = forwardRef<
   HTMLButtonElement,
   TooltipIconButtonProps
 >(function TooltipIconButton(
-  {
-    label,
-    icon,
-    tooltipSide = "top",
-    tooltipClassName,
-    variant = "secondary",
-    ...buttonProps
-  },
+  { variant = "secondary", tooltip = true, ...props },
   ref
 ) {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger
-        render={
-          <Button
-            {...buttonProps}
-            ref={ref}
-            variant={variant}
-            controlSize="square"
-            aria-label={label}
-          >
-            {icon}
-          </Button>
-        }
-      />
-      <Tooltip.Portal>
-        <Tooltip.Positioner
-          side={tooltipSide}
-          sideOffset={4}
-          className={cn("z-50", tooltipClassName)}
-        >
-          <Tooltip.Popup
-            role="tooltip"
-            className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
-          >
-            {label}
-          </Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    <IconButton
+      {...props}
+      tooltip={tooltip}
+      ref={ref}
+      appearance={
+        variant === "primary"
+          ? "solid"
+          : variant === "ghost"
+            ? "ghost"
+            : "surface"
+      }
+    />
   );
 });

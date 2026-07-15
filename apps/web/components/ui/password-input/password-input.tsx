@@ -1,6 +1,7 @@
 "use client";
 
 import { Input, type InputProps } from "@/components/ui/input";
+import { IconButton } from "@/components/ui/icon-button";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import { forwardRef, useState } from "react";
 
@@ -21,20 +22,17 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
         ref={ref}
         type={visible ? "text" : "password"}
         trailingControl={
-          <button
-            type="button"
-            aria-label={label}
+          <IconButton
+            label={label}
+            appearance="ghost"
             aria-pressed={visible}
-            title={label}
-            className="icon-button-glyph flex min-h-control min-w-control items-center justify-center rounded-control text-muted transition-colors hover:text-body"
             onClick={() => setVisible((current) => !current)}
-          >
-            {visible ? (
+            icon={visible ? (
               <IconEyeOff size={20} stroke={1.75} aria-hidden="true" />
             ) : (
               <IconEye size={20} stroke={1.75} aria-hidden="true" />
             )}
-          </button>
+          />
         }
       />
     );

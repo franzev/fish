@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SurfaceHeader } from "@/components/ui/surface-header";
 
 export interface PopoverHeaderProps {
   title: ReactNode;
@@ -6,10 +7,5 @@ export interface PopoverHeaderProps {
 }
 
 export function PopoverHeader({ title, actions }: PopoverHeaderProps) {
-  return (
-    <div className="flex shrink-0 items-center gap-sm border-b border-divider p-md">
-      <div className="min-w-0 flex-1">{title}</div>
-      <div className="flex shrink-0 items-center gap-2xs">{actions}</div>
-    </div>
-  );
+  return <SurfaceHeader title={title} action={actions} />;
 }
