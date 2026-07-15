@@ -39,12 +39,26 @@ const runtime = vi.hoisted(() => {
     }),
     realtime: { setAuth: vi.fn(async () => undefined) },
     removeChannel: vi.fn(async () => "ok"),
+    rpc: vi.fn(async (): Promise<{ data: unknown; error: unknown }> => ({
+      data: null,
+      error: null,
+    })),
   };
-  return { channels, client };
+  return {
+    channels,
+    client,
+    reportFailedResult: vi.fn(),
+    reportOperationalError: vi.fn(),
+  };
 });
 
 vi.mock("./browser", () => ({
   createBrowserSupabaseClient: () => runtime.client,
+}));
+
+vi.mock("@/lib/observability/reporter", () => ({
+  reportFailedResult: runtime.reportFailedResult,
+  reportOperationalError: runtime.reportOperationalError,
 }));
 
 import { supabasePresenceRealtimeService } from "./presence-realtime";
@@ -57,6 +71,10 @@ describe("supabasePresenceRealtimeService", () => {
     runtime.client.channel.mockClear();
     runtime.client.realtime.setAuth.mockClear();
     runtime.client.removeChannel.mockClear();
+    runtime.client.rpc.mockReset();
+    runtime.client.rpc.mockResolvedValue({ data: null, error: null });
+    runtime.reportFailedResult.mockClear();
+    runtime.reportOperationalError.mockClear();
   });
 
   it("bounds snapshot subscriptions and recovers only after replication is ready", async () => {
@@ -128,5 +146,57 @@ describe("supabasePresenceRealtimeService", () => {
 
     unsubscribe();
     expect(runtime.client.removeChannel).toHaveBeenCalledTimes(4);
+  });
+
+  it("does not report a best-effort final heartbeat rejected during teardown", async () => {
+    const teardownError = { code: "P0001", message: "not authenticated" };
+    runtime.client.rpc
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: null, error: teardownError });
+    const onError = vi.fn();
+
+    const session = supabasePresenceRealtimeService.startSession(
+      undefined,
+      onError
+    );
+    await waitFor(() => expect(runtime.client.rpc).toHaveBeenCalledTimes(1));
+
+    session.stop();
+
+    await waitFor(() => expect(runtime.client.rpc).toHaveBeenCalledTimes(2));
+    expect(runtime.client.rpc).toHaveBeenLastCalledWith(
+      "touch_presence_session",
+      expect.objectContaining({ p_ended: true })
+    );
+    expect(runtime.reportOperationalError).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("continues to report an active-session heartbeat failure", async () => {
+    const heartbeatError = { code: "P0001", message: "database unavailable" };
+    runtime.client.rpc.mockResolvedValueOnce({
+      data: null,
+      error: heartbeatError,
+    });
+    const onError = vi.fn();
+
+    const session = supabasePresenceRealtimeService.startSession(
+      undefined,
+      onError
+    );
+
+    await waitFor(() =>
+      expect(runtime.reportOperationalError).toHaveBeenCalledWith(
+        heartbeatError,
+        {
+          operation: "realtime.presence.heartbeat",
+          handled: true,
+          recoverable: true,
+          runtime: "browser",
+        }
+      )
+    );
+    expect(onError).toHaveBeenCalledOnce();
+    session.stop();
   });
 });

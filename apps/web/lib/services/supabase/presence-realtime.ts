@@ -222,6 +222,13 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
         return;
       }
 
+      // Ending a presence session is best-effort. During sign-out the auth
+      // session can disappear before this final RPC reaches Supabase, and
+      // page teardown can interrupt it entirely. Neither case affects the
+      // user or benefits from retrying/reporting after the controller has
+      // already stopped.
+      if (stopped && ended) return;
+
       if (!writeFailureReported) {
         writeFailureReported = true;
         reportOperationalError(error, {
