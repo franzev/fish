@@ -5,7 +5,6 @@ import { Tooltip } from "@base-ui/react/tooltip";
 import {
   IconMoodSmile,
   IconSend,
-  IconX,
 } from "@tabler/icons-react";
 import {
   useLayoutEffect,
@@ -23,8 +22,7 @@ import { GifSelectionPreview } from "../gif-selection-preview";
 import { MediaPickerButton } from "../media-picker-button";
 import type { ChatSticker } from "../sticker-picker";
 import type { ChatStickerId } from "@fish/core/chat";
-import { StickerMedia } from "../sticker-media";
-import { cn } from "@/lib/utils";
+import { StickerSelectionThumbnail } from "./sticker-selection-thumbnail";
 
 export interface ComposerProps {
   /** Community channel name for the placeholder; direct chats omit it. */
@@ -118,11 +116,6 @@ export function Composer({
     || images.length > 0
     || Boolean(selectedGif)
     || Boolean(selectedStickerId);
-  const isStickerOnly =
-    Boolean(selectedStickerId)
-    && draft.trim().length === 0
-    && images.length === 0
-    && !selectedGif;
   const sendDisabledReason = !canSend ? getSendDisabledReason(images) : null;
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -144,35 +137,18 @@ export function Composer({
       }}
       onDrop={handleDrop}
     >
-      <div className={cn(
-        "rounded-control",
-        !isStickerOnly && "bg-surface-2"
-      )}>
+      <div className="rounded-control bg-surface-2">
         <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
-        {selectedStickerId && (
-          <div className={cn(
-            "relative w-fit shrink-0 px-xs pt-xs",
-            isStickerOnly && "mb-xs rounded-control bg-surface-2 pb-xs"
-          )}>
-            <StickerMedia stickerId={selectedStickerId} />
-            <button
-              type="button"
-              aria-label="Remove sticker"
-              onClick={onRemoveSticker}
-              className="absolute right-3xs top-3xs inline-flex min-h-control min-w-control items-start justify-end rounded-control p-2xs text-body"
-            >
-              <span className="inline-flex size-md items-center justify-center rounded-pill bg-surface">
-                <IconX size={16} stroke={1.75} aria-hidden="true" />
-              </span>
-            </button>
-          </div>
-        )}
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
-        <div className={cn(
-          "flex items-end gap-xs p-xs",
-          isStickerOnly && "w-fit max-w-full rounded-control bg-surface-2"
-        )}>
-          <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
+        <div className="flex items-end gap-xs p-xs">
+          {selectedStickerId ? (
+            <StickerSelectionThumbnail
+              stickerId={selectedStickerId}
+              onRemove={onRemoveSticker}
+            />
+          ) : (
+            <AddMenu onSelectImages={onSelectImages} disabled={imageSelectionDisabled} />
+          )}
           <textarea
             ref={textareaRef}
             aria-label="Message"

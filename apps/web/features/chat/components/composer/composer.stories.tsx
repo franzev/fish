@@ -53,3 +53,11 @@ export const GifSelected: Story = {
     onRemoveGif: fn(),
   },
 };
+
+export const StickerSelected: Story = {
+  args: {
+    canSend: true,
+    selectedStickerId: "aquatic-great-job-sea-star",
+    onRemoveSticker: fn(),
+  },
+};

@@ -21,7 +21,9 @@ test("client selects, sends, and reloads a sticker-only message", async ({ page 
   await page.getByRole("searchbox", { name: "Search stickers" }).fill("otter");
   await page.getByRole("button", { name: "Add Hello! sticker" }).click();
 
-  await expect(page.getByRole("button", { name: "Remove sticker" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Remove selected sticker", exact: true })
+  ).toBeVisible();
   await page.getByRole("button", { name: "Send message" }).click();
 
   await expect(otterStickers).toHaveCount(stickersBeforeSend + 1);

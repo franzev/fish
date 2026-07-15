@@ -203,7 +203,7 @@ describe("Composer", () => {
     expect(onRemoveGif).toHaveBeenCalledOnce();
   });
 
-  it("previews a bundled sticker with an immediately enabled Send action", () => {
+  it("previews a bundled sticker as a removable thumbnail", () => {
     const onRemoveSticker = vi.fn();
     render(
       <Composer
@@ -216,26 +216,16 @@ describe("Composer", () => {
 
     expect(screen.getByRole("img", { name: /sea otter/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
-    const removeSticker = screen.getByRole("button", { name: "Remove sticker" });
-    expect(removeSticker).toHaveClass("absolute", "right-3xs", "top-3xs");
-    expect(removeSticker.parentElement).toHaveClass(
-      "w-fit",
-      "mb-xs",
-      "rounded-control",
-      "bg-surface-2"
-    );
-    expect(screen.getByRole("textbox", { name: "Message" }).parentElement).toHaveClass(
-      "w-fit",
-      "max-w-full",
-      "rounded-control",
-      "bg-surface-2"
-    );
-    expect(removeSticker.parentElement?.parentElement).not.toHaveClass("bg-surface-2");
+    const removeSticker = screen.getByRole("button", { name: "Remove selected sticker" });
+    expect(removeSticker).toHaveClass("relative", "size-control");
+    expect(screen.queryByRole("dialog", { name: "Selected sticker preview" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add to message" })).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Message" }).parentElement).toHaveClass("p-xs");
     fireEvent.click(removeSticker);
     expect(onRemoveSticker).toHaveBeenCalledOnce();
   });
 
-  it("keeps a sticker with message text in the stacked composer layout", () => {
+  it("keeps the same composer surface when sticker text is added", () => {
     render(
       <Composer
         {...baseProps}
@@ -245,12 +235,9 @@ describe("Composer", () => {
       />
     );
 
-    const removeSticker = screen.getByRole("button", { name: "Remove sticker" });
-    expect(removeSticker.parentElement).not.toHaveClass("mb-xs", "pb-xs");
-    expect(screen.getByRole("textbox", { name: "Message" }).parentElement).not.toHaveClass(
-      "bg-surface-2"
-    );
-    expect(removeSticker.parentElement?.parentElement).toHaveClass("bg-surface-2");
+    expect(screen.getByRole("button", { name: "Remove selected sticker" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Message" }).parentElement).not.toHaveClass("w-fit");
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue("Love this");
   });
 
   it("keeps one expression picker and the + menu affordance visible", () => {
