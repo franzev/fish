@@ -703,7 +703,7 @@ describe("ChatClient", () => {
 
     expect(screen.getByLabelText("general room")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "# general" })).toBeInTheDocument();
-    expect(screen.getByText("· 3 members")).toBeInTheDocument();
+    expect(screen.getByText("3 members")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Members" })).toHaveAttribute(
       "aria-pressed",
       "false"

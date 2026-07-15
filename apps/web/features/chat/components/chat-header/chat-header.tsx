@@ -76,7 +76,7 @@ export function ChatHeader({
             </h1>
             <span className="truncate text-ui-xs text-muted">
               {isCommunity
-                ? `· ${memberCount} ${memberCount === 1 ? "member" : "members"}`
+                ? `${memberCount} ${memberCount === 1 ? "member" : "members"}`
                 : presenceLabel}
             </span>
           </div>
