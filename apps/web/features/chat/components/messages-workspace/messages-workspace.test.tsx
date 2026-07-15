@@ -123,7 +123,7 @@ describe("MessagesWorkspace", () => {
       </MessagesWorkspace>
     );
 
-    expect(screen.getByText("Your friend")).toBeInTheDocument();
+    expect(screen.queryByText("Your friend")).not.toBeInTheDocument();
     expect(screen.getByText("You’re friends on FISH.")).toBeInTheDocument();
     expect(screen.getByText("Only you and your friend can take part.")).toBeInTheDocument();
     expect(screen.queryByText("One-to-one coaching")).not.toBeInTheDocument();

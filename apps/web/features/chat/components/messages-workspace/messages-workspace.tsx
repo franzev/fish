@@ -50,9 +50,7 @@ export function MessagesWorkspace({
     : latestSnippet;
   const isFriendConversation = chat.currentUserRole === "client"
     && chat.participant.role === "client";
-  const participantLabel = isFriendConversation
-    ? "Your friend"
-    : chat.currentUserRole === "coach"
+  const participantLabel = chat.currentUserRole === "coach"
     ? "Your client"
     : "Your coach";
   const assignedParticipantLabel = chat.currentUserRole === "coach"
@@ -146,7 +144,9 @@ export function MessagesWorkspace({
             <h3 className="mt-sm font-sans text-heading-sm font-semibold text-foreground">
               {chat.participant.displayName}
             </h3>
-            <p className="mt-2xs text-ui-sm text-muted">{participantLabel}</p>
+            {!isFriendConversation ? (
+              <p className="mt-2xs text-ui-sm text-muted">{participantLabel}</p>
+            ) : null}
             <div
               role="group"
               aria-label={`Call ${chat.participant.displayName}`}
