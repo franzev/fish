@@ -8,6 +8,7 @@ import {
   applyTheme,
   applyTimeFormat,
 } from "@/lib/prefs/apply-prefs";
+import { reportOperationalError } from "@/lib/observability/reporter";
 import type { TimeFormatPref } from "@/lib/prefs/time-format";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -119,7 +120,13 @@ export function A11yPrefs({
 
   function persist(next: UpdatePrefsInput) {
     setNotice(null);
-    void updatePrefsAction(next).catch(() => {
+    void updatePrefsAction(next).catch((error) => {
+      reportOperationalError(error, {
+        operation: "profile.preferences.save",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
       setNotice("That preference couldn’t be saved. Try choosing it again.");
     });
   }

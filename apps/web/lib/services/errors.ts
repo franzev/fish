@@ -9,6 +9,7 @@ export type ServiceErrorCode =
 
 export type ServiceFailureReason =
   | "emailNotConfirmed"
+  | "invalidCredentials"
   | "userAlreadyExists"
   | "samePassword"
   | "sessionMissing"
@@ -118,6 +119,7 @@ export function mapInfrastructureError(
 ): ServiceError {
   const reasonByCode: Record<string, ServiceFailureReason> = {
     email_not_confirmed: "emailNotConfirmed",
+    invalid_credentials: "invalidCredentials",
     user_already_exists: "userAlreadyExists",
     same_password: "samePassword",
     session_not_found: "sessionMissing",

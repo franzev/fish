@@ -1,5 +1,6 @@
 "use client";
 
+import { reportOperationalError } from "@/lib/observability/reporter";
 import { getAvatarCommandService } from "@/lib/services/runtime/browser";
 import type { AvatarCommandService, AvatarUploadAuthorization } from "@/lib/services";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -177,6 +178,12 @@ export function useAvatarUpload(override?: AvatarCommandService) {
       return true;
     } catch (error) {
       if (error instanceof AvatarUploadCancelledError || !isActive()) return false;
+      reportOperationalError(error, {
+        operation: "profile.avatar.save",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
       setStatus("failed");
       setNotice(
         error instanceof Error
@@ -200,6 +207,12 @@ export function useAvatarUpload(override?: AvatarCommandService) {
       return true;
     } catch (error) {
       if (operationRef.current !== operationId) return false;
+      reportOperationalError(error, {
+        operation: "profile.avatar.remove",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
       setStatus("failed");
       setNotice(error instanceof Error ? error.message : "That photo could not be removed yet. Try again.");
       return false;

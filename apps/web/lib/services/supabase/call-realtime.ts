@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  reportFailedResult,
+  reportOperationalError,
+} from "@/lib/observability/reporter";
 import type {
   CallRealtimeEvent,
   CallRealtimeService,
@@ -62,8 +66,22 @@ export const supabaseCallRealtimeService: CallRealtimeService = {
       if (active) {
         channel.subscribe((status) => {
           if (status === "SUBSCRIBED") onRecovery?.();
+          else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            reportFailedResult({ ok: false, code: status }, {
+              operation: "realtime.calls.subscribe",
+              recoverable: true,
+              runtime: "browser",
+            });
+          }
         });
       }
+    }).catch((error) => {
+      reportOperationalError(error, {
+        operation: "realtime.calls.authenticate",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
     });
     return () => {
       active = false;

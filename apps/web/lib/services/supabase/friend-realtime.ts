@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  reportFailedResult,
+  reportOperationalError,
+} from "@/lib/observability/reporter";
 import type { FriendRealtimeEvent, FriendRealtimeService } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
 
@@ -31,8 +35,22 @@ export const supabaseFriendRealtimeService: FriendRealtimeService = {
       if (active) {
         channel.subscribe((status) => {
           if (status === "SUBSCRIBED") onRecovery?.();
+          else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            reportFailedResult({ ok: false, code: status }, {
+              operation: "realtime.friends.subscribe",
+              recoverable: true,
+              runtime: "browser",
+            });
+          }
         });
       }
+    }).catch((error) => {
+      reportOperationalError(error, {
+        operation: "realtime.friends.authenticate",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
     });
     return () => {
       active = false;

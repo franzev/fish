@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  reportFailedResult,
+  reportOperationalError,
+} from "@/lib/observability/reporter";
 import type { AttentionRealtimeService } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
 
@@ -26,8 +30,21 @@ export const supabaseAttentionRealtimeService: AttentionRealtimeService = {
           if (status === "SUBSCRIBED" && !recovered) {
             recovered = true;
             onRecovery?.();
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            reportFailedResult({ ok: false, code: status }, {
+              operation: "realtime.attention.subscribe",
+              recoverable: true,
+              runtime: "browser",
+            });
           }
         });
+      });
+    }).catch((error) => {
+      reportOperationalError(error, {
+        operation: "realtime.attention.authenticate",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
       });
     });
     return () => {

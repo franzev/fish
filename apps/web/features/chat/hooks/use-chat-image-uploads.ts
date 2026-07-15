@@ -1,5 +1,6 @@
 "use client";
 
+import { reportOperationalError } from "@/lib/observability/reporter";
 import { getChatImageService } from "@/lib/services/runtime/browser";
 import { chatLimits } from "@fish/core/chat";
 import * as tus from "tus-js-client";
@@ -211,6 +212,12 @@ export function useChatImageUploads(conversationId: string) {
         storedByteSize: attachment.byteSize,
       });
     } catch (error) {
+      reportOperationalError(error, {
+        operation: "chat.imageUpload",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
       uploads.current.delete(id);
       update(id, {
         status: "failed",

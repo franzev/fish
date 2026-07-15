@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  reportFailedResult,
+  reportOperationalError,
+} from "@/lib/observability/reporter";
+import {
   PRESENCE_HEARTBEAT_MS,
   PRESENCE_IDLE_MS,
   type EffectivePresenceStatus,
@@ -148,9 +152,24 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
             status === "CLOSED"
           ) {
             markDisconnected(channel.topic);
+            if (status !== "CLOSED") {
+              reportFailedResult({ ok: false, code: status }, {
+                operation: "realtime.presence.subscribe",
+                recoverable: true,
+                runtime: "browser",
+              });
+            }
           }
         });
       });
+    }).catch((error) => {
+      reportOperationalError(error, {
+        operation: "realtime.presence.authenticate",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
+      onStatus?.("disconnected");
     });
     return () => {
       active = false;
@@ -169,6 +188,7 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let writing = false;
     let endRequested = false;
+    let writeFailureReported = false;
 
     async function write(ended = false) {
       if (stopped && !ended) return;
@@ -187,6 +207,7 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
       writing = false;
 
       if (!error) {
+        writeFailureReported = false;
         retryAttempt = 0;
         acknowledgedActivityVersion = Math.max(
           acknowledgedActivityVersion,
@@ -201,6 +222,15 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
         return;
       }
 
+      if (!writeFailureReported) {
+        writeFailureReported = true;
+        reportOperationalError(error, {
+          operation: "realtime.presence.heartbeat",
+          handled: true,
+          recoverable: true,
+          runtime: "browser",
+        });
+      }
       onError?.();
       if (endRequested) {
         endRequested = false;

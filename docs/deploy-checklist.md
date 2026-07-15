@@ -93,6 +93,14 @@ is done.
 - [ ] `AVATAR_UPLOADS_ENABLED` — server-side web rollout switch. Avatar
       mutations stay hidden unless this is explicitly set to `true`; existing
       avatar reads remain available either way.
+- [ ] For Vercel Preview and the dedicated staging environment only, set
+      `NEXT_PUBLIC_SENTRY_ENABLED=true`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`,
+      `SENTRY_PROJECT`, and the build-secret `SENTRY_AUTH_TOKEN`. Keep the flag
+      false or unset and omit the DSN/token in production. A staging build with
+      the flag enabled intentionally fails when any required value is missing.
+- [ ] In the Sentry project, keep default server-side data scrubbing enabled.
+      Do not enable Session Replay, performance tracing, logs, user identity,
+      or issue-alert rules for this partner-testing rollout.
 
 ## 6. Confirm the hosted auth config matches local
 
@@ -138,6 +146,12 @@ is done.
       reaction, read state, presence status changes, lesson booking and conflict
       handling, upcoming-lesson display, and realtime recovery.
 - [ ] Do not point destructive reset or seed commands at production.
+- [ ] In a Preview deployment, trigger one uncaught browser test error and one
+      handled offline failure. Confirm both appear in Sentry under `staging`,
+      source maps resolve to TypeScript, and events contain no query tokens,
+      authorization data, form/chat content, or user identity.
+- [ ] Trigger the same browser test error in production and confirm the browser
+      sends no request to Sentry and no production event appears.
 
 ---
 *Deliverable of Phase 2 (D-14). Execute at first deploy; keep updated if the auth flow's

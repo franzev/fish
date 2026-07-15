@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  reportFailedResult,
+  reportOperationalError,
+} from "@/lib/observability/reporter";
 import type {
   NotificationRealtimeHint,
   NotificationRealtimeService,
@@ -41,8 +45,23 @@ export const supabaseNotificationRealtimeService: NotificationRealtimeService = 
           onRecovery?.();
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           onStatus?.("disconnected");
+          if (status !== "CLOSED") {
+            reportFailedResult({ ok: false, code: status }, {
+              operation: "realtime.notifications.subscribe",
+              recoverable: true,
+              runtime: "browser",
+            });
+          }
         }
       });
+    }).catch((error) => {
+      reportOperationalError(error, {
+        operation: "realtime.notifications.authenticate",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
+      onStatus?.("disconnected");
     });
     return () => {
       active = false;

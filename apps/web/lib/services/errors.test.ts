@@ -3,6 +3,7 @@ import {
   ServiceError,
   isServiceFailure,
   isServiceSuccess,
+  mapInfrastructureError,
   normalizeServiceError,
   serviceFailure,
   serviceSuccess,
@@ -47,5 +48,19 @@ describe("service errors", () => {
     });
 
     expect(normalizeServiceError(original)).toBe(original);
+  });
+
+  it("normalizes invalid credentials into a stable expected-outcome reason", () => {
+    const error = mapInfrastructureError(
+      { code: "invalid_credentials", message: "Invalid login credentials" },
+      {
+        code: "auth",
+        fallbackMessage: "Could not sign in.",
+        operation: "auth.signIn",
+        recoverable: true,
+      }
+    );
+
+    expect(error.details).toEqual({ reason: "invalidCredentials" });
   });
 });

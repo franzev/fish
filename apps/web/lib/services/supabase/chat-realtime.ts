@@ -1,3 +1,7 @@
+import {
+  reportFailedResult,
+  reportOperationalError,
+} from "@/lib/observability/reporter";
 import type {
   ClientChatMessage,
   ClientChatReadState,
@@ -67,7 +71,13 @@ function subscribeAfterAuth(
       if (accessToken) {
         await supabase.realtime.setAuth(accessToken);
       }
-    } catch {
+    } catch (error) {
+      reportOperationalError(error, {
+        operation: "realtime.chat.authenticate",
+        handled: true,
+        recoverable: true,
+        runtime: "browser",
+      });
       // Session lookup failed; subscribe with whatever auth the client holds.
     }
 
@@ -182,6 +192,13 @@ export function subscribeToConversationMessages(
         status === "CLOSED"
       ) {
         onDisconnected?.();
+        if (status !== "CLOSED") {
+          reportFailedResult({ ok: false, code: status }, {
+            operation: "realtime.chat.messages.subscribe",
+            recoverable: true,
+            runtime: "browser",
+          });
+        }
       }
     }));
 
@@ -212,6 +229,12 @@ export function subscribeToConversationReadStates(
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
         onReconnected?.();
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        reportFailedResult({ ok: false, code: status }, {
+          operation: "realtime.chat.reads.subscribe",
+          recoverable: true,
+          runtime: "browser",
+        });
       }
     }));
 
@@ -251,6 +274,12 @@ export function subscribeToConversationReactionChanges(
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
         onReconnected?.();
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        reportFailedResult({ ok: false, code: status }, {
+          operation: "realtime.chat.reactions.subscribe",
+          recoverable: true,
+          runtime: "browser",
+        });
       }
     }));
 

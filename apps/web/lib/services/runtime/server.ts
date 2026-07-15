@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isSentryEnabled } from "@/lib/observability/environment";
+import { observeServiceTree } from "@/lib/observability/service-observer";
 import type {
   BookingCommandService,
   ChatCommandService,
@@ -47,9 +49,15 @@ function lazyBookingCommands(): BookingCommandService {
 
 export async function getServerServices(): Promise<ServerServices> {
   const services = await createServerSupabaseServices();
-  return {
+  const serverServices: ServerServices = {
     ...services,
     chatCommands: lazyChatCommands(),
     bookingCommands: lazyBookingCommands(),
   };
+  return isSentryEnabled()
+    ? observeServiceTree(serverServices, {
+        prefix: "services.server",
+        runtime: "server",
+      })
+    : serverServices;
 }

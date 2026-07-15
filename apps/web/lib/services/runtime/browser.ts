@@ -1,5 +1,7 @@
 import "client-only";
 
+import { isSentryEnabled } from "@/lib/observability/environment";
+import { observeServiceTree } from "@/lib/observability/service-observer";
 import type {
   AppServices,
   AvatarCommandService,
@@ -33,17 +35,29 @@ import { supabasePresenceRealtimeService } from "../supabase/presence-realtime";
 
 let services: AppServices | null = null;
 
+function observeBrowserService<T extends object>(
+  service: T,
+  prefix: string
+): T {
+  return isSentryEnabled()
+    ? observeServiceTree(service, { prefix, runtime: "browser" })
+    : service;
+}
+
 export function getBrowserServices(): AppServices {
-  services ??= createBrowserSupabaseServices();
+  services ??= observeBrowserService(
+    createBrowserSupabaseServices(),
+    "services.browser"
+  );
   return services;
 }
 
 export function getChatRealtimeService(override?: ChatRealtimeService): ChatRealtimeService {
-  return override ?? supabaseChatRealtimeService;
+  return override ?? observeBrowserService(supabaseChatRealtimeService, "services.chatRealtime");
 }
 
 export function getChatImageService(override?: ChatImageService): ChatImageService {
-  return override ?? chatImageService;
+  return override ?? observeBrowserService(chatImageService, "services.chatImages");
 }
 
 export function getAvatarCommandService(
@@ -55,53 +69,74 @@ export function getAvatarCommandService(
 export function getCallCommandService(
   override?: CallCommandService
 ): CallCommandService {
-  return override ?? new SupabaseCallCommandService(createBrowserSupabaseClient());
+  return override ?? observeBrowserService(
+    new SupabaseCallCommandService(createBrowserSupabaseClient()),
+    "services.callCommands"
+  );
 }
 
 export function getCallRealtimeService(
   override?: CallRealtimeService
 ): CallRealtimeService {
-  return override ?? supabaseCallRealtimeService;
+  return override ?? observeBrowserService(supabaseCallRealtimeService, "services.callRealtime");
 }
 
 export function getFriendCommandService(
   override?: FriendCommandService
 ): FriendCommandService {
-  return override ?? new SupabaseFriendCommandService(createBrowserSupabaseClient());
+  return override ?? observeBrowserService(
+    new SupabaseFriendCommandService(createBrowserSupabaseClient()),
+    "services.friendCommands"
+  );
 }
 
 export function getFriendRealtimeService(
   override?: FriendRealtimeService
 ): FriendRealtimeService {
-  return override ?? supabaseFriendRealtimeService;
+  return override ?? observeBrowserService(supabaseFriendRealtimeService, "services.friendRealtime");
 }
 
 export function getNotificationCommandService(
   override?: NotificationCommandService
 ): NotificationCommandService {
-  return override ?? new SupabaseNotificationCommandService(createBrowserSupabaseClient());
+  return override ?? observeBrowserService(
+    new SupabaseNotificationCommandService(createBrowserSupabaseClient()),
+    "services.notificationCommands"
+  );
 }
 
 export function getNotificationRealtimeService(
   override?: NotificationRealtimeService
 ): NotificationRealtimeService {
-  return override ?? supabaseNotificationRealtimeService;
+  return override ?? observeBrowserService(
+    supabaseNotificationRealtimeService,
+    "services.notificationRealtime"
+  );
 }
 
 export function getAttentionRealtimeService(
   override?: AttentionRealtimeService
 ): AttentionRealtimeService {
-  return override ?? supabaseAttentionRealtimeService;
+  return override ?? observeBrowserService(
+    supabaseAttentionRealtimeService,
+    "services.attentionRealtime"
+  );
 }
 
 export function getPresenceCommandService(
   override?: PresenceCommandService
 ): PresenceCommandService {
-  return override ?? new SupabasePresenceCommandService(createBrowserSupabaseClient());
+  return override ?? observeBrowserService(
+    new SupabasePresenceCommandService(createBrowserSupabaseClient()),
+    "services.presenceCommands"
+  );
 }
 
 export function getPresenceRealtimeService(
   override?: PresenceRealtimeService
 ): PresenceRealtimeService {
-  return override ?? supabasePresenceRealtimeService;
+  return override ?? observeBrowserService(
+    supabasePresenceRealtimeService,
+    "services.presenceRealtime"
+  );
 }

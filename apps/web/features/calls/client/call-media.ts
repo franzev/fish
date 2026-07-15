@@ -1,5 +1,6 @@
 "use client";
 
+import { reportOperationalError } from "@/lib/observability/reporter";
 import type { CallConnection } from "@/lib/services";
 import {
   Room,
@@ -102,6 +103,12 @@ export class LiveKitCallMedia {
       if (room.remoteParticipants.size > 0) this.callbacks.onConnected(callId);
       this.callbacks.onAudioPlaybackChanged(!room.canPlaybackAudio);
     } catch (error) {
+      reportOperationalError(error, {
+        operation: "calls.media.connect",
+        handled: true,
+        recoverable: false,
+        runtime: "browser",
+      });
       if (this.room === room) await this.disconnect();
       else await room.disconnect(true);
       throw error;
