@@ -14,10 +14,24 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const friendsEnabled =
   process.env.FRIENDS_ENABLED?.trim().toLowerCase() === "true";
+const seedMissingCommunityOnly = process.argv.includes("--missing-community-only");
+const allowHostedSeed = process.argv.includes("--allow-hosted");
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error(
     "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Run `supabase start`, then copy apps/web/.env.example to apps/web/.env.local and fill it from `supabase status`.",
+  );
+  process.exit(1);
+}
+
+if (
+  seedMissingCommunityOnly &&
+  !supabaseUrl.startsWith("http://127.0.0.1") &&
+  !supabaseUrl.startsWith("http://localhost") &&
+  !allowHostedSeed
+) {
+  console.error(
+    "Refusing to seed a hosted project without the explicit --allow-hosted flag.",
   );
   process.exit(1);
 }
@@ -33,6 +47,18 @@ async function syncLocalFeatureFlags(): Promise<void> {
     .from("feature_flags")
     .update({ enabled: friendsEnabled, updated_at: new Date().toISOString() })
     .eq("key", "friends");
+  if (error) throw error;
+}
+
+async function seedFriendship(userAId: string, userBId: string): Promise<void> {
+  const [userLowId, userHighId] = [userAId, userBId].sort();
+  const { error } = await supabase.from("friendships").upsert(
+    {
+      user_low_id: userLowId,
+      user_high_id: userHighId,
+    },
+    { onConflict: "user_low_id,user_high_id", ignoreDuplicates: true },
+  );
   if (error) throw error;
 }
 
@@ -217,6 +243,16 @@ async function findUserIdByEmail(email: string): Promise<string | null> {
   }
 }
 
+async function requireExistingUserId(email: string): Promise<string> {
+  const userId = await findUserIdByEmail(email);
+  if (!userId) {
+    throw new Error(
+      `Cannot seed missing community channels because ${email} does not exist. Run the full local seed first.`,
+    );
+  }
+  return userId;
+}
+
 /** Creates a pre-verified user via the real auth API, or returns the existing id (idempotent). */
 async function upsertUser(email: string, password: string, displayName: string): Promise<string> {
   const existingId = await findUserIdByEmail(email);
@@ -381,53 +417,63 @@ async function seedChatConversations(
   coach2Id: string,
   clientIds: string[],
   extraIds: string[],
+  options: {
+    includeDirectConversations?: boolean;
+    channels?: CommunityChannelSeed[];
+  } = {},
 ): Promise<DirectConversation[]> {
-  const { data: assignments, error: assignmentError } = await supabase
-    .from("coach_clients")
-    .select("coach_id, client_id");
-  if (assignmentError) throw assignmentError;
-
   const directConversations: DirectConversation[] = [];
+  const {
+    includeDirectConversations = true,
+    channels = communityChannelSeeds,
+  } = options;
 
-  for (const assignment of assignments ?? []) {
-    const { data: conversation, error: conversationError } = await supabase
-      .from("conversations")
-      .upsert(
-        {
-          client_id: assignment.client_id,
-          coach_id: assignment.coach_id,
-        },
-        { onConflict: "client_id,coach_id" },
-      )
-      .select("id, client_id, coach_id")
-      .single();
-    if (conversationError || !conversation) throw conversationError;
+  if (includeDirectConversations) {
+    const { data: assignments, error: assignmentError } = await supabase
+      .from("coach_clients")
+      .select("coach_id, client_id");
+    if (assignmentError) throw assignmentError;
 
-    directConversations.push({ clientId: conversation.client_id, conversationId: conversation.id });
-
-    const { error: readStateError } = await supabase
-      .from("message_reads")
-      .upsert(
-        [
+    for (const assignment of assignments ?? []) {
+      const { data: conversation, error: conversationError } = await supabase
+        .from("conversations")
+        .upsert(
           {
-            conversation_id: conversation.id,
-            user_id: conversation.client_id,
-            last_read_message_id: null,
+            client_id: assignment.client_id,
+            coach_id: assignment.coach_id,
           },
-          {
-            conversation_id: conversation.id,
-            user_id: conversation.coach_id,
-            last_read_message_id: null,
-          },
-        ],
-        { onConflict: "conversation_id,user_id" },
-      );
-    if (readStateError) throw readStateError;
+          { onConflict: "client_id,coach_id" },
+        )
+        .select("id, client_id, coach_id")
+        .single();
+      if (conversationError || !conversation) throw conversationError;
+
+      directConversations.push({ clientId: conversation.client_id, conversationId: conversation.id });
+
+      const { error: readStateError } = await supabase
+        .from("message_reads")
+        .upsert(
+          [
+            {
+              conversation_id: conversation.id,
+              user_id: conversation.client_id,
+              last_read_message_id: null,
+            },
+            {
+              conversation_id: conversation.id,
+              user_id: conversation.coach_id,
+              last_read_message_id: null,
+            },
+          ],
+          { onConflict: "conversation_id,user_id" },
+        );
+      if (readStateError) throw readStateError;
+    }
   }
 
   const communityMemberIds = [coachId, coach2Id, ...clientIds, ...extraIds];
 
-  for (const channel of communityChannelSeeds) {
+  for (const channel of channels) {
     const conversationClientId =
       communityMemberIds[channel.conversationClientMemberIndex];
     const conversationCoachId =
@@ -866,6 +912,7 @@ async function seedCommunityChannels(
   coach2Id: string,
   clientIds: string[],
   extraIds: string[],
+  channels: CommunityChannelSeed[] = communityChannelSeeds,
 ): Promise<void> {
   const { data: profiles, error: profileError } = await supabase
     .from("profiles")
@@ -884,12 +931,12 @@ async function seedCommunityChannels(
     profiles?.find((profile) => profile.id === clientIds[0])?.username ?? "client1";
   const messagesPerChannel = 100;
   const timeline = buildCommunitySeedTimeline({
-    channelCount: communityChannelSeeds.length,
+    channelCount: channels.length,
     messagesPerChannel,
   });
 
-  for (let channelIndex = 0; channelIndex < communityChannelSeeds.length; channelIndex += 1) {
-    const channel = communityChannelSeeds[channelIndex];
+  for (let channelIndex = 0; channelIndex < channels.length; channelIndex += 1) {
+    const channel = channels[channelIndex];
     if (!channel) continue;
 
     const start = timeline[channelIndex]?.firstMessageAt;
@@ -961,7 +1008,73 @@ async function seedCommunityChannels(
   }
 }
 
+async function seedMissingCommunityChannels(): Promise<void> {
+  const { data: existingChannels, error } = await supabase
+    .from("channels")
+    .select("id, slug, conversation_id");
+  if (error) throw error;
+
+  const existingBySlug = new Map(
+    (existingChannels ?? []).map((channel) => [channel.slug, channel]),
+  );
+  const existingById = new Map(
+    (existingChannels ?? []).map((channel) => [channel.id, channel]),
+  );
+
+  for (const channel of communityChannelSeeds) {
+    const existing = existingBySlug.get(channel.slug) ?? existingById.get(channel.id);
+    if (
+      existing &&
+      (existing.id !== channel.id ||
+        existing.slug !== channel.slug ||
+        existing.conversation_id !== channel.conversationId)
+    ) {
+      throw new Error(
+        `Existing #${channel.slug} identity does not match the seed contract.`,
+      );
+    }
+  }
+
+  const missingChannels = communityChannelSeeds.filter(
+    (channel) => !existingBySlug.has(channel.slug) && !existingById.has(channel.id),
+  );
+  if (missingChannels.length === 0) {
+    console.log("All community channels already exist; nothing to seed.");
+    return;
+  }
+
+  const coachId = await requireExistingUserId(coach.email);
+  const coach2Id = await requireExistingUserId(coach2.email);
+  const clientIds = await Promise.all(
+    clients.map((client) => requireExistingUserId(client.email)),
+  );
+  const extraIds = await Promise.all(
+    communityExtras.map((extra) => requireExistingUserId(extra.email)),
+  );
+
+  await seedChatConversations(coachId, coach2Id, clientIds, extraIds, {
+    includeDirectConversations: false,
+    channels: missingChannels,
+  });
+  await seedCommunityChannels(
+    coachId,
+    coach2Id,
+    clientIds,
+    extraIds,
+    missingChannels,
+  );
+
+  console.log(
+    `Seeded ${missingChannels.length} missing community channels without changing existing channel messages.`,
+  );
+}
+
 async function main(): Promise<void> {
+  if (seedMissingCommunityOnly) {
+    await seedMissingCommunityChannels();
+    return;
+  }
+
   await syncLocalFeatureFlags();
 
   const coachId = await upsertUser(coach.email, coach.password, coach.displayName);
@@ -990,6 +1103,8 @@ async function main(): Promise<void> {
   for (const extra of communityExtras) {
     extraIds.push(await upsertUser(extra.email, extra.password, extra.displayName));
   }
+
+  await seedFriendship(clientIds[0], extraIds[0]);
 
   const directConversations = await seedChatConversations(coachId, coach2Id, clientIds, extraIds);
   await seedDirectMessages(coachId, directConversations, {
