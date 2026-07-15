@@ -5,6 +5,13 @@ export function registerSentryErrorReporter(): void {
   configureErrorReporter((error, context) => {
     Sentry.withScope((scope) => {
       scope.setLevel(context.recoverable ? "warning" : "error");
+      if (
+        context.recoverable &&
+        context.code &&
+        ["channel_error", "network", "timed_out"].includes(context.code)
+      ) {
+        scope.setFingerprint(["fish-recoverable-outage", context.code]);
+      }
       scope.setTags({
         "fish.error.code": context.code ?? "unknown",
         "fish.error.handled": String(context.handled),

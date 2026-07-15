@@ -7,7 +7,10 @@ import {
   resetErrorReporterForTests,
 } from "./reporter";
 
-afterEach(() => resetErrorReporterForTests());
+afterEach(() => {
+  vi.useRealTimers();
+  resetErrorReporterForTests();
+});
 
 describe("operational error reporter", () => {
   it("deduplicates the same error object", () => {
@@ -64,5 +67,49 @@ describe("operational error reporter", () => {
     });
     expect(JSON.stringify([error, context])).not.toContain("Private message");
     expect(JSON.stringify([error, context])).not.toContain("secret");
+  });
+
+  it("coalesces a recoverable outage while preserving later reports", () => {
+    vi.useFakeTimers();
+    const sink = vi.fn();
+    configureErrorReporter(sink);
+
+    reportFailedResult(
+      { ok: false, code: "CHANNEL_ERROR" },
+      { operation: "realtime.calls.subscribe", recoverable: true }
+    );
+    reportFailedResult(
+      { ok: false, code: "CHANNEL_ERROR" },
+      { operation: "realtime.attention.subscribe", recoverable: true }
+    );
+
+    expect(sink).toHaveBeenCalledOnce();
+
+    vi.advanceTimersByTime(60_000);
+    reportFailedResult(
+      { ok: false, code: "CHANNEL_ERROR" },
+      { operation: "realtime.notifications.subscribe", recoverable: true }
+    );
+
+    expect(sink).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses and coalesces a service error code when results have no top-level code", () => {
+    const sink = vi.fn();
+    configureErrorReporter(sink);
+
+    for (const operation of ["notifications.list", "attention.list"]) {
+      reportFailedResult(
+        { ok: false, error: Object.assign(new Error("Load failed"), {
+          code: "network",
+        }) },
+        { operation, recoverable: true }
+      );
+    }
+
+    expect(sink).toHaveBeenCalledOnce();
+    expect(sink).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({
+      code: "network",
+    }));
   });
 });

@@ -64,3 +64,37 @@ describe("service errors", () => {
     expect(error.details).toEqual({ reason: "invalidCredentials" });
   });
 });
+
+describe("mapInfrastructureError", () => {
+  it.each([
+    "TypeError: Load failed (example.supabase.co)",
+    "Failed to fetch",
+    "NetworkError when attempting to fetch resource",
+  ])("classifies browser transport failures as network errors: %s", (message) => {
+    const error = mapInfrastructureError(
+      { message },
+      {
+        code: "database",
+        fallbackMessage: "Could not load data.",
+        operation: "data.list",
+        recoverable: true,
+      }
+    );
+
+    expect(error.code).toBe("network");
+  });
+
+  it("preserves the caller's infrastructure category for database errors", () => {
+    const error = mapInfrastructureError(
+      { code: "42703", message: "column does not exist" },
+      {
+        code: "database",
+        fallbackMessage: "Could not load data.",
+        operation: "data.list",
+        recoverable: true,
+      }
+    );
+
+    expect(error.code).toBe("database");
+  });
+});

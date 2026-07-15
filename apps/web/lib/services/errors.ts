@@ -117,6 +117,10 @@ export function mapInfrastructureError(
     fallbackMessage: string;
   }
 ): ServiceError {
+  const isNetworkFailure = error?.message
+    ? /(?:failed to fetch|fetch failed|load failed|network(?:error| request failed))/i
+      .test(error.message)
+    : false;
   const reasonByCode: Record<string, ServiceFailureReason> = {
     email_not_confirmed: "emailNotConfirmed",
     invalid_credentials: "invalidCredentials",
@@ -132,7 +136,7 @@ export function mapInfrastructureError(
     (error?.name === "AuthSessionMissingError" ? "sessionMissing" : undefined);
 
   return new ServiceError({
-    code: input.code,
+    code: isNetworkFailure ? "network" : input.code,
     message: error?.message ?? input.fallbackMessage,
     operation: input.operation,
     recoverable: input.recoverable,

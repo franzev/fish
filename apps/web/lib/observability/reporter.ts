@@ -15,6 +15,14 @@ export type ErrorReporter = (
 
 let reporter: ErrorReporter | null = null;
 let reportedErrors = new WeakSet<object>();
+let recentRecoverableFailures = new Map<string, number>();
+
+const recoverableFailureWindowMs = 60_000;
+const coalescedRecoverableCodes = new Set([
+  "channel_error",
+  "network",
+  "timed_out",
+]);
 
 const expectedCodes = new Set([
   "abort_error",
@@ -91,6 +99,16 @@ export function reportOperationalError(
 ): void {
   if (!reporter || isExpectedOutcome(error)) return;
 
+  const code = normalizedCode(context.code);
+  if (context.recoverable && code && coalescedRecoverableCodes.has(code)) {
+    const now = Date.now();
+    const previous = recentRecoverableFailures.get(code);
+    if (previous !== undefined && now - previous < recoverableFailureWindowMs) {
+      return;
+    }
+    recentRecoverableFailures.set(code, now);
+  }
+
   if (typeof error === "object" && error !== null) {
     if (reportedErrors.has(error)) return;
     reportedErrors.add(error);
@@ -114,9 +132,10 @@ export function reportFailedResult(
   const code = normalizedCode(value.code);
   const error = value.error;
   if (error !== undefined) {
+    const errorCode = normalizedCode(recordValue(error, "code"));
     reportOperationalError(error, {
       ...context,
-      code: code ?? context.code,
+      code: code ?? errorCode ?? context.code,
       handled: true,
     });
     return;
@@ -142,4 +161,5 @@ export function reportFailedResult(
 export function resetErrorReporterForTests(): void {
   reporter = null;
   reportedErrors = new WeakSet<object>();
+  recentRecoverableFailures = new Map<string, number>();
 }
