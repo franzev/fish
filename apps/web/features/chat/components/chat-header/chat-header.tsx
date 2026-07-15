@@ -1,4 +1,5 @@
 import { SearchFilterPopover } from "../search-filters";
+import { TooltipIconButton } from "@/components/ui/tooltip-icon-button";
 import type {
   ChatFilterCriterion,
   ChatSearchChannel,
@@ -8,6 +9,10 @@ import {
   PresenceAvatar,
   type PresenceDisplayStatus,
 } from "@/features/presence";
+import { CallButton } from "@/features/calls";
+import { cn } from "@/lib/utils";
+import { Tooltip } from "@base-ui/react/tooltip";
+import { IconUsers } from "@tabler/icons-react";
 
 interface ChatHeaderProps {
   chatTitle: string;
@@ -16,6 +21,8 @@ interface ChatHeaderProps {
   channelName?: string;
   isCommunity: boolean;
   memberCount: number;
+  membersOpen: boolean;
+  onToggleMembers: () => void;
   presenceStatus: PresenceDisplayStatus;
   presenceLabel: string;
   search: string;
@@ -35,6 +42,8 @@ export function ChatHeader({
   channelName,
   isCommunity,
   memberCount,
+  membersOpen,
+  onToggleMembers,
   presenceStatus,
   presenceLabel,
   search,
@@ -72,16 +81,52 @@ export function ChatHeader({
             </span>
           </div>
         </div>
-        <SearchFilterPopover
-          value={search}
-          onValueChange={onSearchChange}
-          criteria={criteria}
-          onCriteriaChange={onCriteriaChange}
-          members={members}
-          channels={channels}
-          onSubmit={onSearchSubmit}
-          onOpenFilters={onOpenFilters}
-        />
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-sm">
+          {isCommunity && (
+            <Tooltip.Provider delay={400} closeDelay={0}>
+              <TooltipIconButton
+                type="button"
+                label="Members"
+                tooltipSide="bottom"
+                aria-pressed={membersOpen}
+                onClick={onToggleMembers}
+                className={cn(
+                  "shrink-0",
+                  membersOpen && "bg-surface-3 text-foreground"
+                )}
+                icon={<IconUsers size={20} stroke={1.75} aria-hidden="true" />}
+              />
+            </Tooltip.Provider>
+          )}
+          <SearchFilterPopover
+            value={search}
+            onValueChange={onSearchChange}
+            criteria={criteria}
+            onCriteriaChange={onCriteriaChange}
+            members={members}
+            channels={channels}
+            onSubmit={onSearchSubmit}
+            onOpenFilters={onOpenFilters}
+          />
+          {!isCommunity && participantId && (
+            <div
+              role="group"
+              aria-label={`Call ${chatTitle}`}
+              className="flex shrink-0 items-center gap-xs xl:hidden"
+            >
+              <CallButton
+                recipientId={participantId}
+                recipientName={chatTitle}
+                kind="audio"
+              />
+              <CallButton
+                recipientId={participantId}
+                recipientName={chatTitle}
+                kind="video"
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

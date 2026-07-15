@@ -62,6 +62,20 @@ vi.mock("@/features/presence", async (importOriginal) => ({
   usePresence: usePresenceMock,
 }));
 
+vi.mock("@/features/calls", () => ({
+  CallButton: ({
+    recipientName,
+    kind,
+  }: {
+    recipientName: string;
+    kind: "audio" | "video";
+  }) => (
+    <button type="button">
+      {kind === "video" ? "Video call" : "Voice call"} {recipientName}
+    </button>
+  ),
+}));
+
 const chat: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
   currentUserId: "client-1",
@@ -275,34 +289,111 @@ describe("ChatClient", () => {
     realtimeMock.client.from.mockReturnValue(realtimeMock.table);
   });
 
-  it("shows the exact unread banner and reads only after its explicit action", async () => {
+  it("acknowledges an open conversation without showing an unread banner", async () => {
+    let resolveMarkRead!: (value: {
+      status: "sent";
+      values: unknown;
+      readState: NonNullable<ClientChatData["readStates"]>[number];
+    }) => void;
+    const pendingMarkRead = new Promise<{
+      status: "sent";
+      values: unknown;
+      readState: NonNullable<ClientChatData["readStates"]>[number];
+    }>((resolve) => {
+      resolveMarkRead = resolve;
+    });
+    const markReadStateAction = vi.fn((value: unknown) => {
+      const input = value as {
+        lastDeliveredMessageId: string | null;
+        lastReadMessageId: string | null;
+      };
+      return input.lastReadMessageId
+        ? pendingMarkRead
+        : Promise.resolve({
+            status: "sent" as const,
+            values: value,
+            readState: {
+              userId: chat.currentUserId,
+              lastDeliveredMessageId: input.lastDeliveredMessageId,
+              deliveredAt: "2026-07-14T07:30:00.000Z",
+              lastReadMessageId: null,
+              readAt: null,
+            },
+          });
+    });
+    const successfulReadState = {
+      userId: chat.currentUserId,
+      lastDeliveredMessageId: "message-1",
+      deliveredAt: "2026-07-14T07:30:00.000Z",
+      lastReadMessageId: "message-1",
+      readAt: "2026-07-14T07:30:01.000Z",
+    };
+    const successfulResult = {
+      status: "sent" as const,
+      values: { conversationId: chat.conversationId },
+      readState: successfulReadState,
+    };
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          unreadSummary: {
+            count: 11,
+            oldestUnreadAt: "2026-07-05T00:00:00.000Z",
+            latestUnreadMessageId: "message-1",
+          },
+        }}
+        sendMessageAction={vi.fn()}
+        markReadStateAction={markReadStateAction}
+      />
+    );
+
+    expect(screen.queryByRole("region", { name: "Unread messages" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+    expect(
+      screen.getAllByRole("separator", { name: "Unread messages" })
+    ).toHaveLength(1);
+    await waitFor(() =>
+      expect(markReadStateAction).toHaveBeenCalledWith({
+        conversationId: chat.conversationId,
+        lastDeliveredMessageId: "message-1",
+        lastReadMessageId: "message-1",
+      })
+    );
+
+    await act(async () => {
+      resolveMarkRead(successfulResult);
+      await pendingMarkRead;
+    });
+    expect(screen.queryByRole("region", { name: "Unread messages" })).toBeNull();
+    expect(
+      screen.getByRole("separator", { name: "Unread messages" })
+    ).toBeInTheDocument();
+  });
+
+  it("keeps automatic read-state failures out of the active conversation UI", async () => {
     const markReadStateAction = vi.fn(async (value: unknown) => {
       const input = value as {
         lastDeliveredMessageId: string | null;
         lastReadMessageId: string | null;
       };
-      return {
-        status: "sent" as const,
-        values: value,
-        readState: {
-          userId: chat.currentUserId,
-          lastDeliveredMessageId: input.lastDeliveredMessageId,
-          deliveredAt: "2026-07-14T07:30:00.000Z",
-          lastReadMessageId: input.lastReadMessageId,
-          readAt: input.lastReadMessageId
-            ? "2026-07-14T07:30:01.000Z"
-            : null,
-        },
-      };
-    });
-    const refreshUnreadSummaryAction = vi.fn().mockResolvedValue({
-      status: "sent",
-      values: { conversationId: chat.conversationId },
-      unreadSummary: {
-        count: 0,
-        oldestUnreadAt: null,
-        latestUnreadMessageId: null,
-      },
+      return input.lastReadMessageId
+        ? {
+            status: "notice" as const,
+            values: value,
+            notice: "temporary failure",
+          }
+        : {
+            status: "sent" as const,
+            values: value,
+            readState: {
+              userId: chat.currentUserId,
+              lastDeliveredMessageId: input.lastDeliveredMessageId,
+              deliveredAt: "2026-07-14T07:30:00.000Z",
+              lastReadMessageId: null,
+              readAt: null,
+            },
+          };
     });
 
     render(
@@ -317,23 +408,152 @@ describe("ChatClient", () => {
         }}
         sendMessageAction={vi.fn()}
         markReadStateAction={markReadStateAction}
-        refreshUnreadSummaryAction={refreshUnreadSummaryAction}
       />
     );
 
-    expect(screen.getByText(/11 new messages since/)).toBeInTheDocument();
-    expect(markReadStateAction).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
-
     await waitFor(() =>
-      expect(screen.queryByLabelText("Unread messages")).toBeNull()
+      expect(markReadStateAction).toHaveBeenCalledWith({
+        conversationId: chat.conversationId,
+        lastDeliveredMessageId: "message-1",
+        lastReadMessageId: "message-1",
+      })
     );
-    expect(markReadStateAction).toHaveBeenNthCalledWith(1, {
-      conversationId: chat.conversationId,
-      lastDeliveredMessageId: "message-1",
-      lastReadMessageId: "message-1",
-    });
+    expect(screen.queryByRole("region", { name: "Unread messages" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark as read" })).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(
+      screen.getByRole("separator", { name: "Unread messages" })
+    ).toBeInTheDocument();
+  });
+
+  it("does not guess an unread boundary outside the loaded message window", () => {
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          unreadSummary: {
+            count: 3,
+            oldestUnreadAt: "2026-07-04T00:00:00.000Z",
+            latestUnreadMessageId: "message-1",
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole("region", { name: "Unread messages" })).toBeNull();
+    expect(
+      screen.queryByRole("separator", { name: "Unread messages" })
+    ).toBeNull();
+  });
+
+  it("does not render an unread divider when the summary is empty", () => {
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          unreadSummary: {
+            count: 0,
+            oldestUnreadAt: null,
+            latestUnreadMessageId: null,
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.queryByRole("separator", { name: "Unread messages" })
+    ).toBeNull();
+  });
+
+  it("matches the unread boundary at database timestamp precision", () => {
+    const firstUnreadAt = "2026-07-05T10:00:00.000002Z";
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          messages: [
+            {
+              ...chat.messages[0],
+              id: "message-before-unread",
+              clientRequestId: "seed-before-unread",
+              createdAt: "2026-07-05T10:00:00.000001Z",
+            },
+            {
+              ...chat.messages[0],
+              id: "message-unread",
+              clientRequestId: "seed-unread",
+              createdAt: firstUnreadAt,
+            },
+          ],
+          unreadSummary: {
+            count: 1,
+            oldestUnreadAt: firstUnreadAt,
+            latestUnreadMessageId: "message-unread",
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    const dividerItem = screen
+      .getByRole("separator", { name: "Unread messages" })
+      .closest("li");
+    const unreadMessage = document.getElementById("message-message-unread");
+
+    expect(dividerItem?.nextElementSibling).toBe(unreadMessage);
+  });
+
+  it("orders the date then unread divider before the first unread message", () => {
+    const firstUnreadAt = "2026-07-06T10:00:00.000Z";
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          messages: [
+            {
+              ...chat.messages[0],
+              id: "message-read",
+              senderId: chat.currentUserId,
+              senderRole: chat.currentUserRole,
+              body: "A message from the previous day.",
+              clientRequestId: "seed-read",
+              createdAt: "2026-07-05T10:00:00.000Z",
+            },
+            {
+              ...chat.messages[0],
+              id: "message-unread",
+              body: "The first unread message.",
+              clientRequestId: "seed-unread",
+              createdAt: firstUnreadAt,
+            },
+          ],
+          unreadSummary: {
+            count: 1,
+            oldestUnreadAt: firstUnreadAt,
+            latestUnreadMessageId: "message-unread",
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    const log = screen.getByRole("log", { name: "Conversation messages" });
+    const list = log.querySelector("ol");
+    const dateDivider = screen.getByText("July 6, 2026").closest("li");
+    const unreadDivider = screen
+      .getByRole("separator", { name: "Unread messages" })
+      .closest("li");
+    const messageRow = document.getElementById("message-message-unread");
+    const children = Array.from(list?.children ?? []);
+
+    expect(children.indexOf(dateDivider!)).toBeLessThan(
+      children.indexOf(unreadDivider!)
+    );
+    expect(children.indexOf(unreadDivider!)).toBeLessThan(
+      children.indexOf(messageRow!)
+    );
   });
 
   it("visually emphasizes a message reached from a notification", async () => {
@@ -394,6 +614,19 @@ describe("ChatClient", () => {
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /View Gwyn profile/ })).toBeNull();
+    const search = screen.getByRole("combobox", { name: "Search messages" });
+    const voiceCall = screen.getByRole("button", { name: "Voice call Gwyn" });
+    const videoCall = screen.getByRole("button", { name: "Video call Gwyn" });
+    expect(voiceCall).toBeVisible();
+    expect(videoCall).toBeVisible();
+    expect(search.compareDocumentPosition(voiceCall)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(voiceCall.compareDocumentPosition(videoCall)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(voiceCall.closest('[role="group"]')).toHaveClass("xl:hidden");
+    expect(screen.queryByRole("button", { name: "Members" })).toBeNull();
   });
 
   it("keeps embedded conversations focused on the transcript and composer", () => {
@@ -410,6 +643,12 @@ describe("ChatClient", () => {
     );
 
     expect(screen.queryByRole("heading", { name: "Gwyn" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Voice call Gwyn" })
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Video call Gwyn" })
+    ).toBeNull();
     expect(screen.queryByRole("combobox", { name: "Search messages" })).toBeNull();
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
@@ -442,6 +681,16 @@ describe("ChatClient", () => {
       ],
       searchMembers: [
         {
+          id: "client-1",
+          displayName: "Franz",
+          username: "franz",
+        },
+        {
+          id: "coach-1",
+          displayName: "Gwyn",
+          username: "gwyn",
+        },
+        {
           id: "client-2",
           displayName: "Sam Okafor",
           username: "sam_okafor",
@@ -454,8 +703,17 @@ describe("ChatClient", () => {
 
     expect(screen.getByLabelText("general room")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "# general" })).toBeInTheDocument();
-    // Members derived from read states (client-1, coach-1) + sender (client-2).
     expect(screen.getByText("· 3 members")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Members" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(
+      screen.queryByRole("button", { name: "Voice call FISH Community" })
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Video call FISH Community" })
+    ).toBeNull();
     expect(screen.getByText("Sam Okafor")).toBeInTheDocument();
     expect(screen.getByText("Can anyone share a short intro?")).toBeInTheDocument();
     expect(screen.getByLabelText("Community messages")).toBeInTheDocument();
@@ -471,7 +729,7 @@ describe("ChatClient", () => {
     expect(screen.getByText("@sam_okafor")).toBeVisible();
   });
 
-  it("renders a simplified channel header with a search field and no subtitle line", () => {
+  it("renders the community members control beside search with its tooltip", async () => {
     const communityChat: ClientChatData = {
       ...chat,
       kind: "community",
@@ -490,9 +748,93 @@ describe("ChatClient", () => {
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: /# general/i })).toBeInTheDocument();
-    // The search field is always visible in the header now — no popover to
-    // open before typing.
     expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
+    const membersButton = screen.getByRole("button", { name: "Members" });
+    expect(membersButton.compareDocumentPosition(screen.getByPlaceholderText("Search")))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    fireEvent.focus(membersButton);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Members");
+  });
+
+  it("keeps the members control for legacy channel data without kind", () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: undefined,
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      participantPresence: undefined,
+    };
+
+    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "# general" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Members" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+
+  it("keeps members and search results mutually exclusive", async () => {
+    const communityChat: ClientChatData = {
+      ...chat,
+      kind: "community",
+      channelId: "22222222-2222-4222-8222-222222222222",
+      channelSlug: "general",
+      channelName: "general",
+      title: "general",
+      searchMembers: [
+        { id: "client-1", displayName: "Franz", username: "franz" },
+        { id: "client-2", displayName: "Sam Okafor", username: "sam_okafor" },
+      ],
+      participantPresence: undefined,
+    };
+    const searchMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: {},
+      messages: [chat.messages[0]],
+      nextCursor: null,
+      totalCount: 1,
+    });
+    window.history.replaceState(null, "", "/channels/general?search=practice");
+
+    render(
+      <ChatClient
+        chat={communityChat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={searchMessagesAction}
+      />
+    );
+
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("complementary", { name: "Search results" })).toBeVisible();
+
+    const membersButton = screen.getByRole("button", { name: "Members" });
+    fireEvent.click(membersButton);
+
+    const membersSidebar = screen.getByRole("complementary", { name: "Members" });
+    expect(membersSidebar).toBeVisible();
+    expect(within(membersSidebar).getByText("Sam Okafor")).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Search results" })).toBeNull();
+    expect(membersButton).toHaveAttribute("aria-pressed", "true");
+    expect(window.location.search).toBe("");
+
+    fireEvent.click(membersButton);
+    expect(screen.queryByRole("complementary", { name: "Members" })).toBeNull();
+    expect(membersButton).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(membersButton);
+    expect(screen.getByRole("complementary", { name: "Members" })).toBeVisible();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Search messages" }), {
+      target: { value: "new search" },
+    });
+    fireEvent.click(screen.getByRole("option", { name: "Search for new search" }));
+
+    await waitFor(() => expect(searchMessagesAction).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("complementary", { name: "Search results" })).toBeVisible();
+    expect(screen.queryByRole("complementary", { name: "Members" })).toBeNull();
+    expect(membersButton).toHaveAttribute("aria-pressed", "false");
   });
 
   it("waits for explicit submission and renders results beside the unchanged transcript", async () => {
@@ -828,6 +1170,45 @@ describe("ChatClient", () => {
     expect(row).not.toHaveClass("pt-sm");
   });
 
+  it("shows the first loaded day and later day boundaries in direct chat", () => {
+    render(
+      <ChatClient
+        chat={{
+          ...chat,
+          messages: [
+            {
+              ...chat.messages[0],
+              id: "message-1",
+              clientRequestId: "seed-1",
+              createdAt: "2026-07-05T10:00:00.000Z",
+            },
+            {
+              ...chat.messages[0],
+              id: "message-2",
+              clientRequestId: "seed-2",
+              createdAt: "2026-07-06T10:00:00.000Z",
+            },
+          ],
+          unreadSummary: {
+            count: 0,
+            oldestUnreadAt: null,
+            latestUnreadMessageId: null,
+          },
+        }}
+        sendMessageAction={vi.fn()}
+      />
+    );
+
+    const transcript = screen.getByRole("log", {
+      name: "Conversation messages",
+    });
+    const dateDividers = within(transcript).getAllByRole("separator");
+
+    expect(dateDividers).toHaveLength(2);
+    expect(dateDividers[0]).toHaveTextContent("July 5, 2026");
+    expect(dateDividers[1]).toHaveTextContent("July 6, 2026");
+  });
+
   it("shows community day dividers, coach role pill, and inline reply previews", () => {
     const communityChat: ClientChatData = {
       ...chat,
@@ -864,7 +1245,14 @@ describe("ChatClient", () => {
 
     render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
 
-    expect(screen.getByRole("separator")).toHaveTextContent("July 6, 2026");
+    const communityTranscript = screen.getByRole("log", {
+      name: "Community messages",
+    });
+    const dateDividers = within(communityTranscript)
+      .getAllByRole("separator")
+      .filter((divider) => divider.getAttribute("aria-label") === null);
+    expect(dateDividers[0]).toHaveTextContent("July 5, 2026");
+    expect(dateDividers[1]).toHaveTextContent("July 6, 2026");
     // Scoped to the feed so the assertion stays anchored to the coach role
     // pill on the message row, not any other "Coach" copy elsewhere.
     expect(

@@ -39,6 +39,7 @@ import { useChatStore } from "@/features/chat/model/store";
 import { ChatHeader } from "../chat-header";
 import { ChatComposerSurface } from "../chat-composer-surface";
 import { ChatMessageList } from "../chat-message-list";
+import { MembersSidebar } from "../members-sidebar";
 import { FiltersDialog } from "../search-filters";
 import { SearchResultsSidebar } from "../search-results";
 import {
@@ -50,6 +51,7 @@ const emptySearchMembers: NonNullable<ClientChatData["searchMembers"]> = [];
 const emptySearchChannels: NonNullable<ClientChatData["searchChannels"]> = [];
 
 type SearchNavigationMode = "push" | "replace" | null;
+type RightSidebar = "members" | "search" | null;
 
 function createSearchRequest(
   conversationId: string,
@@ -158,7 +160,7 @@ export function ChatClient({
     mergeReadState,
     participantReadState,
     unreadSummary,
-    unreadNotice,
+    unreadBoundary,
     unreadPending,
     markUnreadMessagesRead,
   } = useChatReadState({
@@ -167,6 +169,18 @@ export function ChatClient({
     markReadStateAction,
     refreshUnreadSummaryAction,
   });
+  useEffect(() => {
+    if (!markReadStateAction || unreadPending || unreadSummary.count <= 0) {
+      return;
+    }
+
+    void markUnreadMessagesRead();
+  }, [
+    markReadStateAction,
+    markUnreadMessagesRead,
+    unreadPending,
+    unreadSummary.count,
+  ]);
   const [search, setSearch] = useState("");
   const [searchCriteria, setSearchCriteria] = useState<ChatFilterCriterion[]>([]);
   const [committedSearch, setCommittedSearch] = useState("");
@@ -175,7 +189,7 @@ export function ChatClient({
   const [searchTotalCount, setSearchTotalCount] = useState(0);
   const [searchPage, setSearchPage] = useState(1);
   const [searchSort, setSearchSort] = useState<"asc" | "desc">("desc");
-  const [searchResultsOpen, setSearchResultsOpen] = useState(false);
+  const [rightSidebar, setRightSidebar] = useState<RightSidebar>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchNotice, setSearchNotice] = useState<string | null>(null);
@@ -183,7 +197,11 @@ export function ChatClient({
   const restoredUrlRef = useRef<string | null>(null);
   const searchMembers = chat.searchMembers ?? emptySearchMembers;
   const searchChannels = chat.searchChannels ?? emptySearchChannels;
-  const isCommunity = chat.kind === "community";
+  // Older hydrated channel payloads predate `kind`, but still carry channel
+  // identity. Treat either signal as authoritative so community controls do
+  // not disappear while navigating between cached and current page data.
+  const isCommunity = chat.kind === "community"
+    || Boolean(chat.channelId ?? chat.channelSlug);
   const chatTitle = chat.title ?? chat.participant.displayName;
   const activityName = isCommunity ? "Someone" : chat.participant.displayName;
   const getMessageAuthorName = (message: ClientChatMessage) =>
@@ -337,10 +355,9 @@ export function ChatClient({
     clearPendingImages: () => imageUploads.clear({ preservePreviewUrls: true }),
   });
 
-  // Room membership has no dedicated table yet (demo bridge), so the member
-  // count is derived from everyone the room has already seen: read states,
-  // message senders, and the current user.
-  const memberCount = useMemo(() => {
+  // Legacy fixtures may omit the member directory. Keep their count useful by
+  // deriving it from everyone the room has already seen.
+  const observedMemberCount = useMemo(() => {
     const memberIds = new Set<string>([chat.currentUserId]);
     for (const readState of chat.readStates ?? []) {
       memberIds.add(readState.userId);
@@ -350,6 +367,9 @@ export function ChatClient({
     }
     return memberIds.size;
   }, [chat.currentUserId, chat.readStates, messages]);
+  const memberCount = isCommunity && chat.searchMembers
+    ? searchMembers.length
+    : observedMemberCount;
   const updateSearchUrl = useCallback((
     query: string,
     page: number,
@@ -378,7 +398,7 @@ export function ChatClient({
     const sequence = ++searchSequenceRef.current;
     setCommittedSearch(query);
     setCommittedSearchCriteria(criteria);
-    setSearchResultsOpen(true);
+    setRightSidebar("search");
     setIsSearching(true);
     setSearchNotice(null);
     if (navigationMode) updateSearchUrl(query, page, sortDirection, navigationMode);
@@ -441,7 +461,7 @@ export function ChatClient({
         setSearchCriteria([]);
         setCommittedSearch("");
         setCommittedSearchCriteria([]);
-        setSearchResultsOpen(false);
+        setRightSidebar(null);
         setIsSearching(false);
         return;
       }
@@ -494,6 +514,20 @@ export function ChatClient({
           channelName={chat.channelName}
           isCommunity={isCommunity}
           memberCount={memberCount}
+          membersOpen={rightSidebar === "members"}
+          onToggleMembers={() => {
+            if (rightSidebar === "members") {
+              setRightSidebar(null);
+              return;
+            }
+
+            searchSequenceRef.current += 1;
+            setIsSearching(false);
+            setRightSidebar("members");
+            const nextUrl = createChatSearchUrl(window.location.href, null);
+            window.history.replaceState(null, "", nextUrl);
+            restoredUrlRef.current = window.location.href;
+          }}
           presenceStatus={participantPresence.status}
           presenceLabel={participantPresence.label}
           search={search}
@@ -535,11 +569,7 @@ export function ChatClient({
           chat,
           participantReadState,
           latestMineRequestId,
-          unreadSummary,
-          showUnreadBanner: Boolean(markReadStateAction),
-          unreadNotice,
-          unreadPending,
-          markUnreadMessagesRead,
+          unreadBoundary,
           friendActionsEnabled,
           focusMessageId,
           getAuthorName: getMessageAuthorName,
@@ -595,7 +625,16 @@ export function ChatClient({
         removeSelectedSticker={removeSelectedSticker}
       />
       </div>
-      {presentation === "full" && searchResultsOpen && (
+      {presentation === "full" && rightSidebar === "members" && (
+        <MembersSidebar
+          members={searchMembers}
+          currentUserId={chat.currentUserId}
+          currentUserRole={chat.currentUserRole}
+          friendActionsEnabled={friendActionsEnabled}
+          onClose={() => setRightSidebar(null)}
+        />
+      )}
+      {presentation === "full" && rightSidebar === "search" && (
         <SearchResultsSidebar
           messages={searchResults}
           totalCount={searchTotalCount}
@@ -609,7 +648,7 @@ export function ChatClient({
           members={searchMembers}
           channels={searchChannels}
           onClose={() => {
-            setSearchResultsOpen(false);
+            setRightSidebar(null);
             const nextUrl = createChatSearchUrl(window.location.href, null);
             window.history.replaceState(null, "", nextUrl);
             restoredUrlRef.current = window.location.href;
