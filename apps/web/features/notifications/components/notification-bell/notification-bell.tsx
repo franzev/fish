@@ -3,9 +3,8 @@
 import { Popover } from "@base-ui/react/popover";
 import { IconBell } from "@tabler/icons-react";
 import { useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { CountBadge } from "@/components/ui/count-badge";
-import { cn } from "@/lib/utils";
 import { NotificationList } from "../notification-list";
 import { useOptionalNotifications } from "../notification-provider";
 
@@ -27,37 +26,28 @@ export function NotificationBell() {
   const notifications = useOptionalNotifications();
   if (!notifications) {
     return (
-      <Button
+      <IconButton
         href="/notifications"
-        aria-label="Notifications"
-        variant="ghost"
-        controlSize="square"
+        label="Notifications"
+        appearance="ghost"
         className="relative shrink-0 hover:bg-surface-2 hover:text-foreground"
-      >
-        {renderBellContents(0)}
-      </Button>
+        icon={renderBellContents(0)}
+      />
     );
   }
   const { state, refreshAndMarkLoadedSeen } = notifications;
   const label = state.summary.unreadCount > 0
     ? `Notifications, ${state.summary.unreadCount} unread`
     : "Notifications";
-  const triggerClass = cn(
-    buttonVariants({ variant: "ghost", controlSize: "square" }),
-    "relative shrink-0 hover:bg-surface-2 hover:text-foreground"
-  );
-
   return (
     <>
-      <Button
+      <IconButton
         href="/notifications"
-        aria-label={label}
-        variant="ghost"
-        controlSize="square"
+        label={label}
+        appearance="ghost"
         className="relative shrink-0 hover:bg-surface-2 hover:text-foreground md:hidden"
-      >
-        {renderBellContents(state.summary.unreadCount)}
-      </Button>
+        icon={renderBellContents(state.summary.unreadCount)}
+      />
       <span className="hidden md:inline-flex">
         <Popover.Root
           open={open}
@@ -68,9 +58,16 @@ export function NotificationBell() {
             }
           }}
         >
-          <Popover.Trigger aria-label={label} className={triggerClass}>
-            {renderBellContents(state.summary.unreadCount)}
-          </Popover.Trigger>
+          <Popover.Trigger
+            render={
+              <IconButton
+                label={label}
+                appearance="ghost"
+                className="relative shrink-0 hover:text-foreground"
+                icon={renderBellContents(state.summary.unreadCount)}
+              />
+            }
+          />
           <Popover.Portal>
             <Popover.Positioner side="bottom" align="end" sideOffset={4} className="z-50">
               <Popover.Popup aria-label="Notifications" className="w-notifications max-w-notifications-mobile overflow-hidden rounded-card border border-divider bg-surface" initialFocus={false}>

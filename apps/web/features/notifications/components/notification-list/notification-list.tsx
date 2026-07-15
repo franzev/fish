@@ -1,12 +1,18 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import { PopoverHeader } from "@/components/ui/popover-header";
+import {
+  ActionMenuItem,
+  ActionMenuPopup,
+  ActionMenuRoot,
+  ActionMenuTrigger,
+} from "@/components/ui/action-menu";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
+import { SurfaceHeader } from "@/components/ui/surface-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { selectVisibleNotifications } from "@fish/core/notification-state";
-import { Menu } from "@base-ui/react/menu";
-import { IconBell, IconCheck, IconDots } from "@tabler/icons-react";
+import { IconArchive, IconBell, IconCheck, IconDots } from "@tabler/icons-react";
 import {
   notificationCategoryLabel,
   notificationCategoryOrder,
@@ -35,40 +41,35 @@ export function NotificationList({ compact = false, onNavigate }: NotificationLi
 
   return (
     <div className={cn("flex min-h-0 flex-col", compact && "h-notifications-panel-h") }>
-      <PopoverHeader
-        title={<h2 className="text-heading-sm">Notifications</h2>}
-        actions={
-          <Menu.Root>
-            <Menu.Trigger
-              aria-label="Notification actions"
-              className={cn(
-                buttonVariants({ variant: "ghost", controlSize: "square" }),
-                "hover:bg-surface-2 hover:text-foreground"
-              )}
-            >
-              <IconDots size={20} stroke={1.75} aria-hidden="true" />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-50">
-                <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
-                  <Menu.Item
+      <SurfaceHeader
+        title={<h2>Notifications</h2>}
+        action={
+          <ActionMenuRoot>
+            <ActionMenuTrigger
+              render={
+                <IconButton
+                  label="Notification actions"
+                  appearance="ghost"
+                  icon={<IconDots size={20} stroke={1.75} aria-hidden="true" />}
+                />
+              }
+            />
+            <ActionMenuPopup>
+                  <ActionMenuItem
                     onClick={() => void markAllRead()}
                     disabled={state.summary.unreadCount === 0}
-                    className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[highlighted]:bg-surface-2"
                   >
                     <IconCheck size={20} stroke={1.75} aria-hidden="true" />
                     Mark all as read
-                  </Menu.Item>
-                  <Menu.Item
+                  </ActionMenuItem>
+                  <ActionMenuItem
                     onClick={() => void archiveRead()}
-                    className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2"
                   >
+                    <IconArchive size={20} stroke={1.75} aria-hidden="true" />
                     Clear read notifications
-                  </Menu.Item>
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
+                  </ActionMenuItem>
+            </ActionMenuPopup>
+          </ActionMenuRoot>
         }
       />
 
@@ -114,7 +115,7 @@ export function NotificationList({ compact = false, onNavigate }: NotificationLi
             if (sectionItems.length === 0) return null;
             return (
               <section key={category} aria-labelledby={`notification-${category}`} className="mb-md last:mb-0">
-                <h3 id={`notification-${category}`} className="px-sm pb-2xs pt-xs text-ui-2xs font-medium uppercase tracking-wide text-muted">
+                <h3 id={`notification-${category}`} className="px-sm pb-2xs pt-xs font-sans text-ui-2xs font-medium uppercase tracking-wide text-muted">
                   {notificationCategoryLabel[category]}
                 </h3>
                 <div className="flex flex-col gap-3xs">
