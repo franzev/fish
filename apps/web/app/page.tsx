@@ -1,5 +1,10 @@
 import { redirectIfSignedIn } from "@/features/auth/server";
+import {
+  parseThemePreference,
+  THEME_PREFERENCE_COOKIE,
+} from "@/lib/prefs/theme-preference";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { LandingPage } from "./_components/landing-page";
 
 export const metadata: Metadata = {
@@ -13,5 +18,10 @@ export const metadata: Metadata = {
    never trusted from a client-supplied value. */
 export default async function RootPage() {
   await redirectIfSignedIn();
-  return <LandingPage />;
+  const cookieStore = await cookies();
+  const initialTheme = parseThemePreference(
+    cookieStore.get(THEME_PREFERENCE_COOKIE)?.value
+  );
+
+  return <LandingPage initialTheme={initialTheme} />;
 }

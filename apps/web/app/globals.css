@@ -37,6 +37,7 @@
   --color-chat-active: light-dark(oklch(0.92 0 0), oklch(0.25 0 0));  /* reached transcript row, one quiet step beyond hover */
   --color-avatar: light-dark(oklch(0.90 0 0), oklch(0.30 0 0));       /* identity marker — must clear surface-2 wells (testimonials), not just the canvas and chat hover */
   --color-surface-3: light-dark(oklch(0.88 0 0), oklch(0.33 0 0));     /* selected wells — e.g. the viewer's own reaction chip; state by fill step, not border or hue */
+  --color-auth-illustration-shadow: light-dark(oklch(0.99 0 0), oklch(0.19 0 0)); /* signup artwork backdrop: white in light mode, just below the side panel in dark mode */
   --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* semantic control boundaries — retains 3:1 contrast */
   --color-border-strong: light-dark(oklch(0.55 0 0), oklch(0.65 0 0)); /* notice-tier borders — heavier step than border */
   /* Decorative separation only (row dividers, framing hairlines) — a low-alpha
@@ -146,6 +147,7 @@
   --spacing-xl: 40px;             /* page rhythm and calm breathing room */
   --spacing-2xl: 48px;            /* large screen-level pauses */
   --spacing-3xl: 72px;            /* landing section rhythm, small screens */
+  --spacing-auth-copy-lift: 60px; /* keeps auth copy just above the artwork without pulling it to the panel top */
   --spacing-4xl: 112px;           /* landing section rhythm, large screens */
   --spacing-mobile-nav-offset: 112px;
 

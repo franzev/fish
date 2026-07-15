@@ -18,8 +18,14 @@ describe("AuthSplitLayout", () => {
       "lg:min-h-0",
       "lg:overflow-y-auto"
     );
-    expect(container.querySelector("svg")).toBeInTheDocument();
+    expect(
+      container.querySelector('button[aria-label="Switch to dark mode"]')
+    ).toBeInTheDocument();
+    expect(container.querySelector("aside svg")).toBeInTheDocument();
     expect(container.querySelector("img")).not.toBeInTheDocument();
+    expect(container.querySelector("aside p")?.parentElement).not.toHaveClass(
+      "-translate-y-auth-copy-lift"
+    );
   });
 
   it("renders route-specific artwork as decorative", () => {
@@ -27,7 +33,7 @@ describe("AuthSplitLayout", () => {
       <AuthSplitLayout
         headline="Welcome"
         message="A calm message."
-        illustrationSrc="/illustrations/sign-in-fish-bowl.svg"
+        illustrationSrc="/illustrations/sign-in-onboarding-blue.svg"
       >
         <p>Form content</p>
       </AuthSplitLayout>
@@ -37,7 +43,7 @@ describe("AuthSplitLayout", () => {
 
     expect(illustration).toHaveAttribute(
       "src",
-      "/illustrations/sign-in-fish-bowl.svg"
+      "/illustrations/sign-in-onboarding-blue.svg"
     );
     expect(illustration).toHaveAttribute("alt", "");
     expect(illustration).toHaveClass(
@@ -45,10 +51,33 @@ describe("AuthSplitLayout", () => {
       "right-0",
       "bottom-0",
       "w-full",
-      "opacity-20",
-      "saturate-0"
+      "translate-y-sm",
     );
-    expect(container.querySelector("svg")).not.toBeInTheDocument();
+    expect(illustration).not.toHaveClass("opacity-20", "saturate-0");
+    expect(container.querySelector("aside svg")).not.toBeInTheDocument();
     expect(container.querySelector("aside p")).toHaveClass("text-hero");
+    expect(container.querySelector("aside p")?.parentElement).toHaveClass(
+      "-translate-y-auth-copy-lift"
+    );
+  });
+
+  it("renders a theme-controlled artwork backdrop when provided", () => {
+    const { container } = render(
+      <AuthSplitLayout
+        headline="Welcome"
+        message="A calm message."
+        illustrationSrc="/illustrations/sign-up-teamwork.svg"
+        illustrationBackdropMaskSrc="/illustrations/sign-up-teamwork-backdrop.svg"
+      >
+        <p>Form content</p>
+      </AuthSplitLayout>
+    );
+
+    const backdrop = container.querySelector('[aria-hidden="true"][style]');
+
+    expect(backdrop).toHaveClass("bg-auth-illustration-shadow");
+    expect(backdrop).toHaveStyle({
+      maskImage: "url(/illustrations/sign-up-teamwork-backdrop.svg)",
+    });
   });
 });

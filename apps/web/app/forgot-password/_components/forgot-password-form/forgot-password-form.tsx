@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requestPasswordReset } from "@/features/auth";
+import Link from "next/link";
 import { type SubmitEvent, useState } from "react";
 
 /* Single-field reset-request form. D-07: the same success copy renders
@@ -70,6 +71,11 @@ export function ForgotPasswordForm() {
             </form>
           </>
         )}
+      <p className="mt-page text-center text-ui-sm">
+        <Link href="/sign-in" className="text-body underline">
+          Back to sign in
+        </Link>
+      </p>
     </div>
   );
 }

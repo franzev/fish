@@ -4,6 +4,8 @@ import {
 } from "@/app/_components/testimonial-carousel";
 import { Wordmark } from "@/components/brand/wordmark";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import type { ThemePref } from "@/lib/prefs/theme-preference";
 import { cn } from "@/lib/utils";
 import { IconPlus } from "@tabler/icons-react";
 import Image from "next/image";
@@ -162,17 +164,24 @@ const FAQS = [
   },
 ];
 
-export function LandingPage() {
+interface LandingPageProps {
+  initialTheme: ThemePref;
+}
+
+export function LandingPage({ initialTheme }: LandingPageProps) {
   return (
     <>
       <header className={cn(SHELL, "flex items-center justify-between py-md")}>
         <Wordmark />
-        <Link
-          href="/sign-in"
-          className="-mr-sm inline-flex min-h-target-touch items-center px-sm text-ui font-medium text-body transition-colors hover:text-foreground"
-        >
-          Sign in
-        </Link>
+        <div className="-mr-sm flex items-center gap-2xs">
+          <ThemeToggle initialTheme={initialTheme} />
+          <Link
+            href="/sign-in"
+            className="inline-flex min-h-target-touch items-center px-sm text-ui font-medium text-body transition-colors hover:text-foreground"
+          >
+            Sign in
+          </Link>
+        </div>
       </header>
 
       <main>
@@ -183,16 +192,15 @@ export function LandingPage() {
             "relative grid gap-2xl pb-3xl pt-xl animate-fade-in lg:grid-cols-2 lg:items-center lg:pt-2xl"
           )}
         >
-          {/* Decorative artwork behind the vignette; the same desaturated,
-              near-transparent treatment as the auth brand panels so it stays
-              a texture, never a competing focal point. */}
+          {/* Decorative artwork behind the vignette, rendered in its authored
+              color and contrast in both themes. */}
           <Image
             src="/illustrations/landing-hero-mind-map.svg"
             alt=""
             width={500}
             height={500}
             sizes="(min-width: 1024px) 40vw, 0px"
-            className="pointer-events-none absolute bottom-0 right-0 hidden h-auto w-full max-w-content object-contain opacity-20 saturate-0 select-none lg:block"
+            className="pointer-events-none absolute bottom-0 right-0 hidden h-auto w-full max-w-content object-contain select-none lg:block"
           />
           <div className="relative">
             <h1 className="max-w-content text-hero">

@@ -40,3 +40,10 @@ export async function updatePrefsAction(
 ): Promise<void> {
   return (await handlers()).updatePrefs(input);
 }
+
+export async function adoptThemePreferenceAction(
+  themePref: unknown
+): Promise<boolean> {
+  if (themePref !== "light" && themePref !== "dark") return false;
+  return (await handlers()).adoptThemePref(themePref);
+}

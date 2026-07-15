@@ -1,6 +1,11 @@
 import { getAuthenticatedShellProfile } from "@/features/auth/server";
+import {
+  parseThemePreference,
+  THEME_PREFERENCE_COOKIE,
+} from "@/lib/prefs/theme-preference";
 import type { Metadata } from "next";
 import { Lexend, Fraunces } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 // Lexend — readability-tuned sans for body and UI (proven to reduce
@@ -31,13 +36,20 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getAuthenticatedShellProfile();
+  const [profile, cookieStore] = await Promise.all([
+    getAuthenticatedShellProfile(),
+    cookies(),
+  ]);
+  const visitorTheme = parseThemePreference(
+    cookieStore.get(THEME_PREFERENCE_COOKIE)?.value
+  );
+  const theme = profile?.themePref ?? visitorTheme;
 
   return (
     <html
       lang="en"
       className={`${lexend.variable} ${fraunces.variable}`}
-      data-theme={profile?.themePref ?? undefined}
+      data-theme={theme ?? undefined}
       data-reduced-motion={
         profile?.reducedMotionPref == null
           ? undefined

@@ -75,4 +75,10 @@ describe("globals.css theme-override hooks", () => {
       /html\[data-kit-theme="dark"\]\s*\{\s*color-scheme:\s*dark;/
     );
   });
+
+  it("does not override the authored illustration color or opacity", () => {
+    expect(css).not.toContain("--illustration-opacity");
+    expect(css).not.toContain("--illustration-filter");
+    expect(css).not.toContain("@utility theme-illustration");
+  });
 });

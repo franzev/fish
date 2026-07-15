@@ -1,4 +1,5 @@
 import { Wordmark } from "@/components/brand/wordmark";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { ReactNode } from "react";
@@ -17,6 +18,8 @@ export interface AuthSplitLayoutProps {
   message: string;
   /** Optional decorative artwork for a route-specific brand panel. */
   illustrationSrc?: string;
+  /** Optional mask for an artwork backdrop that follows the app theme. */
+  illustrationBackdropMaskSrc?: string;
   children: ReactNode;
 }
 
@@ -65,12 +68,16 @@ export function AuthSplitLayout({
   headline,
   message,
   illustrationSrc,
+  illustrationBackdropMaskSrc,
   children,
 }: AuthSplitLayoutProps) {
   return (
     <main className="lg:grid lg:h-dvh lg:grid-cols-2 lg:overflow-hidden">
       <div className="flex min-h-dvh flex-col px-page py-page lg:h-full lg:min-h-0 lg:overflow-y-auto lg:px-2xl">
-        <Wordmark className="self-start" />
+        <div className="flex items-center justify-between">
+          <Wordmark />
+          <ThemeToggle />
+        </div>
         <div className="flex flex-1 items-center justify-center py-2xl lg:min-h-0">
           <div className="w-full max-w-form">{children}</div>
         </div>
@@ -84,18 +91,41 @@ export function AuthSplitLayout({
         )}
       >
         {illustrationSrc ? (
-          <Image
-            src={illustrationSrc}
-            alt=""
-            width={500}
-            height={500}
-            sizes="(min-width: 1024px) 50vw, 0px"
-            className="pointer-events-none absolute right-0 bottom-0 h-auto w-full max-w-content object-contain opacity-20 saturate-0 select-none"
-          />
+          <>
+            {illustrationBackdropMaskSrc ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-0 bottom-0 aspect-square w-full max-w-content translate-y-sm bg-auth-illustration-shadow select-none"
+                style={{
+                  maskImage: `url(${illustrationBackdropMaskSrc})`,
+                  WebkitMaskImage: `url(${illustrationBackdropMaskSrc})`,
+                  maskPosition: "center",
+                  WebkitMaskPosition: "center",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskSize: "contain",
+                  WebkitMaskSize: "contain",
+                }}
+              />
+            ) : null}
+            <Image
+              src={illustrationSrc}
+              alt=""
+              width={500}
+              height={500}
+              sizes="(min-width: 1024px) 50vw, 0px"
+              className="pointer-events-none absolute right-0 bottom-0 h-auto w-full max-w-content translate-y-sm object-contain select-none"
+            />
+          </>
         ) : (
           <SchoolOfFish />
         )}
-        <div className="relative z-10 max-w-form">
+        <div
+          className={cn(
+            "relative z-10 max-w-form",
+            illustrationSrc && "-translate-y-auth-copy-lift"
+          )}
+        >
           <p
             className={cn(
               "font-serif font-semibold text-foreground",

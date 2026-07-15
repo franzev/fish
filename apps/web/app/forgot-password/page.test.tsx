@@ -60,12 +60,48 @@ describe("ForgotPasswordPage", () => {
       expect.stringContaining("forgot-password-reset.svg")
     );
     expect(illustration).toHaveAttribute("alt", "");
-    expect(illustration).toHaveClass("opacity-20", "saturate-0");
+    expect(illustration).not.toHaveClass("opacity-20", "saturate-0");
+  });
+
+  it("uses the shared blue accent and fair skin palette", () => {
+    const svg = readFileSync(
+      resolve(process.cwd(), "public/illustrations/forgot-password-reset.svg"),
+      "utf-8"
+    );
+
+    expect(svg).toContain("#90CAF9");
+    expect(svg).not.toMatch(/#92E3A9/i);
+    expect(svg).toContain("#FFE2D3");
+    expect(svg).toContain("#F1BFAE");
+    expect(svg).toMatch(
+      /<path d="M136\.74,[^>]*style="fill:#FFE2D3"/
+    );
+    expect(svg).toMatch(
+      /<path d="M236\.07,[^>]*style="fill:#F1BFAE"/
+    );
+    expect(svg).toMatch(
+      /<path d="M132\.61,[^>]*style="fill:#FFE2D3"/
+    );
+    expect(svg).not.toMatch(
+      /<path d="M236\.07,[^>]*style="fill:#90CAF9"/
+    );
+    expect(svg).not.toMatch(
+      /<path d="M132\.61,[^>]*style="fill:#fff"/
+    );
   });
 
   it("renders one email Input", () => {
     render(<ForgotPasswordPage />);
     expect(screen.getByLabelText("Email")).toHaveFocus();
+  });
+
+  it("provides a way back to sign in", () => {
+    render(<ForgotPasswordPage />);
+
+    expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute(
+      "href",
+      "/sign-in"
+    );
   });
 
   it("calls resetPasswordForEmail with the email and no redirectTo option", async () => {
@@ -100,5 +136,9 @@ describe("ForgotPasswordPage", () => {
     );
     // Success replaces the form in place — no separate "no account" state.
     expect(screen.queryByLabelText("Email")).toBeNull();
+    expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute(
+      "href",
+      "/sign-in"
+    );
   });
 });

@@ -1,5 +1,23 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const { cookieState, adoptThemePreferenceActionMock } = vi.hoisted(() => ({
+  cookieState: { theme: undefined as string | undefined },
+  adoptThemePreferenceActionMock: vi.fn(),
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({
+    get: (name: string) =>
+      name === "fish-theme" && cookieState.theme
+        ? { value: cookieState.theme }
+        : undefined,
+  })),
+}));
+
+vi.mock("@/features/profile/server/actions", () => ({
+  adoptThemePreferenceAction: adoptThemePreferenceActionMock,
+}));
 
 const redirectMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -52,7 +70,10 @@ vi.mock("@/lib/services/runtime/browser", () => ({
       attention: { list: vi.fn() },
       presence: {
         listVisible: vi.fn(async () => ({ ok: true, data: [] })),
-        getOwnPreference: vi.fn(async () => ({ ok: true, data: "automatic" })),
+        getOwnPreference: vi.fn(async () => ({
+          ok: true,
+          data: { preference: "automatic", expiresAt: null },
+        })),
       },
     },
   }),
@@ -72,6 +93,9 @@ describe("AuthenticatedLayout", () => {
   afterEach(() => {
     redirectMock.mockClear();
     getAuthenticatedShellProfileMock.mockReset();
+    adoptThemePreferenceActionMock.mockReset();
+    cookieState.theme = undefined;
+    delete document.documentElement.dataset.theme;
   });
 
   it("calls redirect('/sign-in') when getUser() returns no user (D-06 default-deny)", async () => {
@@ -109,5 +133,27 @@ describe("AuthenticatedLayout", () => {
     expect(screen.queryByText("Franz")).not.toBeInTheDocument();
     expect(screen.getByText("Content")).toBeInTheDocument();
     expect(screen.getByTestId("call-popover")).toBeInTheDocument();
+  });
+
+  it("keeps the visitor theme active and adopts it after client sign-in", async () => {
+    cookieState.theme = "dark";
+    adoptThemePreferenceActionMock.mockResolvedValueOnce(true);
+    getAuthenticatedShellProfileMock.mockResolvedValueOnce({
+      userId: "client-1",
+      role: "client",
+      displayName: "Franz",
+      avatarUrl: null,
+      themePref: null,
+      reducedMotionPref: null,
+      timeFormatPref: null,
+    });
+
+    const Layout = await AuthenticatedLayout({ children: <div>Content</div> });
+    render(Layout);
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      expect(adoptThemePreferenceActionMock).toHaveBeenCalledWith("dark");
+    });
   });
 });

@@ -15,7 +15,7 @@ export default async function SignInPage() {
     <AuthSplitLayout
       headline="Welcome back."
       message="Your conversations are right where you left them. Continue when you're ready."
-      illustrationSrc="/illustrations/sign-in-fish-bowl.svg"
+      illustrationSrc="/illustrations/sign-in-onboarding-blue.svg"
     >
       <SignInForm
         defaultCredentials={getDevLoginCredentials()}

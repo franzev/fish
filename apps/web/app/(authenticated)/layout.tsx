@@ -9,6 +9,12 @@ import { NotificationProvider } from "@/features/notifications";
 import { getNotificationShellData } from "@/features/notifications/server";
 import { PresenceProvider } from "@/features/presence/components/presence-provider/presence-provider";
 import { loadMessagePopoverAction } from "@/features/chat/server";
+import { VisitorThemeAdopter } from "@/features/profile";
+import {
+  parseThemePreference,
+  THEME_PREFERENCE_COOKIE,
+} from "@/lib/prefs/theme-preference";
+import { cookies } from "next/headers";
 
 /* D-06 default-deny: every route inside this (authenticated) group requires
    a session. getUser() is the only server-verified read (never
@@ -26,12 +32,20 @@ export default async function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getAuthenticatedShellProfile();
+  const [profile, cookieStore] = await Promise.all([
+    getAuthenticatedShellProfile(),
+    cookies(),
+  ]);
 
   if (!profile) {
     // Defensive: a session with no profile row should never happen.
     redirect(authRedirects.signedOut);
   }
+
+  const visitorTheme = parseThemePreference(
+    cookieStore.get(THEME_PREFERENCE_COOKIE)?.value
+  );
+  const effectiveTheme = profile.themePref ?? visitorTheme;
 
   const notifications = await getNotificationShellData();
 
@@ -50,6 +64,9 @@ export default async function AuthenticatedLayout({
           userId={profile.userId}
         >
           <ChatIdentityGuard userId={profile.userId} />
+          {profile.role === "client" &&
+            profile.themePref === null &&
+            visitorTheme && <VisitorThemeAdopter theme={visitorTheme} />}
           <AppShell
             displayName={profile.displayName}
             avatarUrl={profile.avatarUrl}
@@ -58,7 +75,7 @@ export default async function AuthenticatedLayout({
             friendsNavEnabled={friendsFeatureEnabled()}
             loadMessagePopoverAction={loadMessagePopoverAction}
             preferences={{
-              themePref: profile.themePref,
+              themePref: effectiveTheme,
               reducedMotionPref: profile.reducedMotionPref,
               timeFormatPref: profile.timeFormatPref,
             }}

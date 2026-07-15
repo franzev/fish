@@ -124,5 +124,16 @@ export function createProfileActionHandlers(
         }
       );
     },
+
+    async adoptThemePref(themePref: "light" | "dark"): Promise<boolean> {
+      const userResult = await dependencies.auth.getCurrentUser();
+      if (!userResult.ok || !userResult.data) return false;
+
+      const result = await dependencies.clientProfiles.updateSafeFields(
+        userResult.data.id,
+        { themePref }
+      );
+      return result.ok;
+    },
   };
 }

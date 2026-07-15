@@ -32,6 +32,7 @@ vi.mock("@/lib/services/supabase/server", () => ({
 
 import {
   acceptConsentAction,
+  adoptThemePreferenceAction,
   updatePrefsAction,
   updateProfileAction,
   type EditProfileState,
@@ -234,5 +235,31 @@ describe("updatePrefsAction", () => {
       reducedMotionPref: null,
       timeFormatPref: null,
     });
+  });
+});
+
+describe("adoptThemePreferenceAction", () => {
+  afterEach(() => {
+    getCurrentUserMock.mockReset();
+    updateSafeFieldsMock.mockReset();
+  });
+
+  it("moves a valid visitor theme into the signed-in client profile", async () => {
+    getCurrentUserMock.mockResolvedValueOnce({
+      ok: true,
+      data: { id: "client-1" },
+    });
+    updateSafeFieldsMock.mockResolvedValueOnce({ ok: true, data: undefined });
+
+    await expect(adoptThemePreferenceAction("dark")).resolves.toBe(true);
+    expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
+      themePref: "dark",
+    });
+  });
+
+  it("rejects invalid values before reading the session", async () => {
+    await expect(adoptThemePreferenceAction("sepia")).resolves.toBe(false);
+    expect(getCurrentUserMock).not.toHaveBeenCalled();
+    expect(updateSafeFieldsMock).not.toHaveBeenCalled();
   });
 });
