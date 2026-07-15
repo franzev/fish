@@ -99,7 +99,7 @@ describe("SupabaseNotificationRepository", () => {
     });
   });
 
-  it("does not link completed calls back to an ended call route", async () => {
+  it("omits completed calls from the notification list", async () => {
     const completedCall = {
       ...row("completed-call", 2, "2026-07-14T04:00:00.000Z"),
       kind: "call_completed",
@@ -118,9 +118,6 @@ describe("SupabaseNotificationRepository", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.data.items[0]).toMatchObject({
-      kind: "callCompleted",
-      actionHref: null,
-    });
+    expect(result.data.items).toEqual([]);
   });
 });

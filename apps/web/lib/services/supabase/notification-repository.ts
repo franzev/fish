@@ -112,6 +112,8 @@ type ItemRow = Awaited<
 };
 
 function toItem(row: ItemRow): NotificationItem | null {
+  if (row.kind === "call_completed") return null;
+
   const kind = kindByDatabaseValue[row.kind];
   const category = categoryByDatabaseValue[row.category];
   if (!kind || !category) return null;
