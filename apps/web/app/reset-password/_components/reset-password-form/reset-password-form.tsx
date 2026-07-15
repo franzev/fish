@@ -16,8 +16,11 @@ import { type SubmitEvent, useState } from "react";
 export function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const passwordLengthViolation =
+    passwordTouched && password.length > 0 && password.length < 8;
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,9 +79,16 @@ export function ResetPasswordForm() {
             autoFocus
             autoComplete="new-password"
             enterKeyHint="go"
-            hint="At least 8 characters."
+            hint={
+              passwordLengthViolation
+                ? "Use at least 8 characters."
+                : undefined
+            }
+            aria-invalid={passwordLengthViolation || Boolean(error)}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => setPasswordTouched(true)}
+            onInvalid={() => setPasswordTouched(true)}
             error={error || undefined}
             minLength={8}
             required

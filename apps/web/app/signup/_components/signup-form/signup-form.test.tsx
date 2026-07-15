@@ -46,21 +46,45 @@ describe("SignupForm", () => {
   it("hides Google sign-up unless it is explicitly configured", () => {
     render(<SignupForm />);
     expect(
-      screen.queryByRole("button", { name: "Sign up with Google" })
+      screen.queryByRole("button", { name: "Continue with Google" })
     ).not.toBeInTheDocument();
   });
 
   it("renders four Inputs (name, email, password, confirm password)", () => {
     render(<SignupForm />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Create your account" })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Name")).toHaveFocus();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm password")).toBeInTheDocument();
   });
 
-  it("shows the password hint 'At least 8 characters.'", () => {
+  it("shows the password hint only while the entered password is too short", () => {
     render(<SignupForm />);
-    expect(screen.getByText("At least 8 characters.")).toBeInTheDocument();
+
+    const passwordInput = screen.getByLabelText("Password");
+    expect(
+      screen.queryByText("Use at least 8 characters.")
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(passwordInput, { target: { value: "short" } });
+    expect(
+      screen.queryByText("Use at least 8 characters.")
+    ).not.toBeInTheDocument();
+
+    fireEvent.blur(passwordInput);
+    expect(
+      screen.getByText("Use at least 8 characters.")
+    ).toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(passwordInput, { target: { value: "long-enough" } });
+    expect(
+      screen.queryByText("Use at least 8 characters.")
+    ).not.toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute("aria-invalid", "false");
   });
 
   it("submitting calls the browser client's auth.signUp", async () => {
@@ -117,7 +141,9 @@ describe("SignupForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(
-      await screen.findByText("Passwords don't match yet.")
+      await screen.findByText(
+        "The passwords don't match. Check the second one and try again."
+      )
     ).toBeInTheDocument();
     expect(signUpWithPasswordMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
@@ -127,7 +153,9 @@ describe("SignupForm", () => {
     signInWithGoogleMock.mockResolvedValueOnce({ ok: true, data: undefined });
     render(<SignupForm showGoogleAuth />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Sign up with Google" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue with Google" })
+    );
 
     await waitFor(() => expect(signInWithGoogleMock).toHaveBeenCalledTimes(1));
     expect(signUpWithPasswordMock).not.toHaveBeenCalled();
@@ -136,7 +164,9 @@ describe("SignupForm", () => {
   it("renders the Google action as secondary, keeping one primary button", () => {
     render(<SignupForm showGoogleAuth />);
 
-    const googleButton = screen.getByRole("button", { name: "Sign up with Google" });
+    const googleButton = screen.getByRole("button", {
+      name: "Continue with Google",
+    });
     expect(googleButton.className).toContain("bg-surface");
     expect(googleButton.className).not.toContain("bg-primary");
     expect(googleButton.querySelector("svg")).toHaveAttribute(
@@ -172,7 +202,7 @@ describe("SignupForm", () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          "That email's already in use. Try logging in instead?"
+          "That email already has an account. Sign in or use a different email."
         )
       ).toBeInTheDocument()
     );
@@ -206,7 +236,7 @@ describe("SignupForm", () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          "That email's already in use. Try logging in instead?"
+          "That email already has an account. Sign in or use a different email."
         )
       ).toBeInTheDocument()
     );
@@ -237,7 +267,7 @@ describe("SignupForm", () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          "That email's already in use. Try logging in instead?"
+          "That email already has an account. Sign in or use a different email."
         )
       ).toBeInTheDocument()
     );

@@ -28,12 +28,15 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const passwordLengthViolation =
+    passwordTouched && password.length > 0 && password.length < 8;
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,7 +45,9 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
     setFormError("");
 
     if (password !== confirmPassword) {
-      setConfirmPasswordError("Passwords don't match yet.");
+      setConfirmPasswordError(
+        "The passwords don't match. Check the second one and try again."
+      );
       return;
     }
 
@@ -64,11 +69,11 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
           result.error.message.toLowerCase().includes("already registered")
         ) {
           setEmailError(
-            "That email's already in use. Try logging in instead?"
+            "That email already has an account. Sign in or use a different email."
           );
         } else {
           setFormError(
-            "Something needs your attention before you can continue. Try again in a moment."
+            "We couldn't create your account just now. Check your connection and try again."
           );
         }
         return;
@@ -79,14 +84,16 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
       // array is empty — and sends no email. Surface the existing-account
       // copy instead of routing to /check-inbox to wait for nothing.
       if (result.data.identityCount === 0) {
-        setEmailError("That email's already in use. Try logging in instead?");
+        setEmailError(
+          "That email already has an account. Sign in or use a different email."
+        );
         return;
       }
 
       router.push(`/check-inbox?email=${encodeURIComponent(email)}`);
     } catch {
       setFormError(
-        "Something needs your attention before you can continue. Try again in a moment."
+        "We couldn't create your account just now. Check your connection and try again."
       );
     } finally {
       setLoading(false);
@@ -119,7 +126,7 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
     // Bare content block — AuthSplitLayout (the page) owns <main>, the
     // split shell, centering, and the max-w-form column.
     <div className="w-full">
-      <h2 className="text-heading-sm">Create your account</h2>
+      <h1 className="text-heading-sm">Create your account</h1>
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <Input
             label="Name"
@@ -145,9 +152,16 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
             label="Password"
             autoComplete="new-password"
             enterKeyHint="next"
-            hint="At least 8 characters."
+            hint={
+              passwordLengthViolation
+                ? "Use at least 8 characters."
+                : undefined
+            }
+            aria-invalid={passwordLengthViolation}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => setPasswordTouched(true)}
+            onInvalid={() => setPasswordTouched(true)}
             minLength={8}
             required
           />
@@ -182,7 +196,7 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
           >
             <span className="inline-flex items-center gap-xs">
               <IconBrandGoogle size={20} stroke={1.75} aria-hidden="true" />
-              Sign up with Google
+              Continue with Google
             </span>
           </Button>}
         </form>

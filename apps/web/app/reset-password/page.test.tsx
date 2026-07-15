@@ -47,10 +47,31 @@ describe("ResetPasswordPage", () => {
     expect(primaryButtons[0]).toHaveTextContent("Set new password");
   });
 
-  it("renders one password Input with the 8-char hint", () => {
+  it("shows the password hint only while the entered password is too short", () => {
     render(<ResetPasswordPage />);
-    expect(screen.getByLabelText("Password")).toHaveFocus();
-    expect(screen.getByText("At least 8 characters.")).toBeInTheDocument();
+
+    const passwordInput = screen.getByLabelText("Password");
+    expect(passwordInput).toHaveFocus();
+    expect(
+      screen.queryByText("Use at least 8 characters.")
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(passwordInput, { target: { value: "short" } });
+    expect(
+      screen.queryByText("Use at least 8 characters.")
+    ).not.toBeInTheDocument();
+
+    fireEvent.blur(passwordInput);
+    expect(
+      screen.getByText("Use at least 8 characters.")
+    ).toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(passwordInput, { target: { value: "long-enough" } });
+    expect(
+      screen.queryByText("Use at least 8 characters.")
+    ).not.toBeInTheDocument();
+    expect(passwordInput).toHaveAttribute("aria-invalid", "false");
   });
 
   it("calls updateUser on submit and redirects to /home", async () => {
