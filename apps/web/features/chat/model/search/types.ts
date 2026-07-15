@@ -24,6 +24,7 @@ export interface ChatSearchMember {
   id: string;
   displayName: string;
   username: string;
+  role?: "client" | "coach";
   avatarUrl?: string;
 }
 

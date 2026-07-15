@@ -103,7 +103,7 @@ function renderPopover({
     <MemberProfilePopover
       member={target}
       currentUserId={currentUser.id}
-      currentUserRole={currentUser.role}
+      currentUserRole={currentUser.role ?? "client"}
       friendActionsEnabled={friendActionsEnabled}
       trigger={trigger}
       repository={repository}
@@ -185,6 +185,22 @@ describe("MemberProfilePopover", () => {
     expect(screen.getByText("Coach")).toBeVisible();
     expect(searchCandidate).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Add friend" })).toBeNull();
+  });
+
+  it("verifies an unknown directory role before showing Add friend", async () => {
+    const directoryMember = { ...member, role: undefined };
+    const { repository, searchCandidate } = makeRepository(
+      friendCandidate("none")
+    );
+    renderPopover({ target: directoryMember, repository });
+
+    expect(
+      await screen.findByRole("dialog", { name: directoryMember.displayName })
+    ).toBeVisible();
+    expect(searchCandidate).toHaveBeenCalledWith(directoryMember.username);
+    expect(
+      await screen.findByRole("button", { name: "Add friend" })
+    ).toBeVisible();
   });
 
   it("keeps previews informational for coach viewers", async () => {

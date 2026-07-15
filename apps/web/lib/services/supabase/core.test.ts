@@ -38,6 +38,7 @@ function createUnreadSummaryRpc(
     id: string;
     display_name: string;
     username: string;
+    role: string;
   }> = [],
   conversationProfiles: Array<{
     conversation_id: string;
@@ -327,6 +328,7 @@ describe("Supabase service registry", () => {
       id: "user-1",
       display_name: "Franz Fish",
       username: "franz",
+      role: "client",
     }]);
     const client = {
       auth: {
@@ -352,6 +354,12 @@ describe("Supabase service registry", () => {
         channelSlug: "general",
         channelName: "general",
         title: "general",
+        searchMembers: [{
+          id: "user-1",
+          displayName: "Franz Fish",
+          username: "franz",
+          role: "client",
+        }],
       });
       expect(result.data?.subtitle).toBeUndefined();
       expect(client.from).not.toHaveBeenCalledWith("message_reactions");

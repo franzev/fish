@@ -178,7 +178,7 @@ export interface ClientDirectConversationPreview {
   unreadCount: number;
 }
 export interface ClientChatSearchMember {
-  id: string; displayName: string; username: string; avatarUrl?: string;
+  id: string; displayName: string; username: string; role?: "client" | "coach"; avatarUrl?: string;
 }
 export interface ClientChatSearchChannel {
   id: string; name: string; slug: string; conversationId: string;

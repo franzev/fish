@@ -12,14 +12,14 @@ import { cn } from "@/lib/utils";
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
 import { IconBan, IconDots, IconX } from "@tabler/icons-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Avatar } from "../avatar";
 
 export interface CommunityMemberProfile {
   id: string;
   displayName: string;
   username?: string | null;
-  role: "client" | "coach";
+  role?: "client" | "coach";
   avatarUrl?: string | null;
 }
 
@@ -28,7 +28,8 @@ interface MemberProfilePopoverProps {
   currentUserId: string;
   currentUserRole: "client" | "coach";
   friendActionsEnabled?: boolean;
-  trigger: "avatar" | "name";
+  trigger: "avatar" | "name" | "custom";
+  children?: ReactNode;
   className?: string;
   repository?: FriendRepository;
   commands?: FriendCommandService;
@@ -48,6 +49,7 @@ export function MemberProfilePopover({
   currentUserRole,
   friendActionsEnabled = false,
   trigger,
+  children,
   className,
   repository: repositoryOverride,
   commands: commandsOverride,
@@ -65,14 +67,22 @@ export function MemberProfilePopover({
   const closeRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const confirmBlockRef = useRef<HTMLButtonElement>(null);
-  const eligibleForFriendActions =
+  const canCheckFriendStatus =
     friendActionsEnabled &&
     currentUserRole === "client" &&
-    member.role === "client" &&
+    member.role !== "coach" &&
     member.id !== currentUserId;
+  const relationshipConfirmsClient =
+    member.role === "client" ||
+    Boolean(candidate?.profile) ||
+    confirmingBlock ||
+    blocked;
+  const showRelationshipSection =
+    canCheckFriendStatus &&
+    (loadingRelationship || relationshipConfirmsClient || Boolean(notice));
 
   async function loadRelationship(sequence: number) {
-    if (!eligibleForFriendActions || !member.username) {
+    if (!canCheckFriendStatus || !member.username) {
       setLoadingRelationship(false);
       return;
     }
@@ -296,11 +306,13 @@ export function MemberProfilePopover({
         className={cn(
           trigger === "avatar"
             ? "-m-nudge inline-flex min-h-control min-w-control items-center justify-center rounded-pill p-nudge"
-            : "-my-sm inline-flex min-h-control min-w-control items-center rounded-control text-left text-ui-sm font-medium leading-none text-body hover:text-foreground",
+            : trigger === "name"
+              ? "-my-sm inline-flex min-h-control min-w-control items-center rounded-control text-left text-ui-sm font-medium leading-none text-body hover:text-foreground"
+              : "inline-flex min-h-control min-w-control",
           className
         )}
       >
-        {trigger === "avatar" ? (
+        {children ?? (trigger === "avatar" ? (
           <Avatar
             profileId={member.id}
             src={member.avatarUrl ?? undefined}
@@ -310,7 +322,7 @@ export function MemberProfilePopover({
           />
         ) : (
           member.displayName
-        )}
+        ))}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Backdrop className="fixed inset-0 z-40 hidden bg-scrim max-sm:block" />
@@ -346,7 +358,10 @@ export function MemberProfilePopover({
                 </Popover.Description>
               </div>
               <div className="flex shrink-0 items-center gap-2xs">
-                {eligibleForFriendActions && !blocked && !confirmingBlock && (
+                {canCheckFriendStatus &&
+                  relationshipConfirmsClient &&
+                  !blocked &&
+                  !confirmingBlock && (
                   <Menu.Root modal={false}>
                     <Menu.Trigger
                       ref={moreRef}
@@ -390,7 +405,7 @@ export function MemberProfilePopover({
               </div>
             </div>
 
-            {eligibleForFriendActions && (
+            {showRelationshipSection && (
               <div
                 aria-live="polite"
                 className="mt-md border-t border-divider pt-md"

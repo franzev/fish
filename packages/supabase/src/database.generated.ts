@@ -2134,6 +2134,7 @@ export type Database = {
         Returns: {
           display_name: string
           id: string
+          role: string
           username: string
         }[]
       }

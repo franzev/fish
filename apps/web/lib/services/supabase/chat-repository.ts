@@ -630,6 +630,11 @@ export class SupabaseChatRepository implements ChatRepository {
           id: member.id,
           displayName: member.display_name,
           username: member.username,
+          role: member.role === "client"
+            ? "client"
+            : member.role === "coach"
+              ? "coach"
+              : undefined,
         })),
         searchChannels: (availableChannels ?? []).map((channel) => ({
           id: channel.id,
