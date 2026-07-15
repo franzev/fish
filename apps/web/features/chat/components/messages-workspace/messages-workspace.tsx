@@ -13,7 +13,9 @@ import type {
   ClientChatData,
   ClientChatMessage,
   ClientDirectConversationPreview,
+  FriendProfile,
 } from "@/lib/services";
+import { FriendConversationActions } from "@/features/friends";
 import {
   IconLanguage,
   IconLock,
@@ -24,6 +26,7 @@ import type { ReactNode } from "react";
 export interface MessagesWorkspaceProps {
   chat: ClientChatData;
   conversations?: ClientDirectConversationPreview[];
+  friend?: FriendProfile | null;
   children: ReactNode;
 }
 
@@ -35,6 +38,7 @@ export interface MessagesWorkspaceProps {
 export function MessagesWorkspace({
   chat,
   conversations = [],
+  friend,
   children,
 }: MessagesWorkspaceProps) {
   const storedMessages = useChatStore((state) =>
@@ -90,7 +94,7 @@ export function MessagesWorkspace({
         className="hidden w-conversation-list shrink-0 flex-col border-r border-divider bg-surface lg:flex"
       >
         <div className="flex h-chat-header shrink-0 items-center border-b border-divider px-md">
-          <h1 className="font-sans text-heading-sm font-semibold text-foreground">
+          <h1 className="font-serif text-heading-sm font-semibold text-foreground">
             Messages
           </h1>
         </div>
@@ -127,10 +131,16 @@ export function MessagesWorkspace({
         aria-label="Conversation details"
         className="hidden w-conversation-details shrink-0 flex-col border-l border-divider bg-surface xl:flex"
       >
-        <div className="flex h-chat-header shrink-0 items-center border-b border-divider px-md">
-          <h2 className="font-sans text-heading-sm font-semibold text-foreground">
+        <div className="flex h-chat-header shrink-0 items-center justify-between border-b border-divider px-md">
+          <h2 className="font-serif text-heading-sm font-semibold text-foreground">
             Details
           </h2>
+          {friend ? (
+            <FriendConversationActions
+              friend={friend}
+              successHref="/messages"
+            />
+          ) : null}
         </div>
 
         <ScrollArea className="min-h-0 flex-1" viewportClassName="px-md py-lg">

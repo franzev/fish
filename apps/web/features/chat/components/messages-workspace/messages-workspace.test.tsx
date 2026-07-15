@@ -7,6 +7,20 @@ import type {
 import { resetChatStoreForTests } from "@/features/chat/model/store";
 import { MessagesWorkspace } from "./messages-workspace";
 
+vi.mock("@/features/friends", () => ({
+  FriendConversationActions: ({
+    friend,
+    successHref,
+  }: {
+    friend: { displayName: string };
+    successHref: string;
+  }) => (
+    <button type="button" data-success-href={successHref}>
+      Friend actions for {friend.displayName}
+    </button>
+  ),
+}));
+
 vi.mock("@/features/calls", () => ({
   CallButton: ({
     recipientName,
@@ -118,6 +132,11 @@ describe("MessagesWorkspace", () => {
           },
         }}
         conversations={conversations}
+        friend={{
+          id: "friend-1",
+          displayName: "Sam Okafor",
+          username: "sam_okafor",
+        }}
       >
         <div>Active conversation</div>
       </MessagesWorkspace>
@@ -128,6 +147,11 @@ describe("MessagesWorkspace", () => {
     expect(screen.getByText("Only you and your friend can take part.")).toBeInTheDocument();
     expect(screen.queryByText("One-to-one coaching")).not.toBeInTheDocument();
     expect(screen.queryByText("English coaching")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Friend actions for Sam Okafor" })
+    ).toHaveAttribute("data-success-href", "/messages");
+    expect(screen.queryByRole("button", { name: "Unfriend" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Block/ })).toBeNull();
   });
 
   it("describes a coach's direct conversation as their assigned client", () => {

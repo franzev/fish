@@ -1,4 +1,8 @@
-import { ChatClient, EmptyState, MessagesWorkspace } from "@/features/chat";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ChatClient, MessagesWorkspace } from "@/features/chat";
+import { getDirectFriendProfile } from "@/features/chat/model/direct-friend";
+import { FriendConversationActions } from "@/features/friends";
+import { friendsFeatureEnabled } from "@/features/friends/server";
 import {
   backfillMessagesAction,
   deleteMessageAction,
@@ -10,7 +14,6 @@ import {
   refreshMessagesAction,
   refreshUnreadSummaryAction,
   reportGifAction,
-  searchChatMessagesAction,
   sendMessageAction,
   toggleReactionAction,
 } from "@/features/chat/server";
@@ -45,14 +48,27 @@ export default async function DirectMessagePage({
     );
   }
   if (data.chat.kind !== "direct") notFound();
+  const friend = friendsFeatureEnabled()
+    ? getDirectFriendProfile(data.chat)
+    : null;
 
   return (
-    <MessagesWorkspace chat={data.chat} conversations={conversations}>
+    <MessagesWorkspace
+      chat={data.chat}
+      conversations={conversations}
+      friend={friend}
+    >
       <ChatClient
         chat={data.chat}
+        conversationActions={friend ? (
+          <FriendConversationActions
+            friend={friend}
+            successHref="/messages"
+            className="xl:hidden"
+          />
+        ) : null}
         focusMessageId={focusMessageId ?? null}
         sendMessageAction={sendMessageAction}
-        searchMessagesAction={searchChatMessagesAction}
         editMessageAction={editMessageAction}
         deleteMessageAction={deleteMessageAction}
         toggleReactionAction={toggleReactionAction}

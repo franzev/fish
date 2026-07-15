@@ -123,6 +123,16 @@ const chat: ClientChatData = {
   },
 };
 
+const searchableCommunityChat: ClientChatData = {
+  ...chat,
+  kind: "community",
+  channelId: "22222222-2222-4222-8222-222222222222",
+  channelSlug: "general",
+  channelName: "general",
+  title: "general",
+  participantPresence: undefined,
+};
+
 // Every realtime channel shares one mocked `channel` object, and
 // `channel.subscribe`/`client.channel` mock call history accumulates across
 // every test in this file (no clearMocks). Search from the end so a test
@@ -605,21 +615,24 @@ describe("ChatClient", () => {
   });
 
   it("renders the direct assigned conversation without an inbox", () => {
-    render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={vi.fn()}
+      />
+    );
 
     const heading = screen.getByRole("heading", { name: "Gwyn" });
     expect(heading.closest("div.h-chat-header")).toBeInTheDocument();
     expect(screen.getByText("How did practice feel today?")).toBeInTheDocument();
     expect(screen.queryByLabelText(/search conversations/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /View Gwyn profile/ })).toBeNull();
-    const search = screen.getByRole("combobox", { name: "Search messages" });
+    expect(screen.queryByRole("combobox", { name: "Search messages" })).toBeNull();
     const voiceCall = screen.getByRole("button", { name: "Voice call Gwyn" });
     const videoCall = screen.getByRole("button", { name: "Video call Gwyn" });
     expect(voiceCall).toBeVisible();
     expect(videoCall).toBeVisible();
-    expect(search.compareDocumentPosition(voiceCall)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
     expect(voiceCall.compareDocumentPosition(videoCall)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
@@ -743,7 +756,13 @@ describe("ChatClient", () => {
       participantPresence: undefined,
     };
 
-    render(<ChatClient chat={communityChat} sendMessageAction={vi.fn()} />);
+    render(
+      <ChatClient
+        chat={communityChat}
+        sendMessageAction={vi.fn()}
+        searchMessagesAction={vi.fn()}
+      />
+    );
 
     expect(screen.getByRole("heading", { name: /# general/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Search")).toBeInTheDocument();
@@ -853,7 +872,7 @@ describe("ChatClient", () => {
 
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -901,7 +920,7 @@ describe("ChatClient", () => {
 
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -932,7 +951,7 @@ describe("ChatClient", () => {
     render(
       <ChatClient
         chat={{
-          ...chat,
+          ...searchableCommunityChat,
           searchMembers: [{
             id: "coach-1",
             displayName: "Gwyn",
@@ -958,7 +977,7 @@ describe("ChatClient", () => {
     });
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -985,7 +1004,7 @@ describe("ChatClient", () => {
 
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -1024,7 +1043,7 @@ describe("ChatClient", () => {
 
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -1062,7 +1081,7 @@ describe("ChatClient", () => {
 
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -1086,7 +1105,7 @@ describe("ChatClient", () => {
 
     render(
       <ChatClient
-        chat={chat}
+        chat={searchableCommunityChat}
         sendMessageAction={vi.fn()}
         searchMessagesAction={searchMessagesAction}
       />
@@ -1311,11 +1330,11 @@ describe("ChatClient", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not show a recording indicator when Audio Recording is clicked", () => {
+  it("does not show a recording indicator when Audio recording is clicked", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Add to message" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Audio Recording" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Audio recording" }));
 
     expect(screen.queryByText("Recording audio")).toBeNull();
   });

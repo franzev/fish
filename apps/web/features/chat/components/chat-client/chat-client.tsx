@@ -6,7 +6,14 @@ import type {
   ClientChatMessage,
   ClientChatReadState,
 } from "@/lib/services";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type {
   ChatSearchActionState,
   ReportGifActionState,
@@ -42,6 +49,7 @@ import { ChatMessageList } from "../chat-message-list";
 import { MembersSidebar } from "../members-sidebar";
 import { FiltersDialog } from "../search-filters";
 import { SearchResultsSidebar } from "../search-results";
+import { StickerPreloader } from "../sticker-preloader";
 import {
   selectRealtimeStatusForConversation,
 } from "@/features/chat/model/store";
@@ -83,6 +91,7 @@ export interface ChatClientProps {
   presentation?: "full" | "embedded";
   /** Presentation gate only; the Friends backend remains authoritative. */
   friendActionsEnabled?: boolean;
+  conversationActions?: ReactNode;
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
   searchMessagesAction?: (input: unknown) => Promise<ChatSearchActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
@@ -121,6 +130,7 @@ export function ChatClient({
   focusMessageId,
   presentation = "full",
   friendActionsEnabled = false,
+  conversationActions,
   sendMessageAction,
   searchMessagesAction,
   editMessageAction,
@@ -202,6 +212,7 @@ export function ChatClient({
   // not disappear while navigating between cached and current page data.
   const isCommunity = chat.kind === "community"
     || Boolean(chat.channelId ?? chat.channelSlug);
+  const searchEnabled = isCommunity && Boolean(searchMessagesAction);
   const chatTitle = chat.title ?? chat.participant.displayName;
   const activityName = isCommunity ? "Someone" : chat.participant.displayName;
   const getMessageAuthorName = (message: ClientChatMessage) =>
@@ -444,7 +455,7 @@ export function ChatClient({
   }, [chat.conversationId, searchMessagesAction, updateSearchUrl]);
 
   useEffect(() => {
-    if (presentation === "embedded") return;
+    if (presentation === "embedded" || !searchEnabled) return;
 
     const restoreSearchFromUrl = () => {
       if (restoredUrlRef.current === window.location.href) return;
@@ -489,7 +500,7 @@ export function ChatClient({
     restoreSearchFromUrl();
     window.addEventListener("popstate", restoreSearchFromUrl);
     return () => window.removeEventListener("popstate", restoreSearchFromUrl);
-  }, [presentation, runSearch, searchChannels, searchMembers]);
+  }, [presentation, runSearch, searchChannels, searchEnabled, searchMembers]);
   const latestMineRequestId = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
@@ -506,6 +517,7 @@ export function ChatClient({
       className="flex min-h-0 w-full flex-1 flex-col"
       aria-label={isCommunity ? `${chatTitle} room` : `Conversation with ${chatTitle}`}
     >
+      <StickerPreloader />
       {presentation === "full" && (
         <ChatHeader
           chatTitle={chatTitle}
@@ -530,6 +542,7 @@ export function ChatClient({
           }}
           presenceStatus={participantPresence.status}
           presenceLabel={participantPresence.label}
+          searchEnabled={searchEnabled}
           search={search}
           onSearchChange={setSearch}
           criteria={searchCriteria}
@@ -540,6 +553,7 @@ export function ChatClient({
             void runSearch(query, criteria, 1, searchSort)
           }
           onOpenFilters={() => setFiltersOpen(true)}
+          conversationActions={conversationActions}
         />
       )}
 
@@ -634,7 +648,7 @@ export function ChatClient({
           onClose={() => setRightSidebar(null)}
         />
       )}
-      {presentation === "full" && rightSidebar === "search" && (
+      {presentation === "full" && searchEnabled && rightSidebar === "search" && (
         <SearchResultsSidebar
           messages={searchResults}
           totalCount={searchTotalCount}
@@ -663,7 +677,7 @@ export function ChatClient({
         />
       )}
       </div>
-      {presentation === "full" && (
+      {presentation === "full" && searchEnabled && (
         <FiltersDialog
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
