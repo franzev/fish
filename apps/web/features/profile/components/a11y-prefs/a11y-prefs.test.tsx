@@ -1,6 +1,4 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { updatePrefsActionMock } = vi.hoisted(() => ({
@@ -39,10 +37,18 @@ describe("A11yPrefs", () => {
   });
 
   it("keeps segmented preference buttons at the default interaction target", () => {
-    const source = readFileSync(resolve(__dirname, "./a11y-prefs.tsx"), "utf-8");
+    render(
+      <A11yPrefs
+        themePref={null}
+        reducedMotionPref={null}
+        timeFormatPref={null}
+      />
+    );
 
-    expect(source).toContain("min-h-control");
-    expect(source).not.toMatch(/min-h-\[[^\]]+\]/);
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveClass("min-h-control");
+      expect(button.className).not.toMatch(/min-h-\[[^\]]+\]/);
+    }
   });
 
   it("defaults theme and reduced-motion to the system option when the prop is null", () => {

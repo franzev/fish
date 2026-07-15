@@ -2,6 +2,7 @@
 
 import { SettingsRow } from "../settings-row";
 import { Alert } from "@/components/ui/alert";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   applyReducedMotion,
   applyTheme,
@@ -9,7 +10,6 @@ import {
 } from "@/lib/prefs/apply-prefs";
 import { reportOperationalError } from "@/lib/observability/reporter";
 import type { TimeFormatPref } from "@/lib/prefs/time-format";
-import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import {
   updatePrefsAction,
@@ -42,43 +42,6 @@ const timeFormatOptions: Array<{ value: TimeFormatPref; label: string }> = [
   { value: "12h", label: "12 hr" },
   { value: "24h", label: "24 hr" },
 ];
-
-/** Segmented control shared by profile prefs -- quiet pill wells, active
- *  state signaled by the surface-3 fill step only (chat's selected-well
- *  idiom; no border, no size/weight change, so clicking never resizes the
- *  row -- layout-stability contract). */
-function SegmentedControl<T>({
-  options,
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  options: Array<{ value: T; label: string }>;
-  value: T;
-  onChange: (next: T) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div role="group" aria-label={ariaLabel} className="flex gap-xs">
-      {options.map((opt) => (
-        <button
-          key={opt.label}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          aria-pressed={value === opt.value}
-          className={cn(
-            "min-h-control rounded-pill px-sm text-ui-sm transition-colors",
-            value === opt.value
-              ? "bg-surface-3 text-foreground"
-              : "bg-surface-2 text-body hover:bg-surface-3"
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /** The profile preferences: theme, reduced motion, and time format.
  *  System-backed options default to "follow system" (null). Changing one
@@ -130,10 +93,10 @@ export function A11yPrefs({
         label="Appearance"
         control={
           <SegmentedControl
-            ariaLabel="Appearance"
+            label="Appearance"
             options={themeOptions}
             value={theme}
-            onChange={(next) => {
+            onValueChange={(next) => {
               setTheme(next);
               persist({
                 themePref: next,
@@ -148,10 +111,10 @@ export function A11yPrefs({
         label="Reduced motion"
         control={
           <SegmentedControl
-            ariaLabel="Reduced motion"
+            label="Reduced motion"
             options={reducedMotionOptions}
             value={reducedMotion}
-            onChange={(next) => {
+            onValueChange={(next) => {
               setReducedMotion(next);
               persist({
                 themePref: theme,
@@ -166,10 +129,10 @@ export function A11yPrefs({
         label="Time format"
         control={
           <SegmentedControl
-            ariaLabel="Time format"
+            label="Time format"
             options={timeFormatOptions}
             value={timeFormat}
-            onChange={(next) => {
+            onValueChange={(next) => {
               setTimeFormat(next);
               persist({
                 themePref: theme,
