@@ -1,5 +1,5 @@
 import { ClientList } from "@/features/coach";
-import { EmptyState } from "@/components/home/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { authRedirects } from "@/features/auth/redirects";
 import { getCoachHomeData } from "@/features/coach/server";
 import { redirect } from "next/navigation";
@@ -27,9 +27,13 @@ export default async function CoachHomePage() {
     <>
       <h1 className="mb-lg text-heading-sm">Your clients</h1>
       {data.clients.length === 0 ? (
-        <EmptyState Icon={IconUsers}>
-          <p>Clients assigned to you will show up here.</p>
-        </EmptyState>
+        <EmptyState
+          icon={IconUsers}
+          appearance="surface"
+          fill={false}
+          title={null}
+          description="Clients assigned to you will show up here."
+        />
       ) : (
         <ClientList clients={data.clients} />
       )}

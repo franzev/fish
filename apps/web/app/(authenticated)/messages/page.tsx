@@ -1,4 +1,4 @@
-import { EmptyState } from "@/features/chat";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getCurrentProfile } from "@/features/auth/server";
 import { getServerServices } from "@/lib/services/runtime/server";
 import { authRedirects } from "@/features/auth/redirects";

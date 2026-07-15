@@ -1,4 +1,5 @@
-import { ChatClient, EmptyState } from "@/features/chat";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ChatClient } from "@/features/chat";
 import {
   backfillMessagesAction,
   deleteMessageAction,

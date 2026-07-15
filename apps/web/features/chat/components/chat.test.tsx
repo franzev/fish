@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyTimeFormat } from "@/lib/prefs/apply-prefs";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar } from "./avatar";
-import { EmptyState } from "./empty-state";
 import { MessageMeta } from "./message-meta";
 import { MessageStatus } from "./message-status";
 import { Reactions } from "./reactions";
@@ -88,6 +88,11 @@ describe("Reactions", () => {
     );
     const mine = screen.getByRole("button", { name: /including you/ });
     expect(mine).toHaveAttribute("aria-pressed", "true");
+    expect(mine).toHaveClass(
+      "min-h-control",
+      "md:h-reaction-pill",
+      "md:min-h-reaction-pill"
+    );
     // Own reaction reads by a heavier borderless fill step, not a border.
     expect(mine.className).toContain("bg-surface-3");
     expect(mine.className).not.toContain("border-border");
@@ -95,6 +100,25 @@ describe("Reactions", () => {
     const theirs = screen.getByRole("button", { name: /🎉 reaction, 1 person/ });
     expect(theirs).toHaveAttribute("aria-pressed", "false");
     expect(theirs.className).toContain("bg-surface-2");
+  });
+
+  it("shows the reaction context in a tooltip", async () => {
+    render(
+      <Reactions
+        reactions={[{ emoji: "🎉", count: 2, byMe: true }]}
+        onToggle={() => undefined}
+      />
+    );
+
+    fireEvent.focus(
+      screen.getByRole("button", {
+        name: "🎉 reaction, 2 people, including you",
+      })
+    );
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "🎉 reaction, 2 people, including you"
+    );
   });
 
   it("keeps reaction context visible but inactive during message editing", () => {
@@ -112,6 +136,44 @@ describe("Reactions", () => {
     expect(screen.queryByRole("button", { name: "Add a reaction" })).toBeNull();
     fireEvent.click(reaction);
     expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("keeps only the reaction-row emoji picker visually compact", async () => {
+    render(
+      <Reactions
+        reactions={[{ emoji: "👍", count: 1, byMe: false }]}
+        onToggle={() => undefined}
+      />
+    );
+
+    const reaction = screen.getByRole("button", { name: /👍 reaction/ });
+    const trigger = screen.getByRole("button", { name: "Add a reaction" });
+    const sharedGeometry = [
+      "inline-flex",
+      "min-h-control",
+      "items-center",
+      "rounded-pill",
+      "px-xs",
+      "py-2xs",
+      "md:h-reaction-pill",
+      "md:min-h-reaction-pill",
+      "md:py-3xs",
+    ];
+    expect(reaction).toHaveClass(...sharedGeometry);
+    expect(trigger).toHaveClass(...sharedGeometry);
+    expect(trigger).not.toHaveClass("size-control");
+    expect(trigger.querySelector("svg")).toHaveClass("tabler-icon-mood-plus");
+    expect(trigger.querySelector("svg")).toHaveAttribute("width", "18");
+
+    fireEvent.focus(trigger);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Add a reaction"
+    );
+
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole("dialog", { name: "Choose an emoji" })
+    ).toBeInTheDocument();
   });
 });
 

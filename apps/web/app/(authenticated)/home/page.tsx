@@ -1,4 +1,4 @@
-import { EmptyState } from "@/components/home/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { authRedirects } from "@/features/auth/redirects";
 import { getClientHomeData } from "@/features/auth/server";
 import { redirect } from "next/navigation";
@@ -45,13 +45,17 @@ export default async function ClientHomePage() {
         </>
       ) : (
         <>
-          <EmptyState Icon={IconSparkles}>
-            {data.coachName ? (
+          <EmptyState
+            icon={IconSparkles}
+            appearance="surface"
+            fill={false}
+            title={null}
+            description={data.coachName ? (
               <p>Your next lesson is ready to book.</p>
             ) : (
               <p>We&apos;re getting things ready for you.</p>
             )}
-          </EmptyState>
+          />
           {data.coachId && data.coachName && (
             <Button
               href="/book"
