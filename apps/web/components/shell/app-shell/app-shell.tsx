@@ -287,26 +287,28 @@ export function AppShell({
           {channelSurface && (
             <nav
               aria-label="Mobile channels"
-              className="flex shrink-0 gap-3xs overflow-x-auto border-b border-divider bg-surface px-page py-xs md:hidden"
+              className="contain-horizontal-scroll w-full shrink-0 overflow-x-auto border-b border-divider bg-surface md:hidden"
             >
-              {communityChannels.map((channel) => (
-                <Link
-                  key={channel.id}
-                  href={channel.href}
-                  aria-current={
-                    isActivePath(pathname, channel.href) ? "page" : undefined
-                  }
-                  className={cn(
-                    "flex min-h-control shrink-0 items-center gap-2xs rounded-control px-sm text-ui-sm text-muted transition-colors",
-                    "hover:bg-surface-2 hover:text-foreground",
-                    isActivePath(pathname, channel.href) &&
-                      "bg-surface-2 font-semibold text-foreground"
-                  )}
-                >
-                  <span aria-hidden="true">#</span> {channel.name}
-                  <AttentionBadge value={channelBadges.get(channel.id)} />
-                </Link>
-              ))}
+              <div className="flex w-max min-w-full gap-3xs px-page py-xs">
+                {communityChannels.map((channel) => (
+                  <Link
+                    key={channel.id}
+                    href={channel.href}
+                    aria-current={
+                      isActivePath(pathname, channel.href) ? "page" : undefined
+                    }
+                    className={cn(
+                      "flex min-h-control shrink-0 items-center gap-2xs rounded-control px-sm text-ui-sm text-muted transition-colors",
+                      "hover:bg-surface-2 hover:text-foreground",
+                      isActivePath(pathname, channel.href) &&
+                        "bg-surface-2 font-semibold text-foreground"
+                    )}
+                  >
+                    <span aria-hidden="true">#</span> {channel.name}
+                    <AttentionBadge value={channelBadges.get(channel.id)} />
+                  </Link>
+                ))}
+              </div>
             </nav>
           )}
           {children}

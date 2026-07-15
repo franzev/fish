@@ -15,6 +15,7 @@ const fraunces = Fraunces({
 });
 
 const fontVariableClasses = `${lexend.variable} ${fraunces.variable}`;
+const testTheme = import.meta.env.VITE_STORYBOOK_TEST_THEME;
 
 if (typeof document !== "undefined") {
   document.documentElement.classList.add(...fontVariableClasses.split(" "));
@@ -22,14 +23,35 @@ if (typeof document !== "undefined") {
 
 const preview: Preview = {
   decorators: [
-    (Story) => (
-      <div
-        className="font-sans p-lg bg-bg"
-      >
-        <Story />
-      </div>
-    ),
+    (Story, context) => {
+      const theme = context.globals.theme as "system" | "light" | "dark";
+      if (typeof document !== "undefined") {
+        if (theme === "system") {
+          delete document.documentElement.dataset.theme;
+        } else {
+          document.documentElement.dataset.theme = theme;
+        }
+      }
+      return (
+        <div className="min-h-screen bg-bg p-lg font-sans text-foreground">
+          <Story />
+        </div>
+      );
+    },
   ],
+  globalTypes: {
+    theme: {
+      description: "Resolved FISH theme",
+      toolbar: {
+        icon: "paintbrush",
+        items: ["system", "light", "dark"],
+        dynamicTitle: true,
+      },
+    },
+  },
+  initialGlobals: {
+    theme: testTheme === "light" || testTheme === "dark" ? testTheme : "system",
+  },
   parameters: {
     a11y: {
       test: "error",

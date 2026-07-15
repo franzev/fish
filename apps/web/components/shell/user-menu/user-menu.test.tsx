@@ -64,7 +64,7 @@ describe("UserMenu", () => {
       .toBeInTheDocument();
   });
 
-  it("closes immediately after choosing a status", () => {
+  it("keeps the status choices open when the change cannot be saved", async () => {
     render(<UserMenu displayName="Franz" role="client" />);
 
     fireEvent.click(
@@ -73,8 +73,10 @@ describe("UserMenu", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: /Away/ }));
 
-    expect(screen.queryByRole("menuitemradio", { name: /Away/ }))
-      .not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("menuitemradio", { name: /Away/ }))
+        .toBeInTheDocument();
+    });
   });
 
   it("shows Profile and Sign out, but not client-only Friends, for a coach", () => {

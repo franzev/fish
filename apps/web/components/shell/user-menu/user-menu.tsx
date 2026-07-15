@@ -2,13 +2,20 @@
 
 import { useSignOut } from "@/features/auth";
 import {
+  ActionMenuItem,
+  ActionMenuPopup,
+  ActionMenuRadioGroup,
+  ActionMenuRadioItem,
+  ActionMenuRoot,
+  ActionMenuTrigger,
+} from "@/components/ui/action-menu";
+import {
   PresenceAvatar,
   PresenceIndicator,
   useOwnPresence,
 } from "@/features/presence";
 import type { PresencePreference } from "@fish/core/presence";
 import type { UserRole } from "@fish/core/roles";
-import { Menu } from "@base-ui/react/menu";
 import {
   IconCheck,
   IconChevronLeft,
@@ -19,9 +26,6 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
-
-const menuItemClass =
-  "flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2";
 
 const statusOptions: ReadonlyArray<{
   preference: PresencePreference;
@@ -85,21 +89,23 @@ export function UserMenu({
   const [statusOpen, setStatusOpen] = useState(false);
   const showFriends = role === "client" && friendsNavEnabled;
 
-  function chooseStatus(next: PresencePreference) {
+  async function chooseStatus(next: PresencePreference) {
+    const changed = await presence.setPreference(next);
+    if (!changed) return;
+
     setStatusOpen(false);
     setMenuOpen(false);
-    void presence.setPreference(next);
   }
 
   return (
-    <Menu.Root
+    <ActionMenuRoot
       open={menuOpen}
       onOpenChange={(open) => {
         setMenuOpen(open);
         if (!open) setStatusOpen(false);
       }}
     >
-      <Menu.Trigger
+      <ActionMenuTrigger
         aria-label={`Account menu for ${displayName}`}
         className="flex min-h-control min-w-control flex-none items-center justify-end rounded-control px-2xs md:max-w-control"
       >
@@ -112,29 +118,26 @@ export function UserMenu({
           status={presence.displayStatus}
           statusLabel={presence.displayLabel}
         />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-20">
-          <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
+      </ActionMenuTrigger>
+      <ActionMenuPopup>
             {statusOpen ? (
               <>
-                <Menu.Item
+                <ActionMenuItem
                   closeOnClick={false}
-                  className={menuItemClass}
                   onClick={() => setStatusOpen(false)}
                 >
                   <IconChevronLeft size={18} stroke={1.75} aria-hidden="true" />
                   Back to account
-                </Menu.Item>
-                <Menu.RadioGroup aria-label="Status" value={presence.preference}>
+                </ActionMenuItem>
+                <ActionMenuRadioGroup aria-label="Status" value={presence.preference}>
                   {statusOptions.map((option) => (
-                    <Menu.RadioItem
+                    <ActionMenuRadioItem
                       key={option.preference}
                       value={option.preference}
                       closeOnClick={false}
                       disabled={presence.changing}
                       className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
-                      onClick={() => chooseStatus(option.preference)}
+                      onClick={() => void chooseStatus(option.preference)}
                     >
                       <PresenceIndicator status={option.status} label={option.label} size={18} />
                       <span className="min-w-0">
@@ -142,41 +145,39 @@ export function UserMenu({
                         <span className="block text-ui-xs text-body">{option.detail}</span>
                       </span>
                       {presence.preference === option.preference && <IconCheck size={18} stroke={2} aria-label="Selected" />}
-                    </Menu.RadioItem>
+                    </ActionMenuRadioItem>
                   ))}
-                </Menu.RadioGroup>
+                </ActionMenuRadioGroup>
                 {presence.notice && <p className="px-sm py-2xs text-ui-sm text-notice">{presence.notice}</p>}
               </>
             ) : (
               <>
-                <Menu.Item className={menuItemClass} render={<Link href="/profile" />}>
+                <ActionMenuItem render={<Link href="/profile" />}>
                   <IconUser size={20} stroke={1.75} aria-hidden="true" />
                   Profile
-                </Menu.Item>
+                </ActionMenuItem>
                 {showFriends && (
-                  <Menu.Item className={menuItemClass} render={<Link href="/friends" />}>
+                  <ActionMenuItem render={<Link href="/friends" />}>
                     <IconUsers size={20} stroke={1.75} aria-hidden="true" />
                     Friends
-                  </Menu.Item>
+                  </ActionMenuItem>
                 )}
-                <Menu.Item closeOnClick={false} className={menuItemClass} onClick={() => setStatusOpen(true)}>
+                <ActionMenuItem closeOnClick={false} onClick={() => setStatusOpen(true)}>
                   <PresenceIndicator status={presence.displayStatus} label={presence.displayLabel} size={18} />
                   <span className="flex min-w-0 flex-1 items-baseline justify-between gap-sm">
                     <span>Status</span>
                     <span className="truncate text-body">{presence.displayLabel}</span>
                   </span>
                   <IconChevronRight size={18} stroke={1.75} aria-hidden="true" />
-                </Menu.Item>
-                <Menu.Item className={menuItemClass} onClick={signOut}>
+                </ActionMenuItem>
+                <ActionMenuItem onClick={signOut}>
                   <IconLogout size={20} stroke={1.75} aria-hidden="true" />
                   Sign out
-                </Menu.Item>
+                </ActionMenuItem>
                 {notice && <p className="px-sm py-2xs text-ui-sm text-notice">{notice}</p>}
               </>
             )}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+      </ActionMenuPopup>
+    </ActionMenuRoot>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useEffect, useState } from "react";
 
 type ThemeOverride = "system" | "light" | "dark";
@@ -24,25 +24,16 @@ export function KitThemeToggle() {
   }, [mode]);
 
   return (
-    <div role="group" aria-label="Preview theme" className="flex gap-xs">
-      {(["system", "light", "dark"] as const).map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => setMode(opt)}
-          aria-pressed={mode === opt}
-          className={cn(
-            "min-h-control rounded-control px-md text-ui-sm transition-colors",
-            // Active state signals with the fill step only — a font-weight
-            // flip would resize the buttons on every click (layout stability).
-            mode === opt
-              ? "bg-surface-3 text-foreground"
-              : "bg-surface-2 text-body hover:bg-surface-3"
-          )}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      label="Preview theme"
+      value={mode}
+      shape="control"
+      options={[
+        { label: "system", value: "system" },
+        { label: "light", value: "light" },
+        { label: "dark", value: "dark" },
+      ]}
+      onValueChange={setMode}
+    />
   );
 }
