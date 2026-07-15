@@ -31,9 +31,11 @@
   --color-bg: light-dark(oklch(0.98 0 0), oklch(0.15 0 0));            /* page canvas — near-white / near-black */
   --color-surface: light-dark(oklch(0.99 0 0), oklch(0.18 0 0));       /* cards, inputs, elevated containers — kept close to the canvas for calm separation */
   --color-surface-2: light-dark(oklch(0.96 0 0), oklch(0.20 0 0));     /* alt rows, subtle wells, progress track */
+  --color-surface-translucent: light-dark(oklch(0.99 0 0 / 0.6), oklch(0.18 0 0 / 0.6)); /* cards over artwork: retain the surface plane while allowing background texture through */
+  --color-surface-2-translucent: light-dark(oklch(0.96 0 0 / 0.6), oklch(0.20 0 0 / 0.6)); /* nested wells over artwork */
   --color-chat-hover: light-dark(oklch(0.94 0 0), oklch(0.22 0 0));   /* quiet transcript-row interaction state */
   --color-chat-active: light-dark(oklch(0.92 0 0), oklch(0.25 0 0));  /* reached transcript row, one quiet step beyond hover */
-  --color-avatar: light-dark(oklch(0.90 0 0), oklch(0.27 0 0));       /* identity marker — distinct from both the canvas and chat hover */
+  --color-avatar: light-dark(oklch(0.90 0 0), oklch(0.30 0 0));       /* identity marker — must clear surface-2 wells (testimonials), not just the canvas and chat hover */
   --color-surface-3: light-dark(oklch(0.88 0 0), oklch(0.33 0 0));     /* selected wells — e.g. the viewer's own reaction chip; state by fill step, not border or hue */
   --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* semantic control boundaries — retains 3:1 contrast */
   --color-border-strong: light-dark(oklch(0.55 0 0), oklch(0.65 0 0)); /* notice-tier borders — heavier step than border */
@@ -169,6 +171,7 @@
   --spacing-skeleton-word-29: 29%;
   --spacing-field-message: 22px;
   --spacing-badge: 20px;
+  --spacing-profile-avatar: 72px; /* prominent identity on focused profile surfaces */
   --spacing-nav-badge-slot: 40px; /* stable header room for the widest capped attention count */
   /* Reply spline: gap-md + half sm avatar — anchors the L-stem on avatar centre. */
   --spacing-reply-spline-left: 32px;
@@ -188,9 +191,11 @@
   --spacing-filters-sheet: 85dvh; /* Filters bottom-sheet max height on small screens */
   --spacing-search-suggestions: 360px;
   --spacing-search-discovery: min(70dvh, 640px);
+  --spacing-members-panel: 400px; /* about 3:7 against the chat on a typical desktop */
   --spacing-search-results: 520px;
   --spacing-notifications-panel-h: min(70dvh, 560px);
   --spacing-search-control: 36px; /* compact desktop chat-toolbar search field */
+  --spacing-reaction-pill: 22px; /* compact emoji reaction and add-reaction controls */
   --spacing-filter-options: 312px;
   --spacing-chat-demo: 520px;
   --spacing-chat-list-demo: 560px;
@@ -278,6 +283,10 @@
     var(--container-call-popover),
     var(--container-call-popover-mobile)
   );
+}
+
+@utility contain-horizontal-scroll {
+  contain: inline-size paint;
 }
 
 /* ---- Base ---- */
