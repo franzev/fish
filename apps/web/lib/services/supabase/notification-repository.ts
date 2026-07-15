@@ -68,7 +68,7 @@ function socialHref(row: {
   if (row.conversation_id && row.message_id) {
     return `/messages/${row.conversation_id}?message=${encodeURIComponent(row.message_id)}#message-${row.message_id}`;
   }
-  if (row.kind === "call_missed" || row.kind === "call_completed") {
+  if (row.kind === "call_missed") {
     return row.call_id ? `/calls/${row.call_id}` : null;
   }
   if (row.kind === "friend_request_received") {

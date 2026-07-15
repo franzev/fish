@@ -98,4 +98,29 @@ describe("SupabaseNotificationRepository", () => {
       }],
     });
   });
+
+  it("does not link completed calls back to an ended call route", async () => {
+    const completedCall = {
+      ...row("completed-call", 2, "2026-07-14T04:00:00.000Z"),
+      kind: "call_completed",
+      category: "update",
+      channel_slug: "",
+      conversation_id: "",
+      message_id: "",
+      call_id: "call-1",
+    };
+    const rpc = vi.fn().mockResolvedValue({
+      data: [completedCall],
+      error: null,
+    });
+    const repository = new SupabaseNotificationRepository({ rpc } as unknown as AppSupabaseClient);
+    const result = await repository.listPage({ filter: "all" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.items[0]).toMatchObject({
+      kind: "callCompleted",
+      actionHref: null,
+    });
+  });
 });
