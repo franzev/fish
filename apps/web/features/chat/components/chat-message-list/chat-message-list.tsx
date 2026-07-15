@@ -15,7 +15,6 @@ import {
   type ChatMessageEditingState,
 } from "./chat-message-row";
 import { OlderMessagesControl } from "./older-messages-control";
-import { UnreadMessageBanner } from "../unread-message-banner";
 
 interface ChatMessageListProps {
   viewport: {
@@ -40,11 +39,7 @@ interface ChatMessageListProps {
     chat: ClientChatData;
     participantReadState?: ClientChatReadState;
     latestMineRequestId: string | null;
-    unreadSummary: ClientChatUnreadSummary;
-    showUnreadBanner: boolean;
-    unreadNotice: string | null;
-    unreadPending: boolean;
-    markUnreadMessagesRead: () => Promise<void>;
+    unreadBoundary: ClientChatUnreadSummary;
     friendActionsEnabled: boolean;
     focusMessageId?: string | null;
     getAuthorName: (message: LocalMessage) => string;
@@ -53,6 +48,22 @@ interface ChatMessageListProps {
   };
   actions: ChatMessageActions;
   editing: ChatMessageEditingState;
+}
+
+function subMillisecondFraction(timestamp: string): string {
+  const fraction = timestamp.match(/\.(\d+)/)?.[1] ?? "";
+  return fraction.padEnd(9, "0").slice(3, 9);
+}
+
+function timestampsMatch(left: string, right: string): boolean {
+  if (left === right) {
+    return true;
+  }
+
+  return (
+    Date.parse(left) === Date.parse(right) &&
+    subMillisecondFraction(left) === subMillisecondFraction(right)
+  );
 }
 
 /** Coordinates transcript scrolling and delegates pagination and row details
@@ -73,11 +84,7 @@ export function ChatMessageList({
     chat,
     participantReadState,
     latestMineRequestId,
-    unreadSummary,
-    showUnreadBanner,
-    unreadNotice,
-    unreadPending,
-    markUnreadMessagesRead,
+    unreadBoundary,
     friendActionsEnabled,
     focusMessageId,
     getAuthorName,
@@ -87,18 +94,19 @@ export function ChatMessageList({
   const emptyMessage = isCommunity
     ? "No messages yet. Say hello to the community."
     : "No messages yet.";
+  const oldestUnreadAt = unreadBoundary.oldestUnreadAt;
+  const firstLoadedUnreadMessageId =
+    unreadBoundary.count > 0 && oldestUnreadAt
+      ? visibleMessages.find(
+          (message) =>
+            message.senderId !== chat.currentUserId &&
+            !message.deletedAt &&
+            timestampsMatch(message.createdAt, oldestUnreadAt)
+        )?.id ?? null
+      : null;
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {showUnreadBanner && (
-        <UnreadMessageBanner
-          count={unreadSummary.count}
-          oldestUnreadAt={unreadSummary.oldestUnreadAt}
-          notice={unreadNotice}
-          pending={unreadPending}
-          onMarkRead={markUnreadMessagesRead}
-        />
-      )}
       <ScrollArea
         className="flex-1"
         viewportRef={viewport.ref}
@@ -138,6 +146,7 @@ export function ChatMessageList({
                   friendActionsEnabled={friendActionsEnabled}
                   participantReadState={participantReadState}
                   latestMineRequestId={latestMineRequestId}
+                  showUnreadDivider={message.id === firstLoadedUnreadMessageId}
                   isFocused={message.id === focusMessageId}
                   getAuthorName={getAuthorName}
                   getAuthorAvatar={getAuthorAvatar}

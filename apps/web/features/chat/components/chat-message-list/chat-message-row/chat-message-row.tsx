@@ -26,11 +26,13 @@ import {
   MemberProfilePopover,
   type CommunityMemberProfile,
 } from "../../member-profile-popover";
+import { UnreadDivider } from "../../unread-divider";
 import {
   MessageActions,
   type MessageActionResult,
 } from "../message-actions";
 import { MessageEditor } from "../message-editor";
+import { formatChatDayLabel } from "./chat-day-label";
 
 export interface ChatMessageActions {
   canDelete: boolean;
@@ -73,6 +75,7 @@ interface ChatMessageRowProps {
   friendActionsEnabled: boolean;
   participantReadState?: ClientChatReadState;
   latestMineRequestId: string | null;
+  showUnreadDivider?: boolean;
   isFocused?: boolean;
   getAuthorName: (message: LocalMessage) => string;
   getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
@@ -93,6 +96,7 @@ export function ChatMessageRow({
   friendActionsEnabled,
   participantReadState,
   latestMineRequestId,
+  showUnreadDivider = false,
   isFocused = false,
   getAuthorName,
   getAuthorAvatar,
@@ -138,19 +142,12 @@ export function ChatMessageRow({
   const showParticipantAvatar = isCommunity
     ? startsCommunityGroup
     : !mine && !groupedWithNext;
+  const messageDay = new Date(message.createdAt).toDateString();
   const previousDay = previous
     ? new Date(previous.createdAt).toDateString()
     : null;
   const dayDividerLabel =
-    isCommunity &&
-    previousDay &&
-    previousDay !== new Date(message.createdAt).toDateString()
-      ? new Date(message.createdAt).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      : null;
+    previousDay !== messageDay ? formatChatDayLabel(message.createdAt) : null;
   const showMessageActions =
     message.localStatus === "sent" && !message.deletedAt && !interactionDisabled;
   const authorMember = getAuthorMember(message);
@@ -319,6 +316,11 @@ export function ChatMessageRow({
             {dayDividerLabel}
           </span>
           <span aria-hidden="true" className="h-px flex-1 bg-border" />
+        </li>
+      )}
+      {showUnreadDivider && (
+        <li role="none">
+          <UnreadDivider />
         </li>
       )}
       <li

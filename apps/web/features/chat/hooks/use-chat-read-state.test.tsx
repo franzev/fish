@@ -115,7 +115,7 @@ describe("useChatReadState", () => {
     expect(screen.getByTestId("unread-count")).toHaveTextContent("1");
   });
 
-  it("keeps unread context visible while persisting the read marker", async () => {
+  it("dismisses unread context immediately while persisting the read marker", async () => {
     let resolveRead!: (result: MarkReadStateActionState) => void;
     const pendingRead = new Promise<MarkReadStateActionState>((resolve) => {
       resolveRead = resolve;
@@ -135,8 +135,9 @@ describe("useChatReadState", () => {
     await waitFor(() => expect(markReadStateAction).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
 
-    expect(screen.getByTestId("unread-count")).toHaveTextContent("1");
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
     expect(screen.getByTestId("unread-pending")).toHaveTextContent("true");
+    expect(screen.getByTestId("read-notice")).toBeEmptyDOMElement();
     expect(markReadStateAction).toHaveBeenNthCalledWith(2, {
       conversationId,
       lastDeliveredMessageId: "message-1",
@@ -159,7 +160,7 @@ describe("useChatReadState", () => {
     expect(screen.getByTestId("unread-pending")).toHaveTextContent("false");
   });
 
-  it("keeps unread state visible with calm guidance when marking fails", async () => {
+  it("keeps unread context dismissed and shows calm guidance when marking fails", async () => {
     const markReadStateAction = vi.fn(async (value: unknown) => {
       const input = value as MarkReadStateInput;
       return input.lastReadMessageId
@@ -182,7 +183,31 @@ describe("useChatReadState", () => {
     expect(await screen.findByTestId("read-notice")).toHaveTextContent(
       "Messages weren’t marked as read. Try again."
     );
-    expect(screen.getByTestId("unread-count")).toHaveTextContent("1");
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
+    expect(screen.getByTestId("unread-pending")).toHaveTextContent("false");
+  });
+
+  it("keeps unread context dismissed and shows guidance when the request rejects", async () => {
+    const markReadStateAction = vi.fn((value: unknown) => {
+      const input = value as MarkReadStateInput;
+      return input.lastReadMessageId
+        ? Promise.reject(new Error("network unavailable"))
+        : Promise.resolve({
+            status: "sent" as const,
+            values: input,
+            readState: readStateFor(input),
+          });
+    });
+
+    render(<Harness markReadStateAction={markReadStateAction} />);
+    await waitFor(() => expect(markReadStateAction).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Mark as read" }));
+
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
+    expect(await screen.findByTestId("read-notice")).toHaveTextContent(
+      "Messages weren’t marked as read. Try again."
+    );
+    expect(screen.getByTestId("unread-count")).toHaveTextContent("0");
   });
 
   it("does not acknowledge a message that arrives while marking is in flight", async () => {

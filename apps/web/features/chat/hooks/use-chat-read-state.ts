@@ -37,6 +37,7 @@ interface UseChatReadStateOptions {
 interface ConversationUnreadState {
   conversationId: string;
   summary: ClientChatUnreadSummary;
+  boundary: ClientChatUnreadSummary;
   isMarking: boolean;
   notice: string | null;
 }
@@ -149,17 +150,19 @@ export function useChatReadState({
   const [unreadState, setUnreadState] = useState<ConversationUnreadState>(() => ({
     conversationId: chat.conversationId,
     summary: initialUnreadSummary,
+    boundary: initialUnreadSummary,
     isMarking: false,
     notice: null,
   }));
 
   // A single mounted ChatClient can switch conversations during recovery or
   // navigation tests. Reset the transient operation state during render so no
-  // frame can expose the previous conversation's unread banner or notice.
+  // frame can expose the previous conversation's unread context.
   if (unreadState.conversationId !== chat.conversationId) {
     setUnreadState({
       conversationId: chat.conversationId,
       summary: initialUnreadSummary,
+      boundary: initialUnreadSummary,
       isMarking: false,
       notice: null,
     });
@@ -169,6 +172,7 @@ export function useChatReadState({
     : {
         conversationId: chat.conversationId,
         summary: initialUnreadSummary,
+        boundary: initialUnreadSummary,
         isMarking: false,
         notice: null,
       };
@@ -329,8 +333,7 @@ export function useChatReadState({
 
   const markUnreadMessagesRead = useCallback(async () => {
     const conversationId = chat.conversationId;
-    const previousSummary = activeUnreadState.summary;
-    const targetMessageId = previousSummary.latestUnreadMessageId;
+    const targetMessageId = activeUnreadState.summary.latestUnreadMessageId;
     if (!markReadStateAction || !targetMessageId || activeUnreadState.isMarking) {
       return;
     }
@@ -339,6 +342,11 @@ export function useChatReadState({
       current.conversationId === conversationId
         ? {
             ...current,
+            summary: {
+              count: 0,
+              oldestUnreadAt: null,
+              latestUnreadMessageId: null,
+            },
             isMarking: true,
             notice: null,
           }
@@ -359,8 +367,6 @@ export function useChatReadState({
         current.conversationId === conversationId
           ? {
               ...current,
-              summary:
-                current.summary.count > 0 ? current.summary : previousSummary,
               isMarking: false,
               notice: "Messages weren’t marked as read. Try again.",
             }
@@ -407,6 +413,7 @@ export function useChatReadState({
     currentUserReadState,
     participantReadState,
     unreadSummary: activeUnreadState.summary,
+    unreadBoundary: activeUnreadState.boundary,
     unreadNotice: activeUnreadState.notice,
     unreadPending: activeUnreadState.isMarking,
     markUnreadMessagesRead,
