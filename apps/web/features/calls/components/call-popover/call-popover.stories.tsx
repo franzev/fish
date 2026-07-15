@@ -23,12 +23,15 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     call: activeCall,
+    openChat: fn(async () => undefined),
     notice: null,
     busy: false,
     audioBlocked: false,
     localMicrophoneActive: true,
     localMicrophoneLevel: 0.56,
     remoteSpeaking: false,
+    remoteMicrophoneLevel: 0,
+    remoteMuted: false,
     localVideoStream: null,
     remoteVideoTrack: null,
     videoQualityPreference: "auto",
@@ -53,9 +56,11 @@ type Story = StoryObj<typeof meta>;
 
 export const ActiveAudio: Story = {};
 export const ActiveMuted: Story = { args: { call: { ...activeCall, muted: true }, localMicrophoneActive: false } };
-export const RemoteSpeaking: Story = { args: { remoteSpeaking: true } };
-export const ActiveVideo: Story = { args: { call: { ...activeCall, kind: "video", cameraEnabled: true } } };
+export const RemoteSpeaking: Story = { args: { remoteSpeaking: true, remoteMicrophoneLevel: 0.68 } };
+export const RemoteMuted: Story = { args: { remoteMuted: true } };
+export const ActiveVideo: Story = { args: { call: { ...activeCall, kind: "video", cameraEnabled: true }, presentation: "screen" } };
 export const IncomingVideo: Story = { args: { call: { ...activeCall, kind: "video", status: "ringing", direction: "incoming" } } };
+export const IncomingLongName: Story = { args: { call: { ...activeCall, counterpartName: "Alexandria Montgomery-Santos", kind: "video", status: "ringing", direction: "incoming" } } };
 export const OutgoingRinging: Story = { args: { call: { ...activeCall, status: "ringing", direction: "outgoing" } } };
 export const RequestingPermission: Story = { args: { call: { ...activeCall, status: "requestingPermission" } } };
 export const Connecting: Story = { args: { call: { ...activeCall, status: "connecting" } } };
@@ -63,10 +68,28 @@ export const Reconnecting: Story = { args: { call: { ...activeCall, status: "rec
 export const AudioBlocked: Story = { args: { audioBlocked: true } };
 export const Notice: Story = { args: { notice: "Your microphone changed. The call is still connected." } };
 export const BusyIncoming: Story = { args: { busy: true, call: { ...activeCall, status: "ringing", direction: "incoming" } } };
+export const AnsweringIncoming: Story = {
+  args: {
+    answer: fn(() => new Promise<void>(() => undefined)),
+    call: { ...activeCall, kind: "video", status: "ringing", direction: "incoming" },
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Answer" }));
+  },
+};
+export const DecliningIncoming: Story = {
+  args: {
+    decline: fn(() => new Promise<void>(() => undefined)),
+    call: { ...activeCall, kind: "video", status: "ringing", direction: "incoming" },
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Decline" }));
+  },
+};
 export const Failed: Story = { args: { call: { ...activeCall, status: "failed", failureReason: "connectFailed" } } };
 export const Missed: Story = { args: { call: { ...activeCall, status: "missed", direction: "incoming" } } };
 export const SettingsOpen: Story = {
-  args: { call: { ...activeCall, kind: "video", cameraEnabled: true } },
+  args: { call: { ...activeCall, kind: "video", cameraEnabled: true }, presentation: "screen" },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button", { name: "Call settings" }));
   },

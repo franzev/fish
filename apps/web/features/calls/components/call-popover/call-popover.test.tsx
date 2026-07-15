@@ -1,10 +1,13 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createEmptyCallState } from "@fish/core/call-state";
 import type { RemoteVideoTrack } from "livekit-client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { deviceChangeListeners, useCallMock } = vi.hoisted(() => ({
+const { deviceChangeListeners, navigation, pushMock, replaceMock, useCallMock } = vi.hoisted(() => ({
   deviceChangeListeners: new Set<EventListener>(),
+  navigation: { pathname: "/home" },
+  pushMock: vi.fn(),
+  replaceMock: vi.fn(),
   useCallMock: vi.fn(),
 }));
 
@@ -12,7 +15,13 @@ vi.mock("../call-provider", () => ({
   useCall: useCallMock,
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => navigation.pathname,
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
+}));
+
 import { CallPopover } from "./call-popover";
+import { CallScreen } from "../call-screen";
 
 function callValue() {
   const state = createEmptyCallState();
@@ -33,6 +42,8 @@ function callValue() {
     localMicrophoneActive: true,
     localMicrophoneLevel: 0.42,
     remoteSpeaking: false,
+    remoteMicrophoneLevel: 0,
+    remoteMuted: false,
     localVideoStream: null,
     remoteVideoTrack: null as RemoteVideoTrack | null,
     videoQualityPreference: "auto" as "auto" | "data-saver",
@@ -56,6 +67,9 @@ function callValue() {
 describe("CallPopover", () => {
   beforeEach(() => {
     deviceChangeListeners.clear();
+    navigation.pathname = "/home";
+    pushMock.mockReset();
+    replaceMock.mockReset();
     useCallMock.mockReset();
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
@@ -87,15 +101,35 @@ describe("CallPopover", () => {
 
   it("shows a compact audio call with speaking state and accessible controls", () => {
     const value = callValue();
+    value.remoteSpeaking = true;
+    value.remoteMicrophoneLevel = 0.68;
     useCallMock.mockReturnValue(value);
 
     render(<CallPopover />);
 
     expect(screen.getByRole("heading", { name: "In call with Franz" })).toBeVisible();
-    expect(screen.getByText("Voice detected")).toBeVisible();
-    expect(screen.getByText("Listening")).toBeVisible();
+    const callActivity = screen.getByRole("group", { name: "Call activity" });
+    expect(within(callActivity).getByText("Voice detected")).toBeVisible();
+    expect(within(callActivity).getByText("Speaking")).toBeVisible();
+    expect(within(callActivity).getByText("You")).toBeVisible();
+    expect(within(callActivity).getByText("Franz")).toBeVisible();
+    const remoteMicrophone = within(callActivity).getByRole("group", {
+      name: "Franz microphone",
+    });
+    const remoteMeter = remoteMicrophone.querySelector(
+      '[data-slot="microphone-volume-meter"]'
+    );
+    expect(remoteMeter).toBeInTheDocument();
+    expect(remoteMeter?.firstElementChild).toHaveClass("bg-success");
     expect(screen.getByRole("button", { name: "Mute" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Call settings" })).toBeVisible();
+    const openChatButton = screen.getByRole("button", { name: "Open chat" });
+    expect(openChatButton).toBeVisible();
+    const settingsButton = screen.getByRole("button", { name: "Call settings" });
+    expect(settingsButton).toBeVisible();
+    expect(settingsButton.className).toBe(openChatButton.className);
+    expect(settingsButton.querySelector("svg")).toHaveAttribute("width", "20");
+    expect(settingsButton.querySelector("svg")).toHaveAttribute("height", "20");
+    expect(settingsButton.querySelector("svg")).toHaveAttribute("stroke-width", "1.75");
     expect(screen.getByRole("button", { name: "End call" })).toBeVisible();
 
     const panel = screen.getByRole("complementary");
@@ -103,13 +137,13 @@ describe("CallPopover", () => {
       "bottom-mobile-nav-offset",
       "left-page",
       "right-page",
-      "md:bottom-page",
-      "md:w-full",
-      "md:max-w-call-popover"
+      "sm:bottom-page",
+      "sm:w-full",
+      "sm:max-w-call-popover"
     );
   });
 
-  it("keeps the incoming answer as the only primary action", () => {
+  it("shows a caller-first incoming prompt with one dominant answer action", () => {
     const value = callValue();
     value.state.current.kind = "video";
     value.state.current.status = "ringing";
@@ -118,31 +152,121 @@ describe("CallPopover", () => {
 
     render(<CallPopover />);
 
-    const answer = screen.getByRole("button", { name: "Answer video call" });
-    const decline = screen.getByRole("button", { name: "Not now" });
-    expect(answer).toHaveClass("min-h-control-primary", "bg-primary");
-    expect(decline).not.toHaveClass("bg-primary");
+    expect(screen.getByRole("heading", { name: "Franz is calling" })).toHaveClass(
+      "font-serif",
+      "text-heading-sm"
+    );
+    expect(screen.getByText("Video call. Answer when you’re ready.")).toHaveClass("text-ui-sm");
+
+    const answer = screen.getByRole("button", { name: "Answer" });
+    const decline = screen.getByRole("button", { name: "Decline" });
+    expect(answer).toHaveClass(
+      "min-h-control-primary",
+      "rounded-control",
+      "bg-success",
+      "text-on-primary",
+      "font-semibold",
+      "hover:bg-success-press"
+    );
+    expect(decline).toHaveClass(
+      "min-h-control-primary",
+      "rounded-control",
+      "border-error",
+      "text-error",
+      "bg-surface-2"
+    );
+    expect(decline).not.toHaveClass("bg-error", "font-semibold");
+    expect(answer).not.toHaveClass("rounded-pill");
+    expect(decline).not.toHaveClass("rounded-pill");
+    expect(screen.queryByLabelText("Franz video")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Your video preview")).not.toBeInTheDocument();
 
     fireEvent.click(answer);
-    fireEvent.click(decline);
     expect(value.answer).toHaveBeenCalledOnce();
-    expect(value.decline).toHaveBeenCalledOnce();
+    expect(value.decline).not.toHaveBeenCalled();
+  });
+
+  it("shows progress only on the incoming action that was activated", async () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    value.state.current.status = "ringing";
+    value.state.current.direction = "incoming";
+    let finishDecline: (() => void) | undefined;
+    value.decline = vi.fn(() => new Promise<void>((resolve) => {
+      finishDecline = resolve;
+    }));
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    const answer = screen.getByRole("button", { name: "Answer" });
+    const decline = screen.getByRole("button", { name: "Decline" });
+    fireEvent.click(decline);
+
+    expect(decline).toHaveAttribute("aria-busy", "true");
+    expect(decline.querySelector(".animate-spin")).not.toBeNull();
+    expect(answer).toBeDisabled();
+    expect(answer).not.toHaveAttribute("aria-busy");
+
+    await act(async () => finishDecline?.());
+    expect(decline).not.toHaveAttribute("aria-busy");
+    expect(answer).toBeEnabled();
+  });
+
+  it("shows when the other person is muted in audio and video calls", () => {
+    const value = callValue();
+    value.remoteMuted = true;
+    useCallMock.mockReturnValue(value);
+
+    const view = render(<CallPopover />);
+
+    const remoteMicrophone = screen.getByRole("group", { name: "Franz microphone" });
+    expect(remoteMicrophone).toHaveTextContent("FranzMuted");
+    expect(remoteMicrophone.querySelector("svg")).toHaveClass("text-muted");
+
+    value.state.current.kind = "video";
+    view.rerender(<CallScreen callId="call-1" />);
+
+    const videoMutedStatus = screen.getByText("Franz is muted").parentElement;
+    expect(videoMutedStatus).toBeVisible();
+    expect(videoMutedStatus).toHaveClass(
+      "inset-x-sm",
+      "bottom-sm",
+      "z-10",
+      "mx-auto",
+      "w-fit"
+    );
+    expect(videoMutedStatus).not.toHaveClass("left-xs", "top-xs");
   });
 
   it("shows video surfaces and preserves the call quality controls", async () => {
     const value = callValue();
     value.state.current.kind = "video";
     value.state.current.cameraEnabled = true;
+    value.remoteSpeaking = true;
+    value.remoteMicrophoneLevel = 0.68;
     useCallMock.mockReturnValue(value);
 
-    render(<CallPopover />);
+    render(<CallScreen callId="call-1" />);
 
     expect(screen.getByLabelText("Franz video")).toBeVisible();
     expect(screen.getByLabelText("Your video preview")).toBeInTheDocument();
+    const remoteSpeakingStatus = screen.getByRole("status", {
+      name: "Franz is speaking",
+    });
+    expect(
+      remoteSpeakingStatus.querySelector(
+        '[data-slot="microphone-volume-meter"]'
+      )
+    ).toBeInTheDocument();
+    const heading = screen.getByRole("heading", { name: "In call with Franz" });
+    expect(heading.parentElement?.parentElement).toHaveClass("sr-only");
     expect(screen.getByTestId("microphone-on-icon")).toBeInTheDocument();
     expect(screen.getByTestId("camera-on-icon")).toBeInTheDocument();
     const muteButton = screen.getByRole("button", { name: "Mute" });
-    const meter = document.querySelector('[data-slot="microphone-volume-meter"]');
+    const meter = muteButton.parentElement?.querySelector(
+      '[data-slot="microphone-volume-meter"]'
+    );
     expect(meter).toBeInTheDocument();
     expect(meter?.firstElementChild).toHaveClass("bg-success");
     expect(muteButton.parentElement).toContainElement(meter as HTMLElement);
@@ -164,8 +288,48 @@ describe("CallPopover", () => {
     expect(value.setVideoQualityPreference).toHaveBeenCalledWith("data-saver");
   });
 
+  it("leaves the dedicated video call route to CallScreen", () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    navigation.pathname = "/calls/call-1";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    expect(screen.queryByRole("region")).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  });
+
+  it("routes an accepted video call away from the alert popover", async () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    useCallMock.mockReturnValue(value);
+
+    render(<CallPopover />);
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/calls/call-1");
+    });
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Franz video")).not.toBeInTheDocument();
+  });
+
+  it("does not redirect chat away from the dedicated video call route", () => {
+    const value = callValue();
+    value.state.current.kind = "video";
+    navigation.pathname = "/calls/call-1";
+    useCallMock.mockReturnValue(value);
+    const loadChatPreviewsAction = vi.fn();
+
+    render(<CallPopover loadChatPreviewsAction={loadChatPreviewsAction} />);
+
+    expect(loadChatPreviewsAction).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalledWith(expect.stringMatching(/^\/messages/));
+  });
+
   it("refreshes available microphones when a device is connected", async () => {
     const value = callValue();
+    value.state.current.kind = "video";
     value.microphones
       .mockResolvedValueOnce([
         { deviceId: "default", label: "Built-in microphone" },
@@ -176,7 +340,7 @@ describe("CallPopover", () => {
       ]);
     useCallMock.mockReturnValue(value);
 
-    render(<CallPopover />);
+    render(<CallScreen callId="call-1" />);
     fireEvent.click(screen.getByRole("button", { name: "Call settings" }));
 
     const microphone = await screen.findByRole("combobox", {
@@ -204,7 +368,7 @@ describe("CallPopover", () => {
     value.remoteVideoTrack = { attach, detach } as unknown as RemoteVideoTrack;
     useCallMock.mockReturnValue(value);
 
-    const view = render(<CallPopover />);
+    const view = render(<CallScreen callId="call-1" />);
     const video = screen.getByLabelText("Franz video");
     expect(attach).toHaveBeenCalledWith(video);
 
@@ -218,7 +382,7 @@ describe("CallPopover", () => {
     value.videoQualityPreference = "data-saver";
     useCallMock.mockReturnValue(value);
 
-    render(<CallPopover />);
+    render(<CallScreen callId="call-1" />);
     fireEvent.click(screen.getByRole("button", { name: "Call settings" }));
 
     expect(await screen.findByRole("switch", { name: "Use less data" })).toHaveAttribute(
@@ -252,6 +416,6 @@ describe("CallPopover", () => {
     render(<CallPopover />);
 
     expect(screen.getByRole("heading")).toHaveClass("truncate");
-    expect(screen.getAllByRole("button")).toHaveLength(3);
+    expect(screen.getAllByRole("button")).toHaveLength(4);
   });
 });

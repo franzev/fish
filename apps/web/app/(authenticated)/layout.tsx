@@ -65,7 +65,7 @@ export default async function AuthenticatedLayout({
           >
             {children}
           </AppShell>
-          <CallPopover />
+          <CallPopover loadChatPreviewsAction={loadMessagePopoverAction} />
         </CallProvider>
       </NotificationProvider>
     </PresenceProvider>

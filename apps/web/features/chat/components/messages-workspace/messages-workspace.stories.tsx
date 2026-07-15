@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { ClientChatData, ClientDirectConversationPreview } from "@/lib/services";
+import { CallProvider } from "@/features/calls";
 import { MessagesWorkspace } from "./messages-workspace";
 
 const conversationId = "00000000-0000-4000-8000-000000000001";
@@ -36,6 +37,13 @@ const meta = {
   title: "Chat/MessagesWorkspace",
   component: MessagesWorkspace,
   parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <CallProvider userId="client-1">
+        <Story />
+      </CallProvider>
+    ),
+  ],
   args: {
     chat,
     conversations,

@@ -1,11 +1,25 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   ClientChatData,
   ClientDirectConversationPreview,
 } from "@/lib/services";
 import { resetChatStoreForTests } from "@/features/chat/model/store";
 import { MessagesWorkspace } from "./messages-workspace";
+
+vi.mock("@/features/calls", () => ({
+  CallButton: ({
+    recipientName,
+    kind,
+  }: {
+    recipientName: string;
+    kind: "audio" | "video";
+  }) => (
+    <button type="button">
+      {kind === "video" ? "Video call" : "Voice call"} {recipientName}
+    </button>
+  ),
+}));
 
 const chat: ClientChatData = {
   conversationId: "11111111-1111-4111-8111-111111111111",
@@ -84,6 +98,9 @@ describe("MessagesWorkspace", () => {
     expect(screen.getByRole("heading", { name: "Details" }).parentElement).toHaveClass(
       "h-chat-header"
     );
+    expect(screen.getByRole("group", { name: "Call Gwyn" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Voice call Gwyn" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Video call Gwyn" })).toBeVisible();
     expect(screen.getByText("Only you and your coach can take part.")).toBeInTheDocument();
     expect(screen.queryByText("Archived")).not.toBeInTheDocument();
     expect(screen.queryByText(/rating/i)).not.toBeInTheDocument();

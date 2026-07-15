@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MediaDeviceSelect } from "@/components/ui/media-device-select";
 import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
@@ -12,6 +12,7 @@ import type { CallSessionState } from "@fish/core/call-state";
 import { Popover } from "@base-ui/react/popover";
 import { Tooltip } from "@base-ui/react/tooltip";
 import {
+  IconMessages,
   IconMicrophone,
   IconMicrophoneOff,
   IconPhone,
@@ -20,7 +21,13 @@ import {
   IconVideo,
   IconVideoOff,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { CallContextValue } from "../call-provider";
 
 export interface CallPopoverViewProps extends Omit<
@@ -28,12 +35,20 @@ export interface CallPopoverViewProps extends Omit<
   "state" | "startCall" | "startLessonCall" | "clear"
 > {
   call: CallSessionState;
+  openChat: () => void | Promise<void>;
+  openingChat?: boolean;
+  chatSidebar?: ReactNode;
+  chatOpen?: boolean;
+  presentation?: "popover" | "screen";
 }
 
 function getCallCopy(call: CallSessionState) {
   const name = call.counterpartName ?? "your call partner";
   if (call.status === "requestingPermission") return { heading: `Preparing your call with ${name}`, status: "Your browser may ask for device permission." };
-  if (call.status === "ringing" && call.direction === "incoming") return { heading: call.kind === "video" ? `Video call from ${name}` : `${name} is calling`, status: "Answer when you’re ready." };
+  if (call.status === "ringing" && call.direction === "incoming") return {
+    heading: `${call.counterpartName ?? "Your call partner"} is calling`,
+    status: `${call.kind === "video" ? "Video" : "Audio"} call. Answer when you’re ready.`,
+  };
   if (call.status === "ringing") return { heading: call.kind === "video" ? `Video calling ${name}` : `Calling ${name}`, status: "They’ll join when they’re ready." };
   if (call.status === "connecting") return { heading: `Connecting with ${name}`, status: "This usually takes a moment." };
   if (call.status === "reconnecting") return { heading: `Reconnecting with ${name}`, status: "The call will continue when the connection returns." };
@@ -47,12 +62,18 @@ function getCallCopy(call: CallSessionState) {
 
 export function CallPopoverView({
   call,
+  openChat,
+  openingChat = false,
+  chatSidebar,
+  chatOpen = false,
   notice,
   busy,
   audioBlocked,
   localMicrophoneActive,
   localMicrophoneLevel,
   remoteSpeaking,
+  remoteMicrophoneLevel,
+  remoteMuted,
   localVideoStream,
   remoteVideoTrack,
   videoQualityPreference,
@@ -66,14 +87,18 @@ export function CallPopoverView({
   microphones,
   switchMicrophone,
   setVideoQualityPreference,
+  presentation = "popover",
 }: CallPopoverViewProps) {
   const localVideo = useRef<HTMLVideoElement | null>(null);
   const remoteVideo = useRef<HTMLVideoElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [microphoneOptions, setMicrophoneOptions] = useState<Array<{ deviceId: string; label: string }>>([]);
   const [microphoneId, setMicrophoneId] = useState("");
+  const pendingIncomingActionRef = useRef<"answer" | "decline" | null>(null);
+  const [pendingIncomingAction, setPendingIncomingAction] = useState<"answer" | "decline" | null>(null);
   const inProgress = ["connecting", "active", "reconnecting"].includes(call.status);
-  const videoStage = call.kind === "video" && inProgress;
+  const screen = presentation === "screen";
+  const videoStage = screen && call.kind === "video" && inProgress;
   const incoming = call.status === "ringing" && call.direction === "incoming";
   const copy = getCallCopy(call);
 
@@ -103,49 +128,132 @@ export function CallPopoverView({
     return () => navigator.mediaDevices?.removeEventListener?.("devicechange", refreshDevices);
   }, [refreshMicrophones, settingsOpen]);
 
+  const runIncomingAction = useCallback(async (
+    action: "answer" | "decline",
+    operation: () => Promise<void>
+  ) => {
+    if (busy || pendingIncomingActionRef.current) return;
+    pendingIncomingActionRef.current = action;
+    setPendingIncomingAction(action);
+    try {
+      await operation();
+    } finally {
+      pendingIncomingActionRef.current = null;
+      setPendingIncomingAction(null);
+    }
+  }, [busy]);
+
   if (call.status === "idle") return null;
 
+  const Root = screen ? "section" : "aside";
+
   return (
-    <aside aria-labelledby="call-popover-heading" className="fixed bottom-mobile-nav-offset left-page right-page z-40 w-auto md:bottom-page md:left-page md:right-auto md:w-full md:max-w-call-popover">
-      <Card className="overflow-hidden border border-divider p-0">
+    <Root
+      aria-labelledby="call-popover-heading"
+      className={cn(
+        screen
+          ? "fixed inset-0 z-40 h-dvh w-full bg-bg"
+          : "bottom-mobile-nav-offset left-page right-page w-auto sm:bottom-page sm:right-auto sm:w-full sm:max-w-call-popover",
+        !screen && "fixed z-40"
+      )}
+    >
+      <Card className={cn(
+        "overflow-hidden p-0",
+        screen
+          ? "flex h-full w-full flex-col rounded-none border-0"
+          : "border border-divider"
+      )}>
         {videoStage && (
-          <div className="relative aspect-video overflow-hidden bg-surface-2">
-            {!remoteVideoTrack && (
-              <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
-                <IconVideoOff size={24} stroke={1.75} aria-hidden="true" />
-                <span className="max-w-full truncate px-md text-ui-sm">{call.counterpartName ?? "Your call partner"}&apos;s camera is off</span>
+          <div className="flex min-h-0 flex-1">
+            <div className={cn(
+              "relative min-h-0 flex-1 overflow-hidden bg-surface-2",
+              chatSidebar && chatOpen && "hidden lg:block"
+            )}>
+              {!remoteVideoTrack && (
+                <div className="flex h-full flex-col items-center justify-center gap-xs text-body">
+                  <IconVideoOff size={24} stroke={1.75} aria-hidden="true" />
+                  <span className="max-w-full truncate px-md text-ui-sm">{call.counterpartName ?? "Your call partner"}&apos;s camera is off</span>
+                </div>
+              )}
+              <video ref={remoteVideo} aria-label={`${call.counterpartName ?? "Your call partner"} video`} autoPlay muted playsInline className={cn("absolute inset-0 h-full w-full object-cover", remoteVideoTrack ? "block" : "hidden")} />
+              {remoteSpeaking && !remoteMuted && (
+                <div
+                  role="status"
+                  aria-label={`${call.counterpartName ?? "Your call partner"} is speaking`}
+                  className="absolute bottom-sm left-sm z-10 flex min-h-control items-center rounded-pill bg-bg px-sm"
+                >
+                  <MicrophoneVolumeMeter
+                    level={remoteMicrophoneLevel}
+                    active
+                  />
+                </div>
+              )}
+              {remoteMuted && (
+                <div role="status" aria-live="polite" aria-atomic="true" className="absolute inset-x-sm bottom-sm z-10 mx-auto flex w-fit items-center gap-xs rounded-pill bg-bg px-sm py-xs text-ui-xs text-foreground">
+                  <IconMicrophoneOff size={16} stroke={1.75} aria-hidden="true" />
+                  <span className="max-w-full truncate">{call.counterpartName ?? "Your call partner"} is muted</span>
+                </div>
+              )}
+              <div className="absolute bottom-xs right-xs aspect-video w-full max-w-call-preview overflow-hidden rounded-control border border-divider bg-bg">
+                {!localVideoStream && <div className="flex h-full items-center justify-center text-muted"><IconVideoOff size={16} stroke={1.75} aria-label="Your camera is off" /></div>}
+                <video ref={localVideo} aria-label="Your video preview" autoPlay muted playsInline className={cn("h-full w-full -scale-x-100 object-cover", localVideoStream ? "block" : "hidden")} />
               </div>
-            )}
-            <video ref={remoteVideo} aria-label={`${call.counterpartName ?? "Your call partner"} video`} autoPlay muted playsInline className={cn("absolute inset-0 h-full w-full object-cover", remoteVideoTrack ? "block" : "hidden")} />
-            <div className="absolute bottom-xs right-xs aspect-video w-full max-w-call-preview overflow-hidden rounded-control border border-divider bg-bg">
-              {!localVideoStream && <div className="flex h-full items-center justify-center text-muted"><IconVideoOff size={16} stroke={1.75} aria-label="Your camera is off" /></div>}
-              <video ref={localVideo} aria-label="Your video preview" autoPlay muted playsInline className={cn("h-full w-full -scale-x-100 object-cover", localVideoStream ? "block" : "hidden")} />
             </div>
+
+            {chatSidebar && (
+              <aside
+                id="call-messages"
+                aria-label={`Messages with ${call.counterpartName ?? "your call partner"}`}
+                className={cn(
+                  "min-h-0 w-full flex-col border-l border-divider bg-surface lg:w-chat-preview lg:shrink-0",
+                  chatOpen ? "flex" : "hidden"
+                )}
+              >
+                <header className="flex h-chat-header shrink-0 flex-col justify-center border-b border-divider px-md">
+                  <h2 className="font-sans text-ui-md font-semibold text-foreground">Messages</h2>
+                  <p className="text-ui-xs text-muted">{call.counterpartName ?? "Your call partner"}</p>
+                </header>
+                <div className="flex min-h-0 flex-1">{chatSidebar}</div>
+              </aside>
+            )}
           </div>
         )}
 
-        <div className="flex flex-col gap-md p-md">
-          <div className="flex min-w-0 items-center gap-sm">
-            <span className="flex size-control shrink-0 items-center justify-center rounded-pill bg-surface-2 text-foreground">
+        <div className={cn("flex flex-col", incoming ? "gap-lg p-page" : "gap-md p-md")}>
+          <div className={cn("min-w-0", !incoming && "flex items-center gap-sm", videoStage && "sr-only")}>
+            {!incoming && <span className="flex size-control shrink-0 items-center justify-center rounded-pill bg-surface-2 text-foreground">
               {call.kind === "video" ? <IconVideo size={20} stroke={1.75} aria-hidden="true" /> : <IconPhone size={20} stroke={1.75} aria-hidden="true" />}
-            </span>
-            <div className="min-w-0 flex-1" role="status" aria-live={incoming ? "assertive" : "polite"} aria-atomic="true">
-              <h2 id="call-popover-heading" className="truncate font-sans text-ui-md font-semibold text-foreground">{copy.heading}</h2>
-              <p className="truncate text-ui-xs text-body">{copy.status}</p>
+            </span>}
+            <div className={cn("min-w-0 flex-1", incoming && "flex flex-col gap-2xs")} role="status" aria-live={incoming ? "assertive" : "polite"} aria-atomic="true">
+              <h2 id="call-popover-heading" className={cn(
+                "font-semibold text-foreground",
+                incoming ? "break-words font-serif text-heading-sm" : "truncate font-sans text-ui-md"
+              )}>{copy.heading}</h2>
+              <p className={cn("text-body", incoming ? "text-ui-sm" : "truncate text-ui-xs")}>{copy.status}</p>
             </div>
           </div>
 
           {call.kind === "audio" && ["active", "reconnecting"].includes(call.status) && (
-            <div className="grid grid-cols-2 gap-xs text-left">
-              <div className="flex min-w-0 items-center gap-xs rounded-control bg-surface-2 px-sm py-xs">
-                <span aria-hidden="true" className={cn("size-xs shrink-0 rounded-pill", localMicrophoneActive && !call.muted ? "bg-primary" : "bg-muted")} />
-                <span className="truncate text-ui-xs text-body">{call.muted ? "Muted" : localMicrophoneActive ? "Voice detected" : "Listening"}</span>
+            <dl role="group" aria-label="Call activity" className="grid grid-cols-2 divide-x divide-divider overflow-hidden rounded-control bg-surface-2 text-left">
+              <div className="flex min-w-0 items-center gap-xs px-sm py-xs">
+                {call.muted
+                  ? <IconMicrophoneOff size={16} stroke={1.75} className="shrink-0 text-muted" aria-hidden="true" />
+                  : <IconMicrophone size={16} stroke={1.75} className={cn("shrink-0", localMicrophoneActive ? "text-success" : "text-muted")} aria-hidden="true" />}
+                <div className="min-w-0">
+                  <dt className="truncate text-ui-2xs font-medium text-muted">You</dt>
+                  <dd className="truncate text-ui-xs text-foreground">{call.muted ? "Muted" : localMicrophoneActive ? "Voice detected" : "Listening"}</dd>
+                </div>
               </div>
-              <div className="flex min-w-0 items-center gap-xs rounded-control bg-surface-2 px-sm py-xs">
-                <span aria-hidden="true" className={cn("size-xs shrink-0 rounded-pill", remoteSpeaking ? "bg-primary" : "bg-muted")} />
-                <span className="truncate text-ui-xs text-body">{remoteSpeaking ? "Speaking" : "Listening"}</span>
+              <div role="group" aria-label={`${call.counterpartName ?? "Call partner"} microphone`} className="flex min-w-0 items-center gap-xs px-sm py-xs">
+                {remoteMuted
+                  ? <IconMicrophoneOff size={16} stroke={1.75} className="shrink-0 text-muted" aria-hidden="true" />
+                  : <MicrophoneVolumeMeter level={remoteMicrophoneLevel} active={remoteSpeaking} className="shrink-0" />}
+                <div className="min-w-0">
+                  <dt className="truncate text-ui-2xs font-medium text-muted">{call.counterpartName ?? "Call partner"}</dt>
+                  <dd role="status" aria-live="polite" aria-atomic="true" className="truncate text-ui-xs text-foreground">{remoteMuted ? "Muted" : remoteSpeaking ? "Speaking" : "Listening"}</dd>
+                </div>
               </div>
-            </div>
+            </dl>
           )}
 
           {notice && <Alert tone="notice" className="text-left">{notice}</Alert>}
@@ -156,9 +264,34 @@ export function CallPopoverView({
             </div>
           )}
           {incoming && (
-            <div className="flex flex-col gap-xs">
-              <Button fullWidth loading={busy} onClick={() => void answer()}>{call.kind === "video" ? "Answer video call" : "Answer call"}</Button>
-              <Button variant="ghost" fullWidth disabled={busy} onClick={() => void decline()}>Not now</Button>
+            <div className="grid grid-cols-2 gap-sm">
+              <Button
+                variant="secondary"
+                fullWidth
+                loading={pendingIncomingAction === "decline"}
+                disabled={busy || pendingIncomingAction !== null}
+                onClick={() => void runIncomingAction("decline", decline)}
+                className="min-h-control-primary border-error text-error hover:bg-surface-3 active:bg-surface-3"
+              >
+                <span className="inline-flex items-center gap-xs">
+                  <IconPhoneOff size={20} stroke={1.75} aria-hidden="true" />
+                  <span>Decline</span>
+                </span>
+              </Button>
+              <Button
+                fullWidth
+                loading={pendingIncomingAction === "answer"}
+                disabled={busy || pendingIncomingAction !== null}
+                onClick={() => void runIncomingAction("answer", answer)}
+                className="bg-success text-on-primary hover:bg-success-press active:bg-success-press"
+              >
+                <span className="inline-flex items-center gap-xs">
+                  {call.kind === "video"
+                    ? <IconVideo size={20} stroke={1.75} aria-hidden="true" />
+                    : <IconPhone size={20} stroke={1.75} aria-hidden="true" />}
+                  <span>Answer</span>
+                </span>
+              </Button>
             </div>
           )}
           {call.status === "ringing" && call.direction === "outgoing" && <Button variant="secondary" fullWidth loading={busy} onClick={() => void cancel()}>Cancel call</Button>}
@@ -169,15 +302,24 @@ export function CallPopoverView({
                 {call.status !== "connecting" && (
                   <>
                     <span className="inline-flex items-center gap-2xs">
-                      <TooltipIconButton label={call.muted ? "Unmute" : "Mute"} onClick={() => void toggleMute()} icon={call.muted ? <IconMicrophoneOff data-testid="microphone-off-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconMicrophone data-testid="microphone-on-icon" size={20} stroke={1.75} aria-hidden="true" />} />
                       {call.kind === "video" && <MicrophoneVolumeMeter level={call.muted ? 0 : localMicrophoneLevel} active={!call.muted && localMicrophoneActive} />}
+                      <TooltipIconButton label={call.muted ? "Unmute" : "Mute"} onClick={() => void toggleMute()} icon={call.muted ? <IconMicrophoneOff data-testid="microphone-off-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconMicrophone data-testid="microphone-on-icon" size={20} stroke={1.75} aria-hidden="true" />} />
                     </span>
                     {call.kind === "video" && <TooltipIconButton label={call.cameraEnabled ? "Turn camera off" : "Turn camera on"} onClick={() => void toggleCamera()} icon={call.cameraEnabled ? <IconVideo data-testid="camera-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconVideoOff data-testid="camera-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />}
+                    {(!screen || chatSidebar) && (
+                      <TooltipIconButton
+                        label={screen && chatOpen ? "Close chat" : "Open chat"}
+                        loading={openingChat}
+                        aria-controls={screen ? "call-messages" : undefined}
+                        aria-expanded={screen ? chatOpen : undefined}
+                        aria-pressed={screen ? chatOpen : undefined}
+                        className={cn(screen && chatOpen && "bg-surface-3")}
+                        onClick={() => void openChat()}
+                        icon={<IconMessages size={20} stroke={1.75} aria-hidden="true" />}
+                      />
+                    )}
                     <Popover.Root open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshMicrophones(); }}>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger render={<Popover.Trigger aria-label="Call settings" className={buttonVariants({ variant: "secondary", controlSize: "square" })}><IconSettings size={20} stroke={1.75} aria-hidden="true" /></Popover.Trigger>} />
-                        <Tooltip.Portal><Tooltip.Positioner side="top" sideOffset={4} className="z-50"><Tooltip.Popup role="tooltip" className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg">Call settings</Tooltip.Popup></Tooltip.Positioner></Tooltip.Portal>
-                      </Tooltip.Root>
+                      <Popover.Trigger render={<TooltipIconButton label="Call settings" icon={<IconSettings size={20} stroke={1.75} aria-hidden="true" />} />} />
                       <Popover.Portal>
                         <Popover.Positioner side="top" align="end" sideOffset={4} className="z-50">
                           <Popover.Popup aria-label="Call settings" initialFocus={false} className="call-settings-popover rounded-control border border-divider bg-surface p-md outline-none">
@@ -186,13 +328,10 @@ export function CallPopoverView({
                                 <MediaDeviceSelect label="Microphone" value={microphoneId} options={microphoneOptions.map((option) => ({ id: option.deviceId, label: option.label }))} onValueChange={(value) => { setMicrophoneId(value); void switchMicrophone(value); }} />
                               ) : <p role="status" className="text-ui-sm text-body">Finding microphones…</p>}
                               {call.kind === "video" && (
-                                <fieldset className="flex flex-col gap-xs text-left">
-                                  <legend className="text-ui-sm font-semibold text-foreground">Video quality</legend>
-                                  <div className="flex min-h-control items-center justify-between gap-sm">
-                                    <span className="flex min-w-0 flex-col gap-2xs"><span className="text-ui-sm text-foreground">Use less data</span><span id="video-quality-description" className="text-ui-xs text-body">Lowers video quality to help on slower connections.</span></span>
-                                    <Switch aria-label="Use less data" aria-describedby="video-quality-description" checked={videoQualityPreference === "data-saver"} onCheckedChange={(checked) => setVideoQualityPreference(checked ? "data-saver" : "auto")} />
-                                  </div>
-                                </fieldset>
+                                <label className="flex min-h-control cursor-pointer items-center justify-between gap-sm text-left">
+                                  <span className="flex min-w-0 flex-col gap-2xs"><span className="text-ui-sm text-foreground">Use less data</span><span id="video-quality-description" className="text-ui-xs text-body">Lowers video quality to help on slower connections.</span></span>
+                                  <Switch aria-label="Use less data" aria-describedby="video-quality-description" className="shrink-0" checked={videoQualityPreference === "data-saver"} onCheckedChange={(checked) => setVideoQualityPreference(checked ? "data-saver" : "auto")} />
+                                </label>
                               )}
                             </div>
                           </Popover.Popup>
@@ -207,6 +346,6 @@ export function CallPopoverView({
           )}
         </div>
       </Card>
-    </aside>
+    </Root>
   );
 }

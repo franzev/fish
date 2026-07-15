@@ -198,12 +198,13 @@ export function AppShell({
       : undefined,
   ]));
   /* Conversation surfaces own the available pane and scroll internally.
-     Calls stay in a global modeless popover, so navigation remains available. */
+     Accepted video calls use their dedicated route as a focused screen. */
   const channelSurface = isActivePath(pathname, "/channels");
   const messageSurface = isActivePath(pathname, "/messages");
   const bookingSurface = isActivePath(pathname, "/book");
+  const callSurface = isActivePath(pathname, "/calls");
   const conversationSurface = channelSurface || messageSurface;
-  const focusedSurface = bookingSurface;
+  const focusedSurface = bookingSurface || callSurface;
   const immersive = conversationSurface || focusedSurface;
 
   return (

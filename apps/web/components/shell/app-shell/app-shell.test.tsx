@@ -84,17 +84,18 @@ describe("AppShell", () => {
     expect(screen.queryByRole("navigation", { name: "Mobile primary" })).not.toBeInTheDocument();
   });
 
-  it("keeps shell navigation visible on legacy call routes", () => {
+  it("gives dedicated call routes a fullscreen pane without shell navigation", () => {
     pathname = "/calls/call-1";
     const { container } = render(
       <AppShell displayName="Franz" role="client">
-        Compatibility content
+        Call content
       </AppShell>
     );
 
-    expect(container.querySelector("main")?.className).toContain("max-w-content");
-    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Mobile primary" })).toBeInTheDocument();
+    expect(container.querySelector("main")?.className).toContain("min-h-0");
+    expect(container.querySelector("main")?.className).not.toContain("max-w-content");
+    expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Mobile primary" })).not.toBeInTheDocument();
   });
 
   it("renders the channel column with the active room and the two focused community rooms", () => {

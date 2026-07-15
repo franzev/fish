@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar } from "../avatar";
 import { ConversationPreviewRow } from "../conversation-preview-row";
 import { getMessageSnippet } from "@/features/chat/model/chat-state";
+import { CallButton } from "@/features/calls";
 import {
   selectMessagesForConversation,
   useChatStore,
@@ -146,6 +147,24 @@ export function MessagesWorkspace({
               {chat.participant.displayName}
             </h3>
             <p className="mt-2xs text-ui-sm text-muted">{participantLabel}</p>
+            <div
+              role="group"
+              aria-label={`Call ${chat.participant.displayName}`}
+              className="mt-md grid w-full grid-cols-2 gap-xs"
+            >
+              <CallButton
+                recipientId={chat.participant.id}
+                recipientName={chat.participant.displayName}
+                kind="audio"
+                presentation="labeled"
+              />
+              <CallButton
+                recipientId={chat.participant.id}
+                recipientName={chat.participant.displayName}
+                kind="video"
+                presentation="labeled"
+              />
+            </div>
           </div>
 
           <dl className="mt-xl divide-y divide-divider">
