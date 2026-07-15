@@ -44,6 +44,14 @@ describe("Input", () => {
     expect(reservedRow.className).toContain("min-h-field-message");
   });
 
+  it("renders neutral hints with the smaller supporting-text size", () => {
+    const { getByText } = render(
+      <Input label="Password" hint="Use at least 8 characters." />
+    );
+
+    expect(getByText("Use at least 8 characters.")).toHaveClass("text-ui-xs");
+  });
+
   it("can skip the empty reserved row when a compact form owns spacing", () => {
     const { container } = render(
       <Input label="Email" reserveMessageSpace={false} />

@@ -163,7 +163,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             )}
           >
             {hint && !notice && !error && (
-              <p id={messageId} className="text-ui-sm text-muted">{hint}</p>
+              <p id={messageId} className="text-ui-xs text-muted">{hint}</p>
             )}
             {!error && notice && (
               <p id={messageId} className="flex items-center gap-nudge text-ui-sm text-notice">
