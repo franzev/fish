@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Avatar } from "@/features/chat";
 import { IconCircleCheck, IconX } from "@tabler/icons-react";
 import type { BookingCoach } from "../../contracts";
@@ -27,14 +28,12 @@ export function BookingConfirmationScreen({
     <div className="flex min-h-full w-full flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Lesson booking</h1>
-        <Button
+        <IconButton
           href="/home"
-          aria-label="Close confirmation"
-          variant="ghost"
-          controlSize="square"
-        >
-          <IconX size={20} stroke={1.75} aria-hidden="true" />
-        </Button>
+          label="Close confirmation"
+          appearance="ghost"
+          icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+        />
       </header>
 
       <main className="mx-auto flex min-h-full w-full max-w-content flex-1 flex-col justify-center px-page py-xl">

@@ -2,6 +2,7 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/features/chat";
 import { IconX } from "@tabler/icons-react";
@@ -41,14 +42,12 @@ export function BookingScreen({
     <div className="flex min-h-full w-full flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Book your lesson</h1>
-        <Button
+        <IconButton
           href="/home"
-          aria-label="Close booking"
-          variant="ghost"
-          controlSize="square"
-        >
-          <IconX size={20} stroke={1.75} aria-hidden="true" />
-        </Button>
+          label="Close booking"
+          appearance="ghost"
+          icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+        />
       </header>
 
       <div className="flex-1 overflow-y-auto">

@@ -2,9 +2,9 @@
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { MediaDeviceSelect } from "@/components/ui/media-device-select";
 import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
-import { TooltipIconButton } from "@/components/ui/tooltip-icon-button";
 import type { TimeFormatPref } from "@/lib/prefs/time-format";
 import type { LessonSlot } from "@/lib/services";
 import { cn } from "@/lib/utils";
@@ -117,7 +117,7 @@ export function LessonSetupView(props: LessonSetupViewProps) {
     <div className="flex min-h-0 w-full flex-1 flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Lesson setup</h1>
-        <Button href="/home" aria-label="Close lesson setup" variant="ghost" controlSize="square"><IconX size={20} stroke={1.75} aria-hidden="true" /></Button>
+        <IconButton href="/home" label="Close lesson setup" appearance="ghost" icon={<IconX size={20} stroke={1.75} aria-hidden="true" />} />
       </header>
 
       <main className="mx-auto grid min-h-0 w-full max-w-marketing flex-1 gap-lg overflow-y-auto px-page py-lg lg:grid-cols-2 lg:items-center lg:py-xl">
@@ -127,8 +127,8 @@ export function LessonSetupView(props: LessonSetupViewProps) {
             <video ref={videoRef} aria-label="Your camera preview" autoPlay muted playsInline className={cn("h-full w-full -scale-x-100 object-cover", cameraEnabled ? "block" : "hidden")} />
             <Tooltip.Provider delay={400} closeDelay={0}>
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-xs p-sm">
-                <TooltipIconButton type="button" label={microphoneEnabled ? "Mute" : "Unmute"} aria-pressed={!microphoneEnabled} disabled={mediaStatus !== "ready" || !microphoneAvailable} onClick={onToggleMicrophone} tooltipClassName="z-30" icon={microphoneEnabled ? <IconMicrophone data-testid="lesson-microphone-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconMicrophoneOff data-testid="lesson-microphone-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />
-                <TooltipIconButton type="button" label={cameraEnabled ? "Turn camera off" : "Turn camera on"} aria-pressed={!cameraEnabled} disabled={mediaStatus !== "ready" || !cameraAvailable} onClick={onToggleCamera} tooltipClassName="z-30" icon={cameraEnabled ? <IconCamera data-testid="lesson-camera-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconCameraOff data-testid="lesson-camera-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />
+                <IconButton type="button" label={microphoneEnabled ? "Mute" : "Unmute"} tooltip aria-pressed={!microphoneEnabled} disabled={mediaStatus !== "ready" || !microphoneAvailable} onClick={onToggleMicrophone} tooltipClassName="z-30" icon={microphoneEnabled ? <IconMicrophone data-testid="lesson-microphone-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconMicrophoneOff data-testid="lesson-microphone-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />
+                <IconButton type="button" label={cameraEnabled ? "Turn camera off" : "Turn camera on"} tooltip aria-pressed={!cameraEnabled} disabled={mediaStatus !== "ready" || !cameraAvailable} onClick={onToggleCamera} tooltipClassName="z-30" icon={cameraEnabled ? <IconCamera data-testid="lesson-camera-on-icon" size={20} stroke={1.75} aria-hidden="true" /> : <IconCameraOff data-testid="lesson-camera-off-icon" size={20} stroke={1.75} aria-hidden="true" />} />
               </div>
             </Tooltip.Provider>
           </div>

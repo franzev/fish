@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import type { TimeFormatPref } from "@/lib/prefs/time-format";
 import type { LessonSlot } from "@/lib/services";
 import { cn } from "@/lib/utils";
@@ -155,16 +156,14 @@ export function AvailabilityTable({
   return (
     <section aria-labelledby={`week-${week.key}`}>
       <div className="mb-sm flex items-center gap-sm">
-        <Button
+        <IconButton
           type="button"
-          variant="ghost"
-          controlSize="square"
-          aria-label="Previous week"
+          appearance="ghost"
+          label="Previous week"
           disabled={activeWeekIndex === 0}
           onClick={() => setWeekIndex(Math.max(activeWeekIndex - 1, 0))}
-        >
-          <IconChevronLeft size={20} stroke={1.75} aria-hidden="true" />
-        </Button>
+          icon={<IconChevronLeft size={20} stroke={1.75} aria-hidden="true" />}
+        />
         <h3
           id={`week-${week.key}`}
           className="flex-1 text-center text-ui font-semibold text-foreground"
@@ -172,18 +171,16 @@ export function AvailabilityTable({
         >
           Week of {week.label}
         </h3>
-        <Button
+        <IconButton
           type="button"
-          variant="ghost"
-          controlSize="square"
-          aria-label="Next week"
+          appearance="ghost"
+          label="Next week"
           disabled={activeWeekIndex === weeks.length - 1}
           onClick={() => setWeekIndex(
             Math.min(activeWeekIndex + 1, weeks.length - 1)
           )}
-        >
-          <IconChevronRight size={20} stroke={1.75} aria-hidden="true" />
-        </Button>
+          icon={<IconChevronRight size={20} stroke={1.75} aria-hidden="true" />}
+        />
       </div>
 
       <div className="hidden lg:block">
