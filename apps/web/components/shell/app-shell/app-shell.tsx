@@ -95,12 +95,10 @@ function NavLinks({
   items,
   pathname,
   placement,
-  badges,
 }: {
   items: NavItem[];
   pathname: string;
   placement: "top" | "bottom";
-  badges: Record<string, AttentionBadgeValue | undefined>;
 }) {
   return (
     <>
@@ -142,13 +140,6 @@ function NavLinks({
                 {label}
               </span>
             </span>
-            {placement === "top" ? (
-              <span className="inline-flex w-nav-badge-slot shrink-0 justify-end">
-                <AttentionBadge value={badges[href]} />
-              </span>
-            ) : (
-              <AttentionBadge value={badges[href]} />
-            )}
           </Link>
         );
       })}
@@ -177,18 +168,6 @@ export function AppShell({
   const directUnread = attention
     .filter((item) => item.surface === "direct")
     .reduce((total, item) => total + item.unreadCount, 0);
-  const communityMentions = channelAttention.reduce(
-    (total, item) => total + item.mentionCount,
-    0
-  );
-  const communityUnread = channelAttention.some((item) => item.newActivity);
-  const navBadges: Record<string, AttentionBadgeValue | undefined> = {
-    [generalChannelHref]: communityMentions > 0
-      ? { count: communityMentions, kind: "mention" }
-      : communityUnread
-      ? { count: 1, kind: "activity" }
-      : undefined,
-  };
   const channelBadges = new Map(channelAttention.map((item) => [
     item.entityId,
     item.mentionCount > 0
@@ -238,7 +217,7 @@ export function AppShell({
           aria-label="Primary"
           className="hidden items-center gap-3xs md:flex"
         >
-          <NavLinks items={navItems} pathname={pathname} placement="top" badges={navBadges} />
+          <NavLinks items={navItems} pathname={pathname} placement="top" />
         </nav>
         <div className="flex-1" aria-hidden="true" />
         <div className="flex shrink-0 items-center gap-3xs">
@@ -338,7 +317,7 @@ export function AppShell({
           aria-label="Mobile primary"
           className="fixed inset-x-0 bottom-0 flex border-t border-divider bg-surface px-xs py-xs md:hidden"
         >
-          <NavLinks items={navItems} pathname={pathname} placement="bottom" badges={navBadges} />
+          <NavLinks items={navItems} pathname={pathname} placement="bottom" />
         </nav>
       )}
     </div>

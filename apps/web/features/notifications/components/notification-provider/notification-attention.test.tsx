@@ -72,7 +72,7 @@ describe("navigation attention badges", () => {
     expect(messages).toHaveTextContent("7");
     expect(messages).not.toHaveTextContent("Messages");
     expect(messages.className).toContain("size-control");
-    expect(within(primary).getByRole("link", { name: /Community/ })).toHaveTextContent("@3");
+    expect(within(primary).getByRole("link", { name: "Community" })).not.toHaveTextContent("@3");
     const channels = screen.getByRole("navigation", { name: "Channels" });
     expect(within(channels).getByRole("link", { name: /general/ })).toHaveTextContent("@3");
     expect(within(channels).getByRole("link", { name: /introduce yourself/ }))

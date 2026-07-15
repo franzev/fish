@@ -231,7 +231,7 @@ describe("AppShell", () => {
     expect(community).toHaveAttribute("aria-current", "page");
   });
 
-  it("keeps desktop nav geometry stable when a link becomes active or gains a count", () => {
+  it("keeps desktop nav label geometry stable when a link becomes active", () => {
     pathname = "/home";
 
     render(
@@ -243,12 +243,9 @@ describe("AppShell", () => {
     const primaryNav = screen.getByRole("navigation", { name: "Primary" });
     const home = within(primaryNav).getByRole("link", { name: "Home" });
     const labelWidth = home.querySelector(".invisible");
-    const badgeSlot = home.querySelector(".w-nav-badge-slot");
 
     expect(labelWidth).toHaveTextContent("Home");
     expect(labelWidth?.className).toContain("font-semibold");
-    expect(badgeSlot).toBeInTheDocument();
-    expect(badgeSlot?.className).toContain("shrink-0");
   });
 
   it("renders coach navigation to the roster instead of client profile choices", () => {
