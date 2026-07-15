@@ -35,10 +35,11 @@ is done.
       `coach_clients`, `channels`, `conversations`, `messages`,
       `message_reads`, `message_reactions`, `presence_sessions`, and
       `lesson_slots`.
-- [ ] Deploy the chat command functions:
-      `supabase functions deploy send-message` and
-      `supabase functions deploy chat-command`.
-- [ ] Confirm both functions require JWT verification and preserve the caller's
+- [ ] Deploy the chat and notification command functions:
+      `supabase functions deploy send-message`,
+      `supabase functions deploy chat-command`, and
+      `supabase functions deploy notification-command`.
+- [ ] Confirm all three functions require JWT verification and preserve the caller's
       bearer token when invoking PostgREST/RPCs.
 - [ ] Deploy `presence-command` with JWT verification, then change a staging
       user's status through the account menu and confirm a trusted viewer sees
