@@ -4,7 +4,6 @@ import { SettingsRow } from "../settings-row";
 import { Alert } from "@/components/ui/alert";
 import {
   applyReducedMotion,
-  applyTextSize,
   applyTheme,
   applyTimeFormat,
 } from "@/lib/prefs/apply-prefs";
@@ -18,12 +17,10 @@ import {
 } from "@/features/profile/server/actions";
 
 type ThemePref = "light" | "dark" | null;
-type TextSizePref = "default" | "large" | "larger" | null;
 type ReducedMotionPref = boolean | null;
 
 interface A11yPrefsProps {
   themePref: ThemePref;
-  textSizePref: TextSizePref;
   reducedMotionPref: ReducedMotionPref;
   timeFormatPref: TimeFormatPref;
 }
@@ -32,12 +29,6 @@ const themeOptions: Array<{ value: ThemePref; label: string }> = [
   { value: null, label: "System" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
-];
-
-const textSizeOptions: Array<{ value: TextSizePref; label: string }> = [
-  { value: "default", label: "Default" },
-  { value: "large", label: "Large" },
-  { value: "larger", label: "Larger" },
 ];
 
 const reducedMotionOptions: Array<{ value: ReducedMotionPref; label: string }> = [
@@ -89,22 +80,18 @@ function SegmentedControl<T>({
   );
 }
 
-/** The profile preferences: theme, text size, reduced motion, and time
- *  format. System-backed options default to "follow system" (null). Changing one
+/** The profile preferences: theme, reduced motion, and time format.
+ *  System-backed options default to "follow system" (null). Changing one
  *  applies instantly via the data-* attribute helpers, then persists to
  *  client_profiles through the Server Action so it rehydrates on next load
  *  / another device (D-14). On mount, re-applies the stored prefs from
  *  props -- matches KitThemeToggle's own useEffect-on-mount shape. */
 export function A11yPrefs({
   themePref: initialTheme,
-  textSizePref: initialTextSize,
   reducedMotionPref: initialReducedMotion,
   timeFormatPref: initialTimeFormat,
 }: A11yPrefsProps) {
   const [theme, setTheme] = useState<ThemePref>(initialTheme);
-  const [textSize, setTextSize] = useState<TextSizePref>(
-    initialTextSize ?? "default"
-  );
   const [reducedMotion, setReducedMotion] =
     useState<ReducedMotionPref>(initialReducedMotion);
   const [timeFormat, setTimeFormat] =
@@ -113,10 +100,9 @@ export function A11yPrefs({
 
   useEffect(() => {
     applyTheme(theme);
-    applyTextSize(textSize);
     applyReducedMotion(reducedMotion);
     applyTimeFormat(timeFormat);
-  }, [reducedMotion, textSize, theme, timeFormat]);
+  }, [reducedMotion, theme, timeFormat]);
 
   function persist(next: UpdatePrefsInput) {
     setNotice(null);
@@ -151,26 +137,6 @@ export function A11yPrefs({
               setTheme(next);
               persist({
                 themePref: next,
-                textSizePref: textSize,
-                reducedMotionPref: reducedMotion,
-                timeFormatPref: timeFormat,
-              });
-            }}
-          />
-        }
-      />
-      <SettingsRow
-        label="Text size"
-        control={
-          <SegmentedControl
-            ariaLabel="Text size"
-            options={textSizeOptions}
-            value={textSize}
-            onChange={(next) => {
-              setTextSize(next);
-              persist({
-                themePref: theme,
-                textSizePref: next,
                 reducedMotionPref: reducedMotion,
                 timeFormatPref: timeFormat,
               });
@@ -189,7 +155,6 @@ export function A11yPrefs({
               setReducedMotion(next);
               persist({
                 themePref: theme,
-                textSizePref: textSize,
                 reducedMotionPref: next,
                 timeFormatPref: timeFormat,
               });
@@ -208,7 +173,6 @@ export function A11yPrefs({
               setTimeFormat(next);
               persist({
                 themePref: theme,
-                textSizePref: textSize,
                 reducedMotionPref: reducedMotion,
                 timeFormatPref: next,
               });

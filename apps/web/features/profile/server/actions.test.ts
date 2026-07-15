@@ -196,7 +196,7 @@ describe("updatePrefsAction", () => {
     updateSafeFieldsMock.mockReset();
   });
 
-  it("persists the three accessibility preference fields through the safe path (PROF-03)", async () => {
+  it("persists profile preference fields through the safe path (PROF-03)", async () => {
     getCurrentUserMock.mockResolvedValueOnce({
       ok: true,
       data: { id: "client-1" },
@@ -205,14 +205,12 @@ describe("updatePrefsAction", () => {
 
     await updatePrefsAction({
       themePref: "dark",
-      textSizePref: "larger",
       reducedMotionPref: true,
       timeFormatPref: "24h",
     });
 
     expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
       themePref: "dark",
-      textSizePref: "larger",
       reducedMotionPref: true,
       timeFormatPref: "24h",
     });
@@ -227,14 +225,12 @@ describe("updatePrefsAction", () => {
 
     await updatePrefsAction({
       themePref: null,
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: null,
     });
 
     expect(updateSafeFieldsMock).toHaveBeenCalledWith("client-1", {
       themePref: null,
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: null,
     });

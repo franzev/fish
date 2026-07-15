@@ -71,7 +71,6 @@ export interface ClientProfile {
   timezone: string | null;
   level: string | null;
   themePref: string | null;
-  textSizePref: string | null;
   reducedMotionPref: boolean | null;
   timeFormatPref: string | null;
   consented: boolean;
@@ -88,7 +87,6 @@ export type ClientProfileUpdate = Partial<
     | "locale"
     | "timezone"
     | "themePref"
-    | "textSizePref"
     | "reducedMotionPref"
     | "timeFormatPref"
     | "consented"

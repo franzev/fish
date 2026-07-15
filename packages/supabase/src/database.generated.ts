@@ -357,7 +357,6 @@ export type Database = {
           level: string | null
           locale: string | null
           reduced_motion_pref: boolean | null
-          text_size_pref: string | null
           theme_pref: string | null
           time_format_pref: string | null
           timezone: string | null
@@ -373,7 +372,6 @@ export type Database = {
           level?: string | null
           locale?: string | null
           reduced_motion_pref?: boolean | null
-          text_size_pref?: string | null
           theme_pref?: string | null
           time_format_pref?: string | null
           timezone?: string | null
@@ -389,7 +387,6 @@ export type Database = {
           level?: string | null
           locale?: string | null
           reduced_motion_pref?: boolean | null
-          text_size_pref?: string | null
           theme_pref?: string | null
           time_format_pref?: string | null
           timezone?: string | null

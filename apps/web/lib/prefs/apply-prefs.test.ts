@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   applyReducedMotion,
-  applyTextSize,
   applyTheme,
   applyTimeFormat,
 } from "./apply-prefs";
@@ -9,7 +8,6 @@ import {
 describe("apply-prefs helpers", () => {
   afterEach(() => {
     delete document.documentElement.dataset.theme;
-    delete document.documentElement.dataset.textSize;
     delete document.documentElement.dataset.reducedMotion;
     delete document.documentElement.dataset.timeFormat;
   });
@@ -20,20 +18,6 @@ describe("apply-prefs helpers", () => {
 
     applyTheme(null);
     expect(document.documentElement.dataset.theme).toBeUndefined();
-  });
-
-  it("sets text-size overrides and clears default/system", () => {
-    applyTextSize("larger");
-    expect(document.documentElement.dataset.textSize).toBe("larger");
-
-    applyTextSize("default");
-    expect(document.documentElement.dataset.textSize).toBeUndefined();
-
-    applyTextSize("large");
-    expect(document.documentElement.dataset.textSize).toBe("large");
-
-    applyTextSize(null);
-    expect(document.documentElement.dataset.textSize).toBeUndefined();
   });
 
   it("sets reduced-motion overrides and clears system", () => {

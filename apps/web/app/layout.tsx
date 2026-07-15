@@ -38,11 +38,6 @@ export default async function RootLayout({
       lang="en"
       className={`${lexend.variable} ${fraunces.variable}`}
       data-theme={profile?.themePref ?? undefined}
-      data-text-size={
-        profile?.textSizePref && profile.textSizePref !== "default"
-          ? profile.textSizePref
-          : undefined
-      }
       data-reduced-motion={
         profile?.reducedMotionPref == null
           ? undefined

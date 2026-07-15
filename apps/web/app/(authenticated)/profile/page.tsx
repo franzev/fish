@@ -64,7 +64,6 @@ export default async function ProfilePage() {
           <>
             <A11yPrefs
               themePref={data.themePref}
-              textSizePref={data.textSizePref}
               reducedMotionPref={data.reducedMotionPref}
               timeFormatPref={data.timeFormatPref}
             />

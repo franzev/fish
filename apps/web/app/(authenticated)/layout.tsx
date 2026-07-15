@@ -59,7 +59,6 @@ export default async function AuthenticatedLayout({
             loadMessagePopoverAction={loadMessagePopoverAction}
             preferences={{
               themePref: profile.themePref,
-              textSizePref: profile.textSizePref,
               reducedMotionPref: profile.reducedMotionPref,
               timeFormatPref: profile.timeFormatPref,
             }}

@@ -21,7 +21,6 @@ export interface EditProfileState {
 
 export interface UpdatePrefsInput {
   themePref: "light" | "dark" | null;
-  textSizePref: "default" | "large" | "larger" | null;
   reducedMotionPref: boolean | null;
   timeFormatPref: "12h" | "24h" | null;
 }
@@ -120,7 +119,6 @@ export function createProfileActionHandlers(
         userResult.data.id,
         {
           themePref: input.themePref,
-          textSizePref: input.textSizePref,
           reducedMotionPref: input.reducedMotionPref,
           timeFormatPref: input.timeFormatPref,
         }

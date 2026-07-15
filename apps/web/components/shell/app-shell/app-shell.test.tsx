@@ -21,7 +21,6 @@ describe("AppShell", () => {
   afterEach(() => {
     pathname = "/home";
     delete document.documentElement.dataset.theme;
-    delete document.documentElement.dataset.textSize;
     delete document.documentElement.dataset.reducedMotion;
     delete document.documentElement.dataset.timeFormat;
   });
@@ -152,7 +151,6 @@ describe("AppShell", () => {
         role="client"
         preferences={{
           themePref: "dark",
-          textSizePref: "larger",
           reducedMotionPref: true,
           timeFormatPref: "24h",
         }}
@@ -163,7 +161,6 @@ describe("AppShell", () => {
 
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe("dark");
-      expect(document.documentElement.dataset.textSize).toBe("larger");
       expect(document.documentElement.dataset.reducedMotion).toBe("true");
       expect(document.documentElement.dataset.timeFormat).toBe("24h");
     });

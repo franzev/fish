@@ -99,7 +99,6 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
       ok: true,
       data: {
         themePref: "dark",
-        textSizePref: "larger",
         reducedMotionPref: true,
         timeFormatPref: "24h",
       },
@@ -113,7 +112,6 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
       avatarThumbnailPath: null,
       avatarUrl: null,
       themePref: "dark",
-      textSizePref: "larger",
       reducedMotionPref: true,
       timeFormatPref: "24h",
     });
@@ -132,7 +130,6 @@ describe("getAuthenticatedShellProfile — persisted preference hydration", () =
       role: "coach",
       displayName: "Jamie Coach",
       themePref: null,
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: null,
     });

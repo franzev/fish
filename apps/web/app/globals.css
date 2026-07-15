@@ -294,14 +294,6 @@
   html[data-theme="dark"] {
     color-scheme: dark;
   }
-  /* Three text-size steps (D-13): scales the root so every rem-based token
-     scales with it. Default/unset = 100% = the existing 17px body base. */
-  html[data-text-size="large"] {
-    font-size: 112.5%;
-  }
-  html[data-text-size="larger"] {
-    font-size: 125%;
-  }
   /* Explicit reduced-motion override, composing with (not replacing) the
      prefers-reduced-motion media query below -- an explicit opt-in works
      even when the OS hasn't set the system-level flag (D-14). */

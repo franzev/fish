@@ -21,7 +21,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 type ThemePref = "light" | "dark" | null;
-type TextSizePref = "default" | "large" | "larger" | null;
 type TimeFormatPref = "12h" | "24h" | null;
 
 interface AppShellProps {
@@ -36,7 +35,6 @@ interface AppShellProps {
   ) => Promise<MessagePopoverActionState>;
   preferences?: {
     themePref?: ThemePref;
-    textSizePref?: TextSizePref;
     reducedMotionPref?: boolean | null;
     timeFormatPref?: TimeFormatPref;
   };
@@ -217,7 +215,6 @@ export function AppShell({
     >
       <PreferenceHydrator
         themePref={preferences?.themePref}
-        textSizePref={preferences?.textSizePref}
         reducedMotionPref={preferences?.reducedMotionPref}
         timeFormatPref={preferences?.timeFormatPref}
       />

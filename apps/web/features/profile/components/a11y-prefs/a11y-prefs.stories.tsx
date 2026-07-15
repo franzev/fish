@@ -7,7 +7,6 @@ const meta = {
   tags: ["autodocs"],
   args: {
     themePref: null,
-    textSizePref: null,
     reducedMotionPref: null,
     timeFormatPref: null,
   },
@@ -21,7 +20,6 @@ export const SystemDefaults: Story = {};
 export const ExplicitPreferences: Story = {
   args: {
     themePref: "dark",
-    textSizePref: "large",
     reducedMotionPref: true,
     timeFormatPref: "24h",
   },

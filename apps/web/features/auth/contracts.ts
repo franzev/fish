@@ -2,7 +2,6 @@ import type { ClientChatData, CoachClientListItem } from "@/lib/services";
 import type { UserRole } from "@fish/core/roles";
 
 export type ThemePref = "light" | "dark" | null;
-export type TextSizePref = "default" | "large" | "larger" | null;
 export type TimeFormatPref = "12h" | "24h" | null;
 
 // The DB column is a CHECK-constrained `text`, not a Postgres enum, so the
@@ -12,10 +11,6 @@ export type TimeFormatPref = "12h" | "24h" | null;
 // zod schema's own narrowing job, just for reads instead of writes).
 export function toThemePref(value: string | null): ThemePref {
   return value === "light" || value === "dark" ? value : null;
-}
-
-export function toTextSizePref(value: string | null): TextSizePref {
-  return value === "large" || value === "larger" ? value : "default";
 }
 
 export function toTimeFormatPref(value: string | null): TimeFormatPref {
@@ -33,7 +28,6 @@ export interface CurrentProfile {
 export interface AuthenticatedShellProfile extends CurrentProfile {
   avatarUrl: string | null;
   themePref: ThemePref;
-  textSizePref: TextSizePref;
   reducedMotionPref: boolean | null;
   timeFormatPref: TimeFormatPref;
 }
@@ -85,7 +79,6 @@ export interface ProfileData {
   timezone: string | null;
   level: string | null;
   themePref: ThemePref;
-  textSizePref: TextSizePref;
   reducedMotionPref: boolean | null;
   timeFormatPref: TimeFormatPref;
   consented: boolean;

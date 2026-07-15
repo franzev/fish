@@ -43,7 +43,6 @@ function toClientProfile(row: ClientProfileRow): ClientProfile {
     timezone: row.timezone,
     level: row.level,
     themePref: row.theme_pref,
-    textSizePref: row.text_size_pref,
     reducedMotionPref: row.reduced_motion_pref,
     timeFormatPref: row.time_format_pref,
     consented: row.consented,
@@ -63,9 +62,6 @@ function toClientProfileRowUpdate(
     ...(fields.timezone !== undefined ? { timezone: fields.timezone } : {}),
     ...(fields.themePref !== undefined
       ? { theme_pref: fields.themePref }
-      : {}),
-    ...(fields.textSizePref !== undefined
-      ? { text_size_pref: fields.textSizePref }
       : {}),
     ...(fields.reducedMotionPref !== undefined
       ? { reduced_motion_pref: fields.reducedMotionPref }

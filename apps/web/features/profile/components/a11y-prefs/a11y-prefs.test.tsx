@@ -16,7 +16,6 @@ describe("A11yPrefs", () => {
   afterEach(() => {
     updatePrefsActionMock.mockClear();
     delete document.documentElement.dataset.theme;
-    delete document.documentElement.dataset.textSize;
     delete document.documentElement.dataset.reducedMotion;
     delete document.documentElement.dataset.timeFormat;
   });
@@ -25,16 +24,14 @@ describe("A11yPrefs", () => {
     render(
       <A11yPrefs
         themePref={null}
-        textSizePref={null}
         reducedMotionPref={null}
         timeFormatPref={null}
       />
     );
 
     const groups = screen.getAllByRole("group");
-    expect(groups).toHaveLength(4);
+    expect(groups).toHaveLength(3);
     expect(screen.getByRole("group", { name: "Appearance" })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Text size" })).toBeInTheDocument();
     expect(
       screen.getByRole("group", { name: "Reduced motion" })
     ).toBeInTheDocument();
@@ -52,7 +49,6 @@ describe("A11yPrefs", () => {
     render(
       <A11yPrefs
         themePref={null}
-        textSizePref={null}
         reducedMotionPref={null}
         timeFormatPref={null}
       />
@@ -69,27 +65,10 @@ describe("A11yPrefs", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("defaults text size to Default when the prop is null", () => {
-    render(
-      <A11yPrefs
-        themePref={null}
-        textSizePref={null}
-        reducedMotionPref={null}
-        timeFormatPref={null}
-      />
-    );
-
-    const textSizeGroup = screen.getByRole("group", { name: "Text size" });
-    expect(
-      within(textSizeGroup).getByRole("button", { name: "Default" })
-    ).toHaveAttribute("aria-pressed", "true");
-  });
-
   it("applies and persists a selected preference immediately (PROF-03)", async () => {
     render(
       <A11yPrefs
         themePref={null}
-        textSizePref={null}
         reducedMotionPref={null}
         timeFormatPref={null}
       />
@@ -107,7 +86,6 @@ describe("A11yPrefs", () => {
     });
     expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
       themePref: "light",
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: null,
     });
@@ -117,7 +95,6 @@ describe("A11yPrefs", () => {
     render(
       <A11yPrefs
         themePref={null}
-        textSizePref={null}
         reducedMotionPref={null}
         timeFormatPref={null}
       />
@@ -135,7 +112,6 @@ describe("A11yPrefs", () => {
     });
     expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
       themePref: null,
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: "24h",
     });
@@ -145,7 +121,6 @@ describe("A11yPrefs", () => {
     render(
       <A11yPrefs
         themePref="dark"
-        textSizePref="large"
         reducedMotionPref={true}
         timeFormatPref="12h"
       />
@@ -153,7 +128,6 @@ describe("A11yPrefs", () => {
 
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe("dark");
-      expect(document.documentElement.dataset.textSize).toBe("large");
       expect(document.documentElement.dataset.reducedMotion).toBe("true");
       expect(document.documentElement.dataset.timeFormat).toBe("12h");
     });
@@ -170,7 +144,6 @@ describe("A11yPrefs", () => {
     });
     expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
       themePref: null,
-      textSizePref: "large",
       reducedMotionPref: true,
       timeFormatPref: "12h",
     });
@@ -187,7 +160,6 @@ describe("A11yPrefs", () => {
     });
     expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
       themePref: null,
-      textSizePref: "large",
       reducedMotionPref: null,
       timeFormatPref: "12h",
     });
@@ -204,7 +176,6 @@ describe("A11yPrefs", () => {
     });
     expect(updatePrefsActionMock).toHaveBeenLastCalledWith({
       themePref: null,
-      textSizePref: "large",
       reducedMotionPref: null,
       timeFormatPref: null,
     });
@@ -215,7 +186,6 @@ describe("A11yPrefs", () => {
     render(
       <A11yPrefs
         themePref={null}
-        textSizePref={null}
         reducedMotionPref={null}
         timeFormatPref={null}
       />

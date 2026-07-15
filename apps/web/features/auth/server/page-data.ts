@@ -11,7 +11,6 @@ import {
 import { authRedirects } from "../redirects";
 import { isUserRole } from "@fish/core/roles";
 import {
-  toTextSizePref,
   toThemePref,
   toTimeFormatPref,
   type AuthenticatedShellProfile,
@@ -109,7 +108,6 @@ async function getAuthenticatedShellProfileUncached(
       ...profile,
       avatarUrl,
       themePref: null,
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: null,
     };
@@ -126,7 +124,6 @@ async function getAuthenticatedShellProfileUncached(
     ...profile,
     avatarUrl,
     themePref: toThemePref(clientProfileResult.data?.themePref ?? null),
-    textSizePref: toTextSizePref(clientProfileResult.data?.textSizePref ?? null),
     reducedMotionPref: clientProfileResult.data?.reducedMotionPref ?? null,
     timeFormatPref: toTimeFormatPref(
       clientProfileResult.data?.timeFormatPref ?? null
@@ -210,7 +207,6 @@ export async function getProfileData(
       timezone: null,
       level: null,
       themePref: null,
-      textSizePref: "default",
       reducedMotionPref: null,
       timeFormatPref: null,
       consented: false,
@@ -263,7 +259,6 @@ export async function getProfileData(
     timezone: clientProfile?.timezone ?? null,
     level: clientProfile?.level ?? null,
     themePref: toThemePref(clientProfile?.themePref ?? null),
-    textSizePref: toTextSizePref(clientProfile?.textSizePref ?? null),
     reducedMotionPref: clientProfile?.reducedMotionPref ?? null,
     timeFormatPref: toTimeFormatPref(clientProfile?.timeFormatPref ?? null),
     consented: clientProfile?.consented ?? false,

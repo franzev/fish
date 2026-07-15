@@ -291,7 +291,7 @@ The component vocabulary is rounded, quiet, and familiar. Reuse the base compone
 - **Do** keep client flows assigned rather than browsed, narrow, and single-column by default.
 - **Do** pair status color with an icon, message, weight, or shape so meaning never depends on hue alone.
 - **Do** write sentence-case, direct, non-scolding copy that explains the next useful step.
-- **Do** respect OS and saved light, dark, text-size, and reduced-motion preferences.
+- **Do** respect OS and saved light, dark, and reduced-motion preferences.
 
 ### Don't:
 
