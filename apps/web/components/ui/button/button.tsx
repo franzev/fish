@@ -38,7 +38,7 @@ export const buttonVariants = cva(
       },
       controlSize: {
         default: "px-md",
-        square: "icon-button-glyph size-control min-h-control px-0",
+        square: "icon-button-glyph size-control min-h-control min-w-control px-0",
       },
       fullWidth: {
         true: "w-full",

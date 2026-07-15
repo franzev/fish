@@ -49,7 +49,7 @@ export const alertMessageVariants = cva("text-ui text-body", {
 
 type AlertTone = NonNullable<VariantProps<typeof alertVariants>["tone"]>;
 
-interface AlertProps extends HTMLAttributes<HTMLDivElement> {
+export interface AlertProps extends HTMLAttributes<HTMLDivElement> {
   tone: AlertTone;
   /** Calm, plain-verb copy. Never "Error:", never exclamation points. */
   children: React.ReactNode;
