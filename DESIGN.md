@@ -21,6 +21,7 @@ colors:
   error: "light-dark(oklch(0.45 0.14 20), oklch(0.78 0.11 20))"
   warning: "light-dark(oklch(0.42 0.12 80), oklch(0.78 0.12 80))"
   success: "light-dark(oklch(0.40 0.11 150), oklch(0.75 0.12 150))"
+  success-press: "light-dark(oklch(0.34 0.11 150), oklch(0.82 0.10 150))"
   scrim: "light-dark(oklch(0.15 0 0 / 0.4), oklch(0 0 0 / 0.6))"
 typography:
   display:
