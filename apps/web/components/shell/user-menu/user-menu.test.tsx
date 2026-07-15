@@ -64,6 +64,19 @@ describe("UserMenu", () => {
       .toBeInTheDocument();
   });
 
+  it("closes immediately after choosing a status", () => {
+    render(<UserMenu displayName="Franz" role="client" />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Account menu for Franz" })
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Away/ }));
+
+    expect(screen.queryByRole("menuitemradio", { name: /Away/ }))
+      .not.toBeInTheDocument();
+  });
+
   it("shows Profile and Sign out, but not client-only Friends, for a coach", () => {
     render(
       <UserMenu displayName="Gwyn" role="coach" friendsNavEnabled />

@@ -85,12 +85,10 @@ export function UserMenu({
   const [statusOpen, setStatusOpen] = useState(false);
   const showFriends = role === "client" && friendsNavEnabled;
 
-  async function chooseStatus(next: PresencePreference) {
-    const changed = await presence.setPreference(next);
-    if (changed) {
-      setStatusOpen(false);
-      setMenuOpen(false);
-    }
+  function chooseStatus(next: PresencePreference) {
+    setStatusOpen(false);
+    setMenuOpen(false);
+    void presence.setPreference(next);
   }
 
   return (
@@ -136,7 +134,7 @@ export function UserMenu({
                       closeOnClick={false}
                       disabled={presence.changing}
                       className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
-                      onClick={() => void chooseStatus(option.preference)}
+                      onClick={() => chooseStatus(option.preference)}
                     >
                       <PresenceIndicator status={option.status} label={option.label} size={18} />
                       <span className="min-w-0">
