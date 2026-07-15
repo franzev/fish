@@ -2876,18 +2876,15 @@ describe("ChatClient", () => {
     expect(document.activeElement).not.toBe(prependedMessage);
   });
 
-  it("shows a calm notice-tone offline state (never an error tone) when the realtime status is disconnected", () => {
+  it("does not show an alert when the realtime status is disconnected", () => {
     render(<ChatClient chat={chat} sendMessageAction={vi.fn()} />);
 
     act(() => {
       chatStore.getState().setRealtimeStatus(chat.conversationId, "disconnected");
     });
 
-    // Truthful copy only (WR-03): no offline queue exists, so the banner
-    // must never promise an automatic or background send.
-    const banner = screen.getByText(/Reconnect, then try again\./);
-    expect(banner).toBeInTheDocument();
-    expect(banner.textContent).not.toMatch(/will send when you're back/i);
+    expect(screen.queryByText(/You're offline/i)).toBeNull();
+    expect(screen.queryByText(/Reconnect, then try again\./i)).toBeNull();
   });
 
   it("re-shows the author name and avatar on a same-sender community message after the grouping gap", () => {

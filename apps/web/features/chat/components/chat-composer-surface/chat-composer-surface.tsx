@@ -67,12 +67,6 @@ export function ChatComposerSurface({
 }: ChatComposerSurfaceProps) {
   return (
     <>
-      {isOffline && (
-        <Alert tone="notice" className="mx-md mb-xs">
-          You&apos;re offline. Reconnect, then try again.
-        </Alert>
-      )}
-
       {notice && (
         <Alert tone="notice" className="mx-md mb-xs">
           {notice}
