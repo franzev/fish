@@ -51,6 +51,18 @@ describe("ForgotPasswordPage", () => {
     expect(primaryButtons[0]).toHaveTextContent("Send reset link");
   });
 
+  it("uses the forgot-password illustration in the shared auth panel", () => {
+    const { container } = render(<ForgotPasswordPage />);
+    const illustration = container.querySelector("img");
+
+    expect(illustration).toHaveAttribute(
+      "src",
+      expect.stringContaining("forgot-password-reset.svg")
+    );
+    expect(illustration).toHaveAttribute("alt", "");
+    expect(illustration).toHaveClass("opacity-20", "saturate-0");
+  });
+
   it("renders one email Input", () => {
     render(<ForgotPasswordPage />);
     expect(screen.getByLabelText("Email")).toHaveFocus();

@@ -12,8 +12,9 @@ export default async function SignupPage() {
   await redirectIfSignedIn();
   return (
     <AuthSplitLayout
-      headline="A calmer way to learn English."
-      message="One coach, one conversation, one next step at a time."
+      headline="Learn together."
+      message="Your coach keeps the path clear, so you can focus on using English with confidence."
+      illustrationSrc="/illustrations/sign-up-teamwork.svg"
     >
       <SignupForm showGoogleAuth={isGoogleAuthAvailable()} />
     </AuthSplitLayout>

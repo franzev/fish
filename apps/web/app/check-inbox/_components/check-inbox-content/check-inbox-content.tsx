@@ -1,7 +1,7 @@
 "use client";
 
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FloatingFormNotice } from "@/components/ui/floating-form-notice";
 import { resendSignupEmail } from "@/features/auth";
 import { useSearchParams } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
@@ -69,19 +69,7 @@ export function CheckInboxContent() {
           never changes the card's own box — the centered card never
           moves (D-08, supersedes the reserved-row approach from the
           previous fix). */}
-      <div
-        aria-live="polite"
-        className="pointer-events-none absolute inset-x-0 bottom-full mb-md"
-      >
-        {notice && (
-          <Alert
-            tone={resultTone}
-            className="pointer-events-auto animate-fade-in"
-          >
-            {notice}
-          </Alert>
-        )}
-      </div>
+      <FloatingFormNotice tone={resultTone}>{notice}</FloatingFormNotice>
     </div>
   );
 }

@@ -6,6 +6,7 @@ export default function ForgotPasswordPage() {
     <AuthSplitLayout
       headline="It happens to everyone."
       message="A fresh link is one email away. You'll be back in your chat in no time."
+      illustrationSrc="/illustrations/forgot-password-reset.svg"
     >
       <ForgotPasswordForm />
     </AuthSplitLayout>
