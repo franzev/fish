@@ -120,4 +120,48 @@ describe("SupabaseNotificationRepository", () => {
     if (!result.ok) return;
     expect(result.data.items).toEqual([]);
   });
+
+  it("links missed calls to the caller conversation instead of the ended call", async () => {
+    const missedCall = {
+      ...row("missed-call", 1, "2026-07-14T04:00:00.000Z"),
+      kind: "call_missed",
+      channel_slug: "",
+      message_id: "",
+      call_id: "call-1",
+    };
+    const rpc = vi.fn().mockResolvedValue({
+      data: [missedCall],
+      error: null,
+    });
+    const repository = new SupabaseNotificationRepository({ rpc } as unknown as AppSupabaseClient);
+    const result = await repository.listPage({ filter: "all" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.items[0]).toMatchObject({
+      kind: "callMissed",
+      actionHref: "/messages/conversation-1",
+    });
+  });
+
+  it("does not link a missed call when its conversation is unavailable", async () => {
+    const missedCall = {
+      ...row("missed-call", 1, "2026-07-14T04:00:00.000Z"),
+      kind: "call_missed",
+      channel_slug: "",
+      conversation_id: "",
+      message_id: "",
+      call_id: "call-1",
+    };
+    const rpc = vi.fn().mockResolvedValue({
+      data: [missedCall],
+      error: null,
+    });
+    const repository = new SupabaseNotificationRepository({ rpc } as unknown as AppSupabaseClient);
+    const result = await repository.listPage({ filter: "all" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.items[0]?.actionHref).toBeNull();
+  });
 });

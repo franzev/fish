@@ -65,11 +65,14 @@ function socialHref(row: {
       : "";
     return `/channels/${encodeURIComponent(row.channel_slug)}${focus}`;
   }
-  if (row.conversation_id && row.message_id) {
-    return `/messages/${row.conversation_id}?message=${encodeURIComponent(row.message_id)}#message-${row.message_id}`;
+  if (row.conversation_id) {
+    const focus = row.message_id
+      ? `?message=${encodeURIComponent(row.message_id)}#message-${row.message_id}`
+      : "";
+    return `/messages/${row.conversation_id}${focus}`;
   }
   if (row.kind === "call_missed") {
-    return row.call_id ? `/calls/${row.call_id}` : null;
+    return null;
   }
   if (row.kind === "friend_request_received") {
     return row.friend_request_id
