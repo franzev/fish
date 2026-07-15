@@ -16,7 +16,7 @@ export const buttonVariants = cva(
     // Layout stability: no state change may alter the rendered size.
     // relative anchors the loading overlay; a constant (transparent)
     // border keeps the box model identical across all variants.
-    "relative inline-flex items-center justify-center rounded-control px-md",
+    "relative inline-flex items-center justify-center rounded-control",
     "text-ui transition-colors",
     "border border-transparent cursor-pointer",
     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -37,8 +37,8 @@ export const buttonVariants = cva(
         ghost: "bg-transparent text-muted hover:text-body",
       },
       controlSize: {
-        default: null,
-        square: "size-control min-h-control px-0",
+        default: "px-md",
+        square: "icon-button-glyph size-control min-h-control px-0",
       },
       fullWidth: {
         true: "w-full",
@@ -201,7 +201,17 @@ const ButtonRoot = forwardRef<
             className="absolute inset-0 m-auto size-4 animate-spin rounded-pill border-2 border-current border-t-transparent"
           />
         )}
-        <span className={cn(loading && "opacity-0")}>{children}</span>
+        <span
+          className={cn(
+            // Center icon-and-label content by its actual box. A plain inline
+            // wrapper reserves baseline space below nested inline-flex content
+            // and makes the visible group sit slightly too high.
+            "inline-flex items-center justify-center",
+            loading && "opacity-0"
+          )}
+        >
+          {children}
+        </span>
       </button>
     );
 });

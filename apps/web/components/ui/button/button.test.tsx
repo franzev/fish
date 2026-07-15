@@ -21,6 +21,16 @@ describe("Button", () => {
     expect(getByRole("button").className).toContain("w-full");
   });
 
+  it("centers its content wrapper without a baseline offset", () => {
+    const { getByText } = render(<Button>Call</Button>);
+
+    expect(getByText("Call")).toHaveClass(
+      "inline-flex",
+      "items-center",
+      "justify-center"
+    );
+  });
+
   it("renders a Next.js link when href is present and merges its variants with custom classes", () => {
     const { getByRole } = render(
       <Button href="/profile" variant="ghost" fullWidth className="mt-lg">
@@ -101,7 +111,13 @@ describe("Button", () => {
     );
     const button = getByRole("button", { name: "Send message" });
 
-    expect(button).toHaveClass("size-control", "min-h-control", "px-0");
+    expect(button).toHaveClass(
+      "icon-button-glyph",
+      "size-control",
+      "min-h-control",
+      "px-0"
+    );
+    expect(button).not.toHaveClass("px-md");
     expect(button).not.toHaveClass("min-h-control-primary");
   });
 
