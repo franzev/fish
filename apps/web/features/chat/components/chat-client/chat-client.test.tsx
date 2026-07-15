@@ -505,7 +505,7 @@ describe("ChatClient", () => {
     expect(dividerItem?.nextElementSibling).toBe(unreadMessage);
   });
 
-  it("orders the date then unread divider before the first unread message", () => {
+  it("combines coincident date and unread boundaries before the first unread message", () => {
     const firstUnreadAt = "2026-07-06T10:00:00.000Z";
     render(
       <ChatClient
@@ -548,9 +548,7 @@ describe("ChatClient", () => {
     const messageRow = document.getElementById("message-message-unread");
     const children = Array.from(list?.children ?? []);
 
-    expect(children.indexOf(dateDivider!)).toBeLessThan(
-      children.indexOf(unreadDivider!)
-    );
+    expect(dateDivider).toBe(unreadDivider);
     expect(children.indexOf(unreadDivider!)).toBeLessThan(
       children.indexOf(messageRow!)
     );
@@ -1248,11 +1246,15 @@ describe("ChatClient", () => {
     const communityTranscript = screen.getByRole("log", {
       name: "Community messages",
     });
+    const unreadDivider = within(communityTranscript).getByRole("separator", {
+      name: "Unread messages",
+    });
     const dateDividers = within(communityTranscript)
       .getAllByRole("separator")
       .filter((divider) => divider.getAttribute("aria-label") === null);
-    expect(dateDividers[0]).toHaveTextContent("July 5, 2026");
-    expect(dateDividers[1]).toHaveTextContent("July 6, 2026");
+    expect(unreadDivider).toHaveAccessibleDescription("July 5, 2026");
+    expect(dateDividers).toHaveLength(1);
+    expect(dateDividers[0]).toHaveTextContent("July 6, 2026");
     // Scoped to the feed so the assertion stays anchored to the coach role
     // pill on the message row, not any other "Coach" copy elsewhere.
     expect(

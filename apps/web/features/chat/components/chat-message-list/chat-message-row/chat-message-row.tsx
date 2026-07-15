@@ -321,7 +321,7 @@ export function ChatMessageRow({
 
   return (
     <>
-      {dayDividerLabel && (
+      {dayDividerLabel && !showUnreadDivider && (
         <li role="separator" className="mt-md flex items-center gap-xs">
           <span aria-hidden="true" className="h-px flex-1 bg-border" />
           <span
@@ -335,7 +335,7 @@ export function ChatMessageRow({
       )}
       {showUnreadDivider && (
         <li role="none">
-          <UnreadDivider />
+          <UnreadDivider dateLabel={dayDividerLabel ?? undefined} />
         </li>
       )}
       <li
