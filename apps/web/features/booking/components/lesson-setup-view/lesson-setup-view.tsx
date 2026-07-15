@@ -117,7 +117,7 @@ export function LessonSetupView(props: LessonSetupViewProps) {
     <div className="flex min-h-0 w-full flex-1 flex-col bg-bg">
       <header className="flex shrink-0 items-center gap-md border-b border-divider bg-surface px-page py-md">
         <h1 className="flex-1 text-heading-sm">Lesson setup</h1>
-        <Button href="/home" aria-label="Close lesson setup" variant="ghost" controlSize="square"><IconX size={24} stroke={1.75} aria-hidden="true" /></Button>
+        <Button href="/home" aria-label="Close lesson setup" variant="ghost" controlSize="square"><IconX size={20} stroke={1.75} aria-hidden="true" /></Button>
       </header>
 
       <main className="mx-auto grid min-h-0 w-full max-w-marketing flex-1 gap-lg overflow-y-auto px-page py-lg lg:grid-cols-2 lg:items-center lg:py-xl">

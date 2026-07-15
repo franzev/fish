@@ -60,10 +60,10 @@ export function IconTabStrip({
                   <Tabs.Tab
                     value={value}
                     aria-label={label}
-                    className="group flex min-h-target-touch flex-1 items-center justify-center rounded-control text-muted data-[active]:text-foreground"
+                    className="icon-button-glyph group flex min-h-target-touch flex-1 items-center justify-center rounded-control text-muted data-[active]:text-foreground"
                   >
                     <span className="flex items-center justify-center rounded-pill p-2xs group-hover:bg-surface-2 group-data-[active]:bg-surface-2">
-                      <Icon size={18} stroke={1.75} aria-hidden="true" />
+                      <Icon size={20} stroke={1.75} aria-hidden="true" />
                     </span>
                   </Tabs.Tab>
                 }
@@ -86,7 +86,7 @@ export function IconTabStrip({
                       aria-pressed={selected}
                       onClick={() => onValueChange?.(value)}
                       className={cn(
-                        "group flex min-h-target-touch flex-1 items-center justify-center rounded-control",
+                        "icon-button-glyph group flex min-h-target-touch flex-1 items-center justify-center rounded-control",
                         selected ? "text-foreground" : "text-muted"
                       )}
                     >
@@ -96,7 +96,7 @@ export function IconTabStrip({
                           selected && "bg-surface-2"
                         )}
                       >
-                        <Icon size={18} stroke={1.75} aria-hidden="true" />
+                        <Icon size={20} stroke={1.75} aria-hidden="true" />
                       </span>
                     </button>
                   }

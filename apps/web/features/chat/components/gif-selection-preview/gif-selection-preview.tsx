@@ -23,9 +23,9 @@ export function GifSelectionPreview({ gif, onRemove }: GifSelectionPreviewProps)
         type="button"
         aria-label="Remove selected GIF"
         onClick={onRemove}
-        className="inline-flex min-h-target-touch min-w-target-touch items-center justify-center rounded-control text-muted hover:bg-surface hover:text-body"
+        className="icon-button-glyph inline-flex min-h-target-touch min-w-target-touch items-center justify-center rounded-control text-muted hover:bg-surface hover:text-body"
       >
-        <IconX size={18} stroke={1.75} aria-hidden="true" />
+        <IconX size={20} stroke={1.75} aria-hidden="true" />
       </button>
     </div>
   );

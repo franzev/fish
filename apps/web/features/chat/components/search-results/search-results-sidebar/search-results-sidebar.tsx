@@ -62,7 +62,7 @@ export function SearchResultsSidebar(props: SearchResultsSidebarProps) {
               <Menu.Item onClick={() => props.onSortChange("asc")} className="flex min-h-control cursor-pointer items-center rounded-control px-sm text-ui text-foreground data-[highlighted]:bg-surface-2">Oldest first{props.sortDirection === "asc" ? " ✓" : ""}</Menu.Item>
             </Menu.Popup></Menu.Positioner></Menu.Portal>
           </Menu.Root>
-          <button type="button" aria-label="Close search results" onClick={props.onClose} className="inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"><IconX size={20} stroke={1.75} aria-hidden="true" /></button>
+          <button type="button" aria-label="Close search results" onClick={props.onClose} className="icon-button-glyph inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"><IconX size={20} stroke={1.75} aria-hidden="true" /></button>
         </div>
       </header>
       <ScrollArea className="flex-1" viewportClassName="p-sm">

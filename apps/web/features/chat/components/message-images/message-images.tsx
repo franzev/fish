@@ -291,7 +291,7 @@ function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
           <IconDownload size={20} stroke={1.75} aria-hidden="true" />
         </a>
       ) : (
-        <button type="button" disabled={refreshing} onClick={() => void refresh()} className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-body" aria-label={`Retry ${file.originalName}`}>
+        <button type="button" disabled={refreshing} onClick={() => void refresh()} className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-body" aria-label={`Retry ${file.originalName}`}>
           <IconRefresh size={20} stroke={1.75} aria-hidden="true" />
         </button>
       )}

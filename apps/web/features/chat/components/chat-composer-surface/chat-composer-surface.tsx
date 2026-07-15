@@ -105,9 +105,9 @@ export function ChatComposerSurface({
               type="button"
               aria-label="Cancel reply"
               onClick={cancelReply}
-              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+              className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
             >
-              <IconX size={18} stroke={1.75} aria-hidden="true" />
+              <IconX size={20} stroke={1.75} aria-hidden="true" />
             </button>
           </div>
         </div>

@@ -196,9 +196,9 @@ export const EmojiPickerButton = forwardRef<
 
     return (
       <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Trigger ref={ref} aria-label={label} className={className}>
+        <Popover.Trigger ref={ref} aria-label={label} className={cn("icon-button-glyph", className)}>
           {children ?? (
-            <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
+            <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
           )}
         </Popover.Trigger>
         <Popover.Portal>

@@ -267,7 +267,7 @@ export function SearchFilterPopover({
           />
         </div>
         {!value && <span className="pointer-events-none flex min-h-target-touch min-w-target-touch shrink-0 items-center justify-center text-muted sm:min-h-search-control sm:min-w-search-control"><IconSearch size={16} stroke={1.75} aria-hidden="true" /></span>}
-        {value && <button type="button" aria-label="Clear search" onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="inline-flex min-h-target-touch min-w-target-touch items-center justify-center rounded-control text-muted hover:text-body sm:min-h-search-control sm:min-w-search-control"><IconX size={16} stroke={1.75} aria-hidden="true" /></button>}
+        {value && <button type="button" aria-label="Clear search" onMouseDown={(event) => event.preventDefault()} onClick={() => { updateValue(""); setPanelOpen(true); }} className="icon-button-glyph inline-flex min-h-target-touch min-w-target-touch items-center justify-center rounded-control text-muted hover:text-body sm:min-h-search-control sm:min-w-search-control"><IconX size={20} stroke={1.75} aria-hidden="true" /></button>}
       </div>
 
       {panelOpen && <div id="chat-search-panel" className="absolute right-0 top-full z-30 mt-2xs w-full">

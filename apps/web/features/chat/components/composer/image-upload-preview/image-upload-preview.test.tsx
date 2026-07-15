@@ -27,7 +27,7 @@ describe("ImageUploadPreview", () => {
     expect(screen.queryByText("Uploading")).not.toBeInTheDocument();
     const removeButton = screen.getByRole("button", { name: "Remove photo.png" });
     expect(removeButton).toHaveClass("min-h-control", "min-w-control");
-    expect(removeButton.firstElementChild).toHaveClass("size-md");
+    expect(removeButton.firstElementChild).toHaveClass("size-lg");
     fireEvent.click(removeButton);
     expect(remove).toHaveBeenCalledWith("upload-1");
   });
@@ -40,7 +40,11 @@ describe("ImageUploadPreview", () => {
     expect(trigger.parentElement).toHaveClass("border-notice");
     expect(screen.queryByText("Not uploaded yet")).not.toBeInTheDocument();
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("menuitem", { name: "Retry" }));
+    const retryAction = screen.getByRole("menuitem", { name: "Retry" });
+    expect(retryAction.parentElement).toHaveClass("w-max");
+    expect(retryAction.parentElement).not.toHaveClass("min-w-menu");
+    expect(retryAction.parentElement?.parentElement).toHaveAttribute("data-align", "end");
+    fireEvent.click(retryAction);
     expect(retry).toHaveBeenCalledWith("upload-1");
     fireEvent.click(trigger);
     const removeAction = screen.getByRole("menuitem", { name: "Remove" });

@@ -40,9 +40,9 @@ export function ChannelFilterField({ channels, selectedIds, onToggle }: ChannelF
           type="button"
           aria-label={`${open ? "Close" : "Open"} channel suggestions`}
           onClick={() => setOpen((current) => !current)}
-          className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted"
+          className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted"
         >
-          {open ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+          {open ? <IconChevronUp size={20} stroke={1.75} /> : <IconChevronDown size={20} stroke={1.75} />}
         </button>
       </div>
       {open && (

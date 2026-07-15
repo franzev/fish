@@ -65,13 +65,13 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                 <Menu.Root modal={false}>
                   <Menu.Trigger
                     aria-label={`Upload failed for ${image.file.name}. Show options`}
-                    className="absolute inset-0 flex size-full items-center justify-center bg-scrim text-notice"
+                    className="icon-button-glyph absolute inset-0 flex size-full items-center justify-center bg-scrim text-notice"
                   >
-                    <IconAlertCircle size={28} stroke={1.75} aria-hidden="true" />
+                    <IconAlertCircle size={20} stroke={1.75} aria-hidden="true" />
                   </Menu.Trigger>
                   <Menu.Portal>
-                    <Menu.Positioner side="top" align="start" sideOffset={4} className="z-30">
-                      <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
+                    <Menu.Positioner side="top" align="end" sideOffset={4} className="z-30">
+                      <Menu.Popup className="w-max rounded-card border border-divider bg-surface p-3xs">
                         <Menu.Item
                           onClick={() => onRetry(image.clientUploadId)}
                           className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2"
@@ -95,10 +95,10 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                   type="button"
                   aria-label={`Remove ${image.file.name || "file"}`}
                   onClick={() => onRemove(image.clientUploadId)}
-                  className="absolute right-3xs top-3xs inline-flex min-h-control min-w-control items-start justify-end rounded-control p-2xs text-body"
+                  className="icon-button-glyph absolute right-3xs top-3xs inline-flex min-h-control min-w-control items-start justify-end rounded-control p-2xs text-body"
                 >
-                  <span className="inline-flex size-md items-center justify-center rounded-pill bg-surface">
-                    <IconX size={16} stroke={1.75} aria-hidden="true" />
+                  <span className="inline-flex size-lg items-center justify-center rounded-pill bg-surface">
+                    <IconX size={20} stroke={1.75} aria-hidden="true" />
                   </span>
                 </button>
               )}

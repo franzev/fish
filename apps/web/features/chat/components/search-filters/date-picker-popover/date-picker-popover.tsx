@@ -105,7 +105,7 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
                 type="button"
                 aria-label="Previous month"
                 onClick={() => moveMonth(-1)}
-                className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
+                className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
               >
                 <IconChevronLeft size={20} stroke={1.75} aria-hidden="true" />
               </button>
@@ -119,7 +119,7 @@ export function DatePickerPopover({ value, onChange, label }: DatePickerPopoverP
                 type="button"
                 aria-label="Next month"
                 onClick={() => moveMonth(1)}
-                className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
+                className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2"
               >
                 <IconChevronRight size={20} stroke={1.75} aria-hidden="true" />
               </button>

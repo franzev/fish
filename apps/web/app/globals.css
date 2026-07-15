@@ -68,6 +68,7 @@
   --color-error: light-dark(oklch(0.45 0.14 20), oklch(0.78 0.11 20));    /* soft rose/coral — not pure red */
   --color-warning: light-dark(oklch(0.42 0.12 80), oklch(0.78 0.12 80));  /* soft amber */
   --color-success: light-dark(oklch(0.40 0.11 150), oklch(0.75 0.12 150)); /* soft green */
+  --color-success-press: light-dark(oklch(0.34 0.11 150), oklch(0.82 0.10 150)); /* call acceptance hover/press — preserves strong on-primary contrast */
   --color-presence-online: light-dark(oklch(0.40 0.11 150), oklch(0.75 0.12 150));
   --color-presence-idle: light-dark(oklch(0.45 0.12 85), oklch(0.78 0.12 85));
   --color-presence-away: light-dark(oklch(0.45 0.13 55), oklch(0.76 0.12 55));
@@ -120,6 +121,8 @@
   --size-target-touch: 44px;      /* touch-first and frequently used targets */
   --size-control-primary: 56px;   /* focused primary actions                 */
   --size-control: var(--size-target-touch); /* default control compatibility */
+  --size-icon-button-glyph: 20px; /* one glyph size across every icon-only control */
+  --icon-button-stroke-width: 1.75;
   --size-chat-header: 64px;       /* shared pane header; accommodates two-line chat identity */
   /* Reserved height for the older-page feedback region (WR-07): sized to
      the tallest state (the paragraph-shaped loading skeleton) so idle / loading /
@@ -247,6 +250,14 @@
   --duration-progress: 500ms;
   --duration-skeleton: 1400ms;
 
+}
+
+@utility icon-button-glyph {
+  & svg {
+    width: var(--size-icon-button-glyph);
+    height: var(--size-icon-button-glyph);
+    stroke-width: var(--icon-button-stroke-width);
+  }
 }
 
 /* Status choices keep their indicator, copy, and selected marker aligned

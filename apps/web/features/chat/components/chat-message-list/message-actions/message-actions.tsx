@@ -108,7 +108,7 @@ export function MessageActions({
           onClick={onReply}
           className={cn(toolbarButtonClass, "pointer-coarse:hidden")}
         >
-          <IconMessageReply size={18} stroke={1.75} aria-hidden="true" />
+          <IconMessageReply size={20} stroke={1.75} aria-hidden="true" />
         </button>
       )}
       <EmojiPickerButton
@@ -116,7 +116,7 @@ export function MessageActions({
         onSelect={onReact}
         className={cn(toolbarButtonClass, "pointer-coarse:hidden")}
       >
-        <IconMoodSmile size={18} stroke={1.75} aria-hidden="true" />
+        <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
       </EmojiPickerButton>
       {mine && canEdit && (
         <button
@@ -125,7 +125,7 @@ export function MessageActions({
           onClick={onEdit}
           className={cn(toolbarButtonClass, "pointer-coarse:hidden")}
         >
-          <IconPencil size={18} stroke={1.75} aria-hidden="true" />
+          <IconPencil size={20} stroke={1.75} aria-hidden="true" />
         </button>
       )}
       <Popover.Root
@@ -225,7 +225,7 @@ export function MessageActions({
                       onClick={() => setView("actions")}
                       className={toolbarButtonClass}
                     >
-                      <IconArrowBackUp size={18} stroke={1.75} aria-hidden="true" />
+                      <IconArrowBackUp size={20} stroke={1.75} aria-hidden="true" />
                     </button>
                     <p className="text-ui-sm font-medium text-foreground">
                       Add a reaction

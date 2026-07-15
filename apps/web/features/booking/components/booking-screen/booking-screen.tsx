@@ -47,7 +47,7 @@ export function BookingScreen({
           variant="ghost"
           controlSize="square"
         >
-          <IconX size={24} stroke={1.75} aria-hidden="true" />
+          <IconX size={20} stroke={1.75} aria-hidden="true" />
         </Button>
       </header>
 

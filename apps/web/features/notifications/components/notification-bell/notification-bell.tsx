@@ -12,7 +12,7 @@ import { useOptionalNotifications } from "../notification-provider";
 function renderBellContents(unreadCount: number) {
   return (
     <>
-      <IconBell size={22} stroke={1.75} aria-hidden="true" />
+      <IconBell size={20} stroke={1.75} aria-hidden="true" />
       <CountBadge
         count={unreadCount}
         className="absolute -right-3xs -top-3xs"

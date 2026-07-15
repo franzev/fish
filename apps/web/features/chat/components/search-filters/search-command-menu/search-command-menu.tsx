@@ -108,7 +108,7 @@ export function SearchCommandMenu({
               type="button"
               aria-label="Clear search history"
               onClick={onClearHistory}
-              className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
+              className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
             >
               <IconTrash size={20} stroke={1.75} aria-hidden="true" />
             </button>
