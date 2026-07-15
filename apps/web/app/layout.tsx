@@ -21,6 +21,9 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "FISH",
   description: "English coaching that fits how your brain works.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default async function RootLayout({

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, waitFor, within } from "storybook/test";
 import { Card } from "@/components/ui/card";
 import { AppShell } from "./app-shell";
 
@@ -26,7 +27,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ClientHome: Story = {};
+export const ClientHome: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const logo = canvas.getByRole("img", { name: "FISH" });
+
+    await waitFor(() => {
+      expect(logo).toHaveProperty("complete", true);
+      expect(logo).toHaveProperty("naturalWidth");
+      expect((logo as HTMLImageElement).naturalWidth).toBeGreaterThan(0);
+    });
+
+    expect(getComputedStyle(canvas.getByText("Your coach will place the next step here.")).fontFamily)
+      .toContain("Lexend");
+    expect(getComputedStyle(canvas.getByRole("heading", { name: "Today" })).fontFamily)
+      .toContain("Fraunces");
+  },
+};
 
 export const CoachHome: Story = {
   args: {

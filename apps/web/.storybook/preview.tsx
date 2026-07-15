@@ -14,11 +14,17 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+const fontVariableClasses = `${lexend.variable} ${fraunces.variable}`;
+
+if (typeof document !== "undefined") {
+  document.documentElement.classList.add(...fontVariableClasses.split(" "));
+}
+
 const preview: Preview = {
   decorators: [
     (Story) => (
       <div
-        className={`${lexend.variable} ${fraunces.variable} p-lg bg-bg`}
+        className="font-sans p-lg bg-bg"
       >
         <Story />
       </div>
