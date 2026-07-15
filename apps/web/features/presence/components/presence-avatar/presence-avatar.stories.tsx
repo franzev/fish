@@ -20,7 +20,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Online: Story = {};
 export const Away: Story = { args: { status: "away", statusLabel: "Away" } };
-export const Busy: Story = { args: { status: "busy", statusLabel: "Busy" } };
+export const Busy: Story = {
+  args: { status: "busy", statusLabel: "Do not disturb" },
+};
 export const Offline: Story = { args: { status: "offline", statusLabel: "Offline" } };
 export const Invisible: Story = { args: { status: "invisible", statusLabel: "Invisible" } };
 export const Large: Story = { args: { size: "lg" } };

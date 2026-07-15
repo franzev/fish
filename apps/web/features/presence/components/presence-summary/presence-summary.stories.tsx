@@ -18,7 +18,10 @@ function renderWithStatus(status: PresenceSnapshot["status"], lastSeenAt = "2026
     };
     const repository: PresenceRepository = {
       listVisible: async () => ({ ok: true, data: [snapshot] }),
-      getOwnPreference: async () => ({ ok: true, data: "automatic" }),
+      getOwnPreference: async () => ({
+        ok: true,
+        data: { preference: "automatic", expiresAt: null },
+      }),
     };
     const realtime: PresenceRealtimeService = {
       startSession: () => ({ markActive: () => undefined, stop: () => undefined }),

@@ -13,6 +13,14 @@ const jsonHeaders = {
 };
 const commandSchema = z.object({
   mode: z.enum(["automatic", "away", "busy", "invisible"]),
+  durationSeconds: z.union([
+    z.literal(900),
+    z.literal(3_600),
+    z.literal(28_800),
+    z.literal(86_400),
+    z.literal(259_200),
+    z.null(),
+  ]).optional().default(null),
 });
 
 function calmError(code: string, error: string, status: number): Response {
@@ -51,6 +59,7 @@ Deno.serve(async (request) => {
 
   const { data, error } = await caller.rpc("set_presence_mode", {
     p_mode: parsed.data.mode,
+    p_duration_seconds: parsed.data.durationSeconds,
   });
   if (error) {
     console.error("presence command failed", { code: error.code });
@@ -68,6 +77,8 @@ Deno.serve(async (request) => {
     last_seen_at: string | null;
     revision: number;
     updated_at: string;
+    preference_mode: string;
+    preference_expires_at: string | null;
   };
   return Response.json({
     snapshot: {
@@ -77,6 +88,10 @@ Deno.serve(async (request) => {
       lastSeenAt: row.last_seen_at,
       revision: row.revision,
       updatedAt: row.updated_at,
+    },
+    setting: {
+      preference: row.preference_mode,
+      expiresAt: row.preference_expires_at,
     },
   }, { headers: jsonHeaders });
 });

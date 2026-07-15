@@ -2,18 +2,24 @@
 
 import { cn } from "@/lib/utils";
 import { Menu } from "@base-ui/react/menu";
-import type { ComponentProps } from "react";
+import { forwardRef, type ComponentProps, type ComponentRef } from "react";
 
 export const ActionMenuRoot = Menu.Root;
 export const ActionMenuTrigger = Menu.Trigger;
 export const ActionMenuRadioGroup = Menu.RadioGroup;
 export const ActionMenuRadioItem = Menu.RadioItem;
+export const ActionMenuGroup = Menu.Group;
+export const ActionMenuGroupLabel = Menu.GroupLabel;
 
 export type ActionMenuItemProps = ComponentProps<typeof Menu.Item>;
 
-export function ActionMenuItem({ className, ...props }: ActionMenuItemProps) {
+export const ActionMenuItem = forwardRef<
+  ComponentRef<typeof Menu.Item>,
+  ActionMenuItemProps
+>(function ActionMenuItem({ className, ...props }, ref) {
   return (
     <Menu.Item
+      ref={ref}
       className={cn(
         "flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[highlighted]:bg-surface-2",
         className
@@ -21,7 +27,7 @@ export function ActionMenuItem({ className, ...props }: ActionMenuItemProps) {
       {...props}
     />
   );
-}
+});
 
 export interface ActionMenuPopupProps
   extends Omit<ComponentProps<typeof Menu.Popup>, "className"> {

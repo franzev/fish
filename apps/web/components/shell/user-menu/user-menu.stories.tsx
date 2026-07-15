@@ -24,7 +24,10 @@ const repository: PresenceRepository = {
       }],
     };
   },
-  getOwnPreference: async () => ({ ok: true, data: "automatic" }),
+  getOwnPreference: async () => ({
+    ok: true,
+    data: { preference: "automatic", expiresAt: null },
+  }),
 };
 const realtime: PresenceRealtimeService = {
   subscribe: () => () => {},
@@ -112,7 +115,7 @@ export const MobileStatusPicker: Story = {
     const body = within(document.body);
     await userEvent.click(await body.findByRole("menuitem", { name: /Status/ }));
     await expect(
-      await body.findByRole("menuitemradio", { name: /Invisible/ })
+      await body.findByRole("menuitem", { name: /Invisible/ })
     ).toBeVisible();
   },
 };
@@ -124,7 +127,12 @@ export const CalmRetryGuidance: Story = {
     );
     const body = within(document.body);
     await userEvent.click(await body.findByRole("menuitem", { name: /Status/ }));
-    await userEvent.click(await body.findByRole("menuitemradio", { name: /Away/ }));
+    await userEvent.click(await body.findByRole("menuitem", { name: /Away/ }));
+    await userEvent.click(await body.findByRole("menuitem", { name: "Forever" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Account menu for Eli Ramos" })
+    );
+    await userEvent.click(await body.findByRole("menuitem", { name: /Status/ }));
     await expect(
       await body.findByText("Your status could not change. Try again.")
     ).toBeVisible();

@@ -1,6 +1,7 @@
 import type {
   EffectivePresenceStatus,
   PresencePreference,
+  PresencePreferenceSetting,
   PresenceRepository,
   PresenceSnapshot,
 } from "../contracts";
@@ -54,8 +55,11 @@ export class SupabasePresenceRepository implements PresenceRepository {
     return safely("presence.getOwnPreference", async () => {
       const response = await this.client
         .from("presence_preferences")
-        .select("mode")
-        .maybeSingle() as SupabaseResponse<{ mode: PresencePreference }>;
+        .select("mode, expires_at")
+        .maybeSingle() as SupabaseResponse<{
+          mode: PresencePreference;
+          expires_at: string | null;
+        }>;
       if (response.error) {
         return serviceFailure(mapSupabaseError(response.error, {
           code: "database",
@@ -64,7 +68,16 @@ export class SupabasePresenceRepository implements PresenceRepository {
           recoverable: true,
         }));
       }
-      return serviceSuccess(response.data?.mode ?? "automatic");
+      const setting: PresencePreferenceSetting = response.data && (
+        response.data.expires_at === null ||
+        Date.parse(response.data.expires_at) > Date.now()
+      )
+        ? {
+            preference: response.data.mode,
+            expiresAt: response.data.expires_at,
+          }
+        : { preference: "automatic", expiresAt: null };
+      return serviceSuccess(setting);
     });
   }
 }

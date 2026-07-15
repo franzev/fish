@@ -1,5 +1,17 @@
 export type PresencePreference = "automatic" | "away" | "busy" | "invisible";
 
+export type PresenceDurationSeconds =
+  | 900
+  | 3_600
+  | 28_800
+  | 86_400
+  | 259_200;
+
+export interface PresencePreferenceSetting {
+  preference: PresencePreference;
+  expiresAt: string | null;
+}
+
 export type EffectivePresenceStatus =
   | "online"
   | "idle"

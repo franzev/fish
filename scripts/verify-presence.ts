@@ -38,6 +38,10 @@ type PresenceCommandPayload = {
   snapshot?: {
     status: "online" | "idle" | "away" | "busy" | "offline";
   };
+  setting?: {
+    preference: "automatic" | "away" | "busy" | "invisible";
+    expiresAt: string | null;
+  };
   code?: string;
   error?: string;
 };
@@ -63,10 +67,11 @@ async function waitForCondition(
 async function setPresenceThroughEdge(
   session: Awaited<ReturnType<typeof signIn>>,
   mode: "automatic" | "away" | "busy" | "invisible",
+  durationSeconds: 900 | 3_600 | 28_800 | 86_400 | 259_200 | null = null,
 ) {
   const result = await session.client.functions.invoke<PresenceCommandPayload>(
     "presence-command",
-    { body: { mode } },
+    { body: { mode, durationSeconds } },
   );
   let payload = result.data;
   const context = result.error && "context" in result.error
@@ -84,6 +89,9 @@ async function main() {
   const client = await signIn(identities.client);
   const communityOnly = await signIn(identities.communityOnly);
   const admin = createClient(supabaseUrl!, serviceRoleKey!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const anonymous = createClient(supabaseUrl!, publishableKey!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const firstSession = crypto.randomUUID();
@@ -253,11 +261,37 @@ async function main() {
       communityEvents.every((event) => event.user_id !== client.userId),
     );
 
-    const edgeAway = await setPresenceThroughEdge(client, "away");
+    const anonymousCommand = await anonymous.rpc("set_presence_mode", {
+      p_mode: "away",
+      p_duration_seconds: 900,
+    });
     report(
-      "the browser status command updates presence through the Edge Function",
-      !edgeAway.error && edgeAway.payload?.snapshot?.status === "away",
+      "anonymous users cannot execute the presence command",
+      anonymousCommand.error?.code === "42501",
+      anonymousCommand.error?.message,
+    );
+
+    const edgeAway = await setPresenceThroughEdge(client, "away", 900);
+    report(
+      "the browser status command returns one atomic timed result",
+      !edgeAway.error &&
+        edgeAway.payload?.snapshot?.status === "away" &&
+        edgeAway.payload.setting?.preference === "away" &&
+        Date.parse(edgeAway.payload.setting.expiresAt ?? "") > Date.now(),
       edgeAway.payload?.error ?? edgeAway.error?.message,
+    );
+    await admin.from("presence_preferences")
+      .update({ expires_at: new Date(Date.now() - 1_000).toISOString() })
+      .eq("user_id", client.userId);
+    const expiredAway = await client.client.rpc("touch_presence_session", {
+      p_session_id: firstSession,
+      p_activity: true,
+      p_ended: false,
+    });
+    report(
+      "an expired timed status resolves back to Automatic",
+      expiredAway.data?.status === "online",
+      expiredAway.error?.message,
     );
     const edgeAutomatic = await setPresenceThroughEdge(client, "automatic");
     report(

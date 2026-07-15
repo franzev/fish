@@ -82,6 +82,7 @@ describe("supabasePresenceRealtimeService", () => {
       `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`
     );
     const onSnapshot = vi.fn();
+    const onPreference = vi.fn();
     const onRecovery = vi.fn();
     const onStatus = vi.fn();
 
@@ -89,7 +90,7 @@ describe("supabasePresenceRealtimeService", () => {
       userId,
       subjectIds,
       onSnapshot,
-      vi.fn(),
+      onPreference,
       onRecovery,
       onStatus
     );
@@ -135,6 +136,23 @@ describe("supabasePresenceRealtimeService", () => {
       status: "online",
       revision: 2,
     }));
+
+    preferenceChannel?.handlers
+      .find((handler) =>
+        handler.type === "broadcast" &&
+        handler.filter.event === "presence.preference.changed"
+      )
+      ?.callback({
+        payload: {
+          mode: "busy",
+          expiresAt: "2026-07-14T08:00:00.000Z",
+          revision: 3,
+        },
+      });
+    expect(onPreference).toHaveBeenCalledWith({
+      preference: "busy",
+      expiresAt: "2026-07-14T08:00:00.000Z",
+    }, 3);
 
     preferenceChannel?.handlers
       .find((handler) =>

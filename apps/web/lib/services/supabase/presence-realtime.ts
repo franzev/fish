@@ -11,6 +11,7 @@ import {
 } from "@fish/core/presence";
 import type {
   PresencePreference,
+  PresencePreferenceSetting,
   PresenceRealtimeService,
   PresenceSnapshot,
 } from "../contracts";
@@ -94,13 +95,28 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
     const preferenceChannel = client
       .channel(`presence:user:${userId}`, { config: { private: true } })
       .on("broadcast", { event: "presence.preference.changed" }, ({ payload }) => {
-        const value = payload as { mode?: unknown; revision?: unknown };
+        const value = payload as {
+          mode?: unknown;
+          expiresAt?: unknown;
+          revision?: unknown;
+        };
         if (
           typeof value.mode === "string" &&
           preferences.has(value.mode as PresencePreference) &&
+          (
+            value.expiresAt === undefined ||
+            value.expiresAt === null ||
+            typeof value.expiresAt === "string"
+          ) &&
           typeof value.revision === "number"
         ) {
-          onPreference(value.mode as PresencePreference, value.revision);
+          const setting: PresencePreferenceSetting = {
+            preference: value.mode as PresencePreference,
+            expiresAt: typeof value.expiresAt === "string"
+              ? value.expiresAt
+              : null,
+          };
+          onPreference(setting, value.revision);
         }
       })
       .on("broadcast", { event: "presence.subjects.changed" }, () => {

@@ -13,7 +13,7 @@ export const presenceLabels: Record<PresenceDisplayStatus, string> = {
   online: "Online",
   idle: "Idle",
   away: "Away",
-  busy: "Busy",
+  busy: "Do not disturb",
   invisible: "Invisible",
   offline: "Offline",
 };

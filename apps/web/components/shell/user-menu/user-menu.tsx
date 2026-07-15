@@ -2,10 +2,10 @@
 
 import { useSignOut } from "@/features/auth";
 import {
+  ActionMenuGroup,
+  ActionMenuGroupLabel,
   ActionMenuItem,
   ActionMenuPopup,
-  ActionMenuRadioGroup,
-  ActionMenuRadioItem,
   ActionMenuRoot,
   ActionMenuTrigger,
 } from "@/components/ui/action-menu";
@@ -14,10 +14,12 @@ import {
   PresenceIndicator,
   useOwnPresence,
 } from "@/features/presence";
-import type { PresencePreference } from "@fish/core/presence";
+import type {
+  PresenceDurationSeconds,
+  PresencePreference,
+} from "@fish/core/presence";
 import type { UserRole } from "@fish/core/roles";
 import {
-  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconLogout,
@@ -25,7 +27,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const statusOptions: ReadonlyArray<{
   preference: PresencePreference;
@@ -47,8 +49,8 @@ const statusOptions: ReadonlyArray<{
   },
   {
     preference: "busy",
-    label: "Busy",
-    detail: "Show that replies may take longer.",
+    label: "Do not disturb",
+    detail: "Show others that you don’t want interruptions.",
     status: "busy",
   },
   {
@@ -58,6 +60,21 @@ const statusOptions: ReadonlyArray<{
     status: "invisible",
   },
 ];
+
+const durationOptions: ReadonlyArray<{
+  label: string;
+  seconds: PresenceDurationSeconds | null;
+}> = [
+  { label: "15 minutes", seconds: 900 },
+  { label: "1 hour", seconds: 3_600 },
+  { label: "8 hours", seconds: 28_800 },
+  { label: "24 hours", seconds: 86_400 },
+  { label: "3 days", seconds: 259_200 },
+  { label: "Forever", seconds: null },
+];
+
+type StatusOption = (typeof statusOptions)[number];
+type MenuView = "account" | "status" | "duration";
 
 interface UserMenuProps {
   displayName: string;
@@ -86,15 +103,53 @@ export function UserMenu({
   const { signOut, notice } = useSignOut();
   const presence = useOwnPresence();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [statusOpen, setStatusOpen] = useState(false);
+  const [menuView, setMenuView] = useState<MenuView>("account");
+  const [pendingStatus, setPendingStatus] = useState<StatusOption | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const firstItemRef = useRef<HTMLDivElement | null>(null);
+  const restoreTriggerFocusRef = useRef(false);
   const showFriends = role === "client" && friendsNavEnabled;
 
-  async function chooseStatus(next: PresencePreference) {
-    const changed = await presence.setPreference(next);
-    if (!changed) return;
+  useEffect(() => {
+    if (menuOpen) firstItemRef.current?.focus();
+  }, [menuOpen, menuView]);
 
-    setStatusOpen(false);
+  useEffect(() => {
+    if (!menuOpen && restoreTriggerFocusRef.current) {
+      restoreTriggerFocusRef.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [menuOpen]);
+
+  function applyStatus(
+    preference: PresencePreference,
+    durationSeconds: PresenceDurationSeconds | null
+  ) {
+    restoreTriggerFocusRef.current = true;
+    setMenuView("account");
+    setPendingStatus(null);
     setMenuOpen(false);
+    void presence.setPreference(preference, durationSeconds);
+  }
+
+  function chooseDuration(
+    durationSeconds: PresenceDurationSeconds | null
+  ) {
+    if (!pendingStatus) return;
+    applyStatus(pendingStatus.preference, durationSeconds);
+  }
+
+  function chooseStatus(option: StatusOption) {
+    if (option.preference === "automatic") {
+      applyStatus("automatic", null);
+      return;
+    }
+    openDuration(option);
+  }
+
+  function openDuration(option: StatusOption) {
+    setPendingStatus(option);
+    setMenuView("duration");
   }
 
   return (
@@ -102,10 +157,14 @@ export function UserMenu({
       open={menuOpen}
       onOpenChange={(open) => {
         setMenuOpen(open);
-        if (!open) setStatusOpen(false);
+        if (!open) {
+          setMenuView("account");
+          setPendingStatus(null);
+        }
       }}
     >
       <ActionMenuTrigger
+        ref={triggerRef}
         aria-label={`Account menu for ${displayName}`}
         className="flex min-h-control min-w-control flex-none items-center justify-end rounded-control px-2xs md:max-w-control"
       >
@@ -120,39 +179,71 @@ export function UserMenu({
         />
       </ActionMenuTrigger>
       <ActionMenuPopup>
-            {statusOpen ? (
+            {menuView === "duration" && pendingStatus ? (
               <>
                 <ActionMenuItem
+                  ref={firstItemRef}
                   closeOnClick={false}
-                  onClick={() => setStatusOpen(false)}
+                  onClick={() => setMenuView("status")}
+                >
+                  <IconChevronLeft size={18} stroke={1.75} aria-hidden="true" />
+                  Back to status
+                </ActionMenuItem>
+                <ActionMenuGroup>
+                  <ActionMenuGroupLabel className="block px-sm py-xs text-ui-sm text-body">
+                    Show {pendingStatus.label.toLowerCase()} for:
+                  </ActionMenuGroupLabel>
+                  {durationOptions.map((duration) => (
+                    <ActionMenuItem
+                      key={duration.label}
+                      closeOnClick={false}
+                      disabled={presence.changing}
+                      onClick={() => chooseDuration(duration.seconds)}
+                    >
+                      {duration.label}
+                    </ActionMenuItem>
+                  ))}
+                </ActionMenuGroup>
+                {presence.notice && <p className="px-sm py-2xs text-ui-sm text-notice">{presence.notice}</p>}
+              </>
+            ) : menuView === "status" ? (
+              <>
+                <ActionMenuItem
+                  ref={firstItemRef}
+                  closeOnClick={false}
+                  onClick={() => setMenuView("account")}
                 >
                   <IconChevronLeft size={18} stroke={1.75} aria-hidden="true" />
                   Back to account
                 </ActionMenuItem>
-                <ActionMenuRadioGroup aria-label="Status" value={presence.preference}>
+                <ActionMenuGroup aria-label="Status">
                   {statusOptions.map((option) => (
-                    <ActionMenuRadioItem
+                    <ActionMenuItem
                       key={option.preference}
-                      value={option.preference}
                       closeOnClick={false}
                       disabled={presence.changing}
-                      className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
-                      onClick={() => void chooseStatus(option.preference)}
+                      aria-current={presence.preference === option.preference ? "true" : undefined}
+                      className="grid min-h-control cursor-pointer grid-cols-status-option items-center gap-sm rounded-control px-sm py-xs text-foreground aria-current:bg-surface-2 data-[disabled]:cursor-wait data-[disabled]:opacity-60 data-[highlighted]:bg-surface-2"
+                      onClick={() => chooseStatus(option)}
                     >
                       <PresenceIndicator status={option.status} label={option.label} size={18} />
                       <span className="min-w-0">
                         <span className="block text-ui-sm">{option.label}</span>
                         <span className="block text-ui-xs text-body">{option.detail}</span>
                       </span>
-                      {presence.preference === option.preference && <IconCheck size={18} stroke={2} aria-label="Selected" />}
-                    </ActionMenuRadioItem>
+                      <span className="flex items-center">
+                        {option.preference !== "automatic" && (
+                          <IconChevronRight size={18} stroke={1.75} aria-hidden="true" />
+                        )}
+                      </span>
+                    </ActionMenuItem>
                   ))}
-                </ActionMenuRadioGroup>
+                </ActionMenuGroup>
                 {presence.notice && <p className="px-sm py-2xs text-ui-sm text-notice">{presence.notice}</p>}
               </>
             ) : (
               <>
-                <ActionMenuItem render={<Link href="/profile" />}>
+                <ActionMenuItem ref={firstItemRef} render={<Link href="/profile" />}>
                   <IconUser size={20} stroke={1.75} aria-hidden="true" />
                   Profile
                 </ActionMenuItem>
@@ -162,7 +253,7 @@ export function UserMenu({
                     Friends
                   </ActionMenuItem>
                 )}
-                <ActionMenuItem closeOnClick={false} onClick={() => setStatusOpen(true)}>
+                <ActionMenuItem closeOnClick={false} onClick={() => setMenuView("status")}>
                   <PresenceIndicator status={presence.displayStatus} label={presence.displayLabel} size={18} />
                   <span className="flex min-w-0 flex-1 items-baseline justify-between gap-sm">
                     <span>Status</span>

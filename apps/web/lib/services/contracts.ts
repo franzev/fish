@@ -1,8 +1,9 @@
 import type { ServiceResult } from "./errors";
 import type { ChatGif, ChatStickerId } from "@fish/core/chat";
 import type {
-  EffectivePresenceStatus,
+  PresenceDurationSeconds,
   PresencePreference,
+  PresencePreferenceSetting,
   PresenceSnapshot,
 } from "@fish/core/presence";
 import type {
@@ -238,11 +239,17 @@ export interface ChatSearchInput {
 export interface ChatSearchRepository {
   search(input: ChatSearchInput): Promise<ChatOperationResult<ChatSearchResult>>;
 }
-export type { EffectivePresenceStatus, PresencePreference, PresenceSnapshot };
+export type {
+  EffectivePresenceStatus,
+  PresenceDurationSeconds,
+  PresencePreference,
+  PresencePreferenceSetting,
+  PresenceSnapshot,
+} from "@fish/core/presence";
 
 export interface PresenceRepository {
   listVisible(): Promise<ServiceResult<PresenceSnapshot[]>>;
-  getOwnPreference(): Promise<ServiceResult<PresencePreference>>;
+  getOwnPreference(): Promise<ServiceResult<PresencePreferenceSetting>>;
 }
 
 export interface DatabaseServices {
@@ -344,11 +351,18 @@ export interface NotificationRealtimeService {
 }
 
 export type PresenceCommandResult =
-  | { ok: true; snapshot: PresenceSnapshot }
+  | {
+      ok: true;
+      snapshot: PresenceSnapshot;
+      setting: PresencePreferenceSetting;
+    }
   | { ok: false; code: string; notice: string };
 
 export interface PresenceCommandService {
-  setMode(mode: PresencePreference): Promise<PresenceCommandResult>;
+  setMode(
+    mode: PresencePreference,
+    durationSeconds?: PresenceDurationSeconds | null
+  ): Promise<PresenceCommandResult>;
 }
 
 export interface PresenceRealtimeService {
@@ -356,7 +370,10 @@ export interface PresenceRealtimeService {
     userId: string,
     subjectIds: string[],
     onSnapshot: (snapshot: PresenceSnapshot) => void,
-    onPreference: (preference: PresencePreference, revision: number) => void,
+    onPreference: (
+      setting: PresencePreferenceSetting,
+      revision: number
+    ) => void,
     onRecovery?: () => void,
     onStatus?: (status: "connected" | "disconnected") => void
   ): () => void;

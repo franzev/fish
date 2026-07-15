@@ -1358,16 +1358,19 @@ export type Database = {
       }
       presence_preferences: {
         Row: {
+          expires_at: string | null
           mode: Database["public"]["Enums"]["presence_mode"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          expires_at?: string | null
           mode?: Database["public"]["Enums"]["presence_mode"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          expires_at?: string | null
           mode?: Database["public"]["Enums"]["presence_mode"]
           updated_at?: string
           user_id?: string
@@ -2546,18 +2549,14 @@ export type Database = {
         }
       }
       set_presence_mode: {
-        Args: { p_mode: Database["public"]["Enums"]["presence_mode"] }
-        Returns: {
-          last_heartbeat_at: string | null
-          last_seen_at: string | null
-          revision: number
-          status: Database["public"]["Enums"]["presence_status"]
-          updated_at: string
-          user_id: string
+        Args: {
+          p_duration_seconds?: number
+          p_mode: Database["public"]["Enums"]["presence_mode"]
         }
+        Returns: Database["public"]["CompositeTypes"]["presence_command_result"]
         SetofOptions: {
           from: "*"
-          to: "presence_snapshots"
+          to: "presence_command_result"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2648,7 +2647,16 @@ export type Database = {
       presence_status: "online" | "idle" | "away" | "busy" | "offline"
     }
     CompositeTypes: {
-      [_ in never]: never
+      presence_command_result: {
+        last_heartbeat_at: string | null
+        last_seen_at: string | null
+        preference_expires_at: string | null
+        preference_mode: Database["public"]["Enums"]["presence_mode"] | null
+        revision: number | null
+        status: Database["public"]["Enums"]["presence_status"] | null
+        updated_at: string | null
+        user_id: string | null
+      }
     }
   }
 }
