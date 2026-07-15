@@ -32,7 +32,7 @@ export function CallButton({
         type="button"
         variant="secondary"
         fullWidth
-        loading={busy}
+        disabled={busy}
         aria-label={label}
         onClick={() => void startCall(recipientId, recipientName, kind)}
       >
@@ -50,7 +50,7 @@ export function CallButton({
         type="button"
         label={label}
         tooltipSide="bottom"
-        loading={busy}
+        disabled={busy}
         className="shrink-0"
         onClick={() => void startCall(recipientId, recipientName, kind)}
         icon={<CallIcon size={20} stroke={1.75} aria-hidden="true" />}

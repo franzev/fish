@@ -42,24 +42,32 @@ describe("CallButton", () => {
     });
   });
 
-  it("keeps the action stable while another call command is busy", () => {
-    useCallMock.mockReturnValue({
-      startCall: startCallMock,
-      busy: true,
-    });
+  it.each([
+    ["audio", "Voice call Coach Mina", "Call"],
+    ["video", "Video call Coach Mina", "Video"],
+  ] as const)(
+    "disables the labeled %s action without replacing its content while busy",
+    (kind, label, content) => {
+      useCallMock.mockReturnValue({
+        startCall: startCallMock,
+        busy: true,
+      });
 
-    render(
-      <CallButton
-        recipientId="coach-1"
-        recipientName="Coach Mina"
-        kind="video"
-      />
-    );
+      render(
+        <CallButton
+          recipientId="coach-1"
+          recipientName="Coach Mina"
+          kind={kind}
+          presentation="labeled"
+        />
+      );
 
-    expect(
-      screen.getByRole("button", { name: "Video call Coach Mina" })
-    ).toHaveAttribute("aria-busy", "true");
-  });
+      const button = screen.getByRole("button", { name: label });
+      expect(button).toBeDisabled();
+      expect(button).toHaveTextContent(content);
+      expect(button).not.toHaveAttribute("aria-busy");
+    }
+  );
 
   it("uses calm labeled controls in profile context", () => {
     render(
