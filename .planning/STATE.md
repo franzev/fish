@@ -56,6 +56,7 @@ None.
 | 260711-gxf | Refactor the Next.js web folder structure to consistent feature ownership and hardened server-client boundaries while preserving 100% existing functionality | 2026-07-11 | c88b44c8 | [260711-gxf-refactor-the-next-js-web-folder-structur](./quick/260711-gxf-refactor-the-next-js-web-folder-structur/) |
 | 260711-htb | Refactor the codebase to follow clean architecture principles with proper abstraction seams, adapters, dependency inversion, dependency injection, provider-neutral interfaces, and no behavior changes; preserve existing work and ensure all tests pass | 2026-07-11 | 436e7da1 | [260711-htb-refactor-the-codebase-to-follow-clean-ar](./quick/260711-htb-refactor-the-codebase-to-follow-clean-ar/) |
 | 4 | Remove completed-call notifications from the attention inbox | 2026-07-15 | d9e8eb3c | — |
+| 5 | Hide completed-call notifications before the database migration is applied | 2026-07-15 | f8ec69a1 | — |
 
 Last activity: 2026-07-11 - Completed quick task 260711-htb: Refactor the codebase to follow clean architecture principles with proper abstraction seams, adapters, dependency inversion, dependency injection, provider-neutral interfaces, and no behavior changes; preserve existing work and ensure all tests pass.
 
