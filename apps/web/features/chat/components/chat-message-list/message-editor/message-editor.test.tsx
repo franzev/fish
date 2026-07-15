@@ -27,14 +27,8 @@ describe("MessageEditor", () => {
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
     const saveButton = screen.getByRole("button", { name: "Save changes" });
 
-    expect(cancelButton).toHaveAttribute(
-      "title",
-      "Cancel"
-    );
-    expect(saveButton).toHaveAttribute(
-      "title",
-      "Save changes"
-    );
+    expect(cancelButton).toHaveAccessibleName("Cancel");
+    expect(saveButton).toHaveAccessibleName("Save changes");
     expect(cancelButton).toHaveClass("size-control", "min-h-control", "px-0");
     expect(saveButton).toHaveClass("size-control", "min-h-control", "px-0");
 

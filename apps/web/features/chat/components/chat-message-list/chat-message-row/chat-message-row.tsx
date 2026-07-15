@@ -167,7 +167,7 @@ export function ChatMessageRow({
               ? "w-fit max-w-message"
               : "max-w-message";
 
-  const rowContent = (
+  const messagePrimaryContent = (
     <>
       {isCommunity && replyMessage && (
         <div className="relative mb-2xs flex items-center gap-2xs self-stretch text-ui-xs text-muted">
@@ -249,21 +249,28 @@ export function ChatMessageRow({
           <MessageBody body={visibleMessageBody(message)} mine={mine} />
         </div>
       )}
+    </>
+  );
+
+  const messageActions = showMessageActions ? (
+    <MessageActions
+      mine={mine}
+      layout={isCommunity ? "community" : "direct"}
+      canEdit={editing.enabled && Boolean(message.body.trim())}
+      canDelete={actions.canDelete}
+      canReportGif={Boolean(message.gif)}
+      onReply={() => actions.reply(message)}
+      onReact={(emoji) => void actions.toggleReaction(message, emoji)}
+      onEdit={() => editing.start(message)}
+      onDelete={() => actions.delete(message)}
+      onReportGif={() => void actions.reportGif(message)}
+    />
+  ) : null;
+
+  const messageSupplementalContent = (
+    <>
       {message.editedAt && !message.deletedAt && !isEditing && (
         <p className="mt-2xs text-ui-xs text-muted">Edited</p>
-      )}
-      {showMessageActions && (
-        <MessageActions
-          mine={mine}
-          canEdit={editing.enabled && Boolean(message.body.trim())}
-          canDelete={actions.canDelete}
-          canReportGif={Boolean(message.gif)}
-          onReply={() => actions.reply(message)}
-          onReact={(emoji) => void actions.toggleReaction(message, emoji)}
-          onEdit={() => editing.start(message)}
-          onDelete={() => actions.delete(message)}
-          onReportGif={() => void actions.reportGif(message)}
-        />
       )}
       <Reactions
         reactions={message.reactions}
@@ -303,6 +310,14 @@ export function ChatMessageRow({
           </>
         )}
       </div>
+    </>
+  );
+
+  const communityRowContent = (
+    <>
+      {messagePrimaryContent}
+      {messageActions}
+      {messageSupplementalContent}
     </>
   );
 
@@ -363,7 +378,7 @@ export function ChatMessageRow({
               isFocused && "bg-chat-active hover:bg-chat-active"
             )}
           >
-            {rowContent}
+            {communityRowContent}
           </CommunityMessageRowLayout>
         ) : (
           <>
@@ -381,12 +396,22 @@ export function ChatMessageRow({
               ))}
             <div
               className={cn(
-                "relative flex flex-col",
+                "flex flex-col",
                 messageSurfaceWidthClass,
                 mine && "items-end"
               )}
             >
-              {rowContent}
+              <div
+                data-message-action-anchor="direct"
+                className={cn(
+                  "relative flex w-full flex-col",
+                  mine && "items-end"
+                )}
+              >
+                {messagePrimaryContent}
+                {messageActions}
+              </div>
+              {messageSupplementalContent}
             </div>
           </>
         )}

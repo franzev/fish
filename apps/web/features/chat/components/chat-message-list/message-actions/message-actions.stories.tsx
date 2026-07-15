@@ -15,6 +15,7 @@ const meta = {
   ],
   args: {
     mine: false,
+    layout: "direct",
     canEdit: false,
     canDelete: false,
     canReportGif: false,
@@ -39,6 +40,10 @@ export const ReceivedMessage: Story = {};
 
 export const OwnEditableMessage: Story = {
   args: { mine: true, canEdit: true, canDelete: true },
+};
+
+export const CommunityMessage: Story = {
+  args: { layout: "community" },
 };
 
 export const ReportableGif: Story = {

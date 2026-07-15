@@ -341,7 +341,7 @@ function renderBlock(block: BlockToken, key: string, mine?: boolean): ReactNode 
     }
     case "blockquote":
       return (
-        <blockquote key={key} className="mt-sm border-l-2 border-current/30 pl-sm text-current/90">
+        <blockquote key={key} className="mt-sm rounded-control border border-current/30 px-sm py-xs text-current/90">
           {renderLines(block.lines, key, mine)}
         </blockquote>
       );

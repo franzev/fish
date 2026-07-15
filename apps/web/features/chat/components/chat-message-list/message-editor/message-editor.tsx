@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 import { chatLimits } from "@fish/core/chat";
 import { IconCheck, IconX } from "@tabler/icons-react";
@@ -108,29 +108,22 @@ export function MessageEditor({
           Edit message
         </label>
         <div className="flex shrink-0 gap-2xs">
-          <Button
+          <IconButton
             type="button"
-            variant="ghost"
-            controlSize="square"
-            fullWidth={false}
+            appearance="ghost"
             disabled={saving}
             onClick={onCancel}
-            aria-label="Cancel"
-            title="Cancel"
-          >
-            <IconX size={20} stroke={1.75} aria-hidden="true" />
-          </Button>
-          <Button
+            label="Cancel"
+            icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+          />
+          <IconButton
             type="submit"
-            controlSize="square"
-            fullWidth={false}
             disabled={!canSave}
             loading={saving}
-            aria-label="Save changes"
-            title="Save changes"
-          >
-            <IconCheck size={20} stroke={1.75} aria-hidden="true" />
-          </Button>
+            label="Save changes"
+            appearance="solid"
+            icon={<IconCheck size={20} stroke={1.75} aria-hidden="true" />}
+          />
         </div>
       </div>
       <textarea

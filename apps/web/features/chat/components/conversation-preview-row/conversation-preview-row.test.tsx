@@ -21,6 +21,7 @@ describe("ConversationPreviewRow", () => {
     const link = screen.getByRole("link", { name: /Gwyn/ });
     expect(link).toHaveAttribute("href", "/messages/conversation-1");
     expect(link).toHaveAttribute("aria-current", "page");
+    expect(link).toHaveClass("items-center");
     expect(screen.getByText("How did practice feel?")).toBeVisible();
     expect(screen.getByLabelText("3 unread")).toBeVisible();
     fireEvent.click(link);

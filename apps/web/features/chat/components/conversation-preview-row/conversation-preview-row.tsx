@@ -46,7 +46,7 @@ export function ConversationPreviewRow({
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
       className={cn(
-        "flex min-h-control min-w-0 items-start gap-sm transition-colors hover:bg-surface-2",
+        "flex min-h-control min-w-0 items-center gap-sm transition-colors hover:bg-surface-2",
         presentation === "rail"
           ? "rounded-control p-xs text-body hover:bg-surface-3"
           : "px-md py-md",

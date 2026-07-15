@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import {
@@ -8,6 +9,7 @@ import {
   IconDots,
   IconFlag,
   IconMessageReply,
+  IconMoodPlus,
   IconMoodSmile,
   IconPencil,
   IconTrash,
@@ -22,6 +24,7 @@ export interface MessageActionResult {
 
 export interface MessageActionsProps {
   mine: boolean;
+  layout: "direct" | "community";
   canEdit: boolean;
   canDelete: boolean;
   canReportGif: boolean;
@@ -34,11 +37,6 @@ export interface MessageActionsProps {
 
 type MoreView = "actions" | "reactions" | "delete";
 
-const toolbarButtonClass = cn(
-  buttonVariants({ variant: "ghost", controlSize: "square" }),
-  "hover:bg-surface-2"
-);
-
 const popoverActionClass =
   "flex min-h-control w-full items-center gap-sm rounded-control px-sm text-left text-ui-sm text-foreground hover:bg-surface-2";
 
@@ -46,6 +44,7 @@ const popoverActionClass =
  *  every action available behind one persistent touch-friendly trigger. */
 export function MessageActions({
   mine,
+  layout,
   canEdit,
   canDelete,
   canReportGif,
@@ -95,39 +94,48 @@ export function MessageActions({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-3xs rounded-control border border-divider bg-surface p-3xs opacity-0 transition-opacity",
-        mine ? "right-full mr-xs" : "left-full ml-xs",
+        "pointer-events-none absolute z-10 flex h-fit items-center gap-3xs rounded-control border border-divider bg-surface p-3xs opacity-0 transition-opacity",
+        layout === "community"
+          ? "-top-sm right-md"
+          : cn(
+              "inset-y-0 my-auto",
+              mine ? "right-full mr-xs" : "left-full ml-xs"
+            ),
         "focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100",
         "pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
         open && "pointer-events-auto opacity-100"
       )}
     >
       {!mine && (
-        <button
-          type="button"
-          aria-label="Reply to message"
+        <IconButton
+          label="Reply to message"
+          appearance="ghost"
+          tooltip
           onClick={onReply}
-          className={cn(toolbarButtonClass, "pointer-coarse:hidden")}
-        >
-          <IconMessageReply size={20} stroke={1.75} aria-hidden="true" />
-        </button>
+          className="pointer-coarse:hidden"
+          icon={<IconMessageReply size={20} stroke={1.75} aria-hidden="true" />}
+        />
       )}
       <EmojiPickerButton
         label="Add a reaction"
         onSelect={onReact}
-        className={cn(toolbarButtonClass, "pointer-coarse:hidden")}
+        className="pointer-coarse:hidden"
       >
-        <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
+        {layout === "community" ? (
+          <IconMoodPlus size={20} stroke={1.75} aria-hidden="true" />
+        ) : (
+          <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
+        )}
       </EmojiPickerButton>
       {mine && canEdit && (
-        <button
-          type="button"
-          aria-label="Edit message"
+        <IconButton
+          label="Edit message"
+          appearance="ghost"
+          tooltip
           onClick={onEdit}
-          className={cn(toolbarButtonClass, "pointer-coarse:hidden")}
-        >
-          <IconPencil size={20} stroke={1.75} aria-hidden="true" />
-        </button>
+          className="pointer-coarse:hidden"
+          icon={<IconPencil size={20} stroke={1.75} aria-hidden="true" />}
+        />
       )}
       <Popover.Root
         open={open}
@@ -141,14 +149,18 @@ export function MessageActions({
         }}
       >
         <Popover.Trigger
-          aria-label="More actions for message"
-          className={cn(
-            toolbarButtonClass,
-            !mine && !canReportGif && "pointer-fine:hidden"
-          )}
-        >
-          <IconDots size={20} stroke={1.75} aria-hidden="true" />
-        </Popover.Trigger>
+          render={
+            <IconButton
+              label="More actions for message"
+              appearance="ghost"
+              tooltip
+              className={cn(
+                !mine && !canReportGif && "pointer-fine:hidden"
+              )}
+              icon={<IconDots size={20} stroke={1.75} aria-hidden="true" />}
+            />
+          }
+        />
         <Popover.Portal>
           <Popover.Positioner
             side="top"
@@ -220,14 +232,19 @@ export function MessageActions({
               {view === "reactions" && (
                 <div className="flex h-full min-h-0 flex-col">
                   <div className="flex min-h-control shrink-0 items-center gap-xs border-b border-divider px-xs">
-                    <button
-                      type="button"
-                      aria-label="Back to message actions"
+                    <IconButton
+                      label="Back to message actions"
+                      appearance="ghost"
+                      tooltip
                       onClick={() => setView("actions")}
-                      className={toolbarButtonClass}
-                    >
-                      <IconArrowBackUp size={20} stroke={1.75} aria-hidden="true" />
-                    </button>
+                      icon={
+                        <IconArrowBackUp
+                          size={20}
+                          stroke={1.75}
+                          aria-hidden="true"
+                        />
+                      }
+                    />
                     <p className="text-ui-sm font-medium text-foreground">
                       Add a reaction
                     </p>
