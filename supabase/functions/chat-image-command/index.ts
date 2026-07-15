@@ -180,7 +180,16 @@ Deno.serve(async (request) => {
     const sourceMimeType = String(command.sourceMimeType ?? "");
     const sourceByteSize = Number(command.sourceByteSize ?? 0);
     const extension = originalName.split(".").pop()?.toLowerCase() ?? "";
-    if (!sourceExtensions[sourceMimeType]?.includes(extension)) {
+    // Photo pickers may decode or transcode an image while retaining the
+    // source asset's filename (for example, JPEG content named IMG_1234.HEIC).
+    // Images are normalized to WebP by the client and verified again from
+    // their uploaded bytes below, so their original extension is not an
+    // authoritative content-type boundary. Keep the filename check for files,
+    // which are uploaded without client-side normalization.
+    if (
+      !sourceMimeType.startsWith("image/") &&
+      !sourceExtensions[sourceMimeType]?.includes(extension)
+    ) {
       return calmError("unsupported_type", "That file name does not match its selected type.", 400);
     }
     const { data, error } = await caller.rpc("initialize_chat_image_upload", {
