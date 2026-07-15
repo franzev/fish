@@ -19,6 +19,7 @@ export const avatarVariants = cva(
         sm: "size-8 text-ui-xs",
         md: "size-10 text-ui",
         lg: "size-14 text-copy",
+        profile: "size-profile-avatar text-heading-sm",
       },
     },
     defaultVariants: {

@@ -11,6 +11,9 @@ describe("Avatar", () => {
     expect(avatarVariants({ size: "sm" })).toContain("size-8");
     expect(avatarVariants({ size: "md" })).toContain("size-10");
     expect(avatarVariants({ size: "lg" })).toContain("size-14");
+    expect(avatarVariants({ size: "profile" })).toContain(
+      "size-profile-avatar"
+    );
   });
 
   it("applies the requested size class to the rendered element", () => {

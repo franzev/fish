@@ -15,7 +15,11 @@ vi.mock("@/features/presence/components/presence-summary/presence-summary", () =
   PresenceSummary: () => <span>Online</span>,
 }));
 vi.mock("@/features/friends", () => ({
-  FriendSafetyActions: () => <button type="button">Remove friend</button>,
+  FriendConversationActions: ({ className }: { className?: string }) => (
+    <button type="button" className={className}>
+      More actions for Sam Okafor
+    </button>
+  ),
 }));
 vi.mock("@/features/calls", () => ({
   CallEntryAction: ({ label, recipientName }: { label: string; recipientName: string }) => (
@@ -50,8 +54,15 @@ describe("FriendDetailPage", () => {
   it("offers audio and video calls for an accepted friend", async () => {
     render(await FriendDetailPage({ params: Promise.resolve({ id: "client-2" }) }));
 
-    expect(screen.getByRole("button", { name: "Call Sam Okafor" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Audio call" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Video call Sam Okafor" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "More actions for Sam Okafor" })
+    ).toHaveClass("-mr-sm");
+    expect(screen.getByRole("link", { name: "Friends" })).toHaveClass(
+      "-ml-md"
+    );
+    expect(screen.queryByRole("button", { name: "Unfriend" })).toBeNull();
     expect(screen.getByRole("link", { name: "Message Sam Okafor" })).toHaveAttribute(
       "href",
       "/messages/11111111-1111-4111-8111-111111111111"

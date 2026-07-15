@@ -12,7 +12,7 @@ const meta = {
   argTypes: {
     size: {
       control: "inline-radio",
-      options: ["xs", "sm", "md", "lg"],
+      options: ["xs", "sm", "md", "lg", "profile"],
     },
   },
 } satisfies Meta<typeof Avatar>;
@@ -43,5 +43,11 @@ export const ExtraSmall: Story = {
 export const Large: Story = {
   args: {
     size: "lg",
+  },
+};
+
+export const Profile: Story = {
+  args: {
+    size: "profile",
   },
 };

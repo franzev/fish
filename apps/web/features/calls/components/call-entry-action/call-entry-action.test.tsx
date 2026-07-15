@@ -49,4 +49,25 @@ describe("CallEntryAction", () => {
       );
     });
   });
+
+  it("groups equally quiet audio and video controls in the paired presentation", () => {
+    render(
+      <CallEntryAction
+        recipientId="friend-1"
+        recipientName="Sam Okafor"
+        label="Audio call"
+        variant="secondary"
+        presentation="paired"
+      />
+    );
+
+    const group = screen.getByRole("group", { name: "Call Sam Okafor" });
+    expect(group).toHaveClass("grid-cols-2");
+    expect(screen.getByRole("button", { name: "Audio call" })).toHaveClass(
+      "bg-surface-2"
+    );
+    expect(
+      screen.getByRole("button", { name: "Video call Sam Okafor" })
+    ).toHaveClass("bg-surface-2");
+  });
 });

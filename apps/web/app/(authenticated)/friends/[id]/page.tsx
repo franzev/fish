@@ -1,16 +1,16 @@
 import { Alert } from "@/components/ui/alert";
-import { FriendSafetyActions } from "@/features/friends";
+import { Button } from "@/components/ui/button";
+import { FriendConversationActions } from "@/features/friends";
 import {
   friendsFeatureEnabled,
   getFriendDetailData,
 } from "@/features/friends/server";
 import { authRedirects } from "@/features/auth/redirects";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/features/chat";
 import { PresenceSummary } from "@/features/presence/components/presence-summary/presence-summary";
 import { CallEntryAction } from "@/features/calls";
-import { Button } from "@/components/ui/button";
+import { IconArrowLeft, IconMessage } from "@tabler/icons-react";
 
 export default async function FriendDetailPage({
   params,
@@ -32,39 +32,59 @@ export default async function FriendDetailPage({
 
   if (!data.friend) {
     return (
-      <div className="mx-auto flex w-full max-w-form flex-col gap-md">
+      <div className="mx-auto flex w-full max-w-form flex-col gap-lg">
         <Alert tone="notice">This person isn&apos;t in your friends.</Alert>
-        <p className="text-center text-ui-sm text-muted">
-          <Link href="/friends" className="text-body underline">
+        <Button href="/friends" variant="primary" fullWidth>
+          <span className="inline-flex items-center gap-xs">
+            <IconArrowLeft size={20} stroke={1.75} aria-hidden="true" />
             Back to friends
-          </Link>
-        </p>
+          </span>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-form">
-      <div className="mb-xs flex items-center gap-sm">
+    <div className="mx-auto flex w-full max-w-form flex-col gap-lg">
+      <header className="flex items-center justify-between gap-md">
+        <Button href="/friends" variant="ghost" className="-ml-md">
+          <span className="inline-flex items-center gap-xs">
+            <IconArrowLeft size={20} stroke={1.75} aria-hidden="true" />
+            Friends
+          </span>
+        </Button>
+        <FriendConversationActions
+          friend={data.friend.friend}
+          className="-mr-sm"
+        />
+      </header>
+
+      <section
+        aria-labelledby="friend-profile-name"
+        className="flex flex-col items-center text-center"
+      >
         <Avatar
           profileId={data.friend.friend.id}
           src={data.friend.friend.avatarUrl ?? undefined}
           name={data.friend.friend.displayName}
-          size="lg"
+          size="profile"
           alt=""
         />
-        <span className="flex min-w-0 flex-col gap-3xs">
-          <h1 className="text-heading-sm">{data.friend.friend.displayName}</h1>
-          <PresenceSummary
-            userId={data.friend.friend.id}
-            showLastSeen
-          />
-        </span>
-      </div>
-      <p className="mb-lg text-ui-sm text-muted">
-        @{data.friend.friend.username}
-      </p>
-      <div className="flex flex-col gap-lg">
+        <h1
+          id="friend-profile-name"
+          className="mt-md max-w-full text-balance text-heading-sm"
+        >
+          {data.friend.friend.displayName}
+        </h1>
+        <p className="mt-2xs max-w-full truncate text-ui-sm text-muted">
+          @{data.friend.friend.username}
+        </p>
+        <div className="mt-xs text-ui-sm">
+          <PresenceSummary userId={data.friend.friend.id} showLastSeen />
+        </div>
+      </section>
+
+      <div className="mt-md flex flex-col gap-md">
         {data.conversationId && (
           <Button
             href={`/messages/${data.conversationId}`}
@@ -72,22 +92,20 @@ export default async function FriendDetailPage({
             variant="primary"
             fullWidth
           >
-            Message
+            <span className="inline-flex items-center gap-xs">
+              <IconMessage size={20} stroke={1.75} aria-hidden="true" />
+              Message
+            </span>
           </Button>
         )}
         <CallEntryAction
           recipientId={data.friend.friend.id}
           recipientName={data.friend.friend.displayName}
-          label={`Call ${data.friend.friend.displayName}`}
+          label="Audio call"
           variant="secondary"
+          presentation="paired"
         />
-        <FriendSafetyActions friend={data.friend.friend} />
       </div>
-      <p className="mt-lg text-center text-ui-sm text-muted">
-        <Link href="/friends" className="text-body underline">
-          Back to friends
-        </Link>
-      </p>
     </div>
   );
 }
