@@ -1,8 +1,8 @@
 "use client";
 
-import { PopoverHeader } from "@/components/ui/popover-header";
+import { SurfaceHeader } from "@/components/ui/surface-header";
 import { CountBadge } from "@/components/ui/count-badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { ConversationPreviewRow } from "../conversation-preview-row";
 import type {
   MessagePopoverActionState,
@@ -53,8 +53,7 @@ export function MessagesPopover({
     ? `Messages, ${unreadCount} unread`
     : "Messages";
   const triggerClass = cn(
-    buttonVariants({ variant: "ghost", controlSize: "square" }),
-    "relative shrink-0 hover:bg-surface-2 hover:text-foreground",
+    "relative shrink-0 hover:text-foreground",
     active && "bg-surface-2 text-foreground"
   );
   const canPreview = Boolean(loadPreviewAction);
@@ -155,47 +154,51 @@ export function MessagesPopover({
 
   if (!canPreview) {
     return (
-      <Button
+      <IconButton
         href="/messages"
-        aria-label={label}
+        label={label}
         aria-current={active ? "page" : undefined}
-        variant="ghost"
-        controlSize="square"
+        appearance="ghost"
         className={cn(
           "relative shrink-0 hover:bg-surface-2 hover:text-foreground",
           active && "bg-surface-2 text-foreground"
         )}
-      >
-        <IconMessages size={20} stroke={1.75} aria-hidden="true" />
-        <CountBadge
-          count={unreadCount}
-          className="absolute -right-3xs -top-3xs"
-          aria-hidden="true"
-        />
-      </Button>
+        icon={
+          <>
+            <IconMessages size={20} stroke={1.75} aria-hidden="true" />
+            <CountBadge
+              count={unreadCount}
+              className="absolute -right-3xs -top-3xs"
+              aria-hidden="true"
+            />
+          </>
+        }
+      />
     );
   }
 
   return (
     <>
-      <Button
+      <IconButton
         href="/messages"
-        aria-label={label}
+        label={label}
         aria-current={active ? "page" : undefined}
-        variant="ghost"
-        controlSize="square"
+        appearance="ghost"
         className={cn(
           "relative shrink-0 hover:bg-surface-2 hover:text-foreground md:hidden",
           active && "bg-surface-2 text-foreground"
         )}
-      >
-        <IconMessages size={20} stroke={1.75} aria-hidden="true" />
-        <CountBadge
-          count={unreadCount}
-          className="absolute -right-3xs -top-3xs"
-          aria-hidden="true"
-        />
-      </Button>
+        icon={
+          <>
+            <IconMessages size={20} stroke={1.75} aria-hidden="true" />
+            <CountBadge
+              count={unreadCount}
+              className="absolute -right-3xs -top-3xs"
+              aria-hidden="true"
+            />
+          </>
+        }
+      />
 
       <span className="hidden md:inline-flex">
         <Popover.Root
@@ -209,17 +212,25 @@ export function MessagesPopover({
           }}
         >
           <Popover.Trigger
-            aria-label={label}
-            aria-current={active ? "page" : undefined}
-            className={triggerClass}
-          >
-            <IconMessages size={20} stroke={1.75} aria-hidden="true" />
-            <CountBadge
-              count={unreadCount}
-              className="absolute -right-3xs -top-3xs"
-              aria-hidden="true"
-            />
-          </Popover.Trigger>
+            render={
+              <IconButton
+                label={label}
+                aria-current={active ? "page" : undefined}
+                appearance="ghost"
+                className={triggerClass}
+                icon={
+                  <>
+                    <IconMessages size={20} stroke={1.75} aria-hidden="true" />
+                    <CountBadge
+                      count={unreadCount}
+                      className="absolute -right-3xs -top-3xs"
+                      aria-hidden="true"
+                    />
+                  </>
+                }
+              />
+            }
+          />
 
           <Popover.Portal>
             <Popover.Positioner
@@ -232,33 +243,29 @@ export function MessagesPopover({
                 className="w-notifications max-w-notifications-mobile overflow-hidden rounded-card border border-divider bg-surface"
                 initialFocus={false}
               >
-                <PopoverHeader
+                <SurfaceHeader
                   title={
-                    <Popover.Title className="font-sans text-heading-sm font-semibold text-foreground">
-                      Messages
-                    </Popover.Title>
+                    <Popover.Title>Messages</Popover.Title>
                   }
-                  actions={
+                  action={
                     <>
-                      <Button
+                      <IconButton
                         href="/messages"
-                        aria-label="Open messages"
+                        label="Open messages"
                         onClick={() => setOpen(false)}
-                        variant="ghost"
-                        controlSize="square"
+                        appearance="ghost"
                         className="hover:bg-surface-2 hover:text-foreground"
-                      >
-                        <IconArrowsDiagonal size={20} stroke={1.75} aria-hidden="true" />
-                      </Button>
+                        icon={<IconArrowsDiagonal size={20} stroke={1.75} aria-hidden="true" />}
+                      />
                       <Popover.Close
-                        aria-label="Close messages"
-                        className={cn(
-                          buttonVariants({ variant: "ghost", controlSize: "square" }),
-                          "hover:bg-surface-2 hover:text-foreground"
-                        )}
-                      >
-                        <IconX size={20} stroke={1.75} aria-hidden="true" />
-                      </Popover.Close>
+                        render={
+                          <IconButton
+                            label="Close messages"
+                            appearance="ghost"
+                            icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+                          />
+                        }
+                      />
                     </>
                   }
                 />

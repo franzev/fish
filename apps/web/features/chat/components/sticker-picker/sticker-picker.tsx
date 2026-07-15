@@ -51,7 +51,7 @@ export function StickerPicker({ onSelect, className }: StickerPickerProps) {
             className="grid grid-cols-3 gap-2xs"
             data-testid="sticker-grid"
           >
-            {stickers.map((sticker) => (
+            {stickers.map((sticker, index) => (
               <button
                 key={sticker.id}
                 type="button"
@@ -61,6 +61,7 @@ export function StickerPicker({ onSelect, className }: StickerPickerProps) {
               >
                 <StickerMedia
                   stickerId={sticker.id}
+                  loading={index < 3 ? "eager" : "lazy"}
                   className="size-full object-contain"
                 />
               </button>

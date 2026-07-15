@@ -1,4 +1,5 @@
 import { Alert } from "@/components/ui/alert";
+import { IconButton } from "@/components/ui/icon-button";
 import { getMessageSnippet } from "@/features/chat/model/chat-state";
 import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
 import type { ClientChatData } from "@/lib/services";
@@ -95,14 +96,12 @@ export function ChatComposerSurface({
                 className="mb-0 mt-2xs"
               />
             </div>
-            <button
-              type="button"
-              aria-label="Cancel reply"
+            <IconButton
+              label="Cancel reply"
+              appearance="ghost"
               onClick={cancelReply}
-              className="icon-button-glyph inline-flex min-h-control min-w-control items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-            >
-              <IconX size={20} stroke={1.75} aria-hidden="true" />
-            </button>
+              icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+            />
           </div>
         </div>
       )}

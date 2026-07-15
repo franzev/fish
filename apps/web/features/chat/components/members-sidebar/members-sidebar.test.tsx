@@ -35,11 +35,14 @@ describe("MembersSidebar", () => {
       "fixed",
       "inset-0",
       "md:relative",
-      "md:w-search-results"
+      "md:w-members-panel"
     );
+    expect(sidebar).toHaveClass("border-l", "border-divider");
+    expect(sidebar.querySelector("header")).not.toHaveClass("border-b");
+    expect(sidebar.querySelector("li")).not.toHaveClass("border-b");
     expect(screen.getByRole("heading", { name: "2 Members" })).toBeInTheDocument();
     expect(within(sidebar).getByText("Franz Santos")).toBeInTheDocument();
-    expect(within(sidebar).getByText("@franz")).toBeInTheDocument();
+    expect(within(sidebar).getByText("@franz")).toHaveClass("text-ui-xs");
     expect(within(sidebar).getByText("Sam Okafor")).toBeInTheDocument();
     expect(within(sidebar).getByText("@sam_okafor")).toBeInTheDocument();
 

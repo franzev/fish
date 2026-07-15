@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Tooltip } from "@base-ui/react/tooltip";
 import {
   IconMoodSmile,
@@ -14,7 +14,6 @@ import {
   type KeyboardEvent,
 } from "react";
 import { AddMenu } from "./add-menu";
-import { composerIconButtonClass } from "./icon-button-class";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
 import { ImageUploadPreview } from "./image-upload-preview";
 import type { ClientChatGif } from "@/lib/services";
@@ -162,7 +161,7 @@ export function Composer({
             rows={1}
             enterKeyHint="send"
             placeholder={channelName ? `Message #${channelName}` : "Message"}
-            className="h-control max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs py-compact text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
+            className="h-control max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs pb-xs pt-sm text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
           />
           <MediaPickerButton
             onSelectEmoji={onSelectEmoji}
@@ -170,7 +169,7 @@ export function Composer({
             onSelectSticker={onSelectSticker}
             gifDisabled={gifSelectionDisabled}
             stickerDisabled={stickerSelectionDisabled}
-            className={composerIconButtonClass}
+            className="shrink-0 hover:bg-surface-3"
           >
             <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
           </MediaPickerButton>
@@ -186,17 +185,15 @@ export function Composer({
                         : undefined}
                       className="inline-flex size-control shrink-0 rounded-control"
                     >
-                      <Button
+                      <IconButton
                         type="button"
-                        controlSize="square"
-                        fullWidth={false}
                         onClick={onSend}
                         disabled={!canSend}
                         className="shrink-0"
-                        aria-label="Send message"
-                      >
-                        <IconSend size={20} stroke={1.75} aria-hidden="true" />
-                      </Button>
+                        label="Send message"
+                        appearance="solid"
+                        icon={<IconSend size={20} stroke={1.75} aria-hidden="true" />}
+                      />
                     </span>
                   }
                 />

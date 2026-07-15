@@ -24,6 +24,20 @@ describe("StickerMedia", () => {
     expect(sticker).toHaveAttribute("height", "96");
   });
 
+  it("keeps compact sticker dimensions in sync with its rendered size", () => {
+    render(
+      <StickerMedia
+        stickerId="aquatic-great-job-sea-star"
+        displaySize="control"
+      />
+    );
+
+    const sticker = screen.getByRole("img", { name: /sea star/i });
+    expect(sticker).not.toHaveClass("size-sticker-tile");
+    expect(sticker).toHaveAttribute("width", "44");
+    expect(sticker).toHaveAttribute("height", "44");
+  });
+
   it("renders a calm fallback for an unknown persisted sticker id", () => {
     render(<StickerMedia stickerId="aquatic-new-rollout-sticker" />);
 

@@ -1,7 +1,6 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { IconButton } from "@/components/ui/icon-button";
 import type { ChatStickerId } from "@fish/core/chat";
 import { IconX } from "@tabler/icons-react";
 import { StickerMedia } from "../../sticker-media";
@@ -17,22 +16,22 @@ export function StickerSelectionThumbnail({
   onRemove,
 }: StickerSelectionThumbnailProps) {
   return (
-    <button
-      type="button"
-      aria-label="Remove selected sticker"
+    <IconButton
+      label="Remove selected sticker"
+      appearance="ghost"
       onClick={onRemove}
-      className={cn(
-        buttonVariants({ variant: "ghost", controlSize: "square" }),
-        "relative shrink-0 overflow-hidden p-0 hover:bg-surface"
-      )}
-    >
-      <StickerMedia stickerId={stickerId} className="size-control" />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute right-3xs top-3xs inline-flex size-lg items-center justify-center rounded-pill bg-surface text-body"
-      >
-        <IconX size={20} stroke={1.75} />
-      </span>
-    </button>
+      className="relative shrink-0 overflow-hidden p-0 hover:bg-surface"
+      icon={
+        <>
+          <StickerMedia stickerId={stickerId} displaySize="control" loading="eager" />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3xs top-3xs inline-flex size-lg items-center justify-center rounded-pill bg-surface text-body"
+          >
+            <IconX size={20} stroke={1.75} />
+          </span>
+        </>
+      }
+    />
   );
 }

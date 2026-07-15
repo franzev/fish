@@ -1,5 +1,5 @@
 import { SearchFilterPopover } from "../search-filters";
-import { TooltipIconButton } from "@/components/ui/tooltip-icon-button";
+import { IconButton } from "@/components/ui/icon-button";
 import type {
   ChatFilterCriterion,
   ChatSearchChannel,
@@ -13,6 +13,7 @@ import { CallButton } from "@/features/calls";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { IconUsers } from "@tabler/icons-react";
+import type { ReactNode } from "react";
 
 interface ChatHeaderProps {
   chatTitle: string;
@@ -25,6 +26,7 @@ interface ChatHeaderProps {
   onToggleMembers: () => void;
   presenceStatus: PresenceDisplayStatus;
   presenceLabel: string;
+  searchEnabled: boolean;
   search: string;
   onSearchChange: (value: string) => void;
   criteria: ChatFilterCriterion[];
@@ -33,6 +35,7 @@ interface ChatHeaderProps {
   channels: ChatSearchChannel[];
   onSearchSubmit: (query: string, criteria: ChatFilterCriterion[]) => void;
   onOpenFilters: () => void;
+  conversationActions?: ReactNode;
 }
 
 export function ChatHeader({
@@ -46,6 +49,7 @@ export function ChatHeader({
   onToggleMembers,
   presenceStatus,
   presenceLabel,
+  searchEnabled,
   search,
   onSearchChange,
   criteria,
@@ -54,6 +58,7 @@ export function ChatHeader({
   channels,
   onSearchSubmit,
   onOpenFilters,
+  conversationActions,
 }: ChatHeaderProps) {
   return (
     <div className="flex h-chat-header shrink-0 items-center border-b border-divider bg-surface px-md">
@@ -82,11 +87,13 @@ export function ChatHeader({
           </div>
         </div>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-sm">
+          {conversationActions}
           {isCommunity && (
             <Tooltip.Provider delay={400} closeDelay={0}>
-              <TooltipIconButton
+              <IconButton
                 type="button"
                 label="Members"
+                tooltip
                 tooltipSide="bottom"
                 aria-pressed={membersOpen}
                 onClick={onToggleMembers}
@@ -98,16 +105,18 @@ export function ChatHeader({
               />
             </Tooltip.Provider>
           )}
-          <SearchFilterPopover
-            value={search}
-            onValueChange={onSearchChange}
-            criteria={criteria}
-            onCriteriaChange={onCriteriaChange}
-            members={members}
-            channels={channels}
-            onSubmit={onSearchSubmit}
-            onOpenFilters={onOpenFilters}
-          />
+          {searchEnabled && (
+            <SearchFilterPopover
+              value={search}
+              onValueChange={onSearchChange}
+              criteria={criteria}
+              onCriteriaChange={onCriteriaChange}
+              members={members}
+              channels={channels}
+              onSubmit={onSearchSubmit}
+              onOpenFilters={onOpenFilters}
+            />
+          )}
           {!isCommunity && participantId && (
             <div
               role="group"

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { EmojiPicker } from "./emoji-picker";
+import { EmojiPicker, EmojiPickerButton } from "./emoji-picker";
 
 describe("EmojiPicker", () => {
   it("keeps the category icon row at the bottom", () => {
@@ -25,5 +25,22 @@ describe("EmojiPicker", () => {
     fireEvent.focus(screen.getByRole("tab", { name: "Animals & Nature" }));
 
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Animals & Nature");
+  });
+
+  it("labels its icon trigger with a tooltip without breaking the popover", async () => {
+    render(
+      <EmojiPickerButton label="Add a reaction" onSelect={() => undefined} />
+    );
+
+    const trigger = screen.getByRole("button", { name: "Add a reaction" });
+    fireEvent.focus(trigger);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Add a reaction"
+    );
+
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole("dialog", { name: "Choose an emoji" })
+    ).toBeInTheDocument();
   });
 });

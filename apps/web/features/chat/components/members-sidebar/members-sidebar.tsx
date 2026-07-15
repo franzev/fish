@@ -1,6 +1,7 @@
 "use client";
 
 import { IconX } from "@tabler/icons-react";
+import { IconButton } from "@/components/ui/icon-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ChatSearchMember } from "@/features/chat/model/search";
 import { Avatar } from "../avatar";
@@ -24,20 +25,19 @@ export function MembersSidebar({
   return (
     <aside
       aria-label="Members"
-      className="fixed inset-0 z-40 flex min-h-0 flex-col border-l border-divider bg-bg md:relative md:z-auto md:w-search-results md:shrink-0"
+      className="fixed inset-0 z-40 flex min-h-0 flex-col border-l border-divider bg-bg md:relative md:z-auto md:w-members-panel md:shrink-0"
     >
-      <header className="flex min-h-chat-header items-center gap-xs border-b border-divider bg-surface p-sm">
+      <header className="flex min-h-chat-header items-center gap-xs bg-surface p-sm">
         <h2 className="min-w-0 flex-1 font-sans text-copy font-semibold text-foreground">
           {members.length} Members
         </h2>
-        <button
-          type="button"
-          aria-label="Close members"
+        <IconButton
+          label="Close members"
+          appearance="ghost"
           onClick={onClose}
-          className="icon-button-glyph inline-flex min-h-control min-w-control shrink-0 items-center justify-center rounded-control text-muted hover:bg-surface-2 hover:text-body"
-        >
-          <IconX size={20} stroke={1.75} aria-hidden="true" />
-        </button>
+          className="shrink-0"
+          icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+        />
       </header>
 
       <ScrollArea className="flex-1">
@@ -48,7 +48,7 @@ export function MembersSidebar({
         ) : (
           <ul>
             {members.map((member) => (
-              <li key={member.id} className="border-b border-divider">
+              <li key={member.id}>
                 <MemberProfilePopover
                   member={member}
                   currentUserId={currentUserId}
@@ -68,7 +68,7 @@ export function MembersSidebar({
                     <span className="block truncate text-ui font-medium text-foreground">
                       {member.displayName}
                     </span>
-                    <span className="block truncate text-ui-sm text-muted">
+                    <span className="block truncate text-ui-xs text-muted">
                       @{member.username}
                     </span>
                   </span>

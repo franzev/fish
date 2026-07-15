@@ -122,7 +122,8 @@ describe("Composer", () => {
     expect(screen.getByRole("textbox", { name: "Message" })).toHaveClass(
       "h-control",
       "min-h-control",
-      "py-compact"
+      "pb-xs",
+      "pt-sm"
     );
   });
 
@@ -254,10 +255,10 @@ describe("Composer", () => {
       screen.getByRole("menuitem", { name: "Add files" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: "Audio Recording" })
+      screen.getByRole("menuitem", { name: "Audio recording" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: "Create Poll" })
+      screen.getByRole("menuitem", { name: "Create poll" })
     ).toBeInTheDocument();
   });
 

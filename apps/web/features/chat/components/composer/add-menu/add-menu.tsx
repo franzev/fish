@@ -1,6 +1,12 @@
 "use client";
 
-import { Menu } from "@base-ui/react/menu";
+import {
+  ActionMenuItem,
+  ActionMenuPopup,
+  ActionMenuRoot,
+  ActionMenuTrigger,
+} from "@/components/ui/action-menu";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   IconChartBar,
   IconMicrophone,
@@ -8,10 +14,6 @@ import {
   IconUpload,
 } from "@tabler/icons-react";
 import { useRef, type ChangeEvent } from "react";
-import { composerIconButtonClass } from "../icon-button-class";
-
-const menuItemClass =
-  "flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2";
 
 /** The composer's + menu — attach-style actions behind one quiet trigger so
  *  the bar itself stays a single line. Upload, audio recording, and polls
@@ -30,7 +32,7 @@ export function AddMenu({ onSelectImages = () => undefined, disabled }: AddMenuP
     event.target.value = "";
   };
   return (
-    <Menu.Root>
+    <ActionMenuRoot>
       <input
         ref={inputRef}
         type="file"
@@ -41,36 +43,31 @@ export function AddMenu({ onSelectImages = () => undefined, disabled }: AddMenuP
         tabIndex={-1}
         onChange={handleFiles}
       />
-      <Menu.Trigger
-        aria-label="Add to message"
-        disabled={disabled}
-        className={composerIconButtonClass}
-      >
-        <IconPlus size={20} stroke={1.75} aria-hidden="true" />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner
-          side="top"
-          align="start"
-          sideOffset={4}
-          className="z-20"
-        >
-          <Menu.Popup className="min-w-menu rounded-card border border-divider bg-surface p-3xs">
-            <Menu.Item className={menuItemClass} onClick={() => inputRef.current?.click()}>
+      <ActionMenuTrigger
+        render={
+          <IconButton
+            label="Add to message"
+            appearance="ghost"
+            disabled={disabled}
+            className="shrink-0 hover:bg-surface-3"
+            icon={<IconPlus size={20} stroke={1.75} aria-hidden="true" />}
+          />
+        }
+      />
+      <ActionMenuPopup side="top" align="start" positionerClassName="z-20">
+            <ActionMenuItem onClick={() => inputRef.current?.click()}>
               <IconUpload size={20} stroke={1.75} aria-hidden="true" />
               Add files
-            </Menu.Item>
-            <Menu.Item className={menuItemClass}>
+            </ActionMenuItem>
+            <ActionMenuItem>
               <IconMicrophone size={20} stroke={1.75} aria-hidden="true" />
-              Audio Recording
-            </Menu.Item>
-            <Menu.Item className={menuItemClass}>
+              Audio recording
+            </ActionMenuItem>
+            <ActionMenuItem>
               <IconChartBar size={20} stroke={1.75} aria-hidden="true" />
-              Create Poll
-            </Menu.Item>
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+              Create poll
+            </ActionMenuItem>
+      </ActionMenuPopup>
+    </ActionMenuRoot>
   );
 }

@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { IconButton } from "@/components/ui/icon-button";
 import { IconTabStrip, type IconTabStripItem } from "@/components/ui/icon-tab-strip";
 import {
   IconBallBasketball,
@@ -17,8 +18,9 @@ import {
 } from "@tabler/icons-react";
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
+import { Tooltip } from "@base-ui/react/tooltip";
 import groups from "unicode-emoji-json/data-by-group.json";
-import { ReactNode, forwardRef, useMemo, useState } from "react";
+import { type ReactElement, ReactNode, forwardRef, useMemo, useState } from "react";
 import { MediaPickerScrollArea } from "../media-picker-scroll-area";
 import { MediaPickerSearch } from "../media-picker-search";
 
@@ -178,6 +180,7 @@ export interface EmojiPickerButtonProps {
   label: string;
   className?: string;
   children?: ReactNode;
+  trigger?: ReactElement;
 }
 
 /** Self-contained popover trigger — an icon button (default smiley) that
@@ -189,18 +192,53 @@ export const EmojiPickerButton = forwardRef<
   HTMLButtonElement,
   EmojiPickerButtonProps
 >(function EmojiPickerButton(
-  { onSelect, label, className, children },
+  { onSelect, label, className, children, trigger: triggerElement },
   ref
 ) {
     const [open, setOpen] = useState(false);
+    const triggerControl =
+      triggerElement ? (
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <Popover.Trigger
+                ref={ref}
+                aria-label={label}
+                render={triggerElement}
+              />
+            }
+          />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="top" sideOffset={4} className="z-50">
+              <Tooltip.Popup
+                role="tooltip"
+                className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
+              >
+                {label}
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      ) : (
+        <Popover.Trigger
+          render={
+            <IconButton
+              ref={ref}
+              label={label}
+              appearance="ghost"
+              tooltip
+              className={className}
+              icon={children ?? (
+                <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
+              )}
+            />
+          }
+        />
+      );
 
     return (
       <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Trigger ref={ref} aria-label={label} className={cn("icon-button-glyph", className)}>
-          {children ?? (
-            <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
-          )}
-        </Popover.Trigger>
+        {triggerControl}
         <Popover.Portal>
           <Popover.Positioner
             side="top"

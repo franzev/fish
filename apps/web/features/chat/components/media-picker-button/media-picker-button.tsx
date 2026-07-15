@@ -1,9 +1,8 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import type { GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
-import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import { IconMoodSmile } from "@tabler/icons-react";
 import { forwardRef, useState, type ReactNode } from "react";
@@ -54,17 +53,18 @@ export const MediaPickerButton = forwardRef<
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
-        ref={ref}
-        aria-label="Add emoji, GIF, or sticker"
-        disabled={disabled}
-        data-slot="media-picker-trigger"
-        className={cn(
-          buttonVariants({ variant: "ghost", controlSize: "square" }),
-          className
-        )}
-      >
-        {children ?? <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />}
-      </Popover.Trigger>
+        render={
+          <IconButton
+            ref={ref}
+            label="Add emoji, GIF, or sticker"
+            appearance="ghost"
+            disabled={disabled}
+            data-slot="media-picker-trigger"
+            className={className}
+            icon={children ?? <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />}
+          />
+        }
+      />
       <Popover.Portal>
         <Popover.Positioner side="top" align="end" sideOffset={4} className="z-20">
           <Popover.Popup initialFocus={false} role="presentation">

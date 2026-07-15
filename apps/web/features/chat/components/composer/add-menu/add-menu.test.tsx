@@ -12,14 +12,14 @@ describe("AddMenu", () => {
       screen.getByRole("menuitem", { name: "Add files" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: "Audio Recording" })
+      screen.getByRole("menuitem", { name: "Audio recording" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: "Create Poll" })
+      screen.getByRole("menuitem", { name: "Create poll" })
     ).toBeInTheDocument();
   });
 
-  it.each(["Add files", "Audio Recording", "Create Poll"])(
+  it.each(["Add files", "Audio recording", "Create poll"])(
     "lets %s be clicked without raising an error",
     (itemName) => {
       render(<AddMenu />);

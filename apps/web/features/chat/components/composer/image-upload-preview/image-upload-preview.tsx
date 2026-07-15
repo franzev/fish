@@ -1,9 +1,15 @@
 "use client";
 
+import {
+  ActionMenuItem,
+  ActionMenuPopup,
+  ActionMenuRoot,
+  ActionMenuTrigger,
+} from "@/components/ui/action-menu";
+import { IconButton } from "@/components/ui/icon-button";
 import { Progress } from "@/components/ui/progress";
 import type { PendingChatImage } from "@/features/chat/hooks/use-chat-image-uploads";
 import { cn } from "@/lib/utils";
-import { Menu } from "@base-ui/react/menu";
 import { IconAlertCircle, IconFileText, IconRefresh, IconTrash, IconX } from "@tabler/icons-react";
 
 interface ImageUploadPreviewProps {
@@ -62,45 +68,48 @@ export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPre
                 />
               )}
               {image.status === "failed" ? (
-                <Menu.Root modal={false}>
-                  <Menu.Trigger
-                    aria-label={`Upload failed for ${image.file.name}. Show options`}
-                    className="icon-button-glyph absolute inset-0 flex size-full items-center justify-center bg-scrim text-notice"
-                  >
-                    <IconAlertCircle size={20} stroke={1.75} aria-hidden="true" />
-                  </Menu.Trigger>
-                  <Menu.Portal>
-                    <Menu.Positioner side="top" align="end" sideOffset={4} className="z-30">
-                      <Menu.Popup className="w-max rounded-card border border-divider bg-surface p-3xs">
-                        <Menu.Item
+                <ActionMenuRoot modal={false}>
+                  <ActionMenuTrigger
+                    render={
+                      <IconButton
+                        label={`Upload failed for ${image.file.name}. Show options`}
+                        appearance="overlay"
+                        tone="notice"
+                        tooltip={false}
+                        className="absolute inset-0 size-full min-h-0 rounded-none"
+                        icon={<IconAlertCircle size={20} stroke={1.75} aria-hidden="true" />}
+                      />
+                    }
+                  />
+                  <ActionMenuPopup side="top" width="content" positionerClassName="z-30">
+                        <ActionMenuItem
                           onClick={() => onRetry(image.clientUploadId)}
-                          className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-foreground data-[highlighted]:bg-surface-2"
                         >
                           <IconRefresh size={20} stroke={1.75} aria-hidden="true" />
                           Retry
-                        </Menu.Item>
-                        <Menu.Item
+                        </ActionMenuItem>
+                        <ActionMenuItem
                           onClick={() => onRemove(image.clientUploadId)}
-                          className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-body data-[highlighted]:bg-surface-2"
+                          className="text-body"
                         >
                           <IconTrash size={20} stroke={1.75} aria-hidden="true" />
                           Remove
-                        </Menu.Item>
-                      </Menu.Popup>
-                    </Menu.Positioner>
-                  </Menu.Portal>
-                </Menu.Root>
+                        </ActionMenuItem>
+                  </ActionMenuPopup>
+                </ActionMenuRoot>
               ) : (
-                <button
-                  type="button"
-                  aria-label={`Remove ${image.file.name || "file"}`}
+                <IconButton
+                  label={`Remove ${image.file.name || "file"}`}
+                  appearance="ghost"
+                  tooltip={false}
                   onClick={() => onRemove(image.clientUploadId)}
-                  className="icon-button-glyph absolute right-3xs top-3xs inline-flex min-h-control min-w-control items-start justify-end rounded-control p-2xs text-body"
-                >
-                  <span className="inline-flex size-lg items-center justify-center rounded-pill bg-surface">
-                    <IconX size={20} stroke={1.75} aria-hidden="true" />
-                  </span>
-                </button>
+                  className="absolute right-3xs top-3xs items-start justify-end p-2xs text-body"
+                  icon={
+                    <span className="inline-flex size-lg items-center justify-center rounded-pill bg-surface">
+                      <IconX size={20} stroke={1.75} aria-hidden="true" />
+                    </span>
+                  }
+                />
               )}
             </div>
           </li>

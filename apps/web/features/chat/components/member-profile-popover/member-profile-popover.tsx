@@ -1,7 +1,14 @@
 "use client";
 
 import { Alert } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  ActionMenuItem,
+  ActionMenuPopup,
+  ActionMenuRoot,
+  ActionMenuTrigger,
+} from "@/components/ui/action-menu";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { getBrowserServices, getFriendCommandService } from "@/lib/services/runtime/browser";
 import type {
   FriendCandidate,
@@ -9,7 +16,6 @@ import type {
   FriendRepository,
 } from "@/lib/services";
 import { cn } from "@/lib/utils";
-import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
 import { IconBan, IconDots, IconX } from "@tabler/icons-react";
 import { useRef, useState, type ReactNode } from "react";
@@ -362,46 +368,38 @@ export function MemberProfilePopover({
                   relationshipConfirmsClient &&
                   !blocked &&
                   !confirmingBlock && (
-                  <Menu.Root modal={false}>
-                    <Menu.Trigger
-                      ref={moreRef}
-                      aria-label={`More actions for ${member.displayName}`}
-                      className={cn(
-                        buttonVariants({ variant: "ghost", controlSize: "square" }),
-                        "hover:bg-surface-2"
-                      )}
-                    >
-                      <IconDots size={20} stroke={1.75} aria-hidden="true" />
-                    </Menu.Trigger>
-                    <Menu.Portal>
-                      <Menu.Positioner
-                        side="bottom"
-                        align="end"
-                        className="z-50"
-                      >
-                        <Menu.Popup className="mt-2xs min-w-menu rounded-card border border-divider bg-surface p-3xs">
-                          <Menu.Item
+                  <ActionMenuRoot modal={false}>
+                    <ActionMenuTrigger
+                      render={
+                        <IconButton
+                          ref={moreRef}
+                          label={`More actions for ${member.displayName}`}
+                          appearance="ghost"
+                          icon={<IconDots size={20} stroke={1.75} aria-hidden="true" />}
+                        />
+                      }
+                    />
+                    <ActionMenuPopup className="mt-2xs">
+                          <ActionMenuItem
                             onClick={startBlockConfirmation}
-                            className="flex min-h-control cursor-pointer items-center gap-sm rounded-control px-sm text-ui-sm text-notice data-[highlighted]:bg-surface-2"
+                            className="text-notice"
                           >
                             <IconBan size={20} stroke={1.75} aria-hidden="true" />
                             Block member
-                          </Menu.Item>
-                        </Menu.Popup>
-                      </Menu.Positioner>
-                    </Menu.Portal>
-                  </Menu.Root>
+                          </ActionMenuItem>
+                    </ActionMenuPopup>
+                  </ActionMenuRoot>
                 )}
                 <Popover.Close
-                  ref={closeRef}
-                  aria-label={`Close ${member.displayName} profile`}
-                  className={cn(
-                    buttonVariants({ variant: "ghost", controlSize: "square" }),
-                    "hover:bg-surface-2"
-                  )}
-                >
-                  <IconX size={20} stroke={1.75} aria-hidden="true" />
-                </Popover.Close>
+                  render={
+                    <IconButton
+                      ref={closeRef}
+                      label={`Close ${member.displayName} profile`}
+                      appearance="ghost"
+                      icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+                    />
+                  }
+                />
               </div>
             </div>
 

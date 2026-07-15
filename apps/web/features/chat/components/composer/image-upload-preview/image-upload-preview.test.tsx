@@ -27,7 +27,7 @@ describe("ImageUploadPreview", () => {
     expect(screen.queryByText("Uploading")).not.toBeInTheDocument();
     const removeButton = screen.getByRole("button", { name: "Remove photo.png" });
     expect(removeButton).toHaveClass("min-h-control", "min-w-control");
-    expect(removeButton.firstElementChild).toHaveClass("size-lg");
+    expect(removeButton.querySelector(".size-lg")).toBeInTheDocument();
     fireEvent.click(removeButton);
     expect(remove).toHaveBeenCalledWith("upload-1");
   });

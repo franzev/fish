@@ -5,7 +5,7 @@ const meta = {
   title: "Chat/StickerMedia",
   component: StickerMedia,
   parameters: { layout: "centered" },
-  args: { stickerId: "aquatic-great-job-sea-star" },
+  args: { stickerId: "aquatic-great-job-sea-star", loading: "eager" },
 } satisfies Meta<typeof StickerMedia>;
 
 export default meta;

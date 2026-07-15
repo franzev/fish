@@ -1,5 +1,6 @@
 "use client";
 
+import { IconButton } from "@/components/ui/icon-button";
 import type { ClientChatGif } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import { IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
@@ -92,9 +93,10 @@ export function GifMedia({
         />
       )}
       {allowPlaybackControl && !failed && !posterFailed && (
-        <button
-          type="button"
-          aria-label={`${shouldPlay ? "Pause" : "Play"} GIF: ${gif.description}`}
+        <IconButton
+          label={`${shouldPlay ? "Pause" : "Play"} GIF: ${gif.description}`}
+          appearance="overlay"
+          tooltip={false}
           onClick={() => {
             if (shouldPlay) {
               setPaused(true);
@@ -103,14 +105,13 @@ export function GifMedia({
             setPaused(false);
             setLocalPlayRequested(true);
           }}
-          className="icon-button-glyph absolute bottom-xs right-xs flex size-control items-center justify-center rounded-pill bg-scrim text-foreground"
-        >
-          {shouldPlay ? (
+          className="absolute bottom-xs right-xs rounded-pill"
+          icon={shouldPlay ? (
             <IconPlayerPause size={20} stroke={1.75} aria-hidden="true" />
           ) : (
             <IconPlayerPlay size={20} stroke={1.75} aria-hidden="true" />
           )}
-        </button>
+        />
       )}
     </div>
   );
