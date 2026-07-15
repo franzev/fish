@@ -175,6 +175,16 @@ async function main() {
     participantReadError?.message,
   );
 
+  const { data: callerName, error: callerNameError } = await client.client.rpc(
+    "get_call_counterpart_name",
+    { p_call_id: call.id },
+  );
+  report(
+    "invitee can resolve the caller name",
+    !callerNameError && callerName === "Patty Cake",
+    callerNameError?.message,
+  );
+
   const { data: leakedCall, error: unrelatedReadError } = await unrelated.client
     .from("calls")
     .select("id")
@@ -183,6 +193,16 @@ async function main() {
     "unrelated user cannot read the call",
     !unrelatedReadError && leakedCall?.length === 0,
     unrelatedReadError?.message,
+  );
+
+  const { data: leakedCallerName, error: leakedCallerNameError } =
+    await unrelated.client.rpc("get_call_counterpart_name", {
+      p_call_id: call.id,
+    });
+  report(
+    "unrelated user cannot resolve a call participant name",
+    !leakedCallerNameError && leakedCallerName === null,
+    leakedCallerNameError?.message,
   );
 
   const { error: unauthorizedAcceptError } = await unrelated.client.rpc("accept_call", {

@@ -29,16 +29,15 @@ function isCallStatus(value: unknown): value is ClientCallStatus {
 }
 
 async function withCounterpart(
-  row: CallRow,
-  userId: string
+  row: CallRow
 ): Promise<{ call: ReturnType<typeof toClientCall>; counterpartName: string }> {
   const client = createBrowserSupabaseClient();
-  const counterpartId = row.coach_id === userId ? row.client_id : row.coach_id;
-  const { data } = await client.from("profiles").select("display_name")
-    .eq("id", counterpartId).maybeSingle();
+  const { data } = await client.rpc("get_call_counterpart_name", {
+    p_call_id: row.id,
+  });
   return {
     call: toClientCall(row),
-    counterpartName: data?.display_name ?? "Your call partner",
+    counterpartName: data ?? "Your call partner",
   };
 }
 
@@ -97,13 +96,13 @@ export const supabaseCallRealtimeService: CallRealtimeService = {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    return data ? withCounterpart(data, userId) : null;
+    return data ? withCounterpart(data) : null;
   },
 
-  async findCall(callId, userId) {
+  async findCall(callId) {
     const client = createBrowserSupabaseClient();
     const { data } = await client.from("calls").select("*")
       .eq("id", callId).maybeSingle();
-    return data ? withCounterpart(data, userId) : null;
+    return data ? withCounterpart(data) : null;
   },
 };

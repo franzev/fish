@@ -1897,6 +1897,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_call_counterpart_name: {
+        Args: { p_call_id: string }
+        Returns: string
+      }
       get_chat_unread_summary: {
         Args: { p_conversation_id: string }
         Returns: {
