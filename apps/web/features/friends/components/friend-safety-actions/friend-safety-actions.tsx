@@ -10,13 +10,14 @@ import { useMemo, useState } from "react";
 interface FriendSafetyActionsProps {
   friend: FriendProfile;
   commands?: FriendCommandService;
+  successHref?: string;
 }
 
 type SafetyAction = "remove" | "block";
 
 const confirmCopy: Record<SafetyAction, (name: string) => string> = {
   remove: (name) =>
-    `Remove ${name} from your friends? You can add each other again later.`,
+    `Unfriend ${name}? You can add each other again later.`,
   block: (name) =>
     `Block ${name}? They won’t be able to find you or send requests, and they won’t be told.`,
 };
@@ -24,6 +25,7 @@ const confirmCopy: Record<SafetyAction, (name: string) => string> = {
 export function FriendSafetyActions({
   friend,
   commands: commandsOverride,
+  successHref,
 }: FriendSafetyActionsProps) {
   const router = useRouter();
   const commands = useMemo(
@@ -46,7 +48,9 @@ export function FriendSafetyActions({
       setNotice(result.notice);
       return;
     }
-    router.push(action === "block" ? "/friends/blocked" : "/friends");
+    router.push(
+      successHref ?? (action === "block" ? "/friends/blocked" : "/friends")
+    );
   }
 
   if (confirming) {
@@ -61,9 +65,10 @@ export function FriendSafetyActions({
           variant="secondary"
           fullWidth
           loading={working}
+          className={confirming === "block" ? "text-error hover:text-error" : undefined}
           onClick={() => void run(confirming)}
         >
-          {confirming === "remove" ? "Remove friend" : "Block"}
+          {confirming === "remove" ? "Unfriend" : "Block"}
         </Button>
         <Button
           type="button"
@@ -87,12 +92,13 @@ export function FriendSafetyActions({
         fullWidth
         onClick={() => setConfirming("remove")}
       >
-        Remove friend
+        Unfriend
       </Button>
       <Button
         type="button"
         variant="ghost"
         fullWidth
+        className="text-error hover:text-error"
         onClick={() => setConfirming("block")}
       >
         Block @{friend.username}

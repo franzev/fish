@@ -28,18 +28,18 @@ function makeCommands(
 }
 
 describe("FriendSafetyActions", () => {
-  it("removes only after an inline confirmation", async () => {
+  it("unfriends only after an inline confirmation", async () => {
     pushMock.mockClear();
     const commands = makeCommands();
     render(<FriendSafetyActions friend={friend} commands={commands} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove friend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unfriend" }));
     expect(commands.removeFriend).not.toHaveBeenCalled();
     expect(
-      screen.getByText(/Remove Sam Lee from your friends\?/)
+      screen.getByText(/Unfriend Sam Lee\?/)
     ).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove friend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unfriend" }));
 
     await waitFor(() =>
       expect(commands.removeFriend).toHaveBeenCalledWith("user-sam")
@@ -52,10 +52,14 @@ describe("FriendSafetyActions", () => {
     const commands = makeCommands();
     render(<FriendSafetyActions friend={friend} commands={commands} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Block @sam_lee" }));
+    const blockAction = screen.getByRole("button", { name: "Block @sam_lee" });
+    expect(blockAction).toHaveClass("text-error");
+    fireEvent.click(blockAction);
     expect(screen.getByText(/they won’t be told/i)).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Block" }));
+    const confirmBlock = screen.getByRole("button", { name: "Block" });
+    expect(confirmBlock).toHaveClass("text-error");
+    fireEvent.click(confirmBlock);
 
     await waitFor(() =>
       expect(commands.blockUser).toHaveBeenCalledWith("user-sam")
@@ -69,12 +73,49 @@ describe("FriendSafetyActions", () => {
     const commands = makeCommands();
     render(<FriendSafetyActions friend={friend} commands={commands} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove friend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unfriend" }));
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));
 
-    expect(screen.getByRole("button", { name: "Remove friend" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Unfriend" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Block @sam_lee" })).toBeVisible();
     expect(commands.removeFriend).not.toHaveBeenCalled();
     expect(commands.blockUser).not.toHaveBeenCalled();
+  });
+
+  it("returns to a supplied surface after the friendship changes", async () => {
+    pushMock.mockClear();
+    const commands = makeCommands();
+    render(
+      <FriendSafetyActions
+        friend={friend}
+        commands={commands}
+        successHref="/messages"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Unfriend" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unfriend" }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/messages"));
+  });
+
+  it("returns to messages after blocking from a conversation", async () => {
+    pushMock.mockClear();
+    const commands = makeCommands();
+    render(
+      <FriendSafetyActions
+        friend={friend}
+        commands={commands}
+        successHref="/messages"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Block @sam_lee" }));
+    fireEvent.click(screen.getByRole("button", { name: "Block" }));
+
+    await waitFor(() =>
+      expect(commands.blockUser).toHaveBeenCalledWith("user-sam")
+    );
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/messages"));
   });
 });
