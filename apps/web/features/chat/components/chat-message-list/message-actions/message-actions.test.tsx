@@ -25,12 +25,31 @@ describe("MessageActions", () => {
     const edit = screen.getByRole("button", { name: "Edit message" });
     const more = screen.getByRole("button", { name: "More actions for message" });
     expect(toolbar).toHaveClass("border-divider");
+    expect(toolbar).toHaveClass("right-full");
+    expect(toolbar).toHaveClass("mr-xs");
+    expect(toolbar).toHaveClass("z-10");
+    expect(toolbar).not.toHaveClass("left-full");
+    expect(toolbar).toHaveClass("top-1/2");
+    expect(toolbar).toHaveClass("-translate-y-1/2");
+    expect(toolbar).not.toHaveClass("-top-sm");
+    expect(toolbar).not.toHaveClass("right-0");
+    expect(toolbar).not.toHaveClass("right-md");
     expect(toolbar).not.toHaveClass("border-border");
     expect(reaction).toHaveClass("pointer-coarse:hidden");
     expect(edit).toHaveClass("pointer-coarse:hidden");
     expect(more).not.toHaveClass("pointer-coarse:hidden");
     expect(screen.queryByRole("button", { name: "Delete message" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Reply to message" })).toBeNull();
+  });
+
+  it("keeps received-message tools after the message", () => {
+    render(<MessageActions {...props()} mine={false} />);
+
+    const reaction = screen.getByRole("button", { name: "Add a reaction" });
+    const toolbar = reaction.parentElement;
+    expect(toolbar).toHaveClass("left-full");
+    expect(toolbar).toHaveClass("ml-xs");
+    expect(toolbar).not.toHaveClass("right-full");
   });
 
   it("keeps destructive deletion behind truthful confirmation", async () => {

@@ -95,7 +95,8 @@ export function MessageActions({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute -top-sm right-md flex items-center gap-3xs rounded-control border border-divider bg-surface p-3xs opacity-0 transition-opacity",
+        "pointer-events-none absolute top-1/2 z-10 flex -translate-y-1/2 items-center gap-3xs rounded-control border border-divider bg-surface p-3xs opacity-0 transition-opacity",
+        mine ? "right-full mr-xs" : "left-full ml-xs",
         "focus-within:pointer-events-auto focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100",
         "pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
         open && "pointer-events-auto opacity-100"
