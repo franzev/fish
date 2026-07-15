@@ -1,17 +1,33 @@
+import {
+  TestimonialCarousel,
+  type Testimonial,
+} from "@/app/_components/testimonial-carousel";
 import { Wordmark } from "@/components/brand/wordmark";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { IconCheck, IconPlus } from "@tabler/icons-react";
+import { IconPlus } from "@tabler/icons-react";
+import Image from "next/image";
 import Link from "next/link";
 
 /* The public front door. One marketing surface, still governed by the
  *  product's calm rules: monochrome ladder, hierarchy before color, one
  *  useful next action. The hero and the closing invite repeat the SAME
  *  primary action (create account) — a convenience for a long scroll,
- *  never a second competing choice. Everything renders on the server;
- *  the FAQ uses native <details>, so the page ships zero client JS. */
+ *  never a second competing choice. Everything renders on the server
+ *  except the testimonial carousel, the page's one client island; the
+ *  FAQ uses native <details> and ships no JS. */
 
 const SHELL = "mx-auto w-full max-w-marketing px-page md:px-xl";
+
+/* Recognition, not persuasion — each line names a lived experience the
+   audience already knows, restating in the page's own voice what the client
+   testimonials just above it said. */
+const MIRRORS = [
+  "You've abandoned more language apps than you'd like to count — usually right after the first missed day.",
+  "You rehearse a meeting in your head for days, then say a tenth of it.",
+  "A deadline from a real person works. An open-ended plan quietly evaporates.",
+  "Once something decides where to start for you, you can focus for hours.",
+];
 
 const FEATURES = [
   {
@@ -32,6 +48,28 @@ const FEATURES = [
   },
 ];
 
+/* The differentiator is refusal. Each entry expands the hero's "No streaks.
+   No leaderboards. No guilt." into a concrete promise — deliberately covering
+   ground the features list doesn't already claim. */
+const NEVERS = [
+  {
+    title: "No guilt notifications",
+    body: "FISH never pings you at night to defend a metric. When your coach messages you, it's a person with something to say.",
+  },
+  {
+    title: "No leaderboards",
+    body: "You'll never be ranked against strangers. The only comparison FISH draws is you, a little further along than before.",
+  },
+  {
+    title: "No scores or percentages",
+    body: "Progress shows as milestones you've reached, never a number judging how you got there.",
+  },
+  {
+    title: "No fake urgency",
+    body: "Nothing expires, counts down, or pressures you to act today. Your next step waits as long as you need.",
+  },
+];
+
 const STEPS = [
   {
     title: "Meet your coach",
@@ -48,26 +86,51 @@ const STEPS = [
 ];
 
 /* Placeholder voices for layout and tone — replace with real client quotes
-   (with permission) before any public launch. */
-const FEATURED_QUOTE = {
-  quote:
-    "Every other app buried me in choices until I stopped opening it. FISH gives me one thing to do, so I actually come back.",
-  name: "Ana",
-  role: "Product designer",
-};
+   (with permission) before any public launch. Robohash portraits keep the
+   placeholders honest: clearly not photos of real clients. */
+const roboAvatar = (seed: string) =>
+  `https://robohash.org/${seed}.png?size=88x88`;
 
-const SUPPORTING_QUOTES = [
+const TESTIMONIALS: Testimonial[] = [
+  {
+    quote:
+      "Every other app buried me in choices until I stopped opening it. FISH gives me one thing to do, so I actually come back.",
+    name: "Ana",
+    role: "Product designer",
+    rating: 5,
+    avatarUrl: roboAvatar("ana"),
+  },
   {
     quote:
       "I once lost a 214 day streak and never opened that app again. Here there is nothing to lose. It just says welcome back.",
     name: "Tomás",
     role: "Backend developer",
+    rating: 5,
+    avatarUrl: roboAvatar("tomas"),
   },
   {
     quote:
       "My coach knows I hyperfocus, so she sizes each task for it. It feels like something built by people who get it.",
     name: "Rikke",
     role: "Data analyst",
+    rating: 5,
+    avatarUrl: roboAvatar("rikke"),
+  },
+  {
+    quote:
+      "I used to rehearse meetings in my head for days. Now I practice them once, in chat, and my coach tells me exactly what to keep.",
+    name: "Priya",
+    role: "Engineering manager",
+    rating: 5,
+    avatarUrl: roboAvatar("priya"),
+  },
+  {
+    quote:
+      "The app never pings me, never guilts me, never asks me to choose a lesson. That is why it is the one I still open.",
+    name: "Jonas",
+    role: "Technical writer",
+    rating: 5,
+    avatarUrl: roboAvatar("jonas"),
   },
 ];
 
@@ -99,49 +162,6 @@ const FAQS = [
   },
 ];
 
-/* A miniature of the real product: the single assigned next step, backed by
-   a quiet trail of finished ones. One decisive image instead of stock
-   photography — presented as a figure to assistive tech, with the content
-   summarized in the label. */
-function NextStepVignette() {
-  return (
-    <div
-      role="img"
-      aria-label="A FISH home screen. One next step is assigned by Maya, the coach: record a 60 second intro for your team. Two earlier steps are quietly checked off as done."
-      className="w-full max-w-chat-preview rounded-card bg-surface p-md lg:justify-self-end"
-    >
-      <p className="text-ui-xs text-muted">Your next step</p>
-      <p className="mt-2xs font-serif text-heading-sm font-semibold text-foreground">
-        Record a 60 second intro for your team
-      </p>
-      <p className="mt-xs text-ui-sm text-muted">From Maya, your coach</p>
-      <div className="mt-md rounded-control bg-surface-2 px-md py-sm">
-        <p className="text-ui-xs text-muted">Done so far</p>
-        <ul className="mt-xs space-y-xs">
-          <li className="flex items-center gap-xs text-ui text-body">
-            <IconCheck
-              size={16}
-              stroke={1.75}
-              aria-hidden="true"
-              className="shrink-0 text-muted"
-            />
-            Introduce yourself in three sentences
-          </li>
-          <li className="flex items-center gap-xs text-ui text-body">
-            <IconCheck
-              size={16}
-              stroke={1.75}
-              aria-hidden="true"
-              className="shrink-0 text-muted"
-            />
-            Say what you do in one plain sentence
-          </li>
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 export function LandingPage() {
   return (
     <>
@@ -149,7 +169,7 @@ export function LandingPage() {
         <Wordmark />
         <Link
           href="/sign-in"
-          className="inline-flex min-h-target-touch items-center px-sm text-ui font-medium text-body transition-colors hover:text-foreground"
+          className="-mr-sm inline-flex min-h-target-touch items-center px-sm text-ui font-medium text-body transition-colors hover:text-foreground"
         >
           Sign in
         </Link>
@@ -160,10 +180,21 @@ export function LandingPage() {
         <section
           className={cn(
             SHELL,
-            "grid gap-2xl pb-3xl pt-xl animate-fade-in lg:grid-cols-2 lg:items-center lg:pt-2xl"
+            "relative grid gap-2xl pb-3xl pt-xl animate-fade-in lg:grid-cols-2 lg:items-center lg:pt-2xl"
           )}
         >
-          <div>
+          {/* Decorative artwork behind the vignette; the same desaturated,
+              near-transparent treatment as the auth brand panels so it stays
+              a texture, never a competing focal point. */}
+          <Image
+            src="/illustrations/landing-hero-mind-map.svg"
+            alt=""
+            width={500}
+            height={500}
+            sizes="(min-width: 1024px) 40vw, 0px"
+            className="pointer-events-none absolute bottom-0 right-0 hidden h-auto w-full max-w-content object-contain opacity-20 saturate-0 select-none lg:block"
+          />
+          <div className="relative">
             <h1 className="max-w-content text-hero">
               English coaching that fits how your brain works.
             </h1>
@@ -182,7 +213,51 @@ export function LandingPage() {
               No streaks. No leaderboards. No guilt.
             </p>
           </div>
-          <NextStepVignette />
+        </section>
+
+        {/* Voices — proof placed before the page's own claims: real clients
+            say it first. One calm carousel; swipe, arrows, and dots all
+            reach every quote, and nothing advances on its own. */}
+        <section aria-labelledby="voices-heading" className="bg-surface py-3xl md:py-4xl">
+          <div className={SHELL}>
+            <h2 id="voices-heading" className="text-heading-lg">
+              From people who stopped abandoning apps
+            </h2>
+            <TestimonialCarousel
+              testimonials={TESTIMONIALS}
+              label="Client testimonials"
+              className="mt-2xl"
+            />
+          </div>
+        </section>
+
+        {/* Audience mirror — after the client voices, the page names the
+            lived experience in its own words. No action here; recognition
+            is the whole job. */}
+        <section aria-labelledby="mirror-heading" className="py-3xl md:py-4xl">
+          <div className={SHELL}>
+            <h2 id="mirror-heading" className="max-w-content text-heading-lg">
+              Sound familiar?
+            </h2>
+            <p className="mt-md max-w-content text-lead text-body">
+              FISH is built for neurodivergent professionals who are good at
+              their jobs and done with apps that fight their attention.
+            </p>
+            <ul className="mt-2xl max-w-content space-y-lg">
+              {MIRRORS.map((line) => (
+                <li key={line} className="flex gap-md text-copy text-body">
+                  <span aria-hidden="true" className="select-none text-muted">
+                    —
+                  </span>
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2xl max-w-content text-copy font-medium text-foreground">
+              If you nodded at any of these, you&apos;re exactly who FISH is
+              for.
+            </p>
+          </div>
         </section>
 
         {/* Features — spacious definition list, no icon-card grid. */}
@@ -208,78 +283,81 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* How it works — three quiet numbered steps. */}
-        <section aria-labelledby="how-heading" className={cn(SHELL, "py-3xl md:py-4xl")}>
-          <h2 id="how-heading" className="text-heading-lg">
-            How it works
-          </h2>
-          <ol className="mt-2xl max-w-content space-y-xl">
-            {STEPS.map((step, index) => (
-              <li key={step.title} className="flex items-start gap-md">
-                <span
-                  aria-hidden="true"
-                  className="flex size-target-touch shrink-0 items-center justify-center rounded-pill bg-surface-2 font-serif text-heading-sm font-semibold text-foreground"
-                >
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="text-heading-sm">{step.title}</h3>
-                  <p className="mt-xs text-body">{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+        {/* Anti-features — the other half of "Calm is the feature": what
+            stays out. Single-column statements, visually distinct from the
+            features grid above. */}
+        <section aria-labelledby="never-heading" className="py-3xl md:py-4xl">
+          <div className={SHELL}>
+            <h2 id="never-heading" className="max-w-content text-heading-lg">
+              What FISH will never do
+            </h2>
+            <p className="mt-md max-w-content text-lead text-body">
+              Half of building a calm app is refusing to build the loud one.
+            </p>
+            <ul className="mt-2xl max-w-content space-y-lg">
+              {NEVERS.map((item) => (
+                <li key={item.title} className="text-copy text-body">
+                  <strong className="font-semibold text-foreground">
+                    {item.title}.
+                  </strong>{" "}
+                  {item.body}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2xl max-w-content text-ui-sm text-muted">
+              If a feature would make someone feel bad for being human, it
+              doesn&apos;t ship.
+            </p>
+          </div>
         </section>
 
-        {/* Voices — one featured quote carries the section; two support it. */}
-        <section aria-labelledby="voices-heading" className="bg-surface py-3xl md:py-4xl">
+        {/* How it works — three quiet numbered steps. */}
+        <section aria-labelledby="how-heading" className="bg-surface py-3xl md:py-4xl">
           <div className={SHELL}>
-            <h2 id="voices-heading" className="text-heading-lg">
-              From people who stopped abandoning apps
+            <h2 id="how-heading" className="text-heading-lg">
+              How it works
             </h2>
-            <figure className="mt-2xl max-w-content">
-              <blockquote className="font-serif text-heading-lg font-semibold text-foreground">
-                “{FEATURED_QUOTE.quote}”
-              </blockquote>
-              <figcaption className="mt-md text-ui text-muted">
-                {FEATURED_QUOTE.name}, {FEATURED_QUOTE.role}
-              </figcaption>
-            </figure>
-            <div className="mt-2xl grid gap-xl md:grid-cols-2 md:gap-2xl">
-              {SUPPORTING_QUOTES.map((entry) => (
-                <figure key={entry.name} className="max-w-content">
-                  <blockquote className="text-copy text-body">
-                    “{entry.quote}”
-                  </blockquote>
-                  <figcaption className="mt-sm text-ui-sm text-muted">
-                    {entry.name}, {entry.role}
-                  </figcaption>
-                </figure>
+            <ol className="mt-2xl max-w-content space-y-xl">
+              {STEPS.map((step, index) => (
+                <li key={step.title} className="flex items-start gap-md">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-target-touch shrink-0 items-center justify-center rounded-pill bg-surface-2 font-serif text-heading-sm font-semibold text-foreground"
+                  >
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-heading-sm">{step.title}</h3>
+                    <p className="mt-xs text-body">{step.body}</p>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         </section>
 
         {/* FAQ — native details/summary, zero JS, divider hairlines only. */}
         <section aria-labelledby="faq-heading" className={cn(SHELL, "py-3xl md:py-4xl")}>
-          <h2 id="faq-heading" className="text-heading-lg">
-            Common questions
-          </h2>
-          <div className="mt-xl max-w-content divide-y divide-divider">
-            {FAQS.map((faq) => (
-              <details key={faq.question} className="group">
-                <summary className="flex min-h-target-touch cursor-pointer list-none items-center justify-between gap-md py-md text-ui-md font-medium text-foreground">
-                  {faq.question}
-                  <IconPlus
-                    size={20}
-                    stroke={1.75}
-                    aria-hidden="true"
-                    className="shrink-0 text-muted transition-transform group-open:rotate-45"
-                  />
-                </summary>
-                <p className="pb-lg text-body">{faq.answer}</p>
-              </details>
-            ))}
+          <div className="mx-auto w-full max-w-content">
+            <h2 id="faq-heading" className="text-heading-lg">
+              Common questions
+            </h2>
+            <div className="mt-xl divide-y divide-divider">
+              {FAQS.map((faq) => (
+                <details key={faq.question} className="group">
+                  <summary className="flex min-h-target-touch cursor-pointer list-none items-center justify-between gap-md py-md text-ui-md font-medium text-foreground">
+                    {faq.question}
+                    <IconPlus
+                      size={20}
+                      stroke={1.75}
+                      aria-hidden="true"
+                      className="shrink-0 text-muted transition-transform group-open:rotate-45"
+                    />
+                  </summary>
+                  <p className="pb-lg text-body">{faq.answer}</p>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 
