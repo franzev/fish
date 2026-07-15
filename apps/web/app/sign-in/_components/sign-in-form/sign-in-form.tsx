@@ -142,7 +142,6 @@ export function SignInForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               notice={passwordError || undefined}
-              reserveMessageSpace={false}
               required
             />
           </div>

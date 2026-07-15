@@ -63,6 +63,16 @@ describe("SignInForm", () => {
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
   });
 
+  it("reserves the password feedback row so notices do not shift the form", () => {
+    render(<SignInForm />);
+
+    const password = screen.getByLabelText("Password");
+    const feedbackRow = password.parentElement?.nextElementSibling;
+
+    expect(feedbackRow).toHaveClass("min-h-field-message");
+    expect(feedbackRow).toBeEmptyDOMElement();
+  });
+
   it("prefills credentials supplied by the server", () => {
     render(
       <SignInForm
