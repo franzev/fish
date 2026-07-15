@@ -9,6 +9,7 @@ const nearBottomThreshold = 100;
 interface UseStickToBottomOptions {
   messages: LocalMessage[];
   currentUserId: string;
+  suspendAutoScroll?: boolean;
 }
 
 /** Conditional stick-to-bottom for the chat log: jump to the newest message
@@ -18,6 +19,7 @@ interface UseStickToBottomOptions {
 export function useStickToBottom({
   messages,
   currentUserId,
+  suspendAutoScroll = false,
 }: UseStickToBottomOptions) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const isNearBottomRef = useRef(true);
@@ -82,13 +84,13 @@ export function useStickToBottom({
     }
 
     const observer = new ResizeObserver(() => {
-      if (isNearBottomRef.current) {
+      if (!suspendAutoScroll && isNearBottomRef.current) {
         viewport.scrollTop = viewport.scrollHeight;
       }
     });
     observer.observe(content);
     return () => observer.disconnect();
-  }, []);
+  }, [suspendAutoScroll]);
 
   // New message: follow own sends and near-bottom readers; otherwise leave
   // the reading position alone and raise the pill instead. Keyed off the
@@ -106,13 +108,17 @@ export function useStickToBottom({
       return;
     }
 
+    if (suspendAutoScroll) {
+      return;
+    }
+
     if (lastMessage?.senderId === currentUserId || isNearBottomRef.current) {
       scrollToBottom();
       return;
     }
 
     setShowNewMessages(true);
-  }, [messages, currentUserId, scrollToBottom]);
+  }, [messages, currentUserId, scrollToBottom, suspendAutoScroll]);
 
   return { viewportRef, showNewMessages, scrollToBottom };
 }

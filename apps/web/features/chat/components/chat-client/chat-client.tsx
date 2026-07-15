@@ -256,6 +256,7 @@ export function ChatClient({
   const { viewportRef, showNewMessages, scrollToBottom } = useStickToBottom({
     messages,
     currentUserId: chat.currentUserId,
+    suspendAutoScroll: Boolean(focusMessageId),
   });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const requestedFocusMessageRef = useRef<string | null>(null);
@@ -281,12 +282,9 @@ export function ChatClient({
       return;
     }
     const frame = requestAnimationFrame(() => {
-      const reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
       document.getElementById(`message-${focusMessageId}`)?.scrollIntoView({
         block: "center",
-        behavior: reducedMotion ? "auto" : "smooth",
+        behavior: "auto",
       });
     });
     return () => cancelAnimationFrame(frame);

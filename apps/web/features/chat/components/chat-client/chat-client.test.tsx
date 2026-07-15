@@ -583,6 +583,44 @@ describe("ChatClient", () => {
     HTMLElement.prototype.scrollIntoView = previousScrollIntoView;
   });
 
+  it("fetches and focuses a notification target outside the initial message window", async () => {
+    const previousScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    const refreshMessagesAction = vi.fn().mockResolvedValue({
+      status: "sent",
+      values: { messageIds: ["message-older"] },
+      messages: [
+        {
+          ...chat.messages[0],
+          id: "message-older",
+          body: "An older notification target",
+          clientRequestId: "seed-older",
+          createdAt: "2026-07-04T00:00:00.000Z",
+        },
+      ],
+    });
+
+    render(
+      <ChatClient
+        chat={chat}
+        sendMessageAction={vi.fn()}
+        refreshMessagesAction={refreshMessagesAction}
+        focusMessageId="message-older"
+      />
+    );
+
+    await waitFor(() =>
+      expect(refreshMessagesAction).toHaveBeenCalledWith({
+        messageIds: ["message-older"],
+      })
+    );
+    const target = await screen.findByText("An older notification target");
+    expect(target.closest("li")).toHaveClass("bg-chat-active");
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    HTMLElement.prototype.scrollIntoView = previousScrollIntoView;
+  });
+
   it("uses the full-width hover geometry for a focused community message", () => {
     const communityChat: ClientChatData = {
       ...chat,

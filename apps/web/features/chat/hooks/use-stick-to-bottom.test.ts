@@ -39,10 +39,15 @@ const stateHolder: { current: ReturnType<typeof useStickToBottom> | null } = {
 interface HarnessProps {
   messages: LocalMessage[];
   currentUserId: string;
+  suspendAutoScroll?: boolean;
 }
 
-function Harness({ messages, currentUserId }: HarnessProps) {
-  const state = useStickToBottom({ messages, currentUserId });
+function Harness({ messages, currentUserId, suspendAutoScroll }: HarnessProps) {
+  const state = useStickToBottom({
+    messages,
+    currentUserId,
+    suspendAutoScroll,
+  });
   // Reporting into the module-level holder happens in an effect (outside
   // render) so the test can read the latest hook return value after each
   // render/rerender without the harness needing its own exposed state.
@@ -117,5 +122,34 @@ describe("useStickToBottom", () => {
 
     expect(scrollToSpy).not.toHaveBeenCalled();
     expect(stateHolder.current?.showNewMessages).toBe(true);
+  });
+
+  it("does not pin to the newest message while a deep-linked message owns the scroll position", () => {
+    const initialMessages = [makeMessage("message-1")];
+    const { container, rerender } = render(
+      createElement(Harness, {
+        messages: initialMessages,
+        currentUserId: "client-1",
+        suspendAutoScroll: true,
+      })
+    );
+    const viewport = container.firstElementChild as HTMLDivElement;
+    markViewportPosition(viewport, true);
+
+    const scrollToSpy = vi.spyOn(viewport, "scrollTo");
+    const nextMessages = [
+      ...initialMessages,
+      makeMessage("message-2", { senderId: "coach-1" }),
+    ];
+    rerender(
+      createElement(Harness, {
+        messages: nextMessages,
+        currentUserId: "client-1",
+        suspendAutoScroll: true,
+      })
+    );
+
+    expect(scrollToSpy).not.toHaveBeenCalled();
+    expect(stateHolder.current?.showNewMessages).toBe(false);
   });
 });
