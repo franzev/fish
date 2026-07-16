@@ -1,9 +1,12 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { IconButton } from "@/components/ui/icon-button";
 import type { GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
 import { Tabs } from "@base-ui/react/tabs";
+import { IconX } from "@tabler/icons-react";
+import type { Ref } from "react";
 import { EmojiPicker } from "../emoji-picker";
 import { GifPicker } from "../gif-picker";
 import { StickerPicker, type ChatSticker } from "../sticker-picker";
@@ -18,6 +21,8 @@ interface MediaPickerProps {
   gifDisabled?: boolean;
   stickerDisabled?: boolean;
   gifProvider?: GifProvider;
+  onClose?: () => void;
+  closeButtonRef?: Ref<HTMLButtonElement>;
 }
 
 const tabClassName =
@@ -38,6 +43,8 @@ export function MediaPicker({
   gifDisabled,
   stickerDisabled,
   gifProvider,
+  onClose,
+  closeButtonRef,
 }: MediaPickerProps) {
   return (
     <Card
@@ -45,6 +52,20 @@ export function MediaPicker({
       aria-label="Choose emoji, GIF, or sticker"
       className="flex h-media-panel-h w-media-panel max-w-search-pop-mobile flex-col overflow-hidden border border-divider p-0"
     >
+      {onClose && (
+        <div className="flex min-h-control shrink-0 items-center border-b border-divider px-xs md:hidden">
+          <p className="flex-1 px-xs text-ui-md font-semibold text-foreground">
+            Add to message
+          </p>
+          <IconButton
+            ref={closeButtonRef}
+            label="Close expression picker"
+            appearance="ghost"
+            onClick={onClose}
+            icon={<IconX size={20} stroke={1.75} aria-hidden="true" />}
+          />
+        </div>
+      )}
       <Tabs.Root defaultValue={defaultTab} className="flex min-h-0 flex-1 flex-col">
         <Tabs.List
           aria-label="Expression type"

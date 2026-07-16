@@ -117,13 +117,18 @@ export function MessagesPopover({
 
     let idleCallbackId: number | undefined;
     let timeoutId: number | undefined;
+    let scheduled = false;
+    const desktopQuery = window.matchMedia("(min-width: 48rem)");
     const unreadCountChanged = previousUnreadCountRef.current !== unreadCount;
     previousUnreadCountRef.current = unreadCount;
 
     const preload = () => {
+      scheduled = false;
       void loadPreview(unreadCountChanged);
     };
     const schedulePreload = () => {
+      if (!desktopQuery.matches || scheduled) return;
+      scheduled = true;
       const requestIdleCallback = Reflect.get(window, "requestIdleCallback") as
         | Window["requestIdleCallback"]
         | undefined;
@@ -133,15 +138,7 @@ export function MessagesPopover({
         timeoutId = window.setTimeout(preload, 0);
       }
     };
-
-    if (document.readyState === "complete") {
-      schedulePreload();
-    } else {
-      window.addEventListener("load", schedulePreload, { once: true });
-    }
-
-    return () => {
-      window.removeEventListener("load", schedulePreload);
+    const cancelPreload = () => {
       const cancelIdleCallback = Reflect.get(window, "cancelIdleCallback") as
         | Window["cancelIdleCallback"]
         | undefined;
@@ -149,6 +146,26 @@ export function MessagesPopover({
         cancelIdleCallback.call(window, idleCallbackId);
       }
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      idleCallbackId = undefined;
+      timeoutId = undefined;
+      scheduled = false;
+    };
+    const handleLayoutChange = () => {
+      if (desktopQuery.matches) schedulePreload();
+      else cancelPreload();
+    };
+
+    if (document.readyState === "complete") {
+      schedulePreload();
+    } else {
+      window.addEventListener("load", schedulePreload, { once: true });
+    }
+    desktopQuery.addEventListener("change", handleLayoutChange);
+
+    return () => {
+      window.removeEventListener("load", schedulePreload);
+      desktopQuery.removeEventListener("change", handleLayoutChange);
+      cancelPreload();
     };
   }, [loadPreview, loadPreviewAction, unreadCount]);
 

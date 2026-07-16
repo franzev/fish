@@ -19,7 +19,7 @@ import {
 import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
 import { Tooltip } from "@base-ui/react/tooltip";
-import groups from "unicode-emoji-json/data-by-group.json";
+import groups from "@fish/core/chat-media/emoji-groups.json";
 import { type ReactElement, ReactNode, forwardRef, useMemo, useState } from "react";
 import { MediaPickerScrollArea } from "../media-picker-scroll-area";
 import { MediaPickerSearch } from "../media-picker-search";
@@ -36,8 +36,8 @@ interface EmojiGroup {
   emojis: EmojiEntry[];
 }
 
-// Bundled dataset (unicode-emoji-json) — no CDN calls, no network dependency
-// for the picker to render.
+// Shared platform-neutral catalog generated from unicode-emoji-json — no CDN
+// calls and identical search vocabulary on web and Android.
 const emojiGroups = groups as EmojiGroup[];
 
 // Monochrome Tabler icon per category — colored emoji glyphs as tab icons
@@ -74,6 +74,7 @@ interface EmojiPickerProps {
  *  results across every category. */
 export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPickerProps) {
   const [query, setQuery] = useState("");
+  const [activeGroup, setActiveGroup] = useState(emojiGroups[0]?.slug ?? "");
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -123,7 +124,8 @@ export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPick
         </MediaPickerScrollArea>
       ) : (
         <Tabs.Root
-          defaultValue={emojiGroups[0]?.slug}
+          value={activeGroup}
+          onValueChange={setActiveGroup}
           className="flex min-h-0 flex-1 flex-col"
         >
           {emojiGroups.map((group) => (
@@ -137,7 +139,19 @@ export function EmojiPicker({ onSelect, className, embedded = false }: EmojiPick
               </MediaPickerScrollArea>
             </Tabs.Panel>
           ))}
-          <IconTabStrip items={groupTabs} ariaLabel="Emoji category" />
+          <div className="shrink-0 border-t border-divider bg-surface">
+            <p
+              data-slot="emoji-category-label"
+              className="px-sm pt-xs text-ui-xs text-body md:hidden"
+            >
+              {emojiGroups.find((group) => group.slug === activeGroup)?.name}
+            </p>
+            <IconTabStrip
+              items={groupTabs}
+              ariaLabel="Emoji category"
+              className="border-t-0"
+            />
+          </div>
         </Tabs.Root>
       )}
     </PickerRoot>
@@ -156,7 +170,7 @@ function EmojiGroupList({
   return (
     <div className="mb-sm">
       {heading && <p className="mb-2xs text-ui-xs text-muted">{heading}</p>}
-      <div className="grid grid-cols-6 gap-2xs">
+      <div className="grid grid-cols-5 gap-2xs sm:grid-cols-6">
         {emojis.map((entry) => (
           <button
             key={entry.slug}

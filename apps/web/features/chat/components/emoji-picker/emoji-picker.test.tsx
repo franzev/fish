@@ -11,12 +11,29 @@ describe("EmojiPicker", () => {
       "border-divider"
     );
     expect(screen.getByRole("tablist")).toHaveClass(
+      "border-t-0"
+    );
+    expect(screen.getByRole("tablist").parentElement).toHaveClass(
       "border-t",
       "border-divider"
+    );
+    expect(document.querySelector("[data-slot='emoji-category-label']")).toHaveTextContent(
+      "Smileys & Emotion"
     );
     expect(screen.getByRole("tab", { name: "Animals & Nature" })).not.toHaveTextContent(
       "Animals & Nature"
     );
+  });
+
+  it("keeps emoji targets at least five calm columns on narrow phones", () => {
+    render(<EmojiPicker onSelect={() => undefined} />);
+
+    const firstEmoji = screen.getAllByRole("button")[0];
+    expect(firstEmoji?.parentElement).toHaveClass(
+      "grid-cols-5",
+      "sm:grid-cols-6"
+    );
+    expect(firstEmoji).toHaveClass("min-h-target-touch", "w-full");
   });
 
   it("shows a Base UI tooltip when a category receives focus", async () => {

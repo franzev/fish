@@ -38,6 +38,20 @@ describe("MediaPicker", () => {
     expectSharedPickerSearch("Search stickers");
     expect(screen.queryByRole("group", { name: "Sticker style" })).toBeNull();
   });
+
+  it("provides an explicit mobile close route when hosted as a sheet", () => {
+    const onClose = vi.fn();
+    render(
+      <MediaPicker {...callbacks} gifProvider={provider} onClose={onClose} />
+    );
+
+    const close = screen.getByRole("button", {
+      name: "Close expression picker",
+    });
+    expect(close.parentElement).toHaveClass("md:hidden");
+    fireEvent.click(close);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });
 
 function expectSharedPickerSearch(name: string) {

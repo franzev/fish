@@ -74,6 +74,33 @@ describe("MessagesPopover", () => {
     expect(loadPreviewAction).toHaveBeenCalledTimes(1);
   });
 
+  it("does not preload the desktop-only preview on mobile", () => {
+    const loadPreviewAction = vi.fn(async () => previewResult());
+    const requestIdleCallback = vi.fn();
+    vi.stubGlobal("requestIdleCallback", requestIdleCallback);
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: !query.includes("min-width"),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })));
+
+    render(
+      <MessagesPopover
+        unreadCount={3}
+        loadPreviewAction={loadPreviewAction}
+      />
+    );
+    window.dispatchEvent(new Event("load"));
+
+    expect(requestIdleCallback).not.toHaveBeenCalled();
+    expect(loadPreviewAction).not.toHaveBeenCalled();
+  });
+
   it("opens a desktop inbox preview with filters, count, and page controls", async () => {
     const loadPreviewAction = vi.fn(async () => previewResult());
     render(

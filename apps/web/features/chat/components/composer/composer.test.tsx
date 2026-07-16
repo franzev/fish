@@ -35,7 +35,8 @@ describe("Composer", () => {
     render(<Composer {...baseProps} />);
 
     expect(screen.getByRole("textbox", { name: "Message" })).toHaveClass(
-      "text-ui-sm"
+      "text-ui-md",
+      "md:text-ui-sm"
     );
   });
 
@@ -91,6 +92,10 @@ describe("Composer", () => {
   it("hides the Send button while the draft is empty", () => {
     render(<Composer {...baseProps} canSend={false} />);
     expect(screen.queryByRole("button", { name: "Send message" })).toBeNull();
+    expect(document.querySelector("[data-slot='mobile-send-reserved-space']")).toHaveClass(
+      "size-control",
+      "max-md:inline-flex"
+    );
   });
 
   it("shows the Send button once there is something to send", () => {

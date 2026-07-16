@@ -3,9 +3,10 @@
 import { IconButton } from "@/components/ui/icon-button";
 import type { GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
+import { useMobileLayout } from "@/hooks/use-mobile-layout";
 import { Popover } from "@base-ui/react/popover";
 import { IconMoodSmile } from "@tabler/icons-react";
-import { forwardRef, useState, type ReactNode } from "react";
+import { forwardRef, useRef, useState, type ReactNode } from "react";
 import { MediaPicker, type MediaPickerTab } from "../media-picker";
 import type { ChatSticker } from "../sticker-picker";
 
@@ -43,6 +44,8 @@ export const MediaPickerButton = forwardRef<
   ref
 ) {
   const [open, setOpen] = useState(false);
+  const mobile = useMobileLayout();
+  const closeRef = useRef<HTMLButtonElement>(null);
   const closeAfter = <Args extends unknown[]>(
     callback: (...args: Args) => void
   ) => (...args: Args) => {
@@ -51,7 +54,11 @@ export const MediaPickerButton = forwardRef<
   };
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root
+      open={open}
+      onOpenChange={setOpen}
+      modal={mobile ? "trap-focus" : false}
+    >
       <Popover.Trigger
         render={
           <IconButton
@@ -66,13 +73,24 @@ export const MediaPickerButton = forwardRef<
         }
       />
       <Popover.Portal>
-        <Popover.Positioner side="top" align="end" sideOffset={4} className="z-20">
-          <Popover.Popup initialFocus={false} role="presentation">
+        <Popover.Backdrop className="fixed inset-0 z-40 hidden bg-scrim max-md:block" />
+        <Popover.Positioner
+          side="top"
+          align="end"
+          sideOffset={4}
+          className="media-picker-positioner z-50"
+        >
+          <Popover.Popup
+            initialFocus={mobile ? closeRef : false}
+            role="presentation"
+          >
             <MediaPicker
               defaultTab={defaultTab}
               gifDisabled={gifDisabled}
               stickerDisabled={stickerDisabled}
               gifProvider={gifProvider}
+              onClose={() => setOpen(false)}
+              closeButtonRef={closeRef}
               onSelectEmoji={closeAfter(onSelectEmoji)}
               onSelectGif={closeAfter(onSelectGif)}
               onSelectSticker={closeAfter(onSelectSticker)}

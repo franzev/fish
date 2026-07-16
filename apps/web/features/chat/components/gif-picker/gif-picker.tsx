@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { useGifReducedMotion } from "@/features/chat/hooks/use-gif-reduced-motion";
 import { gifProvider, type GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
 import { cn } from "@/lib/utils";
@@ -34,10 +35,9 @@ export function GifPicker({
   const [next, setNext] = useState<string | null>(null);
   const [status, setStatus] = useState<PickerStatus>("loading");
   const [loadingMore, setLoadingMore] = useState(false);
-  const [animationsPaused, setAnimationsPaused] = useState(() =>
-    typeof window !== "undefined"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  const reducedMotion = useGifReducedMotion();
+  const [animationPreference, setAnimationPreference] = useState<boolean | null>(null);
+  const animationsPaused = animationPreference ?? reducedMotion;
   const requestSequence = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -123,7 +123,7 @@ export function GifPicker({
             <button
               type="button"
               aria-pressed={animationsPaused}
-              onClick={() => setAnimationsPaused((current) => !current)}
+              onClick={() => setAnimationPreference(!animationsPaused)}
               className="min-h-target-touch rounded-control px-xs text-ui-xs text-muted hover:bg-surface-2 hover:text-body"
             >
               {animationsPaused ? "Play GIF animations" : "Pause GIF animations"}

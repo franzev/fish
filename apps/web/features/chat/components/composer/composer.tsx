@@ -110,6 +110,7 @@ export function Composer({
 }: ComposerProps) {
   const [dragActive, setDragActive] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const resizedDraftRef = useRef<string | null>(null);
   const hasSendContent =
     draft.trim().length > 0
     || images.length > 0
@@ -123,6 +124,10 @@ export function Composer({
   };
 
   useLayoutEffect(() => {
+    if (resizedDraftRef.current === draft) {
+      resizedDraftRef.current = null;
+      return;
+    }
     if (textareaRef.current) resizeComposer(textareaRef.current);
   }, [draft]);
 
@@ -139,7 +144,7 @@ export function Composer({
       <div className="rounded-control bg-surface-2">
         <ImageUploadPreview images={images} onRemove={onRemoveImage} onRetry={onRetryImage} />
         {selectedGif && <GifSelectionPreview gif={selectedGif} onRemove={onRemoveGif} />}
-        <div className="flex items-end gap-xs p-xs">
+        <div className="flex items-end gap-2xs p-xs md:gap-xs">
           {selectedStickerId ? (
             <StickerSelectionThumbnail
               stickerId={selectedStickerId}
@@ -154,6 +159,7 @@ export function Composer({
             value={draft}
             onChange={(event) => {
               resizeComposer(event.currentTarget);
+              resizedDraftRef.current = event.currentTarget.value;
               onDraftChange(event.currentTarget.value);
             }}
             onKeyDown={onKeyDown}
@@ -161,7 +167,7 @@ export function Composer({
             rows={1}
             enterKeyHint="send"
             placeholder={channelName ? `Message #${channelName}` : "Message"}
-            className="h-control max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-xs pb-xs pt-sm text-ui-sm text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent"
+            className="h-control max-h-chat-composer-max-height min-h-control min-w-0 flex-1 resize-none border-none bg-transparent px-2xs pb-xs pt-sm text-ui-md text-foreground outline-none placeholder:text-muted focus-visible:bg-transparent md:px-xs md:text-ui-sm"
           />
           <MediaPickerButton
             onSelectEmoji={onSelectEmoji}
@@ -211,6 +217,13 @@ export function Composer({
                 )}
               </Tooltip.Root>
             </Tooltip.Provider>
+          )}
+          {!hasSendContent && (
+            <span
+              data-slot="mobile-send-reserved-space"
+              aria-hidden="true"
+              className="hidden size-control shrink-0 max-md:inline-flex"
+            />
           )}
         </div>
       </div>

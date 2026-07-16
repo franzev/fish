@@ -3,18 +3,9 @@
 import { IconButton } from "@/components/ui/icon-button";
 import type { ClientChatGif } from "@/lib/services";
 import { cn } from "@/lib/utils";
+import { useGifReducedMotion } from "@/features/chat/hooks/use-gif-reduced-motion";
 import { IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
-import { useState, useSyncExternalStore } from "react";
-
-function subscribeToReducedMotion(onChange: () => void): () => void {
-  const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-function getReducedMotionSnapshot(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+import { useState } from "react";
 
 interface GifMediaProps {
   gif: ClientChatGif;
@@ -37,11 +28,7 @@ export function GifMedia({
   fixedAspect = false,
   className,
 }: GifMediaProps) {
-  const reducedMotion = useSyncExternalStore(
-    subscribeToReducedMotion,
-    getReducedMotionSnapshot,
-    () => false
-  );
+  const reducedMotion = useGifReducedMotion();
   const [localPlayRequested, setLocalPlayRequested] = useState(false);
   const [paused, setPaused] = useState(false);
   const [failed, setFailed] = useState(false);

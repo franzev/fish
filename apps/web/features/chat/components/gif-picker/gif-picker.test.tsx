@@ -21,6 +21,7 @@ const originalMatchMedia = window.matchMedia;
 
 afterEach(() => {
   window.matchMedia = originalMatchMedia;
+  delete document.documentElement.dataset.reducedMotion;
 });
 
 function provider(overrides: Partial<GifProvider> = {}): GifProvider {
@@ -110,6 +111,28 @@ describe("GifPicker", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Play GIF animations" }));
     expect(screen.getByLabelText(gif.description)).toHaveAttribute("src", gif.previewUrl);
+  });
+
+  it("starts paused for the explicit mobile reduced-motion preference", async () => {
+    document.documentElement.dataset.reducedMotion = "true";
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+
+    render(<GifPicker provider={provider()} onSelect={() => undefined} />);
+    await screen.findByRole("button", { name: `Choose ${gif.description}` });
+
+    expect(screen.getByRole("img", { name: gif.description })).toHaveAttribute(
+      "src",
+      gif.posterUrl
+    );
   });
 
   it("shows a calm unavailable state when the provider is not configured", async () => {

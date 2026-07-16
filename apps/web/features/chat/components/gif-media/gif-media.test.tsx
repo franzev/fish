@@ -20,6 +20,7 @@ const originalMatchMedia = window.matchMedia;
 
 afterEach(() => {
   window.matchMedia = originalMatchMedia;
+  delete document.documentElement.dataset.reducedMotion;
 });
 
 describe("GifMedia", () => {
@@ -43,6 +44,43 @@ describe("GifMedia", () => {
     render(<GifMedia gif={gif} allowPlaybackControl />);
     expect(screen.getByRole("img", { name: gif.description })).toHaveAttribute("src", gif.posterUrl);
     fireEvent.click(screen.getByRole("button", { name: `Play GIF: ${gif.description}` }));
+    expect(screen.getByLabelText(gif.description)).toHaveAttribute("src", gif.mediaUrl);
+  });
+
+  it("honors the explicit FISH reduced-motion preference on mobile", () => {
+    document.documentElement.dataset.reducedMotion = "true";
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+
+    render(<GifMedia gif={gif} allowPlaybackControl />);
+    expect(screen.getByRole("img", { name: gif.description })).toHaveAttribute(
+      "src",
+      gif.posterUrl
+    );
+  });
+
+  it("preserves explicit-preference playback behavior on desktop", () => {
+    document.documentElement.dataset.reducedMotion = "true";
+    window.matchMedia = ((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+
+    render(<GifMedia gif={gif} allowPlaybackControl />);
     expect(screen.getByLabelText(gif.description)).toHaveAttribute("src", gif.mediaUrl);
   });
 
