@@ -1,0 +1,49 @@
+name: Catalog
+options:
+  bundleIdPrefix: app.fish
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  FishKit:
+    path: ../FishKit
+targets:
+  Catalog:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    dependencies:
+      - package: FishKit
+        product: DesignSystem
+      - package: FishKit
+        product: UIComponents
+      - package: FishKit
+        product: PersonalChat
+      - package: FishKit
+        product: TestSupport
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.fish.catalog
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+  CatalogUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: Catalog
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.fish.catalog-uitests
+schemes:
+  Catalog:
+    build:
+      targets:
+        Catalog: all
+        CatalogUITests: [test]
+    test:
+      targets:
+        - CatalogUITests

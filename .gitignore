@@ -26,3 +26,9 @@ xcuserdata/
 # Scratch working files
 tmp/
 apps/web/tmp/
+
+# iOS
+apps/ios/**/xcuserdata/
+apps/ios/**/.build/
+apps/ios/**/DerivedData/
+apps/ios/Catalog/Catalog.xcodeproj/

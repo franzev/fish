@@ -39,10 +39,16 @@ internal object GeneratedColors {
     val Foreground = GeneratedColorToken(oklch(0.15, 0.0, 0.0, 1.0), oklch(0.97, 0.0, 0.0, 1.0))
     val Body = GeneratedColorToken(oklch(0.32, 0.0, 0.0, 1.0), oklch(0.88, 0.0, 0.0, 1.0))
     val Muted = GeneratedColorToken(oklch(0.5, 0.0, 0.0, 1.0), oklch(0.68, 0.0, 0.0, 1.0))
+    val SkeletonAuthor = GeneratedColorToken(oklch(0.82, 0.0, 0.0, 1.0), oklch(0.38, 0.0, 0.0, 1.0))
     val Notice = GeneratedColorToken(oklch(0.4, 0.0, 0.0, 1.0), oklch(0.8, 0.0, 0.0, 1.0))
     val Error = GeneratedColorToken(oklch(0.45, 0.14, 20.0, 1.0), oklch(0.78, 0.11, 20.0, 1.0))
     val Warning = GeneratedColorToken(oklch(0.42, 0.12, 80.0, 1.0), oklch(0.78, 0.12, 80.0, 1.0))
     val Success = GeneratedColorToken(oklch(0.4, 0.11, 150.0, 1.0), oklch(0.75, 0.12, 150.0, 1.0))
+    val PresenceOnline = GeneratedColorToken(oklch(0.4, 0.11, 150.0, 1.0), oklch(0.75, 0.12, 150.0, 1.0))
+    val PresenceIdle = GeneratedColorToken(oklch(0.45, 0.12, 85.0, 1.0), oklch(0.78, 0.12, 85.0, 1.0))
+    val PresenceAway = GeneratedColorToken(oklch(0.45, 0.13, 55.0, 1.0), oklch(0.76, 0.12, 55.0, 1.0))
+    val PresenceBusy = GeneratedColorToken(oklch(0.45, 0.12, 20.0, 1.0), oklch(0.77, 0.1, 20.0, 1.0))
+    val PresenceOffline = GeneratedColorToken(oklch(0.46, 0.0, 0.0, 1.0), oklch(0.7, 0.0, 0.0, 1.0))
     val Scrim = GeneratedColorToken(oklch(0.15, 0.0, 0.0, 0.4), oklch(0.0, 0.0, 0.0, 0.6))
 }
 
@@ -108,6 +114,9 @@ internal object GeneratedDurations {
     const val Fade = 200
     const val Message = 200
     const val Typing = 1200
+    const val TypingDelayShort = 150
+    const val TypingDelayLong = 300
+    const val Reaction = 180
     const val Progress = 500
     const val Skeleton = 1400
 }
