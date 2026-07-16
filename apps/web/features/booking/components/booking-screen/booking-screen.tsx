@@ -6,6 +6,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/features/chat";
 import { IconX } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
 import { useActionState, useState } from "react";
 import type {
   BookLessonAction,
@@ -50,7 +51,10 @@ export function BookingScreen({
         />
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className={cn(
+        "flex-1 overflow-y-auto",
+        selected && "mobile-booking-content-safe"
+      )}>
         {!coach || slots.length === 0 ? (
           <main className="mx-auto flex min-h-full w-full max-w-content flex-col justify-center px-page py-xl">
             <Card>
@@ -91,9 +95,20 @@ export function BookingScreen({
               </p>
             </section>
 
-            <aside className="w-full lg:sticky lg:top-xl lg:w-notifications" aria-label="Lesson summary">
-              <Card>
-                <div className="flex items-center gap-sm">
+            <aside
+              className={cn(
+                "w-full lg:sticky lg:top-xl lg:w-notifications",
+                selected && "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30"
+              )}
+              aria-label="Lesson summary"
+            >
+              <Card className={cn(
+                selected && "mobile-controls-safe max-md:rounded-none max-md:border-t max-md:border-divider"
+              )}>
+                <div className={cn(
+                  "flex items-center gap-sm",
+                  selected && "max-md:hidden"
+                )}>
                   <Avatar
                     profileId={coach.id}
                     src={coach.avatarUrl ?? undefined}
@@ -107,7 +122,10 @@ export function BookingScreen({
                   </div>
                 </div>
 
-                <div className="my-lg border-t border-divider" />
+                <div className={cn(
+                  "my-lg border-t border-divider",
+                  selected && "max-md:hidden"
+                )} />
 
                 <div aria-live="polite" className="min-h-control">
                   {selected ? (

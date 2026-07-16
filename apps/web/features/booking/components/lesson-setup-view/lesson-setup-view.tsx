@@ -8,6 +8,7 @@ import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
 import type { TimeFormatPref } from "@/lib/prefs/time-format";
 import type { LessonSlot } from "@/lib/services";
 import { cn } from "@/lib/utils";
+import { useMobileLayout } from "@/hooks/use-mobile-layout";
 import { Tooltip } from "@base-ui/react/tooltip";
 import {
   IconCamera,
@@ -68,6 +69,7 @@ function devicesByKind(devices: LessonMediaDevice[], kind: MediaDeviceKind) {
 
 export function LessonSetupView(props: LessonSetupViewProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mobile = useMobileLayout();
   const {
     coach, lesson, locale, timeZone, timeFormatPref, ended, joinable,
     mediaStatus, connectionStatus, stream, microphoneAvailable, cameraAvailable,
@@ -112,6 +114,23 @@ export function LessonSetupView(props: LessonSetupViewProps) {
   const cameraDevices = devicesByKind(devices, "videoinput");
   const speakerDevices = devicesByKind(devices, "audiooutput");
   const microphoneActive = microphoneEnabled && microphoneLevel >= 0.15;
+  const setupAnnouncement = [
+    mediaStatus === "starting"
+      ? "Camera and microphone are starting."
+      : cameraEnabled
+        ? "Camera is ready."
+        : "Camera is unavailable or off.",
+    microphoneEnabled
+      ? "Microphone is ready."
+      : "Microphone is unavailable or muted.",
+    connectionStatus === "waiting"
+      ? "Connection check is waiting."
+      : connectionStatus === "checking"
+        ? "Connection is being checked."
+        : connectionStatus === "ready"
+          ? "Connection is ready."
+          : "Connection check needs another try.",
+  ].join(" ");
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-bg">
@@ -151,7 +170,15 @@ export function LessonSetupView(props: LessonSetupViewProps) {
           <p className="mt-xs text-body">{formatLessonTime(lesson.startsAt, timeFormatPref, { locale, timeZone })} · {formatTimeZoneLabel(timeZone, lesson.startsAt)}</p>
           <p className="mt-md text-body">{joinable ? "Your lesson is ready when you are." : "This check is private and won’t notify your coach."}</p>
 
-          <div className="mt-lg divide-y divide-divider" aria-live="polite">
+          {mobile && (
+            <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+              {setupAnnouncement}
+            </p>
+          )}
+          <div
+            className="mt-lg divide-y divide-divider"
+            aria-live={mobile ? undefined : "polite"}
+          >
             <div className="flex items-center gap-sm py-sm">
               {cameraEnabled ? <IconCheck size={20} aria-hidden="true" /> : <IconCameraOff size={20} aria-hidden="true" />}
               <span className="text-ui text-body">{mediaStatus === "starting" ? "Starting your camera…" : cameraEnabled ? "Camera is working" : "Camera is unavailable or off"}</span>

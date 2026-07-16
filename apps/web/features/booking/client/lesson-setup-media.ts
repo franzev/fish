@@ -30,6 +30,8 @@ interface LessonSetupMediaCallbacks {
   onTrackEnded(kind: "audio" | "video"): void;
 }
 
+const MOBILE_MICROPHONE_PUBLISH_INTERVAL_MS = 100;
+
 function mediaError(error: unknown): LessonMediaError {
   if (
     error instanceof DOMException &&
@@ -50,6 +52,10 @@ export class LessonSetupMediaSession {
   private analyserFrame: number | null = null;
   private microphoneLevel = 0;
   private smoothedMicrophoneLevel = 0;
+  private lastMicrophonePublishAt = Number.NEGATIVE_INFINITY;
+  private readonly limitMicrophoneUpdates =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 47.999rem)").matches;
 
   constructor(private readonly callbacks: LessonSetupMediaCallbacks) {}
 
@@ -291,7 +297,7 @@ export class LessonSetupMediaSession {
         new MediaStream([audioTrack])
       ).connect(analyser);
       const samples = new Uint8Array(analyser.fftSize);
-      const readLevel = () => {
+      const readLevel = (timestamp: number) => {
         analyser.getByteTimeDomainData(samples);
         let sumOfSquares = 0;
         for (const sample of samples) {
@@ -312,7 +318,7 @@ export class LessonSetupMediaSession {
         if (this.smoothedMicrophoneLevel < 0.01) {
           this.smoothedMicrophoneLevel = 0;
         }
-        this.updateMicrophoneLevel(this.smoothedMicrophoneLevel);
+        this.updateMicrophoneLevel(this.smoothedMicrophoneLevel, timestamp);
         this.analyserFrame = window.requestAnimationFrame(readLevel);
       };
       this.analyserFrame = window.requestAnimationFrame(readLevel);
@@ -332,10 +338,21 @@ export class LessonSetupMediaSession {
     this.updateMicrophoneLevel(0);
   }
 
-  private updateMicrophoneLevel(level: number): void {
+  private updateMicrophoneLevel(level: number, timestamp = 0): void {
     const nextLevel = Math.round(level * 100) / 100;
     if (nextLevel === this.microphoneLevel) return;
+    if (
+      this.limitMicrophoneUpdates &&
+      nextLevel !== 0 &&
+      timestamp - this.lastMicrophonePublishAt <
+        MOBILE_MICROPHONE_PUBLISH_INTERVAL_MS
+    ) {
+      return;
+    }
     this.microphoneLevel = nextLevel;
+    this.lastMicrophonePublishAt = nextLevel === 0
+      ? Number.NEGATIVE_INFINITY
+      : timestamp;
     this.callbacks.onMicrophoneLevel(nextLevel);
   }
 }

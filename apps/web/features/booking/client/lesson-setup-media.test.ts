@@ -160,6 +160,59 @@ describe("LessonSetupMediaSession", () => {
     session.stop();
   });
 
+  it("limits microphone publications on mobile without stopping the analyser", async () => {
+    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    }));
+    const audio = new FakeTrack("audio", "mic-1");
+    installMediaDevices(vi.fn(async () => new FakeMediaStream([audio])));
+    let amplitude = 16;
+    let frame: FrameRequestCallback | null = null;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frame = callback;
+      return 1;
+    });
+    vi.stubGlobal("AudioContext", class AudioContext {
+      createAnalyser() {
+        return {
+          fftSize: 256,
+          getByteTimeDomainData(samples: Uint8Array) {
+            samples.forEach((_, index) => {
+              samples[index] = 128 + (index % 2 === 0 ? amplitude : -amplitude);
+            });
+          },
+        };
+      }
+      createMediaStreamSource() {
+        return { connect: vi.fn() };
+      }
+      close = vi.fn(async () => undefined);
+    });
+    const handlers = callbacks();
+    const session = new LessonSetupMediaSession(handlers);
+    const runFrame = (time: number) => {
+      const currentFrame = frame;
+      if (!currentFrame) throw new Error("Expected the microphone monitor frame");
+      currentFrame(time);
+    };
+
+    await session.start();
+    runFrame(0);
+    amplitude = 8;
+    runFrame(16);
+    expect(handlers.onMicrophoneLevel).toHaveBeenCalledTimes(1);
+    runFrame(120);
+    expect(handlers.onMicrophoneLevel).toHaveBeenCalledTimes(2);
+    session.stop();
+  });
+
   it("falls back to audio when no camera is available", async () => {
     const audio = new FakeTrack("audio", "mic-1");
     const getUserMedia = vi.fn()

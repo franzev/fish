@@ -37,6 +37,10 @@ describe("BookingScreen", () => {
     expect(screen.getByText(/Times shown in Asia\/Manila \(UTC\+8\)/)).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "18:30" })[0]!);
+    expect(screen.getByRole("complementary", { name: "Lesson summary" })).toHaveClass(
+      "max-md:fixed",
+      "max-md:bottom-0"
+    );
     fireEvent.click(screen.getByRole("button", { name: "Book lesson" }));
     await waitFor(() => expect(action).toHaveBeenCalled());
     const submitted = action.mock.calls[0]?.[1];
