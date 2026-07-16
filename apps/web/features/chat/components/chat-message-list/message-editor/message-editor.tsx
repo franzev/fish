@@ -136,7 +136,7 @@ export function MessageEditor({
         disabled={saving}
         onChange={(event) => onChange(event.currentTarget.value)}
         onKeyDown={handleKeyDown}
-        className="max-h-chat-composer-max-height min-h-control w-full resize-none rounded-control border-none bg-surface px-md py-field-y text-ui-sm text-foreground outline-none"
+        className="max-h-chat-composer-max-height min-h-control w-full resize-none rounded-control border-none bg-surface px-md py-field-y text-ui-md text-foreground outline-none md:text-ui-sm"
       />
       <p
         id={hintId}
