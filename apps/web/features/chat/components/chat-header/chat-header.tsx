@@ -12,7 +12,7 @@ import {
 import { CallButton } from "@/features/calls";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { IconUsers } from "@tabler/icons-react";
+import { IconInfoCircle, IconUsers } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 
 interface ChatHeaderProps {
@@ -24,6 +24,9 @@ interface ChatHeaderProps {
   memberCount: number;
   membersOpen: boolean;
   onToggleMembers: () => void;
+  detailsAvailable: boolean;
+  detailsOpen: boolean;
+  onToggleDetails: () => void;
   presenceStatus: PresenceDisplayStatus;
   presenceLabel: string;
   searchEnabled: boolean;
@@ -47,6 +50,9 @@ export function ChatHeader({
   memberCount,
   membersOpen,
   onToggleMembers,
+  detailsAvailable,
+  detailsOpen,
+  onToggleDetails,
   presenceStatus,
   presenceLabel,
   searchEnabled,
@@ -134,6 +140,26 @@ export function ChatHeader({
                 kind="video"
               />
             </div>
+          )}
+          {detailsAvailable && (
+            <Tooltip.Provider delay={400} closeDelay={0}>
+              <IconButton
+                type="button"
+                label="Conversation details"
+                tooltip
+                tooltipSide="bottom"
+                aria-controls="conversation-details"
+                aria-expanded={detailsOpen}
+                onClick={onToggleDetails}
+                className={cn(
+                  "hidden shrink-0 xl:flex",
+                  detailsOpen && "bg-surface-3 text-foreground"
+                )}
+                icon={
+                  <IconInfoCircle size={20} stroke={1.75} aria-hidden="true" />
+                }
+              />
+            </Tooltip.Provider>
           )}
         </div>
       </div>

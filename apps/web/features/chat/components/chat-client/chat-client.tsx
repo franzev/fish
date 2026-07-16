@@ -44,6 +44,7 @@ import { useLoadOlderMessages } from "@/features/chat/hooks/use-load-older-messa
 import { useStickToBottom } from "@/features/chat/hooks/use-stick-to-bottom";
 import { useChatStore } from "@/features/chat/model/store";
 import { ChatHeader } from "../chat-header";
+import { useConversationDetailsContext } from "../conversation-details-context";
 import { ChatComposerSurface } from "../chat-composer-surface";
 import { ChatMessageList } from "../chat-message-list";
 import { MembersSidebar } from "../members-sidebar";
@@ -145,6 +146,12 @@ export function ChatClient({
   backfillMessagesAction,
   loadNewestMessagesAction,
 }: ChatClientProps) {
+  const {
+    available: detailsAvailable,
+    open: detailsOpen,
+    close: closeDetails,
+    toggle: toggleDetails,
+  } = useConversationDetailsContext();
   const realtimeStatus = useChatStore((state) =>
     selectRealtimeStatusForConversation(state, chat.conversationId)
   );
@@ -407,6 +414,7 @@ export function ChatClient({
     const sequence = ++searchSequenceRef.current;
     setCommittedSearch(query);
     setCommittedSearchCriteria(criteria);
+    closeDetails();
     setRightSidebar("search");
     setIsSearching(true);
     setSearchNotice(null);
@@ -450,7 +458,7 @@ export function ChatClient({
     } finally {
       if (sequence === searchSequenceRef.current) setIsSearching(false);
     }
-  }, [chat.conversationId, searchMessagesAction, updateSearchUrl]);
+  }, [chat.conversationId, closeDetails, searchMessagesAction, updateSearchUrl]);
 
   useEffect(() => {
     if (presentation === "embedded" || !searchEnabled) return;
@@ -533,10 +541,17 @@ export function ChatClient({
 
             searchSequenceRef.current += 1;
             setIsSearching(false);
+            closeDetails();
             setRightSidebar("members");
             const nextUrl = createChatSearchUrl(window.location.href, null);
             window.history.replaceState(null, "", nextUrl);
             restoredUrlRef.current = window.location.href;
+          }}
+          detailsAvailable={detailsAvailable}
+          detailsOpen={detailsOpen}
+          onToggleDetails={() => {
+            setRightSidebar(null);
+            toggleDetails();
           }}
           presenceStatus={participantPresence.status}
           presenceLabel={participantPresence.label}

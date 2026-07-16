@@ -1,5 +1,9 @@
 import { EmptyState } from "@/components/ui/empty-state";
-import { ChatClient, MessagesWorkspace } from "@/features/chat";
+import {
+  ChatClient,
+  ConversationDetailsSidebar,
+  MessagesWorkspace,
+} from "@/features/chat";
 import { getDirectFriendProfile } from "@/features/chat/model/direct-friend";
 import { FriendConversationActions } from "@/features/friends";
 import { friendsFeatureEnabled } from "@/features/friends/server";
@@ -56,7 +60,9 @@ export default async function DirectMessagePage({
     <MessagesWorkspace
       chat={data.chat}
       conversations={conversations}
-      friend={friend}
+      conversationDetails={
+        <ConversationDetailsSidebar chat={data.chat} friend={friend} />
+      }
     >
       <ChatClient
         chat={data.chat}

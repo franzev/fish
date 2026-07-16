@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData } from "@/lib/services";
 import { setSentinelIntersecting, triggerIntersection } from "@/tests/intersection-observer";
 import { ChatClient } from "./chat-client";
+import { MessagesWorkspace } from "../messages-workspace";
 import { chatStore, resetChatStoreForTests } from "@/features/chat/model/store";
 import {
   selectMessagesForConversation,
@@ -676,6 +677,60 @@ describe("ChatClient", () => {
     );
     expect(voiceCall.closest('[role="group"]')).toHaveClass("xl:hidden");
     expect(screen.queryByRole("button", { name: "Members" })).toBeNull();
+  });
+
+  it("keeps conversation details closed until the rightmost header control toggles it", () => {
+    render(
+      <MessagesWorkspace
+        chat={chat}
+        conversationDetails={
+          <aside id="conversation-details" aria-label="Conversation details">
+            Details content
+          </aside>
+        }
+      >
+        <ChatClient
+          chat={chat}
+          sendMessageAction={vi.fn()}
+        />
+      </MessagesWorkspace>
+    );
+
+    const detailsButton = screen.getByRole("button", {
+      name: "Conversation details",
+    });
+    const videoCall = screen.getByRole("button", { name: "Video call Gwyn" });
+
+    expect(detailsButton).toHaveAttribute("aria-expanded", "false");
+    expect(detailsButton).toHaveAttribute(
+      "aria-controls",
+      "conversation-details"
+    );
+    expect(screen.queryByRole("complementary", {
+      name: "Conversation details",
+    })).toBeNull();
+    expect(videoCall.compareDocumentPosition(detailsButton)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+
+    fireEvent.click(detailsButton);
+
+    expect(detailsButton).toHaveAttribute("aria-expanded", "true");
+    const detailsPanel = screen.getByRole("complementary", {
+      name: "Conversation details",
+    });
+    const workspace = screen.getByRole("complementary", {
+      name: "Conversations",
+    }).parentElement;
+    expect(detailsPanel).toBeVisible();
+    expect(detailsPanel.parentElement).toBe(workspace);
+
+    fireEvent.click(detailsButton);
+
+    expect(detailsButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("complementary", {
+      name: "Conversation details",
+    })).toBeNull();
   });
 
   it("keeps embedded conversations focused on the transcript and composer", () => {

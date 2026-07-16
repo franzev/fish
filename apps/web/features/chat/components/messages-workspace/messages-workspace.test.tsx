@@ -5,6 +5,7 @@ import type {
   ClientDirectConversationPreview,
 } from "@/lib/services";
 import { resetChatStoreForTests } from "@/features/chat/model/store";
+import { ConversationDetailsSidebar } from "../conversation-details-sidebar";
 import { MessagesWorkspace } from "./messages-workspace";
 
 vi.mock("@/features/friends", () => ({
@@ -109,20 +110,14 @@ describe("MessagesWorkspace", () => {
     );
     expect(screen.getByText("You: I will send my notes this afternoon.")).toBeInTheDocument();
     expect(screen.getByText("Active conversation")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Details" }).parentElement).toHaveClass(
-      "h-chat-header"
-    );
-    expect(screen.getByRole("group", { name: "Call Gwyn" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Voice call Gwyn" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Video call Gwyn" })).toBeVisible();
-    expect(screen.getByText("Only you and your coach can take part.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Details" })).toBeNull();
     expect(screen.queryByText("Archived")).not.toBeInTheDocument();
     expect(screen.queryByText(/rating/i)).not.toBeInTheDocument();
   });
 
   it("describes a client-to-client direct conversation as friendship", () => {
     render(
-      <MessagesWorkspace
+      <ConversationDetailsSidebar
         chat={{
           ...chat,
           participant: {
@@ -131,15 +126,12 @@ describe("MessagesWorkspace", () => {
             role: "client",
           },
         }}
-        conversations={conversations}
         friend={{
           id: "friend-1",
           displayName: "Sam Okafor",
           username: "sam_okafor",
         }}
-      >
-        <div>Active conversation</div>
-      </MessagesWorkspace>
+      />
     );
 
     expect(screen.queryByText("Your friend")).not.toBeInTheDocument();
@@ -156,7 +148,7 @@ describe("MessagesWorkspace", () => {
 
   it("describes a coach's direct conversation as their assigned client", () => {
     render(
-      <MessagesWorkspace
+      <ConversationDetailsSidebar
         chat={{
           ...chat,
           currentUserId: "coach-1",
@@ -167,9 +159,7 @@ describe("MessagesWorkspace", () => {
             role: "client",
           },
         }}
-      >
-        <div>Active conversation</div>
-      </MessagesWorkspace>
+      />
     );
 
     expect(screen.getByText("Your client")).toBeInTheDocument();
