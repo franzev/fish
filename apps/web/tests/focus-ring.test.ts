@@ -1,10 +1,5 @@
 // @vitest-environment node
-/**
- * Regression guard for the borderless global keyboard-focus treatment.
- *
- * Focus remains visible through non-edge state changes. Outlines, borders,
- * rings, glows, and focus shadows are forbidden across production UI.
- */
+/** Regression guard for the breakpoint-specific keyboard-focus treatment. */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,8 +22,8 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-describe("borderless focus-visible state", () => {
-  it("uses non-edge cues without an outline, ring, border, or shadow", () => {
+describe("focus-visible state", () => {
+  it("keeps the established borderless desktop treatment", () => {
     expect(focusVisibleBlock).toBeDefined();
     expect(focusVisibleBlock).toMatch(/outline\s*:\s*none/);
     expect(focusVisibleBlock).toMatch(/box-shadow\s*:\s*none/);
@@ -37,14 +32,27 @@ describe("borderless focus-visible state", () => {
     expect(cssNoComments).not.toContain("--shadow-focus");
   });
 
-  it("does not add production focus borders, outlines, rings, or shadows", () => {
+  it("adds a stable tokenized indicator on mobile and in forced colors", () => {
+    expect(cssNoComments).toContain("--color-focus-indicator:");
+    expect(cssNoComments).toMatch(/@media\s*\(max-width:\s*47\.999rem\)/);
+    expect(cssNoComments).toContain(
+      "outline: var(--spacing-3xs) solid var(--color-focus-indicator)"
+    );
+    expect(cssNoComments).toContain("outline-offset: var(--spacing-2xs)");
+    expect(cssNoComments).toMatch(
+      /@media\s*\(max-width:\s*47\.999rem\)\s*and\s*\(forced-colors:\s*active\)/
+    );
+    expect(cssNoComments).toContain("outline-color: CanvasText");
+  });
+
+  it("does not add one-off component focus borders, rings, or shadows", () => {
     const productionSource = ["app", "components", "features"]
       .flatMap((directory) => sourceFiles(join(webRoot, directory)))
       .map((path) => readFileSync(path, "utf8"))
       .join("\n");
 
     expect(productionSource).not.toMatch(
-      /(?:focus|focus-visible|group-focus-visible|focus-within):(?:border|ring|shadow)(?:-|(?=\s|["'`]))|(?:focus|focus-visible|group-focus-visible|focus-within):outline(?:-(?!none\b)|(?=\s|["'`]))/
+      /(?:focus|focus-visible|group-focus-visible|focus-within):(?:border|ring|shadow)(?:-|(?=\s|["'`]))/
     );
   });
 });

@@ -18,9 +18,19 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 installIntersectionObserverMock();
 
 if (typeof window !== "undefined" && typeof window.matchMedia === "undefined") {
-  window.matchMedia = (query: string) =>
-    ({
-      matches: false,
+  window.matchMedia = (query: string) => {
+    const widthMatch = query.match(/\((min|max)-width:\s*([\d.]+)(px|rem)\)/);
+    const threshold = widthMatch
+      ? Number(widthMatch[2]) * (widthMatch[3] === "rem" ? 16 : 1)
+      : 0;
+    const matches = widthMatch?.[1] === "min"
+      ? window.innerWidth >= threshold
+      : widthMatch?.[1] === "max"
+        ? window.innerWidth <= threshold
+        : false;
+
+    return ({
+      matches,
       media: query,
       onchange: null,
       addListener: () => {},
@@ -29,6 +39,7 @@ if (typeof window !== "undefined" && typeof window.matchMedia === "undefined") {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     }) as MediaQueryList;
+  };
 }
 
 if (

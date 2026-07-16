@@ -40,6 +40,7 @@
   --color-auth-illustration-shadow: light-dark(oklch(0.99 0 0), oklch(0.19 0 0)); /* signup artwork backdrop: white in light mode, just below the side panel in dark mode */
   --color-border: light-dark(oklch(0.64 0 0), oklch(0.55 0 0));        /* semantic control boundaries — retains 3:1 contrast */
   --color-border-strong: light-dark(oklch(0.55 0 0), oklch(0.65 0 0)); /* notice-tier borders — heavier step than border */
+  --color-focus-indicator: light-dark(oklch(0.15 0 0), oklch(0.97 0 0)); /* mobile keyboard focus — strongest monochrome step */
   /* Decorative separation only (row dividers, framing hairlines) — a low-alpha
      monochrome ink so it stays subtle on any surface step. Never a control
      affordance: fields and semantic boundaries keep the 3:1 tokens above. */
@@ -150,6 +151,7 @@
   --spacing-auth-copy-lift: 60px; /* keeps auth copy just above the artwork without pulling it to the panel top */
   --spacing-4xl: 112px;           /* landing section rhythm, large screens */
   --spacing-mobile-nav-offset: 112px;
+  --spacing-mobile-booking-action-offset: 160px;
 
   --spacing-control: var(--size-control);
   --spacing-control-primary: var(--size-control-primary);
@@ -370,6 +372,25 @@
     text-decoration-thickness: 2px;
     text-underline-offset: var(--spacing-2xs);
   }
+  /* Mobile users may navigate with an external keyboard, switch control, or
+     other focus-driven input. Opacity alone is too quiet on icon-only links,
+     so narrow screens receive a stable high-contrast indicator. Desktop keeps
+     the established borderless treatment unchanged. */
+  @media (max-width: 47.999rem) {
+    :focus-visible {
+      outline: var(--spacing-3xs) solid var(--color-focus-indicator);
+      outline-offset: var(--spacing-2xs);
+      opacity: 1;
+    }
+    :where(input, textarea, select):focus-visible {
+      opacity: 1;
+    }
+  }
+  @media (max-width: 47.999rem) and (forced-colors: active) {
+    :focus-visible {
+      outline-color: CanvasText;
+    }
+  }
   /* Tailwind v4 preflight leaves buttons at the OS default cursor — a single
      base-layer rule so every clickable (native buttons and role="button"
      custom controls) shows a pointer, instead of sprinkling `cursor-pointer`
@@ -531,5 +552,53 @@
 
   .gif-picker-positioner [role="dialog"] {
     width: 100%;
+  }
+}
+
+/* Persistent mobile UI owns the bottom inset. These helpers intentionally
+   have no desktop declarations, so the existing desktop geometry remains
+   byte-for-byte controlled by its current utilities. */
+@media (max-width: 47.999rem) {
+  .mobile-nav-safe {
+    padding-bottom: max(var(--spacing-xs), env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-content-safe {
+    padding-bottom: calc(
+      var(--spacing-mobile-nav-offset) + env(safe-area-inset-bottom)
+    );
+  }
+
+  .mobile-controls-safe {
+    padding-bottom: max(var(--spacing-md), env(safe-area-inset-bottom));
+  }
+
+  .mobile-call-popover-safe {
+    bottom: calc(
+      var(--spacing-mobile-nav-offset) + env(safe-area-inset-bottom)
+    );
+  }
+
+  .mobile-booking-content-safe {
+    padding-bottom: calc(
+      var(--spacing-mobile-booking-action-offset) + env(safe-area-inset-bottom)
+    );
+  }
+
+  .media-picker-positioner {
+    position: fixed !important;
+    inset: auto 0 0 !important;
+    width: 100% !important;
+    transform: none !important;
+  }
+
+  .media-picker-positioner [role="dialog"] {
+    width: 100%;
+    max-width: none;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
   }
 }
