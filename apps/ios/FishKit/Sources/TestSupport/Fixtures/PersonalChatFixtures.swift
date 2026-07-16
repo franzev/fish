@@ -1,3 +1,4 @@
+import ChatData
 import Foundation
 import PersonalChat
 
@@ -24,6 +25,7 @@ public enum PersonalChatFixtures {
     private static func incoming(
         _ id: String,
         _ body: String,
+        media: MessageMedia? = nil,
         at value: String
     ) -> MessageUiModel {
         MessageUiModel(
@@ -32,6 +34,7 @@ public enum PersonalChatFixtures {
             senderId: "coach",
             senderName: coachName,
             body: body,
+            media: media,
             sentAt: date(value)
         )
     }
@@ -39,6 +42,7 @@ public enum PersonalChatFixtures {
     private static func outgoing(
         _ id: String,
         _ body: String,
+        media: MessageMedia? = nil,
         at value: String,
         delivery: MessageDeliveryStatus
     ) -> MessageUiModel {
@@ -48,6 +52,7 @@ public enum PersonalChatFixtures {
             senderId: "client",
             senderName: "Maya Chen",
             body: body,
+            media: media,
             sentAt: date(value),
             delivery: delivery
         )
@@ -141,6 +146,56 @@ public enum PersonalChatFixtures {
             delivery: .failed
         ),
     ])
+
+    /// Sticker, GIF, unavailable fallbacks, and an emoji-only body — the
+    /// transcript media matrix. Compact rows come first and the tall GIF
+    /// last so every state stays visible from the transcript's initial
+    /// position in snapshots.
+    public static let media = model(messages: [
+        incoming(
+            "m8",
+            "",
+            media: .sticker(id: "aquatic-not-in-this-pack"),
+            at: "2026-07-16T14:40:00Z"
+        ),
+        incoming(
+            "m9",
+            "",
+            media: .gifUnavailable,
+            at: "2026-07-16T14:41:00Z"
+        ),
+        outgoing(
+            "m10",
+            "🎉",
+            at: "2026-07-16T14:42:00Z",
+            delivery: .read
+        ),
+        outgoing(
+            "m11",
+            "",
+            media: .sticker(id: "aquatic-great-job-sea-star"),
+            at: "2026-07-16T14:43:00Z",
+            delivery: .delivered
+        ),
+        incoming(
+            "m12",
+            "This is how the pause felt from here:",
+            media: .gif(ChatMediaFixtures.gifs[0]),
+            at: "2026-07-16T14:44:00Z"
+        ),
+    ])
+
+    /// Staged composer selections for previews and snapshots.
+    public static let stagedGif = ComposerSelection.gif(
+        ChatMediaFixtures.gifs[0],
+        searchQuery: "otter"
+    )
+    public static let stagedSticker: ComposerSelection = {
+        guard let sticker = StickerCatalog.sticker(for: "aquatic-hello-otter") else {
+            preconditionFailure("Bundled sticker catalog is missing aquatic-hello-otter")
+        }
+        return .sticker(sticker)
+    }()
 
     private static let longMessage: String = {
         let prefix = "Here is my practice paragraph 😊 https://example.com/very/long/path/that/should/wrap/gracefully "

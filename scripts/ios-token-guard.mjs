@@ -34,8 +34,9 @@ const RULES = [
 ];
 
 const FORBIDDEN_IMPORTS = {
-  DesignSystem: ["UIComponents", "PersonalChat", "TestSupport"],
-  UIComponents: ["PersonalChat", "TestSupport"],
+  DesignSystem: ["UIComponents", "ChatData", "PersonalChat", "TestSupport"],
+  UIComponents: ["ChatData", "PersonalChat", "TestSupport"],
+  ChatData: ["DesignSystem", "UIComponents", "PersonalChat", "TestSupport"],
   PersonalChat: ["TestSupport"],
 };
 

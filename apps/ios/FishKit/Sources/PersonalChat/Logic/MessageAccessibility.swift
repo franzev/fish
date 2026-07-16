@@ -15,7 +15,14 @@ public enum MessageAccessibility {
             locale: locale,
             timeZone: timeZone
         ))
-        var label = "\(sender), \(time): \(row.message.body)"
+        var content = [String]()
+        if let media = row.message.media {
+            content.append(MediaAccessibility.mediaDescription(media))
+        }
+        if !row.message.body.isEmpty {
+            content.append(row.message.body)
+        }
+        var label = "\(sender), \(time): \(content.joined(separator: ". "))"
         if row.showsDeliveryStatus, let delivery = row.message.delivery {
             label += " \(MessageDeliveryPresentation.statusText(delivery))."
         }

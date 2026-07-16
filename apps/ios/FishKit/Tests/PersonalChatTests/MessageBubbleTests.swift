@@ -2,12 +2,14 @@ import DesignSystem
 import Foundation
 import SwiftUI
 import Testing
+import TestSupport
 @testable import PersonalChat
 
 private func row(
     _ id: String,
     direction: MessageDirection,
     body: String,
+    media: MessageMedia? = nil,
     at seconds: TimeInterval,
     position: MessageGroupPosition,
     showsMeta: Bool,
@@ -21,6 +23,7 @@ private func row(
             senderId: direction == .incoming ? "coach" : "client",
             senderName: "Sam Rivera",
             body: body,
+            media: media,
             sentAt: Date(timeIntervalSince1970: 1_784_200_000 + seconds),
             delivery: delivery
         ),
@@ -87,5 +90,66 @@ struct MessageBubbleTests {
         }
         assertThemedSnapshots(of: strip, named: "message-bubbles")
         assertAccessibilitySnapshots(of: strip, named: "message-bubbles")
+    }
+
+    /// Transcript media rows: sticker, GIF (playing state — the video layer
+    /// renders as the stable surface fill in snapshots), both unavailable
+    /// fallbacks, and an enlarged emoji-only body.
+    @MainActor @Test func mediaSnapshots() {
+        let strip = ScrollView {
+            VStack(spacing: Spacing.xs) {
+                MessageBubble(row: row(
+                    "s1",
+                    direction: .outgoing,
+                    body: "",
+                    media: .sticker(id: "aquatic-great-job-sea-star"),
+                    at: 0,
+                    position: .solo,
+                    showsMeta: true,
+                    delivery: .read,
+                    showsStatus: true
+                ))
+                MessageBubble(row: row(
+                    "g1",
+                    direction: .incoming,
+                    body: "This is how the pause felt:",
+                    media: .gif(ChatMediaFixtures.gifs[0]),
+                    at: 60,
+                    position: .solo,
+                    showsMeta: true
+                ))
+                MessageBubble(row: row(
+                    "s2",
+                    direction: .incoming,
+                    body: "",
+                    media: .sticker(id: "aquatic-not-in-this-pack"),
+                    at: 120,
+                    position: .solo,
+                    showsMeta: false
+                ))
+                MessageBubble(row: row(
+                    "g2",
+                    direction: .incoming,
+                    body: "",
+                    media: .gifUnavailable,
+                    at: 180,
+                    position: .solo,
+                    showsMeta: false
+                ))
+                MessageBubble(row: row(
+                    "e1",
+                    direction: .outgoing,
+                    body: "🎉",
+                    at: 240,
+                    position: .solo,
+                    showsMeta: true,
+                    delivery: .delivered,
+                    showsStatus: true
+                ))
+            }
+            .padding(Spacing.page)
+        }
+        assertThemedSnapshots(of: strip, named: "message-bubbles-media")
+        assertAccessibilitySnapshots(of: strip, named: "message-bubbles-media")
     }
 }

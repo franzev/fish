@@ -1,8 +1,22 @@
+import ChatData
 import DesignSystem
 import PersonalChat
 import SwiftUI
 import TestSupport
 import UIComponents
+
+/// Live KLIPY search when a restricted debug key is configured (see
+/// `project.yml` — `KLIPY_API_KEY`), deterministic fixtures otherwise so the
+/// catalog always works offline.
+enum CatalogGifProvider {
+    static func make() -> any GifProviding {
+        let key = Bundle.main.object(forInfoDictionaryKey: "KlipyApiKey") as? String
+        if let key, !key.isEmpty {
+            return KlipyGifProvider(apiKey: key)
+        }
+        return FixtureGifProvider()
+    }
+}
 
 private struct CatalogPage<Content: View>: View {
     let title: String
@@ -202,6 +216,7 @@ struct ChatStatesPage: View {
         ("Offline", PersonalChatFixtures.offline),
         ("Typing", PersonalChatFixtures.typing),
         ("Long content", PersonalChatFixtures.longContent),
+        ("Media", PersonalChatFixtures.media),
         ("Unavailable", PersonalChatFixtures.unavailable),
     ]
 
@@ -216,18 +231,67 @@ struct ChatStatesPage: View {
 struct ChatStateHost: View {
     let model: PersonalChatUiModel
     @State private var draft = ""
+    @State private var selection = ComposerSelection.none
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         PersonalChatScreen(
             model: model,
             draft: $draft,
+            selection: $selection,
+            gifProvider: CatalogGifProvider.make(),
             context: PersonalChatFixtures.context,
-            onSend: { draft = "" },
+            onSend: {
+                draft = ""
+                selection = .none
+            },
             onRetryMessage: { _ in },
             onRetryOlder: {},
             onBack: { dismiss() }
         )
         .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+/// The full picker rendered inline (every tab reachable), plus the composer's
+/// staged-media states with live remove controls.
+struct MediaPickerPage: View {
+    @State private var stagedSticker = PersonalChatFixtures.stagedSticker
+    @State private var stagedGif = PersonalChatFixtures.stagedGif
+    @State private var draft = "And a note alongside it."
+
+    var body: some View {
+        CatalogPage(title: "Media picker") {
+            MediaPickerSheet(
+                gifProvider: CatalogGifProvider.make(),
+                onSelectEmoji: { _ in },
+                onSelectGif: { _, _ in },
+                onSelectSticker: { _ in }
+            )
+            .frame(height: 480)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+
+            Text("Staged sticker")
+                .textStyle(.label)
+                .foregroundStyle(Palette.body)
+            MessageComposer(
+                draft: .constant(""),
+                selection: $stagedSticker,
+                sendState: .ready,
+                onSend: {},
+                onOpenMediaPicker: {}
+            )
+
+            Text("Staged GIF with text")
+                .textStyle(.label)
+                .foregroundStyle(Palette.body)
+            MessageComposer(
+                draft: $draft,
+                selection: $stagedGif,
+                sendState: .ready,
+                onSend: {},
+                onOpenMediaPicker: {}
+            )
+        }
     }
 }

@@ -15,6 +15,18 @@ public enum Icon: String, CaseIterable, Sendable {
     case alert = "alert-circle"
     case check
     case checkDouble = "checks"
+    case moodSmile = "mood-smile"
+    case search
+    case handStop = "hand-stop"
+    case paw
+    case toolsKitchen = "tools-kitchen-2"
+    case car
+    case ballBasketball = "ball-basketball"
+    case bulb
+    case hash
+    case flag
+    case play = "player-play"
+    case pause = "player-pause"
 
     public var isDirectional: Bool {
         self == .back

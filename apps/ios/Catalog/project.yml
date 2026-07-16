@@ -18,13 +18,20 @@ targets:
       - package: FishKit
         product: UIComponents
       - package: FishKit
+        product: ChatData
+      - package: FishKit
         product: PersonalChat
       - package: FishKit
         product: TestSupport
+    info:
+      path: Sources/Info.plist
+      properties:
+        UILaunchScreen: {}
+        # Restricted debug key for live KLIPY search in the catalog. Inject
+        # via `KLIPY_API_KEY=… xcodegen generate`; empty means fixtures.
+        KlipyApiKey: ${KLIPY_API_KEY}
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
         PRODUCT_BUNDLE_IDENTIFIER: app.fish.catalog
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1,2"

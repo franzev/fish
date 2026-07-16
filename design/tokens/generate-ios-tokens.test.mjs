@@ -58,4 +58,7 @@ test("Swift rendering is deterministic and uses the iOS platform values", () => 
   assert.match(values, /static let threeXs: CGFloat = 2/);
   assert.match(values, /static let targetTouch: CGFloat = 44/);
   assert.match(values, /enum ChatRules/);
+  assert.match(values, /static let stickerTile: CGFloat = 96/);
+  assert.match(values, /enum AspectRatio/);
+  assert.match(values, /static let gifTile: CGFloat = 1\.333333/);
 });

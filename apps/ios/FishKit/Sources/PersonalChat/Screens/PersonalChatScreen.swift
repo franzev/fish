@@ -1,3 +1,4 @@
+import ChatData
 import DesignSystem
 import SwiftUI
 import UIComponents
@@ -19,18 +20,26 @@ public struct TranscriptContext: Sendable {
 }
 
 /// Stateless one-to-one conversation: presentation model in, user intents out.
+/// The only local state is the media picker sheet's visibility — staged media
+/// travels through the `selection` binding the host owns, like the draft.
 public struct PersonalChatScreen: View {
     private let model: PersonalChatUiModel
     @Binding private var draft: String
+    @Binding private var selection: ComposerSelection
+    private let gifProvider: any GifProviding
     private let context: TranscriptContext
     private let onSend: () -> Void
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
     private let onBack: (() -> Void)?
 
+    @State private var isMediaPickerPresented = false
+
     public init(
         model: PersonalChatUiModel,
         draft: Binding<String>,
+        selection: Binding<ComposerSelection>,
+        gifProvider: any GifProviding,
         context: TranscriptContext = TranscriptContext(),
         onSend: @escaping () -> Void,
         onRetryMessage: @escaping (String) -> Void,
@@ -39,6 +48,8 @@ public struct PersonalChatScreen: View {
     ) {
         self.model = model
         self._draft = draft
+        self._selection = selection
+        self.gifProvider = gifProvider
         self.context = context
         self.onSend = onSend
         self.onRetryMessage = onRetryMessage
@@ -108,12 +119,24 @@ public struct PersonalChatScreen: View {
                 }
                 MessageComposer(
                     draft: $draft,
+                    selection: $selection,
                     sendState: Self.composerState(for: model),
-                    onSend: onSend
+                    onSend: onSend,
+                    onOpenMediaPicker: { isMediaPickerPresented = true }
                 )
             }
         }
         .background(Palette.bg)
+        .sheet(isPresented: $isMediaPickerPresented) {
+            MediaPickerSheet(
+                gifProvider: gifProvider,
+                gifDisabled: model.connection == .offline,
+                stickerDisabled: model.connection == .offline,
+                onSelectEmoji: { draft += $0 },
+                onSelectGif: { selection = .gif($0, searchQuery: $1) },
+                onSelectSticker: { selection = .sticker($0) }
+            )
+        }
     }
 }
 

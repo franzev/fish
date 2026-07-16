@@ -10,28 +10,38 @@ public enum ComposerSendState: Sendable, Equatable {
 
 /// The chat's single primary action. Blank and offline drafts expose no send
 /// affordance; sending preserves a busy control even after the draft clears.
+/// One expression trigger stages a GIF or sticker beside the draft — a staged
+/// sticker replaces the trigger in place, a staged GIF previews above the
+/// field, and either combines with text.
 public struct MessageComposer: View {
     @Binding private var draft: String
+    @Binding private var selection: ComposerSelection
     private let sendState: ComposerSendState
     private let onSend: () -> Void
+    private let onOpenMediaPicker: () -> Void
 
     public init(
         draft: Binding<String>,
+        selection: Binding<ComposerSelection>,
         sendState: ComposerSendState,
-        onSend: @escaping () -> Void
+        onSend: @escaping () -> Void,
+        onOpenMediaPicker: @escaping () -> Void
     ) {
         self._draft = draft
+        self._selection = selection
         self.sendState = sendState
         self.onSend = onSend
+        self.onOpenMediaPicker = onOpenMediaPicker
     }
 
     nonisolated static func showsSend(
         draft: String,
+        selection: ComposerSelection,
         sendState: ComposerSendState
     ) -> Bool {
         if sendState == .sending { return true }
         if sendState == .offline { return false }
-        return ChatRules.isSendable(draft)
+        return MediaSelectionRules.isSendable(draft: draft, selection: selection)
     }
 
     public var body: some View {
@@ -39,7 +49,23 @@ public struct MessageComposer: View {
             Text("Message")
                 .textStyle(.label)
                 .foregroundStyle(Palette.muted)
+            if let gif = selection.stagedGif {
+                GifSelectionPreview(gif: gif) {
+                    selection = .none
+                }
+            }
             HStack(alignment: .bottom, spacing: Spacing.xs) {
+                if let sticker = selection.stagedSticker {
+                    StickerSelectionThumbnail(sticker: sticker) {
+                        selection = .none
+                    }
+                } else {
+                    IconButton(
+                        .moodSmile,
+                        accessibilityLabel: MediaAccessibility.triggerLabel,
+                        action: onOpenMediaPicker
+                    )
+                }
                 TextField("", text: $draft, axis: .vertical)
                     .textInputStyle(.body)
                     .foregroundStyle(Palette.foreground)
@@ -60,14 +86,17 @@ public struct MessageComposer: View {
                     }
                     .frame(maxHeight: Metrics.composerMaxHeight)
                     .accessibilityLabel("Message")
-                if Self.showsSend(draft: draft, sendState: sendState) {
+                if Self.showsSend(draft: draft, selection: selection, sendState: sendState) {
                     IconButton(
                         .send,
                         style: .solid,
                         accessibilityLabel: "Send message",
                         isBusy: sendState == .sending
                     ) {
-                        guard ChatRules.isSendable(draft) else { return }
+                        guard MediaSelectionRules.isSendable(
+                            draft: draft,
+                            selection: selection
+                        ) else { return }
                         onSend()
                     }
                 }

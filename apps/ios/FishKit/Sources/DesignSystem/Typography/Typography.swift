@@ -52,6 +52,13 @@ public enum Typography {
         )
     }
 
+    /// Emoji glyphs render in the system emoji font at the shared 24 pt cell
+    /// size (pictographs, like Apple's own keyboard, do not scale with
+    /// Dynamic Type — surrounding text still does).
+    public static var emojiGlyph: Font {
+        .system(size: Metrics.emojiGlyph)
+    }
+
     static func extraLineSpacing(for role: TextRole) -> CGFloat {
         let spec = spec(for: role)
         return max(0, spec.size * (spec.lineHeight - 1.2))

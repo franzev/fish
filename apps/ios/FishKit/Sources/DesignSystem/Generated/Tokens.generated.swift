@@ -46,6 +46,15 @@ public enum Metrics {
     public static let motionEnterOffset: CGFloat = 6
     public static let motionTypingOffset: CGFloat = 4
     public static let skeletonAuthorWidth: CGFloat = 96
+    public static let emojiGlyph: CGFloat = 24
+    public static let stickerTile: CGFloat = 96
+    public static let chatGifSelection: CGFloat = 160
+    public static let chatGifMaxWidth: CGFloat = 420
+}
+
+/// Media aspect ratios (width / height) shared with the web contract.
+public enum AspectRatio {
+    public static let gifTile: CGFloat = 1.333333
 }
 
 /// Durations in seconds (the manifest stores milliseconds).

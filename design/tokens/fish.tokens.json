@@ -88,7 +88,14 @@
     "avatarProfile": 72,
     "motionEnterOffset": 6,
     "motionTypingOffset": 4,
-    "skeletonAuthorWidth": 96
+    "skeletonAuthorWidth": 96,
+    "emojiGlyph": 24,
+    "stickerTile": 96,
+    "chatGifSelection": 160,
+    "chatGifMaxWidth": 420
+  },
+  "aspect": {
+    "gifTile": 1.333333
   },
   "typeSp": {
     "display": 32,

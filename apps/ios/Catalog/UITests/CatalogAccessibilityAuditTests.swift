@@ -15,6 +15,7 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             "Loading",
             "Empty states",
             "Top bars",
+            "Media picker",
         ]
 
         for page in pages {
@@ -38,7 +39,10 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
                     && issue.element?.elementType == .textField
                     && issue.element?.label == "Email"
 
-                return decorativeSkeleton || scrollableEmail
+                let pickerPictographs = page == "Media picker"
+                    && self.isPictographAuditLimitation(issue)
+
+                return decorativeSkeleton || scrollableEmail || pickerPictographs
             }
             app.navigationBars.buttons.element(boundBy: 0).tap()
         }
@@ -102,6 +106,35 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
         assertComposer(composer, staysAbove: rotatedKeyboard)
 
         XCUIDevice.shared.orientation = .portrait
+    }
+
+    /// The media picker page is dominated by color emoji and sticker artwork,
+    /// which Xcode's pixel-based contrast sampler cannot assess — its
+    /// findings here proved nondeterministic across identical runs, landing
+    /// on different glyphs or neighbouring token text each time. Contrast is
+    /// therefore delegated to ContrastTests, which verifies every text
+    /// role/canvas pair at AA in both themes (the same delegation the
+    /// Loading page uses for skeleton pixels). Clipping and Dynamic Type
+    /// stay active for real text: only fixed-size pictograph glyphs and
+    /// element-less pixel heuristics are exempt, so a clipped or
+    /// non-scaling label still fails the audit.
+    private func isPictographAuditLimitation(
+        _ issue: XCUIAccessibilityAuditIssue
+    ) -> Bool {
+        switch issue.auditType {
+        case .contrast:
+            return true
+        case .elementDetection, .textClipped, .dynamicType:
+            guard let label = issue.element?.label else { return true }
+            return isPictographLabel(label)
+        default:
+            return false
+        }
+    }
+
+    private func isPictographLabel(_ label: String) -> Bool {
+        label.count == 1
+            && label.unicodeScalars.first?.properties.isEmoji == true
     }
 
     private func handlesKnownTranscriptAuditLimitation(

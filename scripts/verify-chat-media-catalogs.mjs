@@ -44,6 +44,20 @@ if (JSON.stringify(assetNames) !== JSON.stringify(catalogNames)) {
   throw new Error("Sticker assets do not match the shared catalog.");
 }
 
+// iOS bundles synced copies (SwiftPM cannot reference files outside the package).
+const iosMedia = join(root, "apps/ios/FishKit/Sources/PersonalChat/Resources/ChatMedia");
+for (const copy of ["sticker-catalog.json", "emoji-groups.json"]) {
+  const canonical = await readFile(join(root, "packages/core/src/chat-media", copy), "utf8");
+  if (canonical !== (await readFile(join(iosMedia, copy), "utf8"))) {
+    throw new Error(`iOS bundled ${copy} is stale. Run: pnpm ios:chat-media`);
+  }
+}
+const iosAssetNames = (await readdir(join(iosMedia, "stickers/aquatic")))
+  .filter((name) => name.endsWith(".webp")).sort();
+if (JSON.stringify(iosAssetNames) !== JSON.stringify(catalogNames)) {
+  throw new Error("iOS bundled sticker assets do not match the shared catalog. Run: pnpm ios:chat-media");
+}
+
 if (JSON.stringify(emojiCatalog) !== JSON.stringify(emojiSource)) {
   throw new Error("Emoji catalog is stale. Regenerate it from unicode-emoji-json 0.9.0.");
 }

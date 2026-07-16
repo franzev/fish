@@ -176,6 +176,8 @@ export function renderTokensSwift(manifest) {
     "Corner radii by role.");
   numericEnum("Metrics", manifest.sizePt, "CGFloat", undefined,
     "iOS interaction targets and component dimensions in points.");
+  numericEnum("AspectRatio", manifest.aspect, "CGFloat", undefined,
+    "Media aspect ratios (width / height) shared with the web contract.");
   numericEnum("MotionDuration", manifest.durationMs, "TimeInterval", (value) => value / 1000,
     "Durations in seconds (the manifest stores milliseconds).");
   numericEnum("Opacity", manifest.opacity, "Double", undefined,

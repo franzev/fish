@@ -33,6 +33,7 @@ struct CatalogRoot: View {
                 }
                 Section("Personal chat") {
                     NavigationLink("Chat states") { ChatStatesPage() }
+                    NavigationLink("Media picker") { MediaPickerPage() }
                 }
             }
             .navigationTitle("FISH catalog")

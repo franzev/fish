@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "UIComponents", targets: ["UIComponents"]),
+        .library(name: "ChatData", targets: ["ChatData"]),
         .library(name: "PersonalChat", targets: ["PersonalChat"]),
         .library(name: "TestSupport", targets: ["TestSupport"]),
     ],
@@ -23,13 +24,20 @@ let package = Package(
             resources: [.process("Resources")]
         ),
         .target(name: "UIComponents", dependencies: ["DesignSystem"]),
+        .target(name: "ChatData"),
         .target(
             name: "PersonalChat",
-            dependencies: ["DesignSystem", "UIComponents"]
+            dependencies: ["DesignSystem", "UIComponents", "ChatData"],
+            resources: [.copy("Resources/ChatMedia")]
         ),
         .target(
             name: "TestSupport",
-            dependencies: ["DesignSystem", "UIComponents", "PersonalChat"]
+            dependencies: ["DesignSystem", "UIComponents", "ChatData", "PersonalChat"],
+            resources: [.process("Resources")]
+        ),
+        .testTarget(
+            name: "ChatDataTests",
+            dependencies: ["ChatData"]
         ),
         .testTarget(
             name: "DesignSystemTests",
