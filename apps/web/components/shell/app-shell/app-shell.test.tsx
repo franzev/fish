@@ -221,6 +221,8 @@ describe("AppShell", () => {
       name: "Mobile primary",
     });
     expect(mobilePrimaryNav).toHaveClass("mobile-nav-safe", "z-30");
+    expect(mobilePrimaryNav).toHaveClass("shrink-0");
+    expect(mobilePrimaryNav).not.toHaveClass("fixed");
     expect(primaryNav).toHaveTextContent("Home");
     expect(primaryNav).toHaveTextContent("Community");
     expect(primaryNav).not.toHaveTextContent("Messages");

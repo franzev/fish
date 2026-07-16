@@ -116,7 +116,10 @@ export function ChatComposerSurface({
           </div>
         </div>
       ) : (
-        <div className={cn(isOffline && "opacity-60")}>
+        <div
+          data-slot="chat-composer-surface"
+          className={cn(isOffline && "opacity-60")}
+        >
           <Composer
             channelName={chat.channelName}
             draft={draft}

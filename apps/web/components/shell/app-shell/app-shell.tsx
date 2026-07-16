@@ -281,8 +281,7 @@ export function AppShell({
           className={cn(
             "flex min-w-0 flex-1 flex-col",
             immersive && "min-h-0",
-            conversationSurface &&
-              "mobile-nav-content-safe pb-mobile-nav-offset md:pb-0"
+            conversationSurface && "md:pb-0"
           )}
         >
           {channelSurface && (
@@ -318,7 +317,12 @@ export function AppShell({
       {!focusedSurface && (
         <nav
           aria-label="Mobile primary"
-          className="mobile-nav-safe fixed inset-x-0 bottom-0 z-30 flex border-t border-divider bg-surface px-xs pt-xs md:hidden"
+          className={cn(
+            "mobile-nav-safe z-30 flex border-t border-divider bg-surface px-xs pt-xs md:hidden",
+            conversationSurface
+              ? "shrink-0"
+              : "fixed inset-x-0 bottom-0"
+          )}
         >
           <NavLinks items={navItems} pathname={pathname} placement="bottom" />
         </nav>
