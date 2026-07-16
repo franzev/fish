@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="back">Back</string>
+    <string name="message_label">Message</string>
+    <string name="message_placeholder">Write a message</string>
+    <string name="send_message">Send message</string>
+    <string name="sending_message">Sending message</string>
+    <string name="message_limit">This message is a little long. Try sending it in two parts.</string>
+    <string name="message_counter">%1$d of %2$d characters</string>
+    <string name="no_messages_title">No messages yet</string>
+    <string name="no_messages_description">Start here when you are ready to message your coach.</string>
+    <string name="conversation_unavailable_title">This conversation isn\'t available</string>
+    <string name="conversation_unavailable_description">Go back and open an assigned conversation.</string>
+    <string name="conversation_unavailable_notice">This conversation isn\'t available.</string>
+    <string name="retry_conversation">Try again</string>
+    <string name="new_messages">New messages</string>
+    <string name="loading_conversation">Loading conversation</string>
+    <string name="loading_earlier">Loading earlier messages</string>
+    <string name="earlier_failed">Earlier messages did not load. Your recent messages are still here.</string>
+    <string name="retry_earlier">Try loading earlier messages again</string>
+    <string name="connecting">Connecting…</string>
+    <string name="reconnecting">Reconnecting. Your draft is safe.</string>
+    <string name="offline">You\'re offline. Keep writing—sending will be available when you reconnect.</string>
+    <string name="typing">%1$s is typing…</string>
+    <string name="you">You</string>
+    <string name="message_deleted">Message deleted</string>
+    <string name="message_failed">Not sent. Your message is still here.</string>
+    <string name="status_sending">Sending</string>
+    <string name="status_sent">Sent</string>
+    <string name="status_delivered">Delivered</string>
+    <string name="status_read">Read</string>
+    <string name="status_failed">Not sent</string>
+    <string name="message_accessibility">%1$s. %2$s. %3$s</string>
+    <string name="personal_messages">Personal messages</string>
+    <string name="conversation_list_description">Open an assigned personal conversation.</string>
+    <string name="sign_in_title">Welcome back</string>
+    <string name="sign_in_description">Sign in to open your personal coaching conversation.</string>
+    <string name="email_label">Email</string>
+    <string name="email_placeholder">you@example.com</string>
+    <string name="password_label">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="missing_sign_in_credentials">Add your email and password to sign in.</string>
+    <string name="coach_context">Your English coach</string>
+    <string name="client_context">Personal coaching conversation</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+</resources>

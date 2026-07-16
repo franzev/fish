@@ -17,6 +17,7 @@ dist/
 build/
 DerivedData/
 .gradle/
+local.properties
 *.xcuserstate
 xcuserdata/
 .superpowers/

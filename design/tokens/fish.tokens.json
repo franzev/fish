@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": 1,
+  "color": {
+    "background": { "light": [0.98, 0, 0, 1], "dark": [0.15, 0, 0, 1] },
+    "surface": { "light": [0.99, 0, 0, 1], "dark": [0.18, 0, 0, 1] },
+    "surfaceAlt": { "light": [0.96, 0, 0, 1], "dark": [0.20, 0, 0, 1] },
+    "interactiveHover": { "light": [0.94, 0, 0, 1], "dark": [0.22, 0, 0, 1] },
+    "interactiveActive": { "light": [0.92, 0, 0, 1], "dark": [0.25, 0, 0, 1] },
+    "avatar": { "light": [0.90, 0, 0, 1], "dark": [0.30, 0, 0, 1] },
+    "selected": { "light": [0.88, 0, 0, 1], "dark": [0.33, 0, 0, 1] },
+    "border": { "light": [0.64, 0, 0, 1], "dark": [0.55, 0, 0, 1] },
+    "borderStrong": { "light": [0.55, 0, 0, 1], "dark": [0.65, 0, 0, 1] },
+    "divider": { "light": [0.15, 0, 0, 0.10], "dark": [0.98, 0, 0, 0.12] },
+    "primary": { "light": [0.15, 0, 0, 1], "dark": [0.98, 0, 0, 1] },
+    "primaryPressed": { "light": [0.25, 0, 0, 1], "dark": [0.90, 0, 0, 1] },
+    "onPrimary": { "light": [0.98, 0, 0, 1], "dark": [0.15, 0, 0, 1] },
+    "foreground": { "light": [0.15, 0, 0, 1], "dark": [0.97, 0, 0, 1] },
+    "body": { "light": [0.32, 0, 0, 1], "dark": [0.88, 0, 0, 1] },
+    "muted": { "light": [0.50, 0, 0, 1], "dark": [0.68, 0, 0, 1] },
+    "notice": { "light": [0.40, 0, 0, 1], "dark": [0.80, 0, 0, 1] },
+    "error": { "light": [0.45, 0.14, 20, 1], "dark": [0.78, 0.11, 20, 1] },
+    "warning": { "light": [0.42, 0.12, 80, 1], "dark": [0.78, 0.12, 80, 1] },
+    "success": { "light": [0.40, 0.11, 150, 1], "dark": [0.75, 0.12, 150, 1] },
+    "scrim": { "light": [0.15, 0, 0, 0.40], "dark": [0, 0, 0, 0.60] }
+  },
+  "spacingDp": {
+    "threeXs": 2,
+    "twoXs": 4,
+    "nudge": 6,
+    "xs": 8,
+    "compact": 10,
+    "sm": 12,
+    "fieldY": 14,
+    "md": 16,
+    "page": 20,
+    "lg": 24,
+    "xl": 40,
+    "twoXl": 48,
+    "threeXl": 72,
+    "fourXl": 112
+  },
+  "radiusDp": {
+    "card": 16,
+    "chat": 16,
+    "control": 12,
+    "chatInner": 4,
+    "pill": 999
+  },
+  "sizeDp": {
+    "touchTarget": 48,
+    "primaryControl": 56,
+    "iconGlyph": 20,
+    "chatHeader": 64,
+    "composerMin": 56,
+    "composerMax": 160,
+    "conversationRail": 304,
+    "chatContentMax": 720,
+    "avatarSmall": 32,
+    "avatarMedium": 40,
+    "avatarLarge": 72,
+    "badge": 20,
+    "badgeSlot": 40,
+    "paginationSlot": 112
+  },
+  "typeSp": {
+    "display": 32,
+    "heading": 20,
+    "body": 17,
+    "ui": 15,
+    "label": 14,
+    "caption": 13
+  },
+  "lineHeightMultiplier": {
+    "display": 1.10,
+    "heading": 1.15,
+    "body": 1.55,
+    "ui": 1.50,
+    "label": 1.45,
+    "caption": 1.40
+  },
+  "durationMs": {
+    "reduced": 0,
+    "fade": 200,
+    "message": 200,
+    "typing": 1200,
+    "progress": 500,
+    "skeleton": 1400
+  },
+  "layout": {
+    "messageMaxWidthFraction": 0.85,
+    "twoPaneBreakpointDp": 840
+  }
+}
