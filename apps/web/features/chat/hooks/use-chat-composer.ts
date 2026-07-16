@@ -1,12 +1,17 @@
 import type { ClientChatData } from "@/lib/services";
 import { chatLimits, type ChatStickerId } from "@fish/core/chat";
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { SendMessageActionState } from "@/features/chat/contracts";
 import type { ReportGifActionState } from "@/features/chat/contracts";
 import type { LocalMessage } from "./use-chat-messages";
 import type { PendingChatImage } from "./use-chat-image-uploads";
 import type { ClientChatGif, ClientChatImage } from "@/lib/services";
-import { useChatStore, selectComposerForConversation } from "@/features/chat/model/store";
+import {
+  chatStore,
+  selectComposerForConversation,
+  selectMessagesForConversation,
+  useChatStore,
+} from "@/features/chat/model/store";
 import { gifProvider } from "@/features/chat/model/gif-provider";
 
 interface UseChatComposerOptions {
@@ -50,6 +55,22 @@ interface MessageMutationResult {
   notice?: string;
 }
 
+interface OptimisticDelete {
+  conversationId: string;
+  messageId: string;
+  deletedAt: string;
+}
+
+const deleteRollbackNotice =
+  "That message is still here. Try deleting it again.";
+
+function deletionFailureNotice(notice?: string): string {
+  const normalized = notice?.trim();
+  return !normalized || normalized.toLowerCase().includes("keep this open")
+    ? deleteRollbackNotice
+    : normalized;
+}
+
 function makeRequestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `message-${Date.now()}`;
 }
@@ -70,6 +91,10 @@ export function useChatComposer({
 }: UseChatComposerOptions) {
   const [notice, setNotice] = useState<string | null>(null);
   const [editSession, setEditSession] = useState<EditSessionState | null>(null);
+  const [optimisticDeletes, setOptimisticDeletes] = useState<
+    OptimisticDelete[]
+  >([]);
+  const activeConversationIdRef = useRef(chat.conversationId);
   const [gifSelection, setGifSelection] = useState<GifSelectionState>({
     conversationId: chat.conversationId,
     gif: null,
@@ -99,6 +124,18 @@ export function useChatComposer({
   const selectedGif = gifSelection.gif;
   const selectedGifQuery = gifSelection.query;
   const selectedStickerId = stickerSelection.stickerId;
+  useEffect(() => {
+    activeConversationIdRef.current = chat.conversationId;
+  }, [chat.conversationId]);
+  const optimisticDeletedAtByMessageId = useMemo(
+    () =>
+      new Map(
+        optimisticDeletes
+          .filter((item) => item.conversationId === chat.conversationId)
+          .map((item) => [item.messageId, item.deletedAt])
+      ),
+    [chat.conversationId, optimisticDeletes]
+  );
   const composer = useChatStore((state) =>
     selectComposerForConversation(state, chat.conversationId)
   );
@@ -383,20 +420,64 @@ export function useChatComposer({
     }
 
     setNotice(null);
+    const optimisticDelete: OptimisticDelete = {
+      conversationId: message.conversationId,
+      messageId: message.id,
+      deletedAt: new Date().toISOString(),
+    };
+    setOptimisticDeletes((current) => [
+      ...current.filter(
+        (item) =>
+          item.conversationId !== optimisticDelete.conversationId ||
+          item.messageId !== optimisticDelete.messageId
+      ),
+      optimisticDelete,
+    ]);
+
+    const clearOptimisticDelete = () => {
+      setOptimisticDeletes((current) =>
+        current.filter(
+          (item) =>
+            item.conversationId !== optimisticDelete.conversationId ||
+            item.messageId !== optimisticDelete.messageId ||
+            item.deletedAt !== optimisticDelete.deletedAt
+        )
+      );
+    };
+
     const result = await deleteMessageAction({ messageId: message.id }).catch(() => ({
       status: "notice" as const,
       values: {},
-      notice: "That didn’t delete yet. Keep this open and try again.",
+      notice: deleteRollbackNotice,
     }));
     if (result.status !== "sent" || !result.message) {
+      const authoritativeMessage = selectMessagesForConversation(
+        chatStore.getState(),
+        optimisticDelete.conversationId
+      ).find((item) => item.id === optimisticDelete.messageId);
+      clearOptimisticDelete();
+
+      // A realtime event can confirm the command before a late network error
+      // reaches this caller. Never roll an authoritative tombstone back to
+      // visible content or show a false failure in that race.
+      if (authoritativeMessage?.deletedAt) {
+        return { ok: true };
+      }
+
+      const failureNotice = deletionFailureNotice(result.notice);
+      if (
+        activeConversationIdRef.current === optimisticDelete.conversationId
+      ) {
+        setNotice(failureNotice);
+      }
       return {
         ok: false,
-        notice:
-          result.notice ?? "That didn’t delete yet. Keep this open and try again.",
+        notice: failureNotice,
       };
     }
 
-    mergeRemoteMessage(result.message!);
+    mergeRemoteMessage(result.message);
+    clearOptimisticDelete();
     return { ok: true };
   }
 
@@ -541,6 +622,7 @@ export function useChatComposer({
     editDraft: activeEdit?.draft ?? "",
     editNotice: activeEdit?.notice ?? null,
     isSavingEdit: activeEdit?.saving ?? false,
+    optimisticDeletedAtByMessageId,
     handleDraftChange,
     handleSend,
     sendWithRequestId,

@@ -1956,14 +1956,14 @@ describe("ChatClient", () => {
         reactions: [],
       },
     });
-    const deleteMessageAction = vi.fn().mockResolvedValue({
-      status: "sent",
+    const deletedMessage = {
+      status: "sent" as const,
       values: {},
       message: {
         id: "message-2",
         conversationId: chat.conversationId,
         senderId: "client-1",
-        senderRole: "client",
+        senderRole: "client" as const,
         body: "",
         clientRequestId: "seed-2",
         createdAt: "2026-07-05T00:01:00.000Z",
@@ -1972,7 +1972,14 @@ describe("ChatClient", () => {
         replyToMessageId: null,
         reactions: [],
       },
-    });
+    };
+    let resolveDelete: (value: typeof deletedMessage) => void = () => undefined;
+    const deleteMessageAction = vi.fn(
+      () =>
+        new Promise<typeof deletedMessage>((resolve) => {
+          resolveDelete = resolve;
+        })
+    );
 
     render(
       <ChatClient
@@ -2040,6 +2047,15 @@ describe("ChatClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
     await waitFor(() =>
       expect(deleteMessageAction).toHaveBeenCalledWith({ messageId: "message-2" })
+    );
+    expect(screen.getByText("Message deleted")).toBeInTheDocument();
+    expect(screen.queryByText("Edited text.")).toBeNull();
+
+    await act(async () => {
+      resolveDelete(deletedMessage);
+    });
+    await waitFor(() =>
+      expect(screen.getByText("Message deleted")).toBeInTheDocument()
     );
   });
 

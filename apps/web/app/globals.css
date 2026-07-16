@@ -293,6 +293,14 @@
   contain: inline-size paint;
 }
 
+/* Anchored overlays must stay operable when browser zoom or a short viewport
+   leaves less room than their content needs. Base UI provides the available
+   block size on the positioner; this utility keeps that provider detail out of
+   feature components while allowing their content to scroll. */
+@utility max-h-popover-available {
+  max-height: var(--available-height);
+}
+
 /* ---- Base ---- */
 @layer base {
   html {

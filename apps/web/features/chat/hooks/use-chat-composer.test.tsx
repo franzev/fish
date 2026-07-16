@@ -1,7 +1,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientChatData, ClientChatGif } from "@/lib/services";
-import { resetChatStoreForTests } from "@/features/chat/model/store";
+import {
+  chatStore,
+  resetChatStoreForTests,
+} from "@/features/chat/model/store";
 import { useChatComposer } from "./use-chat-composer";
 import type { LocalMessage } from "./use-chat-messages";
 
@@ -232,16 +235,26 @@ describe("useChatComposer inline editing", () => {
     expect(result.current.isSavingEdit).toBe(false);
   });
 
-  it("returns deletion failures to the message confirmation surface", async () => {
+  it("shows an optimistic tombstone before deletion settles, then rolls back with calm guidance", async () => {
     const sendMessageAction = vi.fn(async () => ({
       status: "notice" as const,
       values: {},
     }));
-    const deleteMessageAction = vi.fn(async () => ({
-      status: "notice" as const,
-      values: {},
-      notice: "That didn’t delete yet. Keep this open and try again.",
-    }));
+    let resolveDelete: (value: {
+      status: "notice";
+      values: unknown;
+      notice: string;
+    }) => void = () => undefined;
+    const deleteMessageAction = vi.fn(
+      () =>
+        new Promise<{
+          status: "notice";
+          values: unknown;
+          notice: string;
+        }>((resolve) => {
+          resolveDelete = resolve;
+        })
+    );
     const { result } = renderHook(() =>
       useChatComposer({
         ...options(conversationA, sendMessageAction),
@@ -250,14 +263,82 @@ describe("useChatComposer inline editing", () => {
       })
     );
 
-    let outcome: Awaited<ReturnType<typeof result.current.handleDeleteMessage>>;
+    type DeleteOutcome = Awaited<
+      ReturnType<typeof result.current.handleDeleteMessage>
+    >;
+    let outcome: DeleteOutcome = { ok: true };
+    let pendingDelete: Promise<DeleteOutcome> = Promise.resolve(outcome);
+    act(() => {
+      pendingDelete = result.current.handleDeleteMessage(ownMessage);
+    });
+    expect(
+      result.current.optimisticDeletedAtByMessageId.get(ownMessage.id)
+    ).toEqual(expect.any(String));
+
     await act(async () => {
-      outcome = await result.current.handleDeleteMessage(ownMessage);
+      resolveDelete({
+        status: "notice",
+        values: {},
+        notice: "That didn’t delete yet. Keep this open and try again.",
+      });
+      outcome = await pendingDelete;
     });
 
-    expect(outcome!).toEqual({
+    expect(outcome).toEqual({
       ok: false,
-      notice: "That didn’t delete yet. Keep this open and try again.",
+      notice: "That message is still here. Try deleting it again.",
     });
+    expect(result.current.optimisticDeletedAtByMessageId.size).toBe(0);
+    expect(result.current.notice).toBe(
+      "That message is still here. Try deleting it again."
+    );
+  });
+
+  it("keeps an authoritative realtime tombstone when deletion fails late", async () => {
+    const sendMessageAction = vi.fn(async () => ({
+      status: "notice" as const,
+      values: {},
+    }));
+    let resolveDelete: (value: {
+      status: "notice";
+      values: unknown;
+    }) => void = () => undefined;
+    const deleteMessageAction = vi.fn(
+      () =>
+        new Promise<{ status: "notice"; values: unknown }>((resolve) => {
+          resolveDelete = resolve;
+        })
+    );
+    const { result } = renderHook(() =>
+      useChatComposer({
+        ...options(conversationA, sendMessageAction),
+        messages: [ownMessage],
+        deleteMessageAction,
+      })
+    );
+
+    type DeleteOutcome = Awaited<
+      ReturnType<typeof result.current.handleDeleteMessage>
+    >;
+    let outcome: DeleteOutcome = { ok: false };
+    let pendingDelete: Promise<DeleteOutcome> = Promise.resolve(outcome);
+    act(() => {
+      pendingDelete = result.current.handleDeleteMessage(ownMessage);
+    });
+    act(() => {
+      chatStore.getState().hydrateConversation(
+        conversationA.conversationId,
+        [{ ...ownMessage, deletedAt: "2026-07-14T00:01:00.000Z" }],
+        []
+      );
+    });
+    await act(async () => {
+      resolveDelete({ status: "notice", values: {} });
+      outcome = await pendingDelete;
+    });
+
+    expect(outcome).toEqual({ ok: true });
+    expect(result.current.optimisticDeletedAtByMessageId.size).toBe(0);
+    expect(result.current.notice).toBeNull();
   });
 });

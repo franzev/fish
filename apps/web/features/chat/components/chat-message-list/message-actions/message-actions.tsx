@@ -14,7 +14,7 @@ import {
   IconPencil,
   IconTrash,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmojiPicker, EmojiPickerButton } from "../../emoji-picker";
 
 export interface MessageActionResult {
@@ -58,6 +58,13 @@ export function MessageActions({
   const [view, setView] = useState<MoreView>("actions");
   const [deleting, setDeleting] = useState(false);
   const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
+  const cancelDeleteRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (view === "delete") {
+      cancelDeleteRef.current?.focus();
+    }
+  }, [view]);
 
   function closeMore() {
     setOpen(false);
@@ -169,11 +176,12 @@ export function MessageActions({
             className="z-20"
           >
             <Popover.Popup
-              initialFocus={false}
-              aria-label="Message actions"
+              aria-label={view === "actions" ? "Message actions" : undefined}
               className={cn(
-                "overflow-hidden rounded-card border border-divider bg-surface",
-                view === "reactions" ? "h-emoji-panel-h w-emoji-panel" : "w-menu p-3xs"
+                "rounded-card border border-divider bg-surface",
+                view === "reactions"
+                  ? "h-emoji-panel-h w-emoji-panel overflow-hidden"
+                  : "max-h-popover-available w-menu overflow-x-hidden overflow-y-auto overscroll-contain p-3xs"
               )}
             >
               {view === "actions" && (
@@ -245,9 +253,9 @@ export function MessageActions({
                         />
                       }
                     />
-                    <p className="text-ui-sm font-medium text-foreground">
+                    <Popover.Title className="font-sans text-ui-sm font-medium text-foreground">
                       Add a reaction
-                    </p>
+                    </Popover.Title>
                   </div>
                   <EmojiPicker
                     embedded
@@ -259,21 +267,27 @@ export function MessageActions({
 
               {view === "delete" && (
                 <div className="p-xs">
-                  <p className="text-ui-sm font-medium text-foreground">
+                  <Popover.Title className="font-sans text-ui-sm font-medium text-foreground">
                     Delete this message?
-                  </p>
-                  <p className="mt-2xs text-ui-xs text-body">
-                    It will remain in the conversation as Message deleted.
-                  </p>
-                  <p
-                    role="status"
-                    aria-live="polite"
-                    className="min-h-field-message pt-xs text-ui-xs text-notice"
+                  </Popover.Title>
+                  <Popover.Description
+                    className={cn(
+                      "mt-2xs text-ui-sm",
+                      deleteNotice ? "text-notice" : "text-body"
+                    )}
                   >
-                    {deleteNotice}
-                  </p>
-                  <div className="flex flex-col gap-xs">
+                    {deleteNotice ? (
+                      <span role="status">{deleteNotice}</span>
+                    ) : (
+                      <>
+                        The message will be removed. “Message deleted” will
+                        appear in its place.
+                      </>
+                    )}
+                  </Popover.Description>
+                  <div className="mt-sm flex flex-col gap-xs">
                     <Button
+                      ref={cancelDeleteRef}
                       type="button"
                       variant="ghost"
                       fullWidth

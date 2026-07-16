@@ -123,12 +123,32 @@ describe("MessageActions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
 
     expect(viewProps.onDelete).not.toHaveBeenCalled();
-    expect(screen.getByText("Delete this message?")).toBeInTheDocument();
+    const confirmation = screen.getByRole("dialog", {
+      name: "Delete this message?",
+    });
+    expect(confirmation).toBeInTheDocument();
     expect(
-      screen.getByText(/remain in the conversation as Message deleted/)
+      screen.getByText(
+        "The message will be removed. “Message deleted” will appear in its place."
+      )
     ).toBeInTheDocument();
+    expect(confirmation).toHaveClass(
+      "max-h-popover-available",
+      "overflow-y-auto",
+      "overscroll-contain"
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus()
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete message" }));
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    const deleteMessage = screen.getByRole("button", {
+      name: "Delete message",
+    });
+    expect(cancel).toHaveClass("bg-transparent");
+    expect(deleteMessage).toHaveClass("bg-surface-2");
+
+    fireEvent.click(deleteMessage);
     await waitFor(() => expect(viewProps.onDelete).toHaveBeenCalledOnce());
   });
 
@@ -147,6 +167,11 @@ describe("MessageActions", () => {
     expect(
       await screen.findByText("That didn’t delete yet. Keep this open and try again.")
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "The message will be removed. “Message deleted” will appear in its place."
+      )
+    ).toBeNull();
     expect(screen.getByText("Delete this message?")).toBeInTheDocument();
   });
 

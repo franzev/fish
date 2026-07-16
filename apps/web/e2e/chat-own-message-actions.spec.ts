@@ -66,10 +66,18 @@ test("client edits an own message inline without losing a draft, then confirms d
   await row.hover();
   await row.getByRole("button", { name: "More actions for message" }).click();
   await page.getByRole("button", { name: "Delete message" }).click();
-  await expect(page.getByText("Delete this message?")).toBeVisible();
+  const confirmation = page.getByRole("dialog", {
+    name: "Delete this message?",
+  });
+  await expect(confirmation).toBeVisible();
+  await expect(
+    confirmation.getByText(
+      "The message will be removed. “Message deleted” will appear in its place."
+    )
+  ).toBeVisible();
   await expect(row).toContainText(revised);
 
-  await page.getByRole("button", { name: "Cancel" }).click();
+  await confirmation.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByText("Delete this message?")).toHaveCount(0);
 
   const actions = page.getByRole("dialog", { name: "Message actions" });
@@ -110,8 +118,11 @@ test.describe("touch disclosure", () => {
     await expect(actions.getByRole("button", { name: "Delete message" })).toBeVisible();
 
     await actions.getByRole("button", { name: "Delete message" }).click();
-    await expect(page.getByText("Delete this message?")).toBeVisible();
-    await page.getByRole("button", { name: "Cancel" }).click();
+    const confirmation = page.getByRole("dialog", {
+      name: "Delete this message?",
+    });
+    await expect(confirmation).toBeVisible();
+    await confirmation.getByRole("button", { name: "Cancel" }).click();
     await expect(actions.getByRole("button", { name: "Edit message" })).toBeVisible();
   });
 });

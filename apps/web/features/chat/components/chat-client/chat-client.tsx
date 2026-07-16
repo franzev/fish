@@ -337,6 +337,7 @@ export function ChatClient({
     editDraft,
     editNotice,
     isSavingEdit,
+    optimisticDeletedAtByMessageId,
     handleDraftChange,
     handleSend,
     sendWithRequestId,
@@ -370,6 +371,19 @@ export function ChatClient({
     // render immediately without downloading its just-uploaded image again.
     clearPendingImages: () => imageUploads.clear({ preservePreviewUrls: true }),
   });
+  const presentedMessages = useMemo(
+    () =>
+      optimisticDeletedAtByMessageId.size === 0
+        ? messages
+        : messages.map((message) => {
+            const optimisticDeletedAt =
+              optimisticDeletedAtByMessageId.get(message.id);
+            return optimisticDeletedAt && !message.deletedAt
+              ? { ...message, deletedAt: optimisticDeletedAt }
+              : message;
+          }),
+    [messages, optimisticDeletedAtByMessageId]
+  );
 
   // Legacy fixtures may omit the member directory. Keep their count useful by
   // deriving it from everyone the room has already seen.
@@ -588,8 +602,8 @@ export function ChatClient({
           load: loadOlderAndPreserveScroll,
         }}
         transcript={{
-          visibleMessages: messages,
-          allMessages: messages,
+          visibleMessages: presentedMessages,
+          allMessages: presentedMessages,
           participantTyping,
           isCommunity,
           activityName,
