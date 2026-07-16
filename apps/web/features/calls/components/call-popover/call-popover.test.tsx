@@ -23,6 +23,8 @@ vi.mock("next/navigation", () => ({
 import { CallPopover } from "./call-popover";
 import { CallScreen } from "../call-screen";
 
+const originalMatchMedia = window.matchMedia;
+
 function callValue() {
   const state = createEmptyCallState();
   state.current = {
@@ -86,6 +88,7 @@ describe("CallPopover", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    window.matchMedia = originalMatchMedia;
   });
 
   it("stays hidden when there is no current call", () => {
@@ -135,9 +138,9 @@ describe("CallPopover", () => {
     const panel = screen.getByRole("complementary");
     expect(panel).toHaveClass(
       "call-popover-width",
-      "bottom-mobile-nav-offset",
-      "left-page",
-      "sm:bottom-page"
+      "mobile-call-popover-safe",
+      "md:bottom-page",
+      "left-page"
     );
     expect(panel).not.toHaveClass("right-page", "w-auto", "sm:w-full");
   });
@@ -446,6 +449,29 @@ describe("CallPopover", () => {
 
     fireEvent.click(dataSaver);
     expect(value.setVideoQualityPreference).toHaveBeenCalledWith("data-saver");
+  });
+
+  it("keeps rapidly changing speaking telemetry out of mobile live regions", () => {
+    window.matchMedia = vi.fn((query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+    const value = callValue();
+    value.remoteSpeaking = true;
+    useCallMock.mockReturnValue(value);
+
+    const { container } = render(<CallPopover />);
+
+    expect(screen.queryByRole("status", { name: "Franz is speaking" })).toBeNull();
+    expect(within(screen.getByRole("group", { name: "Call activity" }))
+      .getByText("Speaking")).not.toHaveAttribute("role");
+    expect(container.querySelectorAll("[aria-live='polite']")).toHaveLength(1);
   });
 
   it("lets people move their video preview with the keyboard", () => {

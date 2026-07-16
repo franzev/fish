@@ -7,6 +7,7 @@ import { MediaDeviceSelect } from "@/components/ui/media-device-select";
 import { MicrophoneVolumeMeter } from "@/components/ui/microphone-volume-meter";
 import { Switch } from "@/components/ui/switch";
 import { IconButton } from "@/components/ui/icon-button";
+import { useMobileLayout } from "@/hooks/use-mobile-layout";
 import { cn } from "@/lib/utils";
 import type { CallSessionState } from "@fish/core/call-state";
 import { Popover } from "@base-ui/react/popover";
@@ -93,6 +94,7 @@ export function CallPopoverView({
   setVideoQualityPreference,
   presentation = "popover",
 }: CallPopoverViewProps) {
+  const mobile = useMobileLayout();
   const remoteVideo = useRef<HTMLVideoElement | null>(null);
   const videoStageRef = useRef<HTMLDivElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -169,7 +171,7 @@ export function CallPopoverView({
       className={cn(
         screen
           ? "fixed inset-0 z-40 h-dvh w-full bg-bg"
-          : "call-popover-width bottom-mobile-nav-offset left-page sm:bottom-page",
+          : "call-popover-width mobile-call-popover-safe left-page md:bottom-page",
         !screen && "fixed z-40"
       )}
     >
@@ -194,8 +196,9 @@ export function CallPopoverView({
               <video ref={remoteVideo} aria-label={`${call.counterpartName ?? "Your call partner"} video`} autoPlay muted playsInline className={cn("absolute inset-0 h-full w-full object-contain", remoteVideoTrack ? "block" : "hidden")} />
               {remoteSpeaking && !remoteMuted && (
                 <div
-                  role="status"
+                  role={mobile ? undefined : "status"}
                   aria-label={`${call.counterpartName ?? "Your call partner"} is speaking`}
+                  aria-hidden={mobile ? true : undefined}
                   className="absolute bottom-sm left-sm z-10 flex min-h-control items-center rounded-pill bg-bg px-sm"
                 >
                   <MicrophoneVolumeMeter
@@ -235,7 +238,11 @@ export function CallPopoverView({
           </div>
         )}
 
-        <div className={cn("flex flex-col", callPrompt ? "gap-lg p-page" : "gap-md p-md")}>
+        <div className={cn(
+          "flex flex-col",
+          callPrompt ? "gap-lg p-page" : "gap-md p-md",
+          screen && "mobile-controls-safe"
+        )}>
           <div className={cn("min-w-0", !callPrompt && "flex items-center gap-sm", videoStage && "sr-only")}>
             {!callPrompt && <span className="flex size-control shrink-0 items-center justify-center rounded-pill bg-surface-2 text-foreground">
               {call.kind === "video" ? <IconVideo size={20} stroke={1.75} aria-hidden="true" /> : <IconPhone size={20} stroke={1.75} aria-hidden="true" />}
@@ -266,7 +273,12 @@ export function CallPopoverView({
                   : <MicrophoneVolumeMeter level={remoteMicrophoneLevel} active={remoteSpeaking} className="shrink-0" />}
                 <div className="min-w-0">
                   <span className="block truncate text-ui-2xs font-medium text-muted">{call.counterpartName ?? "Call partner"}</span>
-                  <span role="status" aria-live="polite" aria-atomic="true" className="block truncate text-ui-xs text-foreground">{remoteMuted ? "Muted" : remoteSpeaking ? "Speaking" : "Listening"}</span>
+                  <span
+                    role={mobile ? undefined : "status"}
+                    aria-live={mobile ? undefined : "polite"}
+                    aria-atomic={mobile ? undefined : "true"}
+                    className="block truncate text-ui-xs text-foreground"
+                  >{remoteMuted ? "Muted" : remoteSpeaking ? "Speaking" : "Listening"}</span>
                 </div>
               </div>
             </div>

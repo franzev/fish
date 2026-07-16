@@ -220,6 +220,7 @@ describe("AppShell", () => {
     const mobilePrimaryNav = screen.getByRole("navigation", {
       name: "Mobile primary",
     });
+    expect(mobilePrimaryNav).toHaveClass("mobile-nav-safe", "z-30");
     expect(primaryNav).toHaveTextContent("Home");
     expect(primaryNav).toHaveTextContent("Community");
     expect(primaryNav).not.toHaveTextContent("Messages");

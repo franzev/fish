@@ -245,7 +245,7 @@ export function AppShell({
           "w-full flex-1",
           immersive
             ? "flex min-h-0 min-w-0"
-            : "mx-auto max-w-content px-page py-xl pb-mobile-nav-offset md:py-2xl"
+            : "mobile-nav-content-safe mx-auto max-w-content px-page py-xl pb-mobile-nav-offset md:py-2xl md:pb-0"
         )}
       >
         {/* Keep channel navigation inside the immersive community surface so
@@ -281,7 +281,8 @@ export function AppShell({
           className={cn(
             "flex min-w-0 flex-1 flex-col",
             immersive && "min-h-0",
-            conversationSurface && "pb-mobile-nav-offset md:pb-0"
+            conversationSurface &&
+              "mobile-nav-content-safe pb-mobile-nav-offset md:pb-0"
           )}
         >
           {channelSurface && (
@@ -317,7 +318,7 @@ export function AppShell({
       {!focusedSurface && (
         <nav
           aria-label="Mobile primary"
-          className="fixed inset-x-0 bottom-0 flex border-t border-divider bg-surface px-xs py-xs md:hidden"
+          className="mobile-nav-safe fixed inset-x-0 bottom-0 z-30 flex border-t border-divider bg-surface px-xs pt-xs md:hidden"
         >
           <NavLinks items={navItems} pathname={pathname} placement="bottom" />
         </nav>
