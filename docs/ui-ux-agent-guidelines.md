@@ -1,1059 +1,1364 @@
-# UI/UX Agent Guidelines
-
-This guide consolidates the UI/UX principles extracted from every PDF under
-`uiux/` and adapts them to FISH. Use it when implementing, reviewing, or
-refining any user-facing screen.
-
-The short version: FISH is a calm coaching product for neurodivergent
-professionals. The UI should reduce cognitive load, preserve focus, and make
-the next step obvious. Good visual design matters, but only when it makes the
-product easier to understand and use.
-
-## Source Coverage
-
-These guidelines synthesize:
-
-- `uiux/Designing_User_Interfaces_EN_2024_FINAL.pdf.pdf`
-- `uiux/noBullshit_2025.pdf`
-- `uiux/ui-styles-2024.pdf`
-- `uiux/ducking-designers-guide.pdf`
-- `uiux/UI-design-tips.pdf`
-- `uiux/dark-version-updated.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/css_selector_best_practices.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/five_css_mistakes_to_avoid.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/how_to_organize_your_css_codebase.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/how_to_properly_name_css_classes.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/html_forms_best_practices.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/html_learning_roadmap.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/real_world_examples_of_semantic_html.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/semantic_html_use_cases.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/seven_common_html_mistakes.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/twitter_best_practices_css.pdf`
-- `uiux/+100 slides on HTML & CSS Best practices/web_images_best_practices.pdf`
-
-## Precedence Rules
-
-When sources overlap or conflict, use this order:
-
-1. `AGENTS.md` product rules win.
-2. Existing code tokens and base components win.
-3. This document wins over generic PDF advice.
-4. General PDF advice is a reference, not permission to add complexity.
-
-Important project-specific overrides:
-
-- FISH uses `--size-target-touch` / 44px for touch-first and frequently used
-  controls. Primary actions may use `--size-control-primary` / 56px when the
-  extra prominence supports focus. Compact desktop controls and inline links
-  may be smaller when context and spacing keep them easy to operate.
-- PDFs often use red for errors; FISH uses calm semantic tones and helpful
-  copy. Never use alarming red as the main experience.
-- PDFs sometimes recommend title case labels; FISH copy uses sentence case.
-- PDFs discuss multi-option choice UI; FISH clients should receive assigned
-  next steps, not browse or choose from plan/template menus.
-- PDFs include many visual styles; FISH is intentionally sparse and
-  monochrome. Treat trendy effects as exceptions, not a direction.
-
-## Core Product Principles
-
-### Reduce Choices
-
-Every screen should answer one question: what is the next useful thing the
-user can do?
-
-Do:
-
-- Keep one primary action per screen.
-- Remove options that are not needed for the current task.
-- Split complex flows into small, logical steps.
-- Show progress visually when a flow is long.
-- Let coaches assign next steps.
-
-Do not:
-
-- Add galleries, pickers, or menus of learning plans for clients.
-- Put two visually equal primary actions beside each other.
-- Ask for information that can be inferred, prefilled, deferred, or assigned.
-- Add feature controls just because the app could support them.
-
-Example:
-
-- Do: one assigned check-in with one `Continue` or `Send update` action.
-- Do not: a screen that asks the client to choose from several templates,
-  difficulty levels, and optional learning paths.
-
-### Coach-First, Code-Second
-
-Learning features must come from validated coaching practice. If an exercise,
-community feature, gamification idea, or learning mechanic
-has not been validated manually by a coach, pause and ask.
-
-Do:
-
-- Implement foundations first: auth, profiles, 1-on-1 chat, shared UI kit.
-- Keep the app flexible enough for coaches to assign work manually.
-- Favor simple primitives over hard-coded learning templates.
-
-Do not:
-
-- Encode an unvalidated teaching technique as a product feature.
-- Add gamification before the foundations and validation exist.
-- Build streaks that reset or punish gaps.
-
-### Design, Test, Repeat
-
-The UX PDFs repeatedly reduce the work to a practical loop: understand the
-problem, design a solution, test it with real users, and iterate.
-
-Do:
-
-- Use real coach/client evidence where possible.
-- Prefer short user interviews, usability checks, and production observations
-  over process theater.
-- For meaningful UX changes, test the core flow rather than debating taste.
-- If testing a prototype, make it mid or high fidelity enough that users can
-  understand it.
-
-Do not:
-
-- Add personas, journey maps, or workshops as deliverables unless they help
-  the actual decision.
-- Treat social-media "which design is better?" opinions as user research.
-- Use A/B testing to justify manipulative or user-hostile behavior.
-
-## Visual Hierarchy
-
-Hierarchy is how the screen tells the user what matters first, second, and
-last. Use hierarchy before decoration.
-
-### Hierarchy Model
-
-For every screen or component, identify:
-
-- Context: where the user is and why this screen exists.
-- Clarification: the minimum information needed to decide.
-- Action: the single next step.
-
-This is adapted from the hierarchy-strips method in the PDFs. The spaces
-between groups matter as much as the groups themselves.
-
-Do:
-
-- Make the highest-priority content visually strongest.
-- Put supporting information near the thing it explains.
-- Place the final action where the user's scan path naturally ends.
-- Use bigger spacing between unrelated groups than within a group.
-
-Do not:
-
-- Give all text, cards, or buttons the same visual weight.
-- Put unrelated items close together just to save vertical space.
-- Let decorative elements be noticed before task-critical content.
-
-Example:
-
-- Do: heading, one short explanation, input group, primary button.
-- Do not: heading, long paragraph, three links, two cards, tooltip, and a
-  primary button all with equal emphasis.
-
-### Proximity
-
-Users assume close items belong together.
-
-Do:
-
-- Keep labels close to their fields.
-- Group related fields under a clear section label if the form is long.
-- Separate destructive or rare actions from common actions.
-- Add more space before a new task group than between items in the same group.
-
-Do not:
-
-- Use the same gap between every element.
-- Put sign-out, delete, or cancel actions beside routine navigation.
-- Separate a field from its label with the same gap used between field groups.
-
-### One Primary Action
-
-FISH screens may have at most one `Button variant="primary"` per view.
-
-Do:
-
-- Use primary for the one action that moves the user forward.
-- Use secondary, ghost, or text links for alternatives.
-- Make alternatives visibly quieter.
-
-Do not:
-
-- Use two primary buttons in one screen section.
-- Use the same fill color for two different choices.
-- Make cancel/destructive actions more visually dominant than the desired
-  action.
-
-Examples:
-
-- Do: `Cancel` as ghost, `Clear history` as the only emphasized action.
-- Do not: `Cancel` and `OK` styled identically.
-- Do: `Create account`.
-- Do not: `Next`, `OK`, `Submit`, or `Click here`.
-
-## Layout And Spacing
-
-### Use A Spacing System
-
-FISH should use an 8-point spacing mindset, with occasional 4px or 12px
-sub-steps inside compact components when needed. Avoid random numbers.
-
-Good values:
-
-- Component internals: `4`, `8`, `12`, `16`
-- Component grouping: `16`, `24`, `32`
-- Section grouping: `40`, `48`, `64`
-
-Do:
-
-- Use spacing tokens/classes that map to the design system.
-- Make inner component spacing smaller than outer layout spacing.
-- Keep equal items equally spaced.
-- Use whitespace as a divider before adding borders.
-
-Do not:
-
-- Use magic numbers because they "look right" once.
-- Patch alignment with one-off offsets.
-- Fill empty space just because it exists.
-
-Example:
-
-- Do: label to input gap around `8px`, input to helper text around `4px`.
-- Do not: `13px`, `19px`, and `27px` gaps in the same form without a clear
-  token or reason.
-
-### Web Layout
-
-The PDFs recommend a 12-column web grid, around 1120px content width, and
-32px gutters for content-heavy or marketing-style pages. FISH product screens
-are usually calmer and narrower.
-
-Do:
-
-- Prefer single-column flows for auth, profile editing, chat, and client work.
-- Keep content width constrained so text stays readable.
-- Use side whitespace intentionally on desktop.
-- For dense coach/admin views, use grids only when comparison or scanning
-  benefits from it.
-
-Do not:
-
-- Stretch long text across wide screens.
-- Add columns just because desktop has room.
-- Make marketing-style hero layouts for operational product screens.
-
-Line length:
-
-- Mobile body text: aim for roughly 30-50 characters per line.
-- Desktop body text: avoid very long lines; around 6-9 words per line is a
-  useful readability target for dense copy.
-
-### Mobile Layout
-
-Mobile should usually be one column.
-
-Do:
-
-- Use generous side margins, typically 24px or 32px.
-- Keep internal spacing one step smaller than side spacing.
-- Use full-width primary actions for focused flows.
-- Let users scroll instead of cramming content.
-
-Do not:
-
-- Create multi-column forms on mobile.
-- Hide essential context above the fold to avoid scrolling.
-- Use small controls to fit more content.
-
-### Tablet Layout
-
-Do:
-
-- Use a single column where the task is linear.
-- Use two columns only when the content naturally compares or pairs.
-- Increase side margins compared with phone layouts.
-
-Do not:
-
-- Stretch a phone layout across the tablet width.
-- Create arbitrary columns that break the user's task flow.
+# UI/UX Design Guidelines
+
+This is the authoritative UI/UX reference for FISH. Use it when planning,
+designing, implementing, reviewing, or testing any user-facing surface.
+
+FISH is a calm coaching hub for neurodivergent professionals, including many
+people with ADHD, who are learning English with a coach. The interface exists
+to remove choices, preserve focus, and make the next useful action obvious.
+Visual quality matters because hierarchy and readability affect usability, but
+decoration never outranks the task.
+
+## How to use this guide
+
+- "Must" and "never" are release requirements.
+- "Should" is the default. Deviations need a user, accessibility, or
+  task-specific reason recorded in the change.
+- "May" describes an allowed option, not a requirement.
+- Every recommendation ends with a source citation. Multiple citations show
+  where duplicate guidance was merged.
+- PDF page numbers are the physical pages shown by a PDF viewer. This matters
+  for DFD, whose physical pages contain two printed book pages.
+
+### Precedence
+
+When guidance conflicts, apply it in this order:
+
+1. FISH product rules in AGENTS.md and PRODUCT.md.
+2. The implemented system in DESIGN.md, apps/web/app/globals.css, and the
+   shared components in apps/web/components/ui/.
+3. The resolved decisions in this document.
+4. Generic advice from the source PDFs.
+
+Generic advice is evidence, not permission to add complexity. In particular,
+examples of plan galleries, pricing choices, streaks, red error treatments,
+decorative dashboards, or multiple calls to action do not override FISH's
+assigned-work model. Source: PROJECT, AGENTS.md, "The product rule that governs
+everything" and "Design rules"; NB pp. 174-185, "Laws of UX".
+
+### Required preflight for any user-facing change
+
+Before designing or changing a screen:
+
+1. Confirm the user's role and single task.
+2. Confirm any learning technique has been validated manually by a coach.
+3. Identify the one primary action.
+4. Remove information, choices, and controls that are not needed now.
+5. Define default, focus, loading, success, empty, error, disabled, long-copy,
+   and narrow-screen behavior.
+6. Reuse tokens and shared components before adding anything.
+7. Test keyboard, touch, contrast, reduced motion, zoom, and realistic content.
+
+Source: PROJECT, AGENTS.md, "Coach-first, code-second", "Design rules", and
+"Code conventions"; NB pp. 49-51, 123-125, 174-185; DUI pp. 475-495, "UI
+Audit".
+
+## Source register and coverage
+
+Every PDF in /Users/franz/Desktop/uiux/ was scanned. Image-only pages were
+OCR'd and visually spot-checked. The keys below are used by citations
+throughout this document.
+
+| Key | Source file | Pages | Guidance incorporated |
+| --- | --- | ---: | --- |
+| DUI | Designing_User_Interfaces_EN_2024_FINAL.pdf.pdf | 578 | UI/UX foundations; screens; grids; objects; color; typography; icons; hierarchy; buttons; cards; data; forms; overlays; navigation; motion; media; language; design systems; audits |
+| NB | noBullshit_2025.pdf | 231 | UX process; IA; task decomposition; research; user flows; heuristics; UX laws; dark patterns; testing |
+| STYLE | ui-styles-2024.pdf | 202 | Modern minimal, flat, dark, neumorphic, glass, aurora, clay, brutalist, and spatial styles; accessibility risks |
+| DFD | dark-version-updated.pdf, titled "Design for Developers" | 220 | Color; typography; component anatomy and states; hierarchy; spacing; forms; data; design systems |
+| TIPS | UI-design-tips.pdf | 81 | 70 actionable interface comparisons covering forms, tables, loading, empty states, dialogs, controls, and dark mode |
+| DUCK | ducking-designers-guide.pdf | 49 | Constrained color, type, icon, spacing, and hierarchy rules |
+| FORM | +100 slides on HTML & CSS Best practices/html_forms_best_practices.pdf | 16 | Semantic, accessible forms and input attributes |
+| SELECTOR | +100 slides on HTML & CSS Best practices/css_selector_best_practices.pdf | 6 | Selector intent, reuse, location independence, and specificity |
+| CSS5 | +100 slides on HTML & CSS Best practices/five_css_mistakes_to_avoid.pdf | 6 | Magic values, component independence, selector quality, relative line height, naming |
+| CSSORG | +100 slides on HTML & CSS Best practices/how_to_organize_your_css_codebase.pdf | 9 | Separation of base, component, layout, utility, vendor, and page concerns |
+| BEM | +100 slides on HTML & CSS Best practices/how_to_properly_name_css_classes.pdf | 9 | Blocks, elements, modifiers, and reusable component intent |
+| CSSBP | +100 slides on HTML & CSS Best practices/twitter_best_practices_css.pdf | 15 | CSS readability, declaration order, comments, naming, selector and media-query practices |
+| HTMLR | +100 slides on HTML & CSS Best practices/html_learning_roadmap.pdf | 7 | Semantic structure, links, images, forms, events, and browser APIs |
+| SEMREAL | +100 slides on HTML & CSS Best practices/real_world_examples_of_semantic_html.pdf | 5 | Real-world landmark, article, aside, form, list, time, and disclosure structure |
+| SEMUSE | +100 slides on HTML & CSS Best practices/semantic_html_use_cases.pdf | 9 | Landmark meanings; anchor versus button; figure versus image |
+| HTML7 | +100 slides on HTML & CSS Best practices/seven_common_html_mistakes.pdf | 8 | Semantic elements, figure, inline/block hierarchy, emphasis, inline styles, focus, descriptive links |
+| IMG | +100 slides on HTML & CSS Best practices/web_images_best_practices.pdf | 8 | Content versus decorative images, formats, responsive delivery, CDNs, and lazy loading |
+| PROJECT | AGENTS.md, PRODUCT.md, DESIGN.md, apps/web/app/globals.css, apps/web/app/layout.tsx, apps/web/components/ui/ | n/a | Product precedence, tokens, fonts, components, implementation constraints, and current FISH decisions |
+
+## Design principles and philosophy
+
+### Remove choices
+
+- Every view must make one next useful action obvious. A view may have at most
+  one primary button. Secondary, ghost, or text actions must be visibly quieter.
+  Source: PROJECT, AGENTS.md, "One primary action per screen"; DUI pp. 240-245;
+  TIPS pp. 7, 68; DUCK pp. 13-14.
+- Clients must receive assigned work. They must not browse plan galleries,
+  template menus, skill levels, difficulty pickers, or alternative learning
+  paths. Coaches may use management tools only when those choices are necessary
+  for coaching work. Source: PROJECT, AGENTS.md, "Assigned, never chosen".
+- Ask only for information that cannot be inferred, prefilled, assigned,
+  postponed, or safely removed. Fewer fields and choices reduce cognitive load
+  and improve completion. Source: NB pp. 174, 179-180, 185; DUI pp. 331,
+  358-361; TIPS pp. 11-12.
+- Progressive disclosure is allowed only when it removes nonessential detail
+  without hiding context or information required to complete the task. Source:
+  NB pp. 145-147; DUI pp. 374, 378-379; DFD PDF pp. 99-100.
+
+### Coach-first, code-second
+
+- Do not productize a learning exercise, community feature, gamification
+  mechanic, or coaching technique until a coach has demonstrated that it works
+  manually with a real client. Source: PROJECT, AGENTS.md, "The product rule
+  that governs everything".
+- Build foundations before learning mechanics: auth and roles, client profiles,
+  one-to-one chat, then the shared UI kit. Source: PROJECT, AGENTS.md, "Build
+  order".
+- Reward returning. Never reset a streak to zero, shame a gap, or present
+  progress as a grade. Source: PROJECT, AGENTS.md, "Progress is visual" and
+  "Gamification is reward-only".
+
+### One task at a time
+
+- Keep one logical category of information per screen or step. Separate
+  unrelated tasks even when doing so adds a step. The goal is low cognitive
+  load, not an arbitrary click count. Source: NB pp. 49-51, "The rule of
+  clicks"; NB p. 179, "Reduce complexity".
+- Structure a focused screen as context, clarification, then action. The action
+  normally appears after the information needed to take it. Source: NB p. 166,
+  "Hierarchy strips"; DUI pp. 219-225; DUCK pp. 31-34.
+- Keep only elements that contribute to the task. Ask what can be removed
+  without losing function before adding decoration. Source: NB pp. 146,
+  180-181; DUI pp. 30-43; STYLE pp. 5-16.
+
+### Familiar, calm, and ethical
+
+- Prefer established patterns for registration, forms, navigation, dialogs,
+  and data. Novelty is justified only when a familiar pattern cannot serve the
+  user's task. Source: NB pp. 143-145, 175; DFD PDF pp. 152-158; DUI pp.
+  30-43.
+- Hierarchy, spacing, plain language, and familiar controls must do the work
+  before color, imagery, effects, or motion. Source: DUI pp. 219-225; DUCK pp.
+  25-34; DFD PDF pp. 114-174.
+- Aesthetics support trust and perceived usability, but never at the cost of
+  readability, accessibility, speed, or task clarity. Source: NB p. 181; TIPS
+  p. 33; STYLE pp. 5-16, 89-106.
+- Never implement deceptive patterns: hidden costs, fake scarcity, difficult
+  cancellation, confirmshaming, trick questions, unsolicited contact import,
+  disguised ads, bait-and-switch, or misdirection. Source: NB pp. 186-197,
+  "Types of dark patterns".
+
+### Design, test, refine
+
+- Use the smallest process that answers the actual question: understand the
+  problem, propose a solution, test it, refine it, and repeat. Process artifacts
+  are tools, not deliverables by default. Source: NB pp. 6, 17, 62-70,
+  216-226.
+- Prefer conversations with real target users, competitive analysis, usage
+  evidence, and one-to-one usability checks over invented personas or process
+  theater. Source: NB pp. 71-79, 94-125, 217-226.
+- Use mid- or high-fidelity prototypes for usability tests when visual
+  perception affects the result. Test coded HTML when interaction fidelity
+  matters. Source: NB pp. 123-125, 226.
+- Use heuristic review to check system status, real-world language, user
+  control, consistency, error prevention, recognition, efficiency,
+  minimalism, recovery, and help before usability testing. Source: NB pp.
+  141-147.
+- Use analytics, session recordings, surveys, and A/B tests to identify or
+  compare behavior, not to replace human explanation. Never use an A/B result
+  to justify deception or user harm. Source: NB pp. 128-133, 223-226.
+- Validate on the real device and viewport. A screenshot in a design tool is
+  not enough to judge text size, touch reach, browser behavior, or input
+  keyboards. Source: NB pp. 220-222; DUI pp. 58-66.
+
+## Information architecture
+
+### Build from purpose to surface
+
+- Define strategy first: identify the user need and the product need, and work
+  at their intersection. For FISH, user focus and coach effectiveness outrank
+  feature breadth. Source: NB pp. 24-26, "Strategy"; PROJECT, PRODUCT.md,
+  "Product Purpose".
+- Define scope as the smallest set of capabilities needed to satisfy that
+  strategy. Treat later feature ideas as out of scope until validated. Source:
+  NB p. 27, "Scope"; PROJECT, AGENTS.md, "Coach-first, code-second".
+- Define structure before screens: map the pages, state transitions, user
+  actions, system responses, errors, and recovery paths. Include actual content
+  and fields in the flow when that removes ambiguity. Source: NB p. 28,
+  "Structure".
+- Use a skeleton or wireframe only when it helps align a complex or unclear
+  flow. Familiar, well-defined patterns may move from a clear flow directly to
+  higher fidelity. Source: NB pp. 29, 104-108; DFD PDF pp. 175-180.
+- Treat the surface as behavior as well as appearance. It includes component
+  states, transitions, microcopy, motion, and implementation fidelity. Source:
+  NB p. 30, "Surface"; DUI pp. 401-438.
+
+### Role-based architecture
+
+- Client IA must center on the assigned next step, one-to-one coach context,
+  progress, and the minimum profile/account functions. Do not expose coaching
+  administration or a content catalog. Source: PROJECT, PRODUCT.md, "Users";
+  PROJECT, AGENTS.md, "Assigned, never chosen".
+- Coach IA may include client lists, assignment controls, filters, history, and
+  status because those are required management tasks. Keep each management
+  view focused and do not copy its density into client views. Source: PROJECT,
+  PRODUCT.md, "Users"; DUI pp. 295-310, "Tables and Graphs".
+- Keep role vocabulary, destinations, and permissions explicit. Never rely on
+  hiding a control as the only authorization boundary. Source: PROJECT,
+  AGENTS.md, "API boundary"; NB pp. 142-145.
+
+### Flows and grouping
+
+- Diagram the core value flow first, then supporting flows. Do not spend equal
+  effort diagramming familiar registration or settings patterns unless FISH
+  changes them materially. Source: NB pp. 163-164, 219.
+- Shorten flows by removing unnecessary steps, not by merging unrelated tasks
+  onto one screen. Source: NB p. 164; NB pp. 49-51.
+- Group by the user's mental task: account creation, profile details, coach
+  communication, assigned work, and account settings should remain distinct
+  unless the task truly requires them together. Source: NB pp. 50, 179; DUI
+  pp. 219-225.
+- Put related objects close together and create a clearly larger gap before a
+  new group. Proximity is semantic, not cosmetic. Source: DUI pp. 219-225;
+  DUCK pp. 31-34; DFD PDF pp. 142-147; TIPS p. 73.
+- Prefer recognition over recall. Keep labels, current state, and required
+  context visible; do not make users remember what a field or hidden action
+  means. Source: NB p. 145; TIPS pp. 59-60.
+- Include every meaningful state in the architecture: first use, normal,
+  loading, partial data, empty, offline, permission denied, validation error,
+  server error, success, and retry. Source: NB pp. 142-147; DUI pp. 311-381.
+
+### Labels, search, and help
+
+- Name destinations with plain, user-recognizable nouns and actions with
+  specific verbs. IA labels must match the words used in headings, buttons,
+  notifications, and help. Source: NB pp. 58-60, 143-147; DUI pp. 431-438.
+- Use search, sorting, or filtering only where the information set is too large
+  for calm direct navigation. Long option lists should support typing. Source:
+  TIPS pp. 41, 61-62; DUI pp. 295-310, 340-350.
+- Make help unnecessary for routine tasks through clear UI, then provide
+  searchable, categorized, step-by-step help for genuinely complex work.
+  Source: NB p. 147.
+- Do not use card sorting by default. Established patterns plus usability
+  evidence are usually sufficient; use card sorting only when the category
+  model is genuinely unknown. Source: NB pp. 139-140.
+
+## Navigation patterns
+
+- Start with visible navigation. Hidden navigation increases recall demands
+  and discoverability risk. Source: DUI pp. 382-400; DFD PDF pp. 102-105.
+- Keep destination names, ordering, placement, and interaction consistent
+  across views. Familiarity reduces learning cost. Source: NB pp. 144-145,
+  175; DFD PDF pp. 152-158.
+- Client navigation must remain small and task-oriented. Coach navigation may
+  be broader but must still group related destinations and disclose depth
+  progressively. Source: PROJECT, AGENTS.md, "Assigned, never chosen";
+  PROJECT, PRODUCT.md, "Users".
+- Use labels with icons unless the icon is truly universal in its context. An
+  icon must not be the only explanation for an unfamiliar destination. Source:
+  DUI pp. 206-218, 385-399; TIPS p. 21; DUCK pp. 21-24; DFD PDF pp. 103-110.
+- Show active navigation with at least two cues, such as a surface change plus
+  stronger text or weight. Do not rely on hue alone. Source: DUI pp. 388-391;
+  DFD PDF pp. 103-105.
+- Put the most important destinations where sequence and scanning make them
+  easiest to remember, but do not manipulate ordering to hide account,
+  privacy, or cancellation controls. Source: NB p. 182, "Serial Positioning
+  Effect"; NB pp. 186-197.
+- Use breadcrumbs only for genuine hierarchy with useful parent levels. Do not
+  add them to shallow client flows. The current page is last and not a link;
+  breadcrumbs supplement rather than replace global or local navigation.
+  Source: DFD PDF pp. 81-83.
+- Use text tabs for a small set of peer categories. Keep labels visible, use
+  adequate target areas, and make overflow discoverable without shrinking type.
+  Source: TIPS p. 5; DUI pp. 389-392; DFD PDF pp. 102-105.
+- A side navigation may serve long coach/admin lists. Avoid more than three
+  levels of nesting. Source: DUI p. 393.
+- A hamburger or drawer is a fallback for constrained space, not the default
+  hiding place for primary navigation. Drawer rows and the trigger must retain
+  adequate targets. Source: DUI pp. 395-397; DFD PDF pp. 102-110.
+- Mobile product navigation should use a small labeled bottom bar when the
+  destinations are persistent peers. The active state must be unmistakable and
+  the bar must respect device safe areas. Source: DUI pp. 383-388; DFD PDF pp.
+  102-105.
+- Always provide a clear back, cancel, or close route when users can enter a
+  temporary flow. Preserve entered data when safe. Source: NB p. 143, "User
+  control and freedom"; DUI pp. 363-381.
+- Links navigate and buttons perform actions. Link text must describe the
+  destination and remain visibly link-like without relying on color alone.
+  Source: SEMUSE p. 7; HTML7 p. 8; DUI pp. 242, 398-399.
+
+## Layout and spacing guidelines
+
+### Hierarchy first
+
+- Identify context, clarification, and action before placing components. The
+  most important content must be noticed first, and the final action should
+  follow the information needed to take it. Source: NB p. 166; DUI pp.
+  219-225; DUCK pp. 31-34.
+- Use size, weight, contrast, position, and whitespace in that order of need.
+  Do not give every card, heading, or control equal visual weight. Source: DFD
+  PDF pp. 114-174; DUI pp. 219-225.
+- Do not put unrelated groups close together merely to reduce scrolling. Users
+  are comfortable scrolling; compressed content is harder to process. Source:
+  DUCK pp. 26-29; NB pp. 49-51.
+
+### Token-only spacing
+
+- Use only named spacing tokens from apps/web/app/globals.css for margin,
+  padding, gaps, and spatial rhythm. Do not add one-off numeric Tailwind
+  spacing utilities. Source: PROJECT, AGENTS.md, "Spacing discipline";
+  PROJECT, apps/web/app/globals.css, "@theme".
+- Current spacing roles are: 3xs 2px, 2xs 4px, nudge 6px, xs 8px, compact
+  10px, sm 12px, field-y 14px, md 16px, page 20px, lg 24px, xl 40px, 2xl
+  48px, 3xl 72px, and 4xl 112px. Use the role, not the number. Source:
+  PROJECT, DESIGN.md, "spacing"; PROJECT, apps/web/app/globals.css, "@theme".
+- Component internals should usually use a smaller token than the gap between
+  components; section transitions should use a larger token than either.
+  Source: DUCK pp. 28-29; DUI pp. 84-99; DFD PDF pp. 41-43; TIPS p. 73.
+- Whitespace is the first separator. Add a divider or surface change only when
+  spacing cannot communicate the boundary. Source: DFD PDF pp. 160-165; DUCK
+  pp. 25-34.
+
+### Widths and alignment
+
+- Use the existing width tokens: form 440px, content 640px, chat 720px, and
+  marketing 1120px unless a specific task has a documented need for another
+  named token. Source: PROJECT, apps/web/app/globals.css, "Layout widths".
+- Keep prose constrained to roughly 65-75 characters per line; shorter
+  interface copy may be narrower. Avoid stretching text to fill desktop space.
+  Source: PROJECT, DESIGN.md, "Typography"; DUI pp. 73, 190.
+- Left-align forms, long text, labels, and most structured content. Center only
+  short, self-contained states where the scan path remains obvious. Source:
+  DUI pp. 301-304, 323; DFD PDF pp. 148-152; TIPS pp. 46-48.
+- Align repeated elements to shared edges and baselines. Optical corrections
+  are allowed, but they must become tokens or component behavior rather than
+  page-specific offsets. Source: DUI pp. 94-99, 252-254; DFD PDF pp. 148-152.
+- Do not add columns just because space exists. Use multiple columns only for
+  comparison, parallel scanning, or genuinely paired content. Source: DUI pp.
+  67-103; TIPS pp. 12, 43.
+
+### Containment and elevation
+
+- Use cards only when content forms a distinct repeated object, tool, or
+  movable unit. Do not wrap every section in a card and never nest cards.
+  Source: DUI pp. 258-294; DFD PDF pp. 95-98; PROJECT, DESIGN.md, "Elevation".
+- FISH uses no box or text shadows. Separate layers with surface lightness,
+  spacing, a semantic border, divider, or scrim. Source: PROJECT, DESIGN.md,
+  "Elevation"; PROJECT, apps/web/app/globals.css, global shadow reset.
+- Keep border radius consistent by role: card 16px, control 12px, chat 16px,
+  chat-inner 4px, and pill 999px. Avoid almost-identical radii beside each
+  other. Source: PROJECT, DESIGN.md, "rounded"; TIPS p. 16; DUI pp. 109-112.
 
 ## Typography
 
-FISH web currently uses Lexend for body text and Fraunces for headings. Use
-the loaded fonts and existing typography conventions.
+### Families and roles
 
-### Type Scale
+- Use Lexend for body, labels, controls, navigation, forms, chat, and data. Use
+  Fraunces only for display and headings. Source: PROJECT,
+  apps/web/app/layout.tsx; PROJECT, DESIGN.md, "Typography".
+- Do not introduce another typeface without a design-system decision. One
+  interface should not accumulate decorative or competing families. Source:
+  DUI pp. 177-205; DUCK pp. 16-19.
+- Verify every required language glyph before adding a font. FISH currently
+  loads the Latin subset; expanded language support requires a deliberate
+  subset and performance decision. Source: DUI p. 179; PROJECT,
+  apps/web/app/layout.tsx.
 
-Do:
+### Fixed product type ladder
 
-- Keep most screens to 3-4 text styles.
-- Use body text around 17px on web, matching the existing system.
-- Use labels/captions around 14-15px.
-- Use clear size and weight differences for headings, body, labels, and meta.
-- Use relative line-height, not fixed absolute line-height.
+| Role | FISH specification | Use |
+| --- | --- | --- |
+| Display | Fraunces 600, 32px, 1.1 | Compact product-level title |
+| Heading | Fraunces 600, 20px, 1.15 | Screen or section heading |
+| Body | Lexend 400, 17px, 1.55 | Explanations, messages, form guidance |
+| UI | Lexend 400, 15px, 1.5 | Menus and controls |
+| Label | Lexend 500, 14px, 1.45 | Field labels and compact guidance |
+| Caption | Lexend 400, 13px, 1.4 | Secondary metadata only |
 
-Do not:
+Source: PROJECT, DESIGN.md, "Typography"; PROJECT,
+apps/web/app/globals.css, "Type".
 
-- Add many near-identical text sizes.
-- Use thin/light weights for UI text.
-- Use decorative fonts inside product UI.
-- Use viewport-scaled type.
+- Most product views should use three or four roles. Avoid many near-identical
+  sizes that flatten hierarchy and increase processing. Source: DUI pp.
+  183-204; TIPS p. 19; DUCK pp. 18-19.
+- Body text is 17px. Do not shrink required product text below 13px, and do
+  not use caption styling for task-critical information. Mobile form text must
+  remain at least 16px to avoid browser zoom and preserve readability. Source:
+  PROJECT, DESIGN.md, "Typography"; TIPS p. 20; DUI pp. 197-198.
+- Use regular, medium, semibold, and bold. Avoid thin and light weights,
+  especially in dark mode. Source: TIPS pp. 8, 76; DUI pp. 179, 186-190;
+  DUCK pp. 16-19.
+- Use relative line height. Body copy needs more leading than headings; do not
+  hard-code an absolute line height that fails when type changes. Source: CSS5
+  p. 5; DUI pp. 182-190; DFD PDF p. 32.
+- Keep headings tighter and body copy open. Do not justify interface text.
+  Source: PROJECT, DESIGN.md, "Typography"; DUI pp. 182-190.
+- Use sentence case for FISH headings, controls, labels, tabs, notices, and
+  navigation. Avoid all caps except a very short, low-priority orientation
+  label. Source: PROJECT, AGENTS.md, "Copy never scolds"; DUI pp. 431-438.
+- Do not use viewport-fluid type on authenticated product surfaces. Fluid hero
+  tokens are limited to public marketing and auth brand panels. Source:
+  PROJECT, apps/web/app/globals.css, "Marketing type"; DFD PDF pp. 33-39.
+- Do not use negative tracking except the existing heading tokens. Keep
+  tracking consistent. Source: PROJECT, DESIGN.md, "Typography"; DFD PDF p.
+  31.
+- Do not use Lorem Ipsum. Realistic copy exposes hierarchy, wrapping,
+  localization, and content problems. Source: DUI pp. 437-438; DFD PDF p. 33.
 
-### Readability
+## Color palette and theming
 
-Do:
+### Use semantic tokens
 
-- Prefer regular, medium, semibold, and bold weights.
-- Keep body line height generous, around 1.5.
-- Keep headings tighter, around 1.15.
-- Use left alignment for forms and long text.
-- Use centered text only for short empty states or compact captions.
+- Web UI must use CSS-first tokens from apps/web/app/globals.css. Never add raw
+  hex values in components and never create tailwind.config.js. Source:
+  PROJECT, AGENTS.md, "Design tokens" and "Never"; PROJECT,
+  apps/web/app/globals.css, "@theme".
+- Canvas and surface roles are bg, surface, surface-2, and surface-3. Text roles
+  are foreground, body, and muted. The primary action uses primary and
+  on-primary. Feedback uses notice, error, warning, and success. Source:
+  PROJECT, apps/web/app/globals.css, "@theme"; PROJECT, DESIGN.md, "Colors".
+- Muted is for genuinely secondary content. Essential instructions, values,
+  labels, and states must not be muted merely to look soft. Source: DUI pp.
+  135-146; DFD PDF pp. 128-141.
 
-Do not:
+### Monochrome hierarchy
 
-- Justify text in UI.
-- Use all caps for sentence-length content.
-- Use all caps for multi-word buttons in FISH.
-- Introduce new negative letter spacing; follow the existing text styles.
-
-Examples:
-
-- Do: `Create account`
-- Do not: `CREATE ACCOUNT`
-- Do: `Something needs your attention before you can continue.`
-- Do not: `ERROR 51526C`
-
-## Color And Dark Mode
-
-### Use Tokens Only
-
-On web, use Tailwind utilities backed by `apps/web/app/globals.css`.
-
-Do:
-
-- Use `bg-bg`, `bg-surface`, `bg-surface-2`.
-- Use `bg-primary` and `text-on-primary` for the one primary action.
-- Use `text-foreground`, `text-body`, and `text-muted` for hierarchy.
-- Use semantic feedback tokens such as `text-notice`, `text-error`,
-  `text-warning`, and `text-success` only through the design system.
-
-Do not:
-
-- Use raw hex values in web UI.
-- Create a `tailwind.config.js`.
-- Add one-off dark-mode branches when the token already handles light/dark.
-- Assume a specific hue for `primary`; use the token.
-
-### Hierarchy Before Color
-
-FISH is intentionally restrained. Color should clarify status or action, not
-decorate the screen.
-
-Do:
-
-- Make structure work in monochrome first.
-- Reserve the strongest contrast for the primary action.
-- Use muted text for secondary information.
-- Keep decorative color usage minimal.
-
-Do not:
-
-- Use multiple bright decorative colors on one screen.
-- Use color alone to communicate state.
-- Make background color louder than the task.
-
-### Dark Mode
-
-Dark mode is not a simple inversion.
-
-Do:
-
-- Keep the closest visual layer lighter than the background.
-- Use surface lightness steps instead of shadows in dark mode.
-- Keep text slightly softened while still passing contrast.
-- Test primary action contrast against dark surfaces.
-- Avoid large saturated surfaces that steal focus from cards or forms.
-
-Do not:
-
-- Put darker cards on lighter dark backgrounds.
-- Use pure black plus pure white everywhere.
-- Depend on dark shadows to show elevation.
-- Use pure black for animation-heavy or scrolling areas if it causes smearing.
+- Make the screen understandable in monochrome before semantic hues are
+  applied. The primary action is a full-contrast inversion, not a decorative
+  brand color. Source: PROJECT, DESIGN.md, "The Monochrome First Rule";
+  DUCK pp. 7-14; DUI pp. 121-159.
+- Reserve semantic hue for status or feedback. Pair it with copy, icon, shape,
+  position, or weight so color is never the only cue. Source: PROJECT,
+  AGENTS.md, "Copy never scolds"; DUI pp. 135-146; DFD PDF pp. 22, 128-141.
+- Avoid multiple bright colors, high-saturation inactive states, color-only
+  categories, and decorative gradients behind core work. Source: DUCK pp.
+  7-14; STYLE pp. 99-106, 127-173; PROJECT, DESIGN.md, "Do's and Don'ts".
 
 ### Contrast
 
-Do:
+- Meet WCAG AA for essential text and controls in every theme and state.
+  Normal text requires at least 4.5:1 and control boundaries/state indicators
+  require at least 3:1 where WCAG applies. Source: DUI p. 135; DFD PDF p. 22;
+  PROJECT, apps/web/app/globals.css, contrast-test comments.
+- Verify default, hover, focus, active, selected, disabled, placeholder, error,
+  and primary-action contrast separately. Source: DFD PDF pp. 40-113; PROJECT,
+  DESIGN.md, "Components".
+- Decorative objects may have lower contrast only when removing them would
+  leave the task fully understandable and operable. Source: DUI p. 135.
 
-- Meet WCAG AA for essential text and UI.
-- Keep focus rings visible on every surface.
-- Verify contrast in both light and dark themes.
-- Treat decorations as optional; they may fail contrast only when the core UI
-  remains fully understandable without them.
+### Dark mode
 
-Do not:
+- Dark mode is a separate hierarchy, not a color inversion. The visually
+  closer layer must be lighter than the canvas. Source: TIPS p. 74; STYLE pp.
+  57-78.
+- Use near-black and softened near-white tokens, not hard-coded pure black and
+  pure white. This reduces glare and black-smearing risk while preserving
+  tested contrast. Source: STYLE pp. 57-78; DUCK pp. 9-10; PROJECT,
+  apps/web/app/globals.css, "@theme".
+- Do not use dark shadows for elevation. Use ordered surface lightness and a
+  scrim for modal depth. Source: STYLE pp. 57-78; PROJECT, DESIGN.md,
+  "Elevation".
+- Reduce or retune large saturated areas in dark mode so backgrounds do not
+  compete with forms, cards, or messages. Source: STYLE pp. 57-78.
+- Follow the system theme by default, preserve an explicit user preference,
+  and avoid a flash of the wrong theme. Source: PROJECT,
+  apps/web/app/globals.css, base theme rules; PROJECT,
+  apps/web/app/layout.tsx.
 
-- Use low-contrast text because it "looks soft".
-- Let placeholders be confused with entered text.
-- Let disabled styles be the model for normal text.
+### Visual effects
 
-## Components
+- FISH may use subtle tonal surfaces and calm nonessential illustrations.
+  Core controls must remain solid, familiar, and readable. Source: PROJECT,
+  DESIGN.md, "Elevation"; STYLE pp. 5-16.
+- Never use neumorphism for buttons or inputs; it depends on low-contrast
+  shadows and weak affordances. Source: STYLE pp. 79-88.
+- Never use glassmorphism for buttons, text fields, checkboxes, or core text.
+  Avoid it entirely unless a rare nonessential surface is demonstrably
+  readable in every underlying state. Source: STYLE pp. 89-98.
+- Do not place aurora blur, claymorphism, neubrutalist clash, deep glass, or
+  spatial effects behind core coaching work. These styles increase visual
+  complexity and often reduce contrast or predictability. Source: STYLE pp.
+  99-185; PROJECT, PRODUCT.md, "Anti-references".
 
-Use base components from `apps/web/components/ui/` before creating new ones.
-Project-standard components include `Button`, `Input`, `Card`, `Progress`, and
-`Alert`; if a standard component is missing, add it there rather than
-hand-rolling one-off versions per screen.
+## Components and interaction patterns
 
-### Component States
+### Shared component system
 
-Every interactive component must account for:
+- Reuse and extend the shared components in apps/web/components/ui/ before
+  creating a route-specific control. Current primitives include Button, Input,
+  PasswordInput, Card, Progress, Alert, EmptyState, IconButton, ActionMenu,
+  SegmentedControl, Switch, and related shared patterns. Source: PROJECT,
+  AGENTS.md, "Code conventions"; PROJECT, apps/web/components/ui/.
+- Every interactive component must define default, hover where applicable,
+  focus-visible, active or pressed, disabled, loading or busy, and error states.
+  Selected, empty, warning, success, and notice states are required when the
+  component can enter them. Source: DFD PDF pp. 40-113; PROJECT, DESIGN.md,
+  "Components".
+- State changes must preserve geometry. Focus, loading, validation, selection,
+  and disabled treatments must not shift nearby content. Source: PROJECT,
+  DESIGN.md, "The Layout Stability Rule"; DUI pp. 230-257.
+- Borders and dividers must express a real boundary. Use a semantic control
+  border for affordance and a quiet divider between dense groups; do not box
+  every region or add a divider below the final item. Source: DFD PDF pp.
+  45, 49; PROJECT, apps/web/app/globals.css, border and divider comments.
+- Component behavior must remain independent of where it is placed. Parents
+  own layout; components own their appearance and interaction states. Source:
+  SELECTOR pp. 2-6; CSS5 p. 3; BEM pp. 2-9.
 
-- Default
-- Hover, where hover exists
-- Focus-visible
-- Active/pressed
-- Disabled, if applicable
-- Loading/busy, if applicable
-- Empty, success, warning, error, or notice states where relevant
+### Buttons and links
 
-Do:
+- A button must look like a rectangular or gently rounded rectangular button.
+  Do not use polygons, ambiguous text blocks, or other novel shapes for core
+  actions. Source: DUI pp. 226-229; TIPS p. 24; NB p. 175.
+- Use the primary variant once per view for the action that advances the main
+  task. Use secondary, ghost, or a link for alternatives. Source: PROJECT,
+  AGENTS.md, "One primary action per screen"; DUI pp. 240-245; TIPS pp. 7,
+  68.
+- Primary actions use the 56px primary-control token when prominence supports
+  focus. Default touch-first and frequently used controls use at least the 44px
+  target token. Source: PROJECT, AGENTS.md, "Accessible targets"; PROJECT,
+  apps/web/app/globals.css, "Interaction targets"; NB p. 176.
+- Provide enough horizontal padding that the label has visible breathing room.
+  Do not allow adjacent button safe areas to overlap. Source: TIPS pp. 10, 27;
+  DUI pp. 230-234.
+- Use a direct, outcome-specific verb phrase. Prefer "Send message", "Create
+  account", or "Clear history" over "OK", "Next", "Submit", or "Continue".
+  Source: DUI pp. 248-252, 360, 369, 431-438; TIPS p. 6; FORM p. 13.
+- Preserve button dimensions while loading, prevent duplicate activation, set
+  an accessible busy state, and retain enough label context to identify the
+  operation. Source: FORM p. 13; DFD PDF pp. 72-74; PROJECT, DESIGN.md,
+  "Buttons".
+- Do not make a product button so large that it reads as an advertising
+  banner. Use the established size tokens and hierarchy instead. Source: TIPS
+  p. 38; PROJECT, DESIGN.md, "Buttons".
+- A directional icon may reinforce an already clear navigation action, but it
+  must not compensate for a vague label and must be tested with the target
+  audience. Source: TIPS pp. 39-40.
+- Do not disable a submit button merely because a form is incomplete when
+  clear validation on activation would teach the user what is needed. Disable
+  it after submission begins. Source: FORM p. 13.
+- Buttons perform actions. Links navigate. Do not make a div or span act like
+  a button. Source: FORM pp. 2, 13; SEMUSE p. 7.
+- Links must be distinguishable from static text by underline, weight, shape,
+  or another non-color cue. Never underline text that is not interactive.
+  Source: TIPS p. 25; DUI pp. 242, 398-399; HTML7 p. 8.
 
-- Keep state changes layout-stable.
-- Use `aria-busy`, `aria-describedby`, and other semantic attributes where
-  appropriate.
-- Preserve keyboard focus.
-- Document or test state variants when adding shared components.
+### Cards and containers
 
-Do not:
+- A card contains one subject. Keep its content concise and remove filler
+  metadata. Source: DUI pp. 258-294; DFD PDF pp. 95-98.
+- Prefer one explicit card action. If the entire card is the only action, make
+  the whole card interactive and expose a clear accessible name and state.
+  Source: DUI pp. 259-267; DFD PDF pp. 95-98.
+- Keep card padding and alignment consistent across a repeated set. Test the
+  longest realistic title, metadata, and action label; align actions
+  consistently even when content lengths differ. Source: DUI pp. 290-294.
+- Images must not dominate a card unless the image is the content. Do not use
+  a decorative card merely to fill space. Source: DUI pp. 258-294; PROJECT,
+  PRODUCT.md, "Anti-references".
 
-- Add borders, spinners, or messages that resize the component unexpectedly.
-- Remove focus outlines.
-- Depend only on color changes for selected or error states.
+### Icons, icon buttons, badges, and avatars
 
-### Buttons
-
-Buttons perform actions. Links navigate.
-
-Do:
-
-- Use `<button>` for actions and `<a>`/`Link` for navigation.
-- Keep buttons rectangular or rounded-rectangular.
-- Use direct verb labels.
-- Make the whole target comfortably clickable.
-- Keep icon and label alignment optically centered.
-- Use loading states that preserve button width and height.
-
-Do not:
-
-- Use `div` as a button.
-- Use non-rectangular action shapes.
-- Use vague labels such as `OK`, `Next`, `Submit`, or `Save` when a more
-  specific verb exists.
-- Disable submit buttons merely because the form is incomplete if inline
-  guidance would be clearer.
-- Leave a clicked submit active while the request is in flight.
-
-Examples:
-
-- Do: `Send message`
-- Do not: `Submit`
-- Do: `Sign in instead`
-- Do not: `Continue`
-- Do: `Clear history`
-- Do not: `OK`
-
-### Forms And Inputs
-
-Forms are high-risk UI. They must be quiet, linear, forgiving, and explicit.
-
-Do:
-
-- Use a real `<form>`.
-- Use visible labels associated with controls.
-- Keep labels above fields and left-aligned.
-- Use a single-column layout by default.
-- Keep forms narrow enough to scan comfortably.
-- Use field-specific helper text and errors directly under the field.
-- Reserve space for hint/error text where possible to prevent layout jumps.
-- Use `type`, `autocomplete`, `inputmode`, `enterkeyhint`, `min`, `max`, and
-  `pattern` when they reduce user effort.
-- Use `aria-describedby` for helper and error text.
-- Provide password reveal controls where users may need to verify entry.
-- Prefer marking optional fields over adding red required asterisks.
-
-Do not:
-
-- Use placeholders as labels.
-- Center labels above fields.
-- Mix rectangular inputs and underline-only inputs in one product.
-- Hide invalid fields inside collapsed accordions.
-- Put all errors at the top of the form without field-level messages.
-- Use `type="number"` for phone numbers, card numbers, ZIP/postal codes, or
-  account numbers; use `inputmode="numeric"` where appropriate.
-- Split names into first/last/prefix fields unless the product truly needs the
-  split.
-
-Examples:
-
-```tsx
-<Input
-  label="Email"
-  type="email"
-  autoComplete="email"
-  enterKeyHint="next"
-  error="That does not look like an email yet. Check the spelling?"
-/>
-```
-
-Do not:
-
-```tsx
-<input placeholder="Email" />
-```
-
-### Checkboxes, Radios, Dropdowns, Toggles
-
-Do:
-
-- Use checkboxes for independent on/off selections that are submitted with a
-  form.
-- Top-align checkboxes/radios with the first line of long labels.
-- Wrap labels so the label text is also clickable.
-- Use radio groups for one choice among a small set.
-- Use dropdowns/selects for larger option sets, typically more than five.
-- Add typeahead/filtering for long lists.
-- Use toggles only for settings that take immediate effect.
-
-Do not:
-
-- Use toggles for terms acceptance or choices that still require a submit
-  button.
-- Use dropdowns for 3-5 options when visible radios or segmented controls are
-  clearer.
-- Write confusing negative labels such as "I do not want to be left without
-  updates".
-- Present client learning choices as plan/template pickers.
-
-### Cards
-
-Cards should hold one subject. FISH should use them sparingly.
-
-Do:
-
-- Use cards for repeated items, modals, and genuinely framed tools.
-- Keep one clear subject per card.
-- Keep card content concise.
-- Keep internal padding consistent.
-- Use one primary card action, or make the whole card the action when no
-  explicit CTA exists.
-- Test cards with longest realistic content.
-
-Do not:
-
-- Put cards inside cards.
-- Turn full page sections into floating cards.
-- Pack cards with filler metadata.
-- Put multiple equal CTAs inside one card.
-- Let images occupy most of a card unless the image is the content.
-
-### Alerts, Notices, And Errors
-
-Do:
-
-- Explain what happened and what the user can do next.
-- Place field-specific messages next to the relevant field.
-- Use calm semantic tones and icons.
-- Keep copy short, human, and specific.
-- Use toast/overlay alerts only for transient status, not form validation.
-
-Do not:
-
-- Scold the user.
-- Use raw technical errors.
-- Use exclamation-heavy copy.
-- Depend only on red text.
-- Show permanent UI in a toast.
-
-Examples:
-
-- Do: `That did not send. Give it a minute and try again.`
-- Do not: `ERROR: MESSAGE_SEND_FAILURE`
+- Use Tabler Icons for web UI and one consistent style in a given context.
+  Stroke, corner treatment, size, and visual weight must match. Source:
+  PROJECT, DESIGN.md, "Navigation"; DUCK pp. 21-24; DUI pp. 206-218.
+- Filled and outline icons may differ to communicate an active state, but must
+  not be mixed for equal-status items. Source: DUCK pp. 21-22; TIPS p. 9; DFD
+  PDF pp. 106-110.
+- Use a visible label for unfamiliar icons. Every icon-only button still needs
+  an accessible name and an adequate target. Tooltips are supplemental, not
+  the name. Source: TIPS p. 21; DUI pp. 209, 245, 318; DFD PDF pp. 106-110.
+- Keep icons simple enough for their rendered size. Use SVG or icon
+  components, not raster images, for interface icons. Source: DFD PDF pp.
+  106-110; IMG pp. 2-4.
+- Badges communicate short status or count information. Keep them concise,
+  provide a non-color cue, and prevent wide counts from shifting surrounding
+  layout. Source: DFD PDF pp. 75-77; PROJECT,
+  apps/web/app/globals.css, "nav badge slot".
+- Use the same avatar image, initials, or placeholder for the same person
+  throughout the product. Do not infer gender in placeholder imagery. Source:
+  DFD PDF pp. 111-113.
+- Avatars should remain rounded, appropriately sized for their context, and
+  offer initials when no image is available. Preserve readable contrast
+  between initials and background. Source: DFD PDF pp. 111-113.
 
 ### Progress
 
-Progress is visual, never a grade.
-
-Do:
-
-- Use progress bars or milestones for multi-step flows.
-- Name steps with meaningful labels, such as `Basic info`, `Location`, or
-  `Password`.
-- Allow previous completed steps to be reviewed when safe.
-- Use skeleton screens for predictable loading structures.
-
-Do not:
-
-- Show scores or percentages as judgement.
-- Use progress to shame inactivity.
-- Use broken streaks or reset-to-zero mechanics.
-- Show empty loading screens with no status.
-
-### Tables And Structured Data
-
-Use tables only when comparing structured data matters. Coach/admin surfaces
-may need them; client learning surfaces usually should not.
-
-Do:
-
-- Left-align text.
-- Right-align numbers.
-- Keep column headers visible for long tables.
-- Use pagination for large datasets.
-- Add search, sorting, and filtering when they reduce scan time.
-- On mobile, convert small tables to stacked cell/card views when possible.
-- Keep labels visible if horizontal scroll is unavoidable.
-
-Do not:
-
-- Center table content.
-- Use infinite scroll for serious tabular data.
-- Force side-scrolling mobile tables for six or fewer columns.
-- Hide context while the user scrolls.
-
-Charts:
-
-- Use honest scales.
-- Make graph lines thick enough to read.
-- Do not use color alone; add patterns, labels, or shape differences.
-- Keep tooltips readable with enough padding.
-
-## Navigation
-
-Visible navigation is easier than hidden navigation.
-
-Do:
-
-- Keep navigation consistent across views.
-- Use labels with icons unless the icon is truly universal and the context is
-  obvious.
-- Make active states clear with more than color alone.
-- Keep main mobile navigation to a small number of categories.
-- Keep menu items large enough to tap.
-- Use breadcrumbs only for deep hierarchical content.
-
-Do not:
-
-- Hide primary navigation in a menu when it can be visible.
-- Move navigation around between screens.
-- Use icon-only navigation for unfamiliar actions.
-- Let clients browse learning plans or templates.
-
-FISH-specific note:
-
-- Coach/admin users may need lists, filters, and management navigation.
-- Client users should see assigned work and a clear next action.
-
-## Modals, Overlays, Tooltips, And Action Sheets
-
-Overlay UI interrupts the user. Use it only when the interruption is useful.
-
-Do:
-
-- Open modals/popups only after a user action.
-- Provide an obvious close button with a large target.
-- Allow escape/outside click where appropriate.
-- Keep the main action visually distinct from secondary actions.
-- Keep modal text to the minimum needed.
-- Use action sheets for mobile action sets when they match platform
-  expectations.
-- Use tooltips only for non-essential help.
-- Prefer inline help over tooltips on mobile.
-
-Do not:
-
-- Show automatic entry/exit popups.
-- Put core instructions only in a tooltip.
-- Put rich UI or multi-step decisions inside a tooltip.
-- Use tiny low-contrast close controls.
-- Make overlays look unrelated to the app.
-
-## Motion And Interaction
-
-Motion should explain state, not perform.
-
-Do:
-
-- Respect `prefers-reduced-motion`.
-- Use animation for navigation context, progress, and microfeedback.
-- Keep transitions short and calm.
-- Use easing for natural motion.
-- Use microinteractions only on actionable elements.
-- Show loading with progress, skeletons, or stable spinners.
-
-Do not:
-
-- Animate decorative elements constantly.
-- Bounce or overshoot large UI in a way that draws attention from the task.
-- Animate inactive text or objects in ways that imply clickability.
-- Use motion as the only state indicator.
-
-FISH web already has calm opacity/translate utilities. Prefer those patterns.
-
-## Images, Icons, And Media
-
-### Icons
-
-FISH uses Tabler Icons on web. Keep one icon family per platform unless a
-platform-native equivalent is deliberately chosen.
-
-Do:
-
-- Use one consistent icon style in a given context.
-- Keep stroke width, corner style, and visual weight consistent.
-- Use labels for non-universal icons.
-- Keep icon buttons large enough even if the icon itself is small.
-- Use SVG/icon components, not raster images, for UI icons.
-
-Do not:
-
-- Mix filled and outlined icons for equal-status items.
-- Mix icon sets.
-- Use detailed icons at tiny sizes.
-- Assume an icon is universal for every audience.
-
-### Images
-
-Do:
-
-- Use `<img>`/Next image components for content images.
-- Use CSS backgrounds only for decorative imagery.
-- Provide meaningful `alt` text for content images.
-- Use empty alt for decorative images.
-- Use responsive sizes (`srcset`/`sizes` or framework equivalents).
-- Lazy-load offscreen images where appropriate.
-- Use WebP/modern formats with fallback where needed.
-
-Do not:
-
-- Use background images for content users need to understand.
-- Place text on busy photos without a readable overlay.
-- Use staged, irrelevant stock imagery.
-- Modify user-uploaded images with brand filters unless the feature requires
-  it and users understand it.
-
-FISH note:
-
-- Product screens should not rely on decorative media. If imagery is used, it
-  must support the task or emotional reassurance without stealing focus.
-
-## Accessibility Requirements
-
-Accessibility is not a pass at the end. It is part of the design.
-
-Do:
-
-- Keep visible keyboard focus.
-- Support keyboard-only navigation.
-- Use semantic HTML.
-- Use labels for all form controls.
-- Use `aria-describedby` for hints/errors.
-- Use `role="progressbar"` with values for progress.
-- Use descriptive link text.
-- Give touch-first and frequently used controls at least a 44×44px interaction
-  target. The visible control may be smaller when its clickable area preserves
-  the target.
-- Ensure icons used as buttons have accessible names.
-- Respect reduced motion.
-- Test contrast in both themes.
-- Check empty, loading, error, disabled, and long-content states.
-
-Do not:
-
-- Remove focus outlines.
-- Use color alone to show selected/error/success states.
-- Use `div`/`span` for buttons or links.
-- Use `<b>`/`<i>` for meaning; use CSS for presentation and `strong`/`em`
-  for semantic emphasis.
-- Put block elements inside inline elements incorrectly.
-- Use vague links such as `click here`.
-
-Semantic structure:
-
-- Use one unique `<main>` per page.
-- Use `<header>`, `<nav>`, `<section>`, `<article>`, `<aside>`, and
-  `<footer>` where they match the content.
-- Use anchors for navigation and buttons for actions.
-- Use `<figure>`/`<figcaption>` only when the image and caption form a
-  self-contained unit.
-
-## HTML, CSS, And Implementation Rules
-
-### Web System Rules
-
-Do:
-
-- Use pnpm.
-- Use Tailwind v4 CSS-first tokens in `apps/web/app/globals.css`.
-- Use `cn()` for conditional classes.
-- Reuse base UI components.
-- Keep focus and contrast tests passing.
-- Keep `tailwindcss` and `@tailwindcss/postcss` versions aligned.
-- Use named token-backed utilities for visual values. Examples include
-  `text-ui-sm`, `text-copy`, `max-w-form`, `max-w-content`,
-  `min-h-control`, `min-h-field-message`, `shadow-card`, and
-  `duration-progress`.
-
-Do not:
-
-- Create `tailwind.config.js`.
-- Use raw hex values in components.
-- Use arbitrary Tailwind values for visual styling, such as `text-[14px]`,
-  `p-[18px]`, `rounded-[6px]`, `shadow-[...]`, `max-w-[440px]`, or
-  `min-h-[var(--size-control)]`. If a value is missing, add or update the
-  appropriate design token in `apps/web/app/globals.css`.
-- Hand-roll buttons/inputs where base components fit.
-- Add a separate UI pattern that duplicates an existing component.
-
-### CSS Quality
-
-The CSS PDFs focus on selector intent, reusability, and avoiding magic values.
-In this Tailwind-heavy app, apply those rules through component structure and
-class usage.
-
-Do:
-
-- Keep styling tied to what an element is, not where it happens to sit.
-- Keep components reusable outside one parent layout.
-- Use purposeful component and prop names.
-- Keep selectors/classes short when writing custom CSS.
-- Use relative line heights.
-- Put responsive behavior near the component it affects.
-- Comment only to explain non-obvious intent.
-
-Do not:
-
-- Use location-dependent selectors like "any button inside this promo block"
-  for reusable components.
-- Use qualified selectors that raise specificity without need.
-- Use `!important` except as a documented last resort.
-- Use inline styles for presentation when a token/class should be used.
-- Mix container layout styles into a standalone component's core styles.
-
-Example:
-
-- Do: a `Button` that looks correct anywhere, with layout handled by the parent.
-- Do not: a button that only looks correct inside `.signup-card .actions`.
-
-## Copy And Language
-
-UI copy is part of UX. It should be calm, specific, and plain.
-
-Do:
-
-- Use sentence case.
-- Use direct verbs.
-- Explain what happened and what to do next.
-- Keep button labels action-specific.
-- Use consistent vocabulary across similar actions.
-- Use warm, non-scolding language.
-
-Do not:
-
-- Use double negatives.
-- Shame, guilt, or pressure the user.
-- Use vague modal choices like `Cancel` / `OK` when the action is destructive.
-- Use fake urgency, scarcity, or manipulative language.
-- Use technical codes as the only error message.
-
-Examples:
-
-- Do: `Remove data` and `Cancel`.
-- Do not: `Deny` and `Forget`.
-- Do: `Email is already used. Sign in instead or use a different email.`
-- Do not: `Unknown error 51526c`.
-
-## Dark Patterns To Reject
-
-Never implement patterns that mislead users, even if they increase a metric.
-
-Reject:
-
-- Sneaking extras into a cart or selection.
-- Fake scarcity or urgency.
-- Making signup easy but cancellation hard.
-- Confirmshaming.
-- Trick questions and double negatives.
-- Hidden costs revealed late.
-- Contact-import prompts that overreach.
-- Ads or promotions disguised as product actions.
-- Bait-and-switch offers.
-- Misdirection that hides the user's preferred path.
-
-FISH-specific concern:
-
-- Neurodivergent users are especially harmed by confusing, pressuring, or
-  choice-heavy flows. Ethical clarity is a product requirement, not a nice-to-have.
-
-## Visual Styles And Effects
-
-The style PDFs cover modern minimal, flat UI, dark mode, neumorphism,
-glassmorphism, aurora gradients, claymorphism, neubrutalism, and other
-trends. For FISH, treat these as cautionary references.
-
-Do:
-
-- Keep the product sparse, calm, readable, and focused.
-- Use subtle roundness through tokens.
-- Use solid surfaces for core task areas.
-- Use effects only when they do not affect comprehension.
-- Make the UI understandable if decorative effects are removed.
-
-Do not:
-
-- Use neumorphism for buttons, inputs, or essential controls.
-- Use glassmorphism for forms, checkboxes, or text fields.
-- Use aurora/blurred backgrounds behind core work.
-- Use neubrutalist clash, loud outlines, or aggressive color unless the brand is
-  intentionally changed.
-- Use clay/3D styles for professional coaching workflows.
-
-Acceptable exceptions:
-
-- A small, non-essential illustration in an empty state.
-- A subtle shadow in light mode from the `--shadow-card` token.
-- A calm animation for incoming chat messages or loading feedback.
-
-## UI Review Checklist
-
-Use this checklist before approving UI work.
-
-### Product Fit
-
-- [ ] Does the screen remove choices instead of adding them?
+- Use visual progress or named milestones for a long flow. Use meaningful step
+  names such as "Basic info", "Location", and "Password", not "Step 1".
+  Source: TIPS p. 57; DUI pp. 361, 407; NB pp. 50, 177.
+- Progress must be truthful. Do not fake a nearly complete value to manipulate
+  completion, and never present a percentage as a judgement of the learner.
+  Source: PROJECT, AGENTS.md, "Progress is visual"; NB p. 177.
+- Allow users to review completed prior steps when doing so is safe. Preserve
+  entered data. Source: TIPS p. 57; NB p. 143.
+- Use the shared Progress component and expose programmatic values and labels
+  to assistive technology. Source: PROJECT, AGENTS.md, "Code conventions";
+  DUI p. 407.
+
+### Tables, lists, and charts
+
+- Use a table only when row-and-column comparison is the task. Client coaching
+  surfaces should usually use simpler lists; coach/admin surfaces may need
+  dense tables. Source: DUI pp. 295-310; DFD PDF pp. 84-91.
+- Left-align text and right-align numeric values. Do not center an entire data
+  table. Source: DUI pp. 300-304; TIPS pp. 46-48.
+- Keep headers and row context visible while scrolling. Use pagination for
+  large serious data sets; do not rely on infinite scroll for work that
+  requires position or comparison. Source: TIPS p. 45; DUI pp. 295-310.
+- Provide sorting and filtering only when they reduce scan time. Labels such
+  as "Lowest first" and "Highest first" are clearer than abstract terms or
+  unexplained icons. Source: TIPS p. 62; DUI p. 299.
+- Sort semantic numbers, dates, floors, and named sequences in their natural
+  domain order rather than alphabetically. Source: TIPS p. 71.
+- Keep data visually dominant. Begin in monochrome, use whitespace and subtle
+  separators, and add status color only when it contributes meaning. Source:
+  DUI pp. 296-309; DFD PDF pp. 84-91.
+- On narrow screens, transform tables with six or fewer columns into labeled
+  stacked rows when practical. For truly wide professional data, allow
+  horizontal scrolling while keeping labels and context visible. Source: TIPS
+  pp. 44-45; DUI p. 306.
+- Charts must use honest, clearly labeled scales. Make data marks readable,
+  tooltips spacious, and series distinguishable by labels, patterns, or shapes
+  as well as color. Source: DUI pp. 295-310; TIPS pp. 53-55.
+- Use semantic lists for sequences and collections. Use numbered lists when
+  order or priority matters, bullets when it does not, and indentation for
+  true child items. Source: DFD PDF pp. 89-91; HTMLR pp. 2-3.
+
+### Dialogs, sheets, popovers, tooltips, and accordions
+
+- Use an overlay only when interruption or temporary context is necessary.
+  Prefer inline disclosure for routine help and simple edits. Source: DUI pp.
+  363-381; DFD PDF pp. 92-102.
+- Open dialogs and popups only in response to a user action. Never use
+  automatic entry or exit popups in the product. Source: DUI p. 369.
+- Give dialogs a clear title, minimal copy, one primary action, and visibly
+  subordinate alternatives. Source: DUI pp. 365-369; TIPS p. 7.
+- Provide a clearly labeled close control with at least a 44px touch target.
+  Escape and outside click may close a non-destructive dialog when doing so
+  cannot lose work. Source: TIPS pp. 51-52; DUI pp. 364-368.
+- Action sheets should follow touch-platform expectations and visually enter
+  from the bottom. Include a safe cancel route. Source: DUI pp. 364, 375-376.
+- Tooltips contain nonessential, short help. They must work on focus as well as
+  hover and must not contain core instructions, rich workflows, or required
+  validation. Prefer inline help on touch screens. Source: DUI pp. 378-379;
+  TIPS pp. 59-60; DFD PDF pp. 92-94.
+- Transient toasts may confirm a noncritical completed action or system update.
+  They must not carry form validation, marketing, or permanent information;
+  provide a close route and enough time to read or pause the message. Source:
+  DFD PDF pp. 78-80.
+- Accordions are for optional chunks. Keep the entire header interactive, use
+  a familiar caret, preserve clear expanded state, and allow multiple sections
+  open when comparison is useful. Do not hide content users need at once or
+  hide an invalid field in a collapsed section. Source: TIPS p. 56; DFD PDF
+  pp. 99-102.
+- Tabs represent parallel peer views. Keep labels, do not nest tab sets, and do
+  not stack tabs as a substitute for a list or accordion. Source: DFD PDF pp.
+  102-105.
+
+## Forms and input behavior
+
+### Structure
+
+- Use a real form element for every coherent submission unit. If a page has
+  independent submissions, use separate forms. Source: FORM pp. 2-3; HTMLR
+  p. 5.
+- Use a single-column form by default on every viewport. Multi-column forms
+  slow scanning and create ambiguous reading order. Source: TIPS pp. 12, 43;
+  DUI pp. 311-361.
+- Keep the form narrow and group related fields with a clearly larger gap
+  between groups. Source: DUI pp. 317, 323-335; DFD PDF pp. 50-74; TIPS p.
+  13.
+- Remove nonessential fields. Split a truly long form into cohesive, named
+  steps with honest progress. Source: DUI pp. 331, 358-361; NB pp. 49-51,
+  174, 179-180.
+- Use one full-name field unless the product has a concrete need for separate
+  parts or titles. Source: FORM p. 11; TIPS p. 12.
+
+### Labels, hints, and values
+
+- Every control must have a visible, associated label. Put labels above fields
+  and left-align them. Source: FORM p. 4; DUI p. 323; NB p. 145.
+- A placeholder never replaces a label. Use it only for optional format
+  examples that remain available elsewhere after typing. Source: DUI pp.
+  319-323; NB p. 145; TIPS pp. 26, 59.
+- The entered value has the strongest field text hierarchy, followed by the
+  label, then placeholder or helper text. Source: TIPS p. 36; DUI pp. 316-323.
+- Put required instructions directly below the relevant field and connect them
+  with aria-describedby. Do not hide essential guidance in a tooltip. Source:
+  FORM p. 16; TIPS pp. 33, 59-60.
+- Field width may hint at expected input length, but it must remain usable with
+  zoom, localization, and autofill. Source: DUI p. 326; TIPS p. 30.
+- Use a textarea for genuinely long-form input. Keep its visible label,
+  choose a task-appropriate initial size, state any character limit, and expose
+  a stable character counter when a limit exists. Do not use a full desktop
+  width textarea for short input. Source: DFD PDF pp. 61-64.
+
+### Input selection and attributes
+
+- Use the correct type, autocomplete, inputmode, enterkeyhint, min, max, and
+  pattern when they reduce effort or prevent invalid input. Source: FORM pp.
+  5, 7-10, 12, 14-15.
+- Do not use type=number for phone, card, postal, or account identifiers. Use
+  tel or inputmode=numeric as appropriate. Source: FORM p. 8.
+- Use autocomplete tokens for identity, address, account, and payment fields.
+  Do not force users to re-enter data the browser can safely provide. Source:
+  FORM pp. 11-12, 14.
+- Select the mobile keyboard and enter-key label that match the field's task.
+  Source: FORM pp. 5, 9-10, 15; DUI p. 362.
+- Use rectangular fields with a visible surface or control boundary. Keep one
+  field style across the product; do not mix underline-only and rectangular
+  controls. Source: TIPS pp. 14, 18; DUI pp. 319-323.
+
+### Required and optional fields
+
+- Use native required semantics for mandatory data, but mark the smaller set of
+  optional fields in visible text. Do not create a forest of red asterisks.
+  Source: FORM p. 6; TIPS p. 11; DUI p. 358.
+- Explain required state in text that assistive technology can access. Visual
+  styling is not a substitute for semantics. Source: FORM pp. 6, 16.
+- Ask for consent with a checkbox and plain affirmative language. Do not use a
+  toggle for terms acceptance or a choice that still requires submission.
+  Source: TIPS pp. 31-32; DUI pp. 351-355.
+
+### Validation and recovery
+
+- Validate near the relevant field and in time to help. Do not wait until a
+  final submission to reveal password rules that could have been shown while
+  typing. Source: TIPS pp. 33, 56; DUI pp. 313-316.
+- Keep error text directly below the field, reserve message space where layout
+  stability matters, and connect it with aria-describedby. Source: DUI pp.
+  313-317; FORM p. 16; PROJECT, DESIGN.md, "Inputs / Fields".
+- Add field icons only when they perform or communicate a consistent,
+  necessary function, such as password reveal. Do not decorate some fields
+  with unexplained icons while leaving equivalent fields plain. Source: DFD
+  PDF pp. 51-54; DUI pp. 316-318.
+- Error copy must explain what happened and how to continue. Do not expose raw
+  codes or only say "invalid". Source: TIPS p. 15; NB p. 146; DUI pp. 431-438.
+- When submission fails, keep entered values unless security requires
+  otherwise. Move focus or announce the error so keyboard and screen-reader
+  users can find it. Source: NB pp. 143, 146; FORM p. 16.
+- Never hide an invalid field inside a collapsed accordion. Source: TIPS p. 56.
+
+### Passwords
+
+- Provide a show/hide password control with an accessible name and adequate
+  target. Source: DUI p. 316; TIPS pp. 35-36.
+- Show password requirements before and during entry, and update them without
+  relying only on color. Source: TIPS p. 37; FORM p. 16.
+- Support password managers and autocomplete. Do not block paste. Source:
+  FORM p. 14; NB p. 185.
+
+### Choice controls
+
+- Use checkboxes for independent selections submitted with a form. The label
+  is part of the target; top-align the box to the first line of long text.
+  Source: DUI pp. 351-355; TIPS pp. 32, 34, 72.
+- Use radio buttons or a segmented control for one choice from a small visible
+  set. Do not use checkboxes when choices are mutually exclusive. Source: DUI
+  pp. 354-355; TIPS pp. 28-29.
+- Use a dropdown for a larger list, generally more than five options. Add
+  filtering or typeahead for long lists. Source: DUI pp. 340-350; TIPS pp.
+  28-29, 41.
+- Keep option ordering predictable. A "common choices" group may precede an
+  alphabetical list only when research shows it saves effort and all choices
+  remain searchable. Source: TIPS pp. 57, 61; NB pp. 143-145.
+- Use a switch only for an immediate on/off setting. The state must change as
+  the switch changes and must not require a separate submit action. Source:
+  DUI pp. 352-353; TIPS pp. 31-32; DFD PDF pp. 65-67.
+- A range slider must show its current value, visually distinguish the selected
+  range, and offer an exact input when precision matters. Source: TIPS pp.
+  63-66; DUI p. 356.
+
+### Focus and autofocus
+
+- Focused fields must be visually distinguishable without changing geometry.
+  Source: TIPS p. 58; PROJECT, DESIGN.md, "Inputs / Fields".
+- Do not autofocus by default. Use it only on a deliberately focused,
+  single-input task where skipping preceding context and opening a mobile
+  keyboard will not surprise the user. This resolves FORM p. 16 against
+  cognitive and mobile usability needs. Source: FORM p. 16; NB pp. 143-145.
+
+## Accessibility requirements
+
+Accessibility is a design input and release criterion, not a final audit.
+Source: DUI p. 135; DFD PDF pp. 40, 99; PROJECT, PRODUCT.md, "Accessibility &
+Inclusion".
+
+### Semantics and structure
+
+- Use one unique main landmark per page and use header, nav, section, article,
+  aside, and footer according to their meaning. Source: SEMUSE pp. 2-6;
+  SEMREAL pp. 2-5; HTMLR pp. 2-3.
+- Use a logical heading outline. Do not choose heading levels for appearance;
+  style them through the type system. Source: HTMLR pp. 2-3; DFD PDF pp.
+  33-39.
+- Use button for actions and anchor or Link for navigation. Use strong and em
+  for semantic emphasis rather than b and i as styling shortcuts. Source:
+  SEMUSE p. 7; HTML7 pp. 4-5.
+- Use figure and figcaption only when media and caption form a self-contained
+  unit. Source: SEMUSE pp. 8-9; HTML7 p. 3.
+
+### Keyboard and focus
+
+- Every interactive control and complete task must work with a keyboard alone.
+  Tab order must follow the visual and reading order. Source: FORM p. 16;
+  HTML7 p. 7.
+- Focus must always be visibly perceivable on every surface and for every
+  control type. Do not simply remove the outline without an equally clear
+  replacement. Source: HTML7 p. 7; PROJECT, AGENTS.md, "Accessibility floor".
+- Opening an overlay must move focus into it, trap focus while modal, and
+  restore focus to the trigger on close. Route and validation changes must
+  place or announce focus deliberately. Source: DUI pp. 363-381; NB pp.
+  142-147.
+- Keyboard users must be able to close safe overlays with Escape, operate
+  menus and tabs predictably, and use visible skip or landmark navigation where
+  repeated chrome warrants it. Source: DUI pp. 363-400; SEMUSE pp. 2-7.
+
+### Targets and input
+
+- Touch-first and frequently used controls must provide at least a 44 by 44px
+  interaction area. The visible glyph may be smaller when surrounding
+  clickable padding preserves the target. Source: PROJECT, AGENTS.md,
+  "Accessible targets"; NB p. 176; DUI pp. 232, 353, 367.
+- Keep enough space between targets that one finger cannot activate two
+  choices. Desktop controls may be more compact when precision and frequency
+  justify it, but should remain easy to acquire. Source: NB pp. 176, 184; DUI
+  pp. 231-232.
+- Labels for checkboxes, radio buttons, switches, and fields must activate or
+  focus their controls. Source: FORM p. 4; DUI pp. 351-355.
+- Do not make an essential interaction hover-only, drag-only, swipe-only, or
+  dependent on a precision gesture. Source: DUI pp. 377-379; NB pp. 176, 184.
+
+### Names, descriptions, and announcements
+
+- Every control must have an accessible name that describes its action or
+  destination. Icon-only controls require an explicit name. Source: FORM pp.
+  4, 16; DUI pp. 206-218.
+- Associate help and errors through aria-describedby and expose current,
+  selected, expanded, checked, pressed, busy, and invalid states with native
+  semantics or appropriate ARIA. Source: FORM p. 16; DFD PDF pp. 40-113.
+- Announce asynchronous errors, completion, message sending, and loading when
+  visual updates would otherwise be silent. Avoid announcing every decorative
+  or rapidly changing value. Source: NB p. 142, "Visibility of system status";
+  DUI pp. 401-410.
+
+### Perception
+
+- Meet WCAG AA contrast in light and dark themes and never communicate meaning
+  by color alone. Source: DUI pp. 135-146; DFD PDF pp. 22, 128-141.
+- Preserve legibility at browser zoom and text enlargement. Content must
+  reflow rather than clip, overlap, or require two-dimensional scrolling for
+  ordinary pages. Source: DUI pp. 58-103, 177-205; PROJECT, PRODUCT.md,
+  "Accessibility & Inclusion".
+- Respect reduced-motion preferences and provide an explicit reduced-motion
+  preference where the product supports it. Source: PROJECT,
+  apps/web/app/globals.css, reduced-motion rules; PROJECT,
+  apps/web/app/layout.tsx.
+- Use semantic HTML reading order rather than CSS-only visual rearrangement
+  that makes keyboard or screen-reader order confusing. Source: SEMREAL pp.
+  2-5; HTML7 p. 4.
+
+### Media
+
+- Give meaningful images concise alt text describing their purpose in context.
+  Use empty alt text for decorative images. Source: IMG pp. 2-8; HTMLR p. 4.
+- Do not put essential text only inside an image. If text overlays media, its
+  contrast must remain sufficient for every image state. Source: DUI pp.
+  413-424; IMG p. 2.
+- Captions, transcripts, or equivalent alternatives are required when audio or
+  video carries information needed for the task. Source: PROJECT, PRODUCT.md,
+  "Accessibility & Inclusion"; SEMUSE pp. 8-9.
+
+### Cognitive accessibility
+
+- Reduce choices, keep language literal, preserve visible labels, group one
+  task at a time, and keep state changes predictable. These are accessibility
+  requirements for FISH's audience, not optional simplification. Source:
+  PROJECT, PRODUCT.md, "Accessibility & Inclusion"; NB pp. 174-180.
+- Never use time pressure, punitive progress, disappearing instructions, or
+  avoidable interruptions in a client flow. Source: PROJECT, AGENTS.md,
+  "Gamification is reward-only" and "Copy never scolds"; NB pp. 186-197.
+
+## Responsive design guidelines
+
+### General
+
+- Responsive behavior is structural. Reflow columns, navigation, tables,
+  overlays, and controls at meaningful breakpoints; do not rely on fluid
+  product typography to hide layout problems. Source: DUI pp. 58-103; PROJECT,
+  apps/web/app/globals.css, product type comments.
+- Design for content and tasks, not a single device frame. Test long names,
+  translated text, browser zoom, software keyboards, safe areas, and large
+  system text. Source: DUI pp. 58-66, 290-294; NB pp. 220-222.
+- Avoid horizontal scrolling for ordinary content. It is allowed only when the
+  content itself is intrinsically wide, such as a professional data table, and
+  context remains visible. Source: TIPS pp. 44-45; DUI pp. 295-310.
+
+### Mobile
+
+- Use one column by default. Two columns are rare and must not create a
+  zig-zag scan path. Source: DUI p. 76; TIPS pp. 12, 43.
+- Use the page spacing token at screen edges and keep component internals one
+  spatial step tighter. Let users scroll rather than shrinking type or targets.
+  Source: PROJECT, apps/web/app/globals.css, "spacing-page"; DUCK pp. 26-29.
+- A focused primary action may be full-width and 56px tall. Persistent controls
+  and mobile navigation must respect safe areas and the onscreen keyboard.
+  Source: PROJECT, DESIGN.md, "Buttons"; DUI pp. 383-388.
+- Use platform-appropriate pickers and keyboards. Do not force a desktop-style
+  dropdown onto a touch screen. Source: DUI pp. 350, 362; FORM pp. 5, 9-10,
+  15.
+- Convert small tables to labeled stacked rows and keep critical row context
+  visible. Source: TIPS pp. 44-45; DUI p. 306.
+- Prefer inline help over tooltips. Ensure all hover behavior has a touch and
+  keyboard equivalent. Source: DUI pp. 378-379.
+
+### Tablet
+
+- Keep linear tasks single-column. Use two columns only for paired content,
+  comparison, or a stable navigation-plus-content relationship. Source: DUI
+  pp. 78-79.
+- Increase outer whitespace rather than stretching phone content across the
+  screen. Do not merely double a phone column or stretch a desktop layout.
+  Source: DUI pp. 78-79.
+
+### Desktop
+
+- Constrain forms and prose even when the viewport is wide. Empty side space
+  is valid and often improves focus. Source: DUI pp. 72-73, 323-324.
+- Coach/admin tools may use denser tables, filters, side navigation, and
+  multi-pane layouts when comparison or management requires them. Client
+  screens remain sparse. Source: PROJECT, PRODUCT.md, "Users"; DUI pp.
+  295-310, 382-400.
+- Keep desktop targets comfortably clickable. A precise pointer is not a reason
+  to use tiny frequently accessed controls. Source: TIPS p. 17; NB p. 176.
+
+### Responsive media
+
+- Use the image element or framework image component for content media and CSS
+  backgrounds only for decoration. Source: IMG p. 2.
+- Use SVG for simple icons and logos; use efficient raster formats for photos.
+  Provide responsive sizes and modern formats with appropriate fallback.
+  Source: IMG pp. 3-6.
+- Lazy-load offscreen images when appropriate, but never delay content needed
+  for the initial task or cause avoidable layout shift. Source: IMG pp. 7-8.
+
+## Animations and microinteractions
+
+- Motion must explain state, continuity, progress, or feedback. Do not animate
+  decoration merely to attract attention. Source: DUI pp. 401-412; PROJECT,
+  DESIGN.md, "Motion".
+- Use short product transitions, generally 150-250ms. FISH currently uses
+  200ms fades and message entrances, 180ms reactions, and 500ms progress.
+  Source: PROJECT, apps/web/app/globals.css, "Focus and motion"; DUI pp.
+  401-410.
+- Animate opacity and transforms. Do not animate layout properties that cause
+  reflow or geometry changes. Source: PROJECT, DESIGN.md, "Motion"; DUI pp.
+  401-412.
+- Use calm ease-out timing. Never use bounce, elastic, or large overshoot in
+  product UI. Source: PROJECT, DESIGN.md, "Motion"; DUI pp. 404-406.
+- Respect prefers-reduced-motion and the explicit FISH reduced-motion setting.
+  Clamp both duration and iteration count so looping indicators stop rather
+  than flicker. Source: PROJECT, apps/web/app/globals.css, reduced-motion
+  rules.
+- New chat messages may use a 200ms opacity and 6px vertical settle. Reactions
+  may use a brief 180ms scale confirmation. Neither may become a score,
+  streak, or attention loop. Source: PROJECT, DESIGN.md, "Chat Feedback";
+  PROJECT, apps/web/app/globals.css, chat keyframes.
+- Typing indicators and skeletons may pulse quietly. Do not use aggressive
+  shimmer sweeps or infinite decorative motion. Source: PROJECT, DESIGN.md,
+  "Chat Feedback"; NB p. 178.
+- Progress animation must move forward truthfully and expose its final state.
+  Interrupted, failure, and success states must be defined. Source: DUI p. 407.
+- Action sheets may slide from the bottom because the motion teaches their
+  dismiss direction. Dialogs and notices should otherwise favor a simple fade.
+  Source: DUI pp. 369, 376; PROJECT, apps/web/app/globals.css, "fade-in".
+- Avoid parallax and orchestrated page-load sequences in the product. If a
+  public marketing page uses motion, it must remain nonessential and stop under
+  reduced motion. Source: DUI p. 412; PROJECT, PRODUCT.md,
+  "Anti-references".
+
+## Error, empty, and loading states
+
+### Errors and notices
+
+- State what happened, why if known, and what the user can do next. Keep the
+  message specific, calm, and short. Source: TIPS p. 15; NB p. 146; DUI pp.
+  431-438.
+- Place field errors beside the field. Use a page or floating notice for a
+  submission-level result, not as a replacement for field validation. Source:
+  DUI pp. 313-317; PROJECT, DESIGN.md, "Alerts".
+- Use FISH semantic tokens and pair hue with an icon, text, and placement.
+  Never rely on alarming red alone and never prefix a message with "Error".
+  Source: PROJECT, AGENTS.md, "Copy never scolds"; PROJECT, DESIGN.md,
+  "Alerts"; DUI p. 146.
+- Preserve data, keep recovery available, and provide retry only when retry can
+  succeed. Do not expose stack traces, provider messages, or opaque codes.
+  Source: NB pp. 143, 146; TIPS p. 15.
+- Destructive actions require explicit labels and appropriate confirmation or
+  undo. The destructive option must not visually overpower the safe path by
+  default. Source: DUI pp. 243-245, 434; TIPS p. 7.
+
+### Empty states
+
+- An empty state must explain what the absence means and present at most one
+  useful next action when the user can resolve it. Source: TIPS p. 49; DFD PDF
+  pp. 95-98.
+- Do not fill a client empty state with a gallery of popular actions, plans, or
+  lessons. If the coach has assigned a next step, show that single assignment;
+  otherwise explain that the coach has not assigned one yet. Source: PROJECT,
+  AGENTS.md, "Assigned, never chosen"; TIPS pp. 49-50.
+- Use an illustration only when it reassures or clarifies without becoming the
+  focal task. Decorative media must be silent to assistive technology. Source:
+  DUI pp. 425-430; PROJECT, PRODUCT.md, "Anti-references".
+- Distinguish first-use empty, filtered-empty, permission-empty, offline, and
+  completed states. Their explanations and next actions are not interchangeable.
+  Source: NB pp. 142-147; DUI pp. 425-430.
+
+### Loading and busy states
+
+- Never show a blank screen with no status. Give immediate, layout-stable
+  evidence that the request is in progress. Source: NB pp. 142, 178; TIPS p.
+  42.
+- Use skeletons when the content structure is predictable, progress when
+  completion is measurable, and a stable spinner only for small indeterminate
+  actions. Source: TIPS p. 42; NB p. 178.
+- Match skeleton geometry to the eventual content closely enough to prevent
+  layout shift. Keep the animation calm and stop it under reduced motion.
+  Source: PROJECT, DESIGN.md, "Chat Feedback"; TIPS p. 42.
+- A busy action must prevent duplicate submission, preserve the button's size,
+  and expose aria-busy or equivalent status. Source: FORM p. 13; PROJECT,
+  DESIGN.md, "Buttons".
+- Long-running operations must provide progress, cancellation when feasible,
+  and a recovery path after interruption. Source: DUI p. 407; NB p. 178.
+
+### Success and return
+
+- Confirm success close to the action, then keep the user oriented to what
+  happens next. Do not interrupt a routine success with a modal. Source: DUI
+  pp. 401-410; NB p. 142.
+- Keep success calm. Do not use confetti, scores, streak resets, or judgemental
+  percentages. Source: PROJECT, AGENTS.md, "Progress is visual" and
+  "Gamification is reward-only".
+- When a user returns after a gap, acknowledge continuity and show the next
+  assigned step. Never call attention to the absence as failure. Source:
+  PROJECT, PRODUCT.md, "Product Purpose"; PROJECT, AGENTS.md,
+  "Gamification is reward-only".
+
+## Content and UX writing guidelines
+
+- Use sentence case throughout the product. Source: PROJECT, AGENTS.md, "Copy
+  never scolds"; PROJECT, DESIGN.md, "The Sentence Case Rule".
+- Use plain, common words and direct verbs. FISH is used by English learners,
+  so literal language is more inclusive than idiom, jargon, cleverness, or
+  metaphor inside task UI. Source: PROJECT, PRODUCT.md, "Users"; NB pp.
+  143-147; DUI pp. 431-438.
+- Button labels must name the outcome. Avoid "OK", "Next", "Submit",
+  "Continue", "Yes", and "No" when a specific action fits. Source: TIPS p. 6;
+  DUI pp. 369, 431-438; FORM p. 13.
+- Keep vocabulary consistent. The same object and action must have the same
+  name in navigation, headings, controls, errors, notifications, and help.
+  Source: DUI p. 435; DFD PDF pp. 152-158.
+- Do not use double negatives, confirmshaming, fake urgency, scarcity,
+  countdown pressure, or language that hides the user's preferred action.
+  Source: TIPS p. 33; NB pp. 186-197.
+- Errors must be non-scolding and constructive. Prefer "That did not send. Try
+  again in a moment" over "You failed to send the message". Source: PROJECT,
+  AGENTS.md, "Copy never scolds"; NB p. 146.
+- Put essential instructions where they are needed. Do not hide them in a
+  tooltip, help icon, or separate documentation page. Source: TIPS pp. 59-60;
+  NB pp. 145-147.
+- Keep dialog copy to the minimum needed to decide, usually a clear title and
+  no more than two short explanatory sentences. Source: DUI p. 369.
+- Write real content before polishing visual design on copy-heavy screens.
+  Typeframing may be used to agree on copy and hierarchy before decoration.
+  Source: NB pp. 169-171; DUI pp. 431-438.
+- Use descriptive links that make sense out of context. Never use "click here"
+  or several identical "learn more" links without accessible clarification.
+  Source: HTML7 p. 8; DUI pp. 398-399.
+- Keep help procedural: short steps, examples, and visuals when they clarify a
+  complex action. Make large help collections searchable and categorized.
+  Source: NB p. 147.
+- Test copy with realistic long names, coach messages, validation details, and
+  future translations. Do not truncate information needed to act. Source: DUI
+  pp. 290-294, 431-438.
+
+## Platform-specific considerations
+
+### FISH web implementation
+
+- FISH web uses Next.js App Router, React, TypeScript, Tailwind CSS v4, and
+  CSS-first configuration. Do not create tailwind.config.js and keep
+  tailwindcss and @tailwindcss/postcss on the same version. Source: PROJECT,
+  AGENTS.md, "Stack" and "Never".
+- Use pnpm and the repository scripts. Do not introduce npm lockfiles. Source:
+  PROJECT, AGENTS.md, "Stack" and "Commands".
+- Keep product tokens in apps/web/app/globals.css and use token-backed
+  utilities. If a visual value is truly missing, add a semantic token with a
+  stated purpose before using it. Source: PROJECT, AGENTS.md, "Design tokens"
+  and "Spacing discipline".
+- Reuse Button, Input, Card, Progress, Alert, and the other shared primitives.
+  Use cn() for conditional classes and forwardRef for focusable controls.
+  Source: PROJECT, AGENTS.md, "Code conventions".
+- Every React component implementation must live in its own same-named folder
+  with an index.ts entry point. Route-private components use the required
+  _components structure. Source: PROJECT, AGENTS.md, "Component folder
+  structure".
+- Complete public barrels should use export * unless an intentional boundary,
+  collision, rename, or compatibility surface requires a subset. Source:
+  PROJECT, AGENTS.md, "Exports and barrels".
+
+### Semantic HTML and CSS
+
+- Prefer semantic landmarks and native controls over ARIA replicas. Real-world
+  pages should use header, nav, main, article, section, aside, form, list, time,
+  details, and summary where their meanings fit. Source: SEMREAL pp. 2-5;
+  SEMUSE pp. 2-9; HTMLR pp. 2-5.
+- Do not use inline presentation styles or invalid inline/block nesting. Use
+  CSS and correct semantic structure. Source: HTML7 pp. 4, 6.
+- Custom CSS selectors must express intent, remain reusable, and avoid parent
+  location dependence. Keep selectors short and specificity low. Source:
+  SELECTOR pp. 2-6; CSS5 pp. 3-4; CSSBP pp. 11-14.
+- Avoid magic values, qualified selectors, !important, vague class names, and
+  absolute line heights. Source: CSS5 pp. 2, 4-6; CSSBP pp. 7, 11-14.
+- When custom CSS is necessary, keep names lowercase and purpose-based, group
+  declarations in a consistent order, use shorthand only when every value is
+  intentionally set, omit units from zero, and let the repository formatter
+  normalize syntax. Source: CSSBP pp. 2-12.
+- Comments must explain non-obvious purpose, constraints, or relationships.
+  Do not narrate a selector whose name already states the same thing. Source:
+  CSSBP p. 10.
+- Keep component styling separate from page layout. Organize custom CSS by
+  system concern and keep media queries near the rule they affect. Source:
+  CSSORG pp. 2-9; CSSBP p. 15.
+- BEM concepts may inform custom CSS naming, but Tailwind utilities and React
+  component boundaries remain the repository default. The relevant principle
+  is a clear block, element, state, and reusable intent. Source: BEM pp. 2-9;
+  PROJECT, AGENTS.md, "Code conventions".
+
+### Browser and device behavior
+
+- Use native form features, browser autofill, input types, keyboard hints, and
+  constraint attributes when they help. Source: FORM pp. 3-16; HTMLR pp. 5-7.
+- Preserve browser zoom, text scaling, keyboard navigation, history, and
+  expected link behavior. Do not intercept standard behavior for visual flair.
+  Source: NB pp. 143-145, 175; HTMLR pp. 4, 7.
+- Verify light and dark themes, reduced motion, touch and mouse input, narrow
+  and wide viewports, and at least the major target browser engines. Source:
+  PROJECT, PRODUCT.md, "Accessibility & Inclusion"; NB pp. 220-222.
+
+### Native mobile if introduced later
+
+- Follow iOS and Android conventions for pickers, safe areas, navigation,
+  gestures, keyboards, and accessibility. Do not transplant desktop controls
+  unchanged. Source: DUI pp. 58-66, 197, 350, 362.
+- Platform-native fonts are an option for a future native app, but they do not
+  replace Lexend and Fraunces in the current web product without a documented
+  design-system change. Source: DUCK p. 17; DUI p. 197; PROJECT, DESIGN.md,
+  "Typography".
+- Every gesture must have an accessible alternative, and native target-size
+  guidance must be treated as a floor. Source: DUI pp. 353, 367, 377-379; NB
+  p. 176.
+
+## Do's and Don'ts
+
+These are the shortest release-level summary. Detailed rules and rationale
+remain authoritative in the sections above.
+
+### Do
+
+- Do reduce each client screen to one assigned task and one obvious primary
+  action. Source: PROJECT, AGENTS.md, "One primary action per screen" and
+  "Assigned, never chosen"; NB p. 174.
+- Do validate learning behavior with a coach and real client before coding it.
+  Source: PROJECT, AGENTS.md, "Coach-first, code-second".
+- Do use familiar controls, visible labels, direct verbs, and consistent
+  vocabulary. Source: NB pp. 143-145, 175; DUI pp. 431-438.
+- Do use hierarchy, proximity, and token-based whitespace to communicate
+  groups. Source: DUI pp. 219-225; DUCK pp. 25-34; PROJECT, AGENTS.md,
+  "Spacing discipline".
+- Do use only semantic color, type, radius, spacing, size, motion, and width
+  tokens from the design system. Source: PROJECT, AGENTS.md, "Design tokens";
+  PROJECT, apps/web/app/globals.css, "@theme".
+- Do reuse shared components and define all relevant interaction and data
+  states. Source: PROJECT, AGENTS.md, "Code conventions"; DFD PDF pp. 40-113.
+- Do keep frequently used touch targets at least 44 by 44px and use the 56px
+  primary-action token where its prominence supports focus. Source: PROJECT,
+  AGENTS.md, "Accessible targets"; NB p. 176.
+- Do maintain visible keyboard focus, semantic HTML, associated labels,
+  descriptive links, and correct control roles. Source: FORM pp. 3-16;
+  SEMUSE pp. 2-9; HTML7 pp. 7-8.
+- Do test contrast, keyboard, touch, reduced motion, zoom, long content,
+  loading, empty, error, and recovery states. Source: DUI pp. 475-495;
+  PROJECT, PRODUCT.md, "Accessibility & Inclusion".
+- Do keep errors specific, calm, non-scolding, and actionable. Source: PROJECT,
+  AGENTS.md, "Copy never scolds"; NB p. 146.
+- Do make progress visual, truthful, and supportive. Source: PROJECT,
+  AGENTS.md, "Progress is visual"; NB p. 177.
+- Do test high-risk flows with realistic mid/high-fidelity behavior and real
+  target users. Source: NB pp. 120-125, 217-226.
+
+### Don't
+
+- Don't add plan galleries, template menus, learning-path pickers, or multiple
+  competing primary actions for clients. Source: PROJECT, AGENTS.md, "Assigned,
+  never chosen"; NB pp. 174, 179-180.
+- Don't build unvalidated exercises, community mechanics, gamification, or
+  punitive streaks. Source: PROJECT, AGENTS.md, "Coach-first, code-second" and
+  "Gamification is reward-only".
+- Don't use raw hex colors, arbitrary visual values, one-off spacing, npm, or a
+  Tailwind configuration file. Source: PROJECT, AGENTS.md, "Stack", "Design
+  tokens", "Spacing discipline", and "Never".
+- Don't use shadows, glows, glass, neumorphism, aurora blur, nested cards, loud
+  outlines, or decoration behind core work. Source: PROJECT, DESIGN.md,
+  "Elevation" and "Do's and Don'ts"; STYLE pp. 79-185.
+- Don't use placeholders as labels, hide essential guidance in tooltips, or
+  hide invalid fields in collapsed content. Source: NB p. 145; TIPS pp. 56,
+  59-60.
+- Don't use vague actions, double negatives, technical errors, fake urgency,
+  or shame. Source: DUI pp. 431-438; NB pp. 186-197.
+- Don't communicate state with color alone or use muted text for essential
+  content. Source: DUI pp. 135-146; DFD PDF pp. 128-141.
+- Don't remove focus indication, make interactions mouse-only, or shrink
+  frequent controls to fit more content. Source: HTML7 p. 7; NB pp. 176, 184.
+- Don't use decorative motion, bounce, layout-property animation, or endless
+  motion that ignores reduced-motion preferences. Source: DUI pp. 401-412;
+  PROJECT, apps/web/app/globals.css, reduced-motion rules.
+- Don't show a blank loading screen, an unexplained empty screen, or a
+  disappearing failure. Source: NB pp. 142, 178; TIPS pp. 42, 49.
+- Don't disguise ads, obstruct cancellation, preselect paid extras, fake
+  scarcity, or optimize a metric through deception. Source: NB pp. 186-197.
+- Don't assume the first design is correct. Measure, test, refine, and repeat.
+  Source: NB pp. 216-226.
+
+## Inconsistencies and resolved conflicts
+
+This section records disagreements in the corpus and the binding FISH decision.
+
+| Topic | Source guidance in conflict | FISH decision |
+| --- | --- | --- |
+| Number of primary actions | DUI pp. 240-245 and TIPS p. 7 establish hierarchy; DUCK p. 14 allows rare equal buttons | FISH is stricter: at most one primary button per view. Equal actions must use distinct non-primary treatments or be separated into steps. Source: PROJECT, AGENTS.md, "One primary action per screen". |
+| Touch targets | NB p. 176 suggests 44px mobile and 24-32px desktop; DUI pp. 232, 353, 367 varies by context; DFD PDF p. 107 shows 48px around a 24px icon | Use at least 44 by 44px for touch-first and frequently used controls on every device. Primary actions may be 56px. Compact desktop and inline links may be smaller only when context and spacing preserve usability. Source: PROJECT, AGENTS.md, "Accessible targets". |
+| Required markers | FORM p. 6 recommends required asterisks; TIPS p. 11 and DUI p. 358 recommend marking optional fields | Keep native required semantics, but visibly mark optional fields when they are the minority. Do not use red required asterisks as the default. |
+| Error color | NB p. 146 and several generic examples use red; FISH requires calm feedback and the token system includes desaturated semantic hues | Use the error token only as one cue alongside icon, copy, and placement. Informational notices remain monochrome. Copy never scolds. Source: PROJECT, AGENTS.md, "Copy never scolds"; PROJECT, apps/web/app/globals.css, feedback tokens. |
+| Button capitalization | TIPS p. 26 recommends title case for multiword buttons; DFD PDF p. 30 allows capitalization for emphasis | FISH uses sentence case for every product action, label, notice, and destination. Source: PROJECT, DESIGN.md, "The Sentence Case Rule". |
+| Pure black and white | DUCK p. 8 presents black and white as safe backgrounds; DUI pp. 158, 190 and STYLE pp. 57-78 warn about harsh contrast and smearing | Use near-black and near-white OKLCH tokens. Never hard-code #000 or #fff in web components. Source: PROJECT, apps/web/app/globals.css, "@theme". |
+| Shadows and elevation | DUI pp. 114-118, 266 and DFD PDF pp. 45-46, 95-98 recommend subtle shadows; STYLE pp. 57-78 discourages dark-mode shadows | FISH uses no box or text shadows in either theme. Use surface steps, spacing, borders, dividers, and scrims. Source: PROJECT, DESIGN.md, "Elevation". |
+| Grid system | DUI pp. 84-99 discusses 8- and 10-point grids; DUCK pp. 28-29 recommends an 8-point grid | Use the named FISH spacing tokens. Their values are informed by a compact 8-point rhythm but intentionally include 2, 4, 6, 10, 12, 14, and 20px roles. Never substitute an abstract grid rule for the implemented semantic scale. Source: PROJECT, AGENTS.md, "Spacing discipline". |
+| Body type size | DUCK pp. 18-19 allows 12-14px app text; DUI pp. 197-198 favors about 18px; TIPS p. 20 warns below 16px mobile input text | FISH body is 17px; mobile field text is at least 16px; 13px is the smallest normal metadata role. Source: PROJECT, DESIGN.md, "Typography". |
+| Native fonts | DUCK p. 17 and DUI p. 197 recommend SF Pro or Roboto for native apps | Current web UI uses Lexend and Fraunces. Reconsider native fonts only if a native app is introduced. Source: PROJECT, apps/web/app/layout.tsx. |
+| Progress percentages | NB p. 177 describes artificially accelerated progress; DUI p. 361 recommends percentage or step progress | FISH progress must be truthful and never a grade. Prefer a bar plus named milestones. Programmatic numeric values may support accessibility without presenting judgemental percentages. Source: PROJECT, AGENTS.md, "Progress is visual". |
+| Empty-state suggestions | TIPS p. 50 recommends popular choices; FISH prohibits client browsing of learning options | Empty states may present one assigned or contextually necessary action, not a gallery. Source: PROJECT, AGENTS.md, "Assigned, never chosen". |
+| Dropdown threshold | TIPS pp. 28-29 says avoid dropdowns for 3-5 options; DUI p. 340 says five or fewer should use visible controls | Use visible radio or segmented controls for five or fewer choices when the choice itself is valid. First ask whether a client should be making the choice at all. |
+| Autofocus | FORM p. 16 recommends autofocus on the first input | Do not autofocus by default. Allow it only for an intentionally focused single-input task that will not skip context or unexpectedly open a mobile keyboard. |
+| Popup dismissal | DUI pp. 364-368 promotes X, outside click, and a closing action | Use multiple dismissal routes for safe informational overlays. Do not allow outside click or Escape to discard destructive decisions or unsaved work without protection. |
+| Action placement | TIPS pp. 22-23 favors the primary action on the right and at the bottom for left-to-right scanning; DFD PDF p. 73 favors bottom-left form actions | Put actions where the task's reading order ends, keep the primary action last in logical order, and use one stable placement within a flow. Mobile primary actions may be full-width. Do not hard-code left or right as a universal rule before localization and RTL decisions. |
+| Toast duration | DFD PDF p. 79 recommends automatic dismissal after five seconds; important timed content can be inaccessible | Auto-dismiss only noncritical, recoverable status after enough reading time. Important errors, required decisions, and recovery instructions remain until resolved or explicitly dismissed. |
+| Chart scale | TIPS p. 54 recommends shrinking a Y-axis to fit data; data-visualization ethics require honest interpretation | Select a domain appropriate to the analytical question, label it clearly, and never truncate a scale to exaggerate change. Source: DUI pp. 295-310; NB pp. 186-197. |
+| "Popular choices" ordering | TIPS p. 61 recommends placing popular countries first; predictable ordering also supports scanning and recall | A researched common-choice group is allowed only above a complete, searchable, predictably sorted list. Never hide or demote less common identities. |
+| Prototyping | NB pp. 123-125 and 226 recommends mid/high fidelity for usability; NB p. 222 says clickable prototypes are often wasteful | Prototype only the uncertainty. Use coded HTML when interaction fidelity matters, a visual prototype when hierarchy is being tested, and no prototype when a familiar pattern is already clear. |
+| Mobile-first | DUI pp. 76-88 favors small-screen constraints in parts; DUCK p. 45 questions reflexive mobile-first design | Start with the highest-risk task and constraints, then verify all target viewports. Do not let a workflow slogan replace responsive testing. |
+| Tinted neutrals | TIPS p. 75 and parts of STYLE recommend tinting grays toward a primary hue; FISH's implemented structural tokens intentionally use zero chroma | Keep structural neutrals monochrome until the design system is deliberately revised. Semantic status hues remain the only current exception. Source: PROJECT, apps/web/app/globals.css, "@theme". |
+| BEM versus Tailwind | BEM pp. 2-9 recommends BEM class structures; the repository uses Tailwind v4 and component folders | Apply BEM's intent and independence principles to React components and any custom CSS, but do not replace the repository's Tailwind architecture. |
+
+## Missing areas requiring design decisions
+
+The PDFs do not resolve the following FISH-specific areas. Until each is
+decided and documented, use the temporary default stated here.
+
+| Priority | Gap | Temporary default / decision needed |
+| --- | --- | --- |
+| High | Focus indicator specification | The current global focus-visible treatment primarily changes opacity and removes outlines. Run a dedicated keyboard and contrast audit to decide whether every control remains clearly perceivable; if not, add a tokenized non-shadow indicator. This is required by HTML7 p. 7 and PROJECT, AGENTS.md, "Accessibility floor". |
+| High | Coach and client navigation maps | Document the exact destination set, ordering, mobile behavior, and permissions for each role before adding more shell navigation. Default to the smallest existing set. |
+| High | Realtime, offline, and reconnect states | Define message queueing, failed sends, reconnect status, duplicate prevention, and recovery announcements. Default to preserving drafts, showing calm inline status, and offering retry only when connected. |
+| High | Notification interruption policy | Decide what may interrupt a user, what stays in a notification center, quiet hours, and accessible announcement behavior. Default to no unsolicited modal or sound. |
+| High | Destructive action policy | Define when to use confirmation, undo, reauthentication, and data-retention copy. Default to undo for reversible actions and explicit confirmation for irreversible ones. |
+| High | Neurodivergent usability validation | Establish a recurring test panel and success criteria with real clients and coaches. Generic accessibility compliance cannot validate attention, memory, language, or return-after-gap behavior. Source: PROJECT, "Coach-first, code-second"; NB pp. 120-125. |
+| Medium | Breakpoint behavior matrix | Tokens define widths but the corpus does not define FISH's component-by-component breakpoints. Document navigation, chat panes, tables, dialogs, and forms at each supported range. |
+| Medium | Live-region and focus-management policy | Standardize polite versus assertive announcements, route-change focus, validation summaries, chat updates, and loading completion. Default to the least interruptive announcement that still exposes the state. |
+| Medium | High contrast and forced colors | Add a forced-colors test strategy and decide whether any token or icon needs an explicit system-color fallback. Default to native controls and semantic boundaries wherever possible. |
+| Medium | Localization, RTL, and text expansion | Decide supported languages, font subsets, grammatical tone, name/address models, RTL mirroring, and a text-expansion budget. Default to flexible layouts, full-name fields, and no directional assumptions in component logic. |
+| Medium | Content reading-level standard | Define target vocabulary, sentence length, terminology list, and review ownership for English learners. Default to plain literal English and one idea per sentence. |
+| Medium | Data visualization system | If coach analytics expands, define chart types, scales, non-color series cues, accessible summaries, and mobile behavior before adding one-off charts. |
+| Medium | Media accessibility in chat | Define alt text editing, captions, transcripts, attachment naming, autoplay, and sensitive-media handling. Default to no autoplay and require an accessible name for every attachment. |
+| Medium | Privacy and consent UX | Define data-use explanations, consent granularity, withdrawal, deletion, and coach/client visibility in plain language. Default to minimum collection and no preselected optional consent. |
+| Low | Native app design system | No native app is currently in scope. If that changes, create platform-specific typography, navigation, picker, gesture, and accessibility rules instead of copying web UI. |
+
+## UI review checklist
+
+This checklist introduces no new guidance; it operationalizes the cited rules
+above.
+
+### Product and scope
+
+- [ ] Is the user's role and single task explicit?
 - [ ] Is there exactly one primary action?
-- [ ] Is the client experience assigned rather than browsed?
-- [ ] Is any learning feature coach-validated?
-- [ ] Can anything be removed without losing the task?
+- [ ] Is client work assigned rather than browsed?
+- [ ] Has any learning behavior been coach-validated?
+- [ ] Can any field, option, card, or decoration be removed?
 
-### Hierarchy And Layout
+### Information architecture and navigation
 
-- [ ] Can you name the context, clarification, and action groups?
-- [ ] Is the most important element noticed first?
+- [ ] Does the flow group one logical category per step?
+- [ ] Are context, system response, error, and recovery states mapped?
+- [ ] Is primary navigation visible, stable, and role-appropriate?
+- [ ] Are active, back, cancel, and close states clear?
+- [ ] Are labels consistent across navigation, headings, actions, and help?
+
+### Hierarchy, layout, and typography
+
+- [ ] Is the context, clarification, action sequence obvious?
 - [ ] Are related items close and unrelated groups clearly separated?
-- [ ] Does spacing follow a consistent 8-point/token-based system?
-- [ ] Are desktop widths constrained enough for readable text?
-- [ ] Does mobile stay single-column unless there is a strong reason?
-- [ ] Are elements aligned to a clear grid or soft grid?
+- [ ] Does every space use a named token?
+- [ ] Are prose and forms constrained to readable widths?
+- [ ] Does the screen use a small, fixed type ladder with readable weights?
+- [ ] Is all product copy sentence case and free of filler text?
 
-### Typography
+### Color and theme
 
-- [ ] Does the screen use only a small number of text styles?
-- [ ] Are body text, labels, headings, and meta text distinct?
-- [ ] Is all important text readable at mobile size?
-- [ ] Are line lengths comfortable?
-- [ ] Is copy sentence case?
-- [ ] Are all caps and thin fonts avoided?
+- [ ] Does the screen work through hierarchy before hue?
+- [ ] Are all values semantic tokens with no raw hex?
+- [ ] Does every state pass contrast in light and dark themes?
+- [ ] Is meaning communicated by more than color?
+- [ ] Does dark-mode depth use lighter near surfaces and no shadow?
 
-### Color And Theme
+### Components and forms
 
-- [ ] Are only design tokens used?
-- [ ] Are raw hex values absent from web components?
-- [ ] Does the UI work in monochrome hierarchy before color?
-- [ ] Does the primary action pass contrast in both themes?
-- [ ] Are feedback colors calm and semantic?
-- [ ] Does dark mode preserve surface depth correctly?
-
-### Components And States
-
-- [ ] Are base UI components reused?
-- [ ] Are default, hover, focus, active, disabled, loading, and error states
-  handled where relevant?
-- [ ] Do state changes preserve layout size?
-- [ ] Are buttons direct, specific, and easy to tap?
-- [ ] Are icon buttons accessible by name and target size?
-- [ ] Are cards concise and free of filler?
-
-### Forms
-
-- [ ] Is there a real `<form>`?
-- [ ] Does every input have a visible associated label?
-- [ ] Are fields single-column and left-aligned?
-- [ ] Are errors inline and helpful?
-- [ ] Are autocomplete/type/inputmode/enterkeyhint used where helpful?
-- [ ] Are optional fields marked without red required clutter?
-- [ ] Are dropdowns avoided for short option sets?
-- [ ] Are toggles used only for immediate settings?
+- [ ] Are shared components reused?
+- [ ] Are default, hover, focus, active, selected, disabled, loading, and error
+  states defined where relevant?
+- [ ] Do state changes preserve geometry?
+- [ ] Do buttons look actionable and use outcome-specific labels?
+- [ ] Does every field have a visible associated label?
+- [ ] Are fields single-column, minimal, and grouped by task?
+- [ ] Are input type, autocomplete, inputmode, and enterkeyhint correct?
+- [ ] Are errors inline, calm, specific, and recoverable?
+- [ ] Are choice controls semantically correct and genuinely necessary?
 
 ### Accessibility
 
-- [ ] Is keyboard navigation complete?
-- [ ] Is focus visible on every interactive element?
-- [ ] Are touch-first and frequently used targets at least 44×44px, including
-  any invisible clickable padding?
-- [ ] Does the UI avoid color-only communication?
-- [ ] Does motion respect reduced-motion preferences?
-- [ ] Do images have correct alt behavior?
-- [ ] Are links descriptive?
-- [ ] Is semantic HTML used correctly?
+- [ ] Can the complete task be performed with a keyboard?
+- [ ] Is focus clearly visible on every interactive element?
+- [ ] Are frequent touch targets at least 44 by 44px?
+- [ ] Are names, descriptions, states, and asynchronous updates programmatic?
+- [ ] Does content reflow under zoom and text enlargement?
+- [ ] Does reduced motion stop transitions and looping indicators?
+- [ ] Do images and media have the correct text alternatives?
+- [ ] Is reading order logical in both visual and semantic structure?
 
-### Interaction And Feedback
+### Responsive, motion, and states
 
-- [ ] Does loading show progress, skeletons, or stable busy states?
-- [ ] Are modals used only when unavoidable?
-- [ ] Can overlays be closed easily?
-- [ ] Is feedback placed near the object it concerns?
-- [ ] Are animations calm and useful?
-- [ ] Are empty states actionable without adding choices?
-
-### Data And Content
-
-- [ ] Are tables used only when structured comparison is needed?
-- [ ] Are text and numbers aligned correctly in tables?
-- [ ] Is mobile table content transformed or kept contextual?
-- [ ] Are charts honest, readable, and not color-only?
-- [ ] Is copy calm, plain, and non-scolding?
-- [ ] Are dark patterns absent?
+- [ ] Does mobile remain single-column unless the task demands otherwise?
+- [ ] Do navigation, tables, dialogs, and forms change structure deliberately?
+- [ ] Are software keyboards, safe areas, long text, and real devices tested?
+- [ ] Does motion explain state, use calm timing, and avoid layout animation?
+- [ ] Are loading, partial, empty, offline, error, retry, and success states
+  complete and layout-stable?
+- [ ] Does returning after a gap feel continuous rather than punitive?
 
 ### Implementation
 
-- [ ] Does web UI avoid `tailwind.config.js` and npm?
-- [ ] Does custom CSS avoid magic numbers, `!important`, and
-  location-dependent selectors?
-- [ ] Are reusable components independent of parent layout?
-- [ ] Are tests updated when shared behavior changes?
-- [ ] Do `pnpm lint`, `pnpm typecheck`, and `pnpm build` remain the target
-  verification commands before commit?
-
-## Common Review Findings To Flag
-
-Flag these as inconsistencies or implementation mistakes:
-
-- More than one primary button in a view.
-- Client-facing browsing of learning plans/templates.
-- Touch-first or frequently used controls with targets below 44×44px.
-- Raw color values in web components.
-- Missing visible labels on inputs.
-- Placeholder-only form fields.
-- Red/scolding error copy.
-- Vague button labels.
-- Icon-only actions without accessible names or labels.
-- Focus outlines removed or hidden.
-- State changes that shift layout.
-- Low-contrast muted text used for essential content.
-- Decorative cards inside cards.
-- Unvalidated gamification or punitive streak behavior.
-- Modals/tooltips used for information that should be inline.
-- Dropdowns for small option sets.
-- Toggles used for form submission choices.
-- Text or numbers centered in data tables.
-- Images used as content without alt text.
-- Background images used when the image is meaningful content.
-- Custom CSS selectors tied to parent location rather than reusable intent.
+- [ ] Are Tailwind v4, pnpm, tokens, cn(), and component-folder conventions
+  followed?
+- [ ] Are semantic HTML and native controls used before ARIA replicas?
+- [ ] Are custom selectors reusable, short, and location-independent?
+- [ ] Are responsive images, formats, alt behavior, and lazy loading correct?
+- [ ] Do module-boundary tests report zero loose components and zero component
+  folders without index.ts?
+- [ ] Do lint, typecheck, tests, and the production build pass in proportion to
+  the change?
