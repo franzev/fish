@@ -64,7 +64,18 @@ export async function expectNoDocumentOverflow(page: Page) {
 }
 
 export async function expectMobileControlTargets(page: Page) {
-  const undersized = await page.locator("button:visible, input:visible:not([type='file']), select:visible, textarea:visible").evaluateAll(
+  const selector = [
+    "button:visible",
+    "input:visible:not([type='file']):not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range'])",
+    "select:visible",
+    "textarea:visible",
+    "summary:visible",
+    "[role='button']:visible",
+    "[role='tab']:visible",
+    "[role='switch']:visible",
+    "nav a:visible",
+  ].join(", ");
+  const undersized = await page.locator(selector).evaluateAll(
     (elements) => elements.flatMap((element) => {
       const rect = element.getBoundingClientRect();
       if (rect.width >= 44 && rect.height >= 44) return [];
@@ -78,11 +89,39 @@ export async function expectMobileControlTargets(page: Page) {
   expect(undersized).toEqual([]);
 }
 
+export async function expectMobileTextEntrySizes(page: Page) {
+  const selector = [
+    "input:visible:not([type='file']):not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='button']):not([type='submit'])",
+    "select:visible",
+    "textarea:visible",
+  ].join(", ");
+  const undersized = await page.locator(selector).evaluateAll((elements) =>
+    elements.flatMap((element) => {
+      const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
+      if (fontSize >= 16) return [];
+      return [{
+        label: element.getAttribute("aria-label")
+          ?? element.getAttribute("name")
+          ?? element.tagName,
+        fontSize,
+      }];
+    })
+  );
+  expect(undersized).toEqual([]);
+}
+
 export function watchConsole(page: Page) {
   const messages: string[] = [];
   page.on("console", (message) => {
+    const text = message.text();
+    const isSupabaseRealtimeNavigationTeardown =
+      text.includes("127.0.0.1:54321/realtime/v1/websocket") &&
+      text.includes("WebSocket is closed before the connection is established");
+
+    if (isSupabaseRealtimeNavigationTeardown) return;
+
     if (message.type() === "error" || message.type() === "warning") {
-      messages.push(`${message.type()}: ${message.text()}`);
+      messages.push(`${message.type()}: ${text}`);
     }
   });
   return messages;

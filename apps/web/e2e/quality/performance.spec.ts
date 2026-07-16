@@ -84,3 +84,17 @@ test("critical authenticated routes stay inside performance budgets", async ({ p
 
   expect(consoleMessages).toEqual([]);
 });
+
+test("critical mobile routes stay inside performance budgets", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installObservers(page);
+  const consoleMessages = watchConsole(page);
+  await signInAsClient(page);
+
+  for (const route of ["/home", "/channels/general", "/book"]) {
+    await page.goto(route);
+    await expectBudgets(page, route);
+  }
+
+  expect(consoleMessages).toEqual([]);
+});
