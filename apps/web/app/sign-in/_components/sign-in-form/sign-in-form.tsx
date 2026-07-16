@@ -10,6 +10,7 @@ import {
   signInWithPassword,
 } from "@/features/auth";
 import { authRedirects } from "@/features/auth/redirects";
+import { useDesktopAutofocus } from "@/hooks/use-desktop-autofocus";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export function SignInForm({
   showGoogleAuth = false,
 }: SignInFormProps) {
   const router = useRouter();
+  const emailRef = useDesktopAutofocus<HTMLInputElement>();
   const [email, setEmail] = useState(defaultCredentials?.email ?? "");
   const [password, setPassword] = useState(defaultCredentials?.password ?? "");
   const [passwordError, setPasswordError] = useState("");
@@ -124,9 +126,9 @@ export function SignInForm({
         <form className="mt-lg" onSubmit={handleSubmit}>
           <div className="space-y-md">
             <Input
+              ref={emailRef}
               label="Email"
               type="email"
-              autoFocus
               autoComplete="email"
               inputMode="email"
               enterKeyHint="next"

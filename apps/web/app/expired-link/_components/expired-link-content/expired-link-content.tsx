@@ -7,6 +7,7 @@ import {
   requestPasswordReset,
   resendSignupEmail,
 } from "@/features/auth";
+import { useDesktopAutofocus } from "@/hooks/use-desktop-autofocus";
 import { useSearchParams } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 
@@ -16,6 +17,7 @@ import { type SubmitEvent, useState } from "react";
    a failure — the empty-email guard stays tone="notice", never "error". */
 export function ExpiredLinkContent() {
   const searchParams = useSearchParams();
+  const emailRef = useDesktopAutofocus<HTMLInputElement>();
   const type = searchParams.get("type") === "recovery" ? "recovery" : "signup";
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [notice, setNotice] = useState("");
@@ -70,9 +72,9 @@ export function ExpiredLinkContent() {
       </p>
       <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
         <Input
+          ref={emailRef}
           label="Email"
           type="email"
-          autoFocus
           autoComplete="email"
           inputMode="email"
           enterKeyHint="send"

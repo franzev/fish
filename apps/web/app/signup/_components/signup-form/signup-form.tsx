@@ -9,6 +9,7 @@ import {
   signInWithGoogle,
   signUpWithPassword,
 } from "@/features/auth";
+import { useDesktopAutofocus } from "@/hooks/use-desktop-autofocus";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ export interface SignupFormProps {
 
 export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
   const router = useRouter();
+  const nameRef = useDesktopAutofocus<HTMLInputElement>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -129,8 +131,8 @@ export function SignupForm({ showGoogleAuth = false }: SignupFormProps) {
       <h1 className="text-heading-sm">Create your account</h1>
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <Input
+            ref={nameRef}
             label="Name"
-            autoFocus
             autoComplete="name"
             enterKeyHint="next"
             value={name}

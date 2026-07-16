@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requestPasswordReset } from "@/features/auth";
+import { useDesktopAutofocus } from "@/hooks/use-desktop-autofocus";
 import Link from "next/link";
 import { type SubmitEvent, useState } from "react";
 
@@ -15,6 +16,7 @@ import { type SubmitEvent, useState } from "react";
    through redirectTo here (review HIGH) — so resetPasswordForEmail is
    called with the email only. */
 export function ForgotPasswordForm() {
+  const emailRef = useDesktopAutofocus<HTMLInputElement>();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -50,9 +52,9 @@ export function ForgotPasswordForm() {
             </p>
             <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
               <Input
+                ref={emailRef}
                 label="Email"
                 type="email"
-                autoFocus
                 autoComplete="email"
                 inputMode="email"
                 enterKeyHint="send"

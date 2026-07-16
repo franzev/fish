@@ -6,6 +6,7 @@ import {
   getAuthFailureReason,
   updatePassword,
 } from "@/features/auth";
+import { useDesktopAutofocus } from "@/hooks/use-desktop-autofocus";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 
@@ -15,6 +16,7 @@ import { type SubmitEvent, useState } from "react";
    is needed. */
 export function ResetPasswordForm() {
   const router = useRouter();
+  const passwordRef = useDesktopAutofocus<HTMLInputElement>();
   const [password, setPassword] = useState("");
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [error, setError] = useState("");
@@ -75,8 +77,8 @@ export function ResetPasswordForm() {
       <h2 className="text-heading-sm">Set a new password</h2>
         <form className="mt-lg space-y-2xs" onSubmit={handleSubmit}>
           <PasswordInput
+            ref={passwordRef}
             label="Password"
-            autoFocus
             autoComplete="new-password"
             enterKeyHint="go"
             hint={
