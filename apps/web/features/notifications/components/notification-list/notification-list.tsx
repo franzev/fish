@@ -81,7 +81,7 @@ export function NotificationList({ compact = false, onNavigate }: NotificationLi
             variant={state.filter === filter ? "secondary" : "ghost"}
             aria-pressed={state.filter === filter}
             onClick={() => void setFilter(filter)}
-            className="min-h-control px-sm text-ui-sm"
+            className="min-h-control min-w-control px-sm text-ui-sm md:min-w-0"
           >
             {filter === "all" ? "All" : "Unread"}
           </Button>

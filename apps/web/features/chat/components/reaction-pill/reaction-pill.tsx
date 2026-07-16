@@ -23,7 +23,7 @@ export const ReactionPill = forwardRef<HTMLButtonElement, ReactionPillProps>(
         ref={ref}
         type={type}
         className={cn(
-          "inline-flex min-h-control items-center gap-2xs rounded-pill px-xs py-2xs text-body transition-colors md:h-reaction-pill md:min-h-reaction-pill md:py-3xs",
+          "inline-flex min-h-control min-w-control items-center gap-2xs rounded-pill px-xs py-2xs text-body transition-colors md:h-reaction-pill md:min-h-reaction-pill md:min-w-0 md:py-3xs",
           selected
             ? "bg-surface-3 text-foreground"
             : "bg-surface-2 hover:bg-surface-3",

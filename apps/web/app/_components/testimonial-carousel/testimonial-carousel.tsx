@@ -178,7 +178,10 @@ export function TestimonialCarousel({
       role="region"
       aria-roledescription="carousel"
       aria-label={label}
-      className={className}
+      className={cn(
+        "max-md:min-w-0 max-md:max-w-full max-md:overflow-hidden",
+        className
+      )}
     >
       <div ref={emblaRef} className="overflow-hidden">
         <div className="-ml-md flex">

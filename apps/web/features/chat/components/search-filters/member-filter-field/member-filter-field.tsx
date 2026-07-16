@@ -54,7 +54,7 @@ export function MemberFilterField({
               setQuery(event.target.value);
               setOpen(true);
             }}
-            className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-ui text-foreground placeholder:text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="min-h-control min-w-0 flex-1 bg-transparent px-sm text-ui-md text-foreground placeholder:text-muted focus:outline-none md:text-ui [&::-webkit-search-cancel-button]:hidden"
           />
           <IconButton
             label={`${open ? "Close" : "Open"} ${label.toLowerCase()} suggestions`}

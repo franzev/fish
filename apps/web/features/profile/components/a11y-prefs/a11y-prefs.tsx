@@ -91,11 +91,13 @@ export function A11yPrefs({
       )}
       <SettingsRow
         label="Appearance"
+        mobileStack
         control={
           <SegmentedControl
             label="Appearance"
             options={themeOptions}
             value={theme}
+            className="max-md:grid max-md:w-full max-md:grid-cols-3 max-md:gap-2xs"
             onValueChange={(next) => {
               setTheme(next);
               persist({
@@ -109,11 +111,13 @@ export function A11yPrefs({
       />
       <SettingsRow
         label="Reduced motion"
+        mobileStack
         control={
           <SegmentedControl
             label="Reduced motion"
             options={reducedMotionOptions}
             value={reducedMotion}
+            className="max-md:grid max-md:w-full max-md:grid-cols-3 max-md:gap-2xs"
             onValueChange={(next) => {
               setReducedMotion(next);
               persist({
@@ -127,11 +131,13 @@ export function A11yPrefs({
       />
       <SettingsRow
         label="Time format"
+        mobileStack
         control={
           <SegmentedControl
             label="Time format"
             options={timeFormatOptions}
             value={timeFormat}
+            className="max-md:grid max-md:w-full max-md:grid-cols-3 max-md:gap-2xs"
             onValueChange={(next) => {
               setTimeFormat(next);
               persist({

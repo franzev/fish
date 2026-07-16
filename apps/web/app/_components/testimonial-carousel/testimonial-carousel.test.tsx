@@ -31,6 +31,11 @@ describe("TestimonialCarousel", () => {
 
     const region = screen.getByRole("region", { name: "What clients say" });
     expect(region).toHaveAttribute("aria-roledescription", "carousel");
+    expect(region).toHaveClass(
+      "max-md:min-w-0",
+      "max-md:max-w-full",
+      "max-md:overflow-hidden"
+    );
 
     const slides = screen.getAllByRole("group");
     expect(slides).toHaveLength(3);

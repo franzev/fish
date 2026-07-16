@@ -23,7 +23,12 @@ describe("MediaDeviceSelect", () => {
 
     const select = screen.getByRole("combobox", { name: "Microphone" });
     expect(ref.current).toBe(select);
-    expect(select).toHaveClass("min-h-control", "test-device-class");
+    expect(select).toHaveClass(
+      "min-h-control",
+      "text-ui-md",
+      "md:text-ui",
+      "test-device-class"
+    );
     fireEvent.change(select, { target: { value: "usb" } });
     expect(onValueChange).toHaveBeenCalledWith("usb");
   });

@@ -28,7 +28,7 @@ export const MediaDeviceSelect = forwardRef<
         {...selectProps}
         ref={ref}
         className={cn(
-          "min-h-control w-full rounded-control bg-surface-2 px-sm text-ui text-foreground",
+          "min-h-control w-full rounded-control bg-surface-2 px-sm text-ui-md text-foreground md:text-ui",
           className
         )}
         onChange={(event) => onValueChange(event.currentTarget.value)}

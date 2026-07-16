@@ -73,6 +73,7 @@ describe("Input", () => {
     );
 
     const field = getByRole("searchbox", { name: "Search" });
+    expect(field).toHaveClass("text-ui-md", "md:text-ui-sm");
     expect(field.className).toContain("sm:min-h-search-control");
     expect(field.className).toContain("sm:pl-search-control");
     expect(container.querySelector("label")).toHaveClass("sr-only");

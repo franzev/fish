@@ -18,7 +18,7 @@ export const inputVariants = cva(
     variants: {
       density: {
         default: "min-h-control px-md text-copy",
-        compact: "min-h-control px-sm text-ui-sm sm:min-h-search-control",
+        compact: "min-h-control px-sm text-ui-md md:text-ui-sm sm:min-h-search-control",
       },
       feedback: {
         default: null,

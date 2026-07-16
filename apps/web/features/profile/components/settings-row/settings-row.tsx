@@ -6,6 +6,9 @@ interface SettingsRowProps extends HTMLAttributes<HTMLDivElement> {
   /** The control or value shown on the trailing edge (a chevron, a toggle
    *  group, plain text, etc). */
   control?: React.ReactNode;
+  /** Stack the label and control on mobile while preserving the trailing
+   * desktop row used by account settings. */
+  mobileStack?: boolean;
 }
 
 /** A touch-friendly row: label + trailing control. Reused for every settings row on
@@ -17,12 +20,14 @@ export function SettingsRow({
   control,
   className,
   children,
+  mobileStack = false,
   ...props
 }: SettingsRowProps) {
   return (
     <div
       className={cn(
         "flex min-h-control items-center justify-between gap-md p-md",
+        mobileStack && "max-md:flex-col max-md:items-stretch max-md:justify-start",
         className
       )}
       {...props}

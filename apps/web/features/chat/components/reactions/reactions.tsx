@@ -47,16 +47,17 @@ export function Reactions({
                     disabled={disabled}
                     onClick={() => onToggle?.(reaction.emoji)}
                     selected={reaction.byMe}
-                    className="animate-reaction-pop"
+                    className="md:animate-reaction-pop"
                   >
-                    {/* Sizes live on the spans, not the button: twMerge has no
-                        font-size group for the custom text-ui-* scale, so a size on
-                        the button is swallowed by the text color class above. */}
-                    <span aria-hidden="true" className="text-ui-sm leading-none">
-                      {reaction.emoji}
-                    </span>
-                    <span className="text-ui-xs font-medium leading-none">
-                      {reaction.count}
+                    <span className="inline-flex items-center gap-2xs max-md:animate-reaction-pop">
+                      {/* Motion belongs to the visual contents, not the button,
+                          so the 44px target never shrinks during confirmation. */}
+                      <span aria-hidden="true" className="text-ui-sm leading-none">
+                        {reaction.emoji}
+                      </span>
+                      <span className="text-ui-xs font-medium leading-none">
+                        {reaction.count}
+                      </span>
                     </span>
                   </ReactionPill>
                 }

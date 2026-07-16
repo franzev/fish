@@ -270,7 +270,7 @@ export function SearchFilterPopover({
               }
             }}
             className={cn(
-              "min-h-target-touch w-full min-w-0 bg-transparent px-md text-ui text-foreground placeholder:text-muted focus:outline-none sm:min-h-search-control [&::-webkit-search-cancel-button]:hidden",
+              "min-h-target-touch w-full min-w-0 bg-transparent px-md text-ui-md text-foreground placeholder:text-muted focus:outline-none sm:min-h-search-control md:text-ui [&::-webkit-search-cancel-button]:hidden",
               showTokenLayer && "text-transparent caret-foreground selection:bg-surface-3"
             )}
           />

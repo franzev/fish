@@ -40,7 +40,7 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
                 id: `${event.target.value}:${criterion.date}`,
               })
             }
-            className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui text-foreground sm:w-filter-operator"
+            className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui-md text-foreground sm:w-filter-operator md:text-ui"
           >
             <option value="before">Before</option>
             <option value="after">After</option>
