@@ -183,26 +183,20 @@ internal class DefaultChatRepository(
 
     override suspend fun sendMessage(
         conversationId: String,
-        body: String,
+        content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatResult<ChatMessage> {
         val conversation = dao.conversation(conversationId)?.toDomain()
             ?: return unavailableFailure()
-        val trimmed = body.trim()
-        if (trimmed.isEmpty()) {
-            return ChatResult.Failure(
-                message = "Add a message before sending.",
-                recoverable = true,
-                category = FailureCategory.Remote,
-            )
-        }
         val optimistic = ChatMessage(
             id = "local-$clientRequestId",
             conversationId = conversationId,
             senderId = conversation.currentUserId,
             senderRole = conversation.currentUserRole,
             senderDisplayName = conversation.currentUserDisplayName,
-            body = trimmed,
+            body = content.normalizedBody,
+            gif = content.gif,
+            stickerId = content.stickerId,
             clientRequestId = clientRequestId,
             createdAt = now(),
             localStatus = LocalMessageStatus.Sending,
@@ -212,17 +206,28 @@ internal class DefaultChatRepository(
             ChatOperation.SendMessage,
             "That did not send yet. Keep this open and try again.",
         ) {
-            remote.sendMessage(conversation, trimmed, clientRequestId)
+            remote.sendMessage(conversation, content, clientRequestId)
         }) {
             is ChatResult.Success -> {
-                dao.reconcileMessage(result.value.toEntity())
-                result
+                val enriched = result.value.copy(
+                    gif = result.value.gif ?: content.gif,
+                    stickerId = result.value.stickerId ?: content.stickerId,
+                )
+                dao.reconcileMessage(enriched.toEntity())
+                ChatResult.Success(enriched)
             }
             is ChatResult.Failure -> {
                 dao.markMessageFailed(conversationId, clientRequestId, result.message)
                 result
             }
         }
+    }
+
+    override suspend fun reportGif(messageId: String): ChatResult<Unit> = resultOf(
+        ChatOperation.ReportGif,
+        "That GIF report did not send yet. Try again.",
+    ) {
+        remote.reportGif(messageId)
     }
 
     override suspend fun markRead(

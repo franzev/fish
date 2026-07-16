@@ -1,8 +1,9 @@
 # FISH Android personal chat
 
 Native Kotlin and Jetpack Compose implementation of FISH's authorized
-one-to-one coaching chat. This slice intentionally excludes group chat, calls,
-attachments, reactions, search, notifications, and conversation creation.
+one-to-one coaching chat, including text, emoji, GIF, and bundled sticker
+messages. This slice intentionally excludes group chat, calls, uploads,
+reactions, search, notifications, and conversation creation.
 
 ## Architecture
 
@@ -20,8 +21,9 @@ benchmarks -> app (test target only)
 - `feature:chat` owns chat screens, chat-specific controls, presentation
   models, the pure reducer, fixture parity tests, and its conversation-scoped
   ViewModel. It cannot import Room or Supabase.
-- `data:chat` exposes the FISH-owned `ChatRepository` seam and chat data
-  models. Room, Ktor, and Supabase remain internal implementation packages.
+- `data:chat` exposes the FISH-owned `ChatRepository` and `GifRepository`
+  seams. Room, Ktor, DataStore, KLIPY, and Supabase remain internal
+  implementation packages.
 - `benchmarks` owns Baseline Profile generation and macrobenchmarks.
 
 This intentionally follows the small-app shape in Android's official samples.
@@ -49,12 +51,18 @@ automatically. The app accepts these environment variables:
 ```bash
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
+export FISH_ANDROID_KLIPY_API_KEY="your-public-klipy-key"
+export FISH_ANDROID_KLIPY_CLIENT_KEY="fish_chat_android"
 ```
 
 The web-compatible `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` fallback is also
 accepted. Never put a service-role key in an Android build. For persistent
 local configuration, use `FISH_SUPABASE_URL` and
-`FISH_SUPABASE_PUBLISHABLE_KEY` in `~/.gradle/gradle.properties`.
+`FISH_SUPABASE_PUBLISHABLE_KEY` in `~/.gradle/gradle.properties`. Android also
+accepts the web-compatible `NEXT_PUBLIC_KLIPY_API_KEY` and
+`NEXT_PUBLIC_KLIPY_CLIENT_KEY` fallbacks. A missing KLIPY key leaves the GIF
+tab visible with calm unavailable copy; emoji and local stickers remain
+bundled.
 
 Release builds reject cleartext traffic. Debug builds allow it so an emulator
 can reach a local Supabase stack through `10.0.2.2`.
@@ -79,6 +87,7 @@ Run from the repository root:
 
 ```bash
 pnpm android:verify-design   # token parity, contrast, raw-value and boundary checks
+pnpm chat-media:verify       # shared sticker/emoji catalogs and backend allowlists
 pnpm android:test            # reducer, ViewModel, and remote-contract unit tests
 pnpm android:screenshots     # light/dark, window, font-scale, RTL visual matrix
 pnpm android:instrumented    # Compose accessibility and Room/repository tests
@@ -91,9 +100,11 @@ pnpm android:benchmark
 API 33+ device or emulator. Emulator benchmark results are smoke tests only;
 release performance thresholds must be measured on physical hardware.
 
-The 2026-07-16 release-candidate pass completed all commands above. It covered
-24 shared reducer vectors, 11 host unit tests, 10 device tests, and 8 screenshot
-scenarios with no failures. A local two-account Supabase run also verified
+The 2026-07-16 media release-candidate pass completed design/catalog checks,
+host tests, 17 device tests, 13 screenshot scenarios, the minified release
+build, and Baseline Profile generation with no failures. Shared reducer
+coverage includes the 24 chat-state vectors plus GIF/sticker acknowledgement
+parity fixtures. A local two-account Supabase run for the chat foundation also verified
 authentication, RLS-backed history, outgoing idempotency, incoming Realtime,
 read receipts, process-restored drafts, active network loss, reconnect, and
 authoritative backfill. In the final five-iteration emulator smoke comparison,
@@ -106,6 +117,11 @@ physical-device release threshold.
 - Reads use RLS-protected PostgREST queries.
 - Sends use the existing `send-message` Edge Function and stable client request
   IDs. A manual retry reuses the same ID, preventing duplicate messages.
+- GIF rows are joined into Room during page loads and Realtime changes. KLIPY
+  share registration runs only after Supabase confirms a send.
+- GIF reporting uses the existing idempotent `chat-command` action. Provider
+  queries, media URLs, and account identifiers are never logged; KLIPY gets a
+  random install-scoped customer ID from Preferences DataStore.
 - Read receipts use `chat-command` with `mark-read-state`.
 - Realtime changes are hints written into Room; reconnect performs a bounded
   authoritative backfill.

@@ -76,7 +76,13 @@ fun ChatTopBar(
 }
 
 @Composable
-fun MessageBubble(message: MessageUiModel, modifier: Modifier = Modifier) {
+fun MessageBubble(
+    message: MessageUiModel,
+    onToggleGif: () -> Unit = {},
+    onReportGif: () -> Unit = {},
+    onRetry: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     val colors = FishTheme.colors
     val container = if (message.isOutgoing) colors.primary else colors.surfaceAlt
     val content = if (message.isOutgoing) colors.onPrimary else colors.foreground
@@ -94,26 +100,48 @@ fun MessageBubble(message: MessageUiModel, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
-                .clip(shape)
-                .background(container)
-                .padding(
-                    horizontal = FishTheme.spacing.md,
-                    vertical = FishTheme.spacing.sm,
-                )
-                .clearAndSetSemantics { contentDescription = semantics },
-        ) {
-            Text(
-                text = body,
-                color = if (message.deleted) {
-                    if (message.isOutgoing) content.copy(alpha = 0.78f) else colors.muted
-                } else {
-                    content
-                },
-                style = FishTheme.typography.body,
+        message.sticker?.let { sticker ->
+            StickerMessageMedia(
+                sticker = sticker,
+                author = author,
+                timeLabel = message.timeLabel,
             )
+        }
+        message.gif?.let { gif ->
+            GifMessageMedia(
+                gif = gif,
+                author = author,
+                timeLabel = message.timeLabel,
+                playing = message.gifPlaying,
+                onTogglePlayback = onToggleGif,
+                onReport = onReportGif,
+            )
+        }
+        if (message.gifUnavailable && message.gif == null) {
+            GifUnavailableMedia()
+        }
+        if (message.deleted || message.body.isNotBlank()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+                    .clip(shape)
+                    .background(container)
+                    .padding(
+                        horizontal = FishTheme.spacing.md,
+                        vertical = FishTheme.spacing.sm,
+                    )
+                    .clearAndSetSemantics { contentDescription = semantics },
+            ) {
+                Text(
+                    text = body,
+                    color = if (message.deleted) {
+                        if (message.isOutgoing) content.copy(alpha = 0.78f) else colors.muted
+                    } else {
+                        content
+                    },
+                    style = FishTheme.typography.body,
+                )
+            }
         }
         if (message.delivery != null) {
             MessageDeliveryStatus(
@@ -125,15 +153,14 @@ fun MessageBubble(message: MessageUiModel, modifier: Modifier = Modifier) {
             )
         }
         if (message.delivery == MessageDeliveryUiState.Failed) {
-            Text(
-                text = stringResource(R.string.message_failed),
+            FishButton(
+                label = stringResource(R.string.retry_failed_message),
+                onClick = onRetry,
+                variant = FishButtonVariant.Secondary,
                 modifier = Modifier.padding(
                     top = FishTheme.spacing.twoXs,
                     end = FishTheme.spacing.xs,
                 ),
-                color = colors.notice,
-                textAlign = TextAlign.End,
-                style = FishTheme.typography.caption,
             )
         }
     }
@@ -337,13 +364,16 @@ fun OlderMessagesState(
 fun MessageComposer(
     state: TextFieldState,
     onSend: () -> Unit,
+    pendingMedia: ComposerMediaUiModel? = null,
+    onOpenMediaPicker: () -> Unit = {},
+    onRemovePendingMedia: () -> Unit = {},
     modifier: Modifier = Modifier,
     editable: Boolean = true,
     sendEnabled: Boolean = true,
     sending: Boolean = false,
 ) {
     val textLength = state.text.codePoints().count().toInt()
-    val blank = state.text.isBlank()
+    val blank = state.text.isBlank() && pendingMedia == null
     val atLimit = textLength >= MessageLimit
     Column(
         modifier = modifier
@@ -357,10 +387,25 @@ fun MessageComposer(
             color = FishTheme.colors.foreground,
             style = FishTheme.typography.label,
         )
+        if (pendingMedia != null) {
+            ComposerMediaPreview(
+                media = pendingMedia,
+                onRemove = onRemovePendingMedia,
+                modifier = Modifier.padding(bottom = FishTheme.spacing.sm),
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom,
         ) {
+            FishIconButton(
+                icon = FishIcons.AddMedia,
+                contentDescription = stringResource(R.string.add_media),
+                onClick = onOpenMediaPicker,
+                enabled = editable,
+                size = FishTheme.sizes.touchTarget,
+            )
+            Spacer(Modifier.width(FishTheme.spacing.xs))
             FishStateTextField(
                 state = state,
                 modifier = Modifier

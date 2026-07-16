@@ -18,6 +18,11 @@ import com.fish.android.data.chat.ChatAuthState
 import com.fish.android.data.chat.ChatRealtimeEvent
 import com.fish.android.data.chat.ChatRepository
 import com.fish.android.data.chat.ChatResult
+import com.fish.android.data.chat.GifRepository
+import com.fish.android.data.chat.GifSearchItem
+import com.fish.android.data.chat.GifPage
+import com.fish.android.data.chat.OutgoingMessageContent
+import com.fish.android.data.chat.model.ChatGif
 import java.time.Instant
 import java.time.Duration
 import java.time.ZoneId
@@ -29,11 +34,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 class ChatViewModel(
     private val repository: ChatRepository,
     private val savedStateHandle: SavedStateHandle,
     private val formatter: ChatTextFormatter,
+    private val gifRepository: GifRepository = NoOpGifRepository,
+    private val mediaCatalog: ChatMediaCatalog = ChatMediaCatalog.Empty,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<ChatRouteUiState>(ChatRouteUiState.Loading)
     val uiState: StateFlow<ChatRouteUiState> = mutableUiState.asStateFlow()
@@ -49,6 +59,10 @@ class ChatViewModel(
     private var readMarkJob: Job? = null
     private var sending = false
     private var showingConversationList = false
+    private var pendingMedia: ComposerMediaUiModel? = null
+    private var pendingGifQuery: String = ""
+    private var selectionRevision = 0L
+    private val mediaJson = Json { ignoreUnknownKeys = true }
 
     init {
         viewModelScope.launch {
@@ -57,6 +71,7 @@ class ChatViewModel(
                     ChatAuthState.Loading -> mutableUiState.value = ChatRouteUiState.Loading
                     ChatAuthState.SignedOut -> {
                         activeCollection?.cancel()
+                        clearPendingMedia(recordRevision = true)
                         mutableUiState.value = ChatRouteUiState.SignedOut()
                     }
                     is ChatAuthState.SignedIn -> loadConversations()
@@ -123,15 +138,48 @@ class ChatViewModel(
         }
     }
 
+    fun selectGif(item: GifSearchItem, query: String) {
+        if (!canSelectMedia()) return
+        selectionRevision += 1
+        pendingMedia = ComposerMediaUiModel.Gif(GifUiModel.from(item.chatGif))
+        pendingGifQuery = query
+        persistPendingMedia()
+        publish()
+    }
+
+    fun selectSticker(sticker: StickerCatalogItem) {
+        if (!canSelectMedia() || !mediaCatalog.isKnownSticker(sticker.id)) return
+        selectionRevision += 1
+        pendingMedia = ComposerMediaUiModel.Sticker(sticker.toUiModel())
+        pendingGifQuery = ""
+        persistPendingMedia()
+        publish()
+    }
+
+    fun removePendingMedia() {
+        clearPendingMedia(recordRevision = true)
+        publish()
+    }
+
     fun sendMessage() {
         val conversation = activeConversation ?: return
         val state = chatState.conversations[conversation.conversationId] ?: return
         val body = state.composer.draft.trim()
-        if (body.isEmpty() || sending || state.realtime.status == RealtimeConnectionStatus.Disconnected) return
+        val selectedMedia = pendingMedia
+        if ((body.isEmpty() && selectedMedia == null) || sending ||
+            state.realtime.status == RealtimeConnectionStatus.Disconnected
+        ) return
+        val selectedGif = (selectedMedia as? ComposerMediaUiModel.Gif)?.value?.toChatGif()
+        val selectedStickerId = (selectedMedia as? ComposerMediaUiModel.Sticker)?.value?.id
         val failedRetry = state.messages.lastOrNull {
-            it.localStatus == LocalMessageStatus.Failed && it.body == body
+            it.localStatus == LocalMessageStatus.Failed &&
+                it.body == body &&
+                it.gif?.providerId == selectedGif?.providerId &&
+                it.stickerId == selectedStickerId
         }
         val requestId = failedRetry?.clientRequestId ?: UUID.randomUUID().toString()
+        val sentRevision = selectionRevision
+        val sentGifQuery = pendingGifQuery
         val optimistic = ChatMessage(
             id = failedRetry?.id ?: "local-$requestId",
             conversationId = conversation.conversationId,
@@ -139,10 +187,13 @@ class ChatViewModel(
             senderRole = conversation.currentUserRole,
             senderDisplayName = conversation.currentUserDisplayName,
             body = body,
+            gif = selectedGif,
+            stickerId = selectedStickerId,
             clientRequestId = requestId,
             createdAt = Instant.now().toString(),
             localStatus = LocalMessageStatus.Sending,
         )
+        clearPendingMedia(recordRevision = false)
         chatState = applyChatEvents(
             chatState,
             listOf(
@@ -156,7 +207,7 @@ class ChatViewModel(
             repository.saveDraft(conversation.conversationId, "")
             when (val result = repository.sendMessage(
                 conversation.conversationId,
-                body,
+                OutgoingMessageContent(body, selectedGif, selectedStickerId),
                 requestId,
             )) {
                 is ChatResult.Success -> {
@@ -165,6 +216,9 @@ class ChatViewModel(
                         ChatEvent.ConfirmSentMessage(result.value, requestId),
                     )
                     latestNotice = null
+                    selectedGif?.let { gif ->
+                        viewModelScope.launch { gifRepository.registerShare(gif, sentGifQuery) }
+                    }
                 }
                 is ChatResult.Failure -> {
                     chatState = reduceChatState(
@@ -175,10 +229,69 @@ class ChatViewModel(
                             result.message,
                         ),
                     )
+                    if (selectionRevision == sentRevision && pendingMedia == null) {
+                        pendingMedia = selectedMedia
+                        pendingGifQuery = sentGifQuery
+                        persistPendingMedia()
+                    }
                     latestNotice = result.message
                 }
             }
             sending = false
+            publish()
+        }
+    }
+
+    fun retryMessage(messageId: String) {
+        val conversation = activeConversation ?: return
+        val state = chatState.conversations[conversation.conversationId] ?: return
+        val failed = state.messages.firstOrNull {
+            it.id == messageId && it.localStatus == LocalMessageStatus.Failed
+        } ?: return
+        if (sending || state.realtime.status == RealtimeConnectionStatus.Disconnected) return
+        sending = true
+        chatState = reduceChatState(chatState, ChatEvent.SendOptimisticMessage(failed))
+        publish()
+        viewModelScope.launch {
+            val content = OutgoingMessageContent(failed.body, failed.gif, failed.stickerId)
+            when (val result = repository.sendMessage(
+                conversation.conversationId,
+                content,
+                failed.clientRequestId,
+            )) {
+                is ChatResult.Success -> {
+                    chatState = reduceChatState(
+                        chatState,
+                        ChatEvent.ConfirmSentMessage(result.value, failed.clientRequestId),
+                    )
+                    latestNotice = null
+                    failed.gif?.let { gif ->
+                        viewModelScope.launch { gifRepository.registerShare(gif) }
+                    }
+                }
+                is ChatResult.Failure -> {
+                    chatState = reduceChatState(
+                        chatState,
+                        ChatEvent.MarkMessageFailed(
+                            conversation.conversationId,
+                            failed.clientRequestId,
+                            result.message,
+                        ),
+                    )
+                    latestNotice = result.message
+                }
+            }
+            sending = false
+            publish()
+        }
+    }
+
+    fun reportGif(messageId: String) {
+        viewModelScope.launch {
+            latestNotice = when (val result = repository.reportGif(messageId)) {
+                is ChatResult.Success -> "GIF reported. Thank you."
+                is ChatResult.Failure -> result.message
+            }
             publish()
         }
     }
@@ -246,6 +359,12 @@ class ChatViewModel(
     }
 
     private fun openConversation(conversation: AuthorizedConversation) {
+        val previousConversationId = activeConversation?.conversationId
+        if (previousConversationId != null && previousConversationId != conversation.conversationId) {
+            clearPendingMedia(recordRevision = true)
+        } else if (previousConversationId == null) {
+            restorePendingMedia(conversation.conversationId)
+        }
         activeCollection?.cancel()
         readMarkJob?.cancel()
         showingConversationList = false
@@ -255,6 +374,8 @@ class ChatViewModel(
         mutableUiState.value = ChatRouteUiState.Conversation(
             model = baseModel(conversation).copy(screenState = ChatScreenState.Loading),
             draft = "",
+            pendingMedia = pendingMedia,
+            pendingGifQuery = pendingGifQuery,
         )
         activeCollection = viewModelScope.launch {
             launch {
@@ -419,6 +540,8 @@ class ChatViewModel(
         mutableUiState.value = ChatRouteUiState.Conversation(
             model = model,
             draft = current?.composer?.draft.orEmpty(),
+            pendingMedia = pendingMedia,
+            pendingGifQuery = pendingGifQuery,
             notice = latestNotice,
         )
     }
@@ -440,7 +563,10 @@ class ChatViewModel(
         conversation: AuthorizedConversation,
         readStates: List<com.fish.android.data.chat.model.ChatReadState>,
     ): List<MessageUiModel> {
-        val messages = this.orEmpty().filter { it.body.isNotBlank() || it.deletedAt != null }
+        val messages = this.orEmpty().filter {
+            it.body.isNotBlank() || it.gif != null || it.gifUnavailable ||
+                it.stickerId != null || it.deletedAt != null
+        }
         if (messages.isEmpty()) return emptyList()
         val participantRead = readStates.firstOrNull { it.userId == conversation.participantId }
         val currentRead = readStates.firstOrNull { it.userId == conversation.currentUserId }
@@ -461,7 +587,9 @@ class ChatViewModel(
                 body = message.body,
                 timeLabel = formatter.timeLabel(message.createdAt),
                 isOutgoing = outgoing,
-                delivery = if (outgoing && message.id == latestOutgoingId) {
+                delivery = if (outgoing && message.localStatus == LocalMessageStatus.Failed) {
+                    MessageDeliveryUiState.Failed
+                } else if (outgoing && message.id == latestOutgoingId) {
                     when (message.localStatus) {
                         LocalMessageStatus.Sending,
                         LocalMessageStatus.Pending,
@@ -487,6 +615,9 @@ class ChatViewModel(
                 },
                 startsUnread = message.id == oldestUnreadId,
                 deleted = message.deletedAt != null,
+                gif = message.gif?.let(GifUiModel::from),
+                gifUnavailable = message.gifUnavailable,
+                sticker = message.stickerId?.let(::stickerUiModel),
             )
         }
     }
@@ -515,9 +646,86 @@ class ChatViewModel(
         mutableUiState.value = state.transform()
     }
 
+    private fun canSelectMedia(): Boolean {
+        val conversation = activeConversation ?: return false
+        return chatState.conversations[conversation.conversationId]?.realtime?.status !=
+            RealtimeConnectionStatus.Disconnected
+    }
+
+    private fun StickerCatalogItem.toUiModel(): StickerUiModel = StickerUiModel(
+        id = id,
+        phrase = phrase,
+        description = description,
+        assetPath = assetPath,
+    )
+
+    private fun stickerUiModel(stickerId: String): StickerUiModel =
+        mediaCatalog.sticker(stickerId)?.toUiModel() ?: StickerUiModel(
+            id = stickerId,
+            phrase = "Sticker unavailable",
+            description = "Sticker unavailable",
+            assetPath = null,
+        )
+
+    private fun clearPendingMedia(recordRevision: Boolean) {
+        if (recordRevision) selectionRevision += 1
+        pendingMedia = null
+        pendingGifQuery = ""
+        savedStateHandle.remove<String>(PendingConversationKey)
+        savedStateHandle.remove<String>(PendingMediaKindKey)
+        savedStateHandle.remove<String>(PendingMediaValueKey)
+        savedStateHandle.remove<String>(PendingGifQueryKey)
+    }
+
+    private fun persistPendingMedia() {
+        val conversationId = activeConversation?.conversationId ?: return
+        savedStateHandle[PendingConversationKey] = conversationId
+        savedStateHandle[PendingGifQueryKey] = pendingGifQuery
+        when (val media = pendingMedia) {
+            is ComposerMediaUiModel.Gif -> {
+                savedStateHandle[PendingMediaKindKey] = "gif"
+                savedStateHandle[PendingMediaValueKey] = mediaJson.encodeToString(media.value.toChatGif())
+            }
+            is ComposerMediaUiModel.Sticker -> {
+                savedStateHandle[PendingMediaKindKey] = "sticker"
+                savedStateHandle[PendingMediaValueKey] = media.value.id
+            }
+            null -> Unit
+        }
+    }
+
+    private fun restorePendingMedia(conversationId: String) {
+        if (savedStateHandle.get<String>(PendingConversationKey) != conversationId) {
+            clearPendingMedia(recordRevision = false)
+            return
+        }
+        pendingGifQuery = savedStateHandle.get<String>(PendingGifQueryKey).orEmpty()
+        val value = savedStateHandle.get<String>(PendingMediaValueKey)
+        pendingMedia = when (savedStateHandle.get<String>(PendingMediaKindKey)) {
+            "gif" -> value?.let { encoded ->
+                runCatching { mediaJson.decodeFromString<ChatGif>(encoded) }.getOrNull()
+            }?.let { ComposerMediaUiModel.Gif(GifUiModel.from(it)) }
+            "sticker" -> value?.let(mediaCatalog::sticker)?.toUiModel()
+                ?.let { ComposerMediaUiModel.Sticker(it) }
+            else -> null
+        }
+    }
+
     private companion object {
         const val ActiveConversationKey = "active_conversation_id"
         const val DraftSaveDebounceMs = 300L
+        const val PendingConversationKey = "pending_media_conversation_id"
+        const val PendingMediaKindKey = "pending_media_kind"
+        const val PendingMediaValueKey = "pending_media_value"
+        const val PendingGifQueryKey = "pending_gif_query"
         val GroupingWindow: Duration = Duration.ofMinutes(5)
     }
+}
+
+private object NoOpGifRepository : GifRepository {
+    override val available: Boolean = false
+    override suspend fun trending(cursor: String?, limit: Int): GifPage = GifPage(emptyList(), null)
+    override suspend fun search(query: String, cursor: String?, limit: Int): GifPage =
+        GifPage(emptyList(), null)
+    override suspend fun registerShare(gif: ChatGif, query: String?) = Unit
 }

@@ -30,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.fish.android.core.designsystem.FishTheme
 import com.fish.android.core.designsystem.component.FishButton
 import com.fish.android.feature.chat.component.ConversationRow
@@ -46,6 +48,11 @@ fun ChatAdaptiveLayout(
     onBack: () -> Unit,
     onRetryEarlier: () -> Unit,
     onSelectConversation: (String) -> Unit,
+    pendingMedia: ComposerMediaUiModel? = null,
+    onOpenMediaPicker: () -> Unit = {},
+    onRemovePendingMedia: () -> Unit = {},
+    onRetryMessage: (String) -> Unit = {},
+    onReportGif: (String) -> Unit = {},
     onRetryConversation: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -78,6 +85,11 @@ fun ChatAdaptiveLayout(
                         onBack = onBack,
                         onRetryEarlier = onRetryEarlier,
                         onRetryConversation = onRetryConversation,
+                        pendingMedia = pendingMedia,
+                        onOpenMediaPicker = onOpenMediaPicker,
+                        onRemovePendingMedia = onRemovePendingMedia,
+                        onRetryMessage = onRetryMessage,
+                        onReportGif = onReportGif,
                         modifier = Modifier
                             .fillMaxHeight()
                             .widthIn(max = FishTheme.sizes.chatContentMax),
@@ -96,6 +108,11 @@ fun ChatAdaptiveLayout(
                     onBack = onBack,
                     onRetryEarlier = onRetryEarlier,
                     onRetryConversation = onRetryConversation,
+                    pendingMedia = pendingMedia,
+                    onOpenMediaPicker = onOpenMediaPicker,
+                    onRemovePendingMedia = onRemovePendingMedia,
+                    onRetryMessage = onRetryMessage,
+                    onReportGif = onReportGif,
                     modifier = Modifier
                         .fillMaxSize()
                         .widthIn(max = FishTheme.sizes.chatContentMax),
@@ -113,6 +130,11 @@ fun ChatScreen(
     onBack: () -> Unit,
     onRetryEarlier: () -> Unit,
     onRetryConversation: () -> Unit = {},
+    pendingMedia: ComposerMediaUiModel? = null,
+    onOpenMediaPicker: () -> Unit = {},
+    onRemovePendingMedia: () -> Unit = {},
+    onRetryMessage: (String) -> Unit = {},
+    onReportGif: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -165,12 +187,17 @@ fun ChatScreen(
                     pagination = model.pagination,
                     typingParticipantName = model.typingParticipantName,
                     onRetryEarlier = onRetryEarlier,
+                    onRetryMessage = onRetryMessage,
+                    onReportGif = onReportGif,
                     modifier = Modifier.weight(1f),
                 )
                 FishDivider()
                 MessageComposer(
                     state = composerState,
                     onSend = onSend,
+                    pendingMedia = pendingMedia,
+                    onOpenMediaPicker = onOpenMediaPicker,
+                    onRemovePendingMedia = onRemovePendingMedia,
                     editable = true,
                     sendEnabled = model.connection != ChatConnectionUiState.Offline,
                     sending = model.isSending,
@@ -189,6 +216,8 @@ fun ChatTranscript(
     pagination: OlderMessagesUiState,
     typingParticipantName: String?,
     onRetryEarlier: () -> Unit,
+    onRetryMessage: (String) -> Unit = {},
+    onReportGif: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     if (messages.isEmpty() && pagination == OlderMessagesUiState.Idle) {
@@ -203,6 +232,8 @@ fun ChatTranscript(
 
     val listState = rememberLazyListState()
     var previousLastMessageId by remember { mutableStateOf<String?>(null) }
+    var playingGifId by remember { mutableStateOf<String?>(null) }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { playingGifId = null }
     val lastMessageId = messages.lastOrNull()?.id
     LaunchedEffect(lastMessageId) {
         val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
@@ -214,6 +245,9 @@ fun ChatTranscript(
             listState.scrollToItem(messages.lastIndex + 1)
         }
         previousLastMessageId = lastMessageId
+    }
+    LaunchedEffect(messages.map(MessageUiModel::id)) {
+        if (playingGifId !in messages.map(MessageUiModel::id)) playingGifId = null
     }
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -238,7 +272,12 @@ fun ChatTranscript(
                 UnreadMessageDivider()
             }
             MessageBubble(
-                message = message,
+                message = message.copy(gifPlaying = message.id == playingGifId),
+                onToggleGif = {
+                    playingGifId = if (playingGifId == message.id) null else message.id
+                },
+                onReportGif = { onReportGif(message.id) },
+                onRetry = { onRetryMessage(message.id) },
                 modifier = Modifier.padding(
                     bottom = if (message.groupedWithNext) {
                         FishTheme.spacing.nudge

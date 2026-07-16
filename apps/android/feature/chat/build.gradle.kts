@@ -9,6 +9,12 @@ android {
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     sourceSets {
+        getByName("main").assets.directories.addAll(
+            listOf(
+                "../../../../packages/core/src/chat-media",
+                "../../../web/public/stickers",
+            ),
+        )
         getByName("test").resources.directories.add(
             "../../../../packages/core/src/chat-state/fixtures",
         )
@@ -25,6 +31,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.emoji2.emojipicker)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.gif)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit4)

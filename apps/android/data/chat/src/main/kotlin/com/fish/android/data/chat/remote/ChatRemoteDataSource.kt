@@ -7,6 +7,7 @@ import com.fish.android.data.chat.AuthorizedConversation
 import com.fish.android.data.chat.ChatAuthState
 import com.fish.android.data.chat.ChatRealtimeEvent
 import com.fish.android.data.chat.MessagePage
+import com.fish.android.data.chat.OutgoingMessageContent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -23,9 +24,10 @@ internal interface ChatRemoteDataSource {
     suspend fun loadReadStates(conversationId: String): List<ChatReadState>
     suspend fun sendMessage(
         conversation: AuthorizedConversation,
-        body: String,
+        content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatMessage
+    suspend fun reportGif(messageId: String)
     suspend fun markRead(
         conversationId: String,
         lastDeliveredMessageId: String?,

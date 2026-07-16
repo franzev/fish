@@ -12,6 +12,12 @@ import com.fish.android.data.chat.ChatRepository
 import com.fish.android.data.chat.ChatResult
 import com.fish.android.data.chat.ConversationSnapshot
 import com.fish.android.data.chat.MessagePage
+import com.fish.android.data.chat.OutgoingMessageContent
+import com.fish.android.data.chat.GifRepository
+import com.fish.android.data.chat.GifPage
+import com.fish.android.data.chat.GifSearchItem
+import com.fish.android.data.chat.model.ChatGif
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -80,6 +86,88 @@ class ChatViewModelTest {
         assertEquals("", retried.draft)
         assertEquals(MessageDeliveryUiState.Sent, retried.model.messages.single().delivery)
     }
+
+    @Test
+    fun `sends sticker-only content and replaces a pending GIF`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val gifs = RecordingGifRepository()
+            val catalog = mediaCatalog()
+            val viewModel = ChatViewModel(
+                repository,
+                SavedStateHandle(),
+                TestFormatter,
+                gifs,
+                catalog,
+            )
+            advanceUntilIdle()
+
+            viewModel.selectGif(gifItem(), "fish!")
+            viewModel.selectSticker(catalog.stickers.first())
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            assertEquals("", repository.lastSentContent?.normalizedBody)
+            assertEquals("sticker-1", repository.lastSentContent?.stickerId)
+            assertEquals(null, repository.lastSentContent?.gif)
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(null, state.pendingMedia)
+            assertEquals("sticker-1", state.model.messages.single().sticker?.id)
+        }
+
+    @Test
+    fun `registers a GIF share after confirmation and reports without confirmation UI`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val gifs = RecordingGifRepository()
+            val viewModel = ChatViewModel(
+                repository,
+                SavedStateHandle(),
+                TestFormatter,
+                gifs,
+                mediaCatalog(),
+            )
+            advanceUntilIdle()
+
+            viewModel.selectGif(gifItem(), "fish!")
+            viewModel.sendMessage()
+            advanceUntilIdle()
+            viewModel.reportGif("message-1")
+            advanceUntilIdle()
+
+            assertEquals(listOf("gif-1" to "fish!"), gifs.shares)
+            assertEquals(1, repository.reportCalls)
+            assertEquals(
+                "GIF reported. Thank you.",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).notice,
+            )
+        }
+
+    @Test
+    fun `failed send does not restore media over a newer selection`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(sendFails = true)
+            repository.sendGate = CompletableDeferred()
+            val catalog = mediaCatalog()
+            val viewModel = ChatViewModel(
+                repository,
+                SavedStateHandle(),
+                TestFormatter,
+                RecordingGifRepository(),
+                catalog,
+            )
+            advanceUntilIdle()
+
+            viewModel.selectSticker(catalog.stickers[0])
+            viewModel.sendMessage()
+            viewModel.selectSticker(catalog.stickers[1])
+            repository.sendGate?.complete(Unit)
+            advanceUntilIdle()
+
+            val pending = (viewModel.uiState.value as ChatRouteUiState.Conversation).pendingMedia
+                as ComposerMediaUiModel.Sticker
+            assertEquals("sticker-2", pending.value.id)
+        }
 
     @Test
     fun `conversation list remains open while background chat state changes`() =
@@ -263,6 +351,9 @@ private class FakeChatRepository(
     var sendCalls: Int = 0
     var readFails: Boolean = false
     var markReadCalls: Int = 0
+    var lastSentContent: OutgoingMessageContent? = null
+    var reportCalls: Int = 0
+    var sendGate: CompletableDeferred<Unit>? = null
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> = messages
     override fun observeReadStates(conversationId: String): Flow<List<ChatReadState>> = readStates
@@ -284,10 +375,12 @@ private class FakeChatRepository(
         ChatResult.Success(MessagePage(emptyList(), false, null))
     override suspend fun sendMessage(
         conversationId: String,
-        body: String,
+        content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatResult<ChatMessage> {
         sendCalls += 1
+        lastSentContent = content
+        sendGate?.await()
         return if (sendFails) {
         ChatResult.Failure(
             "That did not send yet. Keep this open and try again.",
@@ -301,12 +394,18 @@ private class FakeChatRepository(
                 conversationId = conversationId,
                 senderId = conversation.currentUserId,
                 senderRole = conversation.currentUserRole,
-                body = body,
+                body = content.normalizedBody,
+                gif = content.gif,
+                stickerId = content.stickerId,
                 clientRequestId = clientRequestId,
                 createdAt = "2026-07-16T00:00:00Z",
             ),
         )
         }
+    }
+    override suspend fun reportGif(messageId: String): ChatResult<Unit> {
+        reportCalls += 1
+        return ChatResult.Success(Unit)
     }
     override suspend fun markRead(
         conversationId: String,
@@ -336,6 +435,56 @@ private class FakeChatRepository(
         messages.value = value
     }
 }
+
+private class RecordingGifRepository : GifRepository {
+    override val available: Boolean = true
+    val shares = mutableListOf<Pair<String, String?>>()
+    override suspend fun trending(cursor: String?, limit: Int) = GifPage(emptyList(), null)
+    override suspend fun search(query: String, cursor: String?, limit: Int) = GifPage(emptyList(), null)
+    override suspend fun registerShare(gif: ChatGif, query: String?) {
+        shares += gif.providerId to query
+    }
+}
+
+private fun gifItem() = GifSearchItem(
+    chatGif = ChatGif(
+        provider = "klipy",
+        providerId = "gif-1",
+        title = "Fish",
+        description = "A fish nodding",
+        sourceUrl = "https://klipy.com/gifs/gif-1",
+        posterUrl = "https://static.klipy.com/poster.gif",
+        previewUrl = "https://static.klipy.com/preview.mp4",
+        mediaUrl = "https://static.klipy.com/media.mp4",
+        width = 480,
+        height = 360,
+    ),
+    animatedPreviewUrl = "https://static.klipy.com/tiny.gif",
+)
+
+private fun mediaCatalog() = ChatMediaCatalog(
+    emojiGroups = emptyList(),
+    stickers = listOf(
+        StickerCatalogItem(
+            id = "sticker-1",
+            phrase = "Hello",
+            animal = "otter",
+            description = "An otter waving",
+            sourcePath = "/stickers/aquatic/hello.webp",
+            styles = listOf("cute"),
+            keywords = listOf("hello"),
+        ),
+        StickerCatalogItem(
+            id = "sticker-2",
+            phrase = "Thanks",
+            animal = "octopus",
+            description = "An octopus saying thanks",
+            sourcePath = "/stickers/aquatic/thanks.webp",
+            styles = listOf("cute"),
+            keywords = listOf("thanks"),
+        ),
+    ),
+)
 
 private object TestFormatter : ChatTextFormatter {
     override val missingSignInCredentials = "Add your email and password to sign in."

@@ -21,6 +21,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -41,10 +45,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 fun ChatRoute(
     viewModel: ChatViewModel,
+    mediaPickerViewModel: MediaPickerViewModel,
+    mediaCatalog: ChatMediaCatalog,
     modifier: Modifier = Modifier,
 ) {
     val routeState by viewModel.uiState.collectAsStateWithLifecycle()
+    val mediaPickerState by mediaPickerViewModel.uiState.collectAsStateWithLifecycle()
     val composerState = rememberTextFieldState()
+    var mediaPickerVisible by remember { mutableStateOf(false) }
 
     when (val state = routeState) {
         ChatRouteUiState.Loading -> ChatAdaptiveLayout(
@@ -77,8 +85,21 @@ fun ChatRoute(
                 onRetryConversation = viewModel::retryConversation,
                 onRetryEarlier = viewModel::loadEarlier,
                 onSelectConversation = viewModel::selectConversation,
+                pendingMedia = state.pendingMedia,
+                onOpenMediaPicker = { mediaPickerVisible = true },
+                onRemovePendingMedia = viewModel::removePendingMedia,
+                onRetryMessage = viewModel::retryMessage,
+                onReportGif = viewModel::reportGif,
                 modifier = modifier,
             )
+            LaunchedEffect(state.model.selectedConversationId, state.pendingGifQuery) {
+                mediaPickerViewModel.restoreGifQuery(state.pendingGifQuery)
+            }
+            LaunchedEffect(state.model.connection) {
+                mediaPickerViewModel.setOnline(
+                    state.model.connection != ChatConnectionUiState.Offline,
+                )
+            }
         }
         is ChatRouteUiState.ConversationList -> ConversationListScreen(
             conversations = state.conversations,
@@ -86,6 +107,35 @@ fun ChatRoute(
             notice = state.notice,
             onSelectConversation = viewModel::selectConversation,
             modifier = modifier,
+        )
+    }
+
+    if (mediaPickerVisible && routeState is ChatRouteUiState.Conversation) {
+        ChatMediaPickerSheet(
+            state = mediaPickerState,
+            onDismiss = { mediaPickerVisible = false },
+            onTabSelected = mediaPickerViewModel::selectTab,
+            onQueryChanged = mediaPickerViewModel::updateQuery,
+            onEmojiSelected = { emoji ->
+                composerState.edit {
+                    val start = selection.min
+                    val end = selection.max
+                    replace(start, end, emoji)
+                    selection = TextRange(start + emoji.length)
+                }
+                mediaPickerVisible = false
+            },
+            onGifSelected = { gif ->
+                viewModel.selectGif(gif, mediaPickerState.gifQuery)
+                mediaPickerVisible = false
+            },
+            onStickerSelected = { sticker ->
+                viewModel.selectSticker(sticker)
+                mediaPickerVisible = false
+            },
+            onRetryGifs = mediaPickerViewModel::retryGifs,
+            onLoadMoreGifs = mediaPickerViewModel::loadMoreGifs,
+            onToggleGifAnimations = mediaPickerViewModel::toggleGifAnimations,
         )
     }
 }

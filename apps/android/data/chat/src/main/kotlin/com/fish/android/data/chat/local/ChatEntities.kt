@@ -33,6 +33,8 @@ data class MessageEntity(
     @ColumnInfo(name = "sender_role") val senderRole: String,
     @ColumnInfo(name = "sender_display_name") val senderDisplayName: String?,
     val body: String,
+    @ColumnInfo(name = "sticker_id") val stickerId: String? = null,
+    @ColumnInfo(name = "gif_json") val gifJson: String? = null,
     @ColumnInfo(name = "client_request_id") val clientRequestId: String,
     @ColumnInfo(name = "created_at") val createdAt: String,
     @ColumnInfo(name = "edited_at") val editedAt: String?,

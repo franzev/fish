@@ -10,6 +10,14 @@ val supabasePublishableKey = providers.environmentVariable("SUPABASE_PUBLISHABLE
     .orElse(providers.environmentVariable("FISH_SUPABASE_PUBLISHABLE_KEY"))
     .orElse(providers.gradleProperty("FISH_SUPABASE_PUBLISHABLE_KEY"))
     .getOrElse("")
+val klipyApiKey = providers.environmentVariable("FISH_ANDROID_KLIPY_API_KEY")
+    .orElse(providers.environmentVariable("NEXT_PUBLIC_KLIPY_API_KEY"))
+    .orElse(providers.gradleProperty("FISH_ANDROID_KLIPY_API_KEY"))
+    .getOrElse("")
+val klipyClientKey = providers.environmentVariable("FISH_ANDROID_KLIPY_CLIENT_KEY")
+    .orElse(providers.environmentVariable("NEXT_PUBLIC_KLIPY_CLIENT_KEY"))
+    .orElse(providers.gradleProperty("FISH_ANDROID_KLIPY_CLIENT_KEY"))
+    .getOrElse("fish_chat_android")
 val releaseStorePath = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PATH")
     .orElse(providers.gradleProperty("FISH_ANDROID_KEYSTORE_PATH"))
 val releaseStorePassword = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PASSWORD")
@@ -60,6 +68,8 @@ android {
             "SUPABASE_PUBLISHABLE_KEY",
             supabasePublishableKey.asBuildConfigString(),
         )
+        buildConfigField("String", "KLIPY_API_KEY", klipyApiKey.asBuildConfigString())
+        buildConfigField("String", "KLIPY_CLIENT_KEY", klipyClientKey.asBuildConfigString())
     }
 
     buildTypes {

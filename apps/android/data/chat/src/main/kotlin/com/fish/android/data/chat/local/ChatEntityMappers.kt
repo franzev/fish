@@ -4,7 +4,16 @@ import com.fish.android.data.chat.model.ChatMessage
 import com.fish.android.data.chat.model.ChatReadState
 import com.fish.android.data.chat.model.LocalMessageStatus
 import com.fish.android.data.chat.model.UserRole
+import com.fish.android.data.chat.model.ChatGif
 import com.fish.android.data.chat.AuthorizedConversation
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+private val mediaJson = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+    encodeDefaults = true
+}
 
 internal fun MessageEntity.toDomain(): ChatMessage = ChatMessage(
     id = id,
@@ -13,6 +22,11 @@ internal fun MessageEntity.toDomain(): ChatMessage = ChatMessage(
     senderRole = senderRole.toUserRole(),
     senderDisplayName = senderDisplayName,
     body = body,
+    gif = gifJson?.takeUnless { it == UnavailableGifJson }?.let { encoded ->
+        runCatching { mediaJson.decodeFromString<ChatGif>(encoded) }.getOrNull()
+    },
+    gifUnavailable = gifJson == UnavailableGifJson,
+    stickerId = stickerId,
     clientRequestId = clientRequestId,
     createdAt = createdAt,
     editedAt = editedAt,
@@ -29,6 +43,9 @@ internal fun ChatMessage.toEntity(): MessageEntity = MessageEntity(
     senderRole = senderRole.wireValue,
     senderDisplayName = senderDisplayName,
     body = body,
+    stickerId = stickerId,
+    gifJson = gif?.let { mediaJson.encodeToString(it) }
+        ?: UnavailableGifJson.takeIf { gifUnavailable },
     clientRequestId = clientRequestId,
     createdAt = createdAt,
     editedAt = editedAt,
@@ -100,3 +117,5 @@ private fun String.toLocalStatus(): LocalMessageStatus = when (this) {
     "failed" -> LocalMessageStatus.Failed
     else -> LocalMessageStatus.Sent
 }
+
+private const val UnavailableGifJson = "{\"unavailable\":true}"

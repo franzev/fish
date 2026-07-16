@@ -81,6 +81,48 @@ object FishIcons {
             lineTo(12f, 16.01f)
         }
     }
+
+    val AddMedia: ImageVector by lazy {
+        fishIcon("AddMedia") {
+            moveTo(12f, 3f)
+            curveTo(17f, 3f, 21f, 7f, 21f, 12f)
+            curveTo(21f, 17f, 17f, 21f, 12f, 21f)
+            curveTo(7f, 21f, 3f, 17f, 3f, 12f)
+            curveTo(3f, 7f, 7f, 3f, 12f, 3f)
+            close()
+            moveTo(12f, 8f)
+            lineTo(12f, 16f)
+            moveTo(8f, 12f)
+            lineTo(16f, 12f)
+        }
+    }
+
+    val Close: ImageVector by lazy {
+        fishIcon("Close") {
+            moveTo(6f, 6f)
+            lineTo(18f, 18f)
+            moveTo(18f, 6f)
+            lineTo(6f, 18f)
+        }
+    }
+
+    val Play: ImageVector by lazy {
+        fishIcon("Play") {
+            moveTo(8f, 5f)
+            lineTo(19f, 12f)
+            lineTo(8f, 19f)
+            close()
+        }
+    }
+
+    val Pause: ImageVector by lazy {
+        fishIcon("Pause") {
+            moveTo(9f, 5f)
+            lineTo(9f, 19f)
+            moveTo(15f, 5f)
+            lineTo(15f, 19f)
+        }
+    }
 }
 
 private fun fishIcon(

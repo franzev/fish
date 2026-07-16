@@ -29,6 +29,13 @@ fun mergeChatMessage(
     val merged = incoming.copy(
         senderDisplayName = incoming.senderDisplayName ?: existing.senderDisplayName,
         images = incoming.images.ifEmpty { existing.images },
+        gif = incoming.gif ?: existing.gif,
+        gifUnavailable = when {
+            incoming.gif != null -> false
+            incoming.gifUnavailable -> true
+            else -> existing.gifUnavailable
+        },
+        stickerId = incoming.stickerId ?: existing.stickerId,
     )
     if (existing == merged) return current
 
@@ -100,6 +107,7 @@ fun messageSnippet(message: ChatMessage): String {
     val body = message.body.trim()
     if (body.isEmpty() && message.stickerId != null) return "Sticker"
     if (body.isEmpty() && message.gif != null) return "GIF"
+    if (body.isEmpty() && message.gifUnavailable) return "GIF"
     if (body.isEmpty() && message.images.isNotEmpty()) {
         if (message.images.size == 1) {
             return if (message.images.first().kind == "file") "File" else "Image"

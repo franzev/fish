@@ -1,6 +1,7 @@
 package com.fish.android.feature.chat
 
 import androidx.compose.runtime.Immutable
+import com.fish.android.data.chat.model.ChatGif
 
 @Immutable
 data class ChatUiModel(
@@ -48,7 +49,72 @@ data class MessageUiModel(
     val dateLabel: String? = null,
     val startsUnread: Boolean = false,
     val deleted: Boolean = false,
+    val gif: GifUiModel? = null,
+    val sticker: StickerUiModel? = null,
+    val gifPlaying: Boolean = false,
+    val gifUnavailable: Boolean = false,
 )
+
+@Immutable
+data class GifUiModel(
+    val provider: String,
+    val providerId: String,
+    val title: String,
+    val description: String,
+    val sourceUrl: String,
+    val posterUrl: String,
+    val previewUrl: String,
+    val mediaUrl: String,
+    val width: Int,
+    val height: Int,
+) {
+    fun toChatGif(): ChatGif = ChatGif(
+        provider = provider,
+        providerId = providerId,
+        title = title,
+        description = description,
+        sourceUrl = sourceUrl,
+        posterUrl = posterUrl,
+        previewUrl = previewUrl,
+        mediaUrl = mediaUrl,
+        width = width,
+        height = height,
+    )
+
+    companion object {
+        fun from(gif: ChatGif): GifUiModel = GifUiModel(
+            provider = gif.provider,
+            providerId = gif.providerId,
+            title = gif.title,
+            description = gif.description,
+            sourceUrl = gif.sourceUrl,
+            posterUrl = gif.posterUrl,
+            previewUrl = gif.previewUrl,
+            mediaUrl = gif.mediaUrl,
+            width = gif.width,
+            height = gif.height,
+        )
+    }
+}
+
+@Immutable
+data class StickerUiModel(
+    val id: String,
+    val phrase: String,
+    val description: String,
+    val assetPath: String?,
+) {
+    val available: Boolean get() = assetPath != null
+}
+
+@Immutable
+sealed interface ComposerMediaUiModel {
+    @Immutable
+    data class Gif(val value: GifUiModel) : ComposerMediaUiModel
+
+    @Immutable
+    data class Sticker(val value: StickerUiModel) : ComposerMediaUiModel
+}
 
 enum class MessageDeliveryUiState { Sending, Sent, Delivered, Read, Failed }
 enum class ChatConnectionUiState { Connected, Connecting, Reconnecting, Offline }
@@ -65,6 +131,8 @@ sealed interface ChatRouteUiState {
     data class Conversation(
         val model: ChatUiModel,
         val draft: String,
+        val pendingMedia: ComposerMediaUiModel? = null,
+        val pendingGifQuery: String = "",
         val notice: String? = null,
     ) : ChatRouteUiState
     data class ConversationList(

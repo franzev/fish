@@ -65,6 +65,7 @@ data class ChatMessage(
     val senderDisplayName: String? = null,
     val body: String,
     val gif: ChatGif? = null,
+    val gifUnavailable: Boolean = false,
     val stickerId: String? = null,
     val images: List<ChatAttachment> = emptyList(),
     val clientRequestId: String,

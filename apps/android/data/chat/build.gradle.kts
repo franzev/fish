@@ -6,6 +6,10 @@ plugins {
 
 android {
     namespace = "com.fish.android.data.chat"
+
+    sourceSets {
+        getByName("androidTest").assets.directories.add("schemas")
+    }
 }
 
 ksp {
@@ -20,6 +24,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.datastore.preferences)
     ksp(libs.androidx.room.compiler)
 
     implementation(platform(libs.supabase.bom))

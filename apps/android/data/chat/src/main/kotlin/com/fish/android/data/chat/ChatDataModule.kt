@@ -16,6 +16,7 @@ import com.fish.android.data.chat.model.ChatReadState
 import com.fish.android.data.chat.AuthorizedConversation
 import com.fish.android.data.chat.remote.SupabaseChatRemoteDataSource
 import com.fish.android.data.chat.local.ChatDatabase
+import com.fish.android.data.chat.local.MIGRATION_1_2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,20 +26,32 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 
 object ChatDataModule {
+    data class Dependencies(
+        val chatRepository: ChatRepository,
+        val gifRepository: GifRepository,
+    )
+
     fun create(
         context: Context,
         supabaseUrl: String,
         publishableKey: String,
-    ): ChatRepository {
+        klipyApiKey: String,
+        klipyClientKey: String,
+    ): Dependencies {
+        val gifRepository = KlipyGifRepository(
+            apiKey = klipyApiKey,
+            clientKey = klipyClientKey,
+            customerIdStore = DataStoreGifCustomerIdStore(context),
+        )
         if (supabaseUrl.isBlank() || publishableKey.isBlank()) {
-            return UnconfiguredChatRepository
+            return Dependencies(UnconfiguredChatRepository, gifRepository)
         }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val database = Room.databaseBuilder(
             context.applicationContext,
             ChatDatabase::class.java,
             "fish-personal-chat.db",
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
         val remote = SupabaseChatRemoteDataSource(supabaseUrl, publishableKey, scope)
         val networkMonitor = AndroidNetworkMonitor(context.applicationContext, scope)
         val diagnostics = if (
@@ -48,11 +61,14 @@ object ChatDataModule {
         } else {
             NoOpChatDiagnostics
         }
-        return DefaultChatRepository(
-            remote,
-            database.chatDao(),
-            diagnostics = diagnostics,
-            networkMonitor = networkMonitor,
+        return Dependencies(
+            chatRepository = DefaultChatRepository(
+                remote,
+                database.chatDao(),
+                diagnostics = diagnostics,
+                networkMonitor = networkMonitor,
+            ),
+            gifRepository = gifRepository,
         )
     }
 }
@@ -75,7 +91,12 @@ private object UnconfiguredChatRepository : ChatRepository {
     override suspend fun listAuthorizedConversations(): ChatResult<List<AuthorizedConversation>> = failure
     override suspend fun syncNewest(conversationId: String): ChatResult<ConversationSnapshot> = failure
     override suspend fun loadOlder(conversationId: String, cursor: ChatMessageCursor): ChatResult<MessagePage> = failure
-    override suspend fun sendMessage(conversationId: String, body: String, clientRequestId: String): ChatResult<ChatMessage> = failure
+    override suspend fun sendMessage(
+        conversationId: String,
+        content: OutgoingMessageContent,
+        clientRequestId: String,
+    ): ChatResult<ChatMessage> = failure
+    override suspend fun reportGif(messageId: String): ChatResult<Unit> = failure
     override suspend fun markRead(
         conversationId: String,
         lastDeliveredMessageId: String?,

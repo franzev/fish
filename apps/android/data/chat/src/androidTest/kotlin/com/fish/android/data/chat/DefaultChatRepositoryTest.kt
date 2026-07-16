@@ -9,6 +9,7 @@ import com.fish.android.data.chat.model.ChatMessageCursor
 import com.fish.android.data.chat.model.ChatReadState
 import com.fish.android.data.chat.model.LocalMessageStatus
 import com.fish.android.data.chat.model.UserRole
+import com.fish.android.data.chat.model.ChatGif
 import com.fish.android.data.chat.AuthorizedConversation
 import com.fish.android.data.chat.ChatAuthState
 import com.fish.android.data.chat.ChatRealtimeEvent
@@ -70,17 +71,53 @@ class DefaultChatRepositoryTest {
         database.chatDao().upsertConversation(remote.conversation.toEntity())
         remote.failSend = true
 
-        val failed = repository.sendMessage("conversation-1", "Practice sentence", "request-1")
+        val failed = repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent("Practice sentence"),
+            "request-1",
+        )
         assertTrue(failed is ChatResult.Failure)
 
         remote.failSend = false
-        val sent = repository.sendMessage("conversation-1", "Practice sentence", "request-1")
+        val sent = repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent("Practice sentence"),
+            "request-1",
+        )
         assertTrue(sent is ChatResult.Success)
 
         val messages = repository.observeMessages("conversation-1").first()
         assertEquals(1, messages.size)
         assertEquals("server-message", messages.single().id)
         assertEquals(LocalMessageStatus.Sent, messages.single().localStatus)
+    }
+
+    @Test
+    fun bodylessGifSurvivesBareSendAcknowledgement() = runTest {
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        val gif = ChatGif(
+            provider = "klipy",
+            providerId = "gif-1",
+            title = "Fish",
+            description = "A fish nodding",
+            sourceUrl = "https://klipy.com/gifs/gif-1",
+            posterUrl = "https://static.klipy.com/poster.gif",
+            previewUrl = "https://static.klipy.com/preview.mp4",
+            mediaUrl = "https://static.klipy.com/media.mp4",
+            width = 480,
+            height = 360,
+        )
+
+        val result = repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "", gif = gif),
+            "gif-request",
+        )
+
+        assertTrue(result is ChatResult.Success)
+        val cached = repository.observeMessages("conversation-1").first().single()
+        assertEquals("gif-1", cached.gif?.providerId)
+        assertEquals("", cached.body)
     }
 
     @Test
@@ -162,7 +199,7 @@ private class FakeRemote : ChatRemoteDataSource {
     override suspend fun loadReadStates(conversationId: String) = emptyList<ChatReadState>()
     override suspend fun sendMessage(
         conversation: AuthorizedConversation,
-        body: String,
+        content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatMessage {
         if (failSend) throw IOException("offline")
@@ -172,12 +209,13 @@ private class FakeRemote : ChatRemoteDataSource {
             senderId = conversation.currentUserId,
             senderRole = conversation.currentUserRole,
             senderDisplayName = conversation.currentUserDisplayName,
-            body = body,
+            body = content.normalizedBody,
             clientRequestId = clientRequestId,
             createdAt = "2026-07-16T00:00:00Z",
             localStatus = LocalMessageStatus.Sent,
         )
     }
+    override suspend fun reportGif(messageId: String) = Unit
     override suspend fun markRead(
         conversationId: String,
         lastDeliveredMessageId: String?,

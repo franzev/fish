@@ -3,6 +3,7 @@ package com.fish.android.data.chat
 import com.fish.android.data.chat.model.ChatMessage
 import com.fish.android.data.chat.model.ChatMessageCursor
 import com.fish.android.data.chat.model.ChatReadState
+import com.fish.android.data.chat.model.ChatGif
 import com.fish.android.data.chat.model.UserRole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +52,41 @@ data class MessagePage(
     val oldestCursor: ChatMessageCursor?,
 )
 
+data class OutgoingMessageContent(
+    val body: String,
+    val gif: ChatGif? = null,
+    val stickerId: String? = null,
+) {
+    init {
+        require(body.isNotBlank() || gif != null || !stickerId.isNullOrBlank()) {
+            "Outgoing message content cannot be empty."
+        }
+        require(gif == null || stickerId == null) {
+            "A GIF and sticker cannot be sent together."
+        }
+    }
+
+    val normalizedBody: String get() = body.trim()
+}
+
+data class GifSearchItem(
+    val chatGif: ChatGif,
+    val animatedPreviewUrl: String,
+)
+
+data class GifPage(
+    val items: List<GifSearchItem>,
+    val nextCursor: String?,
+)
+
+interface GifRepository {
+    val available: Boolean
+
+    suspend fun trending(cursor: String? = null, limit: Int = 12): GifPage
+    suspend fun search(query: String, cursor: String? = null, limit: Int = 12): GifPage
+    suspend fun registerShare(gif: ChatGif, query: String? = null)
+}
+
 sealed interface ChatRealtimeEvent {
     data object Connecting : ChatRealtimeEvent
     data object Connected : ChatRealtimeEvent
@@ -78,9 +114,10 @@ interface ChatRepository {
     ): ChatResult<MessagePage>
     suspend fun sendMessage(
         conversationId: String,
-        body: String,
+        content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatResult<ChatMessage>
+    suspend fun reportGif(messageId: String): ChatResult<Unit>
     suspend fun markRead(
         conversationId: String,
         lastDeliveredMessageId: String?,

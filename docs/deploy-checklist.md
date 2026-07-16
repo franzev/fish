@@ -87,6 +87,11 @@ is done.
       by the browser GIF picker. GIF search stays unavailable unless this is set.
 - [ ] `NEXT_PUBLIC_KLIPY_CLIENT_KEY` — the stable KLIPY client identifier for
       search and share analytics (use `fish_chat` unless the provider assigns another value).
+- [ ] Android release builds receive `FISH_ANDROID_KLIPY_API_KEY` and
+      `FISH_ANDROID_KLIPY_CLIENT_KEY` as environment variables or Gradle
+      properties. The Android-specific names take precedence; the
+      `NEXT_PUBLIC_KLIPY_*` values remain supported fallbacks. These are public
+      provider keys only—never place a Supabase service-role key in an APK.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` — required only in trusted administrative
       environments that run seed or verification scripts. The production web
       runtime does not require it. Never give it a `NEXT_PUBLIC_` prefix,

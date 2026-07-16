@@ -1,5 +1,6 @@
 package com.fish.android.data.chat.remote
 
+import com.fish.android.data.chat.model.ChatGif
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -29,6 +30,7 @@ internal data class MessageDto(
     @SerialName("sender_id") val senderId: String,
     @SerialName("sender_role") val senderRole: String,
     val body: String,
+    @SerialName("sticker_id") val stickerId: String? = null,
     @SerialName("client_request_id") val clientRequestId: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("edited_at") val editedAt: String? = null,
@@ -51,6 +53,23 @@ internal data class SendMessageRequest(
     val conversationId: String,
     val body: String,
     val clientRequestId: String,
+    val gif: ChatGif? = null,
+    val stickerId: String? = null,
+)
+
+@Serializable
+internal data class MessageGifDto(
+    @SerialName("message_id") val messageId: String,
+    val provider: String,
+    @SerialName("provider_content_id") val providerId: String,
+    val title: String,
+    val description: String,
+    @SerialName("source_url") val sourceUrl: String,
+    @SerialName("poster_url") val posterUrl: String,
+    @SerialName("preview_url") val previewUrl: String,
+    @SerialName("media_url") val mediaUrl: String,
+    val width: Int,
+    val height: Int,
 )
 
 @Serializable
@@ -59,4 +78,10 @@ internal data class MarkReadRequest(
     val conversationId: String,
     val lastDeliveredMessageId: String?,
     val lastReadMessageId: String?,
+)
+
+@Serializable
+internal data class ReportGifRequest(
+    val action: String = "report-gif",
+    val messageId: String,
 )
