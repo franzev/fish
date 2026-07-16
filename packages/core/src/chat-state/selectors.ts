@@ -45,6 +45,12 @@ export function mergeChatMessage<T extends ChatMessageState>(
     images: (incoming.images?.length ?? 0) > 0
       ? incoming.images
       : existing.images,
+    // The send RPC and command acknowledgements return the base messages row.
+    // Joined GIF metadata is therefore absent even though the media is still
+    // persisted. Preserve optimistic/enriched media until hydration supplies
+    // another joined value.
+    gif: incoming.gif ?? existing.gif,
+    stickerId: incoming.stickerId ?? existing.stickerId,
   };
   if (areChatMessagesEqual(existing, merged)) {
     return current;
@@ -91,8 +97,28 @@ function areChatMessagesEqual(
     (left.localStatus ?? null) === (right.localStatus ?? null) &&
     (left.failureReason ?? null) === (right.failureReason ?? null) &&
     (left.stickerId ?? null) === (right.stickerId ?? null) &&
+    areGifsEqual(left.gif, right.gif) &&
     areReactionsEqual(left.reactions ?? [], right.reactions ?? []) &&
     areImagesEqual(left.images ?? [], right.images ?? [])
+  );
+}
+
+function areGifsEqual(
+  left: ChatMessageState["gif"],
+  right: ChatMessageState["gif"]
+): boolean {
+  if (!left || !right) return left === right;
+  return (
+    left.provider === right.provider &&
+    left.providerId === right.providerId &&
+    left.title === right.title &&
+    left.description === right.description &&
+    left.sourceUrl === right.sourceUrl &&
+    left.posterUrl === right.posterUrl &&
+    left.previewUrl === right.previewUrl &&
+    left.mediaUrl === right.mediaUrl &&
+    left.width === right.width &&
+    left.height === right.height
   );
 }
 

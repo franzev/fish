@@ -1,0 +1,65 @@
+[
+  {
+    "name": "gifAcknowledgementPreservesJoinedMedia",
+    "existing": {
+      "id": "local-gif-request",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "This one",
+      "gif": {
+        "provider": "klipy",
+        "providerId": "gif-42",
+        "title": "Happy fish",
+        "description": "A happy fish nodding",
+        "sourceUrl": "https://klipy.com/gifs/gif-42",
+        "posterUrl": "https://static.klipy.com/poster.gif",
+        "previewUrl": "https://static.klipy.com/preview.mp4",
+        "mediaUrl": "https://static.klipy.com/media.mp4",
+        "width": 480,
+        "height": 360
+      },
+      "clientRequestId": "gif-request",
+      "createdAt": "2026-07-16T00:00:00Z",
+      "localStatus": "sending"
+    },
+    "incoming": {
+      "id": "message-gif",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "This one",
+      "clientRequestId": "gif-request",
+      "createdAt": "2026-07-16T00:00:01Z",
+      "localStatus": "sent"
+    },
+    "expectedGifProviderId": "gif-42",
+    "expectedStickerId": null
+  },
+  {
+    "name": "stickerAcknowledgementPreservesCatalogReference",
+    "existing": {
+      "id": "local-sticker-request",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "",
+      "stickerId": "aquatic-hello-otter",
+      "clientRequestId": "sticker-request",
+      "createdAt": "2026-07-16T00:01:00Z",
+      "localStatus": "sending"
+    },
+    "incoming": {
+      "id": "message-sticker",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "",
+      "clientRequestId": "sticker-request",
+      "createdAt": "2026-07-16T00:01:01Z",
+      "localStatus": "sent"
+    },
+    "expectedGifProviderId": null,
+    "expectedStickerId": "aquatic-hello-otter"
+  }
+]

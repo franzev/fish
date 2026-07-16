@@ -16,6 +16,8 @@
     "android:check": "pnpm android:verify-design && scripts/android-gradle.sh check assembleRelease :feature:chat:validateDebugScreenshotTest",
     "android:tokens": "node scripts/generate-android-design-tokens.mjs",
     "android:verify-design": "node scripts/verify-android-design-system.mjs",
+    "chat-media:verify": "node scripts/verify-chat-media-catalogs.mjs",
+    "chat-media:generate": "node scripts/generate-chat-media-catalogs.mjs",
     "ios:tokens": "node design/tokens/generate-ios-tokens.mjs",
     "ios:tokens:check": "node design/tokens/generate-ios-tokens.mjs --check",
     "ios:tokens:test": "node --test design/tokens/generate-ios-tokens.test.mjs",
