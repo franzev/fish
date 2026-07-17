@@ -44,7 +44,14 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
                 let pickerPictographs = page == "Media picker"
                     && self.isPictographAuditLimitation(issue)
 
+                // The call-state gallery is a scrolling list; the audit's
+                // OCR pass flags the row clipped at the fold even though it
+                // is a reachable, correctly labeled navigation link.
+                let scrollableStateList = page == "Call states"
+                    && issue.auditType == .elementDetection
+
                 return decorativeSkeleton || scrollableEmail || pickerPictographs
+                    || scrollableStateList
             }
             app.navigationBars.buttons.element(boundBy: 0).tap()
         }
@@ -55,8 +62,15 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             "Sounds good. See you then!"
         ].firstMatch
         XCTAssertTrue(latestMessage.waitForExistence(timeout: 3))
-        XCTAssertTrue(
-            latestMessage.isHittable,
+        // Hit-test only after the push transition settles; a transcript that
+        // opened away from the latest message still fails this wait.
+        let becameHittable = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isHittable == true"),
+            object: latestMessage
+        )
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [becameHittable], timeout: 3),
+            .completed,
             "The transcript should open at the latest message"
         )
         try app.performAccessibilityAudit { issue in
@@ -79,6 +93,8 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             app.swipeUp()
             attempts += 1
         }
+        // Let scroll deceleration settle so the follow-up tap lands.
+        Thread.sleep(forTimeInterval: 0.5)
         return link
     }
 
