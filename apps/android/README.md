@@ -61,6 +61,8 @@ and `FishButton`. Feature types and internal implementation types use their
 domain names, such as `ChatScreen`, `ChatViewModel`, and `ChatDatabase`.
 Gradle plugin IDs and the application class retain the project identity where
 global uniqueness or manifest clarity is useful.
+Design-system source files use concise descriptive names such as `Theme.kt`
+and `Button.kt`; their exported declarations retain the branded prefix.
 
 The rationale and implementation records are in
 `../../docs/android-personal-chat-foundation-plan.md`,
