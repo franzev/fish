@@ -11,6 +11,8 @@
     "./chat-state/fixtures/chat-media-merge-vectors.json": "./src/chat-state/fixtures/chat-media-merge-vectors.json",
     "./chat-state": "./src/chat-state/index.ts",
     "./call-state": "./src/call-state/index.ts",
+    "./call-state/fixtures/call-state-vectors.json": "./src/call-state/fixtures/call-state-vectors.json",
+    "./call-state/fixtures/call-state-vectors.extended.json": "./src/call-state/fixtures/call-state-vectors.extended.json",
     "./notification-state": "./src/notification-state/index.ts",
     "./notification-state/fixtures/notification-state-vectors.json": "./src/notification-state/fixtures/notification-state-vectors.json",
     "./presence": "./src/presence/index.ts",
