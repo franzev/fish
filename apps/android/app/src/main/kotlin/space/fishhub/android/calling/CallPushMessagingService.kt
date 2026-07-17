@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 // Current FCM FID mode replaces the deprecated onNewToken callback with
 // onRegistered/onUnregistered. Android lint still checks the legacy contract.
 @SuppressLint("MissingFirebaseInstanceTokenRefresh")
-class FishFirebaseMessagingService : FirebaseMessagingService() {
+class CallPushMessagingService : FirebaseMessagingService() {
     override fun onRegistered(installationId: String) {
         val app = application as FishApplication
         app.callScope.launch {

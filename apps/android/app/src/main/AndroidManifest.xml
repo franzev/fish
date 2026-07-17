@@ -42,7 +42,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".calling.FishFirebaseMessagingService"
+            android:name=".calling.CallPushMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

@@ -11,7 +11,7 @@ import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-object FishSupabase {
+object SupabaseClientFactory {
     fun create(url: String, publishableKey: String): SupabaseClient? {
         if (url.isBlank() || publishableKey.isBlank()) return null
 

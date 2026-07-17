@@ -2,7 +2,7 @@ package space.fishhub.android
 
 import android.app.Application
 import space.fishhub.android.calling.AndroidCallSystemGateway
-import space.fishhub.android.core.supabase.FishSupabase
+import space.fishhub.android.core.supabase.SupabaseClientFactory
 import space.fishhub.android.data.call.CallDataModule
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatDataModule
@@ -18,7 +18,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 
 class FishApplication : Application() {
     private val supabaseClient by lazy {
-        FishSupabase.create(
+        SupabaseClientFactory.create(
             url = BuildConfig.SUPABASE_URL,
             publishableKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY,
         )
