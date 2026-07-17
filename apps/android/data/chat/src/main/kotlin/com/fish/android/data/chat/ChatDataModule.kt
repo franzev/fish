@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
+import io.github.jan.supabase.SupabaseClient
 
 object ChatDataModule {
     data class Dependencies(
@@ -33,17 +34,17 @@ object ChatDataModule {
 
     fun create(
         context: Context,
-        supabaseUrl: String,
-        publishableKey: String,
+        supabaseClient: SupabaseClient?,
         klipyApiKey: String,
         klipyClientKey: String,
+        onBeforeSignOut: suspend () -> Unit = {},
     ): Dependencies {
         val gifRepository = KlipyGifRepository(
             apiKey = klipyApiKey,
             clientKey = klipyClientKey,
             customerIdStore = DataStoreGifCustomerIdStore(context),
         )
-        if (supabaseUrl.isBlank() || publishableKey.isBlank()) {
+        if (supabaseClient == null) {
             return Dependencies(UnconfiguredChatRepository, gifRepository)
         }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -52,7 +53,7 @@ object ChatDataModule {
             ChatDatabase::class.java,
             "fish-personal-chat.db",
         ).addMigrations(MIGRATION_1_2).build()
-        val remote = SupabaseChatRemoteDataSource(supabaseUrl, publishableKey, scope)
+        val remote = SupabaseChatRemoteDataSource(supabaseClient, scope, onBeforeSignOut)
         val networkMonitor = AndroidNetworkMonitor(context.applicationContext, scope)
         val diagnostics = if (
             context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
@@ -88,7 +89,7 @@ private object UnconfiguredChatRepository : ChatRepository {
         flowOf(ChatRealtimeEvent.Disconnected)
     override suspend fun signIn(email: String, password: String): ChatResult<Unit> = failure
     override suspend fun signOut() = Unit
-    override suspend fun listAuthorizedConversations(): ChatResult<List<AuthorizedConversation>> = failure
+    override suspend fun listAuthorizedConversations(): ChatResult<AuthorizedChatDirectory> = failure
     override suspend fun syncNewest(conversationId: String): ChatResult<ConversationSnapshot> = failure
     override suspend fun loadOlder(conversationId: String, cursor: ChatMessageCursor): ChatResult<MessagePage> = failure
     override suspend fun sendMessage(

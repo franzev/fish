@@ -129,20 +129,32 @@ internal class DefaultChatRepository(
         dao.clearAllUserData()
     }
 
-    override suspend fun listAuthorizedConversations(): ChatResult<List<AuthorizedConversation>> {
+    override suspend fun listAuthorizedConversations(): ChatResult<AuthorizedChatDirectory> {
         val remoteResult = resultOf(
             ChatOperation.ListConversations,
             "Could not load your conversations. Try again.",
         ) {
-            remote.listAuthorizedConversations().also { conversations ->
-                conversations.forEach { dao.upsertConversation(it.toEntity()) }
+            remote.listAuthorizedConversations().also { directory ->
+                directory.conversations.forEach { dao.upsertConversation(it.toEntity()) }
             }
         }
         if (remoteResult is ChatResult.Success) return remoteResult
 
         val userId = (authState.value as? ChatAuthState.SignedIn)?.userId
         val cached = userId?.let { dao.conversations(it).map { row -> row.toDomain() } }.orEmpty()
-        return if (cached.isNotEmpty()) ChatResult.Success(cached) else remoteResult
+        return if (cached.isNotEmpty()) {
+            val first = cached.first()
+            ChatResult.Success(
+                AuthorizedChatDirectory(
+                    currentUser = AuthorizedChatIdentity(
+                        first.currentUserId,
+                        first.currentUserRole,
+                        first.currentUserDisplayName,
+                    ),
+                    conversations = cached,
+                ),
+            )
+        } else remoteResult
     }
 
     override suspend fun syncNewest(conversationId: String): ChatResult<ConversationSnapshot> =
@@ -150,7 +162,7 @@ internal class DefaultChatRepository(
             ChatOperation.SyncNewest,
             "Could not refresh this conversation. Your saved messages are still here.",
         ) {
-            val conversation = remote.listAuthorizedConversations()
+            val conversation = remote.listAuthorizedConversations().conversations
                 .firstOrNull { it.conversationId == conversationId }
                 ?: throw ConversationUnavailableException()
             val page = remote.loadMessages(conversation)
@@ -256,7 +268,7 @@ internal class DefaultChatRepository(
     private suspend fun reconnectBackfill(conversation: AuthorizedConversation) {
         val started = TimeSource.Monotonic.markNow()
         try {
-            val refreshedConversation = remote.listAuthorizedConversations()
+            val refreshedConversation = remote.listAuthorizedConversations().conversations
                 .firstOrNull { it.conversationId == conversation.conversationId }
             if (refreshedConversation == null) {
                 dao.deleteConversationData(conversation.conversationId)

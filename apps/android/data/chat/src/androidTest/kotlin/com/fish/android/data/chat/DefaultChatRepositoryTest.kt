@@ -62,8 +62,9 @@ class DefaultChatRepositoryTest {
         assertTrue(result is ChatResult.Success)
         assertEquals(
             remote.conversation.conversationId,
-            (result as ChatResult.Success).value.single().conversationId,
+            (result as ChatResult.Success).value.conversations.single().conversationId,
         )
+        assertEquals("Franz", result.value.currentUser.displayName)
     }
 
     @Test
@@ -188,9 +189,16 @@ private class FakeRemote : ChatRemoteDataSource {
 
     override suspend fun signIn(email: String, password: String) = Unit
     override suspend fun signOut() = Unit
-    override suspend fun listAuthorizedConversations(): List<AuthorizedConversation> {
+    override suspend fun listAuthorizedConversations(): AuthorizedChatDirectory {
         if (failConversationList) throw IOException("offline")
-        return if (authorized) listOf(conversation) else emptyList()
+        return AuthorizedChatDirectory(
+            currentUser = AuthorizedChatIdentity(
+                conversation.currentUserId,
+                conversation.currentUserRole,
+                conversation.currentUserDisplayName,
+            ),
+            conversations = if (authorized) listOf(conversation) else emptyList(),
+        )
     }
     override suspend fun loadMessages(
         conversation: AuthorizedConversation,

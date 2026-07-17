@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import com.fish.android.core.designsystem.FishTheme
 
-enum class FishIconButtonVariant { Quiet, Filled }
+enum class FishIconButtonVariant { Quiet, Filled, Critical }
 
 @Composable
 fun FishIconButton(
@@ -36,6 +36,12 @@ fun FishIconButton(
         FishIconButtonVariant.Quiet -> IconButtonDefaults.iconButtonColors(
             containerColor = if (selected) FishTheme.colors.selected else Color.Transparent,
             contentColor = FishTheme.colors.body,
+            disabledContentColor = FishTheme.colors.muted,
+        )
+        FishIconButtonVariant.Critical -> IconButtonDefaults.filledIconButtonColors(
+            containerColor = FishTheme.colors.error,
+            contentColor = FishTheme.colors.onPrimary,
+            disabledContainerColor = FishTheme.colors.interactiveActive,
             disabledContentColor = FishTheme.colors.muted,
         )
     }

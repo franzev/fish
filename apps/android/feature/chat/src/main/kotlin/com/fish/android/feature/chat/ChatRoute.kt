@@ -40,19 +40,50 @@ import com.fish.android.core.designsystem.component.FishButton
 import com.fish.android.core.designsystem.component.FishEmptyState
 import com.fish.android.core.designsystem.component.FishNotice
 import com.fish.android.core.designsystem.component.FishTextField
+import com.fish.android.feature.presence.PresenceAccountSheet
+import com.fish.android.feature.presence.PresenceAccountTrigger
+import com.fish.android.feature.presence.PresenceViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ChatRoute(
     viewModel: ChatViewModel,
     mediaPickerViewModel: MediaPickerViewModel,
+    presenceViewModel: PresenceViewModel,
     mediaCatalog: ChatMediaCatalog,
+    onStartAudioCall: (ParticipantUiModel) -> Unit = {},
+    onStartVideoCall: (ParticipantUiModel) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val routeState by viewModel.uiState.collectAsStateWithLifecycle()
     val mediaPickerState by mediaPickerViewModel.uiState.collectAsStateWithLifecycle()
+    val presenceState by presenceViewModel.uiState.collectAsStateWithLifecycle()
     val composerState = rememberTextFieldState()
     var mediaPickerVisible by remember { mutableStateOf(false) }
+    var accountSheetVisible by remember { mutableStateOf(false) }
+    val currentUserDisplayName = when (val state = routeState) {
+        is ChatRouteUiState.Conversation -> state.model.currentUserDisplayName
+        is ChatRouteUiState.ConversationList -> state.currentUserDisplayName
+        else -> ""
+    }
+    val accountContent: (@Composable () -> Unit)? = currentUserDisplayName
+        .takeIf(String::isNotBlank)
+        ?.let { displayName ->
+            {
+                PresenceAccountTrigger(
+                    displayName = displayName,
+                    presence = presenceState.own,
+                    onClick = { accountSheetVisible = true },
+                )
+            }
+        }
+
+    LaunchedEffect(presenceViewModel) {
+        presenceViewModel.preferenceConfirmed.collectLatest {
+            accountSheetVisible = false
+        }
+    }
 
     when (val state = routeState) {
         ChatRouteUiState.Loading -> ChatAdaptiveLayout(
@@ -90,6 +121,10 @@ fun ChatRoute(
                 onRemovePendingMedia = viewModel::removePendingMedia,
                 onRetryMessage = viewModel::retryMessage,
                 onReportGif = viewModel::reportGif,
+                onStartAudioCall = onStartAudioCall,
+                onStartVideoCall = onStartVideoCall,
+                participantPresence = presenceState.presentationFor(state.model.participant?.id),
+                accountContent = accountContent,
                 modifier = modifier,
             )
             LaunchedEffect(state.model.selectedConversationId, state.pendingGifQuery) {
@@ -102,10 +137,12 @@ fun ChatRoute(
             }
         }
         is ChatRouteUiState.ConversationList -> ConversationListScreen(
+            currentUserDisplayName = state.currentUserDisplayName,
             conversations = state.conversations,
             selectedConversationId = state.selectedConversationId,
             notice = state.notice,
             onSelectConversation = viewModel::selectConversation,
+            accountContent = accountContent,
             modifier = modifier,
         )
     }
@@ -136,6 +173,20 @@ fun ChatRoute(
             onRetryGifs = mediaPickerViewModel::retryGifs,
             onLoadMoreGifs = mediaPickerViewModel::loadMoreGifs,
             onToggleGifAnimations = mediaPickerViewModel::toggleGifAnimations,
+        )
+    }
+
+    if (accountSheetVisible && currentUserDisplayName.isNotBlank()) {
+        PresenceAccountSheet(
+            displayName = currentUserDisplayName,
+            state = presenceState,
+            onDismiss = { accountSheetVisible = false },
+            onSetPreference = presenceViewModel::setPreference,
+            onSignOut = {
+                accountSheetVisible = false
+                viewModel.signOut()
+            },
+            onClearNotice = presenceViewModel::clearNotice,
         )
     }
 }

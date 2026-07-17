@@ -39,6 +39,8 @@ import com.fish.android.core.designsystem.component.FishDivider
 import com.fish.android.core.designsystem.component.FishEmptyState
 import com.fish.android.core.designsystem.component.FishSkeleton
 import com.fish.android.core.designsystem.component.FishNotice
+import com.fish.android.core.designsystem.component.FishTopBar
+import com.fish.android.feature.presence.PresencePresentation
 
 @Composable
 fun ChatAdaptiveLayout(
@@ -54,6 +56,10 @@ fun ChatAdaptiveLayout(
     onRetryMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
     onRetryConversation: () -> Unit = {},
+    onStartAudioCall: (ParticipantUiModel) -> Unit = {},
+    onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    participantPresence: PresencePresentation = PresencePresentation(),
+    accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
@@ -90,6 +96,10 @@ fun ChatAdaptiveLayout(
                         onRemovePendingMedia = onRemovePendingMedia,
                         onRetryMessage = onRetryMessage,
                         onReportGif = onReportGif,
+                        onStartAudioCall = onStartAudioCall,
+                        onStartVideoCall = onStartVideoCall,
+                        participantPresence = participantPresence,
+                        accountContent = accountContent,
                         modifier = Modifier
                             .fillMaxHeight()
                             .widthIn(max = FishTheme.sizes.chatContentMax),
@@ -113,6 +123,10 @@ fun ChatAdaptiveLayout(
                     onRemovePendingMedia = onRemovePendingMedia,
                     onRetryMessage = onRetryMessage,
                     onReportGif = onReportGif,
+                    onStartAudioCall = onStartAudioCall,
+                    onStartVideoCall = onStartVideoCall,
+                    participantPresence = participantPresence,
+                    accountContent = accountContent,
                     modifier = Modifier
                         .fillMaxSize()
                         .widthIn(max = FishTheme.sizes.chatContentMax),
@@ -135,6 +149,10 @@ fun ChatScreen(
     onRemovePendingMedia: () -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
+    onStartAudioCall: (ParticipantUiModel) -> Unit = {},
+    onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    participantPresence: PresencePresentation = PresencePresentation(),
+    accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -148,20 +166,31 @@ fun ChatScreen(
                     .fillMaxSize()
                     .statusBarsPadding(),
             )
-            ChatScreenState.Unavailable -> ChatUnavailable(
-                hasBack = model.hasPreviousDestination,
-                onBack = onBack,
-                onRetry = onRetryConversation,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding(),
-            )
+            ChatScreenState.Unavailable -> {
+                if (accountContent != null) {
+                    FishTopBar(
+                        title = stringResource(R.string.personal_messages),
+                        modifier = Modifier.statusBarsPadding(),
+                        trailingContent = accountContent,
+                    )
+                }
+                ChatUnavailable(
+                    hasBack = model.hasPreviousDestination,
+                    onBack = onBack,
+                    onRetry = onRetryConversation,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             ChatScreenState.Available -> {
                 val participant = checkNotNull(model.participant)
                 ChatTopBar(
                     participant = participant,
+                    presence = participantPresence,
                     showBack = model.hasPreviousDestination,
                     onBack = onBack,
+                    onStartAudioCall = onStartAudioCall,
+                    onStartVideoCall = onStartVideoCall,
+                    accountContent = accountContent,
                     modifier = Modifier.statusBarsPadding(),
                 )
                 if (model.connection != ChatConnectionUiState.Connected) {
@@ -337,10 +366,12 @@ private fun ConversationRail(
 
 @Composable
 fun ConversationListScreen(
+    currentUserDisplayName: String,
     conversations: List<ConversationPreviewUiModel>,
     selectedConversationId: String?,
     notice: String?,
     onSelectConversation: (String) -> Unit,
+    accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -357,11 +388,15 @@ fun ConversationListScreen(
                 .navigationBarsPadding()
                 .padding(FishTheme.spacing.page),
         ) {
-            Text(
-                text = stringResource(R.string.personal_messages),
-                color = FishTheme.colors.foreground,
-                style = FishTheme.typography.heading,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.personal_messages),
+                    modifier = Modifier.weight(1f),
+                    color = FishTheme.colors.foreground,
+                    style = FishTheme.typography.heading,
+                )
+                accountContent?.invoke()
+            }
             Text(
                 text = stringResource(R.string.conversation_list_description),
                 modifier = Modifier.padding(top = FishTheme.spacing.xs),

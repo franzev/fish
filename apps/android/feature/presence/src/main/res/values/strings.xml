@@ -1,0 +1,22 @@
+<resources>
+    <string name="presence_account">Account</string>
+    <string name="presence_status">Status</string>
+    <string name="presence_duration_title">For how long?</string>
+    <string name="presence_updating">Updating status…</string>
+    <string name="presence_reconnecting">Status is reconnecting. Your chat is still here.</string>
+    <string name="presence_sign_out">Sign out</string>
+    <string name="presence_automatic">Automatic</string>
+    <string name="presence_automatic_explanation">Online while you are using FISH.</string>
+    <string name="presence_away">Away</string>
+    <string name="presence_away_explanation">Let people know you may reply later.</string>
+    <string name="presence_busy">Do not disturb</string>
+    <string name="presence_busy_explanation">Let people know you need quiet.</string>
+    <string name="presence_invisible">Invisible</string>
+    <string name="presence_invisible_explanation">Appear offline to everyone else.</string>
+    <string name="presence_duration_fifteen_minutes">15 minutes</string>
+    <string name="presence_duration_one_hour">1 hour</string>
+    <string name="presence_duration_eight_hours">8 hours</string>
+    <string name="presence_duration_one_day">24 hours</string>
+    <string name="presence_duration_three_days">3 days</string>
+    <string name="presence_duration_forever">Forever</string>
+</resources>

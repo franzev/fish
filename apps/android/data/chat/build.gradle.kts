@@ -18,6 +18,7 @@ ksp {
 
 dependencies {
     api(libs.kotlinx.coroutines.core)
+    implementation(project(":core:supabase"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
@@ -25,14 +26,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.datastore.preferences)
-    ksp(libs.androidx.room.compiler)
-
-    implementation(platform(libs.supabase.bom))
-    implementation(libs.supabase.auth)
-    implementation(libs.supabase.postgrest)
-    implementation(libs.supabase.functions)
-    implementation(libs.supabase.realtime)
     implementation(libs.ktor.client.okhttp)
+    ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.room.testing)

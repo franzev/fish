@@ -43,7 +43,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import com.fish.android.core.designsystem.FishIcons
 import com.fish.android.core.designsystem.FishTheme
-import com.fish.android.core.designsystem.component.FishAvatar
 import com.fish.android.core.designsystem.component.FishButton
 import com.fish.android.core.designsystem.component.FishButtonVariant
 import com.fish.android.core.designsystem.component.FishDivider
@@ -54,6 +53,8 @@ import com.fish.android.core.designsystem.component.FishIconButton
 import com.fish.android.core.designsystem.component.FishIconButtonVariant
 import com.fish.android.core.designsystem.component.FishStateTextField
 import com.fish.android.core.designsystem.component.FishTopBar
+import com.fish.android.feature.presence.PresenceAvatar
+import com.fish.android.feature.presence.PresencePresentation
 
 private const val MessageLimit = 4_000
 private const val CounterThreshold = 3_600
@@ -61,17 +62,42 @@ private const val CounterThreshold = 3_600
 @Composable
 fun ChatTopBar(
     participant: ParticipantUiModel,
+    presence: PresencePresentation,
     showBack: Boolean,
     onBack: () -> Unit,
+    onStartAudioCall: (ParticipantUiModel) -> Unit = {},
+    onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     FishTopBar(
         title = participant.displayName,
-        subtitle = participant.contextLabel,
+        subtitle = presence.label,
         modifier = modifier,
         showBack = showBack,
         onBack = onBack,
-        avatarName = participant.displayName,
+        leadingAvatar = {
+            PresenceAvatar(name = participant.displayName, presence = presence)
+        },
+        trailingContent = {
+            FishIconButton(
+                icon = FishIcons.Phone,
+                contentDescription = stringResource(
+                    R.string.voice_call_participant,
+                    participant.displayName,
+                ),
+                onClick = { onStartAudioCall(participant) },
+            )
+            FishIconButton(
+                icon = FishIcons.Video,
+                contentDescription = stringResource(
+                    R.string.video_call_participant,
+                    participant.displayName,
+                ),
+                onClick = { onStartVideoCall(participant) },
+            )
+            accountContent?.invoke()
+        },
     )
 }
 

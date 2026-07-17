@@ -43,6 +43,19 @@ class ChatViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
+    fun `current user identity survives an empty conversation directory`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(conversationCount = 0)
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(ChatScreenState.Unavailable, state.model.screenState)
+            assertEquals("Franz", state.model.currentUserDisplayName)
+        }
+
+    @Test
     fun `loads authorized conversation and preserves draft changes`() =
         runTest(mainDispatcherRule.dispatcher) {
         val repository = FakeChatRepository()
@@ -333,7 +346,7 @@ private class FakeChatRepository(
     private val drafts = MutableStateFlow("")
     val realtime = MutableStateFlow<ChatRealtimeEvent>(ChatRealtimeEvent.Connected)
     private val authorizedConversations = buildList {
-        add(conversation)
+        if (conversationCount > 0) add(conversation)
         if (conversationCount > 1) {
             add(
                 conversation.copy(
@@ -361,7 +374,16 @@ private class FakeChatRepository(
     override fun observeRealtime(conversationId: String): Flow<ChatRealtimeEvent> = realtime
     override suspend fun signIn(email: String, password: String): ChatResult<Unit> = ChatResult.Success(Unit)
     override suspend fun signOut() = Unit
-    override suspend fun listAuthorizedConversations() = ChatResult.Success(authorizedConversations)
+    override suspend fun listAuthorizedConversations() = ChatResult.Success(
+        com.fish.android.data.chat.AuthorizedChatDirectory(
+            currentUser = com.fish.android.data.chat.AuthorizedChatIdentity(
+                userId = "client-1",
+                role = com.fish.android.data.chat.model.UserRole.Client,
+                displayName = "Franz",
+            ),
+            conversations = authorizedConversations,
+        ),
+    )
     override suspend fun syncNewest(conversationId: String) = ChatResult.Success(
         ConversationSnapshot(
             authorizedConversations.first { it.conversationId == conversationId },

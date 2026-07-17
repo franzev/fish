@@ -6,6 +6,7 @@ import com.fish.android.data.chat.model.ChatGif
 @Immutable
 data class ChatUiModel(
     val screenState: ChatScreenState,
+    val currentUserDisplayName: String = "",
     val participant: ParticipantUiModel? = null,
     val messages: List<MessageUiModel> = emptyList(),
     val conversations: List<ConversationPreviewUiModel> = emptyList(),
@@ -136,6 +137,7 @@ sealed interface ChatRouteUiState {
         val notice: String? = null,
     ) : ChatRouteUiState
     data class ConversationList(
+        val currentUserDisplayName: String = "",
         val conversations: List<ConversationPreviewUiModel>,
         val selectedConversationId: String?,
         val notice: String? = null,

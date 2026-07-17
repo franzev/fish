@@ -7,32 +7,27 @@ import com.fish.android.data.chat.model.ChatReadState
 import com.fish.android.data.chat.model.LocalMessageStatus
 import com.fish.android.data.chat.model.UserRole
 import com.fish.android.data.chat.AuthorizedConversation
+import com.fish.android.data.chat.AuthorizedChatDirectory
+import com.fish.android.data.chat.AuthorizedChatIdentity
 import com.fish.android.data.chat.ChatAuthState
 import com.fish.android.data.chat.ChatRealtimeEvent
 import com.fish.android.data.chat.MessagePage
 import com.fish.android.data.chat.OutgoingMessageContent
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.functions.functions
-import io.github.jan.supabase.logging.LogLevel
-import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.HasRecord
 import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.decodeRecordOrNull
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
-import io.github.jan.supabase.serializer.KotlinXSerializer
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -48,41 +43,26 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URI
-import kotlin.time.Duration.Companion.seconds
 
 internal class SupabaseChatRemoteDataSource(
-    supabaseUrl: String,
-    publishableKey: String,
+    private val client: SupabaseClient,
     private val scope: CoroutineScope,
+    private val onBeforeSignOut: suspend () -> Unit = {},
 ) : ChatRemoteDataSource {
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
         encodeDefaults = true
     }
-    private val client: SupabaseClient = createSupabaseClient(supabaseUrl, publishableKey) {
-        defaultLogLevel = LogLevel.NONE
-        defaultSerializer = KotlinXSerializer(json)
-        install(Auth)
-        install(Postgrest) {
-            requireValidSession = true
-        }
-        install(Functions) {
-            requireValidSession = true
-        }
-        install(Realtime) {
-            requireValidSession = true
-            reconnectDelay = 5.seconds
-        }
-    }
+
 
     override val authState = client.auth.sessionStatus
         .map { status ->
@@ -107,10 +87,11 @@ internal class SupabaseChatRemoteDataSource(
     }
 
     override suspend fun signOut() {
+        onBeforeSignOut()
         client.auth.signOut()
     }
 
-    override suspend fun listAuthorizedConversations(): List<AuthorizedConversation> {
+    override suspend fun listAuthorizedConversations(): AuthorizedChatDirectory {
         val user = checkNotNull(client.auth.currentUserOrNull())
         val profile = client.from("profiles").select {
             filter { eq("id", user.id) }
@@ -118,8 +99,9 @@ internal class SupabaseChatRemoteDataSource(
         }.decodeSingle<ProfileDto>()
         val previews = client.postgrest.rpc("list_direct_conversation_previews")
             .decodeList<ConversationPreviewDto>()
-        return previews.mapNotNull { preview ->
-            val currentRole = profile.role.toRoleOrNull() ?: return@mapNotNull null
+        val currentRole = profile.role.toRoleOrNull()
+            ?: throw IllegalStateException("Unknown current user role")
+        val conversations = previews.mapNotNull { preview ->
             val participantRole = preview.participantRole.toRoleOrNull() ?: return@mapNotNull null
             AuthorizedConversation(
                 conversationId = preview.conversationId,
@@ -134,6 +116,14 @@ internal class SupabaseChatRemoteDataSource(
                 unreadCount = preview.unreadCount,
             )
         }
+        return AuthorizedChatDirectory(
+            currentUser = AuthorizedChatIdentity(
+                userId = profile.id,
+                role = currentRole,
+                displayName = profile.displayName,
+            ),
+            conversations = conversations,
+        )
     }
 
     override suspend fun loadMessages(

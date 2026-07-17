@@ -20,18 +20,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
@@ -48,6 +45,7 @@ import com.fish.android.core.designsystem.FishTheme
 import com.fish.android.core.designsystem.component.FishButton
 import com.fish.android.core.designsystem.component.FishButtonVariant
 import com.fish.android.core.designsystem.component.FishIconButton
+import com.fish.android.core.designsystem.component.FishModalBottomSheet
 import com.fish.android.core.designsystem.component.FishTextField
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -66,20 +64,8 @@ fun ChatMediaPickerSheet(
     onLoadMoreGifs: () -> Unit,
     onToggleGifAnimations: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // Material's Android dialog wrapper calculates luminance and currently
-    // requires an RGB color space. FISH tokens are authored in OKLCH/Oklab,
-    // so convert only at this platform boundary without changing the token.
-    val sheetContainer = FishTheme.colors.surface.convert(ColorSpaces.Srgb)
-    val sheetContent = FishTheme.colors.foreground.convert(ColorSpaces.Srgb)
-    val sheetScrim = FishTheme.colors.scrim.convert(ColorSpaces.Srgb)
-    ModalBottomSheet(
+    FishModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = sheetContainer,
-        contentColor = sheetContent,
-        scrimColor = sheetScrim,
-        dragHandle = null,
     ) {
         ChatMediaPickerContent(
             state = state,

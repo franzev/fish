@@ -78,4 +78,6 @@
     <string name="gif_unavailable_media">GIF unavailable</string>
     <string name="trending_gifs">Trending GIFs</string>
     <string name="gif_results">GIF results</string>
+    <string name="voice_call_participant">Voice call %1$s</string>
+    <string name="video_call_participant">Video call %1$s</string>
 </resources>

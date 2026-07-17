@@ -25,6 +25,7 @@ fun FishTopBar(
     showBack: Boolean = false,
     onBack: () -> Unit = {},
     avatarName: String? = null,
+    leadingAvatar: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
 ) {
     Column(
@@ -48,8 +49,12 @@ fun FishTopBar(
             } else {
                 Spacer(Modifier.width(FishTheme.spacing.sm))
             }
-            if (avatarName != null) {
-                FishAvatar(name = avatarName, size = FishTheme.sizes.avatarSmall)
+            if (leadingAvatar != null || avatarName != null) {
+                if (leadingAvatar != null) {
+                    leadingAvatar()
+                } else if (avatarName != null) {
+                    FishAvatar(name = avatarName, size = FishTheme.sizes.avatarSmall)
+                }
                 Spacer(Modifier.width(FishTheme.spacing.sm))
             }
             Column(modifier = Modifier.weight(1f)) {

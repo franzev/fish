@@ -18,6 +18,18 @@ val klipyClientKey = providers.environmentVariable("FISH_ANDROID_KLIPY_CLIENT_KE
     .orElse(providers.environmentVariable("NEXT_PUBLIC_KLIPY_CLIENT_KEY"))
     .orElse(providers.gradleProperty("FISH_ANDROID_KLIPY_CLIENT_KEY"))
     .getOrElse("fish_chat_android")
+val firebaseProjectId = providers.environmentVariable("FISH_FIREBASE_PROJECT_ID")
+    .orElse(providers.gradleProperty("FISH_FIREBASE_PROJECT_ID"))
+    .getOrElse("")
+val firebaseApplicationId = providers.environmentVariable("FISH_FIREBASE_APPLICATION_ID")
+    .orElse(providers.gradleProperty("FISH_FIREBASE_APPLICATION_ID"))
+    .getOrElse("")
+val firebaseApiKey = providers.environmentVariable("FISH_FIREBASE_API_KEY")
+    .orElse(providers.gradleProperty("FISH_FIREBASE_API_KEY"))
+    .getOrElse("")
+val firebaseSenderId = providers.environmentVariable("FISH_FIREBASE_SENDER_ID")
+    .orElse(providers.gradleProperty("FISH_FIREBASE_SENDER_ID"))
+    .getOrElse("")
 val releaseStorePath = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PATH")
     .orElse(providers.gradleProperty("FISH_ANDROID_KEYSTORE_PATH"))
 val releaseStorePassword = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PASSWORD")
@@ -70,11 +82,16 @@ android {
         )
         buildConfigField("String", "KLIPY_API_KEY", klipyApiKey.asBuildConfigString())
         buildConfigField("String", "KLIPY_CLIENT_KEY", klipyClientKey.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_PROJECT_ID", firebaseProjectId.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_APPLICATION_ID", firebaseApplicationId.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_API_KEY", firebaseApiKey.asBuildConfigString())
+        buildConfigField("String", "FIREBASE_SENDER_ID", firebaseSenderId.asBuildConfigString())
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -90,14 +107,24 @@ android {
 
 dependencies {
     implementation(project(":core:designsystem"))
+    implementation(project(":core:supabase"))
     implementation(project(":feature:chat"))
+    implementation(project(":feature:call"))
+    implementation(project(":feature:presence"))
     implementation(project(":data:chat"))
+    implementation(project(":data:call"))
+    implementation(project(":data:presence"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.core.telecom)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

@@ -38,6 +38,17 @@ data class AuthorizedConversation(
     val unreadCount: Int,
 )
 
+data class AuthorizedChatIdentity(
+    val userId: String,
+    val role: UserRole,
+    val displayName: String,
+)
+
+data class AuthorizedChatDirectory(
+    val currentUser: AuthorizedChatIdentity,
+    val conversations: List<AuthorizedConversation>,
+)
+
 data class ConversationSnapshot(
     val conversation: AuthorizedConversation,
     val messages: List<ChatMessage>,
@@ -106,7 +117,7 @@ interface ChatRepository {
 
     suspend fun signIn(email: String, password: String): ChatResult<Unit>
     suspend fun signOut()
-    suspend fun listAuthorizedConversations(): ChatResult<List<AuthorizedConversation>>
+    suspend fun listAuthorizedConversations(): ChatResult<AuthorizedChatDirectory>
     suspend fun syncNewest(conversationId: String): ChatResult<ConversationSnapshot>
     suspend fun loadOlder(
         conversationId: String,

@@ -3,6 +3,7 @@ agp = "9.2.1"
 compose-bom = "2026.06.01"
 compose-compiler = "2.3.10"
 activity-compose = "1.13.0"
+fragment = "1.8.9"
 androidx-core = "1.19.0"
 lifecycle = "2.11.0"
 material3 = "1.4.0"
@@ -23,10 +24,14 @@ datastore = "1.2.1"
 emoji2 = "1.6.0"
 coil = "3.5.0"
 media3 = "1.10.1"
+livekit = "2.27.0"
+core-telecom = "1.0.1"
+firebase-bom = "34.16.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
@@ -67,6 +72,11 @@ androidx-compose-ui-test-accessibility = { module = "androidx.compose.ui:ui-test
 screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot" }
 androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "benchmark" }
+androidx-core-telecom = { module = "androidx.core:core-telecom", version.ref = "core-telecom" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
+livekit-android = { module = "io.livekit:livekit-android", version.ref = "livekit" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FISH</string>
+    <string name="call_channel_name">Calls</string>
+    <string name="call_channel_description">Incoming and active FISH calls</string>
 </resources>

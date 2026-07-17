@@ -14,6 +14,7 @@ import com.fish.android.feature.chat.state.outgoingMessageStatus
 import com.fish.android.feature.chat.state.reduceChatState
 import com.fish.android.feature.chat.state.unreadMessageSummary
 import com.fish.android.data.chat.AuthorizedConversation
+import com.fish.android.data.chat.AuthorizedChatIdentity
 import com.fish.android.data.chat.ChatAuthState
 import com.fish.android.data.chat.ChatRealtimeEvent
 import com.fish.android.data.chat.ChatRepository
@@ -50,6 +51,7 @@ class ChatViewModel(
 
     private var chatState = ChatState()
     private var conversations: List<AuthorizedConversation> = emptyList()
+    private var currentUser: AuthorizedChatIdentity? = null
     private var activeConversation: AuthorizedConversation? = null
     private var activeCollection: Job? = null
     private var draftSave: Job? = null
@@ -71,6 +73,8 @@ class ChatViewModel(
                     ChatAuthState.Loading -> mutableUiState.value = ChatRouteUiState.Loading
                     ChatAuthState.SignedOut -> {
                         activeCollection?.cancel()
+                        currentUser = null
+                        conversations = emptyList()
                         clearPendingMedia(recordRevision = true)
                         mutableUiState.value = ChatRouteUiState.SignedOut()
                     }
@@ -113,6 +117,7 @@ class ChatViewModel(
         if (conversations.size <= 1) return
         showingConversationList = true
         mutableUiState.value = ChatRouteUiState.ConversationList(
+            currentUserDisplayName = currentUser?.displayName.orEmpty(),
             conversations = conversationPreviews(),
             selectedConversationId = activeConversation?.conversationId,
             notice = latestNotice,
@@ -336,19 +341,26 @@ class ChatViewModel(
             is ChatResult.Failure -> {
                 latestNotice = result.message
                 mutableUiState.value = ChatRouteUiState.Conversation(
-                    model = ChatUiModel(ChatScreenState.Unavailable),
+                    model = ChatUiModel(
+                        ChatScreenState.Unavailable,
+                        currentUserDisplayName = currentUser?.displayName.orEmpty(),
+                    ),
                     draft = "",
                     notice = result.message,
                 )
             }
             is ChatResult.Success -> {
-                conversations = result.value
+                currentUser = result.value.currentUser
+                conversations = result.value.conversations
                 val restoredId = savedStateHandle.get<String>(ActiveConversationKey)
                 val selected = conversations.firstOrNull { it.conversationId == restoredId }
                     ?: conversations.firstOrNull()
                 if (selected == null) {
                     mutableUiState.value = ChatRouteUiState.Conversation(
-                        model = ChatUiModel(ChatScreenState.Unavailable),
+                        model = ChatUiModel(
+                            ChatScreenState.Unavailable,
+                            currentUserDisplayName = currentUser?.displayName.orEmpty(),
+                        ),
                         draft = "",
                     )
                 } else {
@@ -502,7 +514,10 @@ class ChatViewModel(
             openConversation(next)
         } else {
             mutableUiState.value = ChatRouteUiState.Conversation(
-                model = ChatUiModel(ChatScreenState.Unavailable),
+                model = ChatUiModel(
+                    ChatScreenState.Unavailable,
+                    currentUserDisplayName = currentUser?.displayName.orEmpty(),
+                ),
                 draft = "",
                 notice = latestNotice,
             )
@@ -513,6 +528,7 @@ class ChatViewModel(
     private fun publish() {
         if (showingConversationList) {
             mutableUiState.value = ChatRouteUiState.ConversationList(
+                currentUserDisplayName = currentUser?.displayName.orEmpty(),
                 conversations = conversationPreviews(),
                 selectedConversationId = activeConversation?.conversationId,
                 notice = latestNotice,
@@ -549,6 +565,8 @@ class ChatViewModel(
     private fun baseModel(conversation: AuthorizedConversation): ChatUiModel =
         ChatUiModel(
             screenState = ChatScreenState.Available,
+            currentUserDisplayName = currentUser?.displayName
+                ?: conversation.currentUserDisplayName,
             participant = ParticipantUiModel(
                 id = conversation.participantId,
                 displayName = conversation.participantDisplayName,

@@ -4,6 +4,7 @@ import com.fish.android.data.chat.model.ChatMessage
 import com.fish.android.data.chat.model.ChatMessageCursor
 import com.fish.android.data.chat.model.ChatReadState
 import com.fish.android.data.chat.AuthorizedConversation
+import com.fish.android.data.chat.AuthorizedChatDirectory
 import com.fish.android.data.chat.ChatAuthState
 import com.fish.android.data.chat.ChatRealtimeEvent
 import com.fish.android.data.chat.MessagePage
@@ -16,7 +17,7 @@ internal interface ChatRemoteDataSource {
 
     suspend fun signIn(email: String, password: String)
     suspend fun signOut()
-    suspend fun listAuthorizedConversations(): List<AuthorizedConversation>
+    suspend fun listAuthorizedConversations(): AuthorizedChatDirectory
     suspend fun loadMessages(
         conversation: AuthorizedConversation,
         cursor: ChatMessageCursor? = null,
