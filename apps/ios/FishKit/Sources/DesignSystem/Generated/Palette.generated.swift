@@ -63,6 +63,7 @@ public enum ColorTokens {
     public static let error = ColorPair(light: ColorComponents(red: 0.577017, green: 0.164209, blue: 0.200822, alpha: 1), dark: ColorComponents(red: 0.963821, green: 0.605234, blue: 0.604416, alpha: 1))
     public static let warning = ColorPair(light: ColorComponents(red: 0.432527, green: 0.260791, blue: 0, alpha: 1), dark: ColorComponents(red: 0.876562, green: 0.684007, blue: 0.339268, alpha: 1))
     public static let success = ColorPair(light: ColorComponents(red: 0.001119, green: 0.342062, blue: 0.143547, alpha: 1), dark: ColorComponents(red: 0.449643, green: 0.765897, blue: 0.521354, alpha: 1))
+    public static let successPressed = ColorPair(light: ColorComponents(red: 0, green: 0.276208, blue: 0.079125, alpha: 1), dark: ColorComponents(red: 0.582651, green: 0.842229, blue: 0.634708, alpha: 1))
     public static let presenceOnline = ColorPair(light: ColorComponents(red: 0.001119, green: 0.342062, blue: 0.143547, alpha: 1), dark: ColorComponents(red: 0.449643, green: 0.765897, blue: 0.521354, alpha: 1))
     public static let presenceIdle = ColorPair(light: ColorComponents(red: 0.452167, green: 0.304062, blue: 0, alpha: 1), dark: ColorComponents(red: 0.856938, green: 0.69447, blue: 0.334155, alpha: 1))
     public static let presenceAway = ColorPair(light: ColorComponents(red: 0.538181, green: 0.233629, blue: 0, alpha: 1), dark: ColorComponents(red: 0.923939, green: 0.610577, blue: 0.389908, alpha: 1))
@@ -99,6 +100,7 @@ public enum Palette {
     public static let error = ColorTokens.error.color
     public static let warning = ColorTokens.warning.color
     public static let success = ColorTokens.success.color
+    public static let successPressed = ColorTokens.successPressed.color
     public static let presenceOnline = ColorTokens.presenceOnline.color
     public static let presenceIdle = ColorTokens.presenceIdle.color
     public static let presenceAway = ColorTokens.presenceAway.color

@@ -41,6 +41,7 @@ class SizeTokens internal constructor(
     val touchTarget: Dp = GeneratedSizes.TouchTarget,
     val primaryControl: Dp = GeneratedSizes.PrimaryControl,
     val iconGlyph: Dp = GeneratedSizes.IconGlyph,
+    val presenceIndicatorSmall: Dp = GeneratedSizes.PresenceIndicatorSmall,
     val chatHeader: Dp = GeneratedSizes.ChatHeader,
     val composerMin: Dp = GeneratedSizes.ComposerMin,
     val composerMax: Dp = GeneratedSizes.ComposerMax,

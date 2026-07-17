@@ -50,6 +50,9 @@ public enum Metrics {
     public static let stickerTile: CGFloat = 96
     public static let chatGifSelection: CGFloat = 160
     public static let chatGifMaxWidth: CGFloat = 420
+    public static let callPanel: CGFloat = 360
+    public static let callSettings: CGFloat = 336
+    public static let callPreview: CGFloat = 112
 }
 
 /// Media aspect ratios (width / height) shared with the web contract.
@@ -74,6 +77,7 @@ public enum MotionDuration {
 public enum Opacity {
     public static let focus: Double = 0.72
     public static let focusField: Double = 0.82
+    public static let meterIdle: Double = 0.3
 }
 
 /// Fixed product type ladder. Typography maps these to fonts.

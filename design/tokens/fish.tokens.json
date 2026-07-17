@@ -28,6 +28,7 @@
     "error": { "light": [0.45, 0.14, 20, 1], "dark": [0.78, 0.11, 20, 1] },
     "warning": { "light": [0.42, 0.12, 80, 1], "dark": [0.78, 0.12, 80, 1] },
     "success": { "light": [0.40, 0.11, 150, 1], "dark": [0.75, 0.12, 150, 1] },
+    "successPressed": { "light": [0.34, 0.11, 150, 1], "dark": [0.82, 0.10, 150, 1] },
     "presenceOnline": { "light": [0.40, 0.11, 150, 1], "dark": [0.75, 0.12, 150, 1] },
     "presenceIdle": { "light": [0.45, 0.12, 85, 1], "dark": [0.78, 0.12, 85, 1] },
     "presenceAway": { "light": [0.45, 0.13, 55, 1], "dark": [0.76, 0.12, 55, 1] },
@@ -62,6 +63,7 @@
     "touchTarget": 48,
     "primaryControl": 56,
     "iconGlyph": 20,
+    "presenceIndicatorSmall": 14,
     "chatHeader": 64,
     "composerMin": 56,
     "composerMax": 160,
@@ -92,7 +94,10 @@
     "emojiGlyph": 24,
     "stickerTile": 96,
     "chatGifSelection": 160,
-    "chatGifMaxWidth": 420
+    "chatGifMaxWidth": 420,
+    "callPanel": 360,
+    "callSettings": 336,
+    "callPreview": 112
   },
   "aspect": {
     "gifTile": 1.333333
@@ -142,7 +147,8 @@
   },
   "opacity": {
     "focus": 0.72,
-    "focusField": 0.82
+    "focusField": 0.82,
+    "meterIdle": 0.3
   },
   "chat": {
     "maxMessageLength": 4000,

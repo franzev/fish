@@ -34,10 +34,27 @@ const RULES = [
 ];
 
 const FORBIDDEN_IMPORTS = {
-  DesignSystem: ["UIComponents", "ChatData", "PersonalChat", "TestSupport"],
-  UIComponents: ["ChatData", "PersonalChat", "TestSupport"],
-  ChatData: ["DesignSystem", "UIComponents", "PersonalChat", "TestSupport"],
-  PersonalChat: ["TestSupport"],
+  DesignSystem: [
+    "UIComponents", "ChatData", "PersonalChat", "TestSupport",
+    "CallData", "Calls", "CallMediaLiveKit",
+  ],
+  UIComponents: [
+    "ChatData", "PersonalChat", "TestSupport",
+    "CallData", "Calls", "CallMediaLiveKit",
+  ],
+  ChatData: [
+    "DesignSystem", "UIComponents", "PersonalChat", "TestSupport",
+    "CallData", "Calls", "CallMediaLiveKit",
+  ],
+  PersonalChat: ["TestSupport", "CallData", "Calls", "CallMediaLiveKit"],
+  // The call control plane stays UI-free and SDK-free; the feature never
+  // reaches the media SDK directly — only the adapter target links LiveKit.
+  CallData: [
+    "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
+    "TestSupport", "Calls", "CallMediaLiveKit", "SwiftUI", "LiveKit",
+  ],
+  Calls: ["ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit"],
+  CallMediaLiveKit: ["ChatData", "PersonalChat", "TestSupport"],
 };
 
 function walk(directory) {

@@ -44,6 +44,7 @@ internal object GeneratedColors {
     val Error = GeneratedColorToken(oklch(0.45, 0.14, 20.0, 1.0), oklch(0.78, 0.11, 20.0, 1.0))
     val Warning = GeneratedColorToken(oklch(0.42, 0.12, 80.0, 1.0), oklch(0.78, 0.12, 80.0, 1.0))
     val Success = GeneratedColorToken(oklch(0.4, 0.11, 150.0, 1.0), oklch(0.75, 0.12, 150.0, 1.0))
+    val SuccessPressed = GeneratedColorToken(oklch(0.34, 0.11, 150.0, 1.0), oklch(0.82, 0.1, 150.0, 1.0))
     val PresenceOnline = GeneratedColorToken(oklch(0.4, 0.11, 150.0, 1.0), oklch(0.75, 0.12, 150.0, 1.0))
     val PresenceIdle = GeneratedColorToken(oklch(0.45, 0.12, 85.0, 1.0), oklch(0.78, 0.12, 85.0, 1.0))
     val PresenceAway = GeneratedColorToken(oklch(0.45, 0.13, 55.0, 1.0), oklch(0.76, 0.12, 55.0, 1.0))
@@ -81,6 +82,7 @@ internal object GeneratedSizes {
     val TouchTarget = 48.dp
     val PrimaryControl = 56.dp
     val IconGlyph = 20.dp
+    val PresenceIndicatorSmall = 14.dp
     val ChatHeader = 64.dp
     val ComposerMin = 56.dp
     val ComposerMax = 160.dp

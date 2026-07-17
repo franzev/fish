@@ -26,6 +26,11 @@ class ColorTokens internal constructor(
     val error: Color,
     val warning: Color,
     val success: Color,
+    val presenceOnline: Color,
+    val presenceIdle: Color,
+    val presenceAway: Color,
+    val presenceBusy: Color,
+    val presenceOffline: Color,
     val scrim: Color,
 )
 
@@ -54,6 +59,11 @@ internal fun colorTokens(darkTheme: Boolean): ColorTokens {
         error = GeneratedColors.Error.resolve(),
         warning = GeneratedColors.Warning.resolve(),
         success = GeneratedColors.Success.resolve(),
+        presenceOnline = GeneratedColors.PresenceOnline.resolve(),
+        presenceIdle = GeneratedColors.PresenceIdle.resolve(),
+        presenceAway = GeneratedColors.PresenceAway.resolve(),
+        presenceBusy = GeneratedColors.PresenceBusy.resolve(),
+        presenceOffline = GeneratedColors.PresenceOffline.resolve(),
         scrim = GeneratedColors.Scrim.resolve(),
     )
 }

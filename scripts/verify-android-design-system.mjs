@@ -47,6 +47,11 @@ const cssColorNames = {
   error: "error",
   warning: "warning",
   success: "success",
+  presenceOnline: "presence-online",
+  presenceIdle: "presence-idle",
+  presenceAway: "presence-away",
+  presenceBusy: "presence-busy",
+  presenceOffline: "presence-offline",
   scrim: "scrim",
 };
 
@@ -76,14 +81,23 @@ for (const theme of ["light", "dark"]) {
   }
   const boundaryContrast = contrastRatio(tokens.color.border[theme], tokens.color.surface[theme]);
   assert.ok(boundaryContrast >= 3, `${theme} border/surface contrast is below 3:1`);
+  for (const name of ["presenceOnline", "presenceIdle", "presenceAway", "presenceBusy", "presenceOffline"]) {
+    const contrast = contrastRatio(tokens.color[name][theme], tokens.color.surface[theme]);
+    assert.ok(contrast >= 3, `${theme} ${name}/surface contrast ${contrast.toFixed(2)} is below 3:1`);
+  }
 }
 
 assert.equal(tokens.sizeDp.touchTarget, 48, "Android touch targets must remain at least 48dp");
 assert.equal(tokens.sizeDp.primaryControl, 56, "Primary controls must remain 56dp");
+assert.ok(
+  tokens.sizeDp.presenceIndicatorSmall >= 12 && tokens.sizeDp.presenceIndicatorSmall <= 20,
+  "The small presence indicator must remain legible without competing with the avatar",
+);
 
 const guardedRoots = [
   "apps/android/core/designsystem/src/main/kotlin/com/fish/android/core/designsystem/component",
   "apps/android/feature/chat/src/main",
+  "apps/android/feature/presence/src/main",
 ];
 for (const relativeRoot of guardedRoots) {
   for (const file of walk(path.join(root, relativeRoot)).filter((value) => value.endsWith(".kt"))) {
@@ -121,6 +135,16 @@ const importGuards = [
     root: "apps/android/feature/chat/src/main",
     forbidden: [/^import io\.github\.jan\.supabase/m, /^import androidx\.room/m],
     label: "chat feature",
+  },
+  {
+    root: "apps/android/feature/presence/src/main",
+    forbidden: [
+      /^import io\.github\.jan\.supabase/m,
+      /^import androidx\.room/m,
+      /^import com\.fish\.android\.data\.presence\.remote/m,
+      /^import io\.livekit/m,
+    ],
+    label: "provider-neutral presence feature",
   },
 ];
 for (const guard of importGuards) {
