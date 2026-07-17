@@ -15,6 +15,8 @@ let package = Package(
         .library(name: "CallData", targets: ["CallData"]),
         .library(name: "Calls", targets: ["Calls"]),
         .library(name: "CallMediaLiveKit", targets: ["CallMediaLiveKit"]),
+        .library(name: "PresenceData", targets: ["PresenceData"]),
+        .library(name: "Presence", targets: ["Presence"]),
         .library(name: "TestSupport", targets: ["TestSupport"]),
     ],
     dependencies: [
@@ -25,6 +27,10 @@ let package = Package(
         .package(
             url: "https://github.com/livekit/client-sdk-swift",
             from: "2.0.0"
+        ),
+        .package(
+            url: "https://github.com/supabase/supabase-swift",
+            from: "2.52.0"
         ),
     ],
     targets: [
@@ -45,6 +51,16 @@ let package = Package(
             dependencies: ["DesignSystem", "UIComponents", "CallData"]
         ),
         .target(
+            name: "PresenceData",
+            dependencies: [
+                .product(name: "Supabase", package: "supabase-swift")
+            ]
+        ),
+        .target(
+            name: "Presence",
+            dependencies: ["DesignSystem", "UIComponents", "PresenceData"]
+        ),
+        .target(
             name: "CallMediaLiveKit",
             dependencies: [
                 "Calls",
@@ -55,7 +71,7 @@ let package = Package(
             name: "TestSupport",
             dependencies: [
                 "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
-                "CallData", "Calls",
+                "CallData", "Calls", "PresenceData",
             ],
             resources: [.process("Resources")]
         ),
@@ -66,6 +82,18 @@ let package = Package(
         .testTarget(
             name: "CallDataTests",
             dependencies: ["CallData", "TestSupport"]
+        ),
+        .testTarget(
+            name: "PresenceDataTests",
+            dependencies: ["PresenceData", "TestSupport"]
+        ),
+        .testTarget(
+            name: "PresenceTests",
+            dependencies: [
+                "Presence",
+                "TestSupport",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+            ]
         ),
         .testTarget(
             name: "CallsTests",

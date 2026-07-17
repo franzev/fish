@@ -28,6 +28,10 @@ targets:
       - package: FishKit
         product: CallMediaLiveKit
       - package: FishKit
+        product: PresenceData
+      - package: FishKit
+        product: Presence
+      - package: FishKit
         product: TestSupport
     info:
       path: Sources/Info.plist

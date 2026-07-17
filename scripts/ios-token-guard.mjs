@@ -36,25 +36,43 @@ const RULES = [
 const FORBIDDEN_IMPORTS = {
   DesignSystem: [
     "UIComponents", "ChatData", "PersonalChat", "TestSupport",
-    "CallData", "Calls", "CallMediaLiveKit",
+    "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
   ],
   UIComponents: [
     "ChatData", "PersonalChat", "TestSupport",
-    "CallData", "Calls", "CallMediaLiveKit",
+    "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
   ],
   ChatData: [
     "DesignSystem", "UIComponents", "PersonalChat", "TestSupport",
-    "CallData", "Calls", "CallMediaLiveKit",
+    "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
   ],
-  PersonalChat: ["TestSupport", "CallData", "Calls", "CallMediaLiveKit"],
+  PersonalChat: [
+    "TestSupport", "CallData", "Calls", "CallMediaLiveKit",
+    "PresenceData", "Presence",
+  ],
   // The call control plane stays UI-free and SDK-free; the feature never
   // reaches the media SDK directly — only the adapter target links LiveKit.
   CallData: [
     "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
     "TestSupport", "Calls", "CallMediaLiveKit", "SwiftUI", "LiveKit",
+    "PresenceData", "Presence",
   ],
-  Calls: ["ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit"],
-  CallMediaLiveKit: ["ChatData", "PersonalChat", "TestSupport"],
+  Calls: [
+    "ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit",
+    "PresenceData", "Presence",
+  ],
+  CallMediaLiveKit: ["ChatData", "PersonalChat", "TestSupport", "PresenceData", "Presence"],
+  // The presence control plane stays UI-free; only its adapters speak the
+  // Supabase SDK, and the feature layer never reaches the SDK directly.
+  PresenceData: [
+    "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
+    "TestSupport", "CallData", "Calls", "CallMediaLiveKit", "Presence",
+    "SwiftUI", "LiveKit",
+  ],
+  Presence: [
+    "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
+    "CallMediaLiveKit", "Supabase", "LiveKit",
+  ],
 };
 
 function walk(directory) {

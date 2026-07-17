@@ -44,6 +44,14 @@ struct CatalogRoot: View {
                         }
                     }
                 }
+                Section("Presence") {
+                    NavigationLink("Presence") { PresencePage() }
+                    if let configuration = LiveCallLabConfiguration.fromBundle() {
+                        NavigationLink("Presence lab") {
+                            LivePresenceLabPage(configuration: configuration)
+                        }
+                    }
+                }
             }
             .navigationTitle("FISH catalog")
         }

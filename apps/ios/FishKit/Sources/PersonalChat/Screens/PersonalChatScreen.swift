@@ -32,6 +32,7 @@ public struct PersonalChatScreen: View {
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
     private let onBack: (() -> Void)?
+    private let accountContent: AnyView?
 
     @State private var isMediaPickerPresented = false
 
@@ -44,7 +45,8 @@ public struct PersonalChatScreen: View {
         onSend: @escaping () -> Void,
         onRetryMessage: @escaping (String) -> Void,
         onRetryOlder: @escaping () -> Void,
-        onBack: (() -> Void)? = nil
+        onBack: (() -> Void)? = nil,
+        accountContent: AnyView? = nil
     ) {
         self.model = model
         self._draft = draft
@@ -55,6 +57,7 @@ public struct PersonalChatScreen: View {
         self.onRetryMessage = onRetryMessage
         self.onRetryOlder = onRetryOlder
         self.onBack = onBack
+        self.accountContent = accountContent
     }
 
     nonisolated static func composerState(
@@ -72,7 +75,8 @@ public struct PersonalChatScreen: View {
             PersonalChatTopBar(
                 participantName: model.participantName,
                 presence: model.presence,
-                onBack: onBack
+                onBack: onBack,
+                accountContent: accountContent
             )
             switch model.phase {
             case .unavailable:

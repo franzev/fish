@@ -18,6 +18,7 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             "Media picker",
             "Call states",
             "Call demo",
+            "Presence",
         ]
 
         for page in pages {

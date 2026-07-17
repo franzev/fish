@@ -1,3 +1,5 @@
+import UIComponents
+
 public enum ChatConnectionState: Sendable, Equatable {
     case connected
     case connecting
@@ -12,19 +14,11 @@ public enum OlderMessagesState: Sendable, Equatable {
     case failed
 }
 
-public enum PresenceTone: Sendable, Equatable {
-    case online
-    case idle
-    case away
-    case busy
-    case offline
-}
-
 public struct PresenceUiModel: Sendable, Equatable {
     public let label: String
-    public let tone: PresenceTone
+    public let tone: PresenceDisplayStatus
 
-    public init(label: String, tone: PresenceTone) {
+    public init(label: String, tone: PresenceDisplayStatus) {
         self.label = label
         self.tone = tone
     }
