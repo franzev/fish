@@ -102,6 +102,13 @@ async function main() {
   const communityEvents: RealtimeSnapshot[] = [];
   let coachSubjectChangeCount = 0;
   let coach2SubjectChangeCount = 0;
+  const [friendLowId, friendHighId] = [client.userId, communityOnly.userId].sort();
+  const existingFriendship = await admin.from("friendships")
+    .select("user_low_id,user_high_id")
+    .eq("user_low_id", friendLowId)
+    .eq("user_high_id", friendHighId)
+    .maybeSingle();
+  if (existingFriendship.error) throw existingFriendship.error;
 
   async function subscribeToSnapshots(
     viewer: Awaited<ReturnType<typeof signIn>>,
@@ -206,6 +213,9 @@ async function main() {
     await admin.from("presence_sessions").delete().eq("user_id", client.userId);
     await admin.from("presence_snapshots").delete().eq("user_id", client.userId);
     await admin.from("presence_preferences").delete().eq("user_id", client.userId);
+    await admin.from("friendships").delete()
+      .eq("user_low_id", friendLowId)
+      .eq("user_high_id", friendHighId);
   }
 
   await cleanup();
@@ -418,6 +428,11 @@ async function main() {
   } finally {
     await Promise.all(realtimeChannels.map((channel) => channel.unsubscribe()));
     await cleanup();
+    if (existingFriendship.data) {
+      await admin.from("friendships").upsert(existingFriendship.data, {
+        onConflict: "user_low_id,user_high_id",
+      });
+    }
     await Promise.all([
       coach.client.auth.signOut(),
       coach2.client.auth.signOut(),
