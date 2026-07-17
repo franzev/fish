@@ -29,27 +29,17 @@ struct CallPromptActions: View {
     var body: some View {
         Group {
             if incoming {
-                HStack(spacing: Spacing.sm) {
-                    ActionButton(
-                        CallCopy.decline,
-                        variant: .secondary,
-                        tone: .critical,
-                        prominence: .focused,
-                        icon: .phoneOff,
-                        isLoading: busy && pending == .decline,
-                        fullWidth: true
-                    ) {
-                        run(.decline, onDecline)
+                // Large accessibility type can't fit both labels side by
+                // side without breaking words apart — stack instead, keeping
+                // Answer last in reading order.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Spacing.sm) {
+                        declineButton
+                        answerButton
                     }
-                    ActionButton(
-                        CallCopy.answer,
-                        tone: .success,
-                        prominence: .focused,
-                        icon: call.kind == .video ? .video : .phone,
-                        isLoading: busy && pending == .answer,
-                        fullWidth: true
-                    ) {
-                        run(.answer, onAnswer)
+                    VStack(spacing: Spacing.sm) {
+                        declineButton
+                        answerButton
                     }
                 }
             } else {
@@ -71,6 +61,33 @@ struct CallPromptActions: View {
         .disabled(busy)
         .onChange(of: busy) { _, isBusy in
             if !isBusy { pending = nil }
+        }
+    }
+
+    private var declineButton: some View {
+        ActionButton(
+            CallCopy.decline,
+            variant: .secondary,
+            tone: .critical,
+            prominence: .focused,
+            icon: .phoneOff,
+            isLoading: busy && pending == .decline,
+            fullWidth: true
+        ) {
+            run(.decline, onDecline)
+        }
+    }
+
+    private var answerButton: some View {
+        ActionButton(
+            CallCopy.answer,
+            tone: .success,
+            prominence: .focused,
+            icon: call.kind == .video ? .video : .phone,
+            isLoading: busy && pending == .answer,
+            fullWidth: true
+        ) {
+            run(.answer, onAnswer)
         }
     }
 
