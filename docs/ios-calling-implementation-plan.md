@@ -402,3 +402,54 @@ of this document and must ship with the feature:
    background mode; guard-script module rules.
 7. Full gate run (iOS + web), snapshot baselines, manual-lab notes.
 8. Final documentation pass (this file's limitations section is the record).
+
+## As-built notes (2026-07-17)
+
+Everything above shipped as planned; these are the specifics that were
+resolved during implementation.
+
+- **Resolved dependency**: `livekit/client-sdk-swift` 2.15.1 (WebRTC
+  xcframework 144.7559.10). `Package.swift` also declares a macOS minimum —
+  never shipped, it only satisfies host-side SPM tooling and dependency
+  minimums, and enables fast `swift build --target CallData` checks.
+- **Shared vectors**: the canonical suite
+  (`call-state-vectors.json`, replayed by web, Android, and iOS) is joined by
+  an extended suite (`call-state-vectors.extended.json`, 21 vectors covering
+  every reducer guard) replayed by web
+  (`apps/web/tests/call-state-extended-fixtures.test.ts`, which also pins the
+  bundled iOS copies byte-identical) and by
+  `CallDataTests/CallStateVectorTests` (which additionally asserts every
+  event type appears across the suites).
+- **Wakeup semantics worth knowing**: a `connecting`-row wakeup that races
+  local media keeps the state at `connecting` until the webhook flips the
+  durable row to `active` — identical to the web `applyCall`. Fixture-driven
+  tests must flip the row like the webhook would (the session-model test
+  documents this).
+- **Accessibility refinements**: at accessibility type sizes the
+  answer/decline pair stacks vertically (`ViewThatFits`) with Answer last in
+  reading order. The catalog accessibility audit exempts the call-state
+  gallery's fold-clipped list row (an OCR audit limitation — the row is a
+  reachable, labeled link) and scroll-settles before tapping menu rows.
+- **Speaking meter cadence**: the iOS SDK surfaces `audioLevel` at the active
+  speaker cadence rather than per frame; the web smoothing constants
+  (attack 0.35 / release 0.12, `/0.3` normalization, 0.025 threshold, 250 ms
+  hold) are applied over a 30 Hz sampling loop, so the meter reads slightly
+  chunkier than the browser's rAF-driven meter.
+- **Data-saver behavior**: publish quality is fixed at capture time on iOS;
+  a mid-call preference change restarts the camera track at the new preset
+  (360p vs 720p). Adaptive stream continues to manage delivery either way.
+  The web adjusts publish quality live — a minor parity gap, recorded here.
+- **Catalog lab keys**: `FISH_SUPABASE_URL`, `FISH_SUPABASE_ANON_KEY`,
+  `FISH_SUPABASE_EMAIL`, `FISH_SUPABASE_PASSWORD`,
+  `FISH_SUPABASE_RECIPIENT_ID` (+ optional `FISH_SUPABASE_RECIPIENT_NAME`)
+  at `xcodegen generate` time reveal the live lab (sign-in via the dev
+  password grant; seeded accounts `coach@fish.dev` / `client1@fish.dev`).
+- **Verification run**: `pnpm ios:test` (reducer conformance, command wire
+  tests, session-model behavior, copy conformance, 34 snapshot baselines in
+  light/dark plus AX-XL/RTL), `pnpm ios:catalog` (audit sweep including the
+  two new call pages), `pnpm ios:guard`, `pnpm ios:tokens:check`,
+  `pnpm ios:chat-media:check`, and on web `pnpm lint`, `pnpm typecheck`,
+  `pnpm build`, plus the two call fixture vitest suites — all green at
+  hand-off. One pre-existing catalog issue is tracked separately: the chat
+  transcript flow can open away from its latest message (reproduces at HEAD
+  with the call pages excluded; the FishKit package transcript suites pass).
