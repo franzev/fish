@@ -114,7 +114,7 @@ export function AuthSplitLayout({
               width={500}
               height={500}
               sizes="(min-width: 1024px) 50vw, 0px"
-              className="pointer-events-none absolute right-0 bottom-0 h-auto w-full max-w-content translate-y-sm object-contain select-none"
+              className="pointer-events-none absolute right-0 bottom-0 h-auto w-full max-w-content translate-y-sm object-contain opacity-15 saturate-0 select-none"
             />
           </>
         ) : (

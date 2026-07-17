@@ -52,8 +52,9 @@ describe("AuthSplitLayout", () => {
       "bottom-0",
       "w-full",
       "translate-y-sm",
+      "opacity-15",
+      "saturate-0",
     );
-    expect(illustration).not.toHaveClass("opacity-20", "saturate-0");
     expect(container.querySelector("aside svg")).not.toBeInTheDocument();
     expect(container.querySelector("aside p")).toHaveClass("text-hero");
     expect(container.querySelector("aside p")?.parentElement).toHaveClass(

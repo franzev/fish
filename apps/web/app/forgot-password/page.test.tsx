@@ -60,7 +60,6 @@ describe("ForgotPasswordPage", () => {
       expect.stringContaining("forgot-password-reset.svg")
     );
     expect(illustration).toHaveAttribute("alt", "");
-    expect(illustration).not.toHaveClass("opacity-20", "saturate-0");
   });
 
   it("uses the shared blue accent and fair skin palette", () => {

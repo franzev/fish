@@ -15,7 +15,6 @@ export default async function SignupPage() {
       headline="Learn together."
       message="Your coach keeps the path clear, so you can focus on using English with confidence."
       illustrationSrc="/illustrations/sign-up-teamwork.svg"
-      illustrationBackdropMaskSrc="/illustrations/sign-up-teamwork-backdrop.svg"
     >
       <SignupForm showGoogleAuth={isGoogleAuthAvailable()} />
     </AuthSplitLayout>
