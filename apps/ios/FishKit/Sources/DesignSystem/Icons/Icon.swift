@@ -37,6 +37,12 @@ public enum Icon: String, CaseIterable, Sendable {
     case messages
     case speaker = "volume"
     case cameraFlip = "camera-rotate"
+    case circle
+    case circleFilled = "circle-filled"
+    case circleMinus = "circle-minus"
+    case clock
+    case eyeOff = "eye-off"
+    case moonFilled = "moon-filled"
 
     public var isDirectional: Bool {
         self == .back

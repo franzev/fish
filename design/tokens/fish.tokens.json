@@ -88,6 +88,7 @@
     "avatarSm": 32,
     "avatarMd": 44,
     "avatarProfile": 72,
+    "presenceIndicatorSmall": 14,
     "motionEnterOffset": 6,
     "motionTypingOffset": 4,
     "skeletonAuthorWidth": 96,

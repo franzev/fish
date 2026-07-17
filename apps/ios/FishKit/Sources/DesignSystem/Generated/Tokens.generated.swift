@@ -43,6 +43,7 @@ public enum Metrics {
     public static let avatarSm: CGFloat = 32
     public static let avatarMd: CGFloat = 44
     public static let avatarProfile: CGFloat = 72
+    public static let presenceIndicatorSmall: CGFloat = 14
     public static let motionEnterOffset: CGFloat = 6
     public static let motionTypingOffset: CGFloat = 4
     public static let skeletonAuthorWidth: CGFloat = 96
