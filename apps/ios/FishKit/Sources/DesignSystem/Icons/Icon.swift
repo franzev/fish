@@ -27,6 +27,16 @@ public enum Icon: String, CaseIterable, Sendable {
     case flag
     case play = "player-play"
     case pause = "player-pause"
+    case phone
+    case phoneOff = "phone-off"
+    case video
+    case videoOff = "video-off"
+    case microphone
+    case microphoneOff = "microphone-off"
+    case settings
+    case messages
+    case speaker = "volume"
+    case cameraFlip = "camera-rotate"
 
     public var isDirectional: Bool {
         self == .back

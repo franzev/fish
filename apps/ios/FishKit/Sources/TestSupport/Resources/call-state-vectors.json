@@ -1,0 +1,56 @@
+[
+  {
+    "name": "outgoingVideoBecomesActive",
+    "initialState": { "current": { "callId": null, "counterpartId": null, "counterpartName": null, "kind": "audio", "status": "idle", "direction": null, "muted": false, "cameraEnabled": false, "expiresAt": null, "connectedAt": null, "failureReason": null } },
+    "events": [
+      { "type": "permissionRequested", "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "video" },
+      { "type": "outgoingCallCreated", "callId": "call-1", "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "video", "expiresAt": "2026-07-12T10:00:45.000Z" },
+      { "type": "callAccepted", "callId": "call-1" },
+      { "type": "mediaConnected", "callId": "call-1", "connectedAt": "2026-07-12T10:00:04.000Z" },
+      { "type": "cameraChanged", "enabled": true }
+    ],
+    "expectedState": { "current": { "callId": "call-1", "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "video", "status": "active", "direction": "outgoing", "muted": false, "cameraEnabled": true, "expiresAt": "2026-07-12T10:00:45.000Z", "connectedAt": "2026-07-12T10:00:04.000Z", "failureReason": null } }
+  },
+  {
+    "name": "incomingAudioRejected",
+    "initialState": { "current": { "callId": null, "counterpartId": null, "counterpartName": null, "kind": "audio", "status": "idle", "direction": null, "muted": false, "cameraEnabled": false, "expiresAt": null, "connectedAt": null, "failureReason": null } },
+    "events": [
+      { "type": "incomingCallReceived", "callId": "call-2", "counterpartId": "client-1", "counterpartName": "Ari", "kind": "audio", "expiresAt": "2026-07-12T10:01:45.000Z" },
+      { "type": "callRejected", "callId": "call-2" }
+    ],
+    "expectedState": { "current": { "callId": "call-2", "counterpartId": "client-1", "counterpartName": "Ari", "kind": "audio", "status": "rejected", "direction": "incoming", "muted": false, "cameraEnabled": false, "expiresAt": "2026-07-12T10:01:45.000Z", "connectedAt": null, "failureReason": null } }
+  },
+  {
+    "name": "permissionDenied",
+    "initialState": { "current": { "callId": null, "counterpartId": null, "counterpartName": null, "kind": "audio", "status": "idle", "direction": null, "muted": false, "cameraEnabled": false, "expiresAt": null, "connectedAt": null, "failureReason": null } },
+    "events": [
+      { "type": "permissionRequested", "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "audio" },
+      { "type": "permissionDenied", "reason": "permissionDenied" }
+    ],
+    "expectedState": { "current": { "callId": null, "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "audio", "status": "failed", "direction": "outgoing", "muted": false, "cameraEnabled": false, "expiresAt": null, "connectedAt": null, "failureReason": "permissionDenied" } }
+  },
+  {
+    "name": "reconnectKeepsConnectedTime",
+    "initialState": { "current": { "callId": "call-3", "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "audio", "status": "active", "direction": "incoming", "muted": false, "cameraEnabled": false, "expiresAt": "2026-07-12T10:02:45.000Z", "connectedAt": "2026-07-12T10:02:05.000Z", "failureReason": null } },
+    "events": [
+      { "type": "reconnecting", "callId": "call-3" },
+      { "type": "reconnected", "callId": "call-3" },
+      { "type": "muteChanged", "muted": true }
+    ],
+    "expectedState": { "current": { "callId": "call-3", "counterpartId": "coach-1", "counterpartName": "Coach Mina", "kind": "audio", "status": "active", "direction": "incoming", "muted": true, "cameraEnabled": false, "expiresAt": "2026-07-12T10:02:45.000Z", "connectedAt": "2026-07-12T10:02:05.000Z", "failureReason": null } }
+  },
+  {
+    "name": "staleTerminalIgnored",
+    "initialState": { "current": { "callId": "call-4", "counterpartId": "client-1", "counterpartName": "Ari", "kind": "audio", "status": "ringing", "direction": "outgoing", "muted": false, "cameraEnabled": false, "expiresAt": "2026-07-12T10:03:45.000Z", "connectedAt": null, "failureReason": null } },
+    "events": [
+      { "type": "callEnded", "callId": "stale-call" }
+    ],
+    "expectedState": { "current": { "callId": "call-4", "counterpartId": "client-1", "counterpartName": "Ari", "kind": "audio", "status": "ringing", "direction": "outgoing", "muted": false, "cameraEnabled": false, "expiresAt": "2026-07-12T10:03:45.000Z", "connectedAt": null, "failureReason": null } }
+  },
+  {
+    "name": "identityChangeClearsCall",
+    "initialState": { "current": { "callId": "call-5", "counterpartId": "client-1", "counterpartName": "Ari", "kind": "video", "status": "active", "direction": "incoming", "muted": true, "cameraEnabled": true, "expiresAt": "2026-07-12T10:04:45.000Z", "connectedAt": "2026-07-12T10:04:04.000Z", "failureReason": null } },
+    "events": [{ "type": "identityChanged" }],
+    "expectedState": { "current": { "callId": null, "counterpartId": null, "counterpartName": null, "kind": "audio", "status": "idle", "direction": null, "muted": false, "cameraEnabled": false, "expiresAt": null, "connectedAt": null, "failureReason": null } }
+  }
+]

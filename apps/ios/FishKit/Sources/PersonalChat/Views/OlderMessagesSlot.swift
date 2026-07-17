@@ -50,7 +50,7 @@ public struct OlderMessagesSlot: View {
                     .foregroundStyle(Palette.body)
                 ActionButton(
                     "Try loading earlier messages again",
-                    variant: .ghost,
+                    variant: .link,
                     action: onRetry
                 )
             }

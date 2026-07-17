@@ -79,9 +79,12 @@ struct GifPanel: View {
             Button {
                 onToggleAnimations()
             } label: {
+                // Touch has no hover step, so the underline carries the
+                // affordance the web version gets from its hover state.
                 Text(animationsPaused ? "Play GIF animations" : "Pause GIF animations")
                     .textStyle(.caption)
-                    .foregroundStyle(Palette.muted)
+                    .underline()
+                    .foregroundStyle(Palette.body)
                     .padding(.horizontal, Spacing.xs)
                     .frame(minHeight: Metrics.targetTouch)
                     .contentShape(Rectangle())

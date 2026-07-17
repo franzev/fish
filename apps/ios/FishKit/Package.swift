@@ -4,18 +4,27 @@ import PackageDescription
 let package = Package(
     name: "FishKit",
     defaultLocalization: "en",
-    platforms: [.iOS(.v17)],
+    // macOS is never shipped; it only satisfies host-side tooling (SPM builds
+    // of the Foundation-only targets and dependency minimums like LiveKit's).
+    platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "UIComponents", targets: ["UIComponents"]),
         .library(name: "ChatData", targets: ["ChatData"]),
         .library(name: "PersonalChat", targets: ["PersonalChat"]),
+        .library(name: "CallData", targets: ["CallData"]),
+        .library(name: "Calls", targets: ["Calls"]),
+        .library(name: "CallMediaLiveKit", targets: ["CallMediaLiveKit"]),
         .library(name: "TestSupport", targets: ["TestSupport"]),
     ],
     dependencies: [
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
             from: "1.17.0"
+        ),
+        .package(
+            url: "https://github.com/livekit/client-sdk-swift",
+            from: "2.0.0"
         ),
     ],
     targets: [
@@ -30,14 +39,41 @@ let package = Package(
             dependencies: ["DesignSystem", "UIComponents", "ChatData"],
             resources: [.copy("Resources/ChatMedia")]
         ),
+        .target(name: "CallData"),
+        .target(
+            name: "Calls",
+            dependencies: ["DesignSystem", "UIComponents", "CallData"]
+        ),
+        .target(
+            name: "CallMediaLiveKit",
+            dependencies: [
+                "Calls",
+                .product(name: "LiveKit", package: "client-sdk-swift"),
+            ]
+        ),
         .target(
             name: "TestSupport",
-            dependencies: ["DesignSystem", "UIComponents", "ChatData", "PersonalChat"],
+            dependencies: [
+                "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
+                "CallData", "Calls",
+            ],
             resources: [.process("Resources")]
         ),
         .testTarget(
             name: "ChatDataTests",
             dependencies: ["ChatData"]
+        ),
+        .testTarget(
+            name: "CallDataTests",
+            dependencies: ["CallData", "TestSupport"]
+        ),
+        .testTarget(
+            name: "CallsTests",
+            dependencies: [
+                "Calls",
+                "TestSupport",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+            ]
         ),
         .testTarget(
             name: "DesignSystemTests",

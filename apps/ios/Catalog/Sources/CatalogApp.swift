@@ -35,6 +35,15 @@ struct CatalogRoot: View {
                     NavigationLink("Chat states") { ChatStatesPage() }
                     NavigationLink("Media picker") { MediaPickerPage() }
                 }
+                Section("Calls") {
+                    NavigationLink("Call states") { CallStatesPage() }
+                    NavigationLink("Call demo") { CallDemoPage() }
+                    if let configuration = LiveCallLabConfiguration.fromBundle() {
+                        NavigationLink("Live call lab") {
+                            LiveCallLabPage(configuration: configuration)
+                        }
+                    }
+                }
             }
             .navigationTitle("FISH catalog")
         }

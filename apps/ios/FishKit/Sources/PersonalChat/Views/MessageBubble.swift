@@ -150,7 +150,7 @@ public struct MessageBubble: View {
                 .textStyle(.caption)
                 .foregroundStyle(Palette.messageFailed)
             if let onRetry {
-                ActionButton("Try sending again", variant: .ghost) {
+                ActionButton("Try sending again", variant: .link) {
                     onRetry(row.message.id)
                 }
             }

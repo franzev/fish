@@ -71,13 +71,16 @@ public struct GifMedia: View {
                     .foregroundStyle(Palette.muted)
                     .multilineTextAlignment(.center)
                     .padding(Spacing.xs)
-            } else if isPlaying {
-                LoopingVideo(
-                    url: preview ? gif.previewUrl : gif.mediaUrl,
-                    fillsBounds: fixedAspect
-                )
             } else {
+                // Poster stays beneath the video layer so buffering shows the
+                // still frame instead of a blank fill.
                 poster
+                if isPlaying {
+                    LoopingVideo(
+                        url: preview ? gif.previewUrl : gif.mediaUrl,
+                        fillsBounds: fixedAspect
+                    )
+                }
             }
         }
         .aspectRatio(aspectRatio, contentMode: .fit)

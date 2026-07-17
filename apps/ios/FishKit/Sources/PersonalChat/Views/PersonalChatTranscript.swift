@@ -21,40 +21,30 @@ public struct PersonalChatTranscript: View {
     }
 
     public var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: Spacing.xs) {
-                    OlderMessagesSlot(
-                        state: olderMessages,
-                        onRetry: onRetryOlder
-                    )
-                    ForEach(items) { item in
-                        switch item {
-                        case .daySeparator(_, let label):
-                            MessageDaySeparator(label: label)
-                                .padding(.top, Spacing.sm)
-                        case .unreadDivider:
-                            UnreadMessagesDivider()
-                        case .message(let row):
-                            MessageBubble(row: row, onRetry: onRetryMessage)
-                        }
+        ScrollView {
+            LazyVStack(spacing: Spacing.xs) {
+                OlderMessagesSlot(
+                    state: olderMessages,
+                    onRetry: onRetryOlder
+                )
+                ForEach(items) { item in
+                    switch item {
+                    case .daySeparator(_, let label):
+                        MessageDaySeparator(label: label)
+                            .padding(.top, Spacing.sm)
+                    case .unreadDivider:
+                        UnreadMessagesDivider()
+                    case .message(let row):
+                        MessageBubble(row: row, onRetry: onRetryMessage)
                     }
-                    Color.clear
-                        .frame(height: 1)
-                        .id(Self.bottomAnchorID)
                 }
-                .padding(.horizontal, Spacing.page)
-                .padding(.vertical, Spacing.xs)
-                .frame(maxWidth: Metrics.chatContentMaxWidth)
-                .frame(maxWidth: .infinity)
             }
-            .scrollDismissesKeyboard(.interactively)
-            .task {
-                await Task.yield()
-                proxy.scrollTo(Self.bottomAnchorID, anchor: .bottom)
-            }
+            .padding(.horizontal, Spacing.page)
+            .padding(.vertical, Spacing.xs)
+            .frame(maxWidth: Metrics.chatContentMaxWidth)
+            .frame(maxWidth: .infinity)
         }
+        .defaultScrollAnchor(.bottom)
+        .scrollDismissesKeyboard(.interactively)
     }
-
-    private static let bottomAnchorID = "personal-chat-transcript-bottom"
 }

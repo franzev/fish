@@ -84,7 +84,6 @@ public struct MessageComposer: View {
                         )
                         .strokeBorder(Palette.border, lineWidth: 1)
                     }
-                    .frame(maxHeight: Metrics.composerMaxHeight)
                     .accessibilityLabel("Message")
                 if Self.showsSend(draft: draft, selection: selection, sendState: sendState) {
                     IconButton(

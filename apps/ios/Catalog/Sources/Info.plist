@@ -20,6 +20,26 @@
 	<string>1</string>
 	<key>KlipyApiKey</key>
 	<string>${KLIPY_API_KEY}</string>
+	<key>NSCameraUsageDescription</key>
+	<string>FISH uses your camera so your coach can see you during video calls.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>FISH uses your microphone so you can talk during calls.</string>
+	<key>SupabaseAnonKey</key>
+	<string>${FISH_SUPABASE_ANON_KEY}</string>
+	<key>SupabaseEmail</key>
+	<string>${FISH_SUPABASE_EMAIL}</string>
+	<key>SupabasePassword</key>
+	<string>${FISH_SUPABASE_PASSWORD}</string>
+	<key>SupabaseRecipientId</key>
+	<string>${FISH_SUPABASE_RECIPIENT_ID}</string>
+	<key>SupabaseRecipientName</key>
+	<string>${FISH_SUPABASE_RECIPIENT_NAME}</string>
+	<key>SupabaseUrl</key>
+	<string>${FISH_SUPABASE_URL}</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

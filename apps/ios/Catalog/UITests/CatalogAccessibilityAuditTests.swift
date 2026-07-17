@@ -16,10 +16,12 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             "Empty states",
             "Top bars",
             "Media picker",
+            "Call states",
+            "Call demo",
         ]
 
         for page in pages {
-            let link = app.buttons[page].firstMatch
+            let link = catalogLink(page, in: app)
             XCTAssertTrue(link.waitForExistence(timeout: 3), "Missing \(page)")
             link.tap()
             try app.performAccessibilityAudit { issue in
@@ -47,7 +49,7 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             app.navigationBars.buttons.element(boundBy: 0).tap()
         }
 
-        app.buttons["Chat states"].firstMatch.tap()
+        catalogLink("Chat states", in: app).tap()
         app.buttons["Loaded"].firstMatch.tap()
         let latestMessage = app.staticTexts[
             "Sounds good. See you then!"
@@ -62,6 +64,22 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
         }
         app.buttons["Back"].firstMatch.tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
+    }
+
+    /// The catalog menu is a lazy list; rows outside the viewport are not in
+    /// the accessibility hierarchy until scrolled into view. Returns to the
+    /// top first so lookups work from any scroll position.
+    @MainActor
+    private func catalogLink(_ name: String, in app: XCUIApplication) -> XCUIElement {
+        let link = app.buttons[name].firstMatch
+        if link.waitForExistence(timeout: 1) { return link }
+        for _ in 0..<3 where !link.exists { app.swipeDown() }
+        var attempts = 0
+        while !link.waitForExistence(timeout: 1), attempts < 5 {
+            app.swipeUp()
+            attempts += 1
+        }
+        return link
     }
 
     @MainActor
