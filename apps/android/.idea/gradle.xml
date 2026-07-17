@@ -25,10 +25,15 @@
             <option value="$PROJECT_DIR$/build-logic" />
             <option value="$PROJECT_DIR$/core" />
             <option value="$PROJECT_DIR$/core/designsystem" />
+            <option value="$PROJECT_DIR$/core/supabase" />
             <option value="$PROJECT_DIR$/data" />
+            <option value="$PROJECT_DIR$/data/call" />
             <option value="$PROJECT_DIR$/data/chat" />
+            <option value="$PROJECT_DIR$/data/presence" />
             <option value="$PROJECT_DIR$/feature" />
+            <option value="$PROJECT_DIR$/feature/call" />
             <option value="$PROJECT_DIR$/feature/chat" />
+            <option value="$PROJECT_DIR$/feature/presence" />
           </set>
         </option>
       </GradleProjectSettings>
