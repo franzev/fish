@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.core.designsystem"
+    namespace = "space.fishhub.android.core.designsystem"
 }
 
 dependencies {

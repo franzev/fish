@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.core.supabase"
+    namespace = "space.fishhub.android.core.supabase"
 }
 
 dependencies {

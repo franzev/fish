@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.feature.chat"
+    namespace = "space.fishhub.android.feature.chat"
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     sourceSets {

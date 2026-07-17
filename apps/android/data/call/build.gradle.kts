@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.data.call"
+    namespace = "space.fishhub.android.data.call"
 }
 
 dependencies {

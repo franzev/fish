@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.data.chat"
+    namespace = "space.fishhub.android.data.chat"
 
     sourceSets {
         getByName("androidTest").assets.directories.add("schemas")

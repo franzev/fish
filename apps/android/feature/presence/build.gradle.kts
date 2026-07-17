@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.feature.presence"
+    namespace = "space.fishhub.android.feature.presence"
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 }
 

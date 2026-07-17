@@ -57,7 +57,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android"
+    namespace = "space.fishhub.android"
 
     signingConfigs {
         if (hasReleaseSigning) {
@@ -71,7 +71,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.fish.android"
+        applicationId = "space.fishhub.android"
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "SUPABASE_URL", supabaseUrl.asBuildConfigString())

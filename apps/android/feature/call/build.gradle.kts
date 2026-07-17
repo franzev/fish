@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.feature.call"
+    namespace = "space.fishhub.android.feature.call"
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     sourceSets {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.data.presence"
+    namespace = "space.fishhub.android.data.presence"
 }
 
 dependencies {

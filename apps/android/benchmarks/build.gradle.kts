@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fish.android.benchmarks"
+    namespace = "space.fishhub.android.benchmarks"
     compileSdk = 37
     targetProjectPath = ":app"
 

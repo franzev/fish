@@ -2,7 +2,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.fish.android.buildlogic"
+group = "space.fishhub.android.buildlogic"
 
 dependencies {
     implementation("com.android.tools.build:gradle:9.2.1")
