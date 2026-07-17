@@ -2,6 +2,29 @@
 
 Audit date: 2026-07-15
 
+> **Status update (2026-07-17): superseded in part.** The mobile apps were
+> built natively (`apps/android` — Kotlin/Compose, `apps/ios/FishKit` —
+> SwiftPM/SwiftUI) rather than in React Native, so the TypeScript code-sharing
+> mechanics below (shared `packages/services`, portable hooks, zustand store,
+> the RN dependency-alternatives table, and the reuse percentages) do not
+> apply to mobile. What remains valid:
+>
+> - The backend (edge functions, RLS, RPCs) is reused 100% by all clients —
+>   unchanged.
+> - `packages/core` now serves as the **reference implementation and contract
+>   source**: native apps reimplement the pure reducers and verify parity
+>   against the JSON fixture vectors core exports (see
+>   `apps/android/feature/*/src/test/.../\*ParityTest.kt`). Sticker/emoji
+>   catalogs are shared as JSON (`@fish/core/chat-media/*`), and design tokens
+>   are code-generated for Kotlin and Swift from
+>   `design/tokens/fish.tokens.json`.
+> - The schema-hoisting recommendation (§3 step 3) is *more* important now:
+>   three clients hand-mirror the edge-function command contracts.
+> - The web-only hygiene items (§3 steps 1–2, the two pre-emptive fixes)
+>   remain valid for the web app on their own merits.
+>
+> The sections below are kept for reference and for the web-internal findings.
+
 **TLDR:** This codebase is unusually well-positioned for a React Native port. The
 ports-and-adapters architecture documented in `docs/ARCHITECTURE.md` holds up at
 the file level: **~80% of the non-UI code is directly reusable or needs only

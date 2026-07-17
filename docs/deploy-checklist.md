@@ -27,14 +27,14 @@ is done.
 ## 3. Push migrations to the hosted database
 
 - [ ] Run `supabase db push` against the linked project. This applies every
-      committed migration through `0036_lesson_booking.sql`, including profiles,
+      committed migration through `0049_android_call_push_devices.sql`, including profiles,
       client profiles, assignments, chat, realtime features, reactions, the
       seeded `general` channel, call control plane, presence, notifications,
       and conflict-safe lesson slots.
 - [ ] Spot-check that RLS is enabled on `profiles`, `client_profiles`,
       `coach_clients`, `channels`, `conversations`, `messages`,
       `message_reads`, `message_reactions`, `presence_sessions`, and
-      `lesson_slots`.
+      `lesson_slots`, and `push_devices`.
 - [ ] Deploy the chat and notification command functions:
       `supabase functions deploy send-message`,
       `supabase functions deploy chat-command`, and
@@ -48,6 +48,14 @@ is done.
       and `LIVEKIT_API_SECRET` as Supabase Edge Function secrets.
 - [ ] Deploy `call-command` with JWT verification and `livekit-webhook` without
       Supabase JWT verification; the webhook validates LiveKit's signature.
+- [ ] Create a Firebase service account limited to Cloud Messaging send access,
+      store its complete JSON as the `FCM_SERVICE_ACCOUNT_JSON` Edge Function
+      secret, and deploy `push-command` with JWT verification. Never expose the
+      service account to Android, web, logs, or a client-readable table.
+- [ ] Confirm authenticated users can execute `register_push_device` and
+      `unregister_push_device`, cannot select `push_devices`, and cannot mutate
+      another user's installation. Verify a provider `UNREGISTERED` response
+      revokes the row.
 - [ ] Deploy `booking-command` with JWT verification. Create the initial
       production coach availability through a trusted service-role or SQL
       administration path; never run the local development seed in production.
@@ -92,6 +100,11 @@ is done.
       properties. The Android-specific names take precedence; the
       `NEXT_PUBLIC_KLIPY_*` values remain supported fallbacks. These are public
       provider keys only—never place a Supabase service-role key in an APK.
+- [ ] Android release builds receive the public Firebase values
+      `FISH_FIREBASE_PROJECT_ID`, `FISH_FIREBASE_APPLICATION_ID`,
+      `FISH_FIREBASE_API_KEY`, and `FISH_FIREBASE_SENDER_ID` as environment
+      variables or Gradle properties. Confirm the application ID matches the
+      production Android package. The service-account JSON remains server-only.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` — required only in trusted administrative
       environments that run seed or verification scripts. The production web
       runtime does not require it. Never give it a `NEXT_PUBLIC_` prefix,
@@ -151,6 +164,12 @@ is done.
       client and coach avatar upload/removal, channel loading, message send,
       reaction, read state, presence status changes, lesson booking and conflict
       handling, upcoming-lesson display, and realtime recovery.
+- [ ] Verify direct-chat audio/video calls in both directions for
+      Android↔Android, Android↔web, and Android↔iOS using physical devices.
+      Include locked/background incoming calls, accept/reject/end actions,
+      notification denial, process death, Wi-Fi↔cellular handoff, Bluetooth,
+      camera/microphone revocation, PiP, quality adaptation, and a TURN/TLS-only
+      restrictive network.
 - [ ] Do not point destructive reset or seed commands at production.
 - [ ] In a Preview deployment, trigger one uncaught browser test error and one
       handled offline failure. Confirm both appear in Sentry under `staging`,
