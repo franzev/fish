@@ -4,6 +4,7 @@ import {
 } from "npm:livekit-server-sdk@2.17.0";
 import { createClient } from "npm:@supabase/supabase-js@2.110.0";
 import { z } from "npm:zod@4.4.3";
+import { dispatchCallPush, type CallPush } from "../_shared/fcm.ts";
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -330,6 +331,44 @@ Deno.serve(async (request) => {
       "Calling is taking a break. Messages still work.",
       503,
     );
+  }
+
+  if (command.action !== "checkMedia" && command.action !== "join") {
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+    if (serviceRoleKey) {
+      const admin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { persistSession: false },
+      });
+      const { data: actor } = await admin.from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const event = command.action === "initiate" || command.action === "initiateLesson"
+        ? "ringing"
+        : command.action === "accept"
+        ? "accepted"
+        : command.action === "reject"
+        ? "rejected"
+        : command.action === "cancel"
+        ? "cancelled"
+        : "ended";
+      const participantIds = [call.coach_id, call.client_id];
+      const recipientIds = event === "ringing"
+        ? participantIds.filter((id) => id !== user.id)
+        : participantIds;
+      const push: CallPush = {
+        event,
+        callId: call.id,
+        kind: call.kind,
+        counterpartId: user.id,
+        counterpartName: actor?.display_name ?? "Your call partner",
+        expiresAt: call.expires_at,
+        recipientIds,
+      };
+      await dispatchCallPush(admin, push).catch(() => {
+        console.error("call push dispatch failed", { action: command.action });
+      });
+    }
   }
 
   return Response.json(
