@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.painter.Painter
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishAvatar
 
@@ -20,13 +21,14 @@ fun PresenceAvatar(
     presence: PresencePresentation,
     modifier: Modifier = Modifier,
     size: Dp = FishTheme.sizes.avatarSmall,
+    image: Painter? = null,
 ) {
     Box(
         modifier = modifier.clearAndSetSemantics {
             contentDescription = "$name, ${presence.label}"
         },
     ) {
-        FishAvatar(name = name, size = size)
+        FishAvatar(name = name, image = image, size = size)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)

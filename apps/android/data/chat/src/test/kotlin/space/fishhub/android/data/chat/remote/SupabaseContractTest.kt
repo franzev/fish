@@ -43,6 +43,24 @@ class SupabaseContractTest {
     }
 
     @Test
+    fun conversationMemberProfileUsesTheMemberScopedRpcShape() {
+        val profile = json.decodeFromString<ConversationMemberProfileDto>(
+            """
+            {
+              "conversation_id":"conversation-1",
+              "id":"coach-1",
+              "role":"coach",
+              "display_name":"Coach Jordan",
+              "username":"coach_jordan"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("conversation-1", profile.conversationId)
+        assertEquals("coach_jordan", profile.username)
+    }
+
+    @Test
     fun markReadCommandIncludesEdgeFunctionDiscriminator() {
         val payload = json.encodeToString(
             MarkReadRequest(
@@ -72,6 +90,76 @@ class SupabaseContractTest {
         assertTrue(payload.contains("\"providerId\":\"gif-1\""))
         assertTrue(payload.contains("\"previewUrl\":\"https://static.klipy.com/preview.mp4\""))
         assertTrue(!payload.contains("stickerId"))
+    }
+
+    @Test
+    fun sendCommandCarriesReplyTarget() {
+        val payload = json.encodeToString(
+            SendMessageRequest(
+                conversationId = "conversation-1",
+                body = "I will try that.",
+                clientRequestId = "request-1",
+                replyToMessageId = "message-earlier",
+            ),
+        )
+
+        assertTrue(payload.contains("\"replyToMessageId\":\"message-earlier\""))
+    }
+
+    @Test
+    fun messageRowDecodesReactionAggregates() {
+        val row = json.decodeFromString<MessageDto>(
+            """
+            {
+              "id":"message-1",
+              "conversation_id":"conversation-1",
+              "sender_id":"client-1",
+              "sender_role":"client",
+              "body":"Practice sentence",
+              "client_request_id":"request-1",
+              "created_at":"2026-07-16T00:00:00Z",
+              "reactions":[
+                {"emoji":"👍","count":2,"by_me":true}
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("👍", row.reactions.single().emoji)
+        assertEquals(2, row.reactions.single().count)
+        assertEquals(true, row.reactions.single().byMe)
+    }
+
+    @Test
+    fun editDeleteReactionAndRefreshCommandsUseExactActions() {
+        assertEquals(
+            "{\"action\":\"edit-message\",\"messageId\":\"message-1\",\"body\":\"Clearer\"}",
+            json.encodeToString(EditMessageRequest(messageId = "message-1", body = "Clearer")),
+        )
+        assertEquals(
+            "{\"action\":\"delete-message\",\"messageId\":\"message-1\"}",
+            json.encodeToString(DeleteMessageRequest(messageId = "message-1")),
+        )
+        assertEquals(
+            "{\"action\":\"toggle-reaction\",\"messageId\":\"message-1\",\"emoji\":\"👍\"}",
+            json.encodeToString(ToggleReactionRequest(messageId = "message-1", emoji = "👍")),
+        )
+        assertEquals(
+            "{\"action\":\"refresh-messages\",\"messageIds\":[\"message-1\"]}",
+            json.encodeToString(RefreshMessagesRequest(messageIds = listOf("message-1"))),
+        )
+    }
+
+    @Test
+    fun friendSafetyCommandsUseExistingBackendActions() {
+        assertEquals(
+            "{\"action\":\"remove-friend\",\"targetId\":\"friend-1\"}",
+            json.encodeToString(FriendCommandRequest("remove-friend", "friend-1")),
+        )
+        assertEquals(
+            "{\"action\":\"block-user\",\"targetId\":\"friend-1\"}",
+            json.encodeToString(FriendCommandRequest("block-user", "friend-1")),
+        )
     }
 
     @Test

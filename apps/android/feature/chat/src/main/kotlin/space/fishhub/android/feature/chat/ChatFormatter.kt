@@ -14,6 +14,7 @@ interface ChatTextFormatter {
     val conversationUnavailable: String
     val attachmentsNotReady: String
     val attachmentUnavailable: String
+    val messageUnavailable: String
     fun participantContext(role: UserRole): String
     fun timeLabel(timestamp: String): String
     fun dateLabel(timestamp: String): String
@@ -34,6 +35,9 @@ class AndroidChatFormatter(context: Context) : ChatTextFormatter {
 
     override val attachmentUnavailable: String
         get() = applicationContext.getString(R.string.attachment_open_unavailable_notice)
+
+    override val messageUnavailable: String
+        get() = applicationContext.getString(R.string.reply_message_unavailable)
 
     override fun participantContext(role: UserRole): String = applicationContext.getString(
         when (role) {

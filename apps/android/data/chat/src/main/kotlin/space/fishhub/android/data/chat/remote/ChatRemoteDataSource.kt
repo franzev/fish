@@ -23,6 +23,10 @@ internal interface ChatRemoteDataSource {
         conversation: AuthorizedConversation,
         cursor: ChatMessageCursor? = null,
     ): MessagePage
+    suspend fun refreshMessages(
+        conversation: AuthorizedConversation,
+        messageIds: List<String>,
+    ): List<ChatMessage> = emptyList()
     suspend fun loadReadStates(conversationId: String): List<ChatReadState>
     suspend fun refreshAttachmentUrls(attachmentIds: List<String>): List<AttachmentDelivery>
     suspend fun initializeAttachmentUpload(command: InitializeAttachmentUpload): AttachmentUploadAuthorization
@@ -33,14 +37,23 @@ internal interface ChatRemoteDataSource {
         content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatMessage
-    suspend fun editMessage(conversation: AuthorizedConversation, messageId: String, body: String): ChatMessage
-    suspend fun deleteMessage(conversation: AuthorizedConversation, messageId: String): ChatMessage
+    suspend fun editMessage(
+        conversation: AuthorizedConversation,
+        messageId: String,
+        body: String,
+    ): ChatMessage = error("Message editing is not configured.")
+    suspend fun deleteMessage(
+        conversation: AuthorizedConversation,
+        messageId: String,
+    ): ChatMessage = error("Message deletion is not configured.")
     suspend fun toggleReaction(
         conversation: AuthorizedConversation,
         messageId: String,
         emoji: String,
-    ): ChatMessage
-    suspend fun sendTyping(conversationId: String, userId: String, typing: Boolean)
+    ): ChatMessage = error("Message reactions are not configured.")
+    suspend fun sendTyping(conversationId: String, userId: String, typing: Boolean) = Unit
+    suspend fun removeFriend(userId: String): Unit = error("Friend commands are not configured.")
+    suspend fun blockUser(userId: String): Unit = error("Friend commands are not configured.")
     suspend fun reportGif(messageId: String)
     suspend fun markRead(
         conversationId: String,

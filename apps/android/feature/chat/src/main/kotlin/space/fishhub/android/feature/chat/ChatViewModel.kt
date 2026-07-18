@@ -63,12 +63,21 @@ class ChatViewModel(
     private var currentUser: AuthorizedChatIdentity? = null
     private var activeConversation: AuthorizedConversation? = null
     private var activeCollection: Job? = null
+    private var directoryRefreshJob: Job? = null
     private var draftSave: Job? = null
     private var latestNotice: String? = null
     private var lastMarkedReadMessageId: String? = null
     private var markingReadMessageId: String? = null
     private var readMarkJob: Job? = null
     private var sending = false
+    private var participantTyping = false
+    private var participantTypingReset: Job? = null
+    private var localTyping = false
+    private var localTypingReset: Job? = null
+    private var focusedMessageId: String? = null
+    private var pendingFocusConversationId: String? = null
+    private var pendingFocusMessageId: String? = null
+    private var focusRequestJob: Job? = null
     private var showingConversationList = false
     private var pendingMedia: ComposerMediaUiModel? = null
     private var pendingGifQuery: String = ""
@@ -119,9 +128,29 @@ class ChatViewModel(
 
     fun selectConversation(conversationId: String) {
         val conversation = conversations.firstOrNull { it.conversationId == conversationId } ?: return
+        if (pendingFocusConversationId != conversationId) focusedMessageId = null
         showingConversationList = false
         savedStateHandle[ActiveConversationKey] = conversationId
         openConversation(conversation)
+    }
+
+    fun focusMessage(conversationId: String, messageId: String) {
+        if (conversationId.isBlank() || messageId.isBlank()) return
+        pendingFocusConversationId = conversationId
+        pendingFocusMessageId = messageId
+        focusedMessageId = messageId
+        val conversation = conversations.firstOrNull { it.conversationId == conversationId }
+            ?: return
+        if (activeConversation?.conversationId != conversationId || showingConversationList) {
+            selectConversation(conversationId)
+        } else {
+            requestFocusedMessage(conversation)
+        }
+    }
+
+    fun focusCurrentMessage(messageId: String) {
+        val conversationId = activeConversation?.conversationId ?: return
+        focusMessage(conversationId, messageId)
     }
 
     fun showConversationList() {
@@ -133,6 +162,21 @@ class ChatViewModel(
             selectedConversationId = activeConversation?.conversationId,
             notice = latestNotice,
         )
+        directoryRefreshJob?.cancel()
+        directoryRefreshJob = viewModelScope.launch {
+            val result = repository.listAuthorizedConversations()
+            if (result !is ChatResult.Success) return@launch
+            currentUser = result.value.currentUser
+            conversations = result.value.conversations
+            val activeId = activeConversation?.conversationId
+            if (activeId != null && conversations.none { it.conversationId == activeId }) {
+                handleConversationUnavailable(activeId)
+                return@launch
+            }
+            activeConversation = conversations.firstOrNull { it.conversationId == activeId }
+                ?: activeConversation
+            publish()
+        }
     }
 
     fun retryConversation() {
@@ -151,6 +195,106 @@ class ChatViewModel(
         draftSave = viewModelScope.launch {
             delay(DraftSaveDebounceMs)
             repository.saveDraft(conversation.conversationId, draft)
+        }
+        updateLocalTyping(draft.isNotBlank())
+    }
+
+    fun replyToMessage(messageId: String) {
+        val conversation = activeConversation ?: return
+        val message = chatState.conversations[conversation.conversationId]
+            ?.messages
+            ?.firstOrNull { it.id == messageId && it.deletedAt == null }
+            ?: return
+        if (message.localStatus != LocalMessageStatus.Sent) return
+        chatState = reduceChatState(
+            chatState,
+            ChatEvent.SetReplyTarget(conversation.conversationId, messageId),
+        )
+        publish()
+    }
+
+    fun clearReplyTarget() {
+        val conversationId = activeConversation?.conversationId ?: return
+        chatState = reduceChatState(chatState, ChatEvent.SetReplyTarget(conversationId, null))
+        publish()
+    }
+
+    fun editMessage(messageId: String, body: String) {
+        val conversation = activeConversation ?: return
+        val message = chatState.conversations[conversation.conversationId]
+            ?.messages
+            ?.firstOrNull { it.id == messageId }
+            ?: return
+        val normalized = body.trim()
+        if (message.senderId != conversation.currentUserId || message.deletedAt != null ||
+            message.localStatus != LocalMessageStatus.Sent || normalized.isEmpty() ||
+            normalized.codePoints().count() > MessageBodyLimit
+        ) return
+        viewModelScope.launch {
+            latestNotice = when (val result = repository.editMessage(messageId, normalized)) {
+                is ChatResult.Success -> null
+                is ChatResult.Failure -> result.message
+            }
+            publish()
+        }
+    }
+
+    fun deleteMessage(messageId: String) {
+        val conversation = activeConversation ?: return
+        val message = chatState.conversations[conversation.conversationId]
+            ?.messages
+            ?.firstOrNull { it.id == messageId }
+            ?: return
+        if (message.senderId != conversation.currentUserId || message.deletedAt != null ||
+            message.localStatus != LocalMessageStatus.Sent
+        ) return
+        viewModelScope.launch {
+            latestNotice = when (val result = repository.deleteMessage(messageId)) {
+                is ChatResult.Success -> null
+                is ChatResult.Failure -> result.message
+            }
+            publish()
+        }
+    }
+
+    fun removeFriend() = runFriendSafetyAction(block = false)
+
+    fun blockParticipant() = runFriendSafetyAction(block = true)
+
+    private fun runFriendSafetyAction(block: Boolean) {
+        val conversation = activeConversation ?: return
+        if (conversation.currentUserRole != space.fishhub.android.data.chat.model.UserRole.Client ||
+            conversation.participantRole != space.fishhub.android.data.chat.model.UserRole.Client
+        ) return
+        viewModelScope.launch {
+            val result = if (block) {
+                repository.blockUser(conversation.participantId)
+            } else {
+                repository.removeFriend(conversation.participantId)
+            }
+            when (result) {
+                is ChatResult.Success -> handleConversationUnavailable(conversation.conversationId)
+                is ChatResult.Failure -> {
+                    latestNotice = result.message
+                    publish()
+                }
+            }
+        }
+    }
+
+    fun toggleReaction(messageId: String, emoji: String) {
+        val message = activeConversation?.let { conversation ->
+            chatState.conversations[conversation.conversationId]
+                ?.messages
+                ?.firstOrNull { it.id == messageId }
+        } ?: return
+        if (message.deletedAt != null || message.localStatus != LocalMessageStatus.Sent || emoji.isBlank()) return
+        viewModelScope.launch {
+            latestNotice = when (val result = repository.toggleReaction(messageId, emoji)) {
+                is ChatResult.Success -> null
+                is ChatResult.Failure -> result.message
+            }
+            publish()
         }
     }
 
@@ -218,12 +362,14 @@ class ChatViewModel(
         val selectedGif = (selectedMedia as? ComposerMediaUiModel.Gif)?.value?.toChatGif()
         val selectedStickerId = (selectedMedia as? ComposerMediaUiModel.Sticker)?.value?.id
         val selectedAttachmentIds = selectedAttachments.mapNotNull { it.serverAttachmentId }
+        val replyTargetId = state.composer.replyTargetId
         val failedRetry = state.messages.lastOrNull {
             it.localStatus == LocalMessageStatus.Failed &&
                 it.body == body &&
                 it.gif?.providerId == selectedGif?.providerId &&
                 it.stickerId == selectedStickerId &&
-                it.attachments.map { attachment -> attachment.id } == selectedAttachmentIds
+                it.attachments.map { attachment -> attachment.id } == selectedAttachmentIds &&
+                it.replyToMessageId == replyTargetId
         }
         val requestId = failedRetry?.clientRequestId ?: UUID.randomUUID().toString()
         val sentRevision = selectionRevision
@@ -253,6 +399,7 @@ class ChatViewModel(
             },
             clientRequestId = requestId,
             createdAt = Instant.now().toString(),
+            replyToMessageId = replyTargetId,
             localStatus = LocalMessageStatus.Sending,
         )
         clearPendingMedia(recordRevision = false)
@@ -264,16 +411,18 @@ class ChatViewModel(
             ),
         )
         sending = true
+        stopLocalTyping()
         publish()
         viewModelScope.launch {
             repository.saveDraft(conversation.conversationId, "")
             when (val result = repository.sendMessage(
                 conversation.conversationId,
                 OutgoingMessageContent(
-                    body,
-                    selectedGif,
-                    selectedStickerId,
-                    selectedAttachmentIds,
+                    body = body,
+                    gif = selectedGif,
+                    stickerId = selectedStickerId,
+                    attachmentIds = selectedAttachmentIds,
+                    replyToMessageId = replyTargetId,
                 ),
                 requestId,
             )) {
@@ -310,6 +459,12 @@ class ChatViewModel(
                         )
                         repository.saveDraft(conversation.conversationId, body)
                     }
+                    if (replyTargetId != null) {
+                        chatState = reduceChatState(
+                            chatState,
+                            ChatEvent.SetReplyTarget(conversation.conversationId, replyTargetId),
+                        )
+                    }
                     latestNotice = result.message
                 }
             }
@@ -330,10 +485,11 @@ class ChatViewModel(
         publish()
         viewModelScope.launch {
             val content = OutgoingMessageContent(
-                failed.body,
-                failed.gif,
-                failed.stickerId,
-                failed.attachments.sortedBy { it.position }.map { it.id },
+                body = failed.body,
+                gif = failed.gif,
+                stickerId = failed.stickerId,
+                attachmentIds = failed.attachments.sortedBy { it.position }.map { it.id },
+                replyToMessageId = failed.replyToMessageId,
             )
             when (val result = repository.sendMessage(
                 conversation.conversationId,
@@ -487,7 +643,9 @@ class ChatViewModel(
                 currentUser = result.value.currentUser
                 conversations = result.value.conversations
                 val restoredId = savedStateHandle.get<String>(ActiveConversationKey)
-                val selected = conversations.firstOrNull { it.conversationId == restoredId }
+                val selected = conversations.firstOrNull {
+                    it.conversationId == pendingFocusConversationId
+                } ?: conversations.firstOrNull { it.conversationId == restoredId }
                     ?: conversations.firstOrNull()
                 if (selected == null) {
                     mutableUiState.value = ChatRouteUiState.Conversation(
@@ -506,6 +664,11 @@ class ChatViewModel(
 
     private fun openConversation(conversation: AuthorizedConversation) {
         val previousConversationId = activeConversation?.conversationId
+        if (previousConversationId != null && previousConversationId != conversation.conversationId) {
+            stopLocalTyping(previousConversationId)
+        }
+        participantTypingReset?.cancel()
+        participantTyping = false
         if (previousConversationId != null && previousConversationId != conversation.conversationId) {
             clearPendingMedia(recordRevision = true)
             attachmentDrafts = emptyList()
@@ -571,6 +734,19 @@ class ChatViewModel(
             }
             launch {
                 repository.observeRealtime(conversation.conversationId).collectLatest { event ->
+                    if (event is ChatRealtimeEvent.TypingChanged) {
+                        participantTypingReset?.cancel()
+                        participantTyping = event.typing
+                        if (event.typing) {
+                            participantTypingReset = viewModelScope.launch {
+                                delay(ParticipantTypingTimeoutMs)
+                                participantTyping = false
+                                publish()
+                            }
+                        }
+                        publish()
+                        return@collectLatest
+                    }
                     val status = when (event) {
                         ChatRealtimeEvent.Connecting -> RealtimeConnectionStatus.Connecting
                         ChatRealtimeEvent.Connected -> RealtimeConnectionStatus.Connected
@@ -616,6 +792,43 @@ class ChatViewModel(
                 }
                 publish()
             }
+        }
+        requestFocusedMessage(conversation)
+    }
+
+    private fun requestFocusedMessage(conversation: AuthorizedConversation) {
+        val messageId = pendingFocusMessageId ?: return
+        if (pendingFocusConversationId != conversation.conversationId) return
+        focusRequestJob?.cancel()
+        focusRequestJob = viewModelScope.launch {
+            val alreadyLoaded = chatState.conversations[conversation.conversationId]
+                ?.messages
+                ?.any { it.id == messageId } == true
+            if (!alreadyLoaded) {
+                when (val result = repository.refreshMessages(
+                    conversation.conversationId,
+                    listOf(messageId),
+                )) {
+                    is ChatResult.Success -> {
+                        result.value.forEach { message ->
+                            chatState = reduceChatState(
+                                chatState,
+                                ChatEvent.MergeRemoteMessage(message),
+                            )
+                        }
+                        if (result.value.none { it.id == messageId }) {
+                            focusedMessageId = null
+                            latestNotice = formatter.messageUnavailable
+                        }
+                    }
+                    is ChatResult.Failure -> latestNotice = result.message
+                }
+            }
+            if (pendingFocusMessageId == messageId) {
+                pendingFocusConversationId = null
+                pendingFocusMessageId = null
+            }
+            publish()
         }
     }
 
@@ -697,6 +910,11 @@ class ChatViewModel(
                 else -> OlderMessagesUiState.Idle
             },
             hasMoreOlder = current?.pagination?.hasMoreOlder == true,
+            typingParticipantName = conversation.participantDisplayName.takeIf { participantTyping },
+            replyTarget = current?.composer?.replyTargetId?.let { targetId ->
+                current.messages.firstOrNull { it.id == targetId }?.toReplyPreview(conversation)
+            },
+            focusedMessageId = focusedMessageId,
             isSending = sending,
             notice = latestNotice,
         )
@@ -719,6 +937,12 @@ class ChatViewModel(
                 id = conversation.participantId,
                 displayName = conversation.participantDisplayName,
                 contextLabel = formatter.participantContext(conversation.participantRole),
+                username = conversation.participantUsername,
+                avatarUrl = conversation.participantAvatarUrl,
+                friendSafetyAvailable = conversation.currentUserRole ==
+                    space.fishhub.android.data.chat.model.UserRole.Client &&
+                    conversation.participantRole ==
+                    space.fishhub.android.data.chat.model.UserRole.Client,
             ),
             conversations = conversationPreviews(),
             selectedConversationId = conversation.conversationId,
@@ -781,6 +1005,24 @@ class ChatViewModel(
                 },
                 startsUnread = message.id == oldestUnreadId,
                 deleted = message.deletedAt != null,
+                edited = message.editedAt != null,
+                replyPreview = message.replyToMessageId?.let { targetId ->
+                    messages.firstOrNull { it.id == targetId }?.toReplyPreview(conversation)
+                        ?: ReplyPreviewUiModel(
+                            messageId = targetId,
+                            authorName = "",
+                            snippet = formatter.messageUnavailable,
+                        )
+                },
+                reactions = message.reactions.map { reaction ->
+                    ReactionUiModel(reaction.emoji, reaction.count, reaction.byMe)
+                },
+                actionsEnabled = message.localStatus == LocalMessageStatus.Sent &&
+                    message.deletedAt == null,
+                canEdit = outgoing && message.localStatus == LocalMessageStatus.Sent &&
+                    message.deletedAt == null && message.body.isNotBlank(),
+                canDelete = outgoing && message.localStatus == LocalMessageStatus.Sent &&
+                    message.deletedAt == null,
                 gif = message.gif?.let(GifUiModel::from),
                 gifUnavailable = message.gifUnavailable,
                 attachments = message.attachments
@@ -796,6 +1038,43 @@ class ChatViewModel(
             ?.asSequence()
             ?.flatMap { it.attachments.asSequence() }
             ?.firstOrNull { it.id == attachmentId }
+    }
+
+    private fun ChatMessage.toReplyPreview(
+        conversation: AuthorizedConversation,
+    ): ReplyPreviewUiModel = ReplyPreviewUiModel(
+        messageId = id,
+        authorName = if (senderId == conversation.currentUserId) {
+            conversation.currentUserDisplayName
+        } else {
+            conversation.participantDisplayName
+        },
+        snippet = messageSnippet(this),
+    )
+
+    private fun updateLocalTyping(hasDraft: Boolean) {
+        val conversation = activeConversation ?: return
+        localTypingReset?.cancel()
+        if (!hasDraft) {
+            stopLocalTyping(conversation.conversationId)
+            return
+        }
+        if (!localTyping) {
+            localTyping = true
+            viewModelScope.launch { repository.sendTyping(conversation.conversationId, true) }
+        }
+        localTypingReset = viewModelScope.launch {
+            delay(LocalTypingTimeoutMs)
+            stopLocalTyping(conversation.conversationId)
+        }
+    }
+
+    private fun stopLocalTyping(conversationId: String? = activeConversation?.conversationId) {
+        localTypingReset?.cancel()
+        localTypingReset = null
+        if (!localTyping || conversationId == null) return
+        localTyping = false
+        viewModelScope.launch { repository.sendTyping(conversationId, false) }
     }
 
     private fun conversationPreviews(): List<ConversationPreviewUiModel> = conversations.map { item ->
@@ -900,6 +1179,9 @@ class ChatViewModel(
     private companion object {
         const val ActiveConversationKey = "active_conversation_id"
         const val DraftSaveDebounceMs = 300L
+        const val MessageBodyLimit = 4_000L
+        const val LocalTypingTimeoutMs = 3_000L
+        const val ParticipantTypingTimeoutMs = 5_000L
         const val PendingConversationKey = "pending_media_conversation_id"
         const val PendingMediaKindKey = "pending_media_kind"
         const val PendingMediaValueKey = "pending_media_value"

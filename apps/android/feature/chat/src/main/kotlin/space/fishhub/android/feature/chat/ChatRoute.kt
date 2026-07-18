@@ -143,6 +143,14 @@ fun ChatRoute(
                 onRetryPendingAttachment = viewModel::retryAttachmentDraft,
                 onRetryMessage = viewModel::retryMessage,
                 onReportGif = viewModel::reportGif,
+                onReplyMessage = viewModel::replyToMessage,
+                onEditMessage = viewModel::editMessage,
+                onDeleteMessage = viewModel::deleteMessage,
+                onToggleReaction = viewModel::toggleReaction,
+                onFocusMessage = viewModel::focusCurrentMessage,
+                onClearReplyTarget = viewModel::clearReplyTarget,
+                onRemoveFriend = viewModel::removeFriend,
+                onBlockParticipant = viewModel::blockParticipant,
                 onPhotoAttachmentClick = { attachmentId ->
                     selectedPhotoId = attachmentId
                     viewModel.refreshAttachment(attachmentId)

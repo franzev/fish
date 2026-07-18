@@ -6,6 +6,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +37,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -40,7 +46,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import coil3.compose.rememberAsyncImagePainter
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
@@ -67,9 +75,11 @@ fun ChatTopBar(
     onBack: () -> Unit,
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    onOpenParticipantDetails: () -> Unit = {},
     accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val avatarPainter = participant.avatarUrl?.let { rememberAsyncImagePainter(it) }
     FishTopBar(
         title = participant.displayName,
         subtitle = presence.label,
@@ -77,7 +87,18 @@ fun ChatTopBar(
         showBack = showBack,
         onBack = onBack,
         leadingAvatar = {
-            PresenceAvatar(name = participant.displayName, presence = presence)
+            Box(
+                modifier = Modifier
+                    .size(FishTheme.sizes.touchTarget)
+                    .clickable(onClick = onOpenParticipantDetails),
+                contentAlignment = Alignment.Center,
+            ) {
+                PresenceAvatar(
+                    name = participant.displayName,
+                    presence = presence,
+                    image = avatarPainter,
+                )
+            }
         },
         trailingContent = {
             FishIconButton(
@@ -110,6 +131,9 @@ fun MessageBubble(
     onPhotoAttachmentClick: (String) -> Unit = {},
     onFileAttachmentClick: (String) -> Unit = {},
     onAttachmentLoadError: (String) -> Unit = {},
+    onOpenActions: () -> Unit = {},
+    onToggleReaction: (String) -> Unit = {},
+    onReplyPreviewClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = FishTheme.colors
@@ -123,12 +147,36 @@ fun MessageBubble(
         body,
         message.timeLabel,
     )
+    val messageActionsLabel = stringResource(R.string.more_message_actions)
     val shape = messageShape(message)
 
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .pointerInput(message.id, message.actionsEnabled) {
+                if (message.actionsEnabled) {
+                    detectTapGestures(onLongPress = { onOpenActions() })
+                }
+            }
+            .semantics {
+                if (message.actionsEnabled) {
+                    customActions = listOf(
+                        CustomAccessibilityAction(messageActionsLabel) {
+                            onOpenActions()
+                            true
+                        },
+                    )
+                }
+            },
         horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start,
     ) {
+        message.replyPreview?.let { reply ->
+            ReplyPreviewSurface(
+                preview = reply,
+                onClick = { onReplyPreviewClick(reply.messageId) },
+                modifier = Modifier.padding(bottom = FishTheme.spacing.twoXs),
+            )
+        }
         message.sticker?.let { sticker ->
             StickerMessageMedia(
                 sticker = sticker,
@@ -191,6 +239,44 @@ fun MessageBubble(
                 ),
             )
         }
+        if (message.edited && !message.deleted) {
+            Text(
+                text = stringResource(R.string.message_edited),
+                modifier = Modifier.padding(top = FishTheme.spacing.twoXs),
+                color = FishTheme.colors.muted,
+                style = FishTheme.typography.caption,
+            )
+        }
+        if (message.reactions.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+                    .horizontalScroll(rememberScrollState())
+                    .padding(top = FishTheme.spacing.twoXs),
+                horizontalArrangement = Arrangement.spacedBy(FishTheme.spacing.twoXs),
+            ) {
+                message.reactions.forEach { reaction ->
+                    val reactionDescription = stringResource(
+                        R.string.reaction_accessibility,
+                        reaction.emoji,
+                        reaction.count,
+                    )
+                    FishButton(
+                        label = "${reaction.emoji} ${reaction.count}",
+                        onClick = { onToggleReaction(reaction.emoji) },
+                        variant = if (reaction.byMe) {
+                            FishButtonVariant.Secondary
+                        } else {
+                            FishButtonVariant.Ghost
+                        },
+                        enabled = message.actionsEnabled,
+                        modifier = Modifier.semantics {
+                            contentDescription = reactionDescription
+                        },
+                    )
+                }
+            }
+        }
         if (message.delivery == MessageDeliveryUiState.Failed) {
             FishButton(
                 label = stringResource(R.string.retry_failed_message),
@@ -202,6 +288,40 @@ fun MessageBubble(
                 ),
             )
         }
+    }
+}
+
+@Composable
+private fun ReplyPreviewSurface(
+    preview: ReplyPreviewUiModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+            .clip(RoundedCornerShape(FishTheme.radii.control))
+            .background(FishTheme.colors.surfaceAlt)
+            .clickable(onClick = onClick)
+            .padding(
+                horizontal = FishTheme.spacing.sm,
+                vertical = FishTheme.spacing.xs,
+            ),
+    ) {
+        if (preview.authorName.isNotBlank()) {
+            Text(
+                text = preview.authorName,
+                color = FishTheme.colors.foreground,
+                style = FishTheme.typography.label,
+            )
+        }
+        Text(
+            text = preview.snippet,
+            color = FishTheme.colors.muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = FishTheme.typography.caption,
+        )
     }
 }
 
@@ -410,6 +530,8 @@ fun MessageComposer(
     onOpenAttachmentPicker: () -> Unit = {},
     onRemovePendingAttachment: (String) -> Unit = {},
     onRetryPendingAttachment: (String) -> Unit = {},
+    replyTarget: ReplyPreviewUiModel? = null,
+    onClearReplyTarget: () -> Unit = {},
     modifier: Modifier = Modifier,
     editable: Boolean = true,
     mediaSelectionEnabled: Boolean = true,
@@ -426,6 +548,34 @@ fun MessageComposer(
             .background(FishTheme.colors.surface)
             .padding(FishTheme.spacing.page),
     ) {
+        if (replyTarget != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = FishTheme.spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.replying_to, replyTarget.authorName),
+                        color = FishTheme.colors.foreground,
+                        style = FishTheme.typography.label,
+                    )
+                    Text(
+                        text = replyTarget.snippet,
+                        color = FishTheme.colors.muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = FishTheme.typography.caption,
+                    )
+                }
+                FishIconButton(
+                    icon = FishIcons.Close,
+                    contentDescription = stringResource(R.string.cancel_reply),
+                    onClick = onClearReplyTarget,
+                )
+            }
+        }
         Text(
             text = stringResource(R.string.message_label),
             modifier = Modifier.padding(bottom = FishTheme.spacing.xs),

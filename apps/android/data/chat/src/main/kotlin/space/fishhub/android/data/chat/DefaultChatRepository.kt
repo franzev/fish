@@ -233,6 +233,22 @@ internal class DefaultChatRepository(
         }
     }
 
+    override suspend fun refreshMessages(
+        conversationId: String,
+        messageIds: List<String>,
+    ): ChatResult<List<ChatMessage>> {
+        val uniqueIds = messageIds.distinct().take(MaxRefreshMessageCount)
+        if (uniqueIds.isEmpty()) return ChatResult.Success(emptyList())
+        val conversation = dao.conversation(conversationId)?.toDomain()
+            ?: return unavailableFailure()
+        return resultOf(
+            ChatOperation.RefreshMessages,
+            "That message did not load yet. Try again.",
+        ) {
+            remote.refreshMessages(conversation, uniqueIds).also { reconcileMessages(it) }
+        }
+    }
+
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,
     ): ChatResult<List<AttachmentDelivery>> {
@@ -360,6 +376,16 @@ internal class DefaultChatRepository(
         val conversation = dao.conversation(conversationId)?.toDomain() ?: return
         runCatching { remote.sendTyping(conversationId, conversation.currentUserId, typing) }
     }
+
+    override suspend fun removeFriend(userId: String): ChatResult<Unit> = resultOf(
+        ChatOperation.RemoveFriend,
+        "Friends is taking a break. Chat still works.",
+    ) { remote.removeFriend(userId) }
+
+    override suspend fun blockUser(userId: String): ChatResult<Unit> = resultOf(
+        ChatOperation.BlockUser,
+        "Friends is taking a break. Chat still works.",
+    ) { remote.blockUser(userId) }
 
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = resultOf(
         ChatOperation.ReportGif,
@@ -703,6 +729,7 @@ private class ConversationUnavailableException : IllegalStateException()
 
 private const val DefaultRealtimeRetryDelayMs = 5_000L
 private const val MaxMessageAttachments = 5
+private const val MaxRefreshMessageCount = 50
 private const val AttachmentScopePreview = "preview"
 private const val AttachmentScopeComposer = "composer"
 private const val AttachmentStateWaiting = "waiting_for_network"

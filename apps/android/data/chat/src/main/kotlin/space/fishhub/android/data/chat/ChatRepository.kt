@@ -38,6 +38,8 @@ data class AuthorizedConversation(
     val latestMessageText: String?,
     val latestMessageCreatedAt: String?,
     val unreadCount: Int,
+    val participantUsername: String? = null,
+    val participantAvatarUrl: String? = null,
 )
 
 data class AuthorizedChatIdentity(
@@ -168,6 +170,10 @@ interface ChatRepository {
         conversationId: String,
         cursor: ChatMessageCursor,
     ): ChatResult<MessagePage>
+    suspend fun refreshMessages(
+        conversationId: String,
+        messageIds: List<String>,
+    ): ChatResult<List<ChatMessage>> = ChatResult.Success(emptyList())
     suspend fun refreshAttachmentUrls(attachmentIds: List<String>): ChatResult<List<AttachmentDelivery>>
     suspend fun sendMessage(
         conversationId: String,
@@ -178,6 +184,8 @@ interface ChatRepository {
     suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage>
     suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage>
     suspend fun sendTyping(conversationId: String, typing: Boolean)
+    suspend fun removeFriend(userId: String): ChatResult<Unit>
+    suspend fun blockUser(userId: String): ChatResult<Unit>
     suspend fun reportGif(messageId: String): ChatResult<Unit>
     suspend fun markRead(
         conversationId: String,

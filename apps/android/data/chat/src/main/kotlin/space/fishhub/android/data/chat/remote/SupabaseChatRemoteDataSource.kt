@@ -54,6 +54,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -112,6 +113,23 @@ internal class SupabaseChatRemoteDataSource(
         }.decodeSingle<ProfileDto>()
         val previews = client.postgrest.rpc("list_direct_conversation_previews")
             .decodeList<ConversationPreviewDto>()
+        val conversationIds = previews.map(ConversationPreviewDto::conversationId).distinct()
+        val participantIds = previews.map(ConversationPreviewDto::participantId).distinct()
+        val participantProfiles = if (conversationIds.isEmpty()) {
+            emptyMap()
+        } else {
+            client.postgrest.rpc(
+                function = "list_conversation_member_profiles",
+                parameters = buildJsonObject {
+                    put(
+                        "p_conversation_ids",
+                        JsonArray(conversationIds.map(::JsonPrimitive)),
+                    )
+                },
+            ).decodeList<ConversationMemberProfileDto>()
+                .associateBy(ConversationMemberProfileDto::id)
+        }
+        val avatarUrls = resolveAvatarUrls(participantIds)
         val currentRole = profile.role.toRoleOrNull()
             ?: throw IllegalStateException("Unknown current user role")
         val conversations = previews.mapNotNull { preview ->
@@ -127,6 +145,8 @@ internal class SupabaseChatRemoteDataSource(
                 latestMessageText = preview.latestMessageText,
                 latestMessageCreatedAt = preview.latestMessageCreatedAt,
                 unreadCount = preview.unreadCount,
+                participantUsername = participantProfiles[preview.participantId]?.username,
+                participantAvatarUrl = avatarUrls[preview.participantId],
             )
         }
         return AuthorizedChatDirectory(
@@ -379,6 +399,54 @@ internal class SupabaseChatRemoteDataSource(
         )
     }
 
+    override suspend fun removeFriend(userId: String) = friendCommand("remove-friend", userId)
+
+    override suspend fun blockUser(userId: String) = friendCommand("block-user", userId)
+
+    private suspend fun friendCommand(action: String, userId: String) {
+        val response = client.functions.invoke(
+            function = "friend-command",
+            body = FriendCommandRequest(action = action, targetId = userId),
+            headers = headers {
+                append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            },
+        )
+        val payload = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw RemoteCommandException(readError(payload, DefaultFriendError))
+        }
+    }
+
+    private suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> {
+        if (profileIds.isEmpty()) return emptyMap()
+        return try {
+            val response = client.functions.invoke(
+                function = "avatar-command",
+                body = ResolveAvatarUrlsRequest(profileIds = profileIds.distinct().take(100)),
+                headers = headers {
+                    append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                },
+            )
+            if (!response.status.isSuccess()) return emptyMap()
+            json.decodeFromString<ResolveAvatarUrlsResponse>(response.bodyAsText())
+                .items
+                .associate { item -> item.profileId to normalizeSupabaseUrl(item.url) }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            emptyMap()
+        }
+    }
+
+    private fun normalizeSupabaseUrl(value: String): String = runCatching {
+        val uri = URI(value)
+        buildString {
+            append(client.supabaseHttpUrl)
+            append(uri.rawPath)
+            uri.rawQuery?.let { append('?').append(it) }
+        }
+    }.getOrDefault(value)
+
     override suspend fun reportGif(messageId: String) {
         val response = client.functions.invoke(
             function = "chat-command",
@@ -542,23 +610,35 @@ internal class SupabaseChatRemoteDataSource(
             ?: throw RemoteCommandException(DefaultCommandError)
     }
 
-    private suspend fun refreshMessage(
+    override suspend fun refreshMessages(
         conversation: AuthorizedConversation,
-        messageId: String,
-    ): ChatMessage? = runCatching {
+        messageIds: List<String>,
+    ): List<ChatMessage> {
+        if (messageIds.isEmpty()) return emptyList()
         val response = client.functions.invoke(
             function = "chat-command",
-            body = RefreshMessagesRequest(messageIds = listOf(messageId)),
+            body = RefreshMessagesRequest(messageIds = messageIds.distinct().take(50)),
             headers = headers {
                 append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             },
         )
-        if (!response.status.isSuccess()) return@runCatching null
-        val messages = json.parseToJsonElement(response.bodyAsText()).jsonObject["messages"] as? JsonArray
-        val row = messages?.firstOrNull()?.let {
-            json.decodeFromJsonElement(MessageDto.serializer(), it)
-        } ?: return@runCatching null
-        hydrateMessage(conversation, row)
+        val payload = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw RemoteCommandException(readError(payload, DefaultCommandError))
+        }
+        val rows = json.parseToJsonElement(payload).jsonObject["messages"] as? JsonArray
+            ?: return emptyList()
+        return rows.mapNotNull { element ->
+            val row = json.decodeFromJsonElement(MessageDto.serializer(), element)
+            hydrateMessage(conversation, row)
+        }
+    }
+
+    private suspend fun refreshMessage(
+        conversation: AuthorizedConversation,
+        messageId: String,
+    ): ChatMessage? = runCatching {
+        refreshMessages(conversation, listOf(messageId)).firstOrNull()
     }.getOrNull()
 
     private suspend fun hydrateMessage(
@@ -814,6 +894,7 @@ internal class SupabaseChatRemoteDataSource(
         const val DefaultReadError = "Your read position did not update yet. Your messages are still here."
         const val DefaultReportError = "That GIF report did not send yet. Try again."
         const val DefaultCommandError = "That did not save yet. Keep this open and try again."
+        const val DefaultFriendError = "Friends is taking a break. Chat still works."
         const val DefaultAttachmentError = "That attachment did not load yet. Try again."
     }
 }

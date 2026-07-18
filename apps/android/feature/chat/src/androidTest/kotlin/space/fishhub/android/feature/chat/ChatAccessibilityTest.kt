@@ -13,12 +13,16 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.presence.PresencePresentation
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -352,6 +356,115 @@ class ChatAccessibilityTest {
         assertTrue(dismissed)
     }
 
+    @Test
+    fun messageActionsExposeReplyAndRequireDeletionConfirmation() {
+        var replied = false
+        var deleted = false
+        composeRule.setContent {
+            FishTheme {
+                ChatMessageActionsSheet(
+                    message = actionableMessage(),
+                    onDismiss = {},
+                    onReply = { replied = true },
+                    onEdit = {},
+                    onDelete = { deleted = true },
+                    onReact = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag("message-actions-sheet").assertExists()
+        composeRule.onNodeWithText("Reply").performClick()
+        assertTrue(replied)
+        composeRule.onNodeWithText("Delete message").performClick()
+        composeRule.onNodeWithText(
+            "Delete this message? People in this conversation will see that it was deleted.",
+        ).assertExists()
+        assertTrue(!deleted)
+        composeRule.onNodeWithText("Delete message").performClick()
+        assertTrue(deleted)
+    }
+
+    @Test
+    fun longPressOpensActionsWithoutAddingAPersistentControl() {
+        var opened = false
+        composeRule.setContent {
+            FishTheme {
+                MessageBubble(
+                    message = actionableMessage(),
+                    onOpenActions = { opened = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(
+            "You. I practiced this sentence. 10:30 AM",
+        ).performTouchInput { longClick() }
+
+        assertTrue(opened)
+        composeRule.onAllNodesWithContentDescription("More actions for message")
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun reactionsAreReachableAndFocusedMessageIsEmphasized() {
+        var reaction: String? = null
+        composeRule.setContent {
+            FishTheme(reducedMotion = true) {
+                ChatTranscript(
+                    messages = listOf(
+                        actionableMessage().copy(
+                            reactions = listOf(ReactionUiModel("👍", 2, true)),
+                        ),
+                    ),
+                    pagination = OlderMessagesUiState.Idle,
+                    typingParticipantName = null,
+                    focusedMessageId = "message-action",
+                    onRetryEarlier = {},
+                    onToggleReaction = { _, emoji -> reaction = emoji },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("focused-message").assertExists()
+        composeRule.onNodeWithContentDescription("👍, 2 reactions")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals("👍", reaction)
+    }
+
+    @Test
+    fun friendSafetyActionsUseAConfirmationStep() {
+        var removed = false
+        var dismissed = false
+        composeRule.setContent {
+            FishTheme {
+                ParticipantDetailsSheet(
+                    participant = ParticipantUiModel(
+                        id = "friend-1",
+                        displayName = "Sam",
+                        contextLabel = "Personal coaching conversation",
+                        username = "sam",
+                        friendSafetyAvailable = true,
+                    ),
+                    presence = PresencePresentation(label = "Online"),
+                    onDismiss = { dismissed = true },
+                    onRemoveFriend = { removed = true },
+                    onBlock = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("@sam").assertExists()
+        composeRule.onNodeWithText("Unfriend").performClick()
+        composeRule.onNodeWithText(
+            "Unfriend Sam? You can add each other again later.",
+        ).assertExists()
+        assertTrue(!removed)
+        composeRule.onNodeWithText("Unfriend").performClick()
+        assertTrue(removed)
+        assertTrue(dismissed)
+    }
+
     @Composable
     private fun TestChat() {
         FishTheme(reducedMotion = true) {
@@ -408,5 +521,16 @@ class ChatAccessibilityTest {
         height = 800.takeIf { photo },
         localPath = "/private/$id",
         thumbnailPath = null,
+    )
+
+    private fun actionableMessage() = MessageUiModel(
+        id = "message-action",
+        senderName = "Franz",
+        body = "I practiced this sentence",
+        timeLabel = "10:30 AM",
+        isOutgoing = true,
+        actionsEnabled = true,
+        canEdit = true,
+        canDelete = true,
     )
 }

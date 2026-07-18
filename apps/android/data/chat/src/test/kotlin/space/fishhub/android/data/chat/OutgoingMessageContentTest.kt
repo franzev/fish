@@ -28,6 +28,17 @@ class OutgoingMessageContentTest {
         }
     }
 
+    @Test
+    fun `keeps a reply target without changing normalized content`() {
+        val content = OutgoingMessageContent(
+            body = "  I will try that.  ",
+            replyToMessageId = "message-earlier",
+        )
+
+        assertEquals("I will try that.", content.normalizedBody)
+        assertEquals("message-earlier", content.replyToMessageId)
+    }
+
     private fun gif() = ChatGif(
         provider = "klipy",
         providerId = "gif-1",

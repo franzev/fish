@@ -11,6 +11,7 @@ import space.fishhub.android.data.chat.model.ChatGif
 import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatAttachment
 import space.fishhub.android.data.chat.model.ChatAttachmentKind
+import space.fishhub.android.data.chat.model.ChatReaction
 import space.fishhub.android.data.chat.model.UserRole
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -207,6 +208,59 @@ class ChatDatabaseMigrationTest {
                 assertNull(cursor.getString(5))
                 assertNull(cursor.getString(6))
             }
+        }
+    }
+
+    @Test
+    fun migrationFiveToSixAddsReactionCacheWithoutChangingMessages() {
+        helper.createDatabase(DatabaseName, 5).apply {
+            execSQL(
+                """
+                INSERT INTO messages (
+                    id, conversation_id, sender_id, sender_role, sender_display_name,
+                    body, sticker_id, gif_json, client_request_id, created_at, edited_at,
+                    deleted_at, reply_to_message_id, local_status, failure_reason
+                ) VALUES (
+                    'message-reaction', 'conversation-1', 'client-1', 'client', 'Franz',
+                    'Saved text', NULL, NULL, 'request-reaction', '2026-07-18T00:00:00Z', NULL,
+                    NULL, NULL, 'sent', NULL
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 6, true, MIGRATION_5_6).use { database ->
+            database.query(
+                "SELECT body, reactions_json FROM messages WHERE id = 'message-reaction'",
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Saved text", cursor.getString(0))
+                assertNull(cursor.getString(1))
+            }
+        }
+    }
+
+    @Test
+    fun currentVersionRoundTripsReactionAggregates() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, ChatDatabase::class.java).build()
+        try {
+            val original = message(id = "reacted").copy(
+                reactions = listOf(
+                    ChatReaction(emoji = "👍", count = 3, byMe = true),
+                    ChatReaction(emoji = "🎉", count = 1, byMe = false),
+                ),
+            )
+            database.chatDao().upsertMessage(original.toEntity())
+
+            val restored = database.chatDao().observeMessages("conversation-1")
+                .first()
+                .single()
+                .toDomain()
+            assertEquals(original.reactions, restored.reactions)
+        } finally {
+            database.close()
         }
     }
 

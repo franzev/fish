@@ -9,6 +9,41 @@ internal data class ProfileDto(
     val id: String,
     val role: String,
     @SerialName("display_name") val displayName: String,
+    val username: String? = null,
+)
+
+@Serializable
+internal data class ConversationMemberProfileDto(
+    @SerialName("conversation_id") val conversationId: String,
+    val id: String,
+    val role: String,
+    @SerialName("display_name") val displayName: String,
+    val username: String? = null,
+)
+
+@Serializable
+internal data class ResolveAvatarUrlsRequest(
+    val action: String = "resolve-urls",
+    val profileIds: List<String>,
+    val variant: String = "thumbnail",
+)
+
+@Serializable
+internal data class ResolveAvatarUrlsResponse(
+    val items: List<AvatarUrlDto> = emptyList(),
+)
+
+@Serializable
+internal data class AvatarUrlDto(
+    val profileId: String,
+    val url: String,
+    val expiresAt: String? = null,
+)
+
+@Serializable
+internal data class FriendCommandRequest(
+    val action: String,
+    val targetId: String,
 )
 
 @Serializable

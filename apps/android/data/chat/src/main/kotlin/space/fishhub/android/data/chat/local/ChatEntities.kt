@@ -41,7 +41,7 @@ data class MessageEntity(
     @ColumnInfo(name = "edited_at") val editedAt: String?,
     @ColumnInfo(name = "deleted_at") val deletedAt: String?,
     @ColumnInfo(name = "reply_to_message_id") val replyToMessageId: String?,
-    @ColumnInfo(name = "reactions_json") val reactionsJson: String?,
+    @ColumnInfo(name = "reactions_json") val reactionsJson: String? = null,
     @ColumnInfo(name = "local_status") val localStatus: String?,
     @ColumnInfo(name = "failure_reason") val failureReason: String?,
 )

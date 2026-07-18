@@ -178,6 +178,8 @@ private object UnconfiguredChatRepository : ChatRepository {
     override suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage> = failure
     override suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage> = failure
     override suspend fun sendTyping(conversationId: String, typing: Boolean) = Unit
+    override suspend fun removeFriend(userId: String): ChatResult<Unit> = failure
+    override suspend fun blockUser(userId: String): ChatResult<Unit> = failure
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = failure
     override suspend fun markRead(
         conversationId: String,

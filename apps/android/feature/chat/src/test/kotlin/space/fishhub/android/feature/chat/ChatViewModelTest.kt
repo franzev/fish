@@ -37,8 +37,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -467,6 +469,166 @@ class ChatViewModelTest {
             assertEquals("https://example.test/file/display", request.await().signedUrl)
             assertEquals(1, repository.refreshCalls)
         }
+
+    @Test
+    fun `reply send carries target and clears reply composer state`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitMessages(listOf(incomingMessage("incoming-1")))
+            advanceUntilIdle()
+
+            viewModel.replyToMessage("incoming-1")
+            viewModel.draftChanged("I will try that.")
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            assertEquals("incoming-1", repository.lastSentContent?.replyToMessageId)
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(null, state.model.replyTarget)
+            assertEquals("incoming-1", state.model.messages.last().replyPreview?.messageId)
+        }
+
+    @Test
+    fun `message commands publish edits deletion and reactions`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitMessages(
+                listOf(
+                    incomingMessage("mine").copy(
+                        senderId = "client-1",
+                        senderRole = UserRole.Client,
+                        senderDisplayName = "Franz",
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.editMessage("mine", "A clearer sentence")
+            advanceUntilIdle()
+            var message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertEquals("A clearer sentence", message.body)
+            assertTrue(message.edited)
+
+            viewModel.toggleReaction("mine", "👍")
+            advanceUntilIdle()
+            message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertEquals(ReactionUiModel("👍", 1, true), message.reactions.single())
+
+            viewModel.deleteMessage("mine")
+            advanceUntilIdle()
+            message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertTrue(message.deleted)
+            assertTrue(!message.actionsEnabled)
+        }
+
+    @Test
+    fun `typing signals start once and stop after inactivity`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.draftChanged("H")
+            viewModel.draftChanged("He")
+            advanceTimeBy(2_999)
+            assertEquals(listOf(true), repository.typingEvents)
+            advanceTimeBy(1)
+            advanceUntilIdle()
+
+            assertEquals(listOf(true, false), repository.typingEvents)
+        }
+
+    @Test
+    fun `incoming typing expires when the stop signal is lost`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            repository.realtime.value = ChatRealtimeEvent.TypingChanged(true)
+            runCurrent()
+            assertEquals(
+                "Coach Jordan",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                    .model.typingParticipantName,
+            )
+            advanceTimeBy(5_000)
+            advanceUntilIdle()
+            assertEquals(
+                null,
+                (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                    .model.typingParticipantName,
+            )
+        }
+
+    @Test
+    fun `notification focus selects conversation and refreshes an older target`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(conversationCount = 2)
+            repository.refreshedMessages = listOf(
+                incomingMessage("older-target", conversationId = "conversation-2").copy(
+                    senderId = "coach-2",
+                    senderDisplayName = "Coach Mina",
+                ),
+            )
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.focusMessage("conversation-2", "older-target")
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals("conversation-2", state.model.selectedConversationId)
+            assertEquals("older-target", state.model.focusedMessageId)
+            assertEquals("older-target", state.model.messages.single().id)
+            assertEquals(1, repository.refreshMessageCalls)
+        }
+
+    @Test
+    fun `client friend profile exposes avatar details and removal closes conversation`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(
+                participantRole = UserRole.Client,
+                participantUsername = "sam",
+                participantAvatarUrl = "https://example.test/avatar.webp",
+            )
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            var state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals("sam", state.model.participant?.username)
+            assertEquals("https://example.test/avatar.webp", state.model.participant?.avatarUrl)
+            assertTrue(state.model.participant?.friendSafetyAvailable == true)
+
+            viewModel.removeFriend()
+            advanceUntilIdle()
+
+            assertEquals(listOf("coach-1"), repository.removedUserIds)
+            state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(ChatScreenState.Unavailable, state.model.screenState)
+        }
+
+    @Test
+    fun `coach relationship does not expose friend safety commands`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.blockParticipant()
+            advanceUntilIdle()
+
+            assertTrue(repository.blockedUserIds.isEmpty())
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertTrue(state.model.participant?.friendSafetyAvailable == false)
+        }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -480,6 +642,9 @@ class MainDispatcherRule(
 private class FakeChatRepository(
     var sendFails: Boolean = false,
     conversationCount: Int = 1,
+    participantRole: UserRole = UserRole.Coach,
+    participantUsername: String? = null,
+    participantAvatarUrl: String? = null,
 ) : ChatRepository {
     private val conversation = AuthorizedConversation(
         conversationId = "conversation-1",
@@ -487,11 +652,13 @@ private class FakeChatRepository(
         currentUserRole = UserRole.Client,
         currentUserDisplayName = "Franz",
         participantId = "coach-1",
-        participantRole = UserRole.Coach,
+        participantRole = participantRole,
         participantDisplayName = "Coach Jordan",
         latestMessageText = null,
         latestMessageCreatedAt = null,
         unreadCount = 0,
+        participantUsername = participantUsername,
+        participantAvatarUrl = participantAvatarUrl,
     )
     private val messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     private val readStates = MutableStateFlow<List<ChatReadState>>(emptyList())
@@ -521,6 +688,11 @@ private class FakeChatRepository(
     var reportCalls: Int = 0
     var sendGate: CompletableDeferred<Unit>? = null
     var refreshCalls: Int = 0
+    var refreshMessageCalls: Int = 0
+    var refreshedMessages: List<ChatMessage> = emptyList()
+    val typingEvents = mutableListOf<Boolean>()
+    val removedUserIds = mutableListOf<String>()
+    val blockedUserIds = mutableListOf<String>()
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> = messages
     override fun observeReadStates(conversationId: String): Flow<List<ChatReadState>> = readStates
@@ -551,6 +723,15 @@ private class FakeChatRepository(
     )
     override suspend fun loadOlder(conversationId: String, cursor: ChatMessageCursor) =
         ChatResult.Success(MessagePage(emptyList(), false, null))
+    override suspend fun refreshMessages(
+        conversationId: String,
+        messageIds: List<String>,
+    ): ChatResult<List<ChatMessage>> {
+        refreshMessageCalls += 1
+        return ChatResult.Success(
+            refreshedMessages.filter { it.conversationId == conversationId && it.id in messageIds },
+        )
+    }
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,
     ): ChatResult<List<space.fishhub.android.data.chat.AttachmentDelivery>> {
@@ -588,6 +769,7 @@ private class FakeChatRepository(
                 body = content.normalizedBody,
                 gif = content.gif,
                 stickerId = content.stickerId,
+                replyToMessageId = content.replyToMessageId,
                 clientRequestId = clientRequestId,
                 createdAt = "2026-07-16T00:00:00Z",
             ),
@@ -596,6 +778,28 @@ private class FakeChatRepository(
     }
     override suspend fun reportGif(messageId: String): ChatResult<Unit> {
         reportCalls += 1
+        return ChatResult.Success(Unit)
+    }
+    override suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage> =
+        commandMessage(messageId) { copy(body = body, editedAt = "2026-07-16T00:01:00Z") }
+
+    override suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage> =
+        commandMessage(messageId) { copy(body = "", deletedAt = "2026-07-16T00:01:00Z") }
+
+    override suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage> =
+        commandMessage(messageId) {
+            copy(reactions = listOf(space.fishhub.android.data.chat.model.ChatReaction(emoji, 1, true)))
+        }
+
+    override suspend fun sendTyping(conversationId: String, typing: Boolean) {
+        typingEvents += typing
+    }
+    override suspend fun removeFriend(userId: String): ChatResult<Unit> {
+        removedUserIds += userId
+        return ChatResult.Success(Unit)
+    }
+    override suspend fun blockUser(userId: String): ChatResult<Unit> {
+        blockedUserIds += userId
         return ChatResult.Success(Unit)
     }
     override suspend fun markRead(
@@ -637,6 +841,20 @@ private class FakeChatRepository(
     fun emitAttachmentDrafts(value: List<LocalAttachmentDraft>) {
         attachmentDrafts.value = value
     }
+
+    private fun commandMessage(
+        messageId: String,
+        transform: ChatMessage.() -> ChatMessage,
+    ): ChatResult<ChatMessage> {
+        val updated = messages.value.firstOrNull { it.id == messageId }?.transform()
+            ?: return ChatResult.Failure(
+                "That message is not available.",
+                false,
+                space.fishhub.android.data.chat.FailureCategory.Authorization,
+            )
+        messages.value = messages.value.map { if (it.id == messageId) updated else it }
+        return ChatResult.Success(updated)
+    }
 }
 
 private fun localDraft(
@@ -662,6 +880,20 @@ private fun localDraft(
     createdAt = "2026-07-17T00:00:00Z",
     updatedAt = "2026-07-17T00:00:00Z",
     expiresAt = "2026-07-24T00:00:00Z",
+)
+
+private fun incomingMessage(
+    id: String,
+    conversationId: String = "conversation-1",
+) = ChatMessage(
+    id = id,
+    conversationId = conversationId,
+    senderId = "coach-1",
+    senderRole = UserRole.Coach,
+    senderDisplayName = "Coach Jordan",
+    body = "Try this sentence.",
+    clientRequestId = "request-$id",
+    createdAt = "2026-07-16T00:00:00Z",
 )
 
 private class RecordingGifRepository : GifRepository {
@@ -732,6 +964,7 @@ private object TestFormatter : ChatTextFormatter {
     override val conversationUnavailable = "This conversation isn't available."
     override val attachmentsNotReady = "Wait for each attachment to finish, or remove it."
     override val attachmentUnavailable = "That attachment did not load yet. Try again."
+    override val messageUnavailable = "Earlier message unavailable"
     override fun participantContext(role: UserRole) = when (role) {
         UserRole.Coach -> "Your English coach"
         UserRole.Client -> "Personal coaching conversation"

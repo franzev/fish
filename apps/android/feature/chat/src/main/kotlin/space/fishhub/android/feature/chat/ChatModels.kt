@@ -21,6 +21,8 @@ data class ChatUiModel(
     val pagination: OlderMessagesUiState = OlderMessagesUiState.Idle,
     val hasMoreOlder: Boolean = false,
     val typingParticipantName: String? = null,
+    val replyTarget: ReplyPreviewUiModel? = null,
+    val focusedMessageId: String? = null,
     val hasPreviousDestination: Boolean = false,
     val isSending: Boolean = false,
     val notice: String? = null,
@@ -33,6 +35,9 @@ data class ParticipantUiModel(
     val id: String,
     val displayName: String,
     val contextLabel: String,
+    val username: String? = null,
+    val avatarUrl: String? = null,
+    val friendSafetyAvailable: Boolean = false,
 )
 
 @Immutable
@@ -57,11 +62,31 @@ data class MessageUiModel(
     val dateLabel: String? = null,
     val startsUnread: Boolean = false,
     val deleted: Boolean = false,
+    val edited: Boolean = false,
+    val replyPreview: ReplyPreviewUiModel? = null,
+    val reactions: List<ReactionUiModel> = emptyList(),
+    val actionsEnabled: Boolean = false,
+    val canEdit: Boolean = false,
+    val canDelete: Boolean = false,
     val gif: GifUiModel? = null,
     val sticker: StickerUiModel? = null,
     val gifPlaying: Boolean = false,
     val gifUnavailable: Boolean = false,
     val attachments: List<AttachmentUiModel> = emptyList(),
+)
+
+@Immutable
+data class ReplyPreviewUiModel(
+    val messageId: String,
+    val authorName: String,
+    val snippet: String,
+)
+
+@Immutable
+data class ReactionUiModel(
+    val emoji: String,
+    val count: Int,
+    val byMe: Boolean,
 )
 
 enum class AttachmentUiKind { Photo, File, Unavailable }
