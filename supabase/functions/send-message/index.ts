@@ -1,3 +1,9 @@
+import { createClient } from "npm:@supabase/supabase-js@2.110.0";
+import {
+  dispatchDirectMessagePush,
+  type DirectMessagePush,
+} from "../_shared/fcm.ts";
+
 type SendMessageCommand = {
   conversationId: string;
   body: string;
@@ -101,6 +107,53 @@ async function readJson(response: Response): Promise<unknown> {
   return await response.json().catch(() => null);
 }
 
+function messageIdFromPayload(payload: unknown): string | null {
+  const message = Array.isArray(payload) ? payload[0] : payload;
+  if (!message || typeof message !== "object") return null;
+  const id = (message as { id?: unknown }).id;
+  return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+async function dispatchMessagePush(input: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  conversationId: string;
+  messageId: string;
+  senderId: string;
+}): Promise<void> {
+  const admin = createClient(input.supabaseUrl, input.serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+  const [{ data: conversation }, { data: channel }, { data: sender }] = await Promise.all([
+    admin.from("conversations")
+      .select("client_id, coach_id")
+      .eq("id", input.conversationId)
+      .maybeSingle(),
+    admin.from("channels")
+      .select("id")
+      .eq("conversation_id", input.conversationId)
+      .maybeSingle(),
+    admin.from("profiles")
+      .select("display_name")
+      .eq("id", input.senderId)
+      .maybeSingle(),
+  ]);
+  if (!conversation || channel) return;
+  const recipientIds = [conversation.client_id, conversation.coach_id]
+    .filter((id): id is string => typeof id === "string" && id !== input.senderId);
+  if (recipientIds.length === 0) return;
+  const push: DirectMessagePush = {
+    conversationId: input.conversationId,
+    messageId: input.messageId,
+    senderId: input.senderId,
+    senderName: typeof sender?.display_name === "string" && sender.display_name.trim()
+      ? sender.display_name.trim()
+      : "Someone in FISH",
+    recipientIds,
+  };
+  await dispatchDirectMessagePush(admin, push);
+}
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") {
     return calmError("Send messages with a post request.", 405);
@@ -198,6 +251,11 @@ Deno.serve(async (request) => {
     });
     return calmError("Your session ended. Sign in again to send.", 401, "not_authenticated");
   }
+  const authUser = await authResponse.json().catch(() => null) as { id?: unknown } | null;
+  const senderId = typeof authUser?.id === "string" ? authUser.id : null;
+  if (!senderId) {
+    return calmError("Your session ended. Sign in again to send.", 401, "not_authenticated");
+  }
 
   const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/send_chat_message`, {
     method: "POST",
@@ -258,6 +316,23 @@ Deno.serve(async (request) => {
     }
 
     return calmError("That did not send yet. Keep this open and try again.", 500, "send_unavailable");
+  }
+
+  const messageId = messageIdFromPayload(payload);
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+  if (messageId && serviceRoleKey) {
+    await dispatchMessagePush({
+      supabaseUrl,
+      serviceRoleKey,
+      conversationId: command.conversationId,
+      messageId,
+      senderId,
+    }).catch(() => {
+      console.error("direct message push dispatch failed", {
+        conversationId: command.conversationId,
+        messageId,
+      });
+    });
   }
 
   return Response.json({ message: payload }, { headers: jsonHeaders });

@@ -16,6 +16,22 @@ export type CallPush = {
   recipientIds: string[];
 };
 
+export type DirectMessagePush = {
+  conversationId: string;
+  messageId: string;
+  senderId: string;
+  senderName: string;
+  recipientIds: string[];
+};
+
+type AndroidDataPush = {
+  recipientIds: string[];
+  data: Record<string, string>;
+  priority: "HIGH" | "NORMAL";
+  ttl: string;
+  collapseKey: string;
+};
+
 let cachedAccessToken: { value: string; expiresAt: number } | null = null;
 
 function base64Url(value: Uint8Array | string): string {
@@ -101,6 +117,47 @@ export async function dispatchCallPush(
   admin: SupabaseClient,
   push: CallPush,
 ): Promise<void> {
+  await dispatchAndroidDataPush(admin, {
+    recipientIds: push.recipientIds,
+    data: {
+      version: "1",
+      event: push.event,
+      callId: push.callId,
+      kind: push.kind,
+      counterpartId: push.counterpartId,
+      counterpartName: push.counterpartName,
+      expiresAt: push.expiresAt,
+    },
+    priority: "HIGH",
+    ttl: `${push.event === "ringing" ? ttlSeconds(push.expiresAt) : 45}s`,
+    collapseKey: "fish_call",
+  });
+}
+
+export async function dispatchDirectMessagePush(
+  admin: SupabaseClient,
+  push: DirectMessagePush,
+): Promise<void> {
+  await dispatchAndroidDataPush(admin, {
+    recipientIds: push.recipientIds,
+    data: {
+      version: "1",
+      type: "chat_message",
+      conversationId: push.conversationId,
+      messageId: push.messageId,
+      senderId: push.senderId,
+      senderName: push.senderName,
+    },
+    priority: "HIGH",
+    ttl: "604800s",
+    collapseKey: `fish_message_${push.conversationId}`,
+  });
+}
+
+async function dispatchAndroidDataPush(
+  admin: SupabaseClient,
+  push: AndroidDataPush,
+): Promise<void> {
   const account = serviceAccount();
   if (!account || push.recipientIds.length === 0) return;
   const bearer = await accessToken(account);
@@ -128,19 +185,11 @@ export async function dispatchCallPush(
       body: JSON.stringify({
         message: {
           fid: device.provider_installation_id,
-          data: {
-            version: "1",
-            event: push.event,
-            callId: push.callId,
-            kind: push.kind,
-            counterpartId: push.counterpartId,
-            counterpartName: push.counterpartName,
-            expiresAt: push.expiresAt,
-          },
+          data: push.data,
           android: {
-            priority: "HIGH",
-            ttl: `${push.event === "ringing" ? ttlSeconds(push.expiresAt) : 45}s`,
-            collapse_key: "fish_call",
+            priority: push.priority,
+            ttl: push.ttl,
+            collapse_key: push.collapseKey,
           },
         },
       }),
