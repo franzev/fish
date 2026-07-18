@@ -7,7 +7,9 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -375,12 +377,12 @@ class ChatAccessibilityTest {
         composeRule.onNodeWithTag("message-actions-sheet").assertExists()
         composeRule.onNodeWithText("Reply").performClick()
         assertTrue(replied)
-        composeRule.onNodeWithText("Delete message").performClick()
+        composeRule.onNode(hasText("Delete message") and hasClickAction()).performClick()
         composeRule.onNodeWithText(
             "Delete this message? People in this conversation will see that it was deleted.",
         ).assertExists()
         assertTrue(!deleted)
-        composeRule.onNodeWithText("Delete message").performClick()
+        composeRule.onNode(hasText("Delete message") and hasClickAction()).performClick()
         assertTrue(deleted)
     }
 

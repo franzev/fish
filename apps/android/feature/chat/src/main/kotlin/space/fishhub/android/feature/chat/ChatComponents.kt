@@ -153,11 +153,15 @@ fun MessageBubble(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(message.id, message.actionsEnabled) {
+            .then(
                 if (message.actionsEnabled) {
-                    detectTapGestures(onLongPress = { onOpenActions() })
-                }
-            }
+                    Modifier.pointerInput(message.id) {
+                        detectTapGestures(onLongPress = { onOpenActions() })
+                    }
+                } else {
+                    Modifier
+                },
+            )
             .semantics {
                 if (message.actionsEnabled) {
                     customActions = listOf(
