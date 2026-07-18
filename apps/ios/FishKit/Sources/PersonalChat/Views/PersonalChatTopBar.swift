@@ -3,23 +3,26 @@ import SwiftUI
 import UIComponents
 
 /// Conversation identity with no speculative call or overflow controls. The
-/// optional trailing slot hosts the account/status trigger when the host
-/// provides one.
+/// optional slots host quiet call and account controls when the host provides
+/// them.
 public struct PersonalChatTopBar: View {
     private let participantName: String
     private let presence: PresenceUiModel?
     private let onBack: (() -> Void)?
+    private let trailingContent: AnyView?
     private let accountContent: AnyView?
 
     public init(
         participantName: String,
         presence: PresenceUiModel?,
         onBack: (() -> Void)? = nil,
+        trailingContent: AnyView? = nil,
         accountContent: AnyView? = nil
     ) {
         self.participantName = participantName
         self.presence = presence
         self.onBack = onBack
+        self.trailingContent = trailingContent
         self.accountContent = accountContent
     }
 
@@ -49,8 +52,11 @@ public struct PersonalChatTopBar: View {
                     }
                     .accessibilityElement(children: .combine)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    if let accountContent {
-                        accountContent
+                    if trailingContent != nil || accountContent != nil {
+                        HStack(spacing: Spacing.xs) {
+                            if let trailingContent { trailingContent }
+                            if let accountContent { accountContent }
+                        }
                     }
                 }
             )

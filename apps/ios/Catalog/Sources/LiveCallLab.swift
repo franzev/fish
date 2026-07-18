@@ -2,6 +2,7 @@ import CallData
 import CallMediaLiveKit
 import Calls
 import DesignSystem
+import PersonalChat
 import SwiftUI
 import UIComponents
 
@@ -152,7 +153,8 @@ struct LiveCallLabPage: View {
                 CallOverlay(
                     model: model,
                     localVideo: { media.localVideoView() },
-                    remoteVideo: { media.remoteVideoView() }
+                    remoteVideo: { media.remoteVideoView() },
+                    chatContent: { AnyView(CatalogCallTranscript()) }
                 )
             }
         }

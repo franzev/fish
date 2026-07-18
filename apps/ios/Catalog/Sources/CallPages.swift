@@ -1,6 +1,7 @@
 import CallData
 import Calls
 import DesignSystem
+import PersonalChat
 import SwiftUI
 import TestSupport
 import UIComponents
@@ -93,7 +94,7 @@ struct CallStatesPage: View {
             NavigationLink(item.id) {
                 CallSurface(
                     state: item.state,
-                    chatContent: item.chatOpen ? AnyView(chatPlaceholder) : nil,
+                    chatContent: item.chatOpen ? AnyView(CatalogCallTranscript()) : nil,
                     chatOpen: item.chatOpen
                 )
                 .background(Palette.bg)
@@ -104,16 +105,6 @@ struct CallStatesPage: View {
         .navigationTitle("Call states")
     }
 
-    private var chatPlaceholder: some View {
-        VStack {
-            Spacer()
-            Text("The conversation renders here.")
-                .textStyle(.body)
-                .foregroundStyle(Palette.body)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-    }
 }
 
 /// Interactive scripted call flow: fixture providers play the counterpart
@@ -181,22 +172,30 @@ struct CallDemoPage: View {
             CallOverlay(
                 model: environment.model,
                 chatContent: {
-                    AnyView(
-                        VStack {
-                            Spacer()
-                            Text("The conversation renders here.")
-                                .textStyle(.body)
-                                .foregroundStyle(Palette.body)
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
-                    )
+                    AnyView(CatalogCallTranscript())
                 }
             )
         }
         .navigationTitle("Call demo")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { environment.model.shutdown() }
+    }
+}
+
+struct CatalogCallTranscript: View {
+    var body: some View {
+        PersonalChatTranscript(
+            items: TranscriptBuilder.build(
+                messages: PersonalChatFixtures.loaded.messages,
+                calendar: PersonalChatFixtures.calendar,
+                now: PersonalChatFixtures.now,
+                locale: PersonalChatFixtures.locale
+            ),
+            olderMessages: .hidden,
+            onRetryMessage: { _ in },
+            onRetryOlder: {}
+        )
+        .background(Palette.bg)
     }
 }
 

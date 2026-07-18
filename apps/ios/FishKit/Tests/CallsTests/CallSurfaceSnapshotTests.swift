@@ -1,6 +1,7 @@
 import CallData
 @testable import Calls
 import DesignSystem
+import PersonalChat
 import SwiftUI
 import Testing
 import TestSupport
@@ -202,5 +203,20 @@ struct CallSurfaceSnapshotTests {
         .padding(Spacing.page)
         .frame(maxWidth: .infinity, alignment: .leading)
         assertThemedSnapshots(of: view, named: "call-entry-buttons")
+    }
+
+    @Test func entryButtonsInChatHeader() {
+        let view = PersonalChatTopBar(
+            participantName: "Coach Mina",
+            presence: PresenceUiModel(label: "Online", tone: .online),
+            onBack: {},
+            trailingContent: AnyView(CallEntryButtons(
+                recipientName: "Coach Mina",
+                busy: false,
+                onStartCall: { _ in }
+            ))
+        )
+        assertThemedSnapshots(of: view, named: "call-entry-chat-header")
+        assertAccessibilitySnapshots(of: view, named: "call-entry-chat-header")
     }
 }
