@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./chat": "./src/chat.ts",
+    "./chat-realtime": "./src/chat-realtime.ts",
     "./chat-media/emoji-groups.json": "./src/chat-media/emoji-groups.json",
     "./chat-media/sticker-catalog.json": "./src/chat-media/sticker-catalog.json",
     "./chat-state/fixtures/chat-media-merge-vectors.json": "./src/chat-state/fixtures/chat-media-merge-vectors.json",

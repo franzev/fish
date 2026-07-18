@@ -10,6 +10,7 @@ import type { ChatRealtimeService } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
 import type { AppSupabaseClient } from "./types";
 import type { MessageReadRow, MessageRow } from "@fish/supabase";
+import { chatTypingContract, type ChatTypingPayload } from "@fish/core";
 import { readChatStickerId } from "./chat-mapping";
 import type {
   RealtimeChannel,
@@ -18,18 +19,13 @@ import type {
   RealtimePostgresUpdatePayload,
 } from "@supabase/supabase-js";
 
-interface TypingPayload {
-  userId: string;
-  typing: boolean;
-}
-
 interface VoiceRecordingPayload {
   userId: string;
   recording: boolean;
 }
 
 interface TypingBroadcastPayload {
-  payload?: Partial<TypingPayload>;
+  payload?: Partial<ChatTypingPayload>;
 }
 
 interface VoiceRecordingBroadcastPayload {
@@ -292,29 +288,33 @@ export function subscribeToConversationTyping(
   onTypingChange: (typing: boolean) => void
 ): ConversationTypingSubscription {
   const deferred = subscribeAfterAuth((supabase) => supabase
-    .channel(`conversation:${conversationId}:typing`, {
+    .channel(chatTypingContract.topic(conversationId), {
       config: {
-        broadcast: { self: false },
+        broadcast: { self: chatTypingContract.receiveOwnBroadcasts },
       },
     })
-    .on("broadcast", { event: "typing" }, (event: TypingBroadcastPayload) => {
-      const { userId, typing } = event.payload ?? {};
+    .on(
+      "broadcast",
+      { event: chatTypingContract.event },
+      (event: TypingBroadcastPayload) => {
+        const { userId, typing } = event.payload ?? {};
 
-      if (typeof userId !== "string" || userId === currentUserId) {
-        return;
-      }
+        if (typeof userId !== "string" || userId === currentUserId) {
+          return;
+        }
 
-      if (typeof typing === "boolean") {
-        onTypingChange(typing);
+        if (typeof typing === "boolean") {
+          onTypingChange(typing);
+        }
       }
-    })
+    )
     .subscribe());
 
   return {
     sendTyping(typing) {
       void deferred.getChannel()?.send({
         type: "broadcast",
-        event: "typing",
+        event: chatTypingContract.event,
         payload: {
           userId: currentUserId,
           typing,
