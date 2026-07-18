@@ -289,7 +289,10 @@ private struct EmptyHydration: AttachmentHydrating {
 
         let fetched = try await messaging.messages(conversationId: "c1")
         #expect(fetched.map(\.id) == ["m1"])
-        #expect(AttachmentURLProtocol.requests.last?.url?.query?.contains("conversation_id=eq.c1") == true)
+        #expect(AttachmentURLProtocol.requests.contains {
+            $0.url?.path() == "/rest/v1/messages"
+                && $0.url?.query?.contains("conversation_id=eq.c1") == true
+        })
     }
 
     private func session() -> URLSession {
