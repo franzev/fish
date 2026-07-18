@@ -110,6 +110,9 @@ function parseList(lines: string[], start: number, indent: number): { list: List
       i = nested.nextIndex;
       continue;
     }
+    if (/^\d+\.$/.test(match[2]) !== ordered) {
+      break;
+    }
     items.push({ text: match[3] });
     i += 1;
   }

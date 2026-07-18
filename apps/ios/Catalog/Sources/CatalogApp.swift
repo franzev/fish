@@ -33,11 +33,12 @@ struct CatalogRoot: View {
                 }
                 Section("Personal chat") {
                     NavigationLink("Chat states") { ChatStatesPage() }
+                    NavigationLink("Conversation list") { ConversationListPage() }
                     NavigationLink("Media picker") { MediaPickerPage() }
                     NavigationLink("Attachments") { AttachmentsPage() }
-                    if let configuration = LiveAttachmentLabConfiguration.fromBundle() {
-                        NavigationLink("Live attachment lab") {
-                            LiveAttachmentLabPage(configuration: configuration)
+                    if let configuration = LiveChatLabConfiguration.fromBundle() {
+                        NavigationLink("Live chat lab") {
+                            LiveChatLabPage(configuration: configuration)
                         }
                     }
                 }

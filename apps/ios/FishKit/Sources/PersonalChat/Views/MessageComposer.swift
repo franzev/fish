@@ -25,11 +25,15 @@ public struct MessageComposer: View {
     private let onOpenMediaPicker: () -> Void
     private let attachmentUploads: AttachmentUploadsModel?
     private let attachmentsDisabled: Bool
+    private let context: ComposerContextUiModel?
+    private let onCancelContext: () -> Void
+    private let onFocusChanged: (Bool) -> Void
 
     @State private var showsAttachmentMenu = false
     @State private var showsPhotoPicker = false
     @State private var showsFileImporter = false
     @State private var photoItems: [PhotosPickerItem] = []
+    @FocusState private var isMessageFocused: Bool
 
     public init(
         draft: Binding<String>,
@@ -37,6 +41,9 @@ public struct MessageComposer: View {
         sendState: ComposerSendState,
         attachmentUploads: AttachmentUploadsModel? = nil,
         attachmentsDisabled: Bool = false,
+        context: ComposerContextUiModel? = nil,
+        onCancelContext: @escaping () -> Void = {},
+        onFocusChanged: @escaping (Bool) -> Void = { _ in },
         onSend: @escaping () -> Void,
         onOpenMediaPicker: @escaping () -> Void
     ) {
@@ -45,6 +52,9 @@ public struct MessageComposer: View {
         self.sendState = sendState
         self.attachmentUploads = attachmentUploads
         self.attachmentsDisabled = attachmentsDisabled
+        self.context = context
+        self.onCancelContext = onCancelContext
+        self.onFocusChanged = onFocusChanged
         self.onSend = onSend
         self.onOpenMediaPicker = onOpenMediaPicker
     }
@@ -67,6 +77,9 @@ public struct MessageComposer: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Spacing.twoXs) {
+            if let context {
+                composerContext(context)
+            }
             Text("Message")
                 .textStyle(.label)
                 .foregroundStyle(Palette.muted)
@@ -108,6 +121,7 @@ public struct MessageComposer: View {
                     )
                 }
                 TextField("", text: $draft, axis: .vertical)
+                    .focused($isMessageFocused)
                     .textInputStyle(.body)
                     .foregroundStyle(Palette.foreground)
                     .lineLimit(1...6)
@@ -126,6 +140,9 @@ public struct MessageComposer: View {
                         .strokeBorder(Palette.border, lineWidth: 1)
                     }
                     .accessibilityLabel("Message")
+                    .onChange(of: isMessageFocused) { _, focused in
+                        onFocusChanged(focused)
+                    }
                 if Self.showsSend(
                     draft: draft,
                     selection: selection,
@@ -211,6 +228,36 @@ public struct MessageComposer: View {
         ) { result in
             importDocuments(result)
         }
+    }
+
+    private func composerContext(_ context: ComposerContextUiModel) -> some View {
+        HStack(alignment: .top, spacing: Spacing.xs) {
+            VStack(alignment: .leading, spacing: Spacing.threeXs) {
+                switch context {
+                case .reply(let authorName, let snippet):
+                    Text("Replying to \(authorName)")
+                        .textStyle(.label)
+                        .foregroundStyle(Palette.foreground)
+                    Text(snippet)
+                        .textStyle(.caption)
+                        .foregroundStyle(Palette.muted)
+                        .lineLimit(2)
+                case .edit:
+                    Text("Editing message")
+                        .textStyle(.label)
+                        .foregroundStyle(Palette.foreground)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            IconButton(.close, accessibilityLabel: "Cancel") {
+                onCancelContext()
+            }
+        }
+        .padding(Spacing.xs)
+        .background(
+            Palette.surface2,
+            in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+        )
     }
 
     private var availableAttachmentSlots: Int {

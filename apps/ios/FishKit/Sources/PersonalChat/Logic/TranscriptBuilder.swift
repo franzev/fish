@@ -43,6 +43,7 @@ public enum TranscriptItem: Identifiable, Equatable, Sendable {
 }
 
 public enum TranscriptBuilder {
+    public static let unreadBeforeFirstMarker = "__fish_before_first__"
     /// Messages are accepted oldest to newest. Ordering is a store contract;
     /// the presentation layer does not silently repair it.
     public static func build(
@@ -76,7 +77,10 @@ public enum TranscriptBuilder {
                     )
                 ))
             }
-            if let unreadAfterMessageId, previous?.id == unreadAfterMessageId {
+            if unreadAfterMessageId == unreadBeforeFirstMarker,
+               index == 0 {
+                items.append(.unreadDivider(id: "unread-divider"))
+            } else if let unreadAfterMessageId, previous?.id == unreadAfterMessageId {
                 items.append(.unreadDivider(id: "unread-divider"))
             }
 

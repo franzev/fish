@@ -13,6 +13,31 @@ public enum MessageDeliveryStatus: Sendable, Equatable {
     case failed
 }
 
+public struct MessageReplyPreviewUiModel: Equatable, Sendable {
+    public let messageId: String
+    public let authorName: String
+    public let snippet: String
+
+    public init(messageId: String, authorName: String, snippet: String) {
+        self.messageId = messageId
+        self.authorName = authorName
+        self.snippet = snippet
+    }
+}
+
+public struct MessageReactionUiModel: Identifiable, Equatable, Sendable {
+    public var id: String { emoji }
+    public let emoji: String
+    public let count: Int
+    public let byMe: Bool
+
+    public init(emoji: String, count: Int, byMe: Bool) {
+        self.emoji = emoji
+        self.count = count
+        self.byMe = byMe
+    }
+}
+
 /// Provider-free presentation model. Future state and data layers adapt into
 /// this value without changing views.
 public struct MessageUiModel: Identifiable, Equatable, Sendable {
@@ -27,6 +52,10 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
     public let attachments: [MessageAttachmentUiModel]
     public let sentAt: Date
     public let delivery: MessageDeliveryStatus?
+    public let replyPreview: MessageReplyPreviewUiModel?
+    public let reactions: [MessageReactionUiModel]
+    public let isEdited: Bool
+    public let isDeleted: Bool
 
     public init(
         id: String,
@@ -37,7 +66,11 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         media: MessageMedia? = nil,
         attachments: [MessageAttachmentUiModel] = [],
         sentAt: Date,
-        delivery: MessageDeliveryStatus? = nil
+        delivery: MessageDeliveryStatus? = nil,
+        replyPreview: MessageReplyPreviewUiModel? = nil,
+        reactions: [MessageReactionUiModel] = [],
+        isEdited: Bool = false,
+        isDeleted: Bool = false
     ) {
         self.id = id
         self.direction = direction
@@ -48,5 +81,9 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         self.attachments = attachments
         self.sentAt = sentAt
         self.delivery = delivery
+        self.replyPreview = replyPreview
+        self.reactions = reactions
+        self.isEdited = isEdited
+        self.isDeleted = isDeleted
     }
 }

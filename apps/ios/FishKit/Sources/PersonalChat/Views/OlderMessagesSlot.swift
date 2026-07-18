@@ -27,8 +27,10 @@ public struct OlderMessagesSlot: View {
     @ViewBuilder
     private var content: some View {
         switch state {
-        case .hidden, .idle:
+        case .hidden:
             Color.clear
+        case .idle:
+            Color.clear.onAppear(perform: onRetry)
         case .loading:
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack(spacing: Spacing.xs) {

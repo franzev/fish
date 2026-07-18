@@ -31,7 +31,12 @@ public struct PersonalChatScreen: View {
     private let onSend: (ChatSendPayload) -> Void
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
+    private let onMessageAction: (MessageAction) -> Void
+    private let onVisibleMessage: (String) -> Void
+    private let onCancelComposerContext: () -> Void
+    private let onComposerFocusChanged: (Bool) -> Void
     private let onBack: (() -> Void)?
+    private let trailingContent: AnyView?
     private let accountContent: AnyView?
     private let attachmentUploads: AttachmentUploadsModel?
     private let attachmentCommands: (any AttachmentCommandProviding)?
@@ -54,7 +59,12 @@ public struct PersonalChatScreen: View {
         onSend: @escaping (ChatSendPayload) -> Void,
         onRetryMessage: @escaping (String) -> Void,
         onRetryOlder: @escaping () -> Void,
+        onMessageAction: @escaping (MessageAction) -> Void = { _ in },
+        onVisibleMessage: @escaping (String) -> Void = { _ in },
+        onCancelComposerContext: @escaping () -> Void = {},
+        onComposerFocusChanged: @escaping (Bool) -> Void = { _ in },
         onBack: (() -> Void)? = nil,
+        trailingContent: AnyView? = nil,
         accountContent: AnyView? = nil
     ) {
         self.model = model
@@ -69,7 +79,12 @@ public struct PersonalChatScreen: View {
         self.onSend = onSend
         self.onRetryMessage = onRetryMessage
         self.onRetryOlder = onRetryOlder
+        self.onMessageAction = onMessageAction
+        self.onVisibleMessage = onVisibleMessage
+        self.onCancelComposerContext = onCancelComposerContext
+        self.onComposerFocusChanged = onComposerFocusChanged
         self.onBack = onBack
+        self.trailingContent = trailingContent
         self.accountContent = accountContent
     }
 
@@ -89,6 +104,7 @@ public struct PersonalChatScreen: View {
                 participantName: model.participantName,
                 presence: model.presence,
                 onBack: onBack,
+                trailingContent: trailingContent,
                 accountContent: accountContent
             )
             switch model.phase {
@@ -123,6 +139,8 @@ public struct PersonalChatScreen: View {
                         olderMessages: model.olderMessages,
                         onRetryMessage: onRetryMessage,
                         onRetryOlder: onRetryOlder,
+                        onMessageAction: onMessageAction,
+                        onVisibleMessage: onVisibleMessage,
                         attachmentCommands: attachmentCommands,
                         imageLoader: imageLoader,
                         fileDownloader: fileDownloader
@@ -146,12 +164,17 @@ public struct PersonalChatScreen: View {
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
-            case .background: attachmentUploads?.applicationDidEnterBackground()
+            case .background:
+                attachmentUploads?.applicationDidEnterBackground()
+                onComposerFocusChanged(false)
             case .active: attachmentUploads?.applicationWillEnterForeground()
             default: break
             }
         }
-        .onDisappear { attachmentUploads?.dismiss() }
+        .onDisappear {
+            attachmentUploads?.dismiss()
+            onComposerFocusChanged(false)
+        }
     }
 
     @ViewBuilder private var bottomControls: some View {
@@ -164,12 +187,23 @@ public struct PersonalChatScreen: View {
                 if model.isParticipantTyping {
                     TypingIndicator(name: model.participantName)
                 }
+                if let notice = model.notice {
+                    Text(notice)
+                        .textStyle(.caption)
+                        .foregroundStyle(Palette.notice)
+                        .padding(.horizontal, Spacing.page)
+                        .padding(.bottom, Spacing.xs)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 MessageComposer(
                     draft: $draft,
                     selection: $selection,
                     sendState: Self.composerState(for: model),
                     attachmentUploads: attachmentUploads,
                     attachmentsDisabled: model.connection == .offline,
+                    context: model.composerContext,
+                    onCancelContext: onCancelComposerContext,
+                    onFocusChanged: onComposerFocusChanged,
                     onSend: {
                         let payload = ChatSendPayload(
                             body: draft,

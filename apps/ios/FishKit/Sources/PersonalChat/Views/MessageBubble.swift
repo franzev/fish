@@ -8,21 +8,28 @@ import UIComponents
 public struct MessageBubble: View {
     private let row: MessageRowUiModel
     private let onRetry: ((String) -> Void)?
+    private let onAction: (MessageAction) -> Void
+    private let onReplyTap: (String) -> Void
     private let attachmentCommands: (any AttachmentCommandProviding)?
     private let imageLoader: MessageImageLoader
     private let fileDownloader: AttachmentFileDownloader
     @Environment(\.locale) private var locale
     @Environment(\.timeZone) private var timeZone
+    @State private var confirmsDeletion = false
 
     public init(
         row: MessageRowUiModel,
         onRetry: ((String) -> Void)? = nil,
+        onAction: @escaping (MessageAction) -> Void = { _ in },
+        onReplyTap: @escaping (String) -> Void = { _ in },
         attachmentCommands: (any AttachmentCommandProviding)? = nil,
         imageLoader: MessageImageLoader = .shared,
         fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader()
     ) {
         self.row = row
         self.onRetry = onRetry
+        self.onAction = onAction
+        self.onReplyTap = onReplyTap
         self.attachmentCommands = attachmentCommands
         self.imageLoader = imageLoader
         self.fileDownloader = fileDownloader
@@ -69,6 +76,9 @@ public struct MessageBubble: View {
                 )
             }
             VStack(alignment: horizontalAlignment, spacing: Spacing.threeXs) {
+                if let reply = row.message.replyPreview {
+                    replyPreview(reply)
+                }
                 switch row.message.media {
                 case .sticker(let id):
                     StickerMedia(stickerId: id)
@@ -85,6 +95,11 @@ public struct MessageBubble: View {
                    delivery != .failed {
                     statusLine(delivery)
                 }
+                if row.message.isEdited && !row.message.isDeleted {
+                    Text("Edited")
+                        .textStyle(.caption)
+                        .foregroundStyle(Palette.muted)
+                }
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(MessageAccessibility.label(
@@ -97,21 +112,123 @@ public struct MessageBubble: View {
             if row.showsDeliveryStatus, row.message.delivery == .failed {
                 failedLine
             }
+            if !row.message.reactions.isEmpty {
+                reactionPills
+            }
         }
         .frame(maxWidth: .infinity, alignment: frameAlignment)
         .padding(isOutgoing ? .leading : .trailing, Spacing.twoXl)
+        .contextMenu { actionMenu }
+        .confirmationDialog(
+            "Delete this message?",
+            isPresented: $confirmsDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Delete message", role: .destructive) {
+                onAction(.delete(row.message.id))
+            }
+            Button("Keep message", role: .cancel) {}
+        } message: {
+            Text("It will be replaced with “Message deleted.”")
+        }
+    }
+
+    @ViewBuilder private var actionMenu: some View {
+        if actionsAvailable {
+            Button("Reply", systemImage: "arrowshape.turn.up.left") {
+                onAction(.reply(row.message.id))
+            }
+            if isOutgoing && !row.message.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Button("Edit", systemImage: "pencil") {
+                    onAction(.edit(row.message.id))
+                }
+            }
+            if isOutgoing {
+                Button("Delete", systemImage: "trash", role: .destructive) {
+                    confirmsDeletion = true
+                }
+            }
+            Menu("React") {
+                ForEach(["👍", "❤️", "🎉", "🙏"], id: \.self) { emoji in
+                    Button(emoji) {
+                        onAction(.toggleReaction(messageId: row.message.id, emoji: emoji))
+                    }
+                }
+            }
+            if isGifMessage {
+                Button("Report GIF", systemImage: "flag") {
+                    onAction(.reportGif(row.message.id))
+                }
+            }
+        }
+    }
+
+    private var actionsAvailable: Bool {
+        !row.message.isDeleted
+            && row.message.delivery != .sending
+            && row.message.delivery != .failed
+    }
+
+    private var isGifMessage: Bool {
+        switch row.message.media {
+        case .gif, .gifUnavailable: true
+        case .sticker, .none: false
+        }
+    }
+
+    private func replyPreview(_ preview: MessageReplyPreviewUiModel) -> some View {
+        Button {
+            onReplyTap(preview.messageId)
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.threeXs) {
+                Text(preview.authorName)
+                    .textStyle(.label)
+                    .foregroundStyle(Palette.foreground)
+                Text(preview.snippet)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.muted)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.xs)
+            .background(
+                Palette.surface2,
+                in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reply to \(preview.authorName): \(preview.snippet)")
+    }
+
+    private var reactionPills: some View {
+        HStack(spacing: Spacing.nudge) {
+            ForEach(row.message.reactions) { reaction in
+                Button {
+                    onAction(.toggleReaction(
+                        messageId: row.message.id,
+                        emoji: reaction.emoji
+                    ))
+                } label: {
+                    Text("\(reaction.emoji) \(reaction.count)")
+                        .textStyle(.caption)
+                        .foregroundStyle(Palette.foreground)
+                        .padding(.horizontal, Spacing.xs)
+                        .frame(minHeight: 44)
+                        .background(
+                            reaction.byMe ? Palette.surface2 : Palette.surface,
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    "\(reaction.emoji), \(reaction.count) reaction\(reaction.count == 1 ? "" : "s")"
+                )
+            }
+        }
     }
 
     private var bodyText: some View {
-        Text(row.message.body)
-            .textStyle(
-                EmojiOnlyMessage.isEmojiOnly(row.message.body) ? .display : .body
-            )
-            .foregroundStyle(
-                isOutgoing
-                    ? Palette.onMessageOutgoing
-                    : Palette.onMessageIncoming
-            )
+        MessageBody(body: row.message.body, isOutgoing: isOutgoing)
             .padding(.horizontal, Spacing.sm)
             .padding(.vertical, Spacing.compact)
             .background(

@@ -107,6 +107,15 @@ describe("MessageBody", () => {
     expect(numberedContainer.querySelector("ol")).not.toBeNull();
   });
 
+  it("keeps adjacent bullet and numbered lists distinct", () => {
+    const { container } = render(
+      <MessageBody body={"- First\n- Second\n\n1. Breathe\n2. Begin"} />
+    );
+
+    expect(container.querySelectorAll("ul")).toHaveLength(1);
+    expect(container.querySelectorAll("ol")).toHaveLength(1);
+  });
+
   it("nests a bullet sub-list under its parent bullet item via indentation", () => {
     const { container } = render(
       <MessageBody body={"- Step one\n  - Detail A\n  - Detail B"} />

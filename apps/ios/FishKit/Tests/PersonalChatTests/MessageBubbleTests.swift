@@ -152,4 +152,53 @@ struct MessageBubbleTests {
         assertThemedSnapshots(of: strip, named: "message-bubbles-media")
         assertAccessibilitySnapshots(of: strip, named: "message-bubbles-media")
     }
+
+    @MainActor @Test func actionStateSnapshots() {
+        let date = Date(timeIntervalSince1970: 1_784_200_000)
+        let strip = ScrollView {
+            VStack(spacing: Spacing.sm) {
+                MessageBubble(row: MessageRowUiModel(
+                    message: MessageUiModel(
+                        id: "reply",
+                        direction: .outgoing,
+                        senderId: "client",
+                        senderName: "You",
+                        body: "I’ll try that tomorrow.",
+                        sentAt: date,
+                        delivery: .read,
+                        replyPreview: MessageReplyPreviewUiModel(
+                            messageId: "original",
+                            authorName: "Sam Rivera",
+                            snippet: "Pause before the key point."
+                        ),
+                        reactions: [
+                            MessageReactionUiModel(emoji: "👍", count: 2, byMe: true),
+                            MessageReactionUiModel(emoji: "🎉", count: 1, byMe: false),
+                        ],
+                        isEdited: true
+                    ),
+                    groupPosition: .solo,
+                    showsMeta: true,
+                    showsDeliveryStatus: true
+                ))
+                MessageBubble(row: MessageRowUiModel(
+                    message: MessageUiModel(
+                        id: "deleted",
+                        direction: .incoming,
+                        senderId: "coach",
+                        senderName: "Sam Rivera",
+                        body: "Message deleted",
+                        sentAt: date.addingTimeInterval(60),
+                        isDeleted: true
+                    ),
+                    groupPosition: .solo,
+                    showsMeta: true,
+                    showsDeliveryStatus: false
+                ))
+            }
+            .padding(Spacing.page)
+        }
+        assertThemedSnapshots(of: strip, named: "message-action-states")
+        assertAccessibilitySnapshots(of: strip, named: "message-action-states")
+    }
 }

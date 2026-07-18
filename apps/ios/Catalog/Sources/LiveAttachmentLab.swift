@@ -1,3 +1,6 @@
+import CallData
+import CallMediaLiveKit
+import Calls
 import ChatData
 import DesignSystem
 import PersonalChat
@@ -5,18 +8,15 @@ import SwiftUI
 import TestSupport
 import UIComponents
 
-/// Development-only configuration for exercising the complete attachment
-/// path against a local Supabase stack. The page is absent when any required
-/// value is missing, so catalog builds stay deterministic and offline-first.
-struct LiveAttachmentLabConfiguration {
+/// Development-only live chat and call host. It appears only when all local
+/// stack values are present, keeping normal catalog runs deterministic.
+struct LiveChatLabConfiguration {
     let supabaseUrl: URL
     let anonKey: String
     let email: String
     let password: String
-    let conversationId: String
-    let participantName: String
 
-    static func fromBundle() -> LiveAttachmentLabConfiguration? {
+    static func fromBundle() -> LiveChatLabConfiguration? {
         func value(_ key: String) -> String? {
             let raw = Bundle.main.object(forInfoDictionaryKey: key) as? String
             let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -27,334 +27,302 @@ struct LiveAttachmentLabConfiguration {
             let url = URL(string: rawUrl),
             let anonKey = value("SupabaseAnonKey"),
             let email = value("SupabaseEmail"),
-            let password = value("SupabasePassword"),
-            let conversationId = value("SupabaseConversationId")
+            let password = value("SupabasePassword")
         else { return nil }
-        return LiveAttachmentLabConfiguration(
+        return LiveChatLabConfiguration(
             supabaseUrl: url,
             anonKey: anonKey,
             email: email,
-            password: password,
-            conversationId: conversationId,
-            participantName: value("SupabaseRecipientName") ?? "Your chat partner"
+            password: password
         )
     }
 }
 
 @MainActor @Observable
-final class LiveAttachmentLab {
-    enum Phase {
-        case signingIn
-        case ready
-        case failed(String)
-    }
+final class LiveChatLab {
+    enum Phase { case signingIn, directory, opening, ready, failed(String) }
 
-    private struct PendingSend {
-        let payload: ChatSendPayload
-        let clientRequestId: String
-    }
-
-    private(set) var phase: Phase = .signingIn
-    private(set) var connection = ChatConnectionState.connecting
-    private(set) var messages: [MessageUiModel] = []
+    private(set) var phase = Phase.signingIn
+    private(set) var directoryStore: ConversationDirectoryStore?
+    private(set) var store: ConversationStore?
     private(set) var uploads: AttachmentUploadsModel?
-    private(set) var commands: EdgeFunctionAttachmentCommands?
+    private(set) var attachmentCommands: (any AttachmentCommandProviding)?
+    private(set) var callModel: CallSessionModel?
+    private(set) var callMedia: LiveKitCallMedia?
     private(set) var imageLoader: MessageImageLoader
     private(set) var fileDownloader: AttachmentFileDownloader
+    private(set) var currentUserId = ""
 
-    private let configuration: LiveAttachmentLabConfiguration
-    private var messaging: RestChatMessaging?
-    private var userId: String?
-    private var pending: [String: PendingSend] = [:]
-    private var refreshGeneration = 0
+    private let configuration: LiveChatLabConfiguration
+    private var session: ChatLiveSession?
 
-    init(configuration: LiveAttachmentLabConfiguration) {
+    init(configuration: LiveChatLabConfiguration) {
         self.configuration = configuration
         imageLoader = MessageImageLoader(allowedHost: configuration.supabaseUrl.host)
         fileDownloader = AttachmentFileDownloader(allowedHost: configuration.supabaseUrl.host)
     }
 
-    var model: PersonalChatUiModel {
-        PersonalChatUiModel(
-            participantName: configuration.participantName,
-            phase: phase.isReady ? .ready : .loading,
-            connection: connection,
-            messages: messages
-        )
-    }
-
     func start() async {
-        guard messaging == nil else {
-            await refresh()
-            return
-        }
+        guard session == nil else { return }
         do {
-            let session = try await signIn()
-            let backend = ChatBackendConfiguration(
+            let session = try await ChatLive.signIn(
                 supabaseUrl: configuration.supabaseUrl,
                 anonKey: configuration.anonKey,
-                accessToken: { session.accessToken }
+                email: configuration.email,
+                password: configuration.password
             )
-            let commands = EdgeFunctionAttachmentCommands(configuration: backend)
-            let hydration = RestAttachmentHydration(
-                configuration: backend,
-                commands: commands
-            )
-            let messaging = RestChatMessaging(
-                configuration: backend,
-                hydration: hydration
-            )
-            let uploads = AttachmentUploadsModel(
-                conversationId: configuration.conversationId,
-                commands: commands,
-                uploader: SignedUrlByteUploader(configuration: backend),
-                staging: try AttachmentStaging()
-            )
-
-            userId = session.userId
-            self.commands = commands
-            self.messaging = messaging
-            self.uploads = uploads
-            fileDownloader = AttachmentFileDownloader(
-                allowedHost: configuration.supabaseUrl.host,
-                commands: commands
-            )
-            phase = .ready
-            connection = .connected
-            await refresh()
+            self.session = session
+            currentUserId = session.userId
+            let directoryStore = ConversationDirectoryStore(directory: session.directory)
+            self.directoryStore = directoryStore
+            await directoryStore.start()
+            await followDirectoryRoute()
         } catch {
-            connection = .offline
-            phase = .failed(
-                "Sign-in didn’t complete. Check the local stack and the attachment lab keys."
-            )
+            phase = .failed("Sign-in didn’t complete. Check the local stack and the chat lab keys.")
         }
     }
 
-    func poll() async {
-        while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(3))
-            guard !Task.isCancelled else { return }
-            await refresh()
+    func openConversation(_ conversationId: String) async {
+        guard let preview = directoryStore?.conversations.first(where: {
+            $0.conversationId == conversationId
+        }) else { return }
+        await openConversation(preview)
+    }
+
+    func retryDirectory() async {
+        guard let directoryStore else { return }
+        phase = .signingIn
+        await directoryStore.refresh()
+        await followDirectoryRoute()
+    }
+
+    func retry() async {
+        phase = .signingIn
+        if session == nil {
+            await start()
+        } else {
+            await followDirectoryRoute()
         }
     }
 
-    func send(_ payload: ChatSendPayload) async {
-        await send(payload, clientRequestId: UUID().uuidString)
+    /// Returns true when the host should dismiss instead of showing a list.
+    func closeConversation() -> Bool {
+        cleanupConversation()
+        guard (directoryStore?.conversations.count ?? 0) > 1 else { return true }
+        phase = .directory
+        Task { await directoryStore?.refresh() }
+        return false
     }
 
-    func retry(messageId: String) async {
-        guard let retry = pending.removeValue(forKey: messageId) else { return }
-        messages.removeAll { $0.id == messageId }
-        await send(retry.payload, clientRequestId: retry.clientRequestId)
+    func startCall(_ kind: CallKind) async {
+        guard
+            let model = callModel,
+            let store,
+            !store.participantId.isEmpty
+        else { return }
+        await model.startCall(
+            recipientId: store.participantId,
+            recipientName: store.participantName,
+            kind: kind
+        )
     }
 
     func shutdown() {
+        cleanupConversation()
+        directoryStore?.stop()
+        if let session {
+            Task { await ChatLive.signOut(session) }
+        }
+        self.session = nil
+    }
+
+    private func followDirectoryRoute() async {
+        guard let directoryStore else { return }
+        switch directoryStore.route {
+        case .empty, .list:
+            phase = .directory
+        case .direct(let id):
+            await openConversation(id)
+        }
+    }
+
+    private func openConversation(_ preview: ChatConversationPreview) async {
+        guard let session else { return }
+        cleanupConversation()
+        phase = .opening
+        do {
+            let store = ConversationStore(
+                conversationId: preview.conversationId,
+                currentUserId: session.userId,
+                participantId: preview.participantId,
+                participantName: preview.participantDisplayName,
+                currentUserRole: preview.participantRole == "client" ? .coach : .client,
+                messaging: session.messaging,
+                commands: session.commands,
+                realtime: session.realtime,
+                gifProvider: FixtureGifProvider()
+            )
+            let uploads = AttachmentUploadsModel(
+                conversationId: preview.conversationId,
+                commands: session.attachmentCommands,
+                uploader: SignedUrlByteUploader(configuration: session.backend),
+                staging: try AttachmentStaging()
+            )
+            self.store = store
+            self.uploads = uploads
+            attachmentCommands = session.attachmentCommands
+            fileDownloader = AttachmentFileDownloader(
+                allowedHost: configuration.supabaseUrl.host,
+                commands: session.attachmentCommands
+            )
+
+            let backend = CallBackendConfiguration(
+                supabaseUrl: session.backend.supabaseUrl,
+                anonKey: session.backend.anonKey,
+                accessToken: session.backend.accessToken
+            )
+            let media = LiveKitCallMedia()
+            let callModel = CallSessionModel(
+                userId: session.userId,
+                commands: EdgeFunctionCallCommands(configuration: backend),
+                realtime: PollingCallRealtime(
+                    directory: RestCallDirectory(configuration: backend)
+                ),
+                media: media
+            )
+            callMedia = media
+            self.callModel = callModel
+            await callModel.start()
+            phase = .ready
+            await store.start()
+        } catch {
+            cleanupConversation()
+            phase = .failed("That conversation didn’t open yet. Try again.")
+        }
+    }
+
+    private func cleanupConversation() {
         uploads?.dismiss()
-    }
-
-    private func send(
-        _ payload: ChatSendPayload,
-        clientRequestId: String
-    ) async {
-        guard let messaging, let userId else { return }
-        let optimisticId = "pending-\(clientRequestId)"
-        let optimistic = MessageUiModel(
-            id: optimisticId,
-            direction: .outgoing,
-            senderId: userId,
-            senderName: "You",
-            body: payload.body,
-            attachments: payload.optimisticAttachments,
-            sentAt: Date(),
-            delivery: .sending
-        )
-        messages.append(optimistic)
-
-        do {
-            let sent = try await messaging.send(SendChatMessageRequest(
-                conversationId: configuration.conversationId,
-                body: payload.body,
-                clientRequestId: clientRequestId,
-                attachmentIds: payload.attachmentIds
-            ))
-            replaceMessage(
-                optimisticId,
-                with: presentation(
-                    sent,
-                    attachments: payload.optimisticAttachments,
-                    delivery: .sent
-                )
-            )
-            connection = .connected
-            await refresh()
-        } catch {
-            pending[optimisticId] = PendingSend(
-                payload: payload,
-                clientRequestId: clientRequestId
-            )
-            replaceMessage(
-                optimisticId,
-                with: MessageUiModel(
-                    id: optimisticId,
-                    direction: .outgoing,
-                    senderId: userId,
-                    senderName: "You",
-                    body: payload.body,
-                    attachments: payload.optimisticAttachments,
-                    sentAt: optimistic.sentAt,
-                    delivery: .failed
-                )
-            )
-        }
-    }
-
-    private func refresh() async {
-        guard let messaging else { return }
-        refreshGeneration += 1
-        let generation = refreshGeneration
-        do {
-            let fetched = try await messaging.messages(
-                conversationId: configuration.conversationId
-            )
-            guard generation == refreshGeneration else { return }
-            let localPending = messages.filter {
-                $0.delivery == .sending || $0.delivery == .failed
-            }
-            messages = fetched.map { presentation($0) } + localPending
-            connection = .connected
-        } catch {
-            guard generation == refreshGeneration else { return }
-            connection = .offline
-        }
-    }
-
-    private func presentation(
-        _ message: ChatMessage,
-        attachments: [MessageAttachmentUiModel]? = nil,
-        delivery: MessageDeliveryStatus? = nil
-    ) -> MessageUiModel {
-        let outgoing = message.senderId == userId
-        return MessageUiModel(
-            id: message.id,
-            direction: outgoing ? .outgoing : .incoming,
-            senderId: message.senderId,
-            senderName: outgoing ? "You" : configuration.participantName,
-            body: message.body,
-            attachments: attachments ?? message.attachments.map {
-                MessageAttachmentUiModel(attachment: $0)
-            },
-            sentAt: message.createdAt,
-            delivery: outgoing ? (delivery ?? .sent) : nil
-        )
-    }
-
-    private func replaceMessage(_ id: String, with replacement: MessageUiModel) {
-        guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
-        messages[index] = replacement
-    }
-
-    // MARK: - Dev sign-in (password grant against the local stack)
-
-    private struct SessionResponse: Decodable {
-        struct User: Decodable { let id: String }
-        let accessToken: String
-        let user: User
-    }
-
-    private struct Session: Sendable {
-        let accessToken: String
-        let userId: String
-    }
-
-    private func signIn() async throws -> Session {
-        var components = URLComponents(
-            url: configuration.supabaseUrl.appending(path: "auth/v1/token"),
-            resolvingAgainstBaseURL: false
-        )
-        components?.queryItems = [URLQueryItem(name: "grant_type", value: "password")]
-        guard let url = components?.url else { throw URLError(.badURL) }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(configuration.anonKey, forHTTPHeaderField: "apikey")
-        request.httpBody = try JSONEncoder().encode([
-            "email": configuration.email,
-            "password": configuration.password,
-        ])
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw URLError(.userAuthenticationRequired)
-        }
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let session = try decoder.decode(SessionResponse.self, from: data)
-        return Session(accessToken: session.accessToken, userId: session.user.id)
+        store?.stop()
+        callModel?.shutdown()
+        uploads = nil
+        store = nil
+        callModel = nil
+        callMedia = nil
+        attachmentCommands = nil
     }
 }
 
-private extension LiveAttachmentLab.Phase {
-    var isReady: Bool {
-        if case .ready = self { return true }
-        return false
-    }
-}
-
-struct LiveAttachmentLabPage: View {
-    @State private var lab: LiveAttachmentLab
-    @State private var draft = ""
-    @State private var selection = ComposerSelection.none
+struct LiveChatLabPage: View {
+    @State private var lab: LiveChatLab
     @Environment(\.dismiss) private var dismiss
 
-    init(configuration: LiveAttachmentLabConfiguration) {
-        _lab = State(initialValue: LiveAttachmentLab(configuration: configuration))
+    init(configuration: LiveChatLabConfiguration) {
+        _lab = State(initialValue: LiveChatLab(configuration: configuration))
     }
 
     var body: some View {
-        Group {
-            switch lab.phase {
-            case .signingIn:
-                Text("Signing in to the local stack…")
-                    .textStyle(.body)
-                    .foregroundStyle(Palette.body)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Palette.bg)
-            case .failed(let message):
-                Notice(tone: .notice, title: message)
-                    .padding(Spacing.page)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .background(Palette.bg)
-            case .ready:
-                if let uploads = lab.uploads, let commands = lab.commands {
-                    PersonalChatScreen(
-                        model: lab.model,
-                        draft: $draft,
-                        selection: $selection,
-                        gifProvider: FixtureGifProvider(),
-                        attachmentUploads: uploads,
-                        attachmentCommands: commands,
-                        imageLoader: lab.imageLoader,
-                        fileDownloader: lab.fileDownloader,
-                        onSend: { payload in
-                            draft = ""
-                            selection = .none
-                            Task { await lab.send(payload) }
-                        },
-                        onRetryMessage: { id in
-                            Task { await lab.retry(messageId: id) }
-                        },
-                        onRetryOlder: {},
-                        onBack: { dismiss() }
-                    )
-                }
+        ZStack {
+            content
+            if let callModel = lab.callModel, let media = lab.callMedia, let store = lab.store {
+                CallOverlay(
+                    model: callModel,
+                    localVideo: { media.localVideoView() },
+                    remoteVideo: { media.remoteVideoView() },
+                    chatContent: { AnyView(liveTranscript(store)) }
+                )
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .task {
-            await lab.start()
-            await lab.poll()
-        }
+        .task { await lab.start() }
         .onDisappear { lab.shutdown() }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch lab.phase {
+        case .signingIn:
+            Text("Signing in to the local stack…")
+                .textStyle(.body)
+                .foregroundStyle(Palette.body)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Palette.bg)
+        case .opening:
+            Text("Opening conversation…")
+                .textStyle(.body)
+                .foregroundStyle(Palette.body)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Palette.bg)
+        case .failed(let message):
+            VStack(spacing: Spacing.md) {
+                Notice(tone: .notice, title: message)
+                ActionButton("Try again", variant: .primary) {
+                    Task { await lab.retry() }
+                }
+            }
+                .padding(Spacing.page)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .background(Palette.bg)
+        case .directory:
+            if let directory = lab.directoryStore {
+                ConversationListScreen(
+                    conversations: directory.conversations,
+                    currentUserId: lab.currentUserId,
+                    notice: directory.notice,
+                    onOpen: { id in Task { await lab.openConversation(id) } },
+                    onRetry: { Task { await lab.retryDirectory() } }
+                )
+            }
+        case .ready:
+            if let store = lab.store,
+               let uploads = lab.uploads,
+               let attachmentCommands = lab.attachmentCommands {
+                @Bindable var store = store
+                PersonalChatScreen(
+                    model: store.model,
+                    draft: $store.draft,
+                    selection: $store.selection,
+                    gifProvider: FixtureGifProvider(),
+                    attachmentUploads: uploads,
+                    attachmentCommands: attachmentCommands,
+                    imageLoader: lab.imageLoader,
+                    fileDownloader: lab.fileDownloader,
+                    onSend: { payload in Task { await store.send(payload) } },
+                    onRetryMessage: { id in Task { await store.retry(messageId: id) } },
+                    onRetryOlder: { Task { await store.loadOlder() } },
+                    onMessageAction: store.perform,
+                    onVisibleMessage: store.visibleMessage,
+                    onCancelComposerContext: store.cancelComposerContext,
+                    onComposerFocusChanged: store.composerFocusChanged,
+                    onBack: {
+                        if lab.closeConversation() { dismiss() }
+                    },
+                    trailingContent: callButtons
+                )
+            }
+        }
+    }
+
+    private var callButtons: AnyView? {
+        guard let model = lab.callModel, let store = lab.store else { return nil }
+        return AnyView(CallEntryButtons(
+            recipientName: store.participantName,
+            busy: model.busy,
+            onStartCall: { kind in Task { await lab.startCall(kind) } }
+        ))
+    }
+
+    private func liveTranscript(_ store: ConversationStore) -> some View {
+        PersonalChatTranscript(
+            items: TranscriptBuilder.build(messages: store.model.messages),
+            olderMessages: store.model.olderMessages,
+            onRetryMessage: { id in Task { await store.retry(messageId: id) } },
+            onRetryOlder: { Task { await store.loadOlder() } },
+            onMessageAction: store.perform,
+            onVisibleMessage: store.visibleMessage,
+            attachmentCommands: lab.attachmentCommands,
+            imageLoader: lab.imageLoader,
+            fileDownloader: lab.fileDownloader
+        )
+        .background(Palette.bg)
     }
 }

@@ -30,6 +30,11 @@ public enum PersonalChatPhase: Sendable, Equatable {
     case ready
 }
 
+public enum ComposerContextUiModel: Sendable, Equatable {
+    case reply(authorName: String, snippet: String)
+    case edit
+}
+
 public struct PersonalChatUiModel: Sendable, Equatable {
     public let participantName: String
     public let presence: PresenceUiModel?
@@ -39,6 +44,8 @@ public struct PersonalChatUiModel: Sendable, Equatable {
     public let messages: [MessageUiModel]
     public let unreadAfterMessageId: String?
     public let isParticipantTyping: Bool
+    public let composerContext: ComposerContextUiModel?
+    public let notice: String?
 
     public init(
         participantName: String,
@@ -48,7 +55,9 @@ public struct PersonalChatUiModel: Sendable, Equatable {
         olderMessages: OlderMessagesState = .hidden,
         messages: [MessageUiModel] = [],
         unreadAfterMessageId: String? = nil,
-        isParticipantTyping: Bool = false
+        isParticipantTyping: Bool = false,
+        composerContext: ComposerContextUiModel? = nil,
+        notice: String? = nil
     ) {
         self.participantName = participantName
         self.presence = presence
@@ -58,5 +67,7 @@ public struct PersonalChatUiModel: Sendable, Equatable {
         self.messages = messages
         self.unreadAfterMessageId = unreadAfterMessageId
         self.isParticipantTyping = isParticipantTyping
+        self.composerContext = composerContext
+        self.notice = notice
     }
 }
