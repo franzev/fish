@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
+import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.feature.chat.component.ConversationRow
 import space.fishhub.android.core.designsystem.component.FishDivider
 import space.fishhub.android.core.designsystem.component.FishEmptyState
@@ -41,6 +43,8 @@ import space.fishhub.android.core.designsystem.component.FishSkeleton
 import space.fishhub.android.core.designsystem.component.FishNotice
 import space.fishhub.android.core.designsystem.component.FishTopBar
 import space.fishhub.android.feature.presence.PresencePresentation
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 
 @Composable
 fun ChatAdaptiveLayout(
@@ -53,8 +57,15 @@ fun ChatAdaptiveLayout(
     pendingMedia: ComposerMediaUiModel? = null,
     onOpenMediaPicker: () -> Unit = {},
     onRemovePendingMedia: () -> Unit = {},
+    pendingAttachments: List<LocalAttachmentUiModel> = emptyList(),
+    onOpenAttachmentPicker: () -> Unit = {},
+    onRemovePendingAttachment: (String) -> Unit = {},
+    onRetryPendingAttachment: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
+    onPhotoAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentClick: (String) -> Unit = {},
+    onAttachmentLoadError: (String) -> Unit = {},
     onRetryConversation: () -> Unit = {},
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
@@ -94,8 +105,15 @@ fun ChatAdaptiveLayout(
                         pendingMedia = pendingMedia,
                         onOpenMediaPicker = onOpenMediaPicker,
                         onRemovePendingMedia = onRemovePendingMedia,
+                        pendingAttachments = pendingAttachments,
+                        onOpenAttachmentPicker = onOpenAttachmentPicker,
+                        onRemovePendingAttachment = onRemovePendingAttachment,
+                        onRetryPendingAttachment = onRetryPendingAttachment,
                         onRetryMessage = onRetryMessage,
                         onReportGif = onReportGif,
+                        onPhotoAttachmentClick = onPhotoAttachmentClick,
+                        onFileAttachmentClick = onFileAttachmentClick,
+                        onAttachmentLoadError = onAttachmentLoadError,
                         onStartAudioCall = onStartAudioCall,
                         onStartVideoCall = onStartVideoCall,
                         participantPresence = participantPresence,
@@ -121,8 +139,15 @@ fun ChatAdaptiveLayout(
                     pendingMedia = pendingMedia,
                     onOpenMediaPicker = onOpenMediaPicker,
                     onRemovePendingMedia = onRemovePendingMedia,
+                    pendingAttachments = pendingAttachments,
+                    onOpenAttachmentPicker = onOpenAttachmentPicker,
+                    onRemovePendingAttachment = onRemovePendingAttachment,
+                    onRetryPendingAttachment = onRetryPendingAttachment,
                     onRetryMessage = onRetryMessage,
                     onReportGif = onReportGif,
+                    onPhotoAttachmentClick = onPhotoAttachmentClick,
+                    onFileAttachmentClick = onFileAttachmentClick,
+                    onAttachmentLoadError = onAttachmentLoadError,
                     onStartAudioCall = onStartAudioCall,
                     onStartVideoCall = onStartVideoCall,
                     participantPresence = participantPresence,
@@ -147,8 +172,15 @@ fun ChatScreen(
     pendingMedia: ComposerMediaUiModel? = null,
     onOpenMediaPicker: () -> Unit = {},
     onRemovePendingMedia: () -> Unit = {},
+    pendingAttachments: List<LocalAttachmentUiModel> = emptyList(),
+    onOpenAttachmentPicker: () -> Unit = {},
+    onRemovePendingAttachment: (String) -> Unit = {},
+    onRetryPendingAttachment: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
+    onPhotoAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentClick: (String) -> Unit = {},
+    onAttachmentLoadError: (String) -> Unit = {},
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
     participantPresence: PresencePresentation = PresencePresentation(),
@@ -214,10 +246,14 @@ fun ChatScreen(
                 ChatTranscript(
                     messages = model.messages,
                     pagination = model.pagination,
+                    hasMoreOlder = model.hasMoreOlder,
                     typingParticipantName = model.typingParticipantName,
                     onRetryEarlier = onRetryEarlier,
                     onRetryMessage = onRetryMessage,
                     onReportGif = onReportGif,
+                    onPhotoAttachmentClick = onPhotoAttachmentClick,
+                    onFileAttachmentClick = onFileAttachmentClick,
+                    onAttachmentLoadError = onAttachmentLoadError,
                     modifier = Modifier.weight(1f),
                 )
                 FishDivider()
@@ -227,8 +263,15 @@ fun ChatScreen(
                     pendingMedia = pendingMedia,
                     onOpenMediaPicker = onOpenMediaPicker,
                     onRemovePendingMedia = onRemovePendingMedia,
+                    pendingAttachments = pendingAttachments,
+                    onOpenAttachmentPicker = onOpenAttachmentPicker,
+                    onRemovePendingAttachment = onRemovePendingAttachment,
+                    onRetryPendingAttachment = onRetryPendingAttachment,
+                    mediaSelectionEnabled = pendingAttachments.isEmpty(),
+                    attachmentSelectionEnabled = pendingMedia == null,
                     editable = true,
-                    sendEnabled = model.connection != ChatConnectionUiState.Offline,
+                    sendEnabled = model.connection != ChatConnectionUiState.Offline &&
+                        pendingAttachments.all { it.ready },
                     sending = model.isSending,
                     modifier = Modifier
                         .navigationBarsPadding()
@@ -243,10 +286,14 @@ fun ChatScreen(
 fun ChatTranscript(
     messages: List<MessageUiModel>,
     pagination: OlderMessagesUiState,
+    hasMoreOlder: Boolean = false,
     typingParticipantName: String?,
     onRetryEarlier: () -> Unit,
     onRetryMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
+    onPhotoAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentClick: (String) -> Unit = {},
+    onAttachmentLoadError: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     if (messages.isEmpty() && pagination == OlderMessagesUiState.Idle) {
@@ -262,6 +309,7 @@ fun ChatTranscript(
     val listState = rememberLazyListState()
     var previousLastMessageId by remember { mutableStateOf<String?>(null) }
     var playingGifId by remember { mutableStateOf<String?>(null) }
+    var showNewMessages by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { playingGifId = null }
     val lastMessageId = messages.lastOrNull()?.id
     LaunchedEffect(lastMessageId) {
@@ -272,54 +320,91 @@ fun ChatTranscript(
             (previousLastMessageId == null || nearLatest || sentByCurrentUser)
         ) {
             listState.scrollToItem(messages.lastIndex + 1)
+            showNewMessages = false
+        } else if (previousLastMessageId != null && !nearLatest) {
+            showNewMessages = true
         }
         previousLastMessageId = lastMessageId
+    }
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layout = listState.layoutInfo
+            val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
+            lastVisible >= layout.totalItemsCount - 2
+        }.distinctUntilChanged().filter { it }.collect { showNewMessages = false }
+    }
+    LaunchedEffect(listState, hasMoreOlder, pagination, messages.firstOrNull()?.id) {
+        if (!hasMoreOlder || pagination != OlderMessagesUiState.Idle || messages.isEmpty()) return@LaunchedEffect
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .distinctUntilChanged()
+            .filter { it <= 1 }
+            .collect { onRetryEarlier() }
     }
     LaunchedEffect(messages.map(MessageUiModel::id)) {
         if (playingGifId !in messages.map(MessageUiModel::id)) playingGifId = null
     }
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        state = listState,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = FishTheme.spacing.page,
-            vertical = FishTheme.spacing.xs,
-        ),
-    ) {
-        item(key = "older-state", contentType = "older-state") {
-            OlderMessagesState(state = pagination, onRetry = onRetryEarlier)
-        }
-        items(
-            items = messages,
-            key = { it.id },
-            contentType = { "message" },
-        ) { message ->
-            if (message.dateLabel != null) {
-                MessageDateSeparator(message.dateLabel)
+    Box(modifier = modifier.fillMaxWidth()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = FishTheme.spacing.page,
+                vertical = FishTheme.spacing.xs,
+            ),
+        ) {
+            item(key = "older-state", contentType = "older-state") {
+                OlderMessagesState(state = pagination, onRetry = onRetryEarlier)
             }
-            if (message.startsUnread) {
-                UnreadMessageDivider()
-            }
-            MessageBubble(
-                message = message.copy(gifPlaying = message.id == playingGifId),
-                onToggleGif = {
-                    playingGifId = if (playingGifId == message.id) null else message.id
-                },
-                onReportGif = { onReportGif(message.id) },
-                onRetry = { onRetryMessage(message.id) },
-                modifier = Modifier.padding(
-                    bottom = if (message.groupedWithNext) {
-                        FishTheme.spacing.nudge
-                    } else {
-                        FishTheme.spacing.sm
+            items(
+                items = messages,
+                key = { it.id },
+                contentType = { "message" },
+            ) { message ->
+                if (message.dateLabel != null) {
+                    MessageDateSeparator(message.dateLabel)
+                }
+                if (message.startsUnread) {
+                    UnreadMessageDivider()
+                }
+                MessageBubble(
+                    message = message.copy(gifPlaying = message.id == playingGifId),
+                    onToggleGif = {
+                        playingGifId = if (playingGifId == message.id) null else message.id
                     },
-                ),
-            )
-        }
-        if (typingParticipantName != null) {
-            item(key = "typing", contentType = "typing") {
-                TypingIndicator(typingParticipantName)
+                    onReportGif = { onReportGif(message.id) },
+                    onPhotoAttachmentClick = onPhotoAttachmentClick,
+                    onFileAttachmentClick = onFileAttachmentClick,
+                    onAttachmentLoadError = onAttachmentLoadError,
+                    onRetry = { onRetryMessage(message.id) },
+                    modifier = Modifier.padding(
+                        bottom = if (message.groupedWithNext) {
+                            FishTheme.spacing.nudge
+                        } else {
+                            FishTheme.spacing.sm
+                        },
+                    ),
+                )
             }
+            if (typingParticipantName != null) {
+                item(key = "typing", contentType = "typing") {
+                    TypingIndicator(typingParticipantName)
+                }
+            }
+        }
+        if (showNewMessages) {
+            FishButton(
+                label = stringResource(R.string.new_messages),
+                onClick = {
+                    showNewMessages = false
+                    if (messages.isNotEmpty()) {
+                        listState.requestScrollToItem(messages.lastIndex + 1)
+                    }
+                },
+                variant = FishButtonVariant.Secondary,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(FishTheme.spacing.sm),
+            )
         }
     }
 }

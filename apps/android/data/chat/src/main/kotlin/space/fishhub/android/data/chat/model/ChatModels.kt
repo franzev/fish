@@ -41,20 +41,38 @@ data class ChatGif(
 )
 
 @Serializable
+enum class ChatAttachmentKind {
+    @SerialName("image") Image,
+    @SerialName("file") File,
+    @SerialName("unavailable") Unavailable,
+}
+
+@Serializable
 data class ChatAttachment(
     val id: String,
-    val status: String = "ready",
-    val kind: String? = null,
+    val position: Int,
+    val kind: ChatAttachmentKind,
+    val available: Boolean = true,
     val originalName: String,
     val mimeType: String? = null,
     val byteSize: Long? = null,
     val width: Int? = null,
     val height: Int? = null,
     val thumbnailPath: String? = null,
-    val displayPath: String,
+    val displayPath: String? = null,
     val thumbnailUrl: String? = null,
     val displayUrl: String? = null,
-)
+) {
+    /** Stable Coil cache identity; signed delivery URLs intentionally are not part of it. */
+    val contentVersion: String
+        get() = listOfNotNull(mimeType, byteSize?.toString(), width?.toString(), height?.toString())
+            .joinToString(":")
+            .ifBlank { "unavailable" }
+}
+
+/** Compatibility name for older Android callers while attachments become canonical. */
+@Deprecated("Use ChatAttachment.", ReplaceWith("ChatAttachment"))
+typealias ChatImage = ChatAttachment
 
 @Serializable
 data class ChatMessage(
@@ -67,7 +85,8 @@ data class ChatMessage(
     val gif: ChatGif? = null,
     val gifUnavailable: Boolean = false,
     val stickerId: String? = null,
-    val images: List<ChatAttachment> = emptyList(),
+    val attachments: List<ChatAttachment> = emptyList(),
+    @kotlinx.serialization.Transient val attachmentsHydrated: Boolean = true,
     val clientRequestId: String,
     val createdAt: String,
     val editedAt: String? = null,
@@ -76,7 +95,10 @@ data class ChatMessage(
     val reactions: List<ChatReaction> = emptyList(),
     val localStatus: LocalMessageStatus? = null,
     val failureReason: String? = null,
-)
+) {
+    @Deprecated("Use attachments.", ReplaceWith("attachments"))
+    val images: List<ChatAttachment> get() = attachments
+}
 
 @Serializable
 data class ChatReadState(

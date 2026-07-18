@@ -17,13 +17,23 @@ import space.fishhub.android.data.chat.GifRepository
 import space.fishhub.android.data.chat.GifPage
 import space.fishhub.android.data.chat.GifSearchItem
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatAttachment
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
+import space.fishhub.android.data.chat.model.LocalAttachmentDraft
+import space.fishhub.android.data.chat.model.LocalAttachmentKind
+import space.fishhub.android.data.chat.model.LocalAttachmentScope
+import space.fishhub.android.data.chat.model.LocalAttachmentTransferState
+import space.fishhub.android.data.chat.AttachmentImportResult
+import space.fishhub.android.data.chat.AttachmentImportSource
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -41,6 +51,86 @@ import org.junit.Test
 class ChatViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `attachment only send uses ready server ids in displayed order`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("second", 1, LocalAttachmentScope.Composer).copy(
+                        serverAttachmentId = "server-second",
+                        transferState = LocalAttachmentTransferState.Ready,
+                        progressBytes = 100,
+                    ),
+                    localDraft("first", 0, LocalAttachmentScope.Composer).copy(
+                        serverAttachmentId = "server-first",
+                        transferState = LocalAttachmentTransferState.Ready,
+                        progressBytes = 100,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            assertEquals(listOf("server-first", "server-second"), repository.lastSentContent?.attachmentIds)
+            assertEquals("", repository.lastSentContent?.body)
+            assertEquals(1, repository.sendCalls)
+        }
+
+    @Test
+    fun `one failed attachment blocks subset send and keeps every row`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("ready", 0, LocalAttachmentScope.Composer).copy(
+                        serverAttachmentId = "server-ready",
+                        transferState = LocalAttachmentTransferState.Ready,
+                        progressBytes = 100,
+                    ),
+                    localDraft("failed", 1, LocalAttachmentScope.Composer).copy(
+                        transferState = LocalAttachmentTransferState.FailedRecoverable,
+                        failureCode = "retry_limit",
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            assertEquals(0, repository.sendCalls)
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(listOf("ready", "failed"), state.attachmentDrafts.sortedBy { it.position }.map { it.id })
+            assertTrue(state.notice.orEmpty().contains("Wait for each attachment"))
+        }
+
+    @Test
+    fun `room backed attachment drafts survive view model recreation and keep order`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("photo-2", 1, LocalAttachmentScope.Composer),
+                    localDraft("photo-1", 0, LocalAttachmentScope.Composer),
+                ),
+            )
+
+            val first = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            val firstState = first.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(listOf("photo-1", "photo-2"), firstState.attachmentDrafts.sortedBy { it.position }.map { it.id })
+
+            val recreated = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            val recreatedState = recreated.uiState.value as ChatRouteUiState.Conversation
+            assertEquals(listOf("photo-1", "photo-2"), recreatedState.attachmentDrafts.sortedBy { it.position }.map { it.id })
+        }
 
     @Test
     fun `current user identity survives an empty conversation directory`() =
@@ -315,6 +405,68 @@ class ChatViewModelTest {
             assertEquals(ChatScreenState.Unavailable, state.model.screenState)
             assertEquals("This conversation isn't available.", state.notice)
         }
+
+    @Test
+    fun `attachment only mixed message remains visible in stored order`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            repository.emitMessages(
+                listOf(
+                    ChatMessage(
+                        id = "attachments",
+                        conversationId = "conversation-1",
+                        senderId = "coach-1",
+                        senderRole = UserRole.Coach,
+                        body = "",
+                        attachments = listOf(
+                            attachment("photo-2", 2, ChatAttachmentKind.Image),
+                            attachment("photo-1", 0, ChatAttachmentKind.Image),
+                            attachment("file", 1, ChatAttachmentKind.File),
+                        ),
+                        clientRequestId = "attachment-request",
+                        createdAt = "2026-07-16T00:00:00Z",
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            val message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertEquals(listOf("photo-1", "file", "photo-2"), message.attachments.map { it.id })
+        }
+
+    @Test
+    fun `file open refreshes signed url before emitting app request`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitMessages(
+                listOf(
+                    ChatMessage(
+                        id = "file-message",
+                        conversationId = "conversation-1",
+                        senderId = "coach-1",
+                        senderRole = UserRole.Coach,
+                        body = "",
+                        attachments = listOf(attachment("file", 0, ChatAttachmentKind.File)),
+                        clientRequestId = "file-request",
+                        createdAt = "2026-07-16T00:00:00Z",
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            val request = async { viewModel.attachmentOpenRequests.first() }
+            viewModel.openFileAttachment("file")
+            advanceUntilIdle()
+
+            assertEquals("https://example.test/file/display", request.await().signedUrl)
+            assertEquals(1, repository.refreshCalls)
+        }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -344,6 +496,7 @@ private class FakeChatRepository(
     private val messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     private val readStates = MutableStateFlow<List<ChatReadState>>(emptyList())
     private val drafts = MutableStateFlow("")
+    private val attachmentDrafts = MutableStateFlow<List<LocalAttachmentDraft>>(emptyList())
     val realtime = MutableStateFlow<ChatRealtimeEvent>(ChatRealtimeEvent.Connected)
     private val authorizedConversations = buildList {
         if (conversationCount > 0) add(conversation)
@@ -367,10 +520,13 @@ private class FakeChatRepository(
     var lastSentContent: OutgoingMessageContent? = null
     var reportCalls: Int = 0
     var sendGate: CompletableDeferred<Unit>? = null
+    var refreshCalls: Int = 0
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> = messages
     override fun observeReadStates(conversationId: String): Flow<List<ChatReadState>> = readStates
     override fun observeDraft(conversationId: String): Flow<String> = drafts
+    override fun observeAttachmentDrafts(conversationId: String): Flow<List<LocalAttachmentDraft>> =
+        attachmentDrafts
     override fun observeRealtime(conversationId: String): Flow<ChatRealtimeEvent> = realtime
     override suspend fun signIn(email: String, password: String): ChatResult<Unit> = ChatResult.Success(Unit)
     override suspend fun signOut() = Unit
@@ -395,6 +551,19 @@ private class FakeChatRepository(
     )
     override suspend fun loadOlder(conversationId: String, cursor: ChatMessageCursor) =
         ChatResult.Success(MessagePage(emptyList(), false, null))
+    override suspend fun refreshAttachmentUrls(
+        attachmentIds: List<String>,
+    ): ChatResult<List<space.fishhub.android.data.chat.AttachmentDelivery>> {
+        refreshCalls += 1
+        return ChatResult.Success(attachmentIds.map {
+            space.fishhub.android.data.chat.AttachmentDelivery(
+                attachmentId = it,
+                thumbnailUrl = "https://example.test/$it/thumb",
+                displayUrl = "https://example.test/$it/display",
+                expiresAt = null,
+            )
+        })
+    }
     override suspend fun sendMessage(
         conversationId: String,
         content: OutgoingMessageContent,
@@ -451,12 +620,49 @@ private class FakeChatRepository(
         savedDraft = draft
         drafts.value = draft
     }
+    override suspend fun importAttachments(
+        conversationId: String,
+        sources: List<AttachmentImportSource>,
+    ) = AttachmentImportResult(0)
+    override suspend fun commitAttachmentPreview(conversationId: String) = Unit
+    override suspend fun discardAttachmentPreview(conversationId: String) = Unit
+    override suspend fun removeAttachmentDraft(conversationId: String, attachmentId: String) = Unit
+    override suspend fun retryAttachmentDraft(conversationId: String, attachmentId: String) = Unit
     override suspend fun clearCachedUserData() = Unit
 
     fun emitMessages(value: List<ChatMessage>) {
         messages.value = value
     }
+
+    fun emitAttachmentDrafts(value: List<LocalAttachmentDraft>) {
+        attachmentDrafts.value = value
+    }
 }
+
+private fun localDraft(
+    id: String,
+    position: Int,
+    scope: LocalAttachmentScope,
+) = LocalAttachmentDraft(
+    id = id,
+    conversationId = "conversation-1",
+    userId = "client-1",
+    position = position,
+    kind = LocalAttachmentKind.Image,
+    scope = scope,
+    displayName = "Photo",
+    sourceMimeType = "image/jpeg",
+    storedMimeType = "image/webp",
+    byteSize = 100,
+    width = 100,
+    height = 80,
+    localPath = "/private/$id.webp",
+    thumbnailPath = "/private/$id-thumb.webp",
+    sha256 = id.padEnd(64, '0').take(64),
+    createdAt = "2026-07-17T00:00:00Z",
+    updatedAt = "2026-07-17T00:00:00Z",
+    expiresAt = "2026-07-24T00:00:00Z",
+)
 
 private class RecordingGifRepository : GifRepository {
     override val available: Boolean = true
@@ -482,6 +688,19 @@ private fun gifItem() = GifSearchItem(
         height = 360,
     ),
     animatedPreviewUrl = "https://static.klipy.com/tiny.gif",
+)
+
+private fun attachment(id: String, position: Int, kind: ChatAttachmentKind) = ChatAttachment(
+    id = id,
+    position = position,
+    kind = kind,
+    originalName = if (kind == ChatAttachmentKind.File) "notes.pdf" else "Photo",
+    mimeType = if (kind == ChatAttachmentKind.File) "application/pdf" else "image/webp",
+    byteSize = 1024,
+    width = 1200.takeIf { kind == ChatAttachmentKind.Image },
+    height = 800.takeIf { kind == ChatAttachmentKind.Image },
+    thumbnailPath = "thumb.webp".takeIf { kind == ChatAttachmentKind.Image },
+    displayPath = "display",
 )
 
 private fun mediaCatalog() = ChatMediaCatalog(
@@ -511,6 +730,8 @@ private fun mediaCatalog() = ChatMediaCatalog(
 private object TestFormatter : ChatTextFormatter {
     override val missingSignInCredentials = "Add your email and password to sign in."
     override val conversationUnavailable = "This conversation isn't available."
+    override val attachmentsNotReady = "Wait for each attachment to finish, or remove it."
+    override val attachmentUnavailable = "That attachment did not load yet. Try again."
     override fun participantContext(role: UserRole) = when (role) {
         UserRole.Coach -> "Your English coach"
         UserRole.Client -> "Personal coaching conversation"

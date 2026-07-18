@@ -12,6 +12,8 @@ import java.util.Locale
 interface ChatTextFormatter {
     val missingSignInCredentials: String
     val conversationUnavailable: String
+    val attachmentsNotReady: String
+    val attachmentUnavailable: String
     fun participantContext(role: UserRole): String
     fun timeLabel(timestamp: String): String
     fun dateLabel(timestamp: String): String
@@ -26,6 +28,12 @@ class AndroidChatFormatter(context: Context) : ChatTextFormatter {
 
     override val conversationUnavailable: String
         get() = applicationContext.getString(R.string.conversation_unavailable_notice)
+
+    override val attachmentsNotReady: String
+        get() = applicationContext.getString(R.string.attachments_not_ready_notice)
+
+    override val attachmentUnavailable: String
+        get() = applicationContext.getString(R.string.attachment_open_unavailable_notice)
 
     override fun participantContext(role: UserRole): String = applicationContext.getString(
         when (role) {

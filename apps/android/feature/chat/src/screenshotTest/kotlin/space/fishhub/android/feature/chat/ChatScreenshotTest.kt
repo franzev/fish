@@ -3,8 +3,12 @@ package space.fishhub.android.feature.chat
 import android.content.res.Configuration
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
@@ -165,6 +169,195 @@ fun GifPickerLoadingScreenshot() {
     )
 }
 
+@PreviewTest
+@Preview(name = "attachments 0 compact", widthDp = 360, heightDp = 640, showBackground = true)
+@Composable
+fun AttachmentZeroScreenshot() {
+    FishTheme(reducedMotion = true) {
+        AttachmentPreviewScreen(
+            attachments = emptyList(),
+            importing = false,
+            notice = null,
+            onRemove = {},
+            onAddToMessage = {},
+            onDismiss = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "attachments 1 photo", widthDp = 360, heightDp = 640, showBackground = true)
+@Composable
+fun AttachmentOnePhotoScreenshot() {
+    AttachmentQueueScreenshot(attachments = attachmentScreenshotItems(1, AttachmentMatrixKind.Photos))
+}
+
+@PreviewTest
+@Preview(
+    name = "attachments 2 files dark",
+    widthDp = 412,
+    heightDp = 720,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+)
+@Composable
+fun AttachmentTwoFilesDarkScreenshot() {
+    AttachmentQueueScreenshot(
+        attachments = attachmentScreenshotItems(2, AttachmentMatrixKind.Files),
+        darkTheme = true,
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "attachments 3 mixed RTL",
+    widthDp = 412,
+    heightDp = 720,
+    locale = "ar",
+    showBackground = true,
+)
+@Composable
+fun AttachmentThreeMixedRtlScreenshot() {
+    AttachmentQueueScreenshot(attachments = attachmentScreenshotItems(3, AttachmentMatrixKind.Mixed))
+}
+
+@PreviewTest
+@Preview(name = "attachments 4 active expanded", widthDp = 1024, heightDp = 600, showBackground = true)
+@Composable
+fun AttachmentFourActiveExpandedScreenshot() {
+    AttachmentQueueScreenshot(
+        attachments = attachmentScreenshotItems(4, AttachmentMatrixKind.Mixed).mapIndexed { index, item ->
+            item.copy(
+                transferState = listOf(
+                    AttachmentTransferUiState.Preparing,
+                    AttachmentTransferUiState.Uploading,
+                    AttachmentTransferUiState.Checking,
+                    AttachmentTransferUiState.Waiting,
+                )[index],
+                progressFraction = if (index == 1) 0.58f else 0f,
+            )
+        },
+    )
+}
+
+@PreviewTest
+@Preview(name = "attachments 5 partial failure compact", widthDp = 320, heightDp = 720, showBackground = true)
+@Composable
+fun AttachmentFivePartialFailureScreenshot() {
+    AttachmentQueueScreenshot(
+        attachments = attachmentScreenshotItems(5, AttachmentMatrixKind.Mixed).mapIndexed { index, item ->
+            if (index == 0) {
+                item.copy(
+                    transferState = AttachmentTransferUiState.Failed,
+                    retryable = true,
+                    failureReason = AttachmentFailureUiReason.SafetyCheckFailed,
+                )
+            } else {
+                item
+            }
+        },
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "attachment recovery 200 percent font",
+    widthDp = 412,
+    heightDp = 915,
+    fontScale = 2f,
+    showBackground = true,
+)
+@Composable
+fun AttachmentRecoveryLargeFontScreenshot() {
+    AttachmentQueueScreenshot(
+        attachments = listOf(
+            attachmentScreenshotItem(0, isPhoto = false).copy(
+                name = "client coaching notes with a long descriptive filename.pdf",
+                transferState = AttachmentTransferUiState.Failed,
+                retryable = true,
+                failureReason = AttachmentFailureUiReason.LocalCopyUnavailable,
+            ),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "attachment preview photo", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun AttachmentPreviewPhotoScreenshot() {
+    FishTheme(reducedMotion = true) {
+        AttachmentPreviewScreen(
+            attachments = attachmentScreenshotItems(2, AttachmentMatrixKind.Mixed),
+            importing = false,
+            notice = null,
+            onRemove = {},
+            onAddToMessage = {},
+            onDismiss = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "attachment source sheet", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun AttachmentSourceSheetScreenshot() {
+    FishTheme(reducedMotion = true) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FishTheme.colors.background),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            AttachmentSourceContent(
+                remainingSlots = 3,
+                cameraAvailable = true,
+                onChoosePhotos = {},
+                onTakePhoto = {},
+                onChooseFile = {},
+                onDismiss = {},
+                modifier = Modifier.background(FishTheme.colors.surface),
+            )
+        }
+    }
+}
+
+@PreviewTest
+@Preview(name = "sent mixed attachments", widthDp = 412, heightDp = 720, showBackground = true)
+@Composable
+fun SentMixedAttachmentsScreenshot() {
+    FishTheme(reducedMotion = true) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FishTheme.colors.background)
+                .padding(FishTheme.spacing.page),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            MessageAttachmentGroup(
+                attachments = sentAttachmentScreenshotItems(),
+                author = "Coach Jordan",
+                timeLabel = "10:42 AM",
+                onPhotoClick = {},
+                onFileClick = {},
+                onPhotoLoadError = {},
+            )
+        }
+    }
+}
+
+@PreviewTest
+@Preview(name = "attachment photo viewer", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun AttachmentPhotoViewerScreenshot() {
+    FishTheme(reducedMotion = true) {
+        AttachmentPhotoViewerContent(
+            attachment = sentPhotoScreenshotItem(position = 0),
+            onDismiss = {},
+            onLoadError = {},
+        )
+    }
+}
+
 @Composable
 private fun ScreenshotFrame(
     model: ChatUiModel,
@@ -209,6 +402,92 @@ private fun PickerScreenshot(state: MediaPickerUiState) {
         }
     }
 }
+
+@Composable
+private fun AttachmentQueueScreenshot(
+    attachments: List<LocalAttachmentUiModel>,
+    darkTheme: Boolean = false,
+) {
+    FishTheme(darkTheme = darkTheme, reducedMotion = true) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FishTheme.colors.background)
+                .padding(FishTheme.spacing.page),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            ComposerAttachmentQueue(attachments = attachments, onRemove = {}, onRetry = {})
+        }
+    }
+}
+
+private enum class AttachmentMatrixKind { Photos, Files, Mixed }
+
+private fun attachmentScreenshotItems(
+    count: Int,
+    kind: AttachmentMatrixKind,
+): List<LocalAttachmentUiModel> = List(count) { position ->
+    attachmentScreenshotItem(
+        position = position,
+        isPhoto = when (kind) {
+            AttachmentMatrixKind.Photos -> true
+            AttachmentMatrixKind.Files -> false
+            AttachmentMatrixKind.Mixed -> position % 2 != 0
+        },
+    )
+}
+
+private fun attachmentScreenshotItem(position: Int, isPhoto: Boolean) = LocalAttachmentUiModel(
+    id = "screenshot-attachment-$position",
+    position = position,
+    isPhoto = isPhoto,
+    inPreview = false,
+    name = if (isPhoto) "Coaching photo ${position + 1}" else "coaching-notes-${position + 1}.pdf",
+    mimeType = if (isPhoto) "image/jpeg" else "application/pdf",
+    byteSize = 128_000L + position,
+    width = 1200.takeIf { isPhoto },
+    height = 800.takeIf { isPhoto },
+    localPath = if (isPhoto) AttachmentScreenshotPhotoUri else "/private/screenshot-attachment-$position",
+    thumbnailPath = null,
+    transferState = AttachmentTransferUiState.Ready,
+)
+
+private fun sentAttachmentScreenshotItems(): List<AttachmentUiModel> = listOf(
+    sentPhotoScreenshotItem(position = 0),
+    AttachmentUiModel(
+        id = "sent-file",
+        position = 1,
+        kind = AttachmentUiKind.File,
+        available = true,
+        name = "coaching-notes.pdf",
+        mimeType = "application/pdf",
+        byteSize = 256_000,
+        width = null,
+        height = null,
+        thumbnailUrl = null,
+        displayUrl = null,
+        contentVersion = "screenshot",
+    ),
+    sentPhotoScreenshotItem(position = 2),
+)
+
+private fun sentPhotoScreenshotItem(position: Int) = AttachmentUiModel(
+    id = "sent-photo-$position",
+    position = position,
+    kind = AttachmentUiKind.Photo,
+    available = true,
+    name = "Coaching photo ${position + 1}",
+    mimeType = "image/webp",
+    byteSize = 128_000,
+    width = 360,
+    height = 240,
+    thumbnailUrl = AttachmentScreenshotPhotoUri,
+    displayUrl = AttachmentScreenshotPhotoUri,
+    contentVersion = "screenshot",
+)
+
+private const val AttachmentScreenshotPhotoUri =
+    "file:///android_asset/aquatic/hello-otter.webp"
 
 private val screenshotStickers = listOf(
     StickerCatalogItem(

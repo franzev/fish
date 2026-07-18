@@ -10,7 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = path.join(root, "design/tokens/fish.tokens.json");
 const generatedPath = path.join(
   root,
-  "apps/android/core/designsystem/src/main/kotlin/com/fish/android/core/designsystem/tokens/GeneratedTokens.kt",
+  "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/tokens/GeneratedTokens.kt",
 );
 const cssPath = path.join(root, "apps/web/app/globals.css");
 const tokens = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -95,7 +95,7 @@ assert.ok(
 );
 
 const guardedRoots = [
-  "apps/android/core/designsystem/src/main/kotlin/com/fish/android/core/designsystem/component",
+  "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component",
   "apps/android/feature/chat/src/main",
   "apps/android/feature/presence/src/main",
 ];
@@ -117,7 +117,7 @@ for (const relativeRoot of guardedRoots) {
 
 const importGuards = [
   {
-    root: "apps/android/feature/chat/src/main/kotlin/com/fish/android/feature/chat/state",
+    root: "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/state",
     forbidden: [
       /^import androidx\.compose/m,
       /^import android\./m,
@@ -127,7 +127,7 @@ const importGuards = [
     label: "pure chat state",
   },
   {
-    root: "apps/android/data/chat/src/main/kotlin/com/fish/android/data/chat/model",
+    root: "apps/android/data/chat/src/main/kotlin/space/fishhub/android/data/chat/model",
     forbidden: [/^import androidx\.compose/m, /^import .*supabase/m, /^import androidx\.room/m],
     label: "chat data model",
   },

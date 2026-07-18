@@ -4,13 +4,16 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.unit.dp
@@ -185,6 +188,170 @@ class ChatAccessibilityTest {
         fields[1].assertIsFocused()
     }
 
+    @Test
+    fun mixedAttachmentsKeepOrderedLabelsAndFileTouchTarget() {
+        var openedFile: String? = null
+        composeRule.setContent {
+            FishTheme {
+                MessageBubble(
+                    message = MessageUiModel(
+                        id = "attachments",
+                        senderName = "Coach Jordan",
+                        body = "",
+                        timeLabel = "10:30 AM",
+                        isOutgoing = false,
+                        attachments = listOf(
+                            attachment("photo-1", 0, AttachmentUiKind.Photo, "Photo"),
+                            attachment("file-1", 1, AttachmentUiKind.File, "practice notes.pdf"),
+                            attachment("missing", 2, AttachmentUiKind.Unavailable, "Attachment", false),
+                        ),
+                    ),
+                    onFileAttachmentClick = { openedFile = it },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithContentDescription(
+            "Coach Jordan. Photo: Photo. 10:30 AM",
+        ).assertExists()
+        composeRule.onNodeWithContentDescription(
+            "Coach Jordan. File: practice notes.pdf. PDF · 1 KB. 10:30 AM",
+        ).assertHeightIsAtLeast(48.dp).performClick()
+        composeRule.onNodeWithContentDescription(
+            "Coach Jordan. Attachment. Attachment unavailable. 10:30 AM",
+        ).assertExists()
+
+        assertEquals("file-1", openedFile)
+    }
+
+    @Test
+    fun attachmentSourceAndPreviewKeepOneClearActionAndAccessibleTargets() {
+        var removed: String? = null
+        var added = false
+        composeRule.setContent {
+            FishTheme {
+                AttachmentPreviewScreen(
+                    attachments = listOf(
+                        localAttachment("photo", 0, true, "Photo"),
+                        localAttachment("file", 1, false, "practice notes.pdf"),
+                    ),
+                    importing = false,
+                    notice = null,
+                    onRemove = { removed = it },
+                    onAddToMessage = { added = true },
+                    onDismiss = {},
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithText("Item 1").assertExists()
+        composeRule.onNodeWithText("Item 2").assertExists()
+        composeRule.onAllNodesWithText("Remove")[0]
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithText("Add to message")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertEquals("photo", removed)
+        assertTrue(added)
+    }
+
+    @Test
+    fun composerAttachmentTriggerAndRemovalRemainReachable() {
+        var pickerOpened = false
+        var removed: String? = null
+        composeRule.setContent {
+            FishTheme {
+                MessageComposer(
+                    state = rememberTextFieldState(),
+                    onSend = {},
+                    pendingAttachments = listOf(localAttachment("file", 0, false, "lesson.pdf")),
+                    onOpenAttachmentPicker = { pickerOpened = true },
+                    onRemovePendingAttachment = { removed = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Add photos or files")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithContentDescription("Remove lesson.pdf")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertTrue(pickerOpened)
+        assertEquals("file", removed)
+    }
+
+    @Test
+    fun attachmentQueueAnnouncesOneSummaryAndKeepsRecoveryActionsDistinct() {
+        var retried: String? = null
+        var removed: String? = null
+        val failed = localAttachment("file", 0, false, "lesson.pdf").copy(
+            transferState = AttachmentTransferUiState.Failed,
+            retryable = true,
+            failureReason = AttachmentFailureUiReason.LocalCopyUnavailable,
+        )
+        composeRule.setContent {
+            FishTheme {
+                ComposerAttachmentQueue(
+                    attachments = listOf(failed),
+                    onRetry = { retried = it },
+                    onRemove = { removed = it },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onAllNodesWithContentDescription(
+            "lesson.pdf. Needs attention. This file is no longer available. Remove it and choose it again.",
+        ).assertCountEquals(1)
+        composeRule.onAllNodesWithContentDescription("Try lesson.pdf again")
+            .assertCountEquals(1)[0]
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onAllNodesWithContentDescription("Remove lesson.pdf")
+            .assertCountEquals(1)[0]
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertEquals("file", retried)
+        assertEquals("file", removed)
+    }
+
+    @Test
+    fun photoViewerAnnouncesPhotoOnceAndKeepsCloseAsASeparateAction() {
+        var dismissed = false
+        composeRule.setContent {
+            FishTheme {
+                AttachmentPhotoViewer(
+                    attachment = attachment(
+                        id = "photo",
+                        position = 0,
+                        kind = AttachmentUiKind.Photo,
+                        name = "Practice photo",
+                    ).copy(displayUrl = "https://example.invalid/practice-photo.jpg"),
+                    onDismiss = { dismissed = true },
+                    onLoadError = {},
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onAllNodesWithContentDescription(
+            "Photo viewer: Practice photo. Pinch to zoom.",
+        ).assertCountEquals(1)
+        composeRule.onAllNodesWithContentDescription("Close photo viewer")
+            .assertCountEquals(1)[0]
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertTrue(dismissed)
+    }
+
     @Composable
     private fun TestChat() {
         FishTheme(reducedMotion = true) {
@@ -198,4 +365,48 @@ class ChatAccessibilityTest {
             )
         }
     }
+
+    private fun attachment(
+        id: String,
+        position: Int,
+        kind: AttachmentUiKind,
+        name: String,
+        available: Boolean = true,
+    ) = AttachmentUiModel(
+        id = id,
+        position = position,
+        kind = kind,
+        available = available,
+        name = name,
+        mimeType = when (kind) {
+            AttachmentUiKind.Photo -> "image/webp"
+            AttachmentUiKind.File -> "application/pdf"
+            AttachmentUiKind.Unavailable -> null
+        },
+        byteSize = 1024L.takeIf { available },
+        width = 1200.takeIf { kind == AttachmentUiKind.Photo },
+        height = 800.takeIf { kind == AttachmentUiKind.Photo },
+        thumbnailUrl = null,
+        displayUrl = null,
+        contentVersion = "v1",
+    )
+
+    private fun localAttachment(
+        id: String,
+        position: Int,
+        photo: Boolean,
+        name: String,
+    ) = LocalAttachmentUiModel(
+        id = id,
+        position = position,
+        isPhoto = photo,
+        inPreview = true,
+        name = name,
+        mimeType = if (photo) "image/webp" else "application/pdf",
+        byteSize = 1024,
+        width = 1200.takeIf { photo },
+        height = 800.takeIf { photo },
+        localPath = "/private/$id",
+        thumbnailPath = null,
+    )
 }

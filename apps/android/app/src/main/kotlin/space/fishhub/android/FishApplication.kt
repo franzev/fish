@@ -15,8 +15,9 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.Configuration
 
-class FishApplication : Application() {
+class FishApplication : Application(), Configuration.Provider {
     private val supabaseClient by lazy {
         SupabaseClientFactory.create(
             url = BuildConfig.SUPABASE_URL,
@@ -66,8 +67,14 @@ class FishApplication : Application() {
     val gifRepository: GifRepository get() = chatDependencies.gifRepository
     val presenceRepository: PresenceRepository get() = presenceDependencies.repository
 
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(chatDependencies.workerFactory)
+            .build()
+
     override fun onCreate() {
         super.onCreate()
+        chatDependencies.startAttachmentMaintenanceAndRecovery()
         callCoordinator
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             PresenceLifecycleObserver(presenceRepository),

@@ -107,6 +107,9 @@ fun MessageBubble(
     onToggleGif: () -> Unit = {},
     onReportGif: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onPhotoAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentClick: (String) -> Unit = {},
+    onAttachmentLoadError: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = FishTheme.colors
@@ -145,6 +148,16 @@ fun MessageBubble(
         }
         if (message.gifUnavailable && message.gif == null) {
             GifUnavailableMedia()
+        }
+        if (!message.deleted && message.attachments.isNotEmpty()) {
+            MessageAttachmentGroup(
+                attachments = message.attachments,
+                author = author,
+                timeLabel = message.timeLabel,
+                onPhotoClick = onPhotoAttachmentClick,
+                onFileClick = onFileAttachmentClick,
+                onPhotoLoadError = onAttachmentLoadError,
+            )
         }
         if (message.deleted || message.body.isNotBlank()) {
             Column(
@@ -393,13 +406,19 @@ fun MessageComposer(
     pendingMedia: ComposerMediaUiModel? = null,
     onOpenMediaPicker: () -> Unit = {},
     onRemovePendingMedia: () -> Unit = {},
+    pendingAttachments: List<LocalAttachmentUiModel> = emptyList(),
+    onOpenAttachmentPicker: () -> Unit = {},
+    onRemovePendingAttachment: (String) -> Unit = {},
+    onRetryPendingAttachment: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     editable: Boolean = true,
+    mediaSelectionEnabled: Boolean = true,
+    attachmentSelectionEnabled: Boolean = true,
     sendEnabled: Boolean = true,
     sending: Boolean = false,
 ) {
     val textLength = state.text.codePoints().count().toInt()
-    val blank = state.text.isBlank() && pendingMedia == null
+    val blank = state.text.isBlank() && pendingMedia == null && pendingAttachments.isEmpty()
     val atLimit = textLength >= MessageLimit
     Column(
         modifier = modifier
@@ -420,6 +439,12 @@ fun MessageComposer(
                 modifier = Modifier.padding(bottom = FishTheme.spacing.sm),
             )
         }
+        ComposerAttachmentQueue(
+            attachments = pendingAttachments,
+            onRemove = onRemovePendingAttachment,
+            onRetry = onRetryPendingAttachment,
+            modifier = Modifier.padding(bottom = FishTheme.spacing.sm),
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom,
@@ -428,7 +453,19 @@ fun MessageComposer(
                 icon = FishIcons.AddMedia,
                 contentDescription = stringResource(R.string.add_media),
                 onClick = onOpenMediaPicker,
-                enabled = editable,
+                enabled = editable && mediaSelectionEnabled,
+                size = FishTheme.sizes.touchTarget,
+            )
+            Spacer(Modifier.width(FishTheme.spacing.xs))
+            FishIconButton(
+                icon = AttachmentIcon,
+                contentDescription = if (pendingAttachments.size >= 5) {
+                    stringResource(R.string.attachment_limit_reached)
+                } else {
+                    stringResource(R.string.add_attachment)
+                },
+                onClick = onOpenAttachmentPicker,
+                enabled = editable && attachmentSelectionEnabled && pendingAttachments.size < 5,
                 size = FishTheme.sizes.touchTarget,
             )
             Spacer(Modifier.width(FishTheme.spacing.xs))
@@ -454,6 +491,8 @@ fun MessageComposer(
                     icon = FishIcons.Send,
                     contentDescription = if (sending) {
                         stringResource(R.string.sending_message)
+                    } else if (pendingAttachments.any { !it.ready }) {
+                        stringResource(R.string.attachments_not_ready)
                     } else {
                         stringResource(R.string.send_message)
                     },

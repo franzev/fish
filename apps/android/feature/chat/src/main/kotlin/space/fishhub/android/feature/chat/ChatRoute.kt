@@ -54,6 +54,13 @@ fun ChatRoute(
     mediaCatalog: ChatMediaCatalog,
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    onOpenAttachment: (AttachmentOpenRequest) -> Unit = {},
+    attachmentImportState: AttachmentImportUiState = AttachmentImportUiState(),
+    cameraAvailable: Boolean = true,
+    onChoosePhotos: (remainingSlots: Int) -> Unit = {},
+    onTakePhoto: () -> Unit = {},
+    onChooseFile: () -> Unit = {},
+    onAttachmentFlowFinished: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val routeState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,6 +69,8 @@ fun ChatRoute(
     val composerState = rememberTextFieldState()
     var mediaPickerVisible by remember { mutableStateOf(false) }
     var accountSheetVisible by remember { mutableStateOf(false) }
+    var attachmentSourceVisible by remember { mutableStateOf(false) }
+    var selectedPhotoId by remember { mutableStateOf<String?>(null) }
     val currentUserDisplayName = when (val state = routeState) {
         is ChatRouteUiState.Conversation -> state.model.currentUserDisplayName
         is ChatRouteUiState.ConversationList -> state.currentUserDisplayName
@@ -84,6 +93,9 @@ fun ChatRoute(
             accountSheetVisible = false
         }
     }
+    LaunchedEffect(viewModel, onOpenAttachment) {
+        viewModel.attachmentOpenRequests.collectLatest(onOpenAttachment)
+    }
 
     when (val state = routeState) {
         ChatRouteUiState.Loading -> ChatAdaptiveLayout(
@@ -103,6 +115,12 @@ fun ChatRoute(
             modifier = modifier,
         )
         is ChatRouteUiState.Conversation -> {
+            val composerAttachments = state.attachmentDrafts
+                .filterNot { it.inPreview }
+                .sortedWith(compareBy({ it.position }, { it.id }))
+            val previewAttachments = state.attachmentDrafts
+                .filter { it.inPreview }
+                .sortedWith(compareBy({ it.position }, { it.id }))
             ComposerStateBridge(
                 state = composerState,
                 protocolDraft = state.draft,
@@ -119,14 +137,40 @@ fun ChatRoute(
                 pendingMedia = state.pendingMedia,
                 onOpenMediaPicker = { mediaPickerVisible = true },
                 onRemovePendingMedia = viewModel::removePendingMedia,
+                pendingAttachments = composerAttachments,
+                onOpenAttachmentPicker = { attachmentSourceVisible = true },
+                onRemovePendingAttachment = viewModel::removeAttachmentDraft,
+                onRetryPendingAttachment = viewModel::retryAttachmentDraft,
                 onRetryMessage = viewModel::retryMessage,
                 onReportGif = viewModel::reportGif,
+                onPhotoAttachmentClick = { attachmentId ->
+                    selectedPhotoId = attachmentId
+                    viewModel.refreshAttachment(attachmentId)
+                },
+                onFileAttachmentClick = viewModel::openFileAttachment,
+                onAttachmentLoadError = viewModel::refreshAttachment,
                 onStartAudioCall = onStartAudioCall,
                 onStartVideoCall = onStartVideoCall,
                 participantPresence = presenceState.presentationFor(state.model.participant?.id),
                 accountContent = accountContent,
                 modifier = modifier,
             )
+            if (attachmentImportState.active || previewAttachments.isNotEmpty()) {
+                AttachmentPreviewScreen(
+                    attachments = previewAttachments,
+                    importing = attachmentImportState.importing,
+                    notice = attachmentImportState.notice,
+                    onRemove = viewModel::removeAttachmentDraft,
+                    onAddToMessage = {
+                        viewModel.commitAttachmentPreview()
+                        onAttachmentFlowFinished()
+                    },
+                    onDismiss = {
+                        viewModel.discardAttachmentPreview()
+                        onAttachmentFlowFinished()
+                    },
+                )
+            }
             LaunchedEffect(state.model.selectedConversationId, state.pendingGifQuery) {
                 mediaPickerViewModel.restoreGifQuery(state.pendingGifQuery)
             }
@@ -176,6 +220,28 @@ fun ChatRoute(
         )
     }
 
+    val attachmentConversationState = routeState as? ChatRouteUiState.Conversation
+    if (attachmentSourceVisible && attachmentConversationState != null) {
+        val composerCount = attachmentConversationState.attachmentDrafts.count { !it.inPreview }
+        AttachmentSourceSheet(
+            remainingSlots = (5 - composerCount).coerceAtLeast(0),
+            cameraAvailable = cameraAvailable,
+            onChoosePhotos = {
+                attachmentSourceVisible = false
+                onChoosePhotos((5 - composerCount).coerceAtLeast(0))
+            },
+            onTakePhoto = {
+                attachmentSourceVisible = false
+                onTakePhoto()
+            },
+            onChooseFile = {
+                attachmentSourceVisible = false
+                onChooseFile()
+            },
+            onDismiss = { attachmentSourceVisible = false },
+        )
+    }
+
     if (accountSheetVisible && currentUserDisplayName.isNotBlank()) {
         PresenceAccountSheet(
             displayName = currentUserDisplayName,
@@ -187,6 +253,20 @@ fun ChatRoute(
                 viewModel.signOut()
             },
             onClearNotice = presenceViewModel::clearNotice,
+        )
+    }
+
+    val selectedPhoto = (routeState as? ChatRouteUiState.Conversation)
+        ?.model
+        ?.messages
+        ?.asSequence()
+        ?.flatMap { it.attachments.asSequence() }
+        ?.firstOrNull { it.id == selectedPhotoId && it.kind == AttachmentUiKind.Photo }
+    if (selectedPhoto != null) {
+        AttachmentPhotoViewer(
+            attachment = selectedPhoto,
+            onDismiss = { selectedPhotoId = null },
+            onLoadError = viewModel::refreshAttachment,
         )
     }
 }

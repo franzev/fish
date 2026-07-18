@@ -41,7 +41,10 @@ fun reduceChatState(state: ChatState, event: ChatEvent): ChatState = when (event
         copy(composer = composer.copy(editTargetId = event.messageId))
     }
     is ChatEvent.SetRealtimeStatus -> state.updateConversation(event.conversationId) {
-        if (realtime.status == event.status) this else copy(realtime = ChatRealtimeState(event.status))
+        val hasConnected = realtime.hasConnected || event.status == RealtimeConnectionStatus.Connected
+        if (realtime.status == event.status && realtime.hasConnected == hasConnected) this else copy(
+            realtime = realtime.copy(status = event.status, hasConnected = hasConnected),
+        )
     }
     is ChatEvent.ClearComposer -> state.updateConversation(event.conversationId) {
         copy(composer = ChatComposerState())

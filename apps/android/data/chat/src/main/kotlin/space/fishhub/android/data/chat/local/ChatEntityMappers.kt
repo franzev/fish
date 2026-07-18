@@ -1,11 +1,15 @@
 package space.fishhub.android.data.chat.local
 
 import space.fishhub.android.data.chat.model.ChatMessage
+import space.fishhub.android.data.chat.model.ChatAttachment
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.model.ChatReadState
 import space.fishhub.android.data.chat.model.LocalMessageStatus
 import space.fishhub.android.data.chat.model.UserRole
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatReaction
 import space.fishhub.android.data.chat.AuthorizedConversation
+import space.fishhub.android.data.chat.AttachmentDelivery
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -15,7 +19,10 @@ private val mediaJson = Json {
     encodeDefaults = true
 }
 
-internal fun MessageEntity.toDomain(): ChatMessage = ChatMessage(
+internal fun MessageEntity.toDomain(
+    attachments: List<MessageAttachmentEntity> = emptyList(),
+    deliveries: Map<String, AttachmentDelivery> = emptyMap(),
+): ChatMessage = ChatMessage(
     id = id,
     conversationId = conversationId,
     senderId = senderId,
@@ -27,14 +34,37 @@ internal fun MessageEntity.toDomain(): ChatMessage = ChatMessage(
     },
     gifUnavailable = gifJson == UnavailableGifJson,
     stickerId = stickerId,
+    attachments = attachments
+        .sortedWith(compareBy(MessageAttachmentEntity::position, MessageAttachmentEntity::id))
+        .map { it.toDomain(deliveries[it.id]) },
     clientRequestId = clientRequestId,
     createdAt = createdAt,
     editedAt = editedAt,
     deletedAt = deletedAt,
     replyToMessageId = replyToMessageId,
+    reactions = reactionsJson?.let { encoded ->
+        runCatching { mediaJson.decodeFromString<List<ChatReaction>>(encoded) }.getOrNull()
+    }.orEmpty(),
     localStatus = localStatus?.toLocalStatus(),
     failureReason = failureReason,
 )
+
+internal fun MessageAttachmentEntity.toDomain(delivery: AttachmentDelivery? = null): ChatAttachment =
+    ChatAttachment(
+        id = id,
+        position = position,
+        kind = kind.toAttachmentKind(available),
+        available = available,
+        originalName = originalName,
+        mimeType = storedMimeType,
+        byteSize = storedByteSize,
+        width = width,
+        height = height,
+        thumbnailPath = thumbnailPath,
+        displayPath = displayPath,
+        thumbnailUrl = delivery?.thumbnailUrl,
+        displayUrl = delivery?.displayUrl,
+    )
 
 internal fun ChatMessage.toEntity(): MessageEntity = MessageEntity(
     id = id,
@@ -51,8 +81,32 @@ internal fun ChatMessage.toEntity(): MessageEntity = MessageEntity(
     editedAt = editedAt,
     deletedAt = deletedAt,
     replyToMessageId = replyToMessageId,
+    reactionsJson = reactions.takeIf(List<ChatReaction>::isNotEmpty)?.let(mediaJson::encodeToString),
     localStatus = localStatus?.wireValue,
     failureReason = failureReason,
+)
+
+internal fun ChatAttachment.toEntity(
+    messageId: String,
+    conversationId: String,
+): MessageAttachmentEntity = MessageAttachmentEntity(
+    id = id,
+    messageId = messageId,
+    conversationId = conversationId,
+    position = position,
+    kind = when (kind) {
+        ChatAttachmentKind.Image -> "image"
+        ChatAttachmentKind.File -> "file"
+        ChatAttachmentKind.Unavailable -> "unavailable"
+    },
+    available = available,
+    originalName = originalName,
+    storedMimeType = mimeType,
+    storedByteSize = byteSize,
+    width = width,
+    height = height,
+    thumbnailPath = thumbnailPath,
+    displayPath = displayPath,
 )
 
 internal fun ReadStateEntity.toDomain(): ChatReadState = ChatReadState(
@@ -119,3 +173,10 @@ private fun String.toLocalStatus(): LocalMessageStatus = when (this) {
 }
 
 private const val UnavailableGifJson = "{\"unavailable\":true}"
+
+private fun String.toAttachmentKind(available: Boolean): ChatAttachmentKind = when {
+    !available -> ChatAttachmentKind.Unavailable
+    this == "image" -> ChatAttachmentKind.Image
+    this == "file" -> ChatAttachmentKind.File
+    else -> ChatAttachmentKind.Unavailable
+}

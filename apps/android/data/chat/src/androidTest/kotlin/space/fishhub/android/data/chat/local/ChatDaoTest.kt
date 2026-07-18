@@ -45,6 +45,65 @@ class ChatDaoTest {
     }
 
     @Test
+    fun incompleteAuthoritativeHydrationRekeysOptimisticAttachments() = runTest {
+        val local = message(id = "local-request", body = "", status = "sending")
+        dao.reconcileMessage(local, listOf(attachment(messageId = local.id)))
+
+        dao.reconcileMessage(
+            message(id = "server-message", body = "", status = "sent"),
+            replaceAttachments = false,
+        )
+
+        val messages = dao.observeMessages("conversation-1").first()
+        val attachments = dao.observeMessageAttachments("conversation-1").first()
+        assertEquals(listOf("server-message"), messages.map { it.id })
+        assertEquals("server-message", attachments.single().messageId)
+        assertEquals("server-attachment", attachments.single().id)
+    }
+
+    @Test
+    fun transferClaimAtomicallyUsesPersistedAttemptCount() = runTest {
+        dao.insertAttachmentDraft(attachmentDraft())
+
+        assertEquals(1, dao.claimAttachmentTransfer(
+            "draft-1", "user-1", "conversation-1", "initializing", 2, true,
+            "2026-07-18T00:00:01Z",
+        ))
+        assertEquals(1, dao.claimAttachmentTransfer(
+            "draft-1", "user-1", "conversation-1", "initializing", 2, true,
+            "2026-07-18T00:00:02Z",
+        ))
+        assertEquals(0, dao.claimAttachmentTransfer(
+            "draft-1", "user-1", "conversation-1", "initializing", 2, true,
+            "2026-07-18T00:00:03Z",
+        ))
+        assertEquals(1, dao.claimAttachmentTransfer(
+            "draft-1", "user-1", "conversation-1", "checking", 2, false,
+            "2026-07-18T00:00:04Z",
+        ))
+        assertEquals(2, dao.attachmentDraft("draft-1")?.attemptCount)
+    }
+
+    @Test
+    fun genuineCompletionFailuresAtomicallyStopAtRetryCap() = runTest {
+        dao.insertAttachmentDraft(attachmentDraft())
+
+        repeat(5) { attempt ->
+            assertEquals(1, dao.markAttachmentFailureConsumingAttempt(
+                "draft-1", "user-1", "conversation-1",
+                if (attempt < 4) "checking" else "failed_recoverable",
+                "upload_unavailable", null, 5, "2026-07-18T00:00:0${attempt + 1}Z",
+            ))
+        }
+        assertEquals(0, dao.markAttachmentFailureConsumingAttempt(
+            "draft-1", "user-1", "conversation-1", "checking",
+            "upload_unavailable", null, 5, "2026-07-18T00:00:06Z",
+        ))
+        assertEquals(5, dao.attachmentDraft("draft-1")?.attemptCount)
+        assertEquals("failed_recoverable", dao.attachmentDraft("draft-1")?.transferState)
+    }
+
+    @Test
     fun draftIsScopedToConversationAndUser() = runTest {
         dao.upsertDraft(DraftEntity("conversation-1", "user-1", "Keep this draft", "2026-07-16T00:00:00Z"))
 
@@ -87,5 +146,42 @@ class ChatDaoTest {
         replyToMessageId = null,
         localStatus = status,
         failureReason = null,
+    )
+
+    private fun attachment(messageId: String) = MessageAttachmentEntity(
+        id = "server-attachment",
+        messageId = messageId,
+        conversationId = "conversation-1",
+        position = 0,
+        kind = "image",
+        available = true,
+        originalName = "Photo",
+        storedMimeType = "image/webp",
+        storedByteSize = 100,
+        width = 100,
+        height = 80,
+        thumbnailPath = null,
+        displayPath = null,
+    )
+
+    private fun attachmentDraft() = AttachmentDraftEntity(
+        id = "draft-1",
+        conversationId = "conversation-1",
+        userId = "user-1",
+        position = 0,
+        kind = "image",
+        scope = "composer",
+        displayName = "Photo",
+        sourceMimeType = "image/jpeg",
+        storedMimeType = "image/webp",
+        byteSize = 100,
+        width = 100,
+        height = 80,
+        localPath = "/private/photo.webp",
+        thumbnailPath = null,
+        sha256 = "a".repeat(64),
+        createdAt = "2026-07-18T00:00:00Z",
+        updatedAt = "2026-07-18T00:00:00Z",
+        expiresAt = "2026-07-25T00:00:00Z",
     )
 }

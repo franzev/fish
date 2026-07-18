@@ -17,6 +17,11 @@ import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.remote.SupabaseChatRemoteDataSource
 import space.fishhub.android.data.chat.local.ChatDatabase
 import space.fishhub.android.data.chat.local.MIGRATION_1_2
+import space.fishhub.android.data.chat.local.MIGRATION_2_3
+import space.fishhub.android.data.chat.local.MIGRATION_3_4
+import space.fishhub.android.data.chat.local.MIGRATION_4_5
+import space.fishhub.android.data.chat.local.MIGRATION_5_6
+import androidx.work.WorkerFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,12 +29,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import java.time.Instant
 import io.github.jan.supabase.SupabaseClient
 
 object ChatDataModule {
     data class Dependencies(
         val chatRepository: ChatRepository,
         val gifRepository: GifRepository,
+        val workerFactory: WorkerFactory = NoOpWorkerFactory,
+        val startAttachmentMaintenanceAndRecovery: () -> Unit = {},
     )
 
     fun create(
@@ -52,8 +61,28 @@ object ChatDataModule {
             context.applicationContext,
             ChatDatabase::class.java,
             "fish-personal-chat.db",
-        ).addMigrations(MIGRATION_1_2).build()
+        ).addMigrations(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+        ).build()
         val remote = SupabaseChatRemoteDataSource(supabaseClient, scope, onBeforeSignOut)
+        val attachmentImporter = AttachmentImporter(context.applicationContext)
+        val uploadTransport = KtorSignedTusUploadTransport()
+        val uploadScheduler = WorkManagerAttachmentUploadScheduler(context.applicationContext)
+        val workerFactory = AttachmentUploadWorkerFactory(
+            database.chatDao(),
+            remote,
+            uploadTransport,
+            attachmentImporter,
+        )
+        val maintenance = AttachmentMaintenance(
+            context.applicationContext,
+            database.chatDao(),
+            attachmentImporter,
+        )
         val networkMonitor = AndroidNetworkMonitor(context.applicationContext, scope)
         val diagnostics = if (
             context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
@@ -68,10 +97,52 @@ object ChatDataModule {
                 database.chatDao(),
                 diagnostics = diagnostics,
                 networkMonitor = networkMonitor,
+                attachmentImporter = attachmentImporter,
+                attachmentUploadScheduler = uploadScheduler,
             ),
             gifRepository = gifRepository,
+            workerFactory = workerFactory,
+            startAttachmentMaintenanceAndRecovery = {
+                scope.launch {
+                    try {
+                        maintenance.run()
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Throwable) {
+                        // Recovery still needs to resume durable rows if cleanup is temporarily unavailable.
+                    }
+                    val recoveryNow = Instant.now()
+                    database.chatDao().allAttachmentDrafts()
+                        .filter { row ->
+                            row.scope == "composer" && shouldRecoverAttachmentTransfer(
+                                row.transferState,
+                                row.attemptCount,
+                            )
+                        }
+                        .forEach { row ->
+                            uploadScheduler.enqueue(
+                                row.id,
+                                row.userId,
+                                replace = false,
+                                initialDelaySeconds = attachmentRetryDelaySeconds(
+                                    row.retryAfter,
+                                    recoveryNow,
+                                ),
+                            )
+                        }
+                }
+                runCatching { enqueueAttachmentMaintenance(context.applicationContext) }
+            },
         )
     }
+}
+
+private object NoOpWorkerFactory : WorkerFactory() {
+    override fun createWorker(
+        appContext: Context,
+        workerClassName: String,
+        workerParameters: androidx.work.WorkerParameters,
+    ): androidx.work.ListenableWorker? = null
 }
 
 private object UnconfiguredChatRepository : ChatRepository {
@@ -85,6 +156,9 @@ private object UnconfiguredChatRepository : ChatRepository {
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> = flowOf(emptyList())
     override fun observeReadStates(conversationId: String): Flow<List<ChatReadState>> = flowOf(emptyList())
     override fun observeDraft(conversationId: String): Flow<String> = flowOf("")
+    override fun observeAttachmentDrafts(
+        conversationId: String,
+    ): Flow<List<space.fishhub.android.data.chat.model.LocalAttachmentDraft>> = flowOf(emptyList())
     override fun observeRealtime(conversationId: String): Flow<ChatRealtimeEvent> =
         flowOf(ChatRealtimeEvent.Disconnected)
     override suspend fun signIn(email: String, password: String): ChatResult<Unit> = failure
@@ -92,11 +166,18 @@ private object UnconfiguredChatRepository : ChatRepository {
     override suspend fun listAuthorizedConversations(): ChatResult<AuthorizedChatDirectory> = failure
     override suspend fun syncNewest(conversationId: String): ChatResult<ConversationSnapshot> = failure
     override suspend fun loadOlder(conversationId: String, cursor: ChatMessageCursor): ChatResult<MessagePage> = failure
+    override suspend fun refreshAttachmentUrls(
+        attachmentIds: List<String>,
+    ): ChatResult<List<AttachmentDelivery>> = failure
     override suspend fun sendMessage(
         conversationId: String,
         content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatResult<ChatMessage> = failure
+    override suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage> = failure
+    override suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage> = failure
+    override suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage> = failure
+    override suspend fun sendTyping(conversationId: String, typing: Boolean) = Unit
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = failure
     override suspend fun markRead(
         conversationId: String,
@@ -104,5 +185,16 @@ private object UnconfiguredChatRepository : ChatRepository {
         lastReadMessageId: String?,
     ): ChatResult<ChatReadState> = failure
     override suspend fun saveDraft(conversationId: String, draft: String) = Unit
+    override suspend fun importAttachments(
+        conversationId: String,
+        sources: List<AttachmentImportSource>,
+    ): AttachmentImportResult = AttachmentImportResult(
+        importedCount = 0,
+        issues = listOf(AttachmentImportIssue(null, failure.message)),
+    )
+    override suspend fun commitAttachmentPreview(conversationId: String) = Unit
+    override suspend fun discardAttachmentPreview(conversationId: String) = Unit
+    override suspend fun removeAttachmentDraft(conversationId: String, attachmentId: String) = Unit
+    override suspend fun retryAttachmentDraft(conversationId: String, attachmentId: String) = Unit
     override suspend fun clearCachedUserData() = Unit
 }

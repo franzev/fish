@@ -11,6 +11,7 @@ import space.fishhub.android.feature.chat.state.OutgoingMessageStatus
 import space.fishhub.android.feature.chat.state.RealtimeConnectionStatus
 import space.fishhub.android.feature.chat.state.applyChatEvents
 import space.fishhub.android.feature.chat.state.outgoingMessageStatus
+import space.fishhub.android.feature.chat.state.messageSnippet
 import space.fishhub.android.feature.chat.state.reduceChatState
 import space.fishhub.android.feature.chat.state.unreadMessageSummary
 import space.fishhub.android.data.chat.AuthorizedConversation
@@ -24,6 +25,8 @@ import space.fishhub.android.data.chat.GifSearchItem
 import space.fishhub.android.data.chat.GifPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatAttachment
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import java.time.Instant
 import java.time.Duration
 import java.time.ZoneId
@@ -31,7 +34,10 @@ import java.util.UUID
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -48,6 +54,9 @@ class ChatViewModel(
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<ChatRouteUiState>(ChatRouteUiState.Loading)
     val uiState: StateFlow<ChatRouteUiState> = mutableUiState.asStateFlow()
+    private val mutableAttachmentOpenRequests = MutableSharedFlow<AttachmentOpenRequest>(extraBufferCapacity = 1)
+    val attachmentOpenRequests: SharedFlow<AttachmentOpenRequest> =
+        mutableAttachmentOpenRequests.asSharedFlow()
 
     private var chatState = ChatState()
     private var conversations: List<AuthorizedConversation> = emptyList()
@@ -63,8 +72,10 @@ class ChatViewModel(
     private var showingConversationList = false
     private var pendingMedia: ComposerMediaUiModel? = null
     private var pendingGifQuery: String = ""
+    private var attachmentDrafts: List<LocalAttachmentUiModel> = emptyList()
     private var selectionRevision = 0L
     private val mediaJson = Json { ignoreUnknownKeys = true }
+    private val refreshingAttachmentIds = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
@@ -166,21 +177,53 @@ class ChatViewModel(
         publish()
     }
 
+    fun commitAttachmentPreview() {
+        val conversationId = activeConversation?.conversationId ?: return
+        viewModelScope.launch { repository.commitAttachmentPreview(conversationId) }
+    }
+
+    fun retryAttachmentDraft(attachmentId: String) {
+        val conversationId = activeConversation?.conversationId ?: return
+        viewModelScope.launch { repository.retryAttachmentDraft(conversationId, attachmentId) }
+    }
+
+    fun discardAttachmentPreview() {
+        val conversationId = activeConversation?.conversationId ?: return
+        viewModelScope.launch { repository.discardAttachmentPreview(conversationId) }
+    }
+
+    fun removeAttachmentDraft(attachmentId: String) {
+        val conversationId = activeConversation?.conversationId ?: return
+        viewModelScope.launch { repository.removeAttachmentDraft(conversationId, attachmentId) }
+    }
+
     fun sendMessage() {
         val conversation = activeConversation ?: return
         val state = chatState.conversations[conversation.conversationId] ?: return
         val body = state.composer.draft.trim()
         val selectedMedia = pendingMedia
-        if ((body.isEmpty() && selectedMedia == null) || sending ||
+        val selectedAttachments = attachmentDrafts
+            .filterNot { it.inPreview }
+            .sortedWith(compareBy({ it.position }, { it.id }))
+        if ((body.isEmpty() && selectedMedia == null && selectedAttachments.isEmpty()) || sending ||
             state.realtime.status == RealtimeConnectionStatus.Disconnected
         ) return
+        if (selectedAttachments.any { !it.ready } ||
+            selectedAttachments.any { it.serverAttachmentId == null }
+        ) {
+            latestNotice = formatter.attachmentsNotReady
+            publish()
+            return
+        }
         val selectedGif = (selectedMedia as? ComposerMediaUiModel.Gif)?.value?.toChatGif()
         val selectedStickerId = (selectedMedia as? ComposerMediaUiModel.Sticker)?.value?.id
+        val selectedAttachmentIds = selectedAttachments.mapNotNull { it.serverAttachmentId }
         val failedRetry = state.messages.lastOrNull {
             it.localStatus == LocalMessageStatus.Failed &&
                 it.body == body &&
                 it.gif?.providerId == selectedGif?.providerId &&
-                it.stickerId == selectedStickerId
+                it.stickerId == selectedStickerId &&
+                it.attachments.map { attachment -> attachment.id } == selectedAttachmentIds
         }
         val requestId = failedRetry?.clientRequestId ?: UUID.randomUUID().toString()
         val sentRevision = selectionRevision
@@ -194,6 +237,20 @@ class ChatViewModel(
             body = body,
             gif = selectedGif,
             stickerId = selectedStickerId,
+            attachments = selectedAttachments.map { attachment ->
+                ChatAttachment(
+                    id = checkNotNull(attachment.serverAttachmentId),
+                    position = attachment.position,
+                    kind = if (attachment.isPhoto) ChatAttachmentKind.Image else ChatAttachmentKind.File,
+                    originalName = attachment.name,
+                    mimeType = attachment.mimeType,
+                    byteSize = attachment.byteSize,
+                    width = attachment.width,
+                    height = attachment.height,
+                    thumbnailUrl = attachment.thumbnailPath,
+                    displayUrl = attachment.localPath,
+                )
+            },
             clientRequestId = requestId,
             createdAt = Instant.now().toString(),
             localStatus = LocalMessageStatus.Sending,
@@ -212,7 +269,12 @@ class ChatViewModel(
             repository.saveDraft(conversation.conversationId, "")
             when (val result = repository.sendMessage(
                 conversation.conversationId,
-                OutgoingMessageContent(body, selectedGif, selectedStickerId),
+                OutgoingMessageContent(
+                    body,
+                    selectedGif,
+                    selectedStickerId,
+                    selectedAttachmentIds,
+                ),
                 requestId,
             )) {
                 is ChatResult.Success -> {
@@ -239,6 +301,15 @@ class ChatViewModel(
                         pendingGifQuery = sentGifQuery
                         persistPendingMedia()
                     }
+                    val currentDraft = chatState.conversations[conversation.conversationId]
+                        ?.composer?.draft.orEmpty()
+                    if (currentDraft.isBlank() && body.isNotBlank()) {
+                        chatState = reduceChatState(
+                            chatState,
+                            ChatEvent.DraftChanged(conversation.conversationId, body),
+                        )
+                        repository.saveDraft(conversation.conversationId, body)
+                    }
                     latestNotice = result.message
                 }
             }
@@ -258,7 +329,12 @@ class ChatViewModel(
         chatState = reduceChatState(chatState, ChatEvent.SendOptimisticMessage(failed))
         publish()
         viewModelScope.launch {
-            val content = OutgoingMessageContent(failed.body, failed.gif, failed.stickerId)
+            val content = OutgoingMessageContent(
+                failed.body,
+                failed.gif,
+                failed.stickerId,
+                failed.attachments.sortedBy { it.position }.map { it.id },
+            )
             when (val result = repository.sendMessage(
                 conversation.conversationId,
                 content,
@@ -299,6 +375,64 @@ class ChatViewModel(
             }
             publish()
         }
+    }
+
+    fun refreshAttachment(attachmentId: String) {
+        if (!refreshingAttachmentIds.add(attachmentId)) return
+        viewModelScope.launch {
+            when (val result = repository.refreshAttachmentUrls(listOf(attachmentId))) {
+                is ChatResult.Success -> Unit
+                is ChatResult.Failure -> {
+                    latestNotice = result.message
+                    publish()
+                }
+            }
+            refreshingAttachmentIds -= attachmentId
+        }
+    }
+
+    fun openFileAttachment(attachmentId: String) {
+        val attachment = findAttachment(attachmentId)
+        val mimeType = attachment?.mimeType
+        val byteSize = attachment?.byteSize
+        if (
+            attachment == null || attachment.kind != space.fishhub.android.data.chat.model.ChatAttachmentKind.File ||
+            !attachment.available || mimeType == null || byteSize == null
+        ) return
+        if (!refreshingAttachmentIds.add(attachmentId)) return
+        viewModelScope.launch {
+            when (val result = repository.refreshAttachmentUrls(listOf(attachmentId))) {
+                is ChatResult.Success -> {
+                    val delivery = result.value.firstOrNull { it.attachmentId == attachmentId }
+                    val signedUrl = delivery?.displayUrl
+                    if (signedUrl != null) {
+                        latestNotice = null
+                        mutableAttachmentOpenRequests.emit(
+                            AttachmentOpenRequest(
+                                attachmentId = attachment.id,
+                                name = attachment.originalName,
+                                mimeType = mimeType,
+                                expectedByteSize = byteSize,
+                                signedUrl = signedUrl,
+                            ),
+                        )
+                    } else {
+                        latestNotice = formatter.attachmentUnavailable
+                        publish()
+                    }
+                }
+                is ChatResult.Failure -> {
+                    latestNotice = result.message
+                    publish()
+                }
+            }
+            refreshingAttachmentIds -= attachmentId
+        }
+    }
+
+    fun attachmentOpenFailed(message: String) {
+        latestNotice = message
+        publish()
     }
 
     fun loadEarlier() {
@@ -374,6 +508,7 @@ class ChatViewModel(
         val previousConversationId = activeConversation?.conversationId
         if (previousConversationId != null && previousConversationId != conversation.conversationId) {
             clearPendingMedia(recordRevision = true)
+            attachmentDrafts = emptyList()
         } else if (previousConversationId == null) {
             restorePendingMedia(conversation.conversationId)
         }
@@ -388,6 +523,7 @@ class ChatViewModel(
             draft = "",
             pendingMedia = pendingMedia,
             pendingGifQuery = pendingGifQuery,
+            attachmentDrafts = attachmentDrafts,
         )
         activeCollection = viewModelScope.launch {
             launch {
@@ -425,6 +561,12 @@ class ChatViewModel(
                         )
                         publish()
                     }
+                }
+            }
+            launch {
+                repository.observeAttachmentDrafts(conversation.conversationId).collectLatest { drafts ->
+                    attachmentDrafts = drafts.map(LocalAttachmentUiModel::from)
+                    publish()
                 }
             }
             launch {
@@ -541,7 +683,11 @@ class ChatViewModel(
             screenState = ChatScreenState.Available,
             messages = current?.messages.toUiMessages(conversation, current?.readStates.orEmpty()),
             connection = when (current?.realtime?.status) {
-                RealtimeConnectionStatus.Connecting -> ChatConnectionUiState.Connecting
+                RealtimeConnectionStatus.Connecting -> if (current.realtime.hasConnected) {
+                    ChatConnectionUiState.Reconnecting
+                } else {
+                    ChatConnectionUiState.Connecting
+                }
                 RealtimeConnectionStatus.Disconnected -> ChatConnectionUiState.Offline
                 else -> ChatConnectionUiState.Connected
             },
@@ -550,6 +696,7 @@ class ChatViewModel(
                 current?.pagination?.hasLoadError == true -> OlderMessagesUiState.Failed
                 else -> OlderMessagesUiState.Idle
             },
+            hasMoreOlder = current?.pagination?.hasMoreOlder == true,
             isSending = sending,
             notice = latestNotice,
         )
@@ -558,6 +705,7 @@ class ChatViewModel(
             draft = current?.composer?.draft.orEmpty(),
             pendingMedia = pendingMedia,
             pendingGifQuery = pendingGifQuery,
+            attachmentDrafts = attachmentDrafts,
             notice = latestNotice,
         )
     }
@@ -583,7 +731,7 @@ class ChatViewModel(
     ): List<MessageUiModel> {
         val messages = this.orEmpty().filter {
             it.body.isNotBlank() || it.gif != null || it.gifUnavailable ||
-                it.stickerId != null || it.deletedAt != null
+                it.stickerId != null || it.attachments.isNotEmpty() || it.deletedAt != null
         }
         if (messages.isEmpty()) return emptyList()
         val participantRead = readStates.firstOrNull { it.userId == conversation.participantId }
@@ -635,18 +783,37 @@ class ChatViewModel(
                 deleted = message.deletedAt != null,
                 gif = message.gif?.let(GifUiModel::from),
                 gifUnavailable = message.gifUnavailable,
+                attachments = message.attachments
+                    .sortedWith(compareBy({ it.position }, { it.id }))
+                    .map(AttachmentUiModel::from),
                 sticker = message.stickerId?.let(::stickerUiModel),
             )
         }
     }
 
+    private fun findAttachment(attachmentId: String) = activeConversation?.let { conversation ->
+        chatState.conversations[conversation.conversationId]?.messages
+            ?.asSequence()
+            ?.flatMap { it.attachments.asSequence() }
+            ?.firstOrNull { it.id == attachmentId }
+    }
+
     private fun conversationPreviews(): List<ConversationPreviewUiModel> = conversations.map { item ->
+        val local = chatState.conversations[item.conversationId]
+        val latest = local?.messages?.lastOrNull()
+        val currentRead = local?.readStates?.firstOrNull { it.userId == item.currentUserId }
         ConversationPreviewUiModel(
             conversationId = item.conversationId,
             participantName = item.participantDisplayName,
-            snippet = item.latestMessageText.orEmpty(),
-            timeLabel = item.latestMessageCreatedAt?.let(formatter::timeLabel).orEmpty(),
-            unreadCount = item.unreadCount,
+            snippet = latest?.let(::messageSnippet) ?: item.latestMessageText.orEmpty(),
+            timeLabel = (latest?.createdAt ?: item.latestMessageCreatedAt)
+                ?.let(formatter::timeLabel)
+                .orEmpty(),
+            unreadCount = if (local == null) {
+                item.unreadCount
+            } else {
+                unreadMessageSummary(local.messages, item.currentUserId, currentRead).count
+            },
         )
     }
 
@@ -666,8 +833,9 @@ class ChatViewModel(
 
     private fun canSelectMedia(): Boolean {
         val conversation = activeConversation ?: return false
-        return chatState.conversations[conversation.conversationId]?.realtime?.status !=
-            RealtimeConnectionStatus.Disconnected
+        return attachmentDrafts.none { !it.inPreview } &&
+            chatState.conversations[conversation.conversationId]?.realtime?.status !=
+                RealtimeConnectionStatus.Disconnected
     }
 
     private fun StickerCatalogItem.toUiModel(): StickerUiModel = StickerUiModel(

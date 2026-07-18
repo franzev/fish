@@ -1,8 +1,11 @@
 package space.fishhub.android.data.chat.remote
 
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
+import space.fishhub.android.data.chat.AttachmentDelivery
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -100,6 +103,100 @@ class SupabaseContractTest {
         val payload = json.encodeToString(ReportGifRequest(messageId = "message-1"))
 
         assertEquals("{\"action\":\"report-gif\",\"messageId\":\"message-1\"}", payload)
+    }
+
+    @Test
+    fun orderedAttachmentRowMapsStableMetadataAndEphemeralUrls() {
+        val row = json.decodeFromString<MessageAttachmentDto>(
+            """
+            {
+              "id":"attachment-1",
+              "message_id":"message-1",
+              "conversation_id":"conversation-1",
+              "position":2,
+              "kind":"image",
+              "status":"ready",
+              "original_name":"Photo",
+              "stored_mime_type":"image/webp",
+              "stored_byte_size":1200,
+              "width":1200,
+              "height":800,
+              "thumbnail_path":"conversation-1/attachment-1/thumb.webp",
+              "display_path":"conversation-1/attachment-1/display.webp"
+            }
+            """.trimIndent(),
+        )
+        val attachment = row.toDomain(
+            fallbackId = "fallback",
+            fallbackPosition = 0,
+            delivery = AttachmentDelivery(
+                "attachment-1",
+                "https://example.test/thumb?token=private",
+                "https://example.test/display?token=private",
+                "2026-07-16T00:15:00Z",
+            ),
+        )
+
+        assertEquals(ChatAttachmentKind.Image, attachment.kind)
+        assertEquals(2, attachment.position)
+        assertEquals("Photo", attachment.originalName)
+        assertEquals("https://example.test/thumb?token=private", attachment.thumbnailUrl)
+    }
+
+    @Test
+    fun malformedAttachmentBecomesVisibleUnavailablePlaceholder() {
+        val attachment = MessageAttachmentDto(
+            id = "attachment-unknown",
+            messageId = "message-1",
+            position = 0,
+            kind = "future-kind",
+            status = "ready",
+            originalName = "",
+        ).toDomain("fallback", 0, null)
+
+        assertEquals(ChatAttachmentKind.Unavailable, attachment.kind)
+        assertEquals(false, attachment.available)
+        assertEquals("Attachment", attachment.originalName)
+    }
+
+    @Test
+    fun refreshResponseIsKeyedByAttachmentId() {
+        val response = json.decodeFromString<RefreshAttachmentUrlsResponse>(
+            """
+            {
+              "expiresAt":"2026-07-16T00:15:00Z",
+              "attachments":[
+                {
+                  "attachmentId":"attachment-2",
+                  "thumbnailUrl":null,
+                  "displayUrl":"https://example.test/file?token=private"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("attachment-2", response.attachments.single().attachmentId)
+        assertEquals("2026-07-16T00:15:00Z", response.expiresAt)
+    }
+
+    @Test
+    fun initializeResponseCanReconcileAnAlreadyReadyAttachmentWithoutUploadFields() {
+        val response = json.decodeFromString<AttachmentUploadAuthorizationDto>(
+            """{"status":"ready","attachmentId":"attachment-1","attachment":{},"urls":{}}""",
+        )
+
+        assertEquals("ready", response.status)
+        assertEquals("attachment-1", response.attachmentId)
+        assertEquals(null, response.uploadToken)
+    }
+
+    @Test
+    fun retryAfterSupportsBothDeltaSecondsAndHttpDates() {
+        val now = Instant.parse("2026-07-18T00:00:00Z")
+
+        assertEquals(30L, parseRetryAfterSeconds("30", now))
+        assertEquals(60L, parseRetryAfterSeconds("Sat, 18 Jul 2026 00:01:00 GMT", now))
     }
 
     private fun gif() = ChatGif(

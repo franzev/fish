@@ -2,6 +2,7 @@ package space.fishhub.android.feature.chat.state
 
 import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatReadState
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import java.time.Instant
 
 val ChatMessageComparator: Comparator<ChatMessage> = Comparator { left, right ->
@@ -28,7 +29,7 @@ fun mergeChatMessage(
     val existing = current[existingIndex]
     val merged = incoming.copy(
         senderDisplayName = incoming.senderDisplayName ?: existing.senderDisplayName,
-        images = incoming.images.ifEmpty { existing.images },
+        attachments = incoming.attachments.ifEmpty { existing.attachments },
         gif = incoming.gif ?: existing.gif,
         gifUnavailable = when {
             incoming.gif != null -> false
@@ -108,14 +109,18 @@ fun messageSnippet(message: ChatMessage): String {
     if (body.isEmpty() && message.stickerId != null) return "Sticker"
     if (body.isEmpty() && message.gif != null) return "GIF"
     if (body.isEmpty() && message.gifUnavailable) return "GIF"
-    if (body.isEmpty() && message.images.isNotEmpty()) {
-        if (message.images.size == 1) {
-            return if (message.images.first().kind == "file") "File" else "Image"
+    if (body.isEmpty() && message.attachments.isNotEmpty()) {
+        if (message.attachments.size == 1) {
+            return when (message.attachments.first().kind) {
+                ChatAttachmentKind.Image -> "Photo"
+                ChatAttachmentKind.File -> "File"
+                ChatAttachmentKind.Unavailable -> "Attachment"
+            }
         }
-        return if (message.images.all { it.kind != "file" }) {
-            "${message.images.size} images"
+        return if (message.attachments.all { it.kind == ChatAttachmentKind.Image }) {
+            "${message.attachments.size} photos"
         } else {
-            "${message.images.size} files"
+            "${message.attachments.size} attachments"
         }
     }
     val codePoints = body.codePoints().toArray()

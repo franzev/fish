@@ -11,10 +11,15 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import java.io.File
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.util.Rational
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.lifecycleScope
@@ -37,11 +43,14 @@ import space.fishhub.android.calling.CallIntents
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.call.CallKind
 import space.fishhub.android.data.chat.ChatAuthState
+import space.fishhub.android.data.chat.AttachmentImportKind
+import space.fishhub.android.data.chat.AttachmentImportSource
 import space.fishhub.android.feature.call.CallRoute
 import space.fishhub.android.feature.call.state.CallLifecycleStatus
 import space.fishhub.android.feature.chat.AndroidChatFormatter
 import space.fishhub.android.feature.chat.ChatRoute
 import space.fishhub.android.feature.chat.ChatViewModel
+import space.fishhub.android.feature.chat.AttachmentImportUiState
 import space.fishhub.android.feature.chat.ChatMediaCatalog
 import space.fishhub.android.feature.chat.MediaPickerViewModel
 import space.fishhub.android.feature.chat.ParticipantUiModel
@@ -49,6 +58,7 @@ import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -57,6 +67,47 @@ class MainActivity : ComponentActivity() {
     private val minimized = MutableStateFlow(false)
     private val pictureInPicture = MutableStateFlow(false)
     private var activeVideoCall = false
+    private val attachmentImportState = MutableStateFlow(AttachmentImportUiState())
+    private var attachmentConversationId: String? = null
+    private var pendingCameraFile: File? = null
+    private var pendingCameraUri: Uri? = null
+    private lateinit var attachmentFileOpener: AttachmentFileOpener
+
+    private val photoPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(MaxMessageAttachments),
+    ) { uris ->
+        importAttachmentUris(uris, AttachmentImportKind.Image)
+    }
+    private val documentPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments(),
+    ) { uris ->
+        importAttachmentUris(uris, AttachmentImportKind.File, releasePersistableAccess = true)
+    }
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture(),
+    ) { captured ->
+        val uri = pendingCameraUri
+        if (captured && uri != null) {
+            importAttachmentUris(listOf(uri), AttachmentImportKind.Image, cameraCapture = true)
+        } else {
+            clearPendingCameraCapture()
+            attachmentConversationId = null
+            attachmentImportState.value = AttachmentImportUiState()
+        }
+    }
+    private val cameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            launchCameraCapture()
+        } else {
+            clearPendingCameraCapture()
+            attachmentImportState.value = AttachmentImportUiState(
+                active = true,
+                notice = "Camera access is needed to take a photo. You can still choose one instead.",
+            )
+        }
+    }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -71,6 +122,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fishApplication = application as FishApplication
+        attachmentFileOpener = AttachmentFileOpener(this, BuildConfig.SUPABASE_URL)
+        attachmentConversationId = savedInstanceState?.getString(AttachmentConversationStateKey)
+        pendingCameraFile = savedInstanceState?.getString(CameraFileStateKey)?.let(::File)
+            ?.takeIf(File::exists)
+        pendingCameraUri = savedInstanceState?.getString(CameraUriStateKey)?.let(Uri::parse)
+        cleanupAbandonedCameraCaptures()
         enableEdgeToEdge()
         setContent {
             val repository = fishApplication.chatRepository
@@ -118,6 +175,7 @@ class MainActivity : ComponentActivity() {
             val presenceViewModel: PresenceViewModel = viewModel(factory = presenceFactory)
             val callMinimized by minimized.collectAsStateWithLifecycle()
             val pip by pictureInPicture.collectAsStateWithLifecycle()
+            val attachmentImport by attachmentImportState.collectAsStateWithLifecycle()
             FishTheme(reducedMotion = !animationsEnabled) {
                 Box(Modifier.fillMaxSize()) {
                     ChatRoute(
@@ -127,6 +185,41 @@ class MainActivity : ComponentActivity() {
                         mediaCatalog = mediaCatalog,
                         onStartAudioCall = { requestOutgoing(it, CallKind.Audio) },
                         onStartVideoCall = { requestOutgoing(it, CallKind.Video) },
+                        attachmentImportState = attachmentImport,
+                        cameraAvailable = packageManager.hasSystemFeature(
+                            PackageManager.FEATURE_CAMERA_ANY,
+                        ),
+                        onChoosePhotos = { remainingSlots ->
+                            attachmentConversationId = selectedConversationId(chatViewModel)
+                            if (remainingSlots > 0 && attachmentConversationId != null) {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            }
+                        },
+                        onTakePhoto = {
+                            attachmentConversationId = selectedConversationId(chatViewModel)
+                            if (attachmentConversationId != null) requestAttachmentCamera()
+                        },
+                        onChooseFile = {
+                            attachmentConversationId = selectedConversationId(chatViewModel)
+                            if (attachmentConversationId != null) {
+                                documentPickerLauncher.launch(SupportedDocumentMimeTypes)
+                            }
+                        },
+                        onAttachmentFlowFinished = {
+                            attachmentImportState.value = AttachmentImportUiState()
+                            attachmentConversationId = null
+                        },
+                        onOpenAttachment = { request ->
+                            lifecycleScope.launch {
+                                when (val result = attachmentFileOpener.open(request)) {
+                                    OpenAttachmentResult.Opened -> Unit
+                                    is OpenAttachmentResult.Failed ->
+                                        chatViewModel.attachmentOpenFailed(result.message)
+                                }
+                            }
+                        },
                     )
                     CallRoute(
                         coordinator = fishApplication.callCoordinator,
@@ -141,7 +234,15 @@ class MainActivity : ComponentActivity() {
         }
         observeCallForPictureInPicture()
         observeNotificationPermission()
+        observeAttachmentPrivacyCleanup()
         handleCallIntent(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(AttachmentConversationStateKey, attachmentConversationId)
+        outState.putString(CameraFileStateKey, pendingCameraFile?.absolutePath)
+        outState.putString(CameraUriStateKey, pendingCameraUri?.toString())
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -296,6 +397,117 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun selectedConversationId(viewModel: ChatViewModel): String? =
+        (viewModel.uiState.value as? space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+            ?.model
+            ?.selectedConversationId
+
+    private fun importAttachmentUris(
+        uris: List<Uri>,
+        kind: AttachmentImportKind,
+        releasePersistableAccess: Boolean = false,
+        cameraCapture: Boolean = false,
+    ) {
+        val conversationId = attachmentConversationId
+        if (uris.isEmpty() || conversationId == null) {
+            if (cameraCapture) clearPendingCameraCapture()
+            attachmentImportState.value = AttachmentImportUiState()
+            attachmentConversationId = null
+            return
+        }
+        attachmentImportState.value = AttachmentImportUiState(active = true, importing = true)
+        if (releasePersistableAccess) {
+            uris.forEach { uri ->
+                runCatching {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                }
+            }
+        }
+        lifecycleScope.launch {
+            try {
+                val result = fishApplication.chatRepository.importAttachments(
+                    conversationId,
+                    uris.map { AttachmentImportSource(it, kind) },
+                )
+                attachmentImportState.value = AttachmentImportUiState(
+                    active = true,
+                    importing = false,
+                    notice = result.message,
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                attachmentImportState.value = AttachmentImportUiState(
+                    active = true,
+                    importing = false,
+                    notice = "Those files could not be prepared. Please try again.",
+                )
+            } finally {
+                if (releasePersistableAccess) {
+                    uris.forEach { uri ->
+                        runCatching {
+                            contentResolver.releasePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                            )
+                        }
+                    }
+                }
+                if (cameraCapture) clearPendingCameraCapture()
+            }
+        }
+    }
+
+    private fun requestAttachmentCamera() {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            attachmentImportState.value = AttachmentImportUiState(
+                active = true,
+                notice = "The camera is not available on this device.",
+            )
+            return
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            launchCameraCapture()
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun launchCameraCapture() {
+        clearPendingCameraCapture()
+        val directory = File(cacheDir, CameraCaptureDirectory).apply { mkdirs() }
+        val file = File(directory, "capture-${UUID.randomUUID()}.jpg")
+        if (!file.createNewFile()) {
+            attachmentImportState.value = AttachmentImportUiState(
+                active = true,
+                notice = "The camera could not start. Try choosing a photo instead.",
+            )
+            return
+        }
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        pendingCameraFile = file
+        pendingCameraUri = uri
+        cameraLauncher.launch(uri)
+    }
+
+    private fun clearPendingCameraCapture() {
+        pendingCameraFile?.delete()
+        pendingCameraFile = null
+        pendingCameraUri = null
+    }
+
+    private fun cleanupAbandonedCameraCaptures() {
+        val cutoff = Instant.now().minus(1, ChronoUnit.DAYS).toEpochMilli()
+        File(cacheDir, CameraCaptureDirectory).listFiles()?.forEach { file ->
+            if (file != pendingCameraFile && file.lastModified() <= cutoff) file.delete()
+        }
+    }
+
     private fun setCallMinimized(value: Boolean) {
         minimized.value = value
         updatePictureInPictureParams()
@@ -333,6 +545,16 @@ class MainActivity : ComponentActivity() {
                     ) return@collectLatest
                     preferences.edit { putBoolean("notification-requested", true) }
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
+
+    private fun observeAttachmentPrivacyCleanup() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                fishApplication.chatRepository.authState.collectLatest { auth ->
+                    if (auth is ChatAuthState.SignedOut) attachmentFileOpener.cleanupAll()
                 }
             }
         }
@@ -376,5 +598,21 @@ class MainActivity : ComponentActivity() {
             val callId: String,
             override val kind: CallKind,
         ) : PendingPermissionAction
+    }
+
+    private companion object {
+        const val MaxMessageAttachments = 5
+        const val CameraCaptureDirectory = "chat-camera"
+        const val AttachmentConversationStateKey = "attachment-conversation-id"
+        const val CameraFileStateKey = "attachment-camera-file"
+        const val CameraUriStateKey = "attachment-camera-uri"
+        val SupportedDocumentMimeTypes = arrayOf(
+            "application/pdf",
+            "text/plain",
+            "text/csv",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        )
     }
 }

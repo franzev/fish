@@ -2,6 +2,12 @@ package space.fishhub.android.feature.chat
 
 import androidx.compose.runtime.Immutable
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatAttachment
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
+import space.fishhub.android.data.chat.model.LocalAttachmentDraft
+import space.fishhub.android.data.chat.model.LocalAttachmentKind
+import space.fishhub.android.data.chat.model.LocalAttachmentScope
+import space.fishhub.android.data.chat.model.LocalAttachmentTransferState
 
 @Immutable
 data class ChatUiModel(
@@ -13,6 +19,7 @@ data class ChatUiModel(
     val selectedConversationId: String? = null,
     val connection: ChatConnectionUiState = ChatConnectionUiState.Connected,
     val pagination: OlderMessagesUiState = OlderMessagesUiState.Idle,
+    val hasMoreOlder: Boolean = false,
     val typingParticipantName: String? = null,
     val hasPreviousDestination: Boolean = false,
     val isSending: Boolean = false,
@@ -54,6 +61,56 @@ data class MessageUiModel(
     val sticker: StickerUiModel? = null,
     val gifPlaying: Boolean = false,
     val gifUnavailable: Boolean = false,
+    val attachments: List<AttachmentUiModel> = emptyList(),
+)
+
+enum class AttachmentUiKind { Photo, File, Unavailable }
+
+@Immutable
+data class AttachmentUiModel(
+    val id: String,
+    val position: Int,
+    val kind: AttachmentUiKind,
+    val available: Boolean,
+    val name: String,
+    val mimeType: String?,
+    val byteSize: Long?,
+    val width: Int?,
+    val height: Int?,
+    val thumbnailUrl: String?,
+    val displayUrl: String?,
+    val contentVersion: String,
+) {
+    companion object {
+        fun from(attachment: ChatAttachment): AttachmentUiModel = AttachmentUiModel(
+            id = attachment.id,
+            position = attachment.position,
+            kind = when (attachment.kind) {
+                ChatAttachmentKind.Image -> AttachmentUiKind.Photo
+                ChatAttachmentKind.File -> AttachmentUiKind.File
+                ChatAttachmentKind.Unavailable -> AttachmentUiKind.Unavailable
+            },
+            available = attachment.available,
+            name = attachment.originalName,
+            mimeType = attachment.mimeType,
+            byteSize = attachment.byteSize,
+            width = attachment.width,
+            height = attachment.height,
+            thumbnailUrl = attachment.thumbnailUrl,
+            displayUrl = attachment.displayUrl,
+            contentVersion = attachment.contentVersion,
+        )
+    }
+}
+
+/** One-shot handoff to the app-owned private download/FileProvider boundary. */
+@Immutable
+data class AttachmentOpenRequest(
+    val attachmentId: String,
+    val name: String,
+    val mimeType: String,
+    val expectedByteSize: Long,
+    val signedUrl: String,
 )
 
 @Immutable
@@ -117,6 +174,104 @@ sealed interface ComposerMediaUiModel {
     data class Sticker(val value: StickerUiModel) : ComposerMediaUiModel
 }
 
+@Immutable
+data class LocalAttachmentUiModel(
+    val id: String,
+    val position: Int,
+    val isPhoto: Boolean,
+    val inPreview: Boolean,
+    val name: String,
+    val mimeType: String,
+    val byteSize: Long,
+    val width: Int?,
+    val height: Int?,
+    val localPath: String,
+    val thumbnailPath: String?,
+    val serverAttachmentId: String? = null,
+    val transferState: AttachmentTransferUiState = AttachmentTransferUiState.Waiting,
+    val progressFraction: Float = 0f,
+    val retryable: Boolean = false,
+    val failureReason: AttachmentFailureUiReason? = null,
+) {
+    val ready: Boolean get() = transferState == AttachmentTransferUiState.Ready
+
+    companion object {
+        fun from(draft: LocalAttachmentDraft) = LocalAttachmentUiModel(
+            id = draft.id,
+            position = draft.position,
+            isPhoto = draft.kind == LocalAttachmentKind.Image,
+            inPreview = draft.scope == LocalAttachmentScope.Preview,
+            name = draft.displayName,
+            mimeType = draft.storedMimeType,
+            byteSize = draft.byteSize,
+            width = draft.width,
+            height = draft.height,
+            localPath = draft.localPath,
+            thumbnailPath = draft.thumbnailPath,
+            serverAttachmentId = draft.serverAttachmentId,
+            transferState = draft.transferState.toUiState(),
+            progressFraction = if (draft.byteSize <= 0) 0f else {
+                (draft.progressBytes.toDouble() / draft.byteSize.toDouble()).toFloat().coerceIn(0f, 1f)
+            },
+            retryable = draft.transferState in setOf(
+                LocalAttachmentTransferState.FailedRecoverable,
+                LocalAttachmentTransferState.SignInRequired,
+            ),
+            failureReason = draft.failureCode
+                ?.takeIf {
+                    draft.transferState in setOf(
+                        LocalAttachmentTransferState.FailedRecoverable,
+                        LocalAttachmentTransferState.FailedPermanent,
+                        LocalAttachmentTransferState.SignInRequired,
+                    )
+                }
+                ?.let(::attachmentFailureReason),
+        )
+    }
+}
+
+enum class AttachmentTransferUiState { Preparing, Uploading, Checking, Waiting, Failed, Ready }
+
+enum class AttachmentFailureUiReason {
+    SafetyCheckFailed,
+    LocalCopyUnavailable,
+    SignInRequired,
+    RetryLimitReached,
+    NeedsAttention,
+}
+
+private fun LocalAttachmentTransferState.toUiState(): AttachmentTransferUiState = when (this) {
+    LocalAttachmentTransferState.Initializing -> AttachmentTransferUiState.Preparing
+    LocalAttachmentTransferState.Uploading -> AttachmentTransferUiState.Uploading
+    LocalAttachmentTransferState.Checking -> AttachmentTransferUiState.Checking
+    LocalAttachmentTransferState.Ready -> AttachmentTransferUiState.Ready
+    LocalAttachmentTransferState.FailedRecoverable,
+    LocalAttachmentTransferState.FailedPermanent,
+    LocalAttachmentTransferState.SignInRequired,
+    LocalAttachmentTransferState.Cancelled,
+    LocalAttachmentTransferState.Cancelling,
+    -> AttachmentTransferUiState.Failed
+    LocalAttachmentTransferState.Selected,
+    LocalAttachmentTransferState.WaitingForNetwork,
+    -> AttachmentTransferUiState.Waiting
+}
+
+private fun attachmentFailureReason(code: String): AttachmentFailureUiReason = when (code) {
+    "malware_detected", "invalid_file", "integrity_mismatch", "macro_not_allowed" ->
+        AttachmentFailureUiReason.SafetyCheckFailed
+    "local_copy_unavailable" -> AttachmentFailureUiReason.LocalCopyUnavailable
+    "sign_in_required" -> AttachmentFailureUiReason.SignInRequired
+    "retry_limit" -> AttachmentFailureUiReason.RetryLimitReached
+    else -> AttachmentFailureUiReason.NeedsAttention
+}
+
+@Immutable
+data class AttachmentImportUiState(
+    val active: Boolean = false,
+    val importing: Boolean = false,
+    val notice: String? = null,
+)
+
 enum class MessageDeliveryUiState { Sending, Sent, Delivered, Read, Failed }
 enum class ChatConnectionUiState { Connected, Connecting, Reconnecting, Offline }
 enum class OlderMessagesUiState { Idle, Loading, Failed }
@@ -134,6 +289,7 @@ sealed interface ChatRouteUiState {
         val draft: String,
         val pendingMedia: ComposerMediaUiModel? = null,
         val pendingGifQuery: String = "",
+        val attachmentDrafts: List<LocalAttachmentUiModel> = emptyList(),
         val notice: String? = null,
     ) : ChatRouteUiState
     data class ConversationList(

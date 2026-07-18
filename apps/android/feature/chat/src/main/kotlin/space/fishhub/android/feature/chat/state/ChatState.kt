@@ -42,6 +42,7 @@ data class ChatPaginationState(
 @Serializable
 data class ChatRealtimeState(
     val status: RealtimeConnectionStatus = RealtimeConnectionStatus.Idle,
+    val hasConnected: Boolean = false,
 )
 
 @Serializable
