@@ -35,12 +35,17 @@ const RULES = [
 
 const FORBIDDEN_IMPORTS = {
   DesignSystem: [
-    "UIComponents", "ChatData", "PersonalChat", "TestSupport",
+    "UIComponents", "ChatCore", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
   ],
   UIComponents: [
-    "ChatData", "PersonalChat", "TestSupport",
+    "ChatCore", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
+  ],
+  ChatCore: [
+    "DesignSystem", "UIComponents", "ChatData", "PersonalChat", "TestSupport",
+    "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
+    "SwiftUI", "Supabase", "LiveKit",
   ],
   ChatData: [
     "DesignSystem", "UIComponents", "PersonalChat", "TestSupport",
@@ -53,24 +58,24 @@ const FORBIDDEN_IMPORTS = {
   // The call control plane stays UI-free and SDK-free; the feature never
   // reaches the media SDK directly — only the adapter target links LiveKit.
   CallData: [
-    "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
+    "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
     "TestSupport", "Calls", "CallMediaLiveKit", "SwiftUI", "LiveKit",
     "PresenceData", "Presence",
   ],
   Calls: [
-    "ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit",
+    "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit",
     "PresenceData", "Presence",
   ],
-  CallMediaLiveKit: ["ChatData", "PersonalChat", "TestSupport", "PresenceData", "Presence"],
+  CallMediaLiveKit: ["ChatCore", "ChatData", "PersonalChat", "TestSupport", "PresenceData", "Presence"],
   // The presence control plane stays UI-free; only its adapters speak the
   // Supabase SDK, and the feature layer never reaches the SDK directly.
   PresenceData: [
-    "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
+    "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
     "TestSupport", "CallData", "Calls", "CallMediaLiveKit", "Presence",
     "SwiftUI", "LiveKit",
   ],
   Presence: [
-    "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
+    "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
     "CallMediaLiveKit", "Supabase", "LiveKit",
   ],
 };
@@ -96,6 +101,20 @@ function check(file) {
 
   const relative = path.relative(ROOT, file);
   const moduleName = relative.split(path.sep)[0];
+  if (
+    moduleName === "ChatData" &&
+    !relative.startsWith(`ChatData${path.sep}Adapters${path.sep}`)
+  ) {
+    lines.forEach((line, index) => {
+      if (line.trim() === "import Supabase") {
+        report(
+          file,
+          index + 1,
+          "ChatData may import Supabase only from Adapters",
+        );
+      }
+    });
+  }
   for (const forbiddenImport of FORBIDDEN_IMPORTS[moduleName] ?? []) {
     lines.forEach((line, index) => {
       if (line.trim() === `import ${forbiddenImport}`) {

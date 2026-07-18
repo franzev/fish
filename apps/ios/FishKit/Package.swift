@@ -10,6 +10,7 @@ let package = Package(
     products: [
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "UIComponents", targets: ["UIComponents"]),
+        .library(name: "ChatCore", targets: ["ChatCore"]),
         .library(name: "ChatData", targets: ["ChatData"]),
         .library(name: "PersonalChat", targets: ["PersonalChat"]),
         .library(name: "CallData", targets: ["CallData"]),
@@ -39,10 +40,17 @@ let package = Package(
             resources: [.process("Resources")]
         ),
         .target(name: "UIComponents", dependencies: ["DesignSystem"]),
-        .target(name: "ChatData"),
+        .target(name: "ChatCore"),
+        .target(
+            name: "ChatData",
+            dependencies: [
+                "ChatCore",
+                .product(name: "Supabase", package: "supabase-swift"),
+            ]
+        ),
         .target(
             name: "PersonalChat",
-            dependencies: ["DesignSystem", "UIComponents", "ChatData"],
+            dependencies: ["DesignSystem", "UIComponents", "ChatCore", "ChatData"],
             resources: [.copy("Resources/ChatMedia")]
         ),
         .target(name: "CallData"),
@@ -71,13 +79,17 @@ let package = Package(
             name: "TestSupport",
             dependencies: [
                 "DesignSystem", "UIComponents", "ChatData", "PersonalChat",
-                "CallData", "Calls", "PresenceData",
+                "ChatCore", "CallData", "Calls", "PresenceData",
             ],
             resources: [.process("Resources")]
         ),
         .testTarget(
+            name: "ChatCoreTests",
+            dependencies: ["ChatCore", "TestSupport"]
+        ),
+        .testTarget(
             name: "ChatDataTests",
-            dependencies: ["ChatData"],
+            dependencies: ["ChatCore", "ChatData"],
             resources: [.copy("Fixtures")]
         ),
         .testTarget(
@@ -99,7 +111,7 @@ let package = Package(
         .testTarget(
             name: "CallsTests",
             dependencies: [
-                "Calls",
+                "Calls", "PersonalChat",
                 "TestSupport",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ]
