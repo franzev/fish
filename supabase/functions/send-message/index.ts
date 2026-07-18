@@ -64,8 +64,8 @@ const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
 };
 
-function calmError(error: string, status: number): Response {
-  return Response.json({ error }, { status, headers: jsonHeaders });
+function calmError(error: string, status: number, code = "send_failed"): Response {
+  return Response.json({ code, error }, { status, headers: jsonHeaders });
 }
 
 function hostname(value: unknown): string {
@@ -136,38 +136,53 @@ Deno.serve(async (request) => {
   const stickerId = command.stickerId?.trim() || undefined;
 
   const attachmentIds = Array.isArray(command.attachmentIds)
-    ? [...new Set(command.attachmentIds.filter((id) => typeof id === "string" && id))]
+    ? command.attachmentIds.filter((id): id is string => typeof id === "string" && id.length > 0)
     : [];
+
+  if (
+    Array.isArray(command.attachmentIds)
+    && (
+      attachmentIds.length !== command.attachmentIds.length
+      || new Set(attachmentIds).size !== attachmentIds.length
+    )
+  ) {
+    return calmError(
+      "One attachment was added more than once. Remove the duplicate and try again.",
+      400,
+      "duplicate_attachment",
+    );
+  }
 
   if (
     !command.conversationId
     || (!body && attachmentIds.length === 0 && !gif && !stickerId)
     || !clientRequestId
   ) {
-    return calmError("Add a message before sending.", 400);
+    return calmError("Add a message before sending.", 400, "message_content_required");
   }
 
   if (gif && !isValidGif(gif)) {
-    return calmError("That GIF is not available. Choose another one.", 400);
+    return calmError("That GIF is not available. Choose another one.", 400, "invalid_gif");
   }
   if (gif && attachmentIds.length > 0) {
-    return calmError("Send the GIF or the files first, then send the other.", 400);
+    return calmError("Send the GIF or the files first, then send the other.", 400, "mixed_media_not_allowed");
   }
   if (stickerId && !stickerIds.has(stickerId)) {
-    return calmError("That sticker is not available. Choose another one.", 400);
+    return calmError("That sticker is not available. Choose another one.", 400, "invalid_sticker");
   }
   if (stickerId && (gif || attachmentIds.length > 0)) {
-    return calmError("Send the sticker or the other media first.", 400);
+    return calmError("Send the sticker or the other media first.", 400, "mixed_media_not_allowed");
   }
 
   if (body.length > chatLimits.messageBodyMaxLength) {
     return calmError(
       "This message is a little long. Try sending it in two parts.",
       400,
+      "message_too_long",
     );
   }
   if (attachmentIds.length > 5) {
-    return calmError("Add up to five images to one message.", 400);
+    return calmError("Add up to five files to one message.", 400, "too_many_attachments");
   }
 
   const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -181,7 +196,7 @@ Deno.serve(async (request) => {
       status: authResponse.status,
       body: await authResponse.clone().text().catch(() => ""),
     });
-    return calmError("Your session ended. Sign in again to send.", 401);
+    return calmError("Your session ended. Sign in again to send.", 401, "not_authenticated");
   }
 
   const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/send_chat_message`, {
@@ -210,13 +225,27 @@ Deno.serve(async (request) => {
         : "";
     const message = rawMessage.toLowerCase();
     if (message.includes("conversation not found")) {
-      return calmError("That conversation is not available.", 403);
+      return calmError("That conversation is not available.", 403, "conversation_not_available");
     }
     if (message.includes("conflicts")) {
-      return calmError("That send is already in progress. Try once more.", 409);
+      return calmError("That send is already in progress. Try once more.", 409, "request_conflict");
     }
     if (message.includes("reply target")) {
-      return calmError("That message is no longer available.", 400);
+      return calmError("That message is no longer available.", 400, "reply_not_available");
+    }
+    if (message.includes("attachment is not ready")) {
+      return calmError(
+        "One attachment is not ready yet. Try it again or remove it.",
+        409,
+        "attachment_not_ready",
+      );
+    }
+    if (message.includes("duplicate image") || message.includes("duplicate attachment")) {
+      return calmError(
+        "One attachment was added more than once. Remove the duplicate and try again.",
+        400,
+        "duplicate_attachment",
+      );
     }
     if (message.includes("required") || message.includes("too long")) {
       return calmError(
@@ -224,10 +253,11 @@ Deno.serve(async (request) => {
           ? "This message is a little long. Try sending it in two parts."
           : "Add a message before sending.",
         400,
+        message.includes("too long") ? "message_too_long" : "message_content_required",
       );
     }
 
-    return calmError("That did not send yet. Keep this open and try again.", 500);
+    return calmError("That did not send yet. Keep this open and try again.", 500, "send_unavailable");
   }
 
   return Response.json({ message: payload }, { headers: jsonHeaders });

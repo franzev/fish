@@ -32,6 +32,11 @@ export function mergeChatMessage<T extends ChatMessageState>(
 
   const next = [...current];
   const existing = next[existingIndex];
+  const incomingAttachments = incoming.attachments ?? incoming.images;
+  const existingAttachments = existing.attachments ?? existing.images;
+  const attachments = (incomingAttachments?.length ?? 0) > 0
+    ? incomingAttachments
+    : existingAttachments;
   const merged = {
     ...existing,
     ...incoming,
@@ -42,9 +47,8 @@ export function mergeChatMessage<T extends ChatMessageState>(
     // Command acknowledgements return the bare message row, so their mapped
     // attachment list is empty. Keep the ready optimistic attachments (and
     // their signed URLs) until an enriched repository/realtime payload arrives.
-    images: (incoming.images?.length ?? 0) > 0
-      ? incoming.images
-      : existing.images,
+    attachments,
+    images: attachments,
     // The send RPC and command acknowledgements return the base messages row.
     // Joined GIF metadata is therefore absent even though the media is still
     // persisted. Preserve optimistic/enriched media until hydration supplies
@@ -99,7 +103,10 @@ function areChatMessagesEqual(
     (left.stickerId ?? null) === (right.stickerId ?? null) &&
     areGifsEqual(left.gif, right.gif) &&
     areReactionsEqual(left.reactions ?? [], right.reactions ?? []) &&
-    areImagesEqual(left.images ?? [], right.images ?? [])
+    areAttachmentsEqual(
+      left.attachments ?? left.images ?? [],
+      right.attachments ?? right.images ?? []
+    )
   );
 }
 
@@ -122,9 +129,9 @@ function areGifsEqual(
   );
 }
 
-function areImagesEqual(
-  left: NonNullable<ChatMessageState["images"]>,
-  right: NonNullable<ChatMessageState["images"]>
+function areAttachmentsEqual(
+  left: NonNullable<ChatMessageState["attachments"]>,
+  right: NonNullable<ChatMessageState["attachments"]>
 ): boolean {
   return left.length === right.length && left.every((image, index) => {
     const other = right[index];
@@ -276,8 +283,8 @@ export function getMessageSnippet(message: ChatMessageState): string {
   if (!body && message.gif) {
     return "GIF";
   }
-  if (!body && (message.images?.length ?? 0) > 0) {
-    const attachments = message.images ?? [];
+  const attachments = message.attachments ?? message.images ?? [];
+  if (!body && attachments.length > 0) {
     if (attachments.length === 1) return attachments[0]?.kind === "file" ? "File" : "Image";
     return attachments.every((attachment) => attachment.kind !== "file")
       ? `${attachments.length} images`

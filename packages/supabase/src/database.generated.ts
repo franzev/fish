@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       avatar_uploads: {
@@ -346,6 +371,39 @@ export type Database = {
           },
         ]
       }
+      chat_attachment_cleanup_runs: {
+        Row: {
+          claimed_count: number
+          completed_at: string
+          deleted_bytes: number
+          deleted_count: number
+          failed_count: number
+          id: number
+          oldest_created_at: string | null
+          started_at: string
+        }
+        Insert: {
+          claimed_count: number
+          completed_at?: string
+          deleted_bytes: number
+          deleted_count: number
+          failed_count: number
+          id?: never
+          oldest_created_at?: string | null
+          started_at: string
+        }
+        Update: {
+          claimed_count?: number
+          completed_at?: string
+          deleted_bytes?: number
+          deleted_count?: number
+          failed_count?: number
+          id?: never
+          oldest_created_at?: string | null
+          started_at?: string
+        }
+        Relationships: []
+      }
       client_profiles: {
         Row: {
           consent_version: string | null
@@ -645,6 +703,8 @@ export type Database = {
       }
       message_attachments: {
         Row: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
           client_upload_id: string
           conversation_id: string
           created_at: string
@@ -653,22 +713,33 @@ export type Database = {
           failure_code: string | null
           height: number | null
           id: string
+          integrity_status: string
           kind: string
           message_id: string | null
           original_name: string
           position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
           source_byte_size: number
           source_mime_type: string
+          staging_cleaned_at: string | null
           staging_path: string
           status: string
           stored_byte_size: number | null
           stored_mime_type: string | null
           thumbnail_path: string | null
           updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
           uploader_id: string
+          verified_sha256: string | null
           width: number | null
         }
         Insert: {
+          cleanup_claimed_at?: string | null
+          cleanup_token?: string | null
           client_upload_id: string
           conversation_id: string
           created_at?: string
@@ -677,22 +748,33 @@ export type Database = {
           failure_code?: string | null
           height?: number | null
           id?: string
+          integrity_status?: string
           kind?: string
           message_id?: string | null
           original_name: string
           position?: number | null
+          scan_provider?: string | null
+          scan_reference?: string | null
+          scan_status?: string
+          scanned_at?: string | null
           source_byte_size: number
           source_mime_type: string
+          staging_cleaned_at?: string | null
           staging_path: string
           status?: string
           stored_byte_size?: number | null
           stored_mime_type?: string | null
           thumbnail_path?: string | null
           updated_at?: string
+          upload_credentials_expires_at?: string | null
+          upload_sha256?: string | null
           uploader_id: string
+          verified_sha256?: string | null
           width?: number | null
         }
         Update: {
+          cleanup_claimed_at?: string | null
+          cleanup_token?: string | null
           client_upload_id?: string
           conversation_id?: string
           created_at?: string
@@ -701,19 +783,28 @@ export type Database = {
           failure_code?: string | null
           height?: number | null
           id?: string
+          integrity_status?: string
           kind?: string
           message_id?: string | null
           original_name?: string
           position?: number | null
+          scan_provider?: string | null
+          scan_reference?: string | null
+          scan_status?: string
+          scanned_at?: string | null
           source_byte_size?: number
           source_mime_type?: string
+          staging_cleaned_at?: string | null
           staging_path?: string
           status?: string
           stored_byte_size?: number | null
           stored_mime_type?: string | null
           thumbnail_path?: string | null
           updated_at?: string
+          upload_credentials_expires_at?: string | null
+          upload_sha256?: string | null
           uploader_id?: string
+          verified_sha256?: string | null
           width?: number | null
         }
         Relationships: [
@@ -1494,6 +1585,45 @@ export type Database = {
         }
         Relationships: []
       }
+      push_devices: {
+        Row: {
+          app_version: string
+          created_at: string
+          id: string
+          installation_id: string
+          last_seen_at: string
+          platform: string
+          provider_installation_id: string
+          revoked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version: string
+          created_at?: string
+          id?: string
+          installation_id: string
+          last_seen_at?: string
+          platform: string
+          provider_installation_id: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string
+          created_at?: string
+          id?: string
+          installation_id?: string
+          last_seen_at?: string
+          platform?: string
+          provider_installation_id?: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_announcements: {
         Row: {
           action_href: string | null
@@ -1744,7 +1874,99 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_chat_attachment_cleanup: {
+        Args: { p_claim_token: string; p_limit?: number }
+        Returns: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
+          client_upload_id: string
+          conversation_id: string
+          created_at: string
+          display_path: string | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
+          id: string
+          integrity_status: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_cleaned_at: string | null
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
+          uploader_id: string
+          verified_sha256: string | null
+          width: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "message_attachments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_chat_attachment_staging_cleanup: {
+        Args: { p_claim_token: string; p_limit?: number }
+        Returns: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
+          client_upload_id: string
+          conversation_id: string
+          created_at: string
+          display_path: string | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
+          id: string
+          integrity_status: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_cleaned_at: string | null
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
+          uploader_id: string
+          verified_sha256: string | null
+          width: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "message_attachments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       cleanup_presence_sessions: { Args: never; Returns: number }
+      configure_chat_attachment_cleanup: {
+        Args: { p_cleanup_secret: string; p_project_url: string }
+        Returns: undefined
+      }
       count_chat_messages: {
         Args: {
           p_author_types?: string[]
@@ -1870,6 +2092,8 @@ export type Database = {
       expire_unattached_chat_images: {
         Args: never
         Returns: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
           client_upload_id: string
           conversation_id: string
           created_at: string
@@ -1878,19 +2102,28 @@ export type Database = {
           failure_code: string | null
           height: number | null
           id: string
+          integrity_status: string
           kind: string
           message_id: string | null
           original_name: string
           position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
           source_byte_size: number
           source_mime_type: string
+          staging_cleaned_at: string | null
           staging_path: string
           status: string
           stored_byte_size: number | null
           stored_mime_type: string | null
           thumbnail_path: string | null
           updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
           uploader_id: string
+          verified_sha256: string | null
           width: number | null
         }[]
         SetofOptions: {
@@ -1899,6 +2132,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      finish_chat_attachment_cleanup: {
+        Args: { p_claim_token: string; p_deleted_ids: string[] }
+        Returns: number
+      }
+      finish_chat_attachment_staging_cleanup: {
+        Args: { p_claim_token: string; p_deleted_ids: string[] }
+        Returns: number
       }
       get_call_counterpart_name: {
         Args: { p_call_id: string }
@@ -1963,6 +2204,57 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      initialize_chat_attachment_upload: {
+        Args: {
+          p_client_upload_id: string
+          p_conversation_id: string
+          p_original_name: string
+          p_source_byte_size: number
+          p_source_mime_type: string
+          p_upload_sha256?: string
+        }
+        Returns: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
+          client_upload_id: string
+          conversation_id: string
+          created_at: string
+          display_path: string | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
+          id: string
+          integrity_status: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_cleaned_at: string | null
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
+          uploader_id: string
+          verified_sha256: string | null
+          width: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "message_attachments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       initialize_chat_image_upload: {
         Args: {
           p_client_upload_id: string
@@ -1972,6 +2264,8 @@ export type Database = {
           p_source_mime_type: string
         }
         Returns: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
           client_upload_id: string
           conversation_id: string
           created_at: string
@@ -1980,19 +2274,28 @@ export type Database = {
           failure_code: string | null
           height: number | null
           id: string
+          integrity_status: string
           kind: string
           message_id: string | null
           original_name: string
           position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
           source_byte_size: number
           source_mime_type: string
+          staging_cleaned_at: string | null
           staging_path: string
           status: string
           stored_byte_size: number | null
           stored_mime_type: string | null
           thumbnail_path: string | null
           updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
           uploader_id: string
+          verified_sha256: string | null
           width: number | null
         }
         SetofOptions: {
@@ -2159,9 +2462,9 @@ export type Database = {
         Args: never
         Returns: {
           conversation_id: string
-          latest_message_created_at: string | null
-          latest_message_sender_id: string | null
-          latest_message_text: string | null
+          latest_message_created_at: string
+          latest_message_sender_id: string
+          latest_message_text: string
           participant_display_name: string
           participant_id: string
           participant_role: string
@@ -2379,6 +2682,19 @@ export type Database = {
           p_room_name: string
         }
         Returns: string
+      }
+      record_chat_attachment_upload_credential: {
+        Args: { p_attachment_id: string; p_expires_at: string }
+        Returns: string
+      }
+      register_push_device: {
+        Args: {
+          p_app_version: string
+          p_installation_id: string
+          p_platform: string
+          p_provider_installation_id: string
+        }
+        Returns: undefined
       }
       reject_call: {
         Args: { p_call_id: string }
@@ -2603,6 +2919,10 @@ export type Database = {
         }
       }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }
+      unregister_push_device: {
+        Args: { p_installation_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       call_end_reason:
@@ -2648,14 +2968,14 @@ export type Database = {
     }
     CompositeTypes: {
       presence_command_result: {
+        user_id: string | null
+        status: Database["public"]["Enums"]["presence_status"] | null
         last_heartbeat_at: string | null
         last_seen_at: string | null
-        preference_expires_at: string | null
-        preference_mode: Database["public"]["Enums"]["presence_mode"] | null
         revision: number | null
-        status: Database["public"]["Enums"]["presence_status"] | null
         updated_at: string | null
-        user_id: string | null
+        preference_mode: Database["public"]["Enums"]["presence_mode"] | null
+        preference_expires_at: string | null
       }
     }
   }
@@ -2779,6 +3099,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       call_end_reason: [

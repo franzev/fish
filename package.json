@@ -45,6 +45,7 @@
     "seed": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/seed.ts",
     "verify:rls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-rls.ts",
     "verify:chat-realtime": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-realtime.ts",
+    "verify:chat-attachments": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-attachments.ts",
     "verify:calls": "node --experimental-strip-types --env-file=apps/web/.env.local --env-file=supabase/functions/.env.local scripts/verify-calls.ts",
     "verify:bookings": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-bookings.ts",
     "verify:friends": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-friends.ts",

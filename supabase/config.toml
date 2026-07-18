@@ -34,7 +34,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.chat-image-command]
-verify_jwt = true
+# User commands validate the bearer session inside the function. The cleanup
+# branch uses a dedicated 32+ character secret from pg_cron instead of a broad
+# service-role JWT.
+verify_jwt = false
 
 [functions.avatar-command]
 verify_jwt = true

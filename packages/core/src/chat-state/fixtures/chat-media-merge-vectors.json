@@ -34,7 +34,8 @@
       "localStatus": "sent"
     },
     "expectedGifProviderId": "gif-42",
-    "expectedStickerId": null
+    "expectedStickerId": null,
+    "expectedAttachmentIds": []
   },
   {
     "name": "stickerAcknowledgementPreservesCatalogReference",
@@ -60,6 +61,113 @@
       "localStatus": "sent"
     },
     "expectedGifProviderId": null,
-    "expectedStickerId": "aquatic-hello-otter"
+    "expectedStickerId": "aquatic-hello-otter",
+    "expectedAttachmentIds": []
+  },
+  {
+    "name": "bareAcknowledgementPreservesOptimisticAttachments",
+    "existing": {
+      "id": "local-attachment-request",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "Please review these",
+      "images": [
+        {
+          "id": "attachment-photo",
+          "status": "ready",
+          "kind": "image",
+          "originalName": "Photo",
+          "width": 800,
+          "height": 600,
+          "thumbnailPath": "conversation-media/attachment-photo/thumbnail.webp",
+          "displayPath": "conversation-media/attachment-photo/display.webp",
+          "thumbnailUrl": "blob:optimistic-thumbnail",
+          "displayUrl": "blob:optimistic-display"
+        },
+        {
+          "id": "attachment-file",
+          "status": "ready",
+          "kind": "file",
+          "originalName": "notes.pdf",
+          "mimeType": "application/pdf",
+          "byteSize": 2048,
+          "displayPath": "conversation-media/attachment-file/file.pdf",
+          "displayUrl": "blob:optimistic-file"
+        }
+      ],
+      "clientRequestId": "attachment-request",
+      "createdAt": "2026-07-16T00:02:00Z",
+      "localStatus": "sending"
+    },
+    "incoming": {
+      "id": "message-attachment",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "Please review these",
+      "images": [],
+      "clientRequestId": "attachment-request",
+      "createdAt": "2026-07-16T00:02:01Z",
+      "localStatus": "sent"
+    },
+    "expectedGifProviderId": null,
+    "expectedStickerId": null,
+    "expectedAttachmentIds": ["attachment-photo", "attachment-file"]
+  },
+  {
+    "name": "hydratedAttachmentsReplaceOptimisticUrlsAndOrder",
+    "existing": {
+      "id": "local-hydration-request",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "Updated files",
+      "images": [
+        {
+          "id": "attachment-old",
+          "status": "ready",
+          "kind": "image",
+          "originalName": "Photo",
+          "displayPath": "conversation-media/attachment-old/display.webp",
+          "displayUrl": "blob:old"
+        }
+      ],
+      "clientRequestId": "hydration-request",
+      "createdAt": "2026-07-16T00:03:00Z",
+      "localStatus": "sending"
+    },
+    "incoming": {
+      "id": "message-hydration",
+      "conversationId": "conversation-media",
+      "senderId": "client-1",
+      "senderRole": "client",
+      "body": "Updated files",
+      "images": [
+        {
+          "id": "attachment-ready-file",
+          "status": "ready",
+          "kind": "file",
+          "originalName": "worksheet.pdf",
+          "mimeType": "application/pdf",
+          "displayPath": "conversation-media/attachment-ready-file/file.pdf",
+          "displayUrl": "https://storage.test/file-token"
+        },
+        {
+          "id": "attachment-ready-photo",
+          "status": "ready",
+          "kind": "image",
+          "originalName": "Photo",
+          "displayPath": "conversation-media/attachment-ready-photo/display.webp",
+          "displayUrl": "https://storage.test/photo-token"
+        }
+      ],
+      "clientRequestId": "hydration-request",
+      "createdAt": "2026-07-16T00:03:01Z",
+      "localStatus": "sent"
+    },
+    "expectedGifProviderId": null,
+    "expectedStickerId": null,
+    "expectedAttachmentIds": ["attachment-ready-file", "attachment-ready-photo"]
   }
 ]

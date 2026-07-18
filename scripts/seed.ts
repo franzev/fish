@@ -711,6 +711,8 @@ async function seedThreeImageMessage(
       stored_byte_size: image.byteLength,
       width: 1,
       height: 1,
+      integrity_status: "legacy_unverified",
+      scan_status: "not_required",
       expires_at: "2126-01-01T00:00:00.000Z",
     });
   }

@@ -28,7 +28,10 @@ export interface ChatMessage {
   /** Stable catalog reference returned by persisted messages. Readers preserve
    * unknown ids so older clients can render a calm fallback during rollouts. */
   stickerId?: string;
-  images?: ChatImage[];
+  /** Canonical ordered attachment collection. */
+  attachments?: ChatAttachment[];
+  /** @deprecated Compatibility alias used by the current web boundary. */
+  images?: ChatAttachment[];
   createdAt: string;
 }
 
@@ -92,7 +95,7 @@ export interface ChatGif {
   height: number;
 }
 
-export interface ChatImage {
+export interface ChatAttachment {
   id: string;
   status: "ready";
   kind?: "image" | "file";
@@ -105,6 +108,74 @@ export interface ChatImage {
   displayPath: string;
   thumbnailUrl?: string;
   displayUrl?: string;
+}
+
+/** @deprecated Use ChatAttachment. */
+export type ChatImage = ChatAttachment;
+
+export type ChatAttachmentSourceMime =
+  | "image/jpeg"
+  | "image/png"
+  | "image/webp"
+  | "image/heic"
+  | "image/heif"
+  | "image/avif"
+  | "application/pdf"
+  | "text/plain"
+  | "text/csv"
+  | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  | "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+export type ChatAttachmentCommandErrorCode =
+  | "invalid_request"
+  | "not_authenticated"
+  | "not_authorized"
+  | "not_found"
+  | "unsupported_type"
+  | "too_large"
+  | "invalid_hash"
+  | "integrity_mismatch"
+  | "invalid_file"
+  | "unsafe_archive"
+  | "encrypted_archive"
+  | "macro_not_allowed"
+  | "malware_detected"
+  | "scan_unavailable"
+  | "rate_limited"
+  | "upload_conflict"
+  | "upload_expired"
+  | "missing_upload"
+  | "processing"
+  | "processing_failed"
+  | "cancelled"
+  | "delivery_unavailable"
+  | "upload_unavailable";
+
+export interface InitializeChatAttachmentUploadCommand {
+  action: "initialize-upload";
+  conversationId: ConversationId;
+  clientUploadId: string;
+  originalName: string;
+  sourceMimeType: ChatAttachmentSourceMime;
+  sourceByteSize: number;
+  /** Normalized private staging representation. Web omits this and keeps its
+   * WebP default; native ImageIO clients declare JPEG. */
+  uploadMimeType?: "image/webp" | "image/jpeg";
+  /** SHA-256 of the exact normalized image or document bytes being uploaded. */
+  uploadSha256?: string;
+}
+
+export interface ChatAttachmentUploadAuthorization {
+  attachmentId: string;
+  bucket: "chat-images";
+  objectPath: string;
+  uploadToken: string;
+  uploadMimeType: string;
+  tusEndpoint: string;
+  tusHeaders: Readonly<{ "x-signature": string }>;
+  signedUploadUrl: string;
+  expiresAt: string;
 }
 
 export interface SendMessageCommand {
@@ -124,7 +195,9 @@ export const chatLimits = {
   messageBodyMaxLength: 4000,
   attachmentMaxCount: 5,
   attachmentSourceMaxBytes: 10 * 1024 * 1024,
+  documentSourceMaxBytes: 10 * 1024 * 1024,
   imageMaxCount: 5,
-  imageSourceMaxBytes: 10 * 1024 * 1024,
+  imageSourceMaxBytes: 25 * 1024 * 1024,
   imageUploadMaxBytes: 5 * 1024 * 1024,
+  imageMaxPixels: 25_000_000,
 } as const;

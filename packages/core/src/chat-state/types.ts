@@ -1,5 +1,5 @@
 import type { UserRole } from "../roles";
-import type { ChatGif } from "../chat";
+import type { ChatAttachment, ChatGif } from "../chat";
 
 export type ChatConversationId = string;
 export type ChatMessageId = string;
@@ -29,20 +29,9 @@ export interface ChatMessageState {
   body: string;
   gif?: ChatGif;
   stickerId?: string;
-  images?: Array<{
-    id: string;
-    status: "ready";
-    kind?: "image" | "file";
-    originalName: string;
-    mimeType?: string;
-    byteSize?: number;
-    width?: number;
-    height?: number;
-    thumbnailPath?: string;
-    displayPath: string;
-    thumbnailUrl?: string;
-    displayUrl?: string;
-  }>;
+  attachments?: ChatAttachment[];
+  /** @deprecated Use attachments. */
+  images?: ChatAttachment[];
   clientRequestId: string;
   createdAt: string;
   editedAt?: string | null;
