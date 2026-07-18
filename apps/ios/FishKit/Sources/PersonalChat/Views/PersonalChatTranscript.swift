@@ -1,3 +1,4 @@
+import ChatData
 import DesignSystem
 import SwiftUI
 
@@ -7,17 +8,26 @@ public struct PersonalChatTranscript: View {
     private let olderMessages: OlderMessagesState
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
+    private let attachmentCommands: (any AttachmentCommandProviding)?
+    private let imageLoader: MessageImageLoader
+    private let fileDownloader: AttachmentFileDownloader
 
     public init(
         items: [TranscriptItem],
         olderMessages: OlderMessagesState,
         onRetryMessage: @escaping (String) -> Void,
-        onRetryOlder: @escaping () -> Void
+        onRetryOlder: @escaping () -> Void,
+        attachmentCommands: (any AttachmentCommandProviding)? = nil,
+        imageLoader: MessageImageLoader = .shared,
+        fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader()
     ) {
         self.items = items
         self.olderMessages = olderMessages
         self.onRetryMessage = onRetryMessage
         self.onRetryOlder = onRetryOlder
+        self.attachmentCommands = attachmentCommands
+        self.imageLoader = imageLoader
+        self.fileDownloader = fileDownloader
     }
 
     public var body: some View {
@@ -35,7 +45,13 @@ public struct PersonalChatTranscript: View {
                     case .unreadDivider:
                         UnreadMessagesDivider()
                     case .message(let row):
-                        MessageBubble(row: row, onRetry: onRetryMessage)
+                        MessageBubble(
+                            row: row,
+                            onRetry: onRetryMessage,
+                            attachmentCommands: attachmentCommands,
+                            imageLoader: imageLoader,
+                            fileDownloader: fileDownloader
+                        )
                     }
                 }
             }

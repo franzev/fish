@@ -217,6 +217,7 @@ struct ChatStatesPage: View {
         ("Typing", PersonalChatFixtures.typing),
         ("Long content", PersonalChatFixtures.longContent),
         ("Media", PersonalChatFixtures.media),
+        ("Attachments", PersonalChatFixtures.attachments),
         ("Unavailable", PersonalChatFixtures.unavailable),
     ]
 
@@ -241,7 +242,7 @@ struct ChatStateHost: View {
             selection: $selection,
             gifProvider: CatalogGifProvider.make(),
             context: PersonalChatFixtures.context,
-            onSend: {
+            onSend: { _ in
                 draft = ""
                 selection = .none
             },
@@ -291,6 +292,76 @@ struct MediaPickerPage: View {
                 sendState: .ready,
                 onSend: {},
                 onOpenMediaPicker: {}
+            )
+        }
+    }
+}
+
+struct AttachmentsPage: View {
+    @State private var draft = "A note for my coach."
+    @State private var selection = ComposerSelection.none
+    @State private var uploads: AttachmentUploadsModel?
+
+    init() {
+        let commands = FixtureAttachmentCommands()
+        let staging = try? AttachmentStaging()
+        _uploads = State(initialValue: staging.map {
+            AttachmentUploadsModel(
+                conversationId: "fixture-conversation",
+                commands: commands,
+                uploader: FixtureAttachmentUploader(),
+                staging: $0,
+                connectivity: AlwaysConnectedAttachmentConnectivity()
+            )
+        })
+    }
+
+    var body: some View {
+        CatalogPage(title: "Attachments") {
+            Text("Composer states")
+                .textStyle(.heading)
+                .foregroundStyle(Palette.foreground)
+            StagedAttachmentStrip(
+                items: AttachmentFixtures.stagedStates,
+                onRetry: { _ in },
+                onRemove: { _ in }
+            )
+            if let uploads {
+                MessageComposer(
+                    draft: $draft,
+                    selection: $selection,
+                    sendState: .ready,
+                    attachmentUploads: uploads,
+                    onSend: {},
+                    onOpenMediaPicker: {}
+                )
+            } else {
+                Notice(
+                    tone: .notice,
+                    title: "Attachment previews aren't available right now."
+                )
+            }
+
+            Text("Transcript states")
+                .textStyle(.heading)
+                .foregroundStyle(Palette.foreground)
+            MessageAttachments(
+                attachments: [AttachmentFixtures.imageUi],
+                author: PersonalChatFixtures.coachName
+            )
+            MessageAttachments(
+                attachments: (1...5).map { index in
+                    AttachmentFixtures.imageUi(
+                        id: "catalog-image-\(index)",
+                        width: index.isMultiple(of: 2) ? 300 : 400,
+                        height: index.isMultiple(of: 2) ? 450 : 300
+                    )
+                },
+                author: PersonalChatFixtures.coachName
+            )
+            MessageAttachments(
+                attachments: [AttachmentFixtures.imageUi, AttachmentFixtures.documentUi],
+                author: PersonalChatFixtures.coachName
             )
         }
     }

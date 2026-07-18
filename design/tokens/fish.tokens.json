@@ -96,6 +96,9 @@
     "stickerTile": 96,
     "chatGifSelection": 160,
     "chatGifMaxWidth": 420,
+    "attachmentComposerTile": 96,
+    "attachmentBubbleTile": 160,
+    "attachmentSingleMaxWidth": 320,
     "callPanel": 360,
     "callSettings": 336,
     "callPreview": 112

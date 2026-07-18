@@ -16,6 +16,11 @@ public enum MessageAccessibility {
             timeZone: timeZone
         ))
         var content = [String]()
+        if let attachmentDescription = AttachmentAccessibility.messageDescription(
+            row.message.attachments
+        ) {
+            content.append(attachmentDescription)
+        }
         if let media = row.message.media {
             content.append(MediaAccessibility.mediaDescription(media))
         }

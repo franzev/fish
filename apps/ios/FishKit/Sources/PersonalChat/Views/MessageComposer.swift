@@ -1,6 +1,10 @@
+import ChatData
+import CoreTransferable
 import DesignSystem
+import PhotosUI
 import SwiftUI
 import UIComponents
+import UniformTypeIdentifiers
 
 public enum ComposerSendState: Sendable, Equatable {
     case ready
@@ -19,17 +23,28 @@ public struct MessageComposer: View {
     private let sendState: ComposerSendState
     private let onSend: () -> Void
     private let onOpenMediaPicker: () -> Void
+    private let attachmentUploads: AttachmentUploadsModel?
+    private let attachmentsDisabled: Bool
+
+    @State private var showsAttachmentMenu = false
+    @State private var showsPhotoPicker = false
+    @State private var showsFileImporter = false
+    @State private var photoItems: [PhotosPickerItem] = []
 
     public init(
         draft: Binding<String>,
         selection: Binding<ComposerSelection>,
         sendState: ComposerSendState,
+        attachmentUploads: AttachmentUploadsModel? = nil,
+        attachmentsDisabled: Bool = false,
         onSend: @escaping () -> Void,
         onOpenMediaPicker: @escaping () -> Void
     ) {
         self._draft = draft
         self._selection = selection
         self.sendState = sendState
+        self.attachmentUploads = attachmentUploads
+        self.attachmentsDisabled = attachmentsDisabled
         self.onSend = onSend
         self.onOpenMediaPicker = onOpenMediaPicker
     }
@@ -37,11 +52,17 @@ public struct MessageComposer: View {
     nonisolated static func showsSend(
         draft: String,
         selection: ComposerSelection,
-        sendState: ComposerSendState
+        sendState: ComposerSendState,
+        stagedAttachments: [StagedAttachment] = []
     ) -> Bool {
         if sendState == .sending { return true }
         if sendState == .offline { return false }
-        return MediaSelectionRules.isSendable(draft: draft, selection: selection)
+        return MediaSelectionRules.isSendable(
+            draft: draft,
+            selection: selection,
+            stagedAttachments: stagedAttachments,
+            connectionReady: true
+        )
     }
 
     public var body: some View {
@@ -54,7 +75,27 @@ public struct MessageComposer: View {
                     selection = .none
                 }
             }
+            if let attachmentUploads, !attachmentUploads.items.isEmpty {
+                StagedAttachmentStrip(
+                    items: attachmentUploads.items,
+                    onRetry: { attachmentUploads.retry($0) },
+                    onRemove: attachmentUploads.remove
+                )
+            }
             HStack(alignment: .bottom, spacing: Spacing.xs) {
+                if let attachmentUploads {
+                    IconButton(
+                        .paperclip,
+                        accessibilityLabel: "Add to message"
+                    ) {
+                        showsAttachmentMenu = true
+                    }
+                    .disabled(
+                        attachmentsDisabled
+                            || !attachmentUploads.canAdd
+                            || selection != .none
+                    )
+                }
                 if let sticker = selection.stagedSticker {
                     StickerSelectionThumbnail(sticker: sticker) {
                         selection = .none
@@ -85,7 +126,12 @@ public struct MessageComposer: View {
                         .strokeBorder(Palette.border, lineWidth: 1)
                     }
                     .accessibilityLabel("Message")
-                if Self.showsSend(draft: draft, selection: selection, sendState: sendState) {
+                if Self.showsSend(
+                    draft: draft,
+                    selection: selection,
+                    sendState: sendState,
+                    stagedAttachments: attachmentUploads?.items ?? []
+                ) {
                     IconButton(
                         .send,
                         style: .solid,
@@ -94,11 +140,25 @@ public struct MessageComposer: View {
                     ) {
                         guard MediaSelectionRules.isSendable(
                             draft: draft,
-                            selection: selection
+                            selection: selection,
+                            stagedAttachments: attachmentUploads?.items ?? [],
+                            connectionReady: sendState != .offline
                         ) else { return }
                         onSend()
                     }
                 }
+            }
+            if let notice = attachmentUploads?.notice {
+                Text(notice)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.notice)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let guidance = attachmentUploads?.sendGuidance {
+                Text(guidance)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.notice)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let guidance = ChatRules.counterGuidance(draft) {
                 Text(guidance)
@@ -122,5 +182,143 @@ public struct MessageComposer: View {
         .padding(.horizontal, Spacing.page)
         .padding(.vertical, Spacing.xs)
         .background(Palette.bg)
+        .confirmationDialog(
+            "Add to message",
+            isPresented: $showsAttachmentMenu,
+            titleVisibility: .visible
+        ) {
+            Button("Photo library") { showsPhotoPicker = true }
+            Button("File") { showsFileImporter = true }
+            Button("Cancel", role: .cancel) {}
+        }
+        .photosPicker(
+            isPresented: $showsPhotoPicker,
+            selection: $photoItems,
+            maxSelectionCount: availableAttachmentSlots,
+            selectionBehavior: .ordered,
+            matching: .images,
+            preferredItemEncoding: .current
+        )
+        .onChange(of: photoItems) { _, selected in
+            guard !selected.isEmpty else { return }
+            loadPhotos(selected)
+            photoItems = []
+        }
+        .fileImporter(
+            isPresented: $showsFileImporter,
+            allowedContentTypes: Self.documentTypes,
+            allowsMultipleSelection: true
+        ) { result in
+            importDocuments(result)
+        }
+    }
+
+    private var availableAttachmentSlots: Int {
+        max(1, AttachmentRules.maxCount - (attachmentUploads?.items.count ?? 0))
+    }
+
+    private func loadPhotos(_ selected: [PhotosPickerItem]) {
+        guard let attachmentUploads else { return }
+        let reservations = selected.compactMap { _ in
+            attachmentUploads.reserveLoadingItem()
+        }
+        Task {
+            for (item, id) in zip(selected, reservations) {
+                do {
+                    guard let transfer = try await item.loadTransferable(
+                        type: AttachmentPhotoTransfer.self
+                    ) else {
+                        attachmentUploads.failLoadingItem(id)
+                        continue
+                    }
+                    let mimeType = ByteSignature.detectedMimeType(transfer.data) ?? "image/jpeg"
+                    attachmentUploads.fulfillLoadingItem(
+                        id,
+                        with: AttachmentCandidate(
+                            data: transfer.data,
+                            originalName: "Photo",
+                            sourceMimeType: mimeType
+                        )
+                    )
+                } catch {
+                    attachmentUploads.failLoadingItem(id)
+                }
+            }
+        }
+    }
+
+    private func importDocuments(_ result: Result<[URL], any Error>) {
+        guard let attachmentUploads, case .success(let urls) = result else { return }
+        let available = max(0, AttachmentRules.maxCount - attachmentUploads.items.count)
+        let selected = Array(urls.prefix(available))
+        let excess = max(0, urls.count - selected.count)
+        Task {
+            let results = await Task.detached(priority: .userInitiated) {
+                selected.map(Self.documentCandidate)
+            }.value
+            attachmentUploads.add(
+                results.compactMap { result in
+                    guard case .candidate(let candidate) = result else { return nil }
+                    return candidate
+                },
+                admissionFailures: results.compactMap { result in
+                    guard case .failure(let failure) = result else { return nil }
+                    return failure
+                } + Array(
+                    repeating: .serverRejected("too_many_attachments"),
+                    count: excess
+                )
+            )
+        }
+    }
+
+    private nonisolated static func documentCandidate(_ url: URL) -> DocumentImportResult {
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+        let values = try? url.resourceValues(forKeys: [.contentTypeKey, .nameKey])
+        if let byteSize = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+           byteSize > AttachmentRules.documentSourceMaxBytes {
+            return .failure(.tooLarge)
+        }
+        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else {
+            return .failure(.preparationFailed)
+        }
+        guard data.count <= AttachmentRules.documentSourceMaxBytes else {
+            return .failure(.tooLarge)
+        }
+        let name = values?.name ?? url.lastPathComponent
+        guard let mimeType = AttachmentRules.sourceMimeType(
+            declared: values?.contentType?.preferredMIMEType,
+            filename: name,
+            data: data
+        ) else { return .failure(.unsupportedType) }
+        return .candidate(AttachmentCandidate(
+            data: data,
+            originalName: name,
+            sourceMimeType: mimeType
+        ))
+    }
+
+    private static let documentTypes: [UTType] = [
+        .pdf,
+        .plainText,
+        .commaSeparatedText,
+    ] + ["docx", "xlsx", "pptx"].compactMap {
+        UTType(filenameExtension: $0)
+    }
+}
+
+private enum DocumentImportResult: Sendable {
+    case candidate(AttachmentCandidate)
+    case failure(AttachmentFailureReason)
+}
+
+private struct AttachmentPhotoTransfer: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(importedContentType: .image) { data in
+            Self(data: data)
+        }
     }
 }

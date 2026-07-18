@@ -24,6 +24,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
     /// Expressive media rendered above the text bubble. `body` may be empty
     /// when media is present — never both empty and `nil` media.
     public let media: MessageMedia?
+    public let attachments: [MessageAttachmentUiModel]
     public let sentAt: Date
     public let delivery: MessageDeliveryStatus?
 
@@ -34,6 +35,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         senderName: String,
         body: String,
         media: MessageMedia? = nil,
+        attachments: [MessageAttachmentUiModel] = [],
         sentAt: Date,
         delivery: MessageDeliveryStatus? = nil
     ) {
@@ -43,6 +45,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         self.senderName = senderName
         self.body = body
         self.media = media
+        self.attachments = attachments
         self.sentAt = sentAt
         self.delivery = delivery
     }

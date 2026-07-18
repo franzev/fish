@@ -16,6 +16,7 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             "Empty states",
             "Top bars",
             "Media picker",
+            "Attachments",
             "Call states",
             "Call demo",
             "Presence",
@@ -59,9 +60,35 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
 
         catalogLink("Chat states", in: app).tap()
         app.buttons["Loaded"].firstMatch.tap()
-        let latestMessage = app.staticTexts[
-            "Sounds good. See you then!"
-        ].firstMatch
+        assertLatestMessageIsVisible(in: app)
+        try app.performAccessibilityAudit { issue in
+            self.handlesKnownTranscriptAuditLimitation(issue)
+        }
+        app.buttons["Back"].firstMatch.tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+    }
+
+    @MainActor
+    func testLoadedTranscriptOpensAtLatestMessage() {
+        let app = XCUIApplication()
+        app.launch()
+        catalogLink("Chat states", in: app).tap()
+        app.buttons["Loaded"].firstMatch.tap()
+        assertLatestMessageIsVisible(in: app)
+    }
+
+    @MainActor
+    private func assertLatestMessageIsVisible(in app: XCUIApplication) {
+        // Target the message's combined accessibility element. Its visible
+        // body Text is intentionally ignored so VoiceOver hears the sender,
+        // time, body, and delivery status as one coherent announcement.
+        let latestMessage = app.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "label BEGINSWITH %@ AND label CONTAINS %@",
+                "You,",
+                "Sounds good. See you then!"
+            )
+        ).firstMatch
         XCTAssertTrue(latestMessage.waitForExistence(timeout: 3))
         // Hit-test only after the push transition settles; a transcript that
         // opened away from the latest message still fails this wait.
@@ -74,11 +101,6 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             .completed,
             "The transcript should open at the latest message"
         )
-        try app.performAccessibilityAudit { issue in
-            self.handlesKnownTranscriptAuditLimitation(issue)
-        }
-        app.buttons["Back"].firstMatch.tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
     }
 
     /// The catalog menu is a lazy list; rows outside the viewport are not in
@@ -214,6 +236,11 @@ final class CatalogAccessibilityAuditTests: XCTestCase {
             "That's great progress. Tomorrow, let's practice questions for your team meeting.",
             "Sounds good. See you then!",
             "Message",
+            "Sending…",
+            "Sent",
+            "Delivered",
+            "Read",
+            "Not sent",
         ]
         if exactLabels.contains(label) { return true }
 

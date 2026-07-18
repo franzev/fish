@@ -44,18 +44,21 @@ targets:
         # from an explicit call or answer gesture.
         NSMicrophoneUsageDescription: FISH uses your microphone so you can talk during calls.
         NSCameraUsageDescription: FISH uses your camera so your coach can see you during video calls.
+        NSPhotoLibraryAddUsageDescription: FISH can save photos you choose to your library.
         # Keep an active call's audio alive when the app backgrounds.
         UIBackgroundModes: [audio]
-        # Live call lab (dev-only, KLIPY pattern): inject the local stack via
+        # Live call/attachment labs (dev-only, KLIPY pattern): inject the local stack via
         # `FISH_SUPABASE_URL=… FISH_SUPABASE_ANON_KEY=… FISH_SUPABASE_EMAIL=…
         # FISH_SUPABASE_PASSWORD=… FISH_SUPABASE_RECIPIENT_ID=… xcodegen
-        # generate`. All empty means the lab page stays hidden.
+        # generate`. Attachments additionally use
+        # `FISH_SUPABASE_CONVERSATION_ID=…`. Missing values keep each lab hidden.
         SupabaseUrl: ${FISH_SUPABASE_URL}
         SupabaseAnonKey: ${FISH_SUPABASE_ANON_KEY}
         SupabaseEmail: ${FISH_SUPABASE_EMAIL}
         SupabasePassword: ${FISH_SUPABASE_PASSWORD}
         SupabaseRecipientId: ${FISH_SUPABASE_RECIPIENT_ID}
         SupabaseRecipientName: ${FISH_SUPABASE_RECIPIENT_NAME}
+        SupabaseConversationId: ${FISH_SUPABASE_CONVERSATION_ID}
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.fish.catalog

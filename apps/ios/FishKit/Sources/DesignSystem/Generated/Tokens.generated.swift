@@ -51,6 +51,9 @@ public enum Metrics {
     public static let stickerTile: CGFloat = 96
     public static let chatGifSelection: CGFloat = 160
     public static let chatGifMaxWidth: CGFloat = 420
+    public static let attachmentComposerTile: CGFloat = 96
+    public static let attachmentBubbleTile: CGFloat = 160
+    public static let attachmentSingleMaxWidth: CGFloat = 320
     public static let callPanel: CGFloat = 360
     public static let callSettings: CGFloat = 336
     public static let callPreview: CGFloat = 112

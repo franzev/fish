@@ -1,3 +1,4 @@
+import ChatData
 import DesignSystem
 import SwiftUI
 import UIComponents
@@ -7,15 +8,24 @@ import UIComponents
 public struct MessageBubble: View {
     private let row: MessageRowUiModel
     private let onRetry: ((String) -> Void)?
+    private let attachmentCommands: (any AttachmentCommandProviding)?
+    private let imageLoader: MessageImageLoader
+    private let fileDownloader: AttachmentFileDownloader
     @Environment(\.locale) private var locale
     @Environment(\.timeZone) private var timeZone
 
     public init(
         row: MessageRowUiModel,
-        onRetry: ((String) -> Void)? = nil
+        onRetry: ((String) -> Void)? = nil,
+        attachmentCommands: (any AttachmentCommandProviding)? = nil,
+        imageLoader: MessageImageLoader = .shared,
+        fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader()
     ) {
         self.row = row
         self.onRetry = onRetry
+        self.attachmentCommands = attachmentCommands
+        self.imageLoader = imageLoader
+        self.fileDownloader = fileDownloader
     }
 
     private var isOutgoing: Bool {
@@ -48,6 +58,15 @@ public struct MessageBubble: View {
             // in the combined label, which reads first.
             if case .gif(let gif) = row.message.media {
                 MessageGif(gif: gif)
+            }
+            if !row.message.attachments.isEmpty {
+                MessageAttachments(
+                    attachments: row.message.attachments,
+                    author: row.message.senderName,
+                    loader: imageLoader,
+                    commands: attachmentCommands,
+                    downloader: fileDownloader
+                )
             }
             VStack(alignment: horizontalAlignment, spacing: Spacing.threeXs) {
                 switch row.message.media {
@@ -157,3 +176,4 @@ public struct MessageBubble: View {
         }
     }
 }
+import ChatData

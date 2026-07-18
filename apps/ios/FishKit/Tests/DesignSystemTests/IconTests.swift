@@ -8,7 +8,7 @@ struct IconTests {
         }
     }
 
-    @Test func onlyBackIsDirectional() {
-        #expect(Icon.allCases.filter(\.isDirectional) == [.back])
+    @Test func navigationArrowsAreDirectional() {
+        #expect(Icon.allCases.filter(\.isDirectional) == [.back, .chevronLeft, .chevronRight])
     }
 }

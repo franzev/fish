@@ -28,21 +28,30 @@ public struct PersonalChatScreen: View {
     @Binding private var selection: ComposerSelection
     private let gifProvider: any GifProviding
     private let context: TranscriptContext
-    private let onSend: () -> Void
+    private let onSend: (ChatSendPayload) -> Void
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
     private let onBack: (() -> Void)?
     private let accountContent: AnyView?
+    private let attachmentUploads: AttachmentUploadsModel?
+    private let attachmentCommands: (any AttachmentCommandProviding)?
+    private let imageLoader: MessageImageLoader
+    private let fileDownloader: AttachmentFileDownloader
 
     @State private var isMediaPickerPresented = false
+    @Environment(\.scenePhase) private var scenePhase
 
     public init(
         model: PersonalChatUiModel,
         draft: Binding<String>,
         selection: Binding<ComposerSelection>,
         gifProvider: any GifProviding,
+        attachmentUploads: AttachmentUploadsModel? = nil,
+        attachmentCommands: (any AttachmentCommandProviding)? = nil,
+        imageLoader: MessageImageLoader = .shared,
+        fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader(),
         context: TranscriptContext = TranscriptContext(),
-        onSend: @escaping () -> Void,
+        onSend: @escaping (ChatSendPayload) -> Void,
         onRetryMessage: @escaping (String) -> Void,
         onRetryOlder: @escaping () -> Void,
         onBack: (() -> Void)? = nil,
@@ -52,6 +61,10 @@ public struct PersonalChatScreen: View {
         self._draft = draft
         self._selection = selection
         self.gifProvider = gifProvider
+        self.attachmentUploads = attachmentUploads
+        self.attachmentCommands = attachmentCommands
+        self.imageLoader = imageLoader
+        self.fileDownloader = fileDownloader
         self.context = context
         self.onSend = onSend
         self.onRetryMessage = onRetryMessage
@@ -109,11 +122,41 @@ public struct PersonalChatScreen: View {
                         ),
                         olderMessages: model.olderMessages,
                         onRetryMessage: onRetryMessage,
-                        onRetryOlder: onRetryOlder
+                        onRetryOlder: onRetryOlder,
+                        attachmentCommands: attachmentCommands,
+                        imageLoader: imageLoader,
+                        fileDownloader: fileDownloader
                     )
                 }
             }
-            if model.phase != .unavailable {
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomControls }
+        .background(Palette.bg)
+        .sheet(isPresented: $isMediaPickerPresented) {
+            MediaPickerSheet(
+                gifProvider: gifProvider,
+                gifDisabled: model.connection == .offline
+                    || !(attachmentUploads?.items.isEmpty ?? true),
+                stickerDisabled: model.connection == .offline
+                    || !(attachmentUploads?.items.isEmpty ?? true),
+                onSelectEmoji: { draft += $0 },
+                onSelectGif: { selection = .gif($0, searchQuery: $1) },
+                onSelectSticker: { selection = .sticker($0) }
+            )
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: attachmentUploads?.applicationDidEnterBackground()
+            case .active: attachmentUploads?.applicationWillEnterForeground()
+            default: break
+            }
+        }
+        .onDisappear { attachmentUploads?.dismiss() }
+    }
+
+    @ViewBuilder private var bottomControls: some View {
+        if model.phase != .unavailable {
+            VStack(spacing: 0) {
                 if ChatConnectionNotice.content(for: model.connection) != nil {
                     ChatConnectionNotice(state: model.connection)
                         .padding(.bottom, Spacing.xs)
@@ -125,21 +168,22 @@ public struct PersonalChatScreen: View {
                     draft: $draft,
                     selection: $selection,
                     sendState: Self.composerState(for: model),
-                    onSend: onSend,
+                    attachmentUploads: attachmentUploads,
+                    attachmentsDisabled: model.connection == .offline,
+                    onSend: {
+                        let payload = ChatSendPayload(
+                            body: draft,
+                            selection: selection,
+                            attachmentIds: attachmentUploads?.readyAttachmentIds ?? [],
+                            optimisticAttachments: attachmentUploads?.optimisticAttachments ?? []
+                        )
+                        onSend(payload)
+                        attachmentUploads?.consumeAfterSend()
+                    },
                     onOpenMediaPicker: { isMediaPickerPresented = true }
                 )
             }
-        }
-        .background(Palette.bg)
-        .sheet(isPresented: $isMediaPickerPresented) {
-            MediaPickerSheet(
-                gifProvider: gifProvider,
-                gifDisabled: model.connection == .offline,
-                stickerDisabled: model.connection == .offline,
-                onSelectEmoji: { draft += $0 },
-                onSelectGif: { selection = .gif($0, searchQuery: $1) },
-                onSelectSticker: { selection = .sticker($0) }
-            )
+            .background(Palette.bg)
         }
     }
 }

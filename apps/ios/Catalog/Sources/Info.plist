@@ -24,8 +24,12 @@
 	<string>FISH uses your camera so your coach can see you during video calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>FISH uses your microphone so you can talk during calls.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>FISH can save photos you choose to your library.</string>
 	<key>SupabaseAnonKey</key>
 	<string>${FISH_SUPABASE_ANON_KEY}</string>
+	<key>SupabaseConversationId</key>
+	<string>${FISH_SUPABASE_CONVERSATION_ID}</string>
 	<key>SupabaseEmail</key>
 	<string>${FISH_SUPABASE_EMAIL}</string>
 	<key>SupabasePassword</key>

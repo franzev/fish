@@ -77,7 +77,8 @@ let package = Package(
         ),
         .testTarget(
             name: "ChatDataTests",
-            dependencies: ["ChatData"]
+            dependencies: ["ChatData"],
+            resources: [.copy("Fixtures")]
         ),
         .testTarget(
             name: "CallDataTests",

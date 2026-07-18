@@ -26,6 +26,7 @@ public enum PersonalChatFixtures {
         _ id: String,
         _ body: String,
         media: MessageMedia? = nil,
+        attachments: [MessageAttachmentUiModel] = [],
         at value: String
     ) -> MessageUiModel {
         MessageUiModel(
@@ -35,6 +36,7 @@ public enum PersonalChatFixtures {
             senderName: coachName,
             body: body,
             media: media,
+            attachments: attachments,
             sentAt: date(value)
         )
     }
@@ -43,6 +45,7 @@ public enum PersonalChatFixtures {
         _ id: String,
         _ body: String,
         media: MessageMedia? = nil,
+        attachments: [MessageAttachmentUiModel] = [],
         at value: String,
         delivery: MessageDeliveryStatus
     ) -> MessageUiModel {
@@ -53,6 +56,7 @@ public enum PersonalChatFixtures {
             senderName: "Maya Chen",
             body: body,
             media: media,
+            attachments: attachments,
             sentAt: date(value),
             delivery: delivery
         )
@@ -184,6 +188,28 @@ public enum PersonalChatFixtures {
             at: "2026-07-16T14:44:00Z"
         ),
     ])
+
+    public static var attachments: PersonalChatUiModel {
+        model(messages: [
+            incoming(
+                "a1",
+                "Here is the example we discussed.",
+                attachments: [AttachmentFixtures.imageUi],
+                at: "2026-07-16T14:35:00Z"
+            ),
+            outgoing(
+                "a2",
+                "My notes are attached too.",
+                attachments: [
+                    AttachmentFixtures.imageUi,
+                    AttachmentFixtures.portraitImageUi,
+                    AttachmentFixtures.documentUi,
+                ],
+                at: "2026-07-16T14:36:00Z",
+                delivery: .delivered
+            ),
+        ])
+    }
 
     /// Staged composer selections for previews and snapshots.
     public static let stagedGif = ComposerSelection.gif(

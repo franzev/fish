@@ -1,0 +1,42 @@
+[
+  {
+    "name": "successful upload",
+    "events": [
+      { "type": "staged" },
+      { "type": "preparationStarted" },
+      { "type": "initialized" },
+      { "type": "uploadProgress", "value": 0.6 },
+      { "type": "completionStarted", "position": 2, "total": 4 },
+      { "type": "completed" }
+    ],
+    "expected": "ready:attachment-1"
+  },
+  {
+    "name": "progress and queue values clamp",
+    "events": [
+      { "type": "staged" },
+      { "type": "initialized" },
+      { "type": "uploadProgress", "value": 2.0 },
+      { "type": "completionStarted", "position": 0, "total": 0 }
+    ],
+    "expected": "completing:1/1"
+  },
+  {
+    "name": "transient failure retries from staging",
+    "events": [
+      { "type": "failed", "reason": "offline" },
+      { "type": "retry" }
+    ],
+    "expected": "staging"
+  },
+  {
+    "name": "removed upload is terminal",
+    "events": [
+      { "type": "staged" },
+      { "type": "remove" },
+      { "type": "retry" },
+      { "type": "uploadProgress", "value": 0.5 }
+    ],
+    "expected": "removed"
+  }
+]

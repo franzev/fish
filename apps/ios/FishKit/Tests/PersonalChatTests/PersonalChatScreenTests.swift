@@ -36,6 +36,7 @@ struct PersonalChatScreenTests {
             ("typing", PersonalChatFixtures.typing, ""),
             ("long-content", PersonalChatFixtures.longContent, ""),
             ("media", PersonalChatFixtures.media, ""),
+            ("attachments", PersonalChatFixtures.attachments, ""),
             ("unavailable", PersonalChatFixtures.unavailable, ""),
         ]
 
@@ -62,7 +63,7 @@ struct PersonalChatScreenTests {
             selection: .constant(.none),
             gifProvider: FixtureGifProvider(),
             context: PersonalChatFixtures.context,
-            onSend: {},
+            onSend: { _ in },
             onRetryMessage: { _ in },
             onRetryOlder: {},
             onBack: {}

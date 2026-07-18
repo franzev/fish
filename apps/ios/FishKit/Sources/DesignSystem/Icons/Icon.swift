@@ -43,9 +43,16 @@ public enum Icon: String, CaseIterable, Sendable {
     case clock
     case eyeOff = "eye-off"
     case moonFilled = "moon-filled"
+    case paperclip
+    case photo
+    case fileText = "file-text"
+    case download
+    case share
+    case chevronLeft = "chevron-left"
+    case chevronRight = "chevron-right"
 
     public var isDirectional: Bool {
-        self == .back
+        self == .back || self == .chevronLeft || self == .chevronRight
     }
 
     @MainActor public var image: some View {
