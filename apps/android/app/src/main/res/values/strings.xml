@@ -3,4 +3,7 @@
     <string name="app_name">FISH</string>
     <string name="call_channel_name">Calls</string>
     <string name="call_channel_description">Incoming and active FISH calls</string>
+    <string name="chat_channel_name">Messages</string>
+    <string name="chat_channel_description">Direct messages in FISH</string>
+    <string name="chat_notification_message">Sent you a message</string>
 </resources>

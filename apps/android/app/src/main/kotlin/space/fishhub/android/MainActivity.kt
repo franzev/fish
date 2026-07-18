@@ -26,6 +26,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -56,6 +57,8 @@ import space.fishhub.android.feature.chat.MediaPickerViewModel
 import space.fishhub.android.feature.chat.ParticipantUiModel
 import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
+import space.fishhub.android.messaging.ChatDestination
+import space.fishhub.android.messaging.ChatIntents
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CancellationException
@@ -68,6 +71,7 @@ class MainActivity : ComponentActivity() {
     private val pictureInPicture = MutableStateFlow(false)
     private var activeVideoCall = false
     private val attachmentImportState = MutableStateFlow(AttachmentImportUiState())
+    private val pendingChatDestination = MutableStateFlow<ChatDestination?>(null)
     private var attachmentConversationId: String? = null
     private var pendingCameraFile: File? = null
     private var pendingCameraUri: Uri? = null
@@ -176,6 +180,13 @@ class MainActivity : ComponentActivity() {
             val callMinimized by minimized.collectAsStateWithLifecycle()
             val pip by pictureInPicture.collectAsStateWithLifecycle()
             val attachmentImport by attachmentImportState.collectAsStateWithLifecycle()
+            val chatDestination by pendingChatDestination.collectAsStateWithLifecycle()
+            LaunchedEffect(chatDestination, chatViewModel) {
+                chatDestination?.let { destination ->
+                    chatViewModel.focusMessage(destination.conversationId, destination.messageId)
+                    pendingChatDestination.value = null
+                }
+            }
             FishTheme(reducedMotion = !animationsEnabled) {
                 Box(Modifier.fillMaxSize()) {
                     ChatRoute(
@@ -236,6 +247,7 @@ class MainActivity : ComponentActivity() {
         observeNotificationPermission()
         observeAttachmentPrivacyCleanup()
         handleCallIntent(intent)
+        handleChatIntent(intent)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -249,6 +261,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleCallIntent(intent)
+        handleChatIntent(intent)
     }
 
     override fun onResume() {
@@ -386,6 +399,13 @@ class MainActivity : ComponentActivity() {
             ?: fishApplication.callCoordinator.state.value.current.kind
         requestPermissions(PendingPermissionAction.Answer(callId, kind))
         intent.action = CallIntents.ActionOpen
+    }
+
+    private fun handleChatIntent(intent: Intent?) {
+        val destination = ChatIntents.destination(intent) ?: return
+        pendingChatDestination.value = destination
+        intent?.action = null
+        intent?.data = null
     }
 
     private fun openAppSettings() {

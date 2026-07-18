@@ -7,6 +7,8 @@ import space.fishhub.android.feature.call.CallPushMessage
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.launch
+import space.fishhub.android.messaging.ChatNotificationFactory
+import space.fishhub.android.messaging.ChatPushMessage
 
 // Current FCM FID mode replaces the deprecated onNewToken callback with
 // onRegistered/onUnregistered. Android lint still checks the legacy contract.
@@ -25,6 +27,10 @@ class CallPushMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        ChatPushMessage.parse(message.data)?.let {
+            ChatNotificationFactory.show(this, it)
+            return
+        }
         CallPushMessage.parse(message.data)?.let {
             (application as FishApplication).callCoordinator.receivePush(it)
         }
