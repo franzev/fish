@@ -68,6 +68,9 @@ public struct Avatar: View {
                 Text(Self.initials(from: name))
                     .textStyle(role)
                     .foregroundStyle(Palette.foreground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .allowsTightening(true)
             } else {
                 Icon.person.image
                     .glyphFrame()

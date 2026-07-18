@@ -21,5 +21,6 @@ struct AvatarTests {
         }
         .padding(Spacing.page)
         assertThemedSnapshots(of: states, named: "avatar-states")
+        assertAccessibilitySnapshots(of: states, named: "avatar-states")
     }
 }
