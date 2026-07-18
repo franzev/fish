@@ -244,17 +244,23 @@ export function UserMenu({
             ) : (
               <>
                 <ActionMenuItem ref={firstItemRef} render={<Link href="/profile" />}>
-                  <IconUser size={20} stroke={1.75} aria-hidden="true" />
+                  <span className="action-menu-icon-slot" aria-hidden="true">
+                    <IconUser size={20} stroke={1.75} />
+                  </span>
                   Profile
                 </ActionMenuItem>
                 {showFriends && (
                   <ActionMenuItem render={<Link href="/friends" />}>
-                    <IconUsers size={20} stroke={1.75} aria-hidden="true" />
+                    <span className="action-menu-icon-slot" aria-hidden="true">
+                      <IconUsers size={20} stroke={1.75} />
+                    </span>
                     Friends
                   </ActionMenuItem>
                 )}
                 <ActionMenuItem closeOnClick={false} onClick={() => setMenuView("status")}>
-                  <PresenceIndicator status={presence.displayStatus} label={presence.displayLabel} size={18} />
+                  <span className="action-menu-icon-slot">
+                    <PresenceIndicator status={presence.displayStatus} label={presence.displayLabel} size={18} />
+                  </span>
                   <span className="flex min-w-0 flex-1 items-baseline justify-between gap-sm">
                     <span>Status</span>
                     <span className="truncate text-body">{presence.displayLabel}</span>
@@ -262,7 +268,9 @@ export function UserMenu({
                   <IconChevronRight size={18} stroke={1.75} aria-hidden="true" />
                 </ActionMenuItem>
                 <ActionMenuItem onClick={signOut}>
-                  <IconLogout size={20} stroke={1.75} aria-hidden="true" />
+                  <span className="action-menu-icon-slot" aria-hidden="true">
+                    <IconLogout size={20} stroke={1.75} />
+                  </span>
                   Sign out
                 </ActionMenuItem>
                 {notice && <p className="px-sm py-2xs text-ui-sm text-notice">{notice}</p>}

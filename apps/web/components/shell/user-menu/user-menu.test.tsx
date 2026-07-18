@@ -52,6 +52,9 @@ describe("UserMenu", () => {
       "StatusOffline",
       "Sign out",
     ]);
+    for (const item of screen.getAllByRole("menuitem")) {
+      expect(item.firstElementChild).toHaveClass("action-menu-icon-slot");
+    }
 
     fireEvent.click(screen.getByRole("menuitem", { name: /Status/ }));
     expect(screen.getByRole("menuitem", { name: /Back to account/ }))

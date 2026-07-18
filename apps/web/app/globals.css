@@ -269,6 +269,17 @@
   }
 }
 
+/* Keeps mixed outline icons and smaller filled status marks on one optical
+   centre while preserving a shared text edge in compact action menus. */
+@utility action-menu-icon-slot {
+  display: inline-flex;
+  width: var(--size-icon-button-glyph);
+  height: var(--size-icon-button-glyph);
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Status choices keep their indicator, copy, and selected marker aligned
    without embedding a one-off grid template in component markup. */
 @utility grid-cols-status-option {
