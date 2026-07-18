@@ -269,14 +269,31 @@ function formatFileSize(bytes = 0): string {
 }
 
 function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
-  const [url, setUrl] = useState(file.displayUrl);
   const [refreshing, setRefreshing] = useState(false);
-  async function refresh() {
+  const [openFailed, setOpenFailed] = useState(false);
+  async function openFresh() {
     setRefreshing(true);
+    setOpenFailed(false);
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.opener = null;
     try {
       const refreshed = await getChatImageService().refreshUrls([file.id]);
-      setUrl(refreshed.find((item) => item.path === file.displayPath)?.signedUrl);
-    } finally { setRefreshing(false); }
+      const freshUrl = refreshed.find((item) => item.path === file.displayPath)?.signedUrl;
+      if (!freshUrl) throw new Error("File URL is unavailable");
+      if (popup) popup.location.replace(freshUrl);
+      else {
+        const anchor = document.createElement("a");
+        anchor.href = freshUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.click();
+      }
+    } catch {
+      popup?.close();
+      setOpenFailed(true);
+    } finally {
+      setRefreshing(false);
+    }
   }
   return (
     <div className={cn("flex min-h-control items-center gap-sm rounded-control bg-surface-2 p-xs", mine && "bg-surface-3")}>
@@ -287,53 +304,91 @@ function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
         <span className="block truncate text-ui-sm text-foreground">{file.originalName}</span>
         <span className="block text-ui-xs text-muted">{fileTypeLabel(file.mimeType)} · {formatFileSize(file.byteSize)}</span>
       </span>
-      {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${file.originalName}`} className="inline-flex min-h-control min-w-control items-center justify-center rounded-control text-body hover:bg-surface">
-          <IconDownload size={20} stroke={1.75} aria-hidden="true" />
-        </a>
-      ) : (
-        <IconButton label={`Retry ${file.originalName}`} appearance="ghost" disabled={refreshing} onClick={() => void refresh()} className="text-body" icon={<IconRefresh size={20} stroke={1.75} aria-hidden="true" />} />
-      )}
+      <IconButton
+        label={`${openFailed ? "Retry" : "Open"} ${file.originalName}`}
+        appearance="ghost"
+        disabled={refreshing}
+        onClick={() => void openFresh()}
+        className="text-body"
+        icon={openFailed
+          ? <IconRefresh size={20} stroke={1.75} aria-hidden="true" />
+          : <IconDownload size={20} stroke={1.75} aria-hidden="true" />}
+      />
     </div>
   );
 }
 
+type AttachmentRun =
+  | { kind: "images"; items: ClientChatImage[] }
+  | { kind: "file"; item: ClientChatImage };
+
+function attachmentRuns(attachments: ClientChatImage[]): AttachmentRun[] {
+  const runs: AttachmentRun[] = [];
+  let images: ClientChatImage[] = [];
+  const flushImages = () => {
+    if (images.length > 0) runs.push({ kind: "images", items: images });
+    images = [];
+  };
+  for (const attachment of attachments) {
+    if (attachment.kind === "file") {
+      flushImages();
+      runs.push({ kind: "file", item: attachment });
+    } else {
+      images.push(attachment);
+    }
+  }
+  flushImages();
+  return runs;
+}
+
 export function MessageImages({ images, authorName, mine }: MessageImagesProps) {
   if (images.length === 0) return null;
-  const imageAttachments = images.filter((attachment) => attachment.kind !== "file");
-  const fileAttachments = images.filter((attachment) => attachment.kind === "file");
-  const wrapped = imageAttachments.length > 1;
+  const runs = attachmentRuns(images);
+  const fileCount = images.filter((attachment) => attachment.kind === "file").length;
+  const photoCount = images.length - fileCount;
+  const sharedLabel = fileCount === 0
+    ? `${photoCount} shared ${photoCount === 1 ? "photo" : "photos"}`
+    : photoCount === 0
+      ? `${fileCount} shared ${fileCount === 1 ? "file" : "files"}`
+      : `${images.length} shared attachments`;
+  const onlyImageRun = runs.length === 1 && runs[0]?.kind === "images"
+    ? runs[0].items
+    : null;
   return (
     <div
       className={cn(
         "flex w-full flex-col gap-2xs",
-        imageAttachments.length === 1 && "max-w-chat-preview",
-        imageAttachments.length === 0 && "max-w-chat-image"
+        onlyImageRun?.length === 1 && "max-w-chat-preview",
+        !images.some((attachment) => attachment.kind !== "file") && "max-w-chat-image"
       )}
-      aria-label={`${images.length} shared ${images.length === 1 ? "file" : "files"}`}
+      aria-label={sharedLabel}
     >
-      {imageAttachments.length > 0 && (
-        <div
-          data-image-layout={wrapped ? "wrap" : "single"}
-          className={cn(
-            "flex flex-wrap gap-nudge",
-            mine ? "justify-end" : "justify-start"
-          )}
-        >
-          {imageAttachments.map((image) => (
-            <MessageImage
-              key={image.id}
-              image={image}
-              authorName={authorName}
-              mine={mine}
-              wrapped={wrapped}
-            />
-          ))}
-        </div>
-      )}
-      {fileAttachments.map((file) => (
-        <MessageFile key={file.id} file={file} mine={mine} />
-      ))}
+      {runs.map((run) => {
+        if (run.kind === "file") {
+          return <MessageFile key={run.item.id} file={run.item} mine={mine} />;
+        }
+        const wrapped = run.items.length > 1;
+        return (
+          <div
+            key={`images-${run.items[0]?.id}`}
+            data-image-layout={wrapped ? "wrap" : "single"}
+            className={cn(
+              "flex flex-wrap gap-nudge",
+              mine ? "justify-end" : "justify-start"
+            )}
+          >
+            {run.items.map((image) => (
+              <MessageImage
+                key={image.id}
+                image={image}
+                authorName={authorName}
+                mine={mine}
+                wrapped={wrapped}
+              />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

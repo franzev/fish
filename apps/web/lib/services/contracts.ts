@@ -160,6 +160,8 @@ export interface ClientChatMessage {
   reactions?: ClientChatReaction[];
   gif?: ClientChatGif;
   stickerId?: string;
+  attachments?: ClientChatAttachment[];
+  /** @deprecated Use attachments. */
   images?: ClientChatImage[];
 }
 export interface ClientChatParticipant {
@@ -422,6 +424,13 @@ export interface ReadyChatImageUpload {
   attachment: ClientChatAttachment;
   urls: Array<{ path: string; signedUrl: string }>;
 }
+export interface ReadyChatImageInitialization extends ReadyChatImageUpload {
+  status: "ready";
+  attachmentId: string;
+}
+export type ChatImageInitialization =
+  | ChatImageUploadAuthorization
+  | ReadyChatImageInitialization;
 export interface ChatImageService {
   initialize(input: {
     conversationId: string;
@@ -429,7 +438,8 @@ export interface ChatImageService {
     originalName: string;
     sourceMimeType: string;
     sourceByteSize: number;
-  }): Promise<ChatImageUploadAuthorization>;
+    uploadSha256?: string;
+  }): Promise<ChatImageInitialization>;
   complete(attachmentId: string): Promise<ReadyChatImageUpload>;
   cancel(attachmentId: string): Promise<void>;
   refreshUrls(attachmentIds: string[]): Promise<Array<{ path: string; signedUrl: string }>>;

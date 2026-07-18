@@ -14,6 +14,7 @@ interface SearchResultCardProps {
 
 export function SearchResultCard({ message, currentUserId, authorName, avatarUrl }: SearchResultCardProps) {
   const mine = message.senderId === currentUserId;
+  const attachments = message.attachments ?? message.images ?? [];
   return (
     <article className="flex gap-sm rounded-card bg-surface-2 p-sm">
       <Avatar size="md" name={authorName} src={avatarUrl} />
@@ -21,7 +22,7 @@ export function SearchResultCard({ message, currentUserId, authorName, avatarUrl
         <MessageMeta authorName={authorName} sentAt={message.createdAt} tag={message.senderRole === "coach" ? "Coach" : undefined} />
         {/* Same size the chat bubble wrapper applies — the renderer inherits. */}
         <MessageBody body={visibleMessageBody(message)} className="text-ui-sm" />
-        {(message.images?.length ?? 0) > 0 && <div className="mt-xs"><MessageImages images={message.images ?? []} authorName={authorName} mine={mine} /></div>}
+        {attachments.length > 0 && <div className="mt-xs"><MessageImages images={attachments} authorName={authorName} mine={mine} /></div>}
       </div>
     </article>
   );

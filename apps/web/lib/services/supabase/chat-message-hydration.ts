@@ -18,12 +18,15 @@ export async function hydrateClientChatMessages(
   const currentUserId = userData.user?.id ?? "";
 
   const messageIds = messages.map((message) => message.id);
-  const { data: attachments } = await client
+  const { data: attachments, error: attachmentsError } = await client
     .from("message_attachments")
     .select("id, message_id, kind, original_name, stored_mime_type, stored_byte_size, width, height, thumbnail_path, display_path, position, status")
     .in("message_id", messageIds)
     .eq("status", "ready")
     .order("position", { ascending: true });
+  if (attachmentsError) {
+    throw new Error("Message attachments are temporarily unavailable.");
+  }
 
   const paths = (attachments ?? []).flatMap((attachment) =>
     [attachment.thumbnail_path, attachment.display_path].filter(
@@ -46,30 +49,25 @@ export async function hydrateClientChatMessages(
     NonNullable<MessageResponseRow["images"]>
   >();
   for (const attachment of attachments ?? []) {
-    if (
-      !attachment.message_id ||
-      !attachment.display_path ||
-      !attachment.stored_mime_type ||
-      !attachment.stored_byte_size
-    ) {
-      continue;
-    }
+    if (!attachment.message_id) continue;
     const images = imagesByMessage.get(attachment.message_id) ?? [];
     images.push({
       id: attachment.id,
       status: "ready",
       kind: attachment.kind as "image" | "file",
       original_name: attachment.original_name,
-      stored_mime_type: attachment.stored_mime_type,
-      stored_byte_size: attachment.stored_byte_size,
+      stored_mime_type: attachment.stored_mime_type ?? "application/octet-stream",
+      stored_byte_size: attachment.stored_byte_size ?? 0,
       width: attachment.width,
       height: attachment.height,
       thumbnail_path: attachment.thumbnail_path,
-      display_path: attachment.display_path,
+      display_path: attachment.display_path ?? "",
       thumbnail_url: attachment.thumbnail_path
         ? urls.get(attachment.thumbnail_path)
         : undefined,
-      display_url: urls.get(attachment.display_path),
+      display_url: attachment.display_path
+        ? urls.get(attachment.display_path)
+        : undefined,
     });
     imagesByMessage.set(attachment.message_id, images);
   }

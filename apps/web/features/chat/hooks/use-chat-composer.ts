@@ -216,6 +216,7 @@ export function useChatComposer({
       body,
       gif: optimisticGif,
       stickerId: optimisticStickerId,
+      attachments: optimisticImages,
       images: optimisticImages,
       clientRequestId,
       editedAt: null,

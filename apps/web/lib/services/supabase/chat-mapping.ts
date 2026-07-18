@@ -88,6 +88,20 @@ export function toClientChatMessage(
   row: MessageResponseRow
 ): ClientChatMessage {
   const stickerId = readChatStickerId(row.sticker_id);
+  const attachments = (row.images ?? []).map((image) => ({
+    id: image.id,
+    status: "ready" as const,
+    kind: image.kind,
+    originalName: image.original_name,
+    mimeType: image.stored_mime_type,
+    byteSize: image.stored_byte_size,
+    width: image.width ?? undefined,
+    height: image.height ?? undefined,
+    thumbnailPath: image.thumbnail_path ?? undefined,
+    displayPath: image.display_path,
+    thumbnailUrl: image.thumbnail_url,
+    displayUrl: image.display_url,
+  }));
 
   return {
     id: row.id,
@@ -124,20 +138,8 @@ export function toClientChatMessage(
         }
       : undefined,
     ...(stickerId ? { stickerId } : {}),
-    images: (row.images ?? []).map((image) => ({
-      id: image.id,
-      status: "ready",
-      kind: image.kind,
-      originalName: image.original_name,
-      mimeType: image.stored_mime_type,
-      byteSize: image.stored_byte_size,
-      width: image.width ?? undefined,
-      height: image.height ?? undefined,
-      thumbnailPath: image.thumbnail_path ?? undefined,
-      displayPath: image.display_path,
-      thumbnailUrl: image.thumbnail_url,
-      displayUrl: image.display_url,
-    })),
+    attachments,
+    images: attachments,
   };
 }
 

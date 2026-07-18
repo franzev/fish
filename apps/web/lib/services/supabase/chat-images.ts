@@ -4,6 +4,7 @@ import { createBrowserSupabaseClient } from "./browser";
 import { getPublicEnv } from "../env";
 import type {
   ChatImageService,
+  ChatImageInitialization,
   ChatImageUploadAuthorization,
   ReadyChatImageUpload,
 } from "../contracts";
@@ -42,6 +43,32 @@ interface WireReadyAttachment {
   display_path: string;
 }
 
+function mapReadyAttachment(
+  attachment: WireReadyAttachment,
+  urls: Array<{ path: string; signedUrl: string }>
+): ReadyChatImageUpload {
+  const byPath = new Map(urls.map((item) => [item.path, item.signedUrl]));
+  return {
+    urls,
+    attachment: {
+      id: attachment.id,
+      status: "ready",
+      kind: attachment.kind,
+      originalName: attachment.original_name,
+      mimeType: attachment.stored_mime_type,
+      byteSize: attachment.stored_byte_size,
+      width: attachment.width ?? undefined,
+      height: attachment.height ?? undefined,
+      thumbnailPath: attachment.thumbnail_path ?? undefined,
+      displayPath: attachment.display_path,
+      thumbnailUrl: attachment.thumbnail_path
+        ? byPath.get(attachment.thumbnail_path)
+        : undefined,
+      displayUrl: byPath.get(attachment.display_path),
+    },
+  };
+}
+
 function publicTusEndpoint(): string {
   const url = new URL(getPublicEnv().supabaseUrl);
   const projectRef = url.hostname.endsWith(".supabase.co")
@@ -64,11 +91,27 @@ function signedUploadUrl(
 }
 
 export const chatImageService: ChatImageService = {
-  async initialize(input): Promise<ChatImageUploadAuthorization> {
-    const result = await invoke<Omit<ChatImageUploadAuthorization, "tusEndpoint">>({
+  async initialize(input): Promise<ChatImageInitialization> {
+    const result = await invoke<
+      | Omit<ChatImageUploadAuthorization, "tusEndpoint">
+      | {
+          status: "ready";
+          attachmentId: string;
+          attachment: WireReadyAttachment;
+          urls: Array<{ path: string; signedUrl: string }>;
+        }
+    >({
       action: "initialize-upload",
       ...input,
     });
+
+    if ("attachment" in result) {
+      return {
+        status: "ready",
+        attachmentId: result.attachmentId,
+        ...mapReadyAttachment(result.attachment, result.urls),
+      };
+    }
 
     // The Edge runtime's URL can be an internal Docker/function address. The
     // browser already has the canonical public project URL, so derive the TUS
@@ -88,26 +131,7 @@ export const chatImageService: ChatImageService = {
       attachment: WireReadyAttachment;
       urls: Array<{ path: string; signedUrl: string }>;
     }>({ action: "complete-upload", attachmentId }, 45_000);
-    const urls = new Map(result.urls.map((item) => [item.path, item.signedUrl]));
-    return {
-      urls: result.urls,
-      attachment: {
-        id: result.attachment.id,
-        status: "ready",
-        kind: result.attachment.kind,
-        originalName: result.attachment.original_name,
-        mimeType: result.attachment.stored_mime_type,
-        byteSize: result.attachment.stored_byte_size,
-        width: result.attachment.width ?? undefined,
-        height: result.attachment.height ?? undefined,
-        thumbnailPath: result.attachment.thumbnail_path ?? undefined,
-        displayPath: result.attachment.display_path,
-        thumbnailUrl: result.attachment.thumbnail_path
-          ? urls.get(result.attachment.thumbnail_path)
-          : undefined,
-        displayUrl: urls.get(result.attachment.display_path),
-      },
-    };
+    return mapReadyAttachment(result.attachment, result.urls);
   },
   async cancel(attachmentId): Promise<void> {
     await invoke({ action: "cancel-upload", attachmentId });

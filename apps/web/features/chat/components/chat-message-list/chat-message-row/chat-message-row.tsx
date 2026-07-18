@@ -151,15 +151,16 @@ export function ChatMessageRow({
   const showMessageActions =
     message.localStatus === "sent" && !message.deletedAt && !interactionDisabled;
   const authorMember = getAuthorMember(message);
+  const attachments = message.attachments ?? message.images ?? [];
   const visualImageCount =
-    message.images?.filter((attachment) => attachment.kind !== "file").length ?? 0;
+    attachments.filter((attachment) => attachment.kind !== "file").length;
   const messageSurfaceWidthClass = isEditing
     ? "w-full max-w-message"
     : visualImageCount === 1
       ? "w-full max-w-chat-preview"
       : visualImageCount > 1
         ? "w-full max-w-message"
-        : message.images?.length
+        : attachments.length
           ? "w-full max-w-chat-image"
           : message.gif
             ? "w-full max-w-chat-gif"
@@ -212,8 +213,8 @@ export function ChatMessageRow({
           snippet={getMessageSnippet(replyMessage)}
         />
       )}
-      {Boolean(message.images?.length) && !message.deletedAt && (
-        <MessageImages images={message.images ?? []} authorName={getAuthorName(message)} mine={mine} />
+      {attachments.length > 0 && !message.deletedAt && (
+        <MessageImages images={attachments} authorName={getAuthorName(message)} mine={mine} />
       )}
       {message.stickerId && !message.deletedAt && (
         <StickerMedia stickerId={message.stickerId} />
@@ -298,8 +299,8 @@ export function ChatMessageRow({
                   message.clientRequestId,
                   message.replyToMessageId ?? null,
                   false,
-                  message.images?.map((image) => image.id) ?? [],
-                  message.images ?? [],
+                  attachments.map((attachment) => attachment.id),
+                  attachments,
                   isChatStickerId(message.stickerId) ? message.stickerId : undefined,
                   message.gif
                 )

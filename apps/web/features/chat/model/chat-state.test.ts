@@ -237,4 +237,34 @@ describe("chat-state", () => {
     expect(merged[0].images).toEqual(images);
     expect(toReplyPreview(merged[0], "me", "Gwyn", "Franz").snippet).toBe("Image");
   });
+
+  it("keeps canonical optimistic attachments when a bare send acknowledgement is merged", () => {
+    const attachments = [{
+      id: "image-1",
+      status: "ready" as const,
+      originalName: "Photo",
+      displayPath: "chat/image/display.webp",
+      displayUrl: "blob:optimistic",
+    }];
+    const current = [message({
+      id: "request-1",
+      clientRequestId: "request-1",
+      senderId: "me",
+      body: "",
+      attachments,
+      images: attachments,
+    })];
+
+    const [merged] = mergeChatMessage(current, message({
+      id: "message-1",
+      clientRequestId: "request-1",
+      senderId: "me",
+      body: "",
+      attachments: [],
+      images: [],
+    }));
+
+    expect(merged.attachments).toEqual(attachments);
+    expect(merged.images).toEqual(attachments);
+  });
 });

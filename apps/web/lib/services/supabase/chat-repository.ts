@@ -675,6 +675,24 @@ function toClientChatMessage(
     });
   }
   const stickerId = readChatStickerId(row.sticker_id);
+  const attachments = images.flatMap((image) =>
+    image.display_path && image.stored_mime_type && image.stored_byte_size
+      ? [{
+          id: image.id,
+          status: "ready" as const,
+          kind: image.kind as "image" | "file",
+          originalName: image.original_name,
+          mimeType: image.stored_mime_type,
+          byteSize: image.stored_byte_size,
+          width: image.width ?? undefined,
+          height: image.height ?? undefined,
+          thumbnailPath: image.thumbnail_path ?? undefined,
+          displayPath: image.display_path,
+          thumbnailUrl: image.thumbnail_path ? imageUrls.get(image.thumbnail_path) : undefined,
+          displayUrl: imageUrls.get(image.display_path),
+        }]
+      : []
+  );
 
   return {
     id: row.id,
@@ -710,24 +728,8 @@ function toClientChatMessage(
         }
       : undefined,
     ...(stickerId ? { stickerId } : {}),
-    images: images.flatMap((image) =>
-      image.display_path && image.stored_mime_type && image.stored_byte_size
-        ? [{
-            id: image.id,
-            status: "ready" as const,
-            kind: image.kind as "image" | "file",
-            originalName: image.original_name,
-            mimeType: image.stored_mime_type,
-            byteSize: image.stored_byte_size,
-            width: image.width ?? undefined,
-            height: image.height ?? undefined,
-            thumbnailPath: image.thumbnail_path ?? undefined,
-            displayPath: image.display_path,
-            thumbnailUrl: image.thumbnail_path ? imageUrls.get(image.thumbnail_path) : undefined,
-            displayUrl: imageUrls.get(image.display_path),
-          }]
-        : []
-    ),
+    attachments,
+    images: attachments,
   };
 }
 

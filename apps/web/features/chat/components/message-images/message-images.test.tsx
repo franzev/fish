@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MessageImages } from "./message-images";
 
 const mocks = vi.hoisted(() => ({ refreshUrls: vi.fn() }));
@@ -18,6 +18,10 @@ const image = {
 };
 
 describe("MessageImages", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("loads and refreshes signed URLs without flashing an unavailable state", async () => {
     mocks.refreshUrls.mockResolvedValueOnce([
       { path: image.thumbnailPath, signedUrl: "https://storage.test/thumbnail" },
@@ -44,7 +48,72 @@ describe("MessageImages", () => {
 
     expect(screen.getByText("notes.pdf")).toBeInTheDocument();
     expect(screen.getByText("PDF · 2 KB")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open notes.pdf" })).toHaveAttribute("target", "_blank");
+    expect(screen.getByRole("button", { name: "Open notes.pdf" })).toBeInTheDocument();
+  });
+
+  it("refreshes a private file URL immediately before opening it", async () => {
+    const replace = vi.fn();
+    const popup = { opener: window, location: { replace }, close: vi.fn() };
+    vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+    mocks.refreshUrls.mockResolvedValueOnce([
+      { path: "chat/file/file.pdf", signedUrl: "https://storage.test/fresh-file" },
+    ]);
+    render(<MessageImages images={[{
+      id: "file-1",
+      status: "ready",
+      kind: "file",
+      originalName: "notes.pdf",
+      displayPath: "chat/file/file.pdf",
+      displayUrl: "https://storage.test/expired-file",
+    }]} authorName="Alex" mine={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open notes.pdf" }));
+
+    await waitFor(() => expect(mocks.refreshUrls).toHaveBeenCalledWith(["file-1"]));
+    expect(popup.opener).toBeNull();
+    expect(replace).toHaveBeenCalledWith("https://storage.test/fresh-file");
+  });
+
+  it("offers a calm retry when a file URL cannot be refreshed", async () => {
+    const close = vi.fn();
+    vi.spyOn(window, "open").mockReturnValue({
+      opener: window,
+      location: { replace: vi.fn() },
+      close,
+    } as unknown as Window);
+    mocks.refreshUrls.mockResolvedValueOnce([]);
+    render(<MessageImages images={[{
+      id: "file-1",
+      status: "ready",
+      kind: "file",
+      originalName: "notes.pdf",
+      displayPath: "chat/file/file.pdf",
+    }]} authorName="Alex" mine={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open notes.pdf" }));
+
+    expect(await screen.findByRole("button", { name: "Retry notes.pdf" })).toBeInTheDocument();
+    expect(close).toHaveBeenCalled();
+  });
+
+  it("preserves mixed attachment order around grouped image runs", () => {
+    const { container } = render(<MessageImages images={[
+      { ...image, id: "first", thumbnailUrl: "blob:first", displayUrl: "blob:first" },
+      {
+        id: "file-1",
+        status: "ready",
+        kind: "file",
+        originalName: "between.pdf",
+        displayPath: "chat/file/file.pdf",
+      },
+      { ...image, id: "last", thumbnailUrl: "blob:last", displayUrl: "blob:last" },
+    ]} authorName="Alex" mine={false} />);
+
+    const group = container.querySelector('[aria-label="3 shared attachments"]');
+    expect(group?.children).toHaveLength(3);
+    expect(group?.children[0]).toHaveAttribute("data-image-layout", "single");
+    expect(group?.children[1]).toHaveTextContent("between.pdf");
+    expect(group?.children[2]).toHaveAttribute("data-image-layout", "single");
   });
 
   it("does not classify an uploaded image as a sticker from its filename", () => {

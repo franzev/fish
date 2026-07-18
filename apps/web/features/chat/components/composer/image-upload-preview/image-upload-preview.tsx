@@ -21,7 +21,7 @@ interface ImageUploadPreviewProps {
 const statusLabel = {
   preparing: "Preparing",
   uploading: "Uploading",
-  processing: "Preparing",
+  processing: "Checking",
 } as const;
 
 export function ImageUploadPreview({ images, onRemove, onRetry }: ImageUploadPreviewProps) {

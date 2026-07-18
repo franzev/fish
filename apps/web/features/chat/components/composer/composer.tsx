@@ -229,7 +229,7 @@ export function Composer({
       </div>
       {dragActive && !imageSelectionDisabled && (
         <div className="pointer-events-none absolute inset-sm z-10 flex items-center justify-center rounded-control border border-border-strong bg-surface text-ui-sm text-body">
-          Add images to this message
+          Add files to this message
         </div>
       )}
     </div>

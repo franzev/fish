@@ -12,5 +12,8 @@ describe("chat media merge fixtures", () => {
 
     expect(merged.gif?.providerId ?? null).toBe(fixture.expectedGifProviderId);
     expect(merged.stickerId ?? null).toBe(fixture.expectedStickerId);
+    expect(merged.images?.map((attachment) => attachment.id) ?? []).toEqual(
+      fixture.expectedAttachmentIds,
+    );
   });
 });
