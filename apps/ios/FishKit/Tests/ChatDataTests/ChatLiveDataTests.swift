@@ -89,7 +89,7 @@ struct ChatLiveDataTests {
             switch request.url?.path() {
             case "/rest/v1/messages":
                 return (200, Data("[\(row("m3")),\(row("m2")),\(row("m1"))]".utf8))
-            case "/rest/v1/message_gifs", "/rest/v1/message_reactions":
+            case "/rest/v1/message_gifs", "/rest/v1/rpc/list_message_reaction_summaries":
                 return (200, Data("[]".utf8))
             default:
                 return (200, Data("[]".utf8))
@@ -128,7 +128,7 @@ struct ChatLiveDataTests {
             switch request.url?.path() {
             case "/rest/v1/messages":
                 return (200, Data("[\(row("m4")),\(row("m5")),\(row("m6"))]".utf8))
-            case "/rest/v1/message_gifs", "/rest/v1/message_reactions":
+            case "/rest/v1/message_gifs", "/rest/v1/rpc/list_message_reaction_summaries":
                 return (200, Data("[]".utf8))
             default:
                 return (200, Data("[]".utf8))
@@ -180,6 +180,98 @@ struct ChatLiveDataTests {
             #expect(failure.notice == "That message is not available.")
             #expect(failure.statusCode == 403)
         }
+    }
+
+    @Test func reactionCommandSetsTheDesiredStateIdempotently() async throws {
+        ChatDataURLProtocol.reset { request in
+            let body = try #require(request.httpBody)
+            let object = try #require(
+                JSONSerialization.jsonObject(with: body) as? [String: Any]
+            )
+            #expect(object["action"] as? String == "set-reaction")
+            #expect(object["messageId"] as? String == "m1")
+            #expect(object["emoji"] as? String == "👍🏽")
+            #expect(object["active"] as? Bool == false)
+            return (200, Data("{\"message\":\(row("m1"))}".utf8))
+        }
+        let commands = EdgeFunctionChatCommands(
+            configuration: chatBackend,
+            session: chatSession()
+        )
+
+        let message = try await commands.execute(
+            .setReaction(messageId: "m1", emoji: "👍🏽", active: false)
+        )
+
+        #expect(message.id == "m1")
+    }
+
+    @Test func reactionHydrationUsesViewerAwareSummariesAndPreservesOrder() async throws {
+        ChatDataURLProtocol.reset { request in
+            switch request.url?.path() {
+            case "/rest/v1/messages":
+                return (200, Data("[\(row("m1"))]".utf8))
+            case "/rest/v1/message_gifs":
+                return (200, Data("[]".utf8))
+            case "/rest/v1/rpc/list_message_reaction_summaries":
+                return (200, Data(#"[{"message_id":"m1","emoji":"🎉","count":2,"by_me":false,"first_created_at":"2026-07-18T00:00:00Z"},{"message_id":"m1","emoji":"👍","count":3,"by_me":true,"first_created_at":"2026-07-18T00:00:01Z"}]"#.utf8))
+            default:
+                return (404, Data())
+            }
+        }
+        let messaging = RestChatMessaging(
+            configuration: chatBackend,
+            hydration: NoAttachments(),
+            session: chatSession()
+        )
+
+        let messages = try await messaging.messages(ids: ["m1"])
+
+        #expect(messages.first?.reactions == [
+            ChatReaction(emoji: "🎉", count: 2, byMe: false),
+            ChatReaction(emoji: "👍", count: 3, byMe: true),
+        ])
+        let request = try #require(ChatDataURLProtocol.capturedRequests.first {
+            $0.url?.path() == "/rest/v1/rpc/list_message_reaction_summaries"
+        })
+        #expect(request.httpMethod == "POST")
+        let body = try #require(request.httpBody)
+        let object = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect(object["p_message_ids"] as? [String] == ["m1"])
+        #expect(!ChatDataURLProtocol.capturedRequests.contains {
+            $0.url?.path() == "/rest/v1/message_reactions"
+        })
+    }
+
+    @Test func reactionSummaryHydrationBatchesAtFiftyMessages() async throws {
+        let messageRows = (1...51).map { row("m\($0)") }.joined(separator: ",")
+        ChatDataURLProtocol.reset { request in
+            switch request.url?.path() {
+            case "/rest/v1/messages":
+                return (200, Data("[\(messageRows)]".utf8))
+            case "/rest/v1/message_gifs", "/rest/v1/rpc/list_message_reaction_summaries":
+                return (200, Data("[]".utf8))
+            default:
+                return (404, Data())
+            }
+        }
+        let messaging = RestChatMessaging(
+            configuration: chatBackend,
+            hydration: NoAttachments(),
+            session: chatSession()
+        )
+
+        _ = try await messaging.messages(conversationId: "c1", before: nil, limit: 51)
+
+        let batches = try ChatDataURLProtocol.capturedRequests
+            .filter { $0.url?.path() == "/rest/v1/rpc/list_message_reaction_summaries" }
+            .map { request -> Int in
+                let body = try #require(request.httpBody)
+                let object = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+                return try #require(object["p_message_ids"] as? [String]).count
+            }
+            .sorted()
+        #expect(batches == [1, 50])
     }
 
     @Test func readAndUnreadWiresMatchBackendContracts() async throws {

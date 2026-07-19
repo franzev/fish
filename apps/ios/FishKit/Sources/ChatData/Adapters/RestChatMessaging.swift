@@ -6,21 +6,19 @@ import Foundation
 public struct RestChatMessaging: ChatMessagingProviding {
     public static let defaultPageSize = 40
     public static let maximumPageSize = 100
+    private static let reactionSummaryBatchSize = 50
 
     private let configuration: ChatBackendConfiguration
     private let hydration: any AttachmentHydrating
-    private let currentUserId: @Sendable () async -> String?
     private let session: URLSession
 
     public init(
         configuration: ChatBackendConfiguration,
         hydration: any AttachmentHydrating,
-        currentUserId: @escaping @Sendable () async -> String? = { nil },
         session: URLSession = .shared
     ) {
         self.configuration = configuration
         self.hydration = hydration
-        self.currentUserId = currentUserId
         self.session = session
     }
 
@@ -175,40 +173,54 @@ public struct RestChatMessaging: ChatMessagingProviding {
         }
     }
 
-    private struct ReactionRow: Decodable {
+    private struct ReactionSummaryRequest: Encodable {
+        let messageIds: [String]
+
+        enum CodingKeys: String, CodingKey {
+            case messageIds = "p_message_ids"
+        }
+    }
+
+    private struct ReactionSummaryRow: Decodable {
         let messageId: String
         let emoji: String
-        let userId: String
+        let count: Int
+        let byMe: Bool
 
         enum CodingKeys: String, CodingKey {
             case messageId = "message_id"
             case emoji
-            case userId = "user_id"
+            case count
+            case byMe = "by_me"
+        }
+
+        var domain: ChatReaction {
+            ChatReaction(emoji: emoji, count: count, byMe: byMe)
         }
     }
 
     private func reactionRows(messageIds: [String]) async throws -> [String: [ChatReaction]] {
         do {
-            let data = try await get(
-                table: "message_reactions",
-                query: [
-                    URLQueryItem(name: "select", value: "message_id,emoji,user_id"),
-                    URLQueryItem(name: "message_id", value: "in.(\(messageIds.joined(separator: ",")))"),
-                    URLQueryItem(name: "removed_at", value: "is.null"),
-                    URLQueryItem(name: "limit", value: "1000"),
-                ]
-            )
-            let rows = try JSONDecoder().decode([ReactionRow].self, from: data)
-            let me = await currentUserId()
-            return Dictionary(grouping: rows, by: \.messageId).mapValues { rows in
-                Dictionary(grouping: rows, by: \.emoji).map { emoji, values in
-                    ChatReaction(
-                        emoji: emoji,
-                        count: values.count,
-                        byMe: values.contains { $0.userId == me }
-                    )
-                }.sorted { $0.emoji < $1.emoji }
+            let ids = Array(Set(messageIds.filter { !$0.isEmpty })).sorted()
+            var reactions: [String: [ChatReaction]] = [:]
+            for start in stride(
+                from: 0,
+                to: ids.count,
+                by: Self.reactionSummaryBatchSize
+            ) {
+                let end = min(start + Self.reactionSummaryBatchSize, ids.count)
+                let batch = Array(ids[start..<end])
+                let data = try await authenticatedRequest(
+                    path: "rest/v1/rpc/list_message_reaction_summaries",
+                    method: "POST",
+                    body: JSONEncoder().encode(ReactionSummaryRequest(messageIds: batch))
+                )
+                let rows = try JSONDecoder().decode([ReactionSummaryRow].self, from: data)
+                for row in rows {
+                    reactions[row.messageId, default: []].append(row.domain)
+                }
             }
+            return reactions
         } catch is CancellationError {
             throw CancellationError()
         } catch {

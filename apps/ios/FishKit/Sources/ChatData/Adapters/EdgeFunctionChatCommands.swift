@@ -20,8 +20,12 @@ public struct EdgeFunctionChatCommands: ChatCommandProviding {
             body = AnyEncodable(EditCommand(messageId: messageId, body: messageBody))
         case .delete(let messageId):
             body = AnyEncodable(DeleteCommand(messageId: messageId))
-        case .toggleReaction(let messageId, let emoji):
-            body = AnyEncodable(ReactionCommand(messageId: messageId, emoji: emoji))
+        case .setReaction(let messageId, let emoji, let active):
+            body = AnyEncodable(ReactionCommand(
+                messageId: messageId,
+                emoji: emoji,
+                active: active
+            ))
         }
         let data = try await post(body)
         return try ChatWireDecoder.make().decode(MessageResponse.self, from: data).message.domain
@@ -138,9 +142,10 @@ private struct DeleteCommand: Encodable {
 }
 
 private struct ReactionCommand: Encodable {
-    let action = "toggle-reaction"
+    let action = "set-reaction"
     let messageId: String
     let emoji: String
+    let active: Bool
 }
 
 private struct ReportCommand: Encodable {

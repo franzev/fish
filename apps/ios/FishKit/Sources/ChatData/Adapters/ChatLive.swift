@@ -43,8 +43,7 @@ public enum ChatLive {
         )
         let messaging = RestChatMessaging(
             configuration: backend,
-            hydration: hydration,
-            currentUserId: { userId }
+            hydration: hydration
         )
         let realtime = SupabaseChatRealtime(client: client)
         let directory = RestConversationDirectory(

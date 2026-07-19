@@ -29,7 +29,7 @@ public extension ChatMessagingProviding {
 public enum ChatMessageCommand: Equatable, Sendable {
     case edit(messageId: String, body: String)
     case delete(messageId: String)
-    case toggleReaction(messageId: String, emoji: String)
+    case setReaction(messageId: String, emoji: String, active: Bool)
 }
 
 public protocol ChatCommandProviding: Sendable {
