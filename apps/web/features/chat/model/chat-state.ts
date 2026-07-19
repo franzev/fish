@@ -1,10 +1,16 @@
 export {
   compareChatMessages,
   countUnreadMessages,
+  createUnreadInputsSignature,
   getUnreadMessageSummary,
   getMessageSnippet,
   getOutgoingMessageStatus,
   mergeChatMessage,
+  mergeMonotonicReadState,
   mergeReadState,
+  normalizeMessage,
+  resolveRealtimeSenderName,
+  selectNewestConfirmedMessage,
+  createChatHydrationKey,
   toReplyPreview,
 } from "@fish/core/chat-state";

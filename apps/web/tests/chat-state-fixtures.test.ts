@@ -38,6 +38,18 @@ type FixtureCase = {
         snippet: string;
       };
     };
+    composer?: {
+      conversationId: string;
+      selectedGifProviderId: string | null;
+      selectedStickerId: string | null;
+      selectedGifQuery: string;
+      selectionRevision: number;
+    };
+    messageDeletedAt?: {
+      conversationId: string;
+      messageId: string;
+      expected: string | null;
+    };
   };
 };
 
@@ -47,6 +59,12 @@ type ChatStateLike = {
     {
       messages: MessageLike[];
       readStates: ReadStateLike[];
+      composer?: {
+        selectedGif?: { providerId: string } | null;
+        selectedStickerId?: string | null;
+        selectedGifQuery?: string;
+        selectionRevision?: number;
+      };
     }
   >;
 };
@@ -149,6 +167,9 @@ describe("chat-state fixture vectors", () => {
       "mergeRemoteMessage",
       "duplicateClientRequestIdReconciliation",
       "mergeReadState",
+      "mergeReadStateIgnoresEarlierTimestamp",
+      "composerSelectionMutualExclusion",
+      "deleteTombstoneRestoresAfterFailure",
       "unreadCount",
       "deletedMessageSnippet",
       "replyPreview",
@@ -268,6 +289,22 @@ describe("chat-state fixture vectors", () => {
           currentUserName
         )
       ).toEqual(expected);
+    }
+
+    if (fixture.expectedSelectors?.composer) {
+      const { conversationId, ...expected } = fixture.expectedSelectors.composer;
+      const composer = getConversation(actual, conversationId).composer!;
+      expect({
+        selectedGifProviderId: composer.selectedGif?.providerId ?? null,
+        selectedStickerId: composer.selectedStickerId ?? null,
+        selectedGifQuery: composer.selectedGifQuery ?? "",
+        selectionRevision: composer.selectionRevision ?? 0,
+      }).toEqual(expected);
+    }
+
+    if (fixture.expectedSelectors?.messageDeletedAt) {
+      const { conversationId, messageId, expected } = fixture.expectedSelectors.messageDeletedAt;
+      expect(getMessage(actual, conversationId, messageId).deletedAt ?? null).toBe(expected);
     }
   });
 });

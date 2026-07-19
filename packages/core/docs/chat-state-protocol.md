@@ -36,7 +36,8 @@ generated TypeScript or import web state libraries.
 - `ChatConversationState.conversationId`: stable conversation id.
 - `ChatConversationState.messages`: sorted `ChatMessageState[]`.
 - `ChatConversationState.readStates`: `ChatReadState[]`, one entry per user.
-- `ChatConversationState.composer`: local draft, reply target, and edit target.
+- `ChatConversationState.composer`: local draft, reply target, edit target, and
+  mutually exclusive GIF/sticker selection with a local selection revision.
 - `ChatConversationState.realtime.status`: `"idle"`, `"connecting"`,
   `"connected"`, or `"disconnected"`.
 - `ChatConversationState.pagination`: `oldestLoadedCursor` (the oldest loaded
@@ -68,9 +69,14 @@ Every adapter must be able to apply the current `ChatEvent` names:
 | `confirmSentMessage` | Merge the server-confirmed message, reconcile by `id`, incoming `clientRequestId`, or `localRequestId`, strip failure metadata, and mark it `sent`. |
 | `markMessageFailed` | Mark the matching `clientRequestId` as `failed`, keep the failed body visible, and set the optional failure reason — but only when the matched row's `localStatus` is not already `sent`. A message already confirmed `sent` (by the authoritative send response, a realtime confirmation, or a later hydrate reconciliation) is monotonic: a late failure for that `clientRequestId` is ignored entirely — no status change, no failure reason, no draft restore. For `pending`/`sending`/`failed` rows, restore the failed body to the composer draft only when the draft is currently empty; a non-empty draft is a newer edit typed while the send was pending and is preserved untouched, never overwritten by the failed body. |
 | `mergeRemoteMessage` | Merge a message received from refresh or realtime, reconcile by id/request id, strip failure metadata, and mark it `sent`. |
-| `mergeReadState` | Upsert a user's read-state row by `userId`. |
+| `mergeReadState` | Upsert a user's read-state row by `userId`, retaining the current row when the incoming delivered or read timestamp is earlier. Timestamp comparison preserves sub-millisecond precision so realtime and refresh races cannot regress read progress. |
 | `setReplyTarget` | Set or clear the local reply target id. |
 | `setEditTarget` | Set or clear the local edit target id. |
+| `composerGifSelected` | Select a GIF and clear any sticker selection. The event carries the query used to find it and advances the local selection revision. |
+| `composerStickerSelected` | Select a sticker id and clear any GIF selection. It is mutually exclusive with `composerGifSelected` and advances the local selection revision. |
+| `composerSelectionCleared` | Clear both GIF and sticker selection and advance the local selection revision. Late send completions use the revision to avoid clearing a newer selection. |
+| `deleteRequested` | Add a local tombstone at the supplied timestamp while the delete command is pending. An authoritative `deletedAt` that arrives later remains the source of truth. |
+| `deleteFailed` | Remove only the matching optimistic tombstone when no newer authoritative deletion has reconciled it; a failed late command must not restore a message already confirmed deleted. |
 | `setRealtimeStatus` | Set the local realtime connection status for the conversation. |
 | `clearComposer` | Reset the local draft, reply target, and edit target to empty values. |
 | `hydrateWindow` | Replace a conversation's message/read snapshot exactly like `hydrateConversation`, including the same unresolved-local-send preservation rule (normalize incoming to `sent`, sort by `createdAt` then `id`, keep unreconciled `pending`/`sending`/`failed` rows), and additionally set `pagination` to the provided `hasMoreOlder`/`oldestCursor` with `isLoadingOlder` reset to `false`. |
@@ -141,6 +147,9 @@ The current fixture case names are:
 - `mergeRemoteMessage`
 - `duplicateClientRequestIdReconciliation`
 - `mergeReadState`
+- `mergeReadStateIgnoresEarlierTimestamp`
+- `composerSelectionMutualExclusion`
+- `deleteTombstoneRestoresAfterFailure`
 - `unreadCount`
 - `deletedMessageSnippet`
 - `replyPreview`

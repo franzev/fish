@@ -715,6 +715,184 @@
     }
   },
   {
+    "name": "mergeReadStateIgnoresEarlierTimestamp",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [],
+          "readStates": [
+            {
+              "userId": "coach-1",
+              "lastDeliveredMessageId": "message-2",
+              "deliveredAt": "2026-07-06T04:03:00.000500Z",
+              "lastReadMessageId": "message-2",
+              "readAt": "2026-07-06T04:03:00.000900Z"
+            }
+          ],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": {
+            "status": "idle"
+          },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false,
+            "hasLoadError": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "mergeReadState",
+        "conversationId": "conversation-1",
+        "readState": {
+          "userId": "coach-1",
+          "lastDeliveredMessageId": "message-1",
+          "deliveredAt": "2026-07-06T04:03:00.000400Z",
+          "lastReadMessageId": "message-1",
+          "readAt": "2026-07-06T04:03:00.000800Z"
+        }
+      }
+    ],
+    "expectedState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [],
+          "readStates": [
+            {
+              "userId": "coach-1",
+              "lastDeliveredMessageId": "message-2",
+              "deliveredAt": "2026-07-06T04:03:00.000500Z",
+              "lastReadMessageId": "message-2",
+              "readAt": "2026-07-06T04:03:00.000900Z"
+            }
+          ],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": {
+            "status": "idle"
+          },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false,
+            "hasLoadError": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "composerSelectionMutualExclusion",
+    "initialState": {
+      "conversations": {}
+    },
+    "events": [
+      {
+        "type": "composerGifSelected",
+        "conversationId": "conversation-1",
+        "gif": {
+          "provider": "klipy",
+          "providerId": "gif-1",
+          "title": "A calm GIF",
+          "description": "A calm GIF",
+          "sourceUrl": "https://klipy.com/gifs/gif-1",
+          "posterUrl": "https://cdn.example.test/gif-1.jpg",
+          "previewUrl": "https://cdn.example.test/gif-1.mp4",
+          "mediaUrl": "https://cdn.example.test/gif-1.mp4",
+          "width": 480,
+          "height": 270
+        },
+        "query": "calm"
+      },
+      {
+        "type": "composerStickerSelected",
+        "conversationId": "conversation-1",
+        "stickerId": "aquatic-hello-otter"
+      }
+    ],
+    "expectedSelectors": {
+      "composer": {
+        "conversationId": "conversation-1",
+        "selectedGifProviderId": null,
+        "selectedStickerId": "aquatic-hello-otter",
+        "selectedGifQuery": "",
+        "selectionRevision": 2
+      }
+    }
+  },
+  {
+    "name": "deleteTombstoneRestoresAfterFailure",
+    "initialState": {
+      "conversations": {
+        "conversation-1": {
+          "conversationId": "conversation-1",
+          "messages": [
+            {
+              "id": "message-1",
+              "conversationId": "conversation-1",
+              "senderId": "client-1",
+              "senderRole": "client",
+              "body": "Remove this note.",
+              "clientRequestId": "request-1",
+              "createdAt": "2026-07-06T04:01:00.000Z",
+              "editedAt": null,
+              "deletedAt": null,
+              "replyToMessageId": null,
+              "reactions": [],
+              "localStatus": "sent"
+            }
+          ],
+          "readStates": [],
+          "composer": {
+            "draft": "",
+            "replyTargetId": null,
+            "editTargetId": null
+          },
+          "realtime": {
+            "status": "idle"
+          },
+          "pagination": {
+            "oldestLoadedCursor": null,
+            "hasMoreOlder": false,
+            "isLoadingOlder": false,
+            "hasLoadError": false
+          }
+        }
+      }
+    },
+    "events": [
+      {
+        "type": "deleteRequested",
+        "conversationId": "conversation-1",
+        "messageId": "message-1",
+        "at": "2026-07-06T04:02:00.000Z"
+      },
+      {
+        "type": "deleteFailed",
+        "conversationId": "conversation-1",
+        "messageId": "message-1"
+      }
+    ],
+    "expectedSelectors": {
+      "messageDeletedAt": {
+        "conversationId": "conversation-1",
+        "messageId": "message-1",
+        "expected": null
+      }
+    }
+  },
+  {
     "name": "unreadCount",
     "initialState": {
       "conversations": {}

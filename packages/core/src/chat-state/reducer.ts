@@ -103,6 +103,89 @@ export function reduceChatState(state: ChatState, event: ChatEvent): ChatState {
         };
       });
 
+    case "composerGifSelected":
+      return updateConversation(state, event.conversationId, (conversation) => ({
+        ...conversation,
+        composer: {
+          ...conversation.composer,
+          selectedGif: event.gif,
+          selectedGifQuery: event.query,
+          selectedStickerId: null,
+          selectionRevision: (conversation.composer.selectionRevision ?? 0) + 1,
+        },
+      }));
+
+    case "composerStickerSelected":
+      return updateConversation(state, event.conversationId, (conversation) => ({
+        ...conversation,
+        composer: {
+          ...conversation.composer,
+          selectedGif: null,
+          selectedGifQuery: "",
+          selectedStickerId: event.stickerId,
+          selectionRevision: (conversation.composer.selectionRevision ?? 0) + 1,
+        },
+      }));
+
+    case "composerSelectionCleared":
+      return updateConversation(state, event.conversationId, (conversation) => ({
+        ...conversation,
+        composer: {
+          ...conversation.composer,
+          selectedGif: null,
+          selectedGifQuery: "",
+          selectedStickerId: null,
+          selectionRevision: (conversation.composer.selectionRevision ?? 0) + 1,
+        },
+      }));
+
+    case "deleteRequested":
+      return updateConversation(state, event.conversationId, (conversation) => {
+        const message = conversation.messages.find((item) => item.id === event.messageId);
+        if (!message) return conversation;
+
+        return {
+          ...conversation,
+          messages: conversation.messages.map((item) =>
+            item.id === event.messageId ? { ...item, deletedAt: event.at } : item
+          ),
+          composer: {
+            ...conversation.composer,
+            pendingDeleteByMessageId: {
+              ...conversation.composer.pendingDeleteByMessageId,
+              [event.messageId]: event.at,
+            },
+          },
+        };
+      });
+
+    case "deleteFailed":
+      return updateConversation(state, event.conversationId, (conversation) => {
+        const pendingAt = conversation.composer.pendingDeleteByMessageId?.[event.messageId];
+        if (!pendingAt) return conversation;
+
+        const message = conversation.messages.find((item) => item.id === event.messageId);
+        const pendingDeletes = { ...conversation.composer.pendingDeleteByMessageId };
+        delete pendingDeletes[event.messageId];
+        const composer = {
+          ...conversation.composer,
+          pendingDeleteByMessageId: Object.keys(pendingDeletes).length > 0
+            ? pendingDeletes
+            : undefined,
+        };
+        if (!message || message.deletedAt !== pendingAt) {
+          return { ...conversation, composer };
+        }
+
+        return {
+          ...conversation,
+          messages: conversation.messages.map((item) =>
+            item.id === event.messageId ? { ...item, deletedAt: null } : item
+          ),
+          composer,
+        };
+      });
+
     case "setReplyTarget":
       return updateConversation(state, event.conversationId, (conversation) => ({
         ...conversation,
@@ -232,13 +315,23 @@ function mergeMessage(
       message,
       localRequestId
     );
-    if (messages === conversation.messages) {
+    if (messages === conversation.messages && !message.deletedAt) {
       return conversation;
     }
 
+    const pendingDeletes = { ...conversation.composer.pendingDeleteByMessageId };
+    if (message.deletedAt) delete pendingDeletes[message.id];
     return {
       ...conversation,
       messages,
+      composer: message.deletedAt
+        ? {
+            ...conversation.composer,
+            pendingDeleteByMessageId: Object.keys(pendingDeletes).length > 0
+              ? pendingDeletes
+              : undefined,
+          }
+        : conversation.composer,
     };
   });
 }
@@ -357,7 +450,7 @@ function getConversation(
   );
 }
 
-function normalizeMessage(
+export function normalizeMessage(
   message: ChatMessageState,
   localStatus: LocalMessageStatus
 ): ChatMessageState {

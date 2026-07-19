@@ -1,10 +1,33 @@
 import type {
+  ChatConversationState,
   ChatMessageState,
   ChatReadState,
   OutgoingMessageStatus,
   ReplyPreview,
   UnreadMessageSummary,
 } from "./types";
+
+function timestampPrecision(value: string): [number, number] | null {
+  const milliseconds = Date.parse(value);
+  if (Number.isNaN(milliseconds)) return null;
+
+  const fraction = value.match(/T\d{2}:\d{2}:\d{2}\.(\d+)/i)?.[1] ?? "";
+  return [milliseconds, Number(fraction.padEnd(9, "0").slice(0, 9) || "0")];
+}
+
+function isEarlierTimestamp(incoming: string | null, current: string | null): boolean {
+  if (!current) return false;
+  if (!incoming) return true;
+
+  const incomingParts = timestampPrecision(incoming);
+  const currentParts = timestampPrecision(current);
+  if (!incomingParts || !currentParts) return incoming < current;
+
+  return (
+    incomingParts[0] < currentParts[0] ||
+    (incomingParts[0] === currentParts[0] && incomingParts[1] < currentParts[1])
+  );
+}
 
 export function compareChatMessages(
   a: Pick<ChatMessageState, "createdAt" | "id">,
@@ -74,12 +97,97 @@ export function mergeReadState<T extends ChatReadState>(
   }
 
   const next = [...current];
-  if (areReadStatesEqual(next[existingIndex], incoming)) {
+  const existing = next[existingIndex];
+  if (
+    isEarlierTimestamp(incoming.deliveredAt, existing.deliveredAt) ||
+    isEarlierTimestamp(incoming.readAt, existing.readAt)
+  ) {
+    return current;
+  }
+  if (areReadStatesEqual(existing, incoming)) {
     return current;
   }
 
   next[existingIndex] = incoming;
   return next;
+}
+
+export function mergeMonotonicReadState<T extends ChatReadState>(
+  current: T[],
+  incoming: T
+): T[] {
+  return mergeReadState(current, incoming);
+}
+
+export function selectNewestConfirmedMessage(
+  conversation: Pick<ChatConversationState, "messages">
+): ChatMessageState | undefined {
+  return conversation.messages.reduce<ChatMessageState | undefined>(
+    (newest, message) => {
+      const isConfirmed =
+        message.localStatus === undefined || message.localStatus === "sent";
+      if (!isConfirmed) return newest;
+      return !newest || compareChatMessages(newest, message) < 0
+        ? message
+        : newest;
+    },
+    undefined
+  );
+}
+
+export interface RealtimeSenderIdentity {
+  id: string;
+  displayName: string;
+}
+
+export function resolveRealtimeSenderName(
+  message: Pick<ChatMessageState, "senderId" | "senderDisplayName">,
+  knownMessages: ReadonlyArray<
+    Pick<ChatMessageState, "senderId" | "senderDisplayName">
+  >,
+  currentUser: RealtimeSenderIdentity,
+  participant: RealtimeSenderIdentity
+): string | null {
+  if (message.senderDisplayName) return message.senderDisplayName;
+  if (message.senderId === currentUser.id) return currentUser.displayName;
+  if (message.senderId === participant.id) return participant.displayName;
+  return (
+    knownMessages.find(
+      (candidate) =>
+        candidate.senderId === message.senderId && candidate.senderDisplayName
+    )?.senderDisplayName ?? null
+  );
+}
+
+export function createChatHydrationKey(
+  messages: ChatMessageState[],
+  readStates: ChatReadState[]
+): string {
+  return JSON.stringify({
+    messages: messages.map((message) => ({
+      id: message.id,
+      conversationId: message.conversationId,
+      senderId: message.senderId,
+      senderRole: message.senderRole,
+      body: message.body,
+      gif: message.gif ?? null,
+      stickerId: message.stickerId ?? null,
+      clientRequestId: message.clientRequestId,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt ?? null,
+      deletedAt: message.deletedAt ?? null,
+      replyToMessageId: message.replyToMessageId ?? null,
+      reactions: message.reactions ?? [],
+      localStatus: message.localStatus,
+    })),
+    readStates: readStates.map((readState) => ({
+      userId: readState.userId,
+      lastDeliveredMessageId: readState.lastDeliveredMessageId ?? null,
+      deliveredAt: readState.deliveredAt ?? null,
+      lastReadMessageId: readState.lastReadMessageId ?? null,
+      readAt: readState.readAt ?? null,
+    })),
+  });
 }
 
 function areChatMessagesEqual(
@@ -259,6 +367,19 @@ export function getUnreadMessageSummary(
     oldestUnreadAt: unreadMessages[0]?.createdAt ?? null,
     latestUnreadMessageId: unreadMessages.at(-1)?.id ?? null,
   };
+}
+
+export function createUnreadInputsSignature(
+  messages: ChatMessageState[],
+  currentUserId: string,
+  lastReadMessageId: string | null | undefined
+): string {
+  return [
+    lastReadMessageId ?? "",
+    ...messages
+      .filter((message) => message.senderId !== currentUserId)
+      .map((message) => `${message.id}:${message.deletedAt ?? ""}`),
+  ].join("|");
 }
 
 // Snippets are measured in Unicode code points, not UTF-16 code units.

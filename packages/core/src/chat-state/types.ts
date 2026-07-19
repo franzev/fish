@@ -1,5 +1,5 @@
 import type { UserRole } from "../roles";
-import type { ChatAttachment, ChatGif } from "../chat";
+import type { ChatAttachment, ChatGif, ChatStickerId } from "../chat";
 
 export type ChatConversationId = string;
 export type ChatMessageId = string;
@@ -60,6 +60,11 @@ export interface ChatComposerState {
   draft: string;
   replyTargetId: ChatMessageId | null;
   editTargetId: ChatMessageId | null;
+  selectedGif?: ChatGif | null;
+  selectedGifQuery?: string;
+  selectedStickerId?: ChatStickerId | null;
+  selectionRevision?: number;
+  pendingDeleteByMessageId?: Record<ChatMessageId, string>;
 }
 
 /** Keyset pagination cursor: the oldest loaded message's ordering key. */
@@ -130,6 +135,32 @@ export type ChatEvent =
       type: "mergeReadState";
       conversationId: ChatConversationId;
       readState: ChatReadState;
+    }
+  | {
+      type: "composerGifSelected";
+      conversationId: ChatConversationId;
+      gif: ChatGif;
+      query: string;
+    }
+  | {
+      type: "composerStickerSelected";
+      conversationId: ChatConversationId;
+      stickerId: ChatStickerId;
+    }
+  | {
+      type: "composerSelectionCleared";
+      conversationId: ChatConversationId;
+    }
+  | {
+      type: "deleteRequested";
+      conversationId: ChatConversationId;
+      messageId: ChatMessageId;
+      at: string;
+    }
+  | {
+      type: "deleteFailed";
+      conversationId: ChatConversationId;
+      messageId: ChatMessageId;
     }
   | {
       type: "setReplyTarget";

@@ -3,7 +3,11 @@ import {
   countUnreadMessages,
   getUnreadMessageSummary,
   getOutgoingMessageStatus,
+  mergeMonotonicReadState,
   mergeChatMessage,
+  normalizeMessage,
+  resolveRealtimeSenderName,
+  selectNewestConfirmedMessage,
   toReplyPreview,
 } from "./chat-state";
 import type { ClientChatMessage, ClientChatReadState } from "@/lib/services";
@@ -29,6 +33,61 @@ function message(
 }
 
 describe("chat-state", () => {
+  it("normalizes server messages at the shared boundary", () => {
+    expect(normalizeMessage(message({
+      id: "m-normalized",
+      senderId: "them",
+      body: "hello",
+      editedAt: undefined,
+      deletedAt: undefined,
+      replyToMessageId: undefined,
+      reactions: undefined,
+    }), "sent")).toMatchObject({
+      editedAt: null,
+      deletedAt: null,
+      replyToMessageId: null,
+      reactions: [],
+      localStatus: "sent",
+    });
+  });
+
+  it("keeps read progress monotonic, including sub-millisecond timestamps", () => {
+    const current: ClientChatReadState[] = [{
+      userId: "them",
+      lastDeliveredMessageId: "m2",
+      deliveredAt: "2026-07-06T04:03:00.000500Z",
+      lastReadMessageId: "m2",
+      readAt: "2026-07-06T04:03:00.000900Z",
+    }];
+
+    expect(mergeMonotonicReadState(current, {
+      ...current[0],
+      lastDeliveredMessageId: "m1",
+      deliveredAt: "2026-07-06T04:03:00.000400Z",
+      lastReadMessageId: "m1",
+      readAt: "2026-07-06T04:03:00.000800Z",
+    })).toBe(current);
+  });
+
+  it("selects the newest confirmed message and resolves realtime names", () => {
+    const messages = [
+      message({ id: "m1", senderId: "them", body: "first", createdAt: "2026-07-06T04:01:00.000Z" }),
+      message({ id: "m2", senderId: "me", body: "pending", createdAt: "2026-07-06T04:02:00.000Z" }),
+      message({ id: "m3", senderId: "them", body: "latest", createdAt: "2026-07-06T04:03:00.000Z" }),
+    ];
+    const localMessages = messages.map((item, index) => ({
+      ...item,
+      localStatus: index === 1 ? "sending" as const : "sent" as const,
+    }));
+
+    expect(selectNewestConfirmedMessage({ messages: localMessages })?.id).toBe("m3");
+    expect(resolveRealtimeSenderName(
+      { senderId: "unknown", senderDisplayName: null },
+      [{ senderId: "unknown", senderDisplayName: "Earlier name" }],
+      { id: "me", displayName: "Franz" },
+      { id: "them", displayName: "Gwyn" }
+    )).toBe("Earlier name");
+  });
   it("merges realtime messages by id or client request id and preserves ordering", () => {
     const current = [
       message({
