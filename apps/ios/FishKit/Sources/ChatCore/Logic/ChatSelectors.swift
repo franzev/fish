@@ -51,7 +51,12 @@ public enum ChatSelectors {
         guard let index = current.firstIndex(where: { $0.userId == incoming.userId }) else {
             return current + [incoming]
         }
-        guard current[index] != incoming else { return current }
+        let existing = current[index]
+        guard
+            !isEarlierTimestamp(incoming.deliveredAt, than: existing.deliveredAt),
+            !isEarlierTimestamp(incoming.readAt, than: existing.readAt)
+        else { return current }
+        guard existing != incoming else { return current }
         var next = current
         next[index] = incoming
         return next
@@ -158,10 +163,32 @@ public enum ChatSelectors {
     }
 
     private static func timestamp(_ value: String) -> Date {
+        parsedTimestamp(value) ?? .distantPast
+    }
+
+    private static func parsedTimestamp(_ value: String) -> Date? {
         if let date = try? Date(value, strategy: .iso8601) { return date }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: value) ?? .distantPast
+        return formatter.date(from: value)
+    }
+
+    private static func isEarlierTimestamp(_ incoming: String?, than current: String?) -> Bool {
+        guard let current else { return false }
+        guard let incoming else { return true }
+        guard
+            let incomingDate = parsedTimestamp(incoming),
+            let currentDate = parsedTimestamp(current)
+        else { return incoming < current }
+
+        if incomingDate != currentDate { return incomingDate < currentDate }
+        return fractionalNanoseconds(incoming) < fractionalNanoseconds(current)
+    }
+
+    private static func fractionalNanoseconds(_ value: String) -> Int {
+        guard let dot = value.firstIndex(of: ".") else { return 0 }
+        let digits = value[value.index(after: dot)...].prefix(while: \.isNumber)
+        return Int(String(digits.prefix(9)).padding(toLength: 9, withPad: "0", startingAt: 0)) ?? 0
     }
 }
 
