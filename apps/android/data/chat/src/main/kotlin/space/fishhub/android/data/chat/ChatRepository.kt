@@ -182,7 +182,7 @@ interface ChatRepository {
     ): ChatResult<ChatMessage>
     suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage>
     suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage>
-    suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage>
+    suspend fun setReaction(messageId: String, emoji: String, active: Boolean): ChatResult<ChatMessage>
     suspend fun sendTyping(conversationId: String, typing: Boolean)
     suspend fun removeFriend(userId: String): ChatResult<Unit>
     suspend fun blockUser(userId: String): ChatResult<Unit>

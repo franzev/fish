@@ -184,7 +184,7 @@ internal class SupabaseChatRemoteDataSource(
         val pageRows = rows.take(PageSize)
         val gifsByMessageId = loadGifs(pageRows.map { it.id })
         val attachmentJoin = loadAttachments(pageRows.map { it.id })
-        val reactionsByMessageId = loadReactions(pageRows.map(MessageDto::id), conversation.currentUserId)
+        val reactionsByMessageId = loadReactions(pageRows.map(MessageDto::id))
         val messages = pageRows.mapNotNull {
             val attachments = attachmentJoin.byMessageId[it.id].orEmpty().toMutableList()
             val attachmentOnlyMayBeUnhydrated = attachments.isEmpty() && it.body.isBlank() &&
@@ -383,13 +383,14 @@ internal class SupabaseChatRemoteDataSource(
         request = DeleteMessageRequest(messageId = messageId),
     )
 
-    override suspend fun toggleReaction(
+    override suspend fun setReaction(
         conversation: AuthorizedConversation,
         messageId: String,
         emoji: String,
+        active: Boolean,
     ): ChatMessage = commandMessage(
         conversation = conversation,
-        request = ToggleReactionRequest(messageId = messageId, emoji = emoji),
+        request = SetReactionRequest(messageId = messageId, emoji = emoji, active = active),
     )
 
     override suspend fun sendTyping(conversationId: String, userId: String, typing: Boolean) {
@@ -655,27 +656,19 @@ internal class SupabaseChatRemoteDataSource(
         )
     }
 
-    private suspend fun loadReactions(
-        messageIds: List<String>,
-        currentUserId: String,
-    ): Map<String, List<ReactionDto>> {
+    private suspend fun loadReactions(messageIds: List<String>): Map<String, List<ReactionDto>> {
         if (messageIds.isEmpty()) return emptyMap()
         return try {
-            client.from("message_reactions").select {
-                filter {
-                    isIn("message_id", messageIds)
-                    exact("removed_at", null)
-                }
-            }.decodeList<ReactionRowDto>()
-                .groupBy(ReactionRowDto::messageId)
+            messageIds.chunked(50).flatMap { batch ->
+                client.postgrest.rpc(
+                    function = "list_message_reaction_summaries",
+                    parameters = buildJsonObject {
+                        put("p_message_ids", JsonArray(batch.map(::JsonPrimitive)))
+                    },
+                ).decodeList<ReactionSummaryDto>()
+            }.groupBy(ReactionSummaryDto::messageId)
                 .mapValues { (_, rows) ->
-                    rows.groupBy(ReactionRowDto::emoji).map { (emoji, reactions) ->
-                        ReactionDto(
-                            emoji = emoji,
-                            count = reactions.size,
-                            byMe = reactions.any { it.userId == currentUserId },
-                        )
-                    }
+                    rows.map { row -> ReactionDto(row.emoji, row.count, row.byMe) }
                 }
         } catch (cancelled: CancellationException) {
             throw cancelled

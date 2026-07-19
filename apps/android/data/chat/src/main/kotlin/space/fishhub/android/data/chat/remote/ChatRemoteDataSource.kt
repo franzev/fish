@@ -46,10 +46,11 @@ internal interface ChatRemoteDataSource {
         conversation: AuthorizedConversation,
         messageId: String,
     ): ChatMessage = error("Message deletion is not configured.")
-    suspend fun toggleReaction(
+    suspend fun setReaction(
         conversation: AuthorizedConversation,
         messageId: String,
         emoji: String,
+        active: Boolean,
     ): ChatMessage = error("Message reactions are not configured.")
     suspend fun sendTyping(conversationId: String, userId: String, typing: Boolean) = Unit
     suspend fun removeFriend(userId: String): Unit = error("Friend commands are not configured.")

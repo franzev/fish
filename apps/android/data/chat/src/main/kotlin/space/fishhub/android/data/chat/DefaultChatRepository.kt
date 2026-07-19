@@ -362,13 +362,17 @@ internal class DefaultChatRepository(
         }
     }
 
-    override suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage> {
+    override suspend fun setReaction(
+        messageId: String,
+        emoji: String,
+        active: Boolean,
+    ): ChatResult<ChatMessage> {
         val conversation = conversationForMessage(messageId) ?: return unavailableFailure()
         return resultOf(
             ChatOperation.ToggleReaction,
             "That reaction did not save yet. Try again.",
         ) {
-            remote.toggleReaction(conversation, messageId, emoji.trim()).also { reconcileMessage(it) }
+            remote.setReaction(conversation, messageId, emoji.trim(), active).also { reconcileMessage(it) }
         }
     }
 

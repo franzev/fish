@@ -141,8 +141,10 @@ class SupabaseContractTest {
             json.encodeToString(DeleteMessageRequest(messageId = "message-1")),
         )
         assertEquals(
-            "{\"action\":\"toggle-reaction\",\"messageId\":\"message-1\",\"emoji\":\"👍\"}",
-            json.encodeToString(ToggleReactionRequest(messageId = "message-1", emoji = "👍")),
+            "{\"action\":\"set-reaction\",\"messageId\":\"message-1\",\"emoji\":\"👍\",\"active\":true}",
+            json.encodeToString(
+                SetReactionRequest(messageId = "message-1", emoji = "👍", active = true),
+            ),
         )
         assertEquals(
             "{\"action\":\"refresh-messages\",\"messageIds\":[\"message-1\"]}",

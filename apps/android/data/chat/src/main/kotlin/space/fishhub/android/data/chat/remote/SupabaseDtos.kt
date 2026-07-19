@@ -83,10 +83,12 @@ internal data class ReactionDto(
 )
 
 @Serializable
-internal data class ReactionRowDto(
+internal data class ReactionSummaryDto(
     @SerialName("message_id") val messageId: String,
     val emoji: String,
-    @SerialName("user_id") val userId: String,
+    val count: Int,
+    @SerialName("by_me") val byMe: Boolean,
+    @SerialName("first_created_at") val firstCreatedAt: String,
 )
 
 @Serializable
@@ -167,10 +169,11 @@ internal data class DeleteMessageRequest(
 )
 
 @Serializable
-internal data class ToggleReactionRequest(
-    val action: String = "toggle-reaction",
+internal data class SetReactionRequest(
+    val action: String = "set-reaction",
     val messageId: String,
     val emoji: String,
+    val active: Boolean,
 )
 
 @Serializable
