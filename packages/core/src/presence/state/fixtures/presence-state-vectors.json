@@ -1,0 +1,185 @@
+[
+  {
+    "name": "snapshot hydration keeps the newest revision",
+    "initialState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "automatic", "expiresAt": null },
+      "preferenceRevision": 0,
+      "pendingPreference": null
+    },
+    "events": [
+      {
+        "type": "snapshotsHydrated",
+        "snapshots": [
+          {
+            "userId": "user-1",
+            "status": "online",
+            "lastHeartbeatAt": "2026-07-19T00:00:00.000Z",
+            "lastSeenAt": "2026-07-19T00:00:00.000Z",
+            "revision": 2,
+            "updatedAt": "2026-07-19T00:00:00.000Z"
+          },
+          {
+            "userId": "user-1",
+            "status": "idle",
+            "lastHeartbeatAt": "2026-07-19T00:00:01.000Z",
+            "lastSeenAt": "2026-07-19T00:00:01.000Z",
+            "revision": 1,
+            "updatedAt": "2026-07-19T00:00:01.000Z"
+          }
+        ]
+      },
+      {
+        "type": "snapshotReceived",
+        "snapshot": {
+          "userId": "user-1",
+          "status": "offline",
+          "lastHeartbeatAt": null,
+          "lastSeenAt": "2026-07-19T00:00:02.000Z",
+          "revision": 1,
+          "updatedAt": "2026-07-19T00:00:02.000Z"
+        }
+      },
+      {
+        "type": "snapshotReceived",
+        "snapshot": {
+          "userId": "user-1",
+          "status": "busy",
+          "lastHeartbeatAt": "2026-07-19T00:00:03.000Z",
+          "lastSeenAt": "2026-07-19T00:00:03.000Z",
+          "revision": 3,
+          "updatedAt": "2026-07-19T00:00:03.000Z"
+        }
+      }
+    ],
+    "expectedState": {
+      "snapshots": {
+        "user-1": {
+          "userId": "user-1",
+          "status": "busy",
+          "lastHeartbeatAt": "2026-07-19T00:00:03.000Z",
+          "lastSeenAt": "2026-07-19T00:00:03.000Z",
+          "revision": 3,
+          "updatedAt": "2026-07-19T00:00:03.000Z"
+        }
+      },
+      "preferenceSetting": { "preference": "automatic", "expiresAt": null },
+      "preferenceRevision": 0,
+      "pendingPreference": null
+    }
+  },
+  {
+    "name": "preference success commits the snapshot revision",
+    "initialState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "away", "expiresAt": null },
+      "preferenceRevision": 4,
+      "pendingPreference": null
+    },
+    "events": [
+      {
+        "type": "preferenceSetRequested",
+        "requestId": "request-1",
+        "setting": { "preference": "busy", "expiresAt": "2026-07-19T01:00:00.000Z" }
+      },
+      {
+        "type": "preferenceSetSucceeded",
+        "requestId": "request-1",
+        "setting": { "preference": "busy", "expiresAt": "2026-07-19T01:00:00.000Z" },
+        "snapshot": {
+          "userId": "user-1",
+          "status": "busy",
+          "lastHeartbeatAt": "2026-07-19T00:05:00.000Z",
+          "lastSeenAt": "2026-07-19T00:05:00.000Z",
+          "revision": 5,
+          "updatedAt": "2026-07-19T00:05:00.000Z"
+        }
+      }
+    ],
+    "expectedState": {
+      "snapshots": {
+        "user-1": {
+          "userId": "user-1",
+          "status": "busy",
+          "lastHeartbeatAt": "2026-07-19T00:05:00.000Z",
+          "lastSeenAt": "2026-07-19T00:05:00.000Z",
+          "revision": 5,
+          "updatedAt": "2026-07-19T00:05:00.000Z"
+        }
+      },
+      "preferenceSetting": { "preference": "busy", "expiresAt": "2026-07-19T01:00:00.000Z" },
+      "preferenceRevision": 5,
+      "pendingPreference": null
+    }
+  },
+  {
+    "name": "preference failure restores the optimistic setting",
+    "initialState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "away", "expiresAt": null },
+      "preferenceRevision": 0,
+      "pendingPreference": null
+    },
+    "events": [
+      {
+        "type": "preferenceSetRequested",
+        "requestId": "request-2",
+        "setting": { "preference": "invisible", "expiresAt": null }
+      },
+      { "type": "preferenceSetFailed", "requestId": "request-2" }
+    ],
+    "expectedState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "away", "expiresAt": null },
+      "preferenceRevision": 0,
+      "pendingPreference": null
+    }
+  },
+  {
+    "name": "failure does not overwrite a newer authoritative preference",
+    "initialState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "away", "expiresAt": null },
+      "preferenceRevision": 1,
+      "pendingPreference": null
+    },
+    "events": [
+      {
+        "type": "preferenceSetRequested",
+        "requestId": "request-3",
+        "setting": { "preference": "invisible", "expiresAt": null }
+      },
+      {
+        "type": "preferenceChangeReceived",
+        "setting": { "preference": "busy", "expiresAt": null },
+        "revision": 2
+      },
+      { "type": "preferenceSetFailed", "requestId": "request-3" }
+    ],
+    "expectedState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "busy", "expiresAt": null },
+      "preferenceRevision": 2,
+      "pendingPreference": null
+    }
+  },
+  {
+    "name": "expired preference transitions to automatic",
+    "initialState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "busy", "expiresAt": "2026-07-19T00:30:00.000Z" },
+      "preferenceRevision": 2,
+      "pendingPreference": null
+    },
+    "events": [
+      { "type": "preferenceExpired", "now": "2026-07-19T00:30:00.001Z" },
+      { "type": "preferenceExpired", "now": "2026-07-19T00:31:00.000Z" }
+    ],
+    "expectedState": {
+      "snapshots": {},
+      "preferenceSetting": { "preference": "automatic", "expiresAt": null },
+      "preferenceRevision": 2,
+      "pendingPreference": null
+    }
+  }
+]

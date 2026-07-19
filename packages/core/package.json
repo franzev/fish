@@ -17,6 +17,7 @@
     "./notification-state": "./src/notification-state/index.ts",
     "./notification-state/fixtures/notification-state-vectors.json": "./src/notification-state/fixtures/notification-state-vectors.json",
     "./presence": "./src/presence/index.ts",
+    "./presence/state/fixtures/presence-state-vectors.json": "./src/presence/state/fixtures/presence-state-vectors.json",
     "./roles": "./src/roles.ts"
   },
   "scripts": {
