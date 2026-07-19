@@ -289,8 +289,8 @@ async function main() {
   if (completedCallError) throw completedCallError;
   await a.client.rpc("accept_call", { p_call_id: completedCall.id });
   await coach.client.rpc("end_call", { p_call_id: completedCall.id });
-  report("completed calls persist as read history, not new attention", (await list(a.client)).some((item) =>
-    item.kind === "call_completed" && item.call_id === completedCall.id && item.read_at !== null
+  report("completed calls do not create new notification attention", !(await list(a.client)).some((item) =>
+    item.kind === "call_completed" && item.call_id === completedCall.id
   ));
 
   const { data: attention, error: attentionError } = await a.client.rpc("list_navigation_attention");
@@ -306,7 +306,8 @@ async function main() {
   const { data: aConversations, error: privateConversationError } = await admin
     .from("conversations")
     .select("id")
-    .eq("client_id", a.userId);
+    .eq("client_id", a.userId)
+    .eq("coach_id", coach.userId);
   if (privateConversationError) throw privateConversationError;
   const { data: channelConversations, error: channelConversationError } = await admin
     .from("channels")

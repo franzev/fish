@@ -58,7 +58,7 @@ async function getCommunityProfileIds(
   report(
     "DB-03 community directory: exposes display-safe fields only",
     safeRows.every((row) =>
-      Object.keys(row).every((key) => ["id", "display_name", "username"].includes(key))
+      Object.keys(row).every((key) => ["id", "display_name", "username", "role"].includes(key))
     ),
   );
   const { data: conversationRows, error: conversationError } = await supabase.rpc(

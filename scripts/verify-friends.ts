@@ -67,6 +67,126 @@ async function invokeFriendCommand(
   return { payload, error: result.error };
 }
 
+const paginationFixturePrefix = "verify-pagination-";
+
+async function ensurePaginationFixtureUsers(
+  admin: ReturnType<typeof createClient>,
+  count: number,
+): Promise<string[]> {
+  const { data: existingUsers, error: listError } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+  if (listError) throw listError;
+
+  const existingByEmail = new Map(
+    existingUsers.users
+      .filter((user) => user.email?.startsWith(paginationFixturePrefix))
+      .map((user) => [user.email!, user.id]),
+  );
+  const ids: string[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const email = `${paginationFixturePrefix}${String(index).padStart(3, "0")}@fish.dev`;
+    const existingId = existingByEmail.get(email);
+    if (existingId) {
+      ids.push(existingId);
+      continue;
+    }
+
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password: "fish-pagination-dev",
+      email_confirm: true,
+      user_metadata: { display_name: `Pagination fixture ${index + 1}` },
+    });
+    if (error || !data.user) throw error ?? new Error(`Could not create ${email}`);
+    ids.push(data.user.id);
+  }
+
+  return ids;
+}
+
+async function verifyIncomingPagination(
+  admin: ReturnType<typeof createClient>,
+  session: Session,
+): Promise<void> {
+  const fixtureUserIds = await ensurePaginationFixtureUsers(admin, 105);
+  const cleanup = async () => {
+    const { error: requestError } = await admin
+      .from("friend_requests")
+      .delete()
+      .eq("recipient_id", session.userId)
+      .like("client_request_id", `${paginationFixturePrefix}%`);
+    if (requestError) throw requestError;
+
+    for (const userId of fixtureUserIds) {
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error && !error.message.includes("User not found")) throw error;
+    }
+  };
+
+  try {
+    const syntheticRows = fixtureUserIds.map((senderId, index) => ({
+      sender_id: senderId,
+      recipient_id: session.userId,
+      client_request_id: `${paginationFixturePrefix}${index}-${crypto.randomUUID()}`,
+      created_at: new Date(Date.now() - index * 1_000).toISOString(),
+    }));
+    const syntheticInsert = await admin.from("friend_requests").insert(syntheticRows);
+    if (syntheticInsert.error) throw syntheticInsert.error;
+
+    const { data: requestCount } = await session.client.rpc(
+      "count_incoming_friend_requests",
+    );
+    const { data: firstRequestPage } = await session.client.rpc(
+      "list_incoming_friend_requests",
+      { p_limit: 50 },
+    );
+    const firstPageLast = firstRequestPage?.at(-1);
+    const { data: secondRequestPage } = await session.client.rpc(
+      "list_incoming_friend_requests",
+      {
+        p_limit: 50,
+        p_cursor_created_at: firstPageLast?.created_at,
+        p_cursor_id: firstPageLast?.request_id,
+      },
+    );
+    const secondPageLast = secondRequestPage?.at(-1);
+    const { data: thirdRequestPage } = await session.client.rpc(
+      "list_incoming_friend_requests",
+      {
+        p_limit: 50,
+        p_cursor_created_at: secondPageLast?.created_at,
+        p_cursor_id: secondPageLast?.request_id,
+      },
+    );
+    const oldestRequest = thirdRequestPage?.at(-1);
+    const { data: oldestRequestDetail } = await session.client.rpc(
+      "get_incoming_friend_request",
+      { p_request_id: oldestRequest?.request_id },
+    );
+    report(
+      "incoming requests paginate past 100 and remain directly reviewable",
+      requestCount === 105 &&
+        firstRequestPage?.length === 50 &&
+        secondRequestPage?.length === 50 &&
+        thirdRequestPage?.length === 5 &&
+        oldestRequestDetail?.[0]?.request_id === oldestRequest?.request_id,
+      JSON.stringify({
+        requestCount,
+        pages: [
+          firstRequestPage?.length,
+          secondRequestPage?.length,
+          thirdRequestPage?.length,
+        ],
+      }),
+    );
+  } finally {
+    await cleanup();
+  }
+}
+
 async function main() {
   const coach = await signIn(users.coach.email, users.coach.password);
   const a = await signIn(users.clientA.email, users.clientA.password);
@@ -128,77 +248,7 @@ async function main() {
   const usernameCoach = usernameOf.get(coach.userId)!;
 
   // --- pagination beyond the old 100-row cap -----------------------------
-  const { data: extraProfiles, error: extraProfilesError } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("role", "client")
-    .not("id", "in", `(${involved.join(",")})`)
-    .limit(105);
-  if (extraProfilesError) throw extraProfilesError;
-  const syntheticSenders = extraProfiles ?? [];
-  if (syntheticSenders.length < 105) {
-    throw new Error("Need at least 105 extra client profiles for pagination verification.");
-  }
-  const syntheticRows = syntheticSenders.map((profile, index) => ({
-    sender_id: profile.id,
-    recipient_id: a.userId,
-    client_request_id: `verify-pagination-${index}-${crypto.randomUUID()}`,
-    created_at: new Date(Date.now() - index * 1_000).toISOString(),
-  }));
-  const syntheticInsert = await admin.from("friend_requests").insert(syntheticRows);
-  if (syntheticInsert.error) throw syntheticInsert.error;
-  const { data: requestCount } = await a.client.rpc(
-    "count_incoming_friend_requests",
-  );
-  const { data: firstRequestPage } = await a.client.rpc(
-    "list_incoming_friend_requests",
-    { p_limit: 50 },
-  );
-  const firstPageLast = firstRequestPage?.at(-1);
-  const { data: secondRequestPage } = await a.client.rpc(
-    "list_incoming_friend_requests",
-    {
-      p_limit: 50,
-      p_cursor_created_at: firstPageLast?.created_at,
-      p_cursor_id: firstPageLast?.request_id,
-    },
-  );
-  const secondPageLast = secondRequestPage?.at(-1);
-  const { data: thirdRequestPage } = await a.client.rpc(
-    "list_incoming_friend_requests",
-    {
-      p_limit: 50,
-      p_cursor_created_at: secondPageLast?.created_at,
-      p_cursor_id: secondPageLast?.request_id,
-    },
-  );
-  const oldestRequest = thirdRequestPage?.at(-1);
-  const { data: oldestRequestDetail } = await a.client.rpc(
-    "get_incoming_friend_request",
-    { p_request_id: oldestRequest?.request_id },
-  );
-  report(
-    "incoming requests paginate past 100 and remain directly reviewable",
-    requestCount === 105 &&
-      firstRequestPage?.length === 50 &&
-      secondRequestPage?.length === 50 &&
-      thirdRequestPage?.length === 5 &&
-      oldestRequestDetail?.[0]?.request_id === oldestRequest?.request_id,
-    JSON.stringify({
-      requestCount,
-      pages: [
-        firstRequestPage?.length,
-        secondRequestPage?.length,
-        thirdRequestPage?.length,
-      ],
-    }),
-  );
-  const syntheticCleanup = await admin
-    .from("friend_requests")
-    .delete()
-    .eq("recipient_id", a.userId)
-    .like("client_request_id", "verify-pagination-%");
-  if (syntheticCleanup.error) throw syntheticCleanup.error;
+  await verifyIncomingPagination(admin, a);
 
   // --- private realtime topics -------------------------------------------
   await a.client.realtime.setAuth();

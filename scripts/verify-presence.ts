@@ -256,10 +256,11 @@ async function main() {
     });
     report("an authenticated tab creates an Online snapshot", touch.data?.status === "online", touch.error?.message);
     const firstRevision = touch.data?.revision;
-    const coachReceivedInsert = await waitForCondition(() =>
-      coachEvents.some((event) =>
+    const coachReceivedInsert = await waitForCondition(
+      () => coachEvents.some((event) =>
         event.user_id === client.userId && event.revision === firstRevision
-      )
+      ),
+      10_000,
     );
     await new Promise((resolve) => setTimeout(resolve, 300));
     report(

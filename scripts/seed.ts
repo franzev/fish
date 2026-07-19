@@ -757,7 +757,8 @@ function communityMessageBody(
       "Reminder that simple words are professional when they make the message clear.",
       "What phrase helps when you need someone to repeat a question?",
     ];
-    return `${fixtures[index % fixtures.length]}${index < fixtures.length ? "" : ` — ${senderName}`}`;
+    if (index < fixtures.length) return fixtures[index] ?? "";
+    return `A calm practice note from ${senderName} for the community archive.`;
   }
 
   if (channelSlug === "introductions") {
@@ -929,6 +930,8 @@ async function seedCommunityChannels(
   }));
   const clientParticipants = participants.filter((participant) => participant.role === "client");
   const coachParticipants = participants.filter((participant) => participant.role === "coach");
+  const leadCoach = participants.find((participant) => participant.id === coachId);
+  const firstClient = clientParticipants[0];
   const searchUsername =
     profiles?.find((profile) => profile.id === clientIds[0])?.username ?? "client1";
   const messagesPerChannel = 100;
@@ -947,11 +950,14 @@ async function seedCommunityChannels(
       const introductionAuthor = clientParticipants[Math.floor(index / 2) % clientParticipants.length];
       const introductionCoach = coachParticipants[index % coachParticipants.length];
       const defaultAuthor = participants[index % participants.length];
-      const author = channel.slug === "announcements"
+      const generalFixtureAuthor = channel.slug === "general" && index < 3
+        ? index === 2 ? firstClient : leadCoach
+        : undefined;
+      const author = generalFixtureAuthor ?? (channel.slug === "announcements"
         ? coachParticipants[index % coachParticipants.length]
         : channel.slug === "introductions"
           ? index % 2 === 0 ? introductionAuthor : introductionCoach
-          : defaultAuthor;
+          : defaultAuthor);
       if (!author) throw new Error(`No seed author available for ${channel.slug}`);
 
       const createdAt = new Date(start + index * 45 * 60 * 1000).toISOString();
