@@ -54,7 +54,7 @@ export interface ChatClientProps {
   searchMessagesAction?: (input: unknown) => Promise<ChatSearchActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
-  toggleReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
+  setReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
   reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
   markReadStateAction?: (input: unknown) => Promise<{
     status: "sent" | "notice";
@@ -93,7 +93,7 @@ export function ChatClient({
   searchMessagesAction,
   editMessageAction,
   deleteMessageAction,
-  toggleReactionAction,
+  setReactionAction,
   reportGifAction,
   markReadStateAction,
   refreshUnreadSummaryAction,
@@ -296,6 +296,7 @@ export function ChatClient({
     sendWithRequestId,
     handleDeleteMessage,
     handleToggleReaction,
+    isReactionPending,
     handleReportGif,
     startReplyingToMessage,
     startEditingMessage,
@@ -314,7 +315,7 @@ export function ChatClient({
     sendMessageAction,
     editMessageAction,
     deleteMessageAction,
-    toggleReactionAction,
+    setReactionAction,
     reportGifAction,
     sendLocalTyping,
     stopLocalTyping,
@@ -435,6 +436,7 @@ export function ChatClient({
           canDelete: Boolean(deleteMessageAction),
           reply: startReplyingToMessage,
           toggleReaction: handleToggleReaction,
+          isReactionPending,
           reportGif: handleReportGif,
           delete: handleDeleteMessage,
           retry: sendWithRequestId,

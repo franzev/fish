@@ -58,12 +58,16 @@ export function Reactions({
             </Tooltip>
           );
         })}
-        {onToggle && !disabled && (
+        {onToggle && (
           <EmojiPickerButton
             label="Add a reaction"
             onSelect={(emoji) => onToggle(emoji)}
+            disabled={disabled}
             trigger={
-              <ReactionPill className="justify-center text-muted hover:text-body">
+              <ReactionPill
+                disabled={disabled}
+                className="justify-center text-muted hover:text-body"
+              >
                 <IconMoodPlus size={18} stroke={1.75} aria-hidden="true" />
               </ReactionPill>
             }

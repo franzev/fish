@@ -82,6 +82,8 @@ export function ChatMessageRow({
   const mine = message.senderId === currentUserId;
   const isEditing = editing.messageId === message.id;
   const interactionDisabled = editing.messageId !== null;
+  const reactionsDisabled =
+    interactionDisabled || Boolean(actions.isReactionPending?.(message.id));
   const wasEditingRef = useRef(isEditing);
 
   useEffect(() => {
@@ -205,6 +207,7 @@ export function ChatMessageRow({
       canEdit={editing.enabled && Boolean(message.body.trim())}
       canDelete={actions.canDelete}
       canReportGif={Boolean(message.gif)}
+      reactionsDisabled={reactionsDisabled}
       onReply={() => actions.reply(message)}
       onReact={(emoji) => void actions.toggleReaction(message, emoji)}
       onEdit={() => editing.start(message)}
@@ -221,7 +224,7 @@ export function ChatMessageRow({
       <Reactions
         reactions={message.reactions}
         onToggle={(emoji) => void actions.toggleReaction(message, emoji)}
-        disabled={interactionDisabled}
+        disabled={reactionsDisabled}
         className="mt-2xs"
       />
       <div

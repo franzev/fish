@@ -133,7 +133,7 @@ describe("Reactions", () => {
 
     const reaction = screen.getByRole("button", { name: /including you/ });
     expect(reaction).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Add a reaction" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Add a reaction" })).toBeDisabled();
     fireEvent.click(reaction);
     expect(onToggle).not.toHaveBeenCalled();
   });

@@ -21,6 +21,7 @@ export interface ChatMessageActions {
   canDelete: boolean;
   reply: (message: LocalMessage) => void;
   toggleReaction: (message: LocalMessage, emoji: string) => Promise<void>;
+  isReactionPending?: (messageId: string) => boolean;
   delete: (message: LocalMessage) => Promise<MessageActionResult>;
   reportGif: (message: LocalMessage) => Promise<void>;
   retry: (options: SendWithRequestIdOptions) => Promise<void>;

@@ -26,7 +26,7 @@ interface UseMessageMutationsOptions {
   messages: LocalMessage[];
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
-  toggleReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
+  setReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
   reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
   setReplyTarget: (conversationId: string, messageId: string | null) => void;
   setNotice: (notice: string | null) => void;
@@ -49,7 +49,7 @@ export function useMessageMutations({
   messages,
   editMessageAction,
   deleteMessageAction,
-  toggleReactionAction,
+  setReactionAction,
   reportGifAction,
   setReplyTarget,
   setNotice,
@@ -58,6 +58,10 @@ export function useMessageMutations({
   failDelete,
 }: UseMessageMutationsOptions) {
   const [editSession, setEditSession] = useState<EditSessionState | null>(null);
+  const [pendingReactionMessageIds, setPendingReactionMessageIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const pendingReactionMessageIdsRef = useRef(new Set<string>());
   const activeConversationIdRef = useRef(chat.conversationId);
   useEffect(() => {
     activeConversationIdRef.current = chat.conversationId;
@@ -127,20 +131,35 @@ export function useMessageMutations({
   }
 
   async function handleToggleReaction(message: LocalMessage, emoji: string) {
-    if (!toggleReactionAction) {
+    if (pendingReactionMessageIdsRef.current.has(message.id)) return;
+    if (!setReactionAction) {
       setNotice("That reaction did not save yet. Keep this open and try again.");
       return;
     }
-    const result = await toggleReactionAction({ messageId: message.id, emoji }).catch(() => ({
-      status: "notice" as const,
-      values: {},
-      notice: "That reaction did not save yet. Keep this open and try again.",
-    }));
-    if (result.status !== "sent" || !result.message) {
-      setNotice(result.notice ?? "That reaction did not save yet. Keep this open and try again.");
-      return;
+    const active = !message.reactions?.some(
+      (reaction) => reaction.emoji === emoji && reaction.byMe
+    );
+    pendingReactionMessageIdsRef.current.add(message.id);
+    setPendingReactionMessageIds(new Set(pendingReactionMessageIdsRef.current));
+    try {
+      const result = await setReactionAction({
+        messageId: message.id,
+        emoji,
+        active,
+      }).catch(() => ({
+        status: "notice" as const,
+        values: {},
+        notice: "That reaction did not save yet. Keep this open and try again.",
+      }));
+      if (result.status !== "sent" || !result.message) {
+        setNotice(result.notice ?? "That reaction did not save yet. Keep this open and try again.");
+        return;
+      }
+      mergeRemoteMessage(result.message as LocalMessage);
+    } finally {
+      pendingReactionMessageIdsRef.current.delete(message.id);
+      setPendingReactionMessageIds(new Set(pendingReactionMessageIdsRef.current));
     }
-    mergeRemoteMessage(result.message as LocalMessage);
   }
 
   async function handleReportGif(message: LocalMessage) {
@@ -179,6 +198,7 @@ export function useMessageMutations({
     isSavingEdit: activeEdit?.saving ?? false,
     handleDeleteMessage,
     handleToggleReaction,
+    isReactionPending: (messageId: string) => pendingReactionMessageIds.has(messageId),
     handleReportGif,
     startEditingMessage,
     handleEditDraftChange,

@@ -18,6 +18,7 @@ export interface EmojiPickerButtonProps {
   className?: string;
   children?: ReactNode;
   trigger?: ReactElement;
+  disabled?: boolean;
 }
 
 /** Self-contained popover trigger for the grouped/searchable emoji panel. */
@@ -25,7 +26,7 @@ export const EmojiPickerButton = forwardRef<
   HTMLButtonElement,
   EmojiPickerButtonProps
 >(function EmojiPickerButton(
-  { onSelect, label, className, children, trigger: triggerElement },
+  { onSelect, label, className, children, trigger: triggerElement, disabled = false },
   ref
 ) {
   const [open, setOpen] = useState(false);
@@ -35,6 +36,7 @@ export const EmojiPickerButton = forwardRef<
         <Popover.Trigger
           ref={ref}
           aria-label={label}
+          disabled={disabled}
           render={triggerElement}
         />
       </Tooltip>
@@ -45,6 +47,7 @@ export const EmojiPickerButton = forwardRef<
             ref={ref}
             label={label}
             appearance="ghost"
+            disabled={disabled}
             tooltip
             className={className}
             icon={

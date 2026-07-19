@@ -199,7 +199,7 @@ export const AllSupportedFiles: Story = {
     const canvas = within(canvasElement);
     for (const file of [pdf, text, csv, word, excel, powerpoint]) {
       await expect(canvas.getByText(file.originalName)).toBeInTheDocument();
-      await expect(canvas.getByRole("link", { name: `Open ${file.originalName}` })).toBeInTheDocument();
+      await expect(canvas.getByRole("button", { name: `Open ${file.originalName}` })).toBeInTheDocument();
     }
   },
 };

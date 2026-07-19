@@ -1986,7 +1986,7 @@ describe("ChatClient", () => {
   });
 
   it("toggles reactions and updates read receipts from realtime", async () => {
-    const toggleReactionAction = vi.fn().mockResolvedValue({
+    const setReactionAction = vi.fn().mockResolvedValue({
       status: "sent",
       values: {},
       message: {
@@ -2017,7 +2017,7 @@ describe("ChatClient", () => {
           ],
         }}
         sendMessageAction={vi.fn()}
-        toggleReactionAction={toggleReactionAction}
+        setReactionAction={setReactionAction}
       />
     );
 
@@ -2030,9 +2030,22 @@ describe("ChatClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "thumbs up" }));
     await waitFor(() =>
-      expect(toggleReactionAction).toHaveBeenCalledWith({
+      expect(setReactionAction).toHaveBeenCalledWith({
         messageId: "message-1",
         emoji: "👍",
+        active: true,
+      })
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "👍 reaction, 1 person, including you",
+      })
+    );
+    await waitFor(() =>
+      expect(setReactionAction).toHaveBeenLastCalledWith({
+        messageId: "message-1",
+        emoji: "👍",
+        active: false,
       })
     );
 

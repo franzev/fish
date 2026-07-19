@@ -13,7 +13,7 @@ import {
   reportGifAction,
   sendMessageAction,
   searchChatMessagesAction,
-  toggleReactionAction,
+  setReactionAction,
 } from "@/features/chat/server";
 import { authRedirects } from "@/features/auth/redirects";
 import { getChatPageData } from "@/features/chat/server/page-data";
@@ -68,7 +68,7 @@ export default async function ChannelPage({
       searchMessagesAction={searchChatMessagesAction}
       editMessageAction={editMessageAction}
       deleteMessageAction={deleteMessageAction}
-      toggleReactionAction={toggleReactionAction}
+      setReactionAction={setReactionAction}
       reportGifAction={reportGifAction}
       markReadStateAction={markReadStateAction}
       refreshUnreadSummaryAction={refreshUnreadSummaryAction}

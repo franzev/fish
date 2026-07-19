@@ -28,6 +28,7 @@ export interface MessageActionsProps {
   canEdit: boolean;
   canDelete: boolean;
   canReportGif: boolean;
+  reactionsDisabled?: boolean;
   onReply: () => void;
   onReact: (emoji: string) => void;
   onEdit: () => void;
@@ -48,6 +49,7 @@ export function MessageActions({
   canEdit,
   canDelete,
   canReportGif,
+  reactionsDisabled = false,
   onReply,
   onReact,
   onEdit,
@@ -126,6 +128,7 @@ export function MessageActions({
       <EmojiPickerButton
         label="Add a reaction"
         onSelect={onReact}
+        disabled={reactionsDisabled}
         className="pointer-coarse:hidden"
       >
         {layout === "community" ? (
@@ -188,8 +191,12 @@ export function MessageActions({
                 <div role="group" aria-label="Message actions">
                   <button
                     type="button"
+                    disabled={reactionsDisabled}
                     onClick={() => setView("reactions")}
-                    className={cn(popoverActionClass, "pointer-fine:hidden")}
+                    className={cn(
+                      popoverActionClass,
+                      "pointer-fine:hidden disabled:cursor-not-allowed disabled:opacity-50"
+                    )}
                   >
                     <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
                     Add a reaction

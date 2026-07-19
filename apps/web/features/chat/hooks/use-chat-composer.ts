@@ -17,7 +17,7 @@ interface UseChatComposerOptions {
   sendMessageAction: (input: unknown) => Promise<SendMessageActionState>;
   editMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
-  toggleReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
+  setReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
   reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
   sendLocalTyping: (typing: boolean) => void;
   stopLocalTyping: () => void;
@@ -32,7 +32,7 @@ export function useChatComposer({
   sendMessageAction,
   editMessageAction,
   deleteMessageAction,
-  toggleReactionAction,
+  setReactionAction,
   reportGifAction,
   sendLocalTyping,
   stopLocalTyping,
@@ -118,7 +118,7 @@ export function useChatComposer({
     messages,
     editMessageAction,
     deleteMessageAction,
-    toggleReactionAction,
+    setReactionAction,
     reportGifAction,
     setReplyTarget,
     setNotice,
