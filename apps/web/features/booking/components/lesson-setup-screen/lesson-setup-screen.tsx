@@ -10,6 +10,7 @@ import {
   LessonSetupMediaSession,
   supportsSpeakerSelection,
   type LessonMediaDevice,
+  type LessonSetupMediaCallbacks,
   type LessonMediaSnapshot,
 } from "../../client/lesson-setup-media";
 import type { BookingCoach } from "../../contracts";
@@ -29,7 +30,17 @@ export interface LessonSetupScreenProps {
   joinWindowMinutes: number;
   initialNow: string;
   commands?: CallCommandService;
+  createSession?: (callbacks: LessonSetupMediaCallbacks) => LessonSetupMediaSessionLike;
+  speakerSelectionSupported?: boolean;
 }
+
+type LessonSetupMediaSessionLike = Pick<
+  LessonSetupMediaSession,
+  "start" | "stop" | "setEnabled" | "refreshDevices" | "switchInput" | "checkConnection" | "playTestSound"
+>;
+
+const defaultCreateSession = (callbacks: LessonSetupMediaCallbacks) =>
+  new LessonSetupMediaSession(callbacks);
 
 /** Owns browser media and call orchestration while LessonSetupView owns the UI. */
 export function LessonSetupScreen({
@@ -41,10 +52,12 @@ export function LessonSetupScreen({
   joinWindowMinutes,
   initialNow,
   commands: commandsOverride,
+  createSession = defaultCreateSession,
+  speakerSelectionSupported = supportsSpeakerSelection(),
 }: LessonSetupScreenProps) {
   const { startLessonCall, busy, notice: callNotice } = useCall();
   const commands = useMemo(() => getCallCommandService(commandsOverride), [commandsOverride]);
-  const sessionRef = useRef<LessonSetupMediaSession | null>(null);
+  const sessionRef = useRef<LessonSetupMediaSessionLike | null>(null);
   const clockOffset = useRef(0);
   const [now, setNow] = useState(() => new Date(initialNow));
   const [mediaStatus, setMediaStatus] = useState<LessonMediaStatus>("starting");
@@ -80,7 +93,7 @@ export function LessonSetupScreen({
     setSpeakerId((current) => current || defaultSpeaker?.deviceId || "");
   }, []);
 
-  const runConnectionCheck = useCallback(async (session: LessonSetupMediaSession, activeLesson: LessonSlot) => {
+  const runConnectionCheck = useCallback(async (session: LessonSetupMediaSessionLike, activeLesson: LessonSlot) => {
     setConnectionStatus("checking");
     setNotice(null);
     const result = await commands.checkMedia(activeLesson.id);
@@ -101,7 +114,7 @@ export function LessonSetupScreen({
   useEffect(() => {
     if (!lesson || ended) return;
     let active = true;
-    const session = new LessonSetupMediaSession({
+    const session = createSession({
       onMicrophoneLevel(value) {
         if (active) setMicrophoneLevel(value);
       },
@@ -147,7 +160,7 @@ export function LessonSetupScreen({
       session.stop();
       if (sessionRef.current === session) sessionRef.current = null;
     };
-  }, [applySnapshot, ended, lesson, runConnectionCheck]);
+  }, [applySnapshot, createSession, ended, lesson, runConnectionCheck]);
 
   useEffect(() => {
     if (!lesson || ended || mediaStatus !== "starting") return;
@@ -217,7 +230,7 @@ export function LessonSetupScreen({
       callNotice={callNotice}
       speakerNotice={speakerNotice}
       busy={busy}
-      speakerSelectionSupported={supportsSpeakerSelection()}
+      speakerSelectionSupported={speakerSelectionSupported}
       onToggleMicrophone={toggleMicrophone}
       onToggleCamera={toggleCamera}
       onSwitchInput={(kind, value) => void switchInput(kind, value)}

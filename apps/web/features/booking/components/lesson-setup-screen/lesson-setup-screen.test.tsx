@@ -1,7 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CallCommandService, LessonSlot } from "@/lib/services";
-import type { LessonMediaDevice } from "../../client/lesson-setup-media";
+import type {
+  LessonMediaDevice,
+  LessonSetupMediaCallbacks,
+  LessonSetupMediaSession,
+} from "../../client/lesson-setup-media";
 
 const {
   checkConnectionMock,
@@ -34,28 +38,6 @@ vi.mock("@/features/calls", () => ({
     notice: null,
   }),
 }));
-
-vi.mock("../../client/lesson-setup-media", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("../../client/lesson-setup-media")
-  >();
-  return {
-    ...actual,
-    supportsSpeakerSelection: supportsSpeakerSelectionMock,
-    LessonSetupMediaSession: vi.fn(function MockSession(callbacks) {
-      mediaCallbacksRef.current = callbacks;
-      return {
-        start: sessionStartMock,
-        stop: sessionStopMock,
-        setEnabled: setEnabledMock,
-        refreshDevices: refreshDevicesMock,
-        switchInput: vi.fn(),
-        checkConnection: checkConnectionMock,
-        playTestSound: playTestSoundMock,
-      };
-    }),
-  };
-});
 
 import { LessonSetupScreen } from "./lesson-setup-screen";
 
@@ -110,6 +92,18 @@ function commands(
 }
 
 function renderScreen(initialNow: string, commandService = commands()) {
+  const createSession = (callbacks: LessonSetupMediaCallbacks) => {
+    mediaCallbacksRef.current = callbacks;
+    return {
+      start: sessionStartMock,
+      stop: sessionStopMock,
+      setEnabled: setEnabledMock,
+      refreshDevices: refreshDevicesMock,
+      switchInput: vi.fn(),
+      checkConnection: checkConnectionMock,
+      playTestSound: playTestSoundMock,
+    } as unknown as LessonSetupMediaSession;
+  };
   return render(
     <LessonSetupScreen
       coach={{ id: "coach-1", displayName: "Patricia", avatarUrl: null }}
@@ -120,6 +114,8 @@ function renderScreen(initialNow: string, commandService = commands()) {
       joinWindowMinutes={10}
       initialNow={initialNow}
       commands={commandService}
+      createSession={createSession}
+      speakerSelectionSupported={supportsSpeakerSelectionMock()}
     />
   );
 }

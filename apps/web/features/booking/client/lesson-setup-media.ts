@@ -25,7 +25,7 @@ export interface LessonMediaSnapshot {
   cameraId: string;
 }
 
-interface LessonSetupMediaCallbacks {
+export interface LessonSetupMediaCallbacks {
   onMicrophoneLevel(level: number): void;
   onTrackEnded(kind: "audio" | "video"): void;
 }
