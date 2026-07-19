@@ -20,3 +20,4 @@ export * from "./segmented-control";
 export * from "./surface-header";
 export * from "./switch";
 export * from "./tooltip-icon-button";
+export * from "./tooltip";

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Tooltip } from "@base-ui/react/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { IconMoodPlus } from "@tabler/icons-react";
 import { HTMLAttributes } from "react";
 import { EmojiPickerButton } from "../emoji-picker";
@@ -30,49 +30,32 @@ export function Reactions({
   if (!reactions || reactions.length === 0) return null;
 
   return (
-    <Tooltip.Provider delay={400} closeDelay={0}>
-      <div className={cn("flex flex-wrap items-center gap-2xs", className)} {...props}>
+    <div className={cn("flex flex-wrap items-center gap-2xs", className)} {...props}>
         {reactions.map((reaction) => {
           const label = `${reaction.emoji} reaction, ${reaction.count} ${
             reaction.count === 1 ? "person" : "people"
           }${reaction.byMe ? ", including you" : ""}`;
 
           return (
-            <Tooltip.Root key={reaction.emoji}>
-              <Tooltip.Trigger
-                render={
-                  <ReactionPill
-                    aria-label={label}
-                    aria-pressed={reaction.byMe}
-                    disabled={disabled}
-                    onClick={() => onToggle?.(reaction.emoji)}
-                    selected={reaction.byMe}
-                    className="md:animate-reaction-pop"
-                  >
-                    <span className="inline-flex items-center gap-2xs max-md:animate-reaction-pop">
-                      {/* Motion belongs to the visual contents, not the button,
-                          so the 44px target never shrinks during confirmation. */}
-                      <span aria-hidden="true" className="text-ui-sm leading-none">
-                        {reaction.emoji}
-                      </span>
-                      <span className="text-ui-xs font-medium leading-none">
-                        {reaction.count}
-                      </span>
-                    </span>
-                  </ReactionPill>
-                }
-              />
-              <Tooltip.Portal>
-                <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
-                  <Tooltip.Popup
-                    role="tooltip"
-                    className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
-                  >
-                    {label}
-                  </Tooltip.Popup>
-                </Tooltip.Positioner>
-              </Tooltip.Portal>
-            </Tooltip.Root>
+            <Tooltip key={reaction.emoji} label={label}>
+              <ReactionPill
+                aria-label={label}
+                aria-pressed={reaction.byMe}
+                disabled={disabled}
+                onClick={() => onToggle?.(reaction.emoji)}
+                selected={reaction.byMe}
+                className="md:animate-reaction-pop"
+              >
+                <span className="inline-flex items-center gap-2xs max-md:animate-reaction-pop">
+                  <span aria-hidden="true" className="text-ui-sm leading-none">
+                    {reaction.emoji}
+                  </span>
+                  <span className="text-ui-xs font-medium leading-none">
+                    {reaction.count}
+                  </span>
+                </span>
+              </ReactionPill>
+            </Tooltip>
           );
         })}
         {onToggle && !disabled && (
@@ -86,7 +69,6 @@ export function Reactions({
             }
           />
         )}
-      </div>
-    </Tooltip.Provider>
+    </div>
   );
 }

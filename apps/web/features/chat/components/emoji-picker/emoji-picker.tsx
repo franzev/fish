@@ -2,7 +2,6 @@
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import { IconButton } from "@/components/ui/icon-button";
 import { IconTabStrip, type IconTabStripItem } from "@/components/ui/icon-tab-strip";
 import {
   IconBallBasketball,
@@ -16,11 +15,9 @@ import {
   IconToolsKitchen2,
   type TablerIcon,
 } from "@tabler/icons-react";
-import { Popover } from "@base-ui/react/popover";
 import { Tabs } from "@base-ui/react/tabs";
-import { Tooltip } from "@base-ui/react/tooltip";
 import groups from "@fish/core/chat-media/emoji-groups.json";
-import { type ReactElement, ReactNode, forwardRef, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { MediaPickerScrollArea } from "../media-picker-scroll-area";
 import { MediaPickerSearch } from "../media-picker-search";
 
@@ -188,92 +185,3 @@ function EmojiGroupList({
     </div>
   );
 }
-
-export interface EmojiPickerButtonProps {
-  onSelect: (emoji: string) => void;
-  label: string;
-  className?: string;
-  children?: ReactNode;
-  trigger?: ReactElement;
-}
-
-/** Self-contained popover trigger — an icon button (default smiley) that
- *  opens the grouped/searchable EmojiPicker panel in a Base UI Popover
- *  (portaled to <body>, collision-aware flip/align, Escape + outside-click
- *  dismiss, and focus return handled for free). Closes on selecting an
- *  emoji. */
-export const EmojiPickerButton = forwardRef<
-  HTMLButtonElement,
-  EmojiPickerButtonProps
->(function EmojiPickerButton(
-  { onSelect, label, className, children, trigger: triggerElement },
-  ref
-) {
-    const [open, setOpen] = useState(false);
-    const triggerControl =
-      triggerElement ? (
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            render={
-              <Popover.Trigger
-                ref={ref}
-                aria-label={label}
-                render={triggerElement}
-              />
-            }
-          />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="top" sideOffset={4} className="z-50">
-              <Tooltip.Popup
-                role="tooltip"
-                className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
-              >
-                {label}
-              </Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-      ) : (
-        <Popover.Trigger
-          render={
-            <IconButton
-              ref={ref}
-              label={label}
-              appearance="ghost"
-              tooltip
-              className={className}
-              icon={children ?? (
-                <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
-              )}
-            />
-          }
-        />
-      );
-
-    return (
-      <Popover.Root open={open} onOpenChange={setOpen}>
-        {triggerControl}
-        <Popover.Portal>
-          <Popover.Positioner
-            side="top"
-            align="end"
-            sideOffset={4}
-            className="z-20"
-          >
-            {/* Keep focus on the trigger at open — autofocusing the search
-                field flashes a focus ring on every open and pops the mobile
-                keyboard over the grid. Tab reaches the field in one step. */}
-            <Popover.Popup initialFocus={false}>
-              <EmojiPicker
-                onSelect={(emoji) => {
-                  onSelect(emoji);
-                  setOpen(false);
-                }}
-              />
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
-    );
-  }
-);

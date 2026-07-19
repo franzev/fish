@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { EmojiPicker, EmojiPickerButton } from "./emoji-picker";
+import { EmojiPicker } from "./emoji-picker";
+import { EmojiPickerButton } from "./emoji-picker-button";
 
 describe("EmojiPicker", () => {
   it("keeps the category icon row at the bottom", () => {

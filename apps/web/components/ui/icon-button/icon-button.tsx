@@ -6,7 +6,7 @@ import {
   type ButtonLinkProps,
 } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Tooltip } from "@base-ui/react/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   type ForwardedRef,
   forwardRef,
@@ -123,23 +123,13 @@ const IconButtonRoot = forwardRef<
     const tooltipLabel = typeof tooltip === "string" ? tooltip : label;
 
     return (
-      <Tooltip.Root>
-        <Tooltip.Trigger render={button} />
-        <Tooltip.Portal>
-          <Tooltip.Positioner
-            side={tooltipSide}
-            sideOffset={4}
-            className={cn("z-50", tooltipClassName)}
-          >
-            <Tooltip.Popup
-              role="tooltip"
-              className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
-            >
-              {tooltipLabel}
-            </Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <Tooltip
+        label={tooltipLabel}
+        side={tooltipSide}
+        positionerClassName={cn("z-50", tooltipClassName)}
+      >
+        {button}
+      </Tooltip>
     );
   }
 );

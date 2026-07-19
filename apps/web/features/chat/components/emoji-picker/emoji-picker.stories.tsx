@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { EmojiPicker, EmojiPickerButton } from "./emoji-picker";
+import { EmojiPicker } from "./emoji-picker";
+import { EmojiPickerButton } from "./emoji-picker-button";
 
 const meta = {
   title: "Chat/EmojiPicker",
