@@ -1,28 +1,22 @@
 import type { ClientChatData, ClientChatReadState } from "@/lib/services";
+import { resolveRealtimeSenderName } from "@/features/chat/model/chat-state";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
 import {
   type ConversationTypingSubscription,
-  type ConversationVoiceRecordingSubscription,
   subscribeToConversationMessages,
   subscribeToConversationReactionChanges,
   subscribeToConversationReadStates,
   subscribeToConversationTyping,
-  subscribeToConversationVoiceRecording,
 } from "@/features/chat/model/realtime";
-import type { LocalMessage } from "./use-chat-messages";
 import {
   chatStore,
-  selectMessagesForConversation,
   useChatStore,
 } from "@/features/chat/model/store";
-import type { ClientChatMessage } from "@/lib/services";
 
 // Supabase postgres_changes payloads carry only the raw messages row — no
 // joined profile — so a live-received message arrives with senderDisplayName
@@ -33,32 +27,6 @@ import type { ClientChatMessage } from "@/lib/services";
 // loaded message from the same sender) without a round-trip; return null only
 // when the sender is genuinely unknown so the caller can fall back to a
 // targeted refetch.
-function resolveRealtimeSenderName(
-  message: ClientChatMessage,
-  conversationId: string,
-  currentUserId: string,
-  currentUserDisplayName: string,
-  participant: { id: string; displayName: string }
-): string | null {
-  if (message.senderDisplayName) {
-    return message.senderDisplayName;
-  }
-  if (message.senderId === currentUserId) {
-    return currentUserDisplayName;
-  }
-  if (message.senderId === participant.id) {
-    return participant.displayName;
-  }
-  const known = selectMessagesForConversation(
-    chatStore.getState(),
-    conversationId
-  ).find(
-    (candidate) =>
-      candidate.senderId === message.senderId && candidate.senderDisplayName
-  );
-  return known?.senderDisplayName ?? null;
-}
-
 // Each of the messages/reads/reactions channels below fires its own initial
 // post-mount SUBSCRIBED — track first-subscribe PER CHANNEL so all three
 // initial subscribes are skipped (SSR data is already current) and only a
@@ -68,7 +36,6 @@ type ReconnectChannelKey = "messages" | "reads" | "reactions";
 
 interface UseChatRealtimeOptions {
   chat: ClientChatData;
-  setMessages: Dispatch<SetStateAction<LocalMessage[]>>;
   mergeReadState: (readState: ClientChatReadState) => void;
   refreshMessages: (messageIds: string[]) => Promise<void>;
   refreshConversation: () => Promise<void>;
@@ -83,24 +50,18 @@ interface UseChatRealtimeOptions {
 
 export function useChatRealtime({
   chat,
-  setMessages,
   mergeReadState,
   refreshMessages,
   refreshConversation,
   applyGapBackfill,
 }: UseChatRealtimeOptions) {
   const [participantTyping, setParticipantTyping] = useState(false);
-  const [participantRecording, setParticipantRecording] = useState(false);
-  const [localRecording, setLocalRecording] = useState(false);
   const dispatchChatEvent = useChatStore((state) => state.dispatchChatEvent);
   const setRealtimeStatus = useChatStore((state) => state.setRealtimeStatus);
   const typingSubscriptionRef = useRef<ConversationTypingSubscription | null>(null);
-  const voiceSubscriptionRef =
-    useRef<ConversationVoiceRecordingSubscription | null>(null);
   const localTypingRef = useRef(false);
   const localTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const participantTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const participantRecordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Per-channel first-subscribe tracker + one shared in-flight lock across
   // all three channels' onReconnected, so a near-simultaneous reconnect
   // triggers exactly one bounded backfill instead of three full refetches
@@ -121,8 +82,6 @@ export function useChatRealtime({
   if (chat.conversationId !== previousConversationId) {
     setPreviousConversationId(chat.conversationId);
     setParticipantTyping(false);
-    setParticipantRecording(false);
-    setLocalRecording(false);
   }
 
   // A new conversation's first subscribes must read as first connects, not
@@ -147,10 +106,6 @@ export function useChatRealtime({
     if (participantTypingTimeoutRef.current) {
       clearTimeout(participantTypingTimeoutRef.current);
       participantTypingTimeoutRef.current = null;
-    }
-    if (participantRecordingTimeoutRef.current) {
-      clearTimeout(participantRecordingTimeoutRef.current);
-      participantRecordingTimeoutRef.current = null;
     }
   }, [chat.conversationId]);
 
@@ -188,9 +143,11 @@ export function useChatRealtime({
 
         const senderDisplayName = resolveRealtimeSenderName(
           message,
-          chat.conversationId,
-          chat.currentUserId,
-          chat.currentUserDisplayName,
+          chatStore.getState().conversations[chat.conversationId]?.messages ?? [],
+          {
+            id: chat.currentUserId,
+            displayName: chat.currentUserDisplayName,
+          },
           chat.participant
         );
         dispatchChatEvent({
@@ -242,7 +199,6 @@ export function useChatRealtime({
     dispatchChatEvent,
     handleReconnected,
     refreshMessages,
-    setMessages,
     setRealtimeStatus,
   ]);
 
@@ -336,37 +292,6 @@ export function useChatRealtime({
     };
   }, [chat.conversationId, chat.currentUserId]);
 
-  useEffect(() => {
-    const subscription = subscribeToConversationVoiceRecording(
-      chat.conversationId,
-      chat.currentUserId,
-      (recording) => {
-        setParticipantRecording(recording);
-
-        if (participantRecordingTimeoutRef.current) {
-          clearTimeout(participantRecordingTimeoutRef.current);
-        }
-
-        if (recording) {
-          participantRecordingTimeoutRef.current = setTimeout(() => {
-            setParticipantRecording(false);
-          }, 5000);
-        }
-      }
-    );
-
-    voiceSubscriptionRef.current = subscription;
-
-    return () => {
-      voiceSubscriptionRef.current = null;
-      subscription.unsubscribe();
-
-      if (participantRecordingTimeoutRef.current) {
-        clearTimeout(participantRecordingTimeoutRef.current);
-      }
-    };
-  }, [chat.conversationId, chat.currentUserId]);
-
   function sendLocalTyping(typing: boolean) {
     if (localTypingRef.current === typing) {
       return;
@@ -385,11 +310,6 @@ export function useChatRealtime({
     sendLocalTyping(false);
   }
 
-  function setLocalVoiceRecording(recording: boolean) {
-    setLocalRecording(recording);
-    voiceSubscriptionRef.current?.sendRecording(recording);
-  }
-
   function scheduleLocalTypingStop() {
     if (localTypingTimeoutRef.current) {
       clearTimeout(localTypingTimeoutRef.current);
@@ -403,11 +323,8 @@ export function useChatRealtime({
 
   return {
     participantTyping,
-    participantRecording,
-    localRecording,
     sendLocalTyping,
     stopLocalTyping,
     scheduleLocalTypingStop,
-    setLocalVoiceRecording,
   };
 }

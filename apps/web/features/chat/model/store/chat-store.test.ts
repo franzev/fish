@@ -289,7 +289,11 @@ describe("chat store actions", () => {
 
     store.getState().setDraft(conversationId, "A focused draft");
     store.getState().setReplyTarget(conversationId, "message-1");
-    store.getState().setEditTarget(conversationId, "message-2");
+    store.getState().dispatchChatEvent({
+      type: "setEditTarget",
+      conversationId,
+      messageId: "message-2",
+    });
     store.getState().setRealtimeStatus(conversationId, "connected");
     store.getState().setDraft(otherConversationId, "Separate draft");
 

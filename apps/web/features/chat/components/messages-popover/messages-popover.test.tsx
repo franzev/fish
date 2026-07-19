@@ -35,10 +35,12 @@ function previewResult(): MessagePopoverActionState {
 
 describe("MessagesPopover", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
   it("preloads previews during browser idle time and reuses them when opened", async () => {
+    vi.useFakeTimers();
     let runIdleCallback: IdleRequestCallback | undefined;
     const loadPreviewAction = vi.fn(async () => previewResult());
     vi.stubGlobal("requestIdleCallback", vi.fn((callback: IdleRequestCallback) => {
@@ -55,6 +57,8 @@ describe("MessagesPopover", () => {
     );
 
     if (!runIdleCallback) window.dispatchEvent(new Event("load"));
+    act(() => vi.advanceTimersByTime(2_000));
+    vi.useRealTimers();
     expect(runIdleCallback).toBeDefined();
     expect(loadPreviewAction).not.toHaveBeenCalled();
 

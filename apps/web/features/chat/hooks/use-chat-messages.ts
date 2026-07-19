@@ -1,19 +1,20 @@
 import type { ClientChatData, ClientChatMessage } from "@/lib/services";
-import type { ChatConversationId, ChatMessageState } from "@fish/core/chat-state";
-import { mergeChatMessage } from "@/features/chat/model/chat-state";
+import type { ChatConversationId } from "@fish/core/chat-state";
+import {
+  normalizeMessage,
+  selectNewestConfirmedMessage,
+} from "@/features/chat/model/chat-state";
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
 import {
   chatStore,
-  createChatHydrationKey,
   useChatStore,
 } from "@/features/chat/model/store";
+import { useHydratedConversation } from "./use-hydrated-conversation";
 import {
   selectHasLoadErrorForConversation,
   selectHasMoreOlderForConversation,
@@ -21,7 +22,6 @@ import {
   selectIsLoadingOlderForConversation,
   selectMessagesForConversation,
   selectOldestCursorForConversation,
-  selectReadStatesForConversation,
 } from "@/features/chat/model/store";
 
 export type LocalStatus = "pending" | "sending" | "sent" | "failed";
@@ -57,22 +57,7 @@ export type LoadOlderMessagesOutcome = "loaded" | "failed" | "skipped";
 const refreshMessageCooldownMs = 2_000;
 
 export function toLocalMessage(message: ClientChatMessage): LocalMessage {
-  return {
-    ...message,
-    editedAt: message.editedAt ?? null,
-    deletedAt: message.deletedAt ?? null,
-    replyToMessageId: message.replyToMessageId ?? null,
-    reactions: message.reactions ?? [],
-    localStatus: "sent",
-  };
-}
-
-export function mergeMessage(
-  current: LocalMessage[],
-  incomingMessage: ClientChatMessage,
-  localRequestId = incomingMessage.clientRequestId
-): LocalMessage[] {
-  return mergeChatMessage(current, toLocalMessage(incomingMessage), localRequestId);
+  return normalizeMessage(message, "sent") as LocalMessage;
 }
 
 interface UseChatMessagesOptions {
@@ -111,7 +96,6 @@ export function useChatMessages({
   const hasLoadError = useChatStore((state) =>
     selectHasLoadErrorForConversation(state, chat.conversationId)
   );
-  const hydrateConversation = useChatStore((state) => state.hydrateConversation);
   const hydrateWindow = useChatStore((state) => state.hydrateWindow);
   const requestOlderMessages = useChatStore((state) => state.requestOlderMessages);
   const applyOlderPage = useChatStore((state) => state.applyOlderPage);
@@ -127,15 +111,9 @@ export function useChatMessages({
   const loadingOlderConversationsRef = useRef<Set<ChatConversationId>>(
     new Set()
   );
-  const initialMessages = useMemo(
-    () => chat.messages.map(toLocalMessage),
-    [chat.messages]
-  );
+  const initialMessages = useMemo(() => chat.messages.map(toLocalMessage), [chat.messages]);
   const initialReadStates = useMemo(() => chat.readStates ?? [], [chat.readStates]);
-  const hydrationKey = useMemo(
-    () => createChatHydrationKey(initialMessages, initialReadStates),
-    [initialMessages, initialReadStates]
-  );
+  const { hydrationKey } = useHydratedConversation(initialMessages, initialReadStates);
   const messages =
     storedHydrationKey === hydrationKey ? storeMessages : initialMessages;
 
@@ -157,30 +135,6 @@ export function useChatMessages({
     initialMessages,
     initialReadStates,
   ]);
-
-  const setMessages: Dispatch<SetStateAction<LocalMessage[]>> = useCallback(
-    (nextMessages) => {
-      const currentMessages = selectMessagesForConversation(
-        chatStore.getState(),
-        chat.conversationId
-      ) as LocalMessage[];
-      const readStates = selectReadStatesForConversation(
-        chatStore.getState(),
-        chat.conversationId
-      );
-      const resolvedMessages =
-        typeof nextMessages === "function"
-          ? nextMessages(currentMessages)
-          : nextMessages;
-
-      hydrateConversation(
-        chat.conversationId,
-        resolvedMessages as ChatMessageState[],
-        readStates
-      );
-    },
-    [chat.conversationId, hydrateConversation]
-  );
 
   useEffect(() => {
     messageIdsRef.current = messages.map((message) => message.id);
@@ -322,14 +276,9 @@ export function useChatMessages({
       chatStore.getState(),
       chat.conversationId
     );
-    let newestConfirmedMessage: ChatMessageState | undefined;
-    for (let index = currentMessages.length - 1; index >= 0; index -= 1) {
-      const candidate = currentMessages[index];
-      if (candidate?.localStatus === "sent") {
-        newestConfirmedMessage = candidate;
-        break;
-      }
-    }
+    const newestConfirmedMessage = selectNewestConfirmedMessage({
+      messages: currentMessages,
+    });
 
     if (!newestConfirmedMessage) {
       await hydrateNewestWindow();
@@ -415,7 +364,6 @@ export function useChatMessages({
 
   return {
     messages,
-    setMessages,
     refreshMessages,
     refreshConversation,
     loadOlderMessages,

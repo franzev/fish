@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import { useGifReducedMotion } from "@/features/chat/hooks/use-gif-reduced-motion";
+import { useLatestRequest } from "@/features/chat/hooks/use-latest-request";
 import { gifProvider, type GifProvider } from "@/features/chat/model/gif-provider";
 import type { ClientChatGif } from "@/lib/services";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,7 @@ export function GifPicker({
   const reducedMotion = useGifReducedMotion();
   const [animationPreference, setAnimationPreference] = useState<boolean | null>(null);
   const animationsPaused = animationPreference ?? reducedMotion;
-  const requestSequence = useRef(0);
+  const { begin, isLatest, invalidate } = useLatestRequest("gif-picker");
   const activeRequest = useRef<AbortController | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -46,7 +47,7 @@ export function GifPicker({
     activeRequest.current?.abort();
     const controller = new AbortController();
     activeRequest.current = controller;
-    const sequence = ++requestSequence.current;
+    const request = begin();
     const trimmedQuery = query.trim();
     if (!cursor) setStatus("loading");
     else setLoadingMore(true);
@@ -54,27 +55,27 @@ export function GifPicker({
       const page = trimmedQuery
         ? await provider.search({ query: trimmedQuery, cursor, signal: controller.signal })
         : await provider.trending({ cursor, signal: controller.signal });
-      if (sequence !== requestSequence.current) return;
+      if (!isLatest(request)) return;
       setGifs((current) => cursor ? [...current, ...page.gifs] : page.gifs);
       setNext(page.next);
       setStatus(page.gifs.length === 0 && !cursor ? "empty" : "ready");
     } catch {
-      if (sequence !== requestSequence.current) return;
+      if (!isLatest(request)) return;
       if (!cursor) setGifs([]);
       setStatus("notice");
     } finally {
-      if (sequence === requestSequence.current) setLoadingMore(false);
+      if (isLatest(request)) setLoadingMore(false);
     }
-  }, [provider, query]);
+  }, [begin, isLatest, provider, query]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void load(), query ? 300 : 0);
     return () => {
       window.clearTimeout(timeout);
       activeRequest.current?.abort();
-      requestSequence.current += 1;
+      invalidate();
     };
-  }, [load, query]);
+  }, [invalidate, load, query]);
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;

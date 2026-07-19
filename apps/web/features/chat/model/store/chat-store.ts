@@ -9,8 +9,11 @@ import {
   type ChatState,
   type RealtimeConnectionState,
 } from "@fish/core/chat-state";
+import type { ChatStickerId } from "@fish/core/chat";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
+
+export { createChatHydrationKey } from "@fish/core/chat-state";
 
 export interface ChatStoreState {
   conversations: ChatState["conversations"];
@@ -61,15 +64,26 @@ export interface ChatStoreState {
     conversationId: ChatConversationId,
     messageId: ChatMessageId | null
   ) => void;
-  setEditTarget: (
+  selectGif: (
     conversationId: ChatConversationId,
-    messageId: ChatMessageId | null
+    gif: ChatMessageState["gif"],
+    query: string
   ) => void;
+  selectSticker: (
+    conversationId: ChatConversationId,
+    stickerId: ChatStickerId
+  ) => void;
+  clearComposerSelection: (conversationId: ChatConversationId) => void;
+  requestDelete: (
+    conversationId: ChatConversationId,
+    messageId: ChatMessageId,
+    at: string
+  ) => void;
+  failDelete: (conversationId: ChatConversationId, messageId: ChatMessageId) => void;
   setRealtimeStatus: (
     conversationId: ChatConversationId,
     status: RealtimeConnectionState
   ) => void;
-  clearComposer: (conversationId: ChatConversationId) => void;
   clearConversation: (conversationId: ChatConversationId) => void;
 }
 
@@ -79,42 +93,6 @@ function createStateFromConversations(
   conversations: ChatState["conversations"]
 ): ChatState {
   return { conversations };
-}
-
-// Hashes only messages + read states. Pagination metadata (hasMoreOlder/
-// oldestCursor) is derived server-side from the same SSR payload and always
-// travels alongside it, so it needs no place of its own in this key — adding
-// it here would not change when a re-entrant hydration should be treated as
-// "already seen" (review MEDIUM 10-03).
-export function createChatHydrationKey(
-  messages: ChatMessageState[],
-  readStates: ChatReadState[]
-): string {
-  return JSON.stringify({
-    messages: messages.map((message) => ({
-      id: message.id,
-      conversationId: message.conversationId,
-      senderId: message.senderId,
-      senderRole: message.senderRole,
-      body: message.body,
-      gif: message.gif ?? null,
-      stickerId: message.stickerId ?? null,
-      clientRequestId: message.clientRequestId,
-      createdAt: message.createdAt,
-      editedAt: message.editedAt ?? null,
-      deletedAt: message.deletedAt ?? null,
-      replyToMessageId: message.replyToMessageId ?? null,
-      reactions: message.reactions ?? [],
-      localStatus: message.localStatus,
-    })),
-    readStates: readStates.map((readState) => ({
-      userId: readState.userId,
-      lastDeliveredMessageId: readState.lastDeliveredMessageId ?? null,
-      deliveredAt: readState.deliveredAt ?? null,
-      lastReadMessageId: readState.lastReadMessageId ?? null,
-      readAt: readState.readAt ?? null,
-    })),
-  });
 }
 
 function createChatStoreState(set: ChatStoreSet): ChatStoreState {
@@ -231,14 +209,24 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
     setReplyTarget: (conversationId, messageId) => {
       dispatchChatEvent({ type: "setReplyTarget", conversationId, messageId });
     },
-    setEditTarget: (conversationId, messageId) => {
-      dispatchChatEvent({ type: "setEditTarget", conversationId, messageId });
+    selectGif: (conversationId, gif, query) => {
+      if (!gif) return;
+      dispatchChatEvent({ type: "composerGifSelected", conversationId, gif, query });
+    },
+    selectSticker: (conversationId, stickerId) => {
+      dispatchChatEvent({ type: "composerStickerSelected", conversationId, stickerId });
+    },
+    clearComposerSelection: (conversationId) => {
+      dispatchChatEvent({ type: "composerSelectionCleared", conversationId });
+    },
+    requestDelete: (conversationId, messageId, at) => {
+      dispatchChatEvent({ type: "deleteRequested", conversationId, messageId, at });
+    },
+    failDelete: (conversationId, messageId) => {
+      dispatchChatEvent({ type: "deleteFailed", conversationId, messageId });
     },
     setRealtimeStatus: (conversationId, status) => {
       dispatchChatEvent({ type: "setRealtimeStatus", conversationId, status });
-    },
-    clearComposer: (conversationId) => {
-      dispatchChatEvent({ type: "clearComposer", conversationId });
     },
     clearConversation: (conversationId) => {
       set((state) => {

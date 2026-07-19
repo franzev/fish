@@ -8,16 +8,17 @@ import type {
   UnreadSummaryActionState,
 } from "@/features/chat/contracts";
 import {
+  createUnreadInputsSignature,
   getUnreadMessageSummary,
-  mergeReadState as mergeChatReadState,
 } from "@/features/chat/model/chat-state";
 import { toLocalMessage, type LocalMessage } from "./use-chat-messages";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   chatStore,
-  createChatHydrationKey,
   useChatStore,
 } from "@/features/chat/model/store";
+import { useHydratedConversation } from "./use-hydrated-conversation";
+import { useLatestRequest } from "./use-latest-request";
 import {
   selectHydrationKeyForConversation,
   selectReadStatesForConversation,
@@ -54,30 +55,6 @@ function readStateForCurrentUser(
   ).find((state) => state.userId === currentUserId);
 }
 
-function isEarlierTimestamp(
-  incoming: string | null,
-  current: string | null
-): boolean {
-  if (!current) return false;
-  if (!incoming) return true;
-  return Date.parse(incoming) < Date.parse(current);
-}
-
-function mergeMonotonicReadState(
-  current: ClientChatReadState[],
-  incoming: ClientChatReadState
-): ClientChatReadState[] {
-  const existing = current.find((state) => state.userId === incoming.userId);
-  if (
-    existing &&
-    (isEarlierTimestamp(incoming.deliveredAt, existing.deliveredAt) ||
-      isEarlierTimestamp(incoming.readAt, existing.readAt))
-  ) {
-    return current;
-  }
-  return mergeChatReadState(current, incoming);
-}
-
 export function useChatReadState({
   chat,
   messages,
@@ -91,15 +68,9 @@ export function useChatReadState({
     selectHydrationKeyForConversation(state, chat.conversationId)
   );
   const mergeReadStateAction = useChatStore((state) => state.mergeReadState);
-  const initialMessages = useMemo(
-    () => chat.messages.map(toLocalMessage),
-    [chat.messages]
-  );
+  const initialMessages = useMemo(() => chat.messages.map(toLocalMessage), [chat.messages]);
   const initialReadStates = useMemo(() => chat.readStates ?? [], [chat.readStates]);
-  const hydrationKey = useMemo(
-    () => createChatHydrationKey(initialMessages, initialReadStates),
-    [initialMessages, initialReadStates]
-  );
+  const { hydrationKey } = useHydratedConversation(initialMessages, initialReadStates);
   const readStates =
     storedHydrationKey === hydrationKey ? storeReadStates : initialReadStates;
 
@@ -115,24 +86,12 @@ export function useChatReadState({
   );
 
   const mergeReadState = useCallback((readState: ClientChatReadState) => {
-    const current = selectReadStatesForConversation(
-      chatStore.getState(),
-      chat.conversationId
-    ) as ClientChatReadState[];
-    if (mergeMonotonicReadState(current, readState) !== current) {
-      mergeReadStateAction(chat.conversationId, readState);
-    }
+    mergeReadStateAction(chat.conversationId, readState);
   }, [chat.conversationId, mergeReadStateAction]);
 
   const mergeReadStates = useCallback((incoming: ClientChatReadState[]) => {
-    const current = selectReadStatesForConversation(
-      chatStore.getState(),
-      chat.conversationId
-    ) as ClientChatReadState[];
-    setReadStates(
-      incoming.reduce(mergeMonotonicReadState, current)
-    );
-  }, [chat.conversationId, setReadStates]);
+    incoming.forEach((readState) => mergeReadStateAction(chat.conversationId, readState));
+  }, [chat.conversationId, mergeReadStateAction]);
 
   const currentUserReadState = useMemo(
     () => readStates.find((state) => state.userId === chat.currentUserId),
@@ -178,7 +137,7 @@ export function useChatReadState({
       };
 
   const activeConversationIdRef = useRef(chat.conversationId);
-  const summaryRequestRef = useRef(0);
+  const { begin, isLatest } = useLatestRequest(chat.conversationId);
   const deliveredRequestRef = useRef<{
     conversationId: string;
     messageId: string;
@@ -186,7 +145,6 @@ export function useChatReadState({
 
   useEffect(() => {
     activeConversationIdRef.current = chat.conversationId;
-    summaryRequestRef.current += 1;
     deliveredRequestRef.current = null;
   }, [chat.conversationId]);
 
@@ -200,7 +158,7 @@ export function useChatReadState({
 
   const refreshUnreadSummary = useCallback(async () => {
     const conversationId = chat.conversationId;
-    const requestId = ++summaryRequestRef.current;
+    const request = begin();
     if (!refreshUnreadSummaryAction) {
       const currentMessages =
         chatStore.getState().conversations[conversationId]?.messages ?? messages;
@@ -220,7 +178,7 @@ export function useChatReadState({
     );
     if (
       activeConversationIdRef.current !== conversationId ||
-      summaryRequestRef.current !== requestId ||
+      !isLatest(request) ||
       result?.status !== "sent" ||
       !result.unreadSummary
     ) {
@@ -233,6 +191,8 @@ export function useChatReadState({
     chat.currentUserId,
     messages,
     refreshUnreadSummaryAction,
+    begin,
+    isLatest,
     updateUnreadSummary,
   ]);
 
@@ -299,14 +259,10 @@ export function useChatReadState({
     messages,
   ]);
 
-  const unreadInputsSignature = useMemo(
-    () => [
-      currentUserReadState?.lastReadMessageId ?? "",
-      ...messages
-        .filter((message) => message.senderId !== chat.currentUserId)
-        .map((message) => `${message.id}:${message.deletedAt ?? ""}`),
-    ].join("|"),
-    [chat.currentUserId, currentUserReadState?.lastReadMessageId, messages]
+  const unreadInputsSignature = createUnreadInputsSignature(
+    messages,
+    chat.currentUserId,
+    currentUserReadState?.lastReadMessageId
   );
   const previousUnreadInputsRef = useRef({
     conversationId: chat.conversationId,

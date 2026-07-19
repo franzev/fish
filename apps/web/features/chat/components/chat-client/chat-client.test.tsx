@@ -6,6 +6,7 @@ import type { ClientChatData } from "@/lib/services";
 import { setSentinelIntersecting, triggerIntersection } from "@/tests/intersection-observer";
 import { ChatClient } from "./chat-client";
 import { MessagesWorkspace } from "../messages-workspace";
+import { chat, searchableCommunityChat } from "./chat-client.fixtures";
 import { chatStore, resetChatStoreForTests } from "@/features/chat/model/store";
 import {
   selectMessagesForConversation,
@@ -21,9 +22,6 @@ const realtimeMock = vi.hoisted(() => {
   const presenceHandlers: Array<(payload: { eventType: string; new: unknown; old: unknown }) => void> = [];
   const typingHandlers: Array<
     (payload: { payload: { typing?: boolean; userId?: string } }) => void
-  > = [];
-  const voiceHandlers: Array<
-    (payload: { payload: { recording?: boolean; userId?: string } }) => void
   > = [];
   const channel = {
     on: vi.fn(),
@@ -46,7 +44,6 @@ const realtimeMock = vi.hoisted(() => {
     reactionHandlers,
     presenceHandlers,
     typingHandlers,
-    voiceHandlers,
     channel,
     table,
     client,
@@ -77,68 +74,6 @@ vi.mock("@/features/calls", () => ({
   ),
 }));
 
-const chat: ClientChatData = {
-  conversationId: "11111111-1111-4111-8111-111111111111",
-  currentUserId: "client-1",
-  currentUserRole: "client",
-  currentUserDisplayName: "Franz",
-  participant: {
-    id: "coach-1",
-    displayName: "Gwyn",
-    role: "coach",
-  },
-  messages: [
-    {
-      id: "message-1",
-      conversationId: "11111111-1111-4111-8111-111111111111",
-      senderId: "coach-1",
-      senderRole: "coach",
-      body: "How did practice feel today?",
-      clientRequestId: "seed-1",
-      createdAt: "2026-07-05T00:00:00.000Z",
-      editedAt: null,
-      deletedAt: null,
-      replyToMessageId: null,
-      reactions: [],
-    },
-  ],
-  readStates: [
-    {
-      userId: "client-1",
-      lastDeliveredMessageId: "message-1",
-      deliveredAt: "2026-07-05T00:00:01.000Z",
-      lastReadMessageId: null,
-      readAt: null,
-    },
-    {
-      userId: "coach-1",
-      lastDeliveredMessageId: null,
-      deliveredAt: null,
-      lastReadMessageId: null,
-      readAt: null,
-    },
-  ],
-  participantPresence: {
-    lastSeenAt: "2026-07-05T00:00:00.000Z",
-    sessions: [],
-  },
-};
-
-const searchableCommunityChat: ClientChatData = {
-  ...chat,
-  kind: "community",
-  channelId: "22222222-2222-4222-8222-222222222222",
-  channelSlug: "general",
-  channelName: "general",
-  title: "general",
-  participantPresence: undefined,
-};
-
-// Every realtime channel shares one mocked `channel` object, and
-// `channel.subscribe`/`client.channel` mock call history accumulates across
-// every test in this file (no clearMocks). Search from the end so a test
-// captures the connection-status callback from its own latest subscribe
-// call, not an earlier test's.
 function latestSubscribeStatusCallback(
   channelSuffix: string
 ): (status: string) => void {
@@ -226,8 +161,6 @@ describe("ChatClient hook boundaries", () => {
 
     expect(useChatRealtimeSource).toContain("previousConversationId");
     expect(useChatRealtimeSource).toContain("setParticipantTyping(false)");
-    expect(useChatRealtimeSource).toContain("setParticipantRecording(false)");
-    expect(useChatRealtimeSource).toContain("setLocalRecording(false)");
     expect(useChatRealtimeSource).toContain("localTypingRef.current = false");
   });
 });
@@ -248,7 +181,6 @@ describe("ChatClient", () => {
     realtimeMock.reactionHandlers.length = 0;
     realtimeMock.presenceHandlers.length = 0;
     realtimeMock.typingHandlers.length = 0;
-    realtimeMock.voiceHandlers.length = 0;
     realtimeMock.channel.on.mockImplementation((event, filter, callback) => {
       if (event === "postgres_changes" && filter?.table === "messages") {
         if (filter?.event === "UPDATE") {
@@ -281,12 +213,6 @@ describe("ChatClient", () => {
       if (event === "broadcast" && filter?.event === "typing") {
         realtimeMock.typingHandlers.push(
           callback as (payload: { payload: { typing?: boolean; userId?: string } }) => void
-        );
-      }
-
-      if (event === "broadcast" && filter?.event === "voice-recording") {
-        realtimeMock.voiceHandlers.push(
-          callback as (payload: { payload: { recording?: boolean; userId?: string } }) => void
         );
       }
 

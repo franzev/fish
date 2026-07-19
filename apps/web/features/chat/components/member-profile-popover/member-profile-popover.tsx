@@ -9,9 +9,7 @@ import {
 } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { getBrowserServices, getFriendCommandService } from "@/lib/services/runtime/browser";
 import type {
-  FriendCandidate,
   FriendCommandService,
   FriendRepository,
 } from "@/lib/services";
@@ -19,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import { IconBan, IconDots, IconX } from "@tabler/icons-react";
 import { useRef, useState, type ReactNode } from "react";
+import { useFriendRelationship } from "@/features/chat/hooks/use-friend-relationship";
 import { Avatar } from "../avatar";
 
 export interface CommunityMemberProfile {
@@ -41,9 +40,6 @@ interface MemberProfilePopoverProps {
   commands?: FriendCommandService;
 }
 
-const friendStatusNotice =
-  "Friend status isn’t available yet. Give it a moment and try again.";
-
 /**
  * A calm identity preview for community message authors. The popup only
  * exposes the already-validated client-to-client Friends workflow; coaches,
@@ -61,23 +57,31 @@ export function MemberProfilePopover({
   commands: commandsOverride,
 }: MemberProfilePopoverProps) {
   const [open, setOpen] = useState(false);
-  const [candidate, setCandidate] = useState<FriendCandidate | null>(null);
-  const [loadingRelationship, setLoadingRelationship] = useState(false);
-  const [sendingRequest, setSendingRequest] = useState(false);
   const [confirmingBlock, setConfirmingBlock] = useState(false);
-  const [blocking, setBlocking] = useState(false);
-  const [blocked, setBlocked] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [clientRequestId, setClientRequestId] = useState<string | null>(null);
-  const asyncSequence = useRef(0);
+  const {
+    canCheckFriendStatus,
+    candidate,
+    loadingRelationship,
+    sendingRequest,
+    blocking,
+    blocked,
+    notice,
+    open: openRelationship,
+    close: closeRelationship,
+    sendFriendRequest,
+    blockMember,
+    setNotice,
+  } = useFriendRelationship({
+    member,
+    currentUserId,
+    currentUserRole,
+    friendActionsEnabled,
+    repository: repositoryOverride,
+    commands: commandsOverride,
+  });
   const closeRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
   const confirmBlockRef = useRef<HTMLButtonElement>(null);
-  const canCheckFriendStatus =
-    friendActionsEnabled &&
-    currentUserRole === "client" &&
-    member.role !== "coach" &&
-    member.id !== currentUserId;
   const relationshipConfirmsClient =
     member.role === "client" ||
     Boolean(candidate?.profile) ||
@@ -87,112 +91,17 @@ export function MemberProfilePopover({
     canCheckFriendStatus &&
     (loadingRelationship || relationshipConfirmsClient || Boolean(notice));
 
-  async function loadRelationship(sequence: number) {
-    if (!canCheckFriendStatus || !member.username) {
-      setLoadingRelationship(false);
-      return;
-    }
-
-    setLoadingRelationship(true);
-    const repository =
-      repositoryOverride ?? getBrowserServices().database.friends;
-    let result;
-    try {
-      result = await repository.searchCandidate(member.username);
-    } catch {
-      if (sequence !== asyncSequence.current) return;
-      setLoadingRelationship(false);
-      setCandidate(null);
-      setNotice(friendStatusNotice);
-      return;
-    }
-    if (sequence !== asyncSequence.current) return;
-
-    setLoadingRelationship(false);
-    if (!result.ok) {
-      setCandidate(null);
-      setNotice(friendStatusNotice);
-      return;
-    }
-    setCandidate(result.data);
-  }
-
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
-    const sequence = ++asyncSequence.current;
 
     if (!nextOpen) {
-      setLoadingRelationship(false);
-      setSendingRequest(false);
-      setBlocking(false);
+      closeRelationship();
       setConfirmingBlock(false);
-      setNotice(null);
       return;
     }
 
-    setCandidate(null);
-    setNotice(null);
-    setBlocked(false);
     setConfirmingBlock(false);
-    setClientRequestId(crypto.randomUUID());
-    void loadRelationship(sequence);
-  }
-
-  async function sendFriendRequest() {
-    if (
-      !candidate?.profile ||
-      candidate.status !== "none" ||
-      !clientRequestId ||
-      sendingRequest
-    ) {
-      return;
-    }
-
-    const sequence = ++asyncSequence.current;
-    setSendingRequest(true);
-    setNotice(null);
-    let result;
-    try {
-      result = await getFriendCommandService(commandsOverride).sendRequest({
-        targetId: member.id,
-        clientRequestId,
-      });
-    } catch {
-      if (sequence !== asyncSequence.current) return;
-      setSendingRequest(false);
-      setNotice("That friend request didn’t send yet. Try again.");
-      return;
-    }
-    if (sequence !== asyncSequence.current) return;
-
-    setSendingRequest(false);
-    if (!result.ok) {
-      if (result.code === "request_pending") {
-        setCandidate({ ...candidate, status: "outgoingPending" });
-        return;
-      }
-      if (result.code === "already_friends") {
-        setCandidate({ ...candidate, status: "friends" });
-        return;
-      }
-      if (result.code === "incoming_request_exists") {
-        const refreshSequence = ++asyncSequence.current;
-        await loadRelationship(refreshSequence);
-        return;
-      }
-      setNotice(result.notice);
-      return;
-    }
-
-    if (result.data.status === "accepted") {
-      setCandidate({ ...candidate, status: "friends" });
-      return;
-    }
-    if (result.data.status === "pending") {
-      setCandidate({ ...candidate, status: "outgoingPending" });
-      return;
-    }
-    setCandidate({ ...candidate, status: "unavailable" });
+    openRelationship();
   }
 
   function startBlockConfirmation() {
@@ -207,35 +116,11 @@ export function MemberProfilePopover({
     requestAnimationFrame(() => moreRef.current?.focus());
   }
 
-  async function blockMember() {
-    if (blocking) return;
-
-    const sequence = ++asyncSequence.current;
-    setBlocking(true);
-    setNotice(null);
-    let result;
-    try {
-      result = await getFriendCommandService(commandsOverride).blockUser(
-        member.id
-      );
-    } catch {
-      if (sequence !== asyncSequence.current) return;
-      setBlocking(false);
-      setNotice("That member wasn’t blocked yet. Try again.");
-      return;
+  async function handleBlockMember() {
+    if (await blockMember()) {
+      setConfirmingBlock(false);
+      requestAnimationFrame(() => closeRef.current?.focus());
     }
-    if (sequence !== asyncSequence.current) return;
-
-    setBlocking(false);
-    if (!result.ok) {
-      setNotice(result.notice);
-      return;
-    }
-
-    setBlocked(true);
-    setConfirmingBlock(false);
-    setCandidate(null);
-    requestAnimationFrame(() => closeRef.current?.focus());
   }
 
   function renderRelationshipContent() {
@@ -429,7 +314,7 @@ export function MemberProfilePopover({
                         variant="secondary"
                         fullWidth
                         loading={blocking}
-                        onClick={() => void blockMember()}
+                        onClick={() => void handleBlockMember()}
                       >
                         Block
                       </Button>

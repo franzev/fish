@@ -262,6 +262,11 @@ describe("useChatComposer inline editing", () => {
         deleteMessageAction,
       })
     );
+    chatStore.getState().hydrateConversation(
+      conversationA.conversationId,
+      [ownMessage],
+      []
+    );
 
     type DeleteOutcome = Awaited<
       ReturnType<typeof result.current.handleDeleteMessage>
@@ -272,7 +277,7 @@ describe("useChatComposer inline editing", () => {
       pendingDelete = result.current.handleDeleteMessage(ownMessage);
     });
     expect(
-      result.current.optimisticDeletedAtByMessageId.get(ownMessage.id)
+      chatStore.getState().conversations[conversationA.conversationId]?.messages[0]?.deletedAt
     ).toEqual(expect.any(String));
 
     await act(async () => {
@@ -288,7 +293,9 @@ describe("useChatComposer inline editing", () => {
       ok: false,
       notice: "That message is still here. Try deleting it again.",
     });
-    expect(result.current.optimisticDeletedAtByMessageId.size).toBe(0);
+    expect(
+      chatStore.getState().conversations[conversationA.conversationId]?.messages[0]?.deletedAt
+    ).toBeNull();
     expect(result.current.notice).toBe(
       "That message is still here. Try deleting it again."
     );
@@ -316,6 +323,11 @@ describe("useChatComposer inline editing", () => {
         deleteMessageAction,
       })
     );
+    chatStore.getState().hydrateConversation(
+      conversationA.conversationId,
+      [ownMessage],
+      []
+    );
 
     type DeleteOutcome = Awaited<
       ReturnType<typeof result.current.handleDeleteMessage>
@@ -338,7 +350,9 @@ describe("useChatComposer inline editing", () => {
     });
 
     expect(outcome).toEqual({ ok: true });
-    expect(result.current.optimisticDeletedAtByMessageId.size).toBe(0);
+    expect(
+      chatStore.getState().conversations[conversationA.conversationId]?.messages[0]?.deletedAt
+    ).toBe("2026-07-14T00:01:00.000Z");
     expect(result.current.notice).toBeNull();
   });
 });
