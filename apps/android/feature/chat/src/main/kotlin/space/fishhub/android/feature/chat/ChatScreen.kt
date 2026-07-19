@@ -56,6 +56,7 @@ fun ChatAdaptiveLayout(
     onBack: () -> Unit,
     onRetryEarlier: () -> Unit,
     onSelectConversation: (String) -> Unit,
+    emojiCatalog: ChatMediaCatalog = ChatMediaCatalog.Empty,
     pendingMedia: ComposerMediaUiModel? = null,
     onOpenMediaPicker: () -> Unit = {},
     onRemovePendingMedia: () -> Unit = {},
@@ -108,6 +109,7 @@ fun ChatAdaptiveLayout(
                     ChatScreen(
                         model = model.copy(hasPreviousDestination = false),
                         composerState = composerState,
+                        emojiCatalog = emojiCatalog,
                         onSend = onSend,
                         onBack = onBack,
                         onRetryEarlier = onRetryEarlier,
@@ -150,6 +152,7 @@ fun ChatAdaptiveLayout(
                 ChatScreen(
                     model = model,
                     composerState = composerState,
+                    emojiCatalog = emojiCatalog,
                     onSend = onSend,
                     onBack = onBack,
                     onRetryEarlier = onRetryEarlier,
@@ -194,6 +197,7 @@ fun ChatScreen(
     onSend: () -> Unit,
     onBack: () -> Unit,
     onRetryEarlier: () -> Unit,
+    emojiCatalog: ChatMediaCatalog = ChatMediaCatalog.Empty,
     onRetryConversation: () -> Unit = {},
     pendingMedia: ComposerMediaUiModel? = null,
     onOpenMediaPicker: () -> Unit = {},
@@ -222,6 +226,9 @@ fun ChatScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedMessageId by remember(model.selectedConversationId) { mutableStateOf<String?>(null) }
+    var showReactionsInitially by remember(model.selectedConversationId) {
+        mutableStateOf(false)
+    }
     var participantDetailsVisible by remember(model.selectedConversationId) { mutableStateOf(false) }
     Column(
         modifier = modifier
@@ -292,7 +299,14 @@ fun ChatScreen(
                     onPhotoAttachmentClick = onPhotoAttachmentClick,
                     onFileAttachmentClick = onFileAttachmentClick,
                     onAttachmentLoadError = onAttachmentLoadError,
-                    onOpenMessageActions = { selectedMessageId = it },
+                    onOpenMessageActions = {
+                        showReactionsInitially = false
+                        selectedMessageId = it
+                    },
+                    onOpenReactionPicker = {
+                        showReactionsInitially = true
+                        selectedMessageId = it
+                    },
                     onToggleReaction = onToggleReaction,
                     onFocusMessage = onFocusMessage,
                     modifier = Modifier.weight(1f),
@@ -343,6 +357,8 @@ fun ChatScreen(
                 selectedMessageId = null
                 onToggleReaction(selectedMessage.id, emoji)
             },
+            emojiCatalog = emojiCatalog,
+            showReactionsInitially = showReactionsInitially,
         )
     }
     if (participantDetailsVisible && model.participant != null) {
@@ -370,6 +386,7 @@ fun ChatTranscript(
     onFileAttachmentClick: (String) -> Unit = {},
     onAttachmentLoadError: (String) -> Unit = {},
     onOpenMessageActions: (String) -> Unit = {},
+    onOpenReactionPicker: (String) -> Unit = {},
     onToggleReaction: (String, String) -> Unit = { _, _ -> },
     onFocusMessage: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -471,6 +488,7 @@ fun ChatTranscript(
                     onAttachmentLoadError = onAttachmentLoadError,
                     onRetry = { onRetryMessage(message.id) },
                     onOpenActions = { onOpenMessageActions(message.id) },
+                    onAddReaction = { onOpenReactionPicker(message.id) },
                     onToggleReaction = { emoji -> onToggleReaction(message.id, emoji) },
                     onReplyPreviewClick = onFocusMessage,
                     modifier = Modifier

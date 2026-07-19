@@ -1,6 +1,5 @@
 package space.fishhub.android.feature.chat
 
-import android.view.ContextThemeWrapper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,9 +22,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.emoji2.emojipicker.EmojiPickerView
-import androidx.emoji2.emojipicker.RecentEmojiProvider
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
@@ -47,9 +43,16 @@ fun ChatMessageActionsSheet(
     onEdit: (String) -> Unit,
     onDelete: () -> Unit,
     onReact: (String) -> Unit,
+    emojiCatalog: ChatMediaCatalog = ChatMediaCatalog.Empty,
+    showReactionsInitially: Boolean = false,
 ) {
-    var view by remember(message.id) { mutableStateOf(MessageActionsView.Actions) }
+    var view by remember(message.id, showReactionsInitially) {
+        mutableStateOf(
+            if (showReactionsInitially) MessageActionsView.Reactions else MessageActionsView.Actions,
+        )
+    }
     var editBody by remember(message.id) { mutableStateOf(message.body) }
+    var emojiQuery by remember(message.id) { mutableStateOf("") }
     FishModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -86,6 +89,7 @@ fun ChatMessageActionsSheet(
                     FishButton(
                         label = stringResource(R.string.add_reaction),
                         onClick = { view = MessageActionsView.Reactions },
+                        enabled = message.reactionsEnabled,
                         modifier = Modifier.fillMaxWidth(),
                         variant = FishButtonVariant.Secondary,
                     )
@@ -113,18 +117,21 @@ fun ChatMessageActionsSheet(
                     }
                 }
                 MessageActionsView.Reactions -> {
-                    AndroidView(
-                        factory = { context ->
-                            EmojiPickerView(
-                                ContextThemeWrapper(context, R.style.FishEmojiPickerTheme),
-                            ).apply {
-                                setRecentEmojiProvider(EmptyRecentEmojiProvider)
-                                setOnEmojiPickedListener { item -> onReact(item.emoji) }
-                            }
+                    FishTextField(
+                        value = emojiQuery,
+                        onValueChange = { emojiQuery = it },
+                        label = stringResource(R.string.search_emoji),
+                        placeholder = stringResource(R.string.search_emoji),
+                    )
+                    EmojiPickerContent(
+                        query = emojiQuery,
+                        results = remember(emojiCatalog, emojiQuery) {
+                            emojiCatalog.searchEmoji(emojiQuery)
                         },
+                        onSelect = onReact,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f, fill = false),
+                            .weight(1f),
                     )
                     FishButton(
                         label = stringResource(R.string.back),
@@ -186,9 +193,4 @@ fun ChatMessageActionsSheet(
             }
         }
     }
-}
-
-private object EmptyRecentEmojiProvider : RecentEmojiProvider {
-    override suspend fun getRecentEmojiList(): List<String> = emptyList()
-    override fun recordSelection(emoji: String) = Unit
 }

@@ -50,8 +50,21 @@ fun mergeReadState(
 ): List<ChatReadState> {
     val existingIndex = current.indexOfFirst { it.userId == incoming.userId }
     if (existingIndex == -1) return current + incoming
-    if (current[existingIndex] == incoming) return current
+    val existing = current[existingIndex]
+    if (isEarlierTimestamp(incoming.deliveredAt, existing.deliveredAt) ||
+        isEarlierTimestamp(incoming.readAt, existing.readAt) ||
+        existing == incoming
+    ) {
+        return current
+    }
     return current.toMutableList().apply { this[existingIndex] = incoming }
+}
+
+private fun isEarlierTimestamp(incoming: String?, current: String?): Boolean {
+    if (current == null) return false
+    if (incoming == null) return true
+    return runCatching { Instant.parse(incoming).isBefore(Instant.parse(current)) }
+        .getOrElse { incoming < current }
 }
 
 fun outgoingMessageStatus(

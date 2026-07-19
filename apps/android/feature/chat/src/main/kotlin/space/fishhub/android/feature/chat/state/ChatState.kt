@@ -5,6 +5,7 @@ package space.fishhub.android.feature.chat.state
 import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatMessageCursor
 import space.fishhub.android.data.chat.model.ChatReadState
+import space.fishhub.android.data.chat.model.ChatGif
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
@@ -29,6 +30,11 @@ data class ChatComposerState(
     val draft: String = "",
     val replyTargetId: String? = null,
     val editTargetId: String? = null,
+    val selectedGif: ChatGif? = null,
+    val selectedGifQuery: String = "",
+    val selectedStickerId: String? = null,
+    val selectionRevision: Int = 0,
+    val pendingDeleteByMessageId: Map<String, String> = emptyMap(),
 )
 
 @Serializable
@@ -120,6 +126,40 @@ sealed interface ChatEvent {
     data class MergeReadState(
         val conversationId: String,
         val readState: ChatReadState,
+    ) : ChatEvent
+
+    @Serializable
+    @SerialName("composerGifSelected")
+    data class ComposerGifSelected(
+        val conversationId: String,
+        val gif: ChatGif,
+        val query: String,
+    ) : ChatEvent
+
+    @Serializable
+    @SerialName("composerStickerSelected")
+    data class ComposerStickerSelected(
+        val conversationId: String,
+        val stickerId: String,
+    ) : ChatEvent
+
+    @Serializable
+    @SerialName("composerSelectionCleared")
+    data class ComposerSelectionCleared(val conversationId: String) : ChatEvent
+
+    @Serializable
+    @SerialName("deleteRequested")
+    data class DeleteRequested(
+        val conversationId: String,
+        val messageId: String,
+        val at: String,
+    ) : ChatEvent
+
+    @Serializable
+    @SerialName("deleteFailed")
+    data class DeleteFailed(
+        val conversationId: String,
+        val messageId: String,
     ) : ChatEvent
 
     @Serializable

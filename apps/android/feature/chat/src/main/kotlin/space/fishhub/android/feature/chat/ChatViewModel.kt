@@ -85,6 +85,7 @@ class ChatViewModel(
     private var selectionRevision = 0L
     private val mediaJson = Json { ignoreUnknownKeys = true }
     private val refreshingAttachmentIds = mutableSetOf<String>()
+    private val pendingReactionMessageIds = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
@@ -289,12 +290,23 @@ class ChatViewModel(
                 ?.firstOrNull { it.id == messageId }
         } ?: return
         if (message.deletedAt != null || message.localStatus != LocalMessageStatus.Sent || emoji.isBlank()) return
+        if (!pendingReactionMessageIds.add(messageId)) return
+        val active = message.reactions.none { reaction ->
+            reaction.emoji == emoji && reaction.byMe
+        }
+        publish()
         viewModelScope.launch {
-            latestNotice = when (val result = repository.toggleReaction(messageId, emoji)) {
-                is ChatResult.Success -> null
-                is ChatResult.Failure -> result.message
+            try {
+                latestNotice = when (
+                    val result = repository.setReaction(messageId, emoji, active)
+                ) {
+                    is ChatResult.Success -> null
+                    is ChatResult.Failure -> result.message
+                }
+            } finally {
+                pendingReactionMessageIds.remove(messageId)
+                publish()
             }
-            publish()
         }
     }
 
@@ -1019,6 +1031,8 @@ class ChatViewModel(
                 },
                 actionsEnabled = message.localStatus == LocalMessageStatus.Sent &&
                     message.deletedAt == null,
+                reactionsEnabled = message.localStatus == LocalMessageStatus.Sent &&
+                    message.deletedAt == null && message.id !in pendingReactionMessageIds,
                 canEdit = outgoing && message.localStatus == LocalMessageStatus.Sent &&
                     message.deletedAt == null && message.body.isNotBlank(),
                 canDelete = outgoing && message.localStatus == LocalMessageStatus.Sent &&

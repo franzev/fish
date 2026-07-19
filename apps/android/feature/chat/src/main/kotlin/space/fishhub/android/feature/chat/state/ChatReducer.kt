@@ -34,6 +34,63 @@ fun reduceChatState(state: ChatState, event: ChatEvent): ChatState = when (event
     is ChatEvent.MergeReadState -> state.updateConversation(event.conversationId) {
         copy(readStates = mergeReadState(readStates, event.readState))
     }
+    is ChatEvent.ComposerGifSelected -> state.updateConversation(event.conversationId) {
+        copy(
+            composer = composer.copy(
+                selectedGif = event.gif,
+                selectedGifQuery = event.query,
+                selectedStickerId = null,
+                selectionRevision = composer.selectionRevision + 1,
+            ),
+        )
+    }
+    is ChatEvent.ComposerStickerSelected -> state.updateConversation(event.conversationId) {
+        copy(
+            composer = composer.copy(
+                selectedGif = null,
+                selectedGifQuery = "",
+                selectedStickerId = event.stickerId,
+                selectionRevision = composer.selectionRevision + 1,
+            ),
+        )
+    }
+    is ChatEvent.ComposerSelectionCleared -> state.updateConversation(event.conversationId) {
+        copy(
+            composer = composer.copy(
+                selectedGif = null,
+                selectedGifQuery = "",
+                selectedStickerId = null,
+                selectionRevision = composer.selectionRevision + 1,
+            ),
+        )
+    }
+    is ChatEvent.DeleteRequested -> state.updateConversation(event.conversationId) {
+        if (messages.none { it.id == event.messageId }) return@updateConversation this
+        copy(
+            messages = messages.map { message ->
+                if (message.id == event.messageId) message.copy(deletedAt = event.at) else message
+            },
+            composer = composer.copy(
+                pendingDeleteByMessageId = composer.pendingDeleteByMessageId +
+                    (event.messageId to event.at),
+            ),
+        )
+    }
+    is ChatEvent.DeleteFailed -> state.updateConversation(event.conversationId) {
+        val pendingAt = composer.pendingDeleteByMessageId[event.messageId]
+            ?: return@updateConversation this
+        val pendingDeletes = composer.pendingDeleteByMessageId - event.messageId
+        copy(
+            messages = messages.map { message ->
+                if (message.id == event.messageId && message.deletedAt == pendingAt) {
+                    message.copy(deletedAt = null)
+                } else {
+                    message
+                }
+            },
+            composer = composer.copy(pendingDeleteByMessageId = pendingDeletes),
+        )
+    }
     is ChatEvent.SetReplyTarget -> state.updateConversation(event.conversationId) {
         copy(composer = composer.copy(replyTargetId = event.messageId))
     }

@@ -6,10 +6,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import coil3.compose.rememberAsyncImagePainter
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
@@ -132,6 +132,7 @@ fun MessageBubble(
     onFileAttachmentClick: (String) -> Unit = {},
     onAttachmentLoadError: (String) -> Unit = {},
     onOpenActions: () -> Unit = {},
+    onAddReaction: () -> Unit = {},
     onToggleReaction: (String) -> Unit = {},
     onReplyPreviewClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -252,33 +253,36 @@ fun MessageBubble(
             )
         }
         if (message.reactions.isNotEmpty()) {
-            Row(
+            FlowRow(
                 modifier = Modifier
                     .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
-                    .horizontalScroll(rememberScrollState())
                     .padding(top = FishTheme.spacing.twoXs),
                 horizontalArrangement = Arrangement.spacedBy(FishTheme.spacing.twoXs),
+                verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.twoXs),
             ) {
                 message.reactions.forEach { reaction ->
-                    val reactionDescription = stringResource(
-                        R.string.reaction_accessibility,
+                    val reactionDescription = pluralStringResource(
+                        R.plurals.reaction_accessibility,
+                        reaction.count,
                         reaction.emoji,
                         reaction.count,
-                    )
-                    FishButton(
-                        label = "${reaction.emoji} ${reaction.count}",
+                    ) + if (reaction.byMe) {
+                        stringResource(R.string.reaction_including_you)
+                    } else {
+                        ""
+                    }
+                    ReactionChip(
+                        reaction = reaction,
+                        description = reactionDescription,
+                        enabled = message.reactionsEnabled,
                         onClick = { onToggleReaction(reaction.emoji) },
-                        variant = if (reaction.byMe) {
-                            FishButtonVariant.Secondary
-                        } else {
-                            FishButtonVariant.Ghost
-                        },
-                        enabled = message.actionsEnabled,
-                        modifier = Modifier.semantics {
-                            contentDescription = reactionDescription
-                        },
                     )
                 }
+                AddReactionChip(
+                    description = stringResource(R.string.add_reaction),
+                    enabled = message.reactionsEnabled,
+                    onClick = onAddReaction,
+                )
             }
         }
         if (message.delivery == MessageDeliveryUiState.Failed) {

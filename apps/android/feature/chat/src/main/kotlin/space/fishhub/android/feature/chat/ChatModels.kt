@@ -66,6 +66,7 @@ data class MessageUiModel(
     val replyPreview: ReplyPreviewUiModel? = null,
     val reactions: List<ReactionUiModel> = emptyList(),
     val actionsEnabled: Boolean = false,
+    val reactionsEnabled: Boolean = actionsEnabled,
     val canEdit: Boolean = false,
     val canDelete: Boolean = false,
     val gif: GifUiModel? = null,

@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -22,7 +23,7 @@ class ChatStateParityTest {
         val resource = checkNotNull(javaClass.classLoader?.getResource("chat-state-vectors.json"))
         val vectors = json.decodeFromString<List<ChatStateVector>>(resource.readText())
 
-        assertEquals("The shared contract case count changed", 24, vectors.size)
+        assertEquals("The shared contract case count changed", 27, vectors.size)
         vectors.forEach { vector ->
             val actual = applyChatEvents(vector.initialState, vector.events)
             vector.expectedState?.let { expected ->
@@ -83,6 +84,33 @@ class ChatStateParityTest {
                 else -> OutgoingMessageStatus.Sent
             }
             assertEquals(name, expected, outgoingMessageStatus(message, conversation.messages, readState))
+        }
+        selectors["composer"]?.jsonObject?.let { input ->
+            val composer = state.conversation(input.string("conversationId")).composer
+            assertEquals(
+                name,
+                input.getValue("selectedGifProviderId").jsonPrimitive.contentOrNull,
+                composer.selectedGif?.providerId,
+            )
+            assertEquals(
+                name,
+                input.getValue("selectedStickerId").jsonPrimitive.contentOrNull,
+                composer.selectedStickerId,
+            )
+            assertEquals(name, input.string("selectedGifQuery"), composer.selectedGifQuery)
+            assertEquals(
+                name,
+                input.getValue("selectionRevision").jsonPrimitive.int,
+                composer.selectionRevision,
+            )
+        }
+        selectors["messageDeletedAt"]?.jsonObject?.let { input ->
+            val message = state.message(input.string("conversationId"), input.string("messageId"))
+            assertEquals(
+                name,
+                input.getValue("expected").jsonPrimitive.contentOrNull,
+                message.deletedAt,
+            )
         }
     }
 

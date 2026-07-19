@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.unit.dp
@@ -387,6 +389,41 @@ class ChatAccessibilityTest {
     }
 
     @Test
+    fun reactionPickerSearchesTheSharedCatalog() {
+        var reaction: String? = null
+        composeRule.setContent {
+            FishTheme {
+                ChatMessageActionsSheet(
+                    message = actionableMessage(),
+                    onDismiss = {},
+                    onReply = {},
+                    onEdit = {},
+                    onDelete = {},
+                    onReact = { reaction = it },
+                    emojiCatalog = ChatMediaCatalog(
+                        emojiGroups = listOf(
+                            EmojiCatalogGroup(
+                                name = "Smileys",
+                                slug = "smileys",
+                                emojis = listOf(
+                                    EmojiCatalogEntry("👍", "thumbs up", "thumbs-up"),
+                                ),
+                            ),
+                        ),
+                        stickers = emptyList(),
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNode(hasText("Add a reaction") and hasClickAction()).performClick()
+        composeRule.onNode(hasSetTextAction()).performTextInput("thumbs")
+        composeRule.onNodeWithContentDescription("thumbs up").performClick()
+
+        assertEquals("👍", reaction)
+    }
+
+    @Test
     fun longPressOpensActionsWithoutAddingAPersistentControl() {
         var opened = false
         composeRule.setContent {
@@ -428,8 +465,9 @@ class ChatAccessibilityTest {
         }
 
         composeRule.onNodeWithTag("focused-message").assertExists()
-        composeRule.onNodeWithContentDescription("👍, 2 reactions")
+        composeRule.onNodeWithContentDescription("👍 reaction, 2 people, including you")
             .assertHeightIsAtLeast(48.dp)
+            .assertIsSelected()
             .performClick()
         assertEquals("👍", reaction)
     }

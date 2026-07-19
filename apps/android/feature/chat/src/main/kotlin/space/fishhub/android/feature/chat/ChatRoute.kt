@@ -129,6 +129,7 @@ fun ChatRoute(
             ChatAdaptiveLayout(
                 model = state.model.copy(notice = state.notice),
                 composerState = composerState,
+                emojiCatalog = mediaCatalog,
                 onSend = viewModel::sendMessage,
                 onBack = viewModel::showConversationList,
                 onRetryConversation = viewModel::retryConversation,

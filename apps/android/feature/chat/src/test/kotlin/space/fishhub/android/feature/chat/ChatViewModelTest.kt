@@ -529,6 +529,40 @@ class ChatViewModelTest {
         }
 
     @Test
+    fun `reaction writes use desired state and block duplicate taps while pending`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            repository.reactionGate = CompletableDeferred()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitMessages(listOf(incomingMessage("reaction-message")))
+            advanceUntilIdle()
+
+            viewModel.toggleReaction("reaction-message", "👍")
+            viewModel.toggleReaction("reaction-message", "👍")
+            runCurrent()
+
+            var message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertEquals(listOf(true), repository.reactionStates)
+            assertTrue(!message.reactionsEnabled)
+
+            repository.reactionGate?.complete(Unit)
+            advanceUntilIdle()
+            message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertTrue(message.reactionsEnabled)
+            assertEquals(ReactionUiModel("👍", 1, true), message.reactions.single())
+
+            viewModel.toggleReaction("reaction-message", "👍")
+            advanceUntilIdle()
+            message = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.messages.single()
+            assertEquals(listOf(true, false), repository.reactionStates)
+            assertTrue(message.reactions.isEmpty())
+        }
+
+    @Test
     fun `typing signals start once and stop after inactivity`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository()
@@ -687,6 +721,8 @@ private class FakeChatRepository(
     var lastSentContent: OutgoingMessageContent? = null
     var reportCalls: Int = 0
     var sendGate: CompletableDeferred<Unit>? = null
+    var reactionGate: CompletableDeferred<Unit>? = null
+    val reactionStates = mutableListOf<Boolean>()
     var refreshCalls: Int = 0
     var refreshMessageCalls: Int = 0
     var refreshedMessages: List<ChatMessage> = emptyList()
@@ -786,10 +822,23 @@ private class FakeChatRepository(
     override suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage> =
         commandMessage(messageId) { copy(body = "", deletedAt = "2026-07-16T00:01:00Z") }
 
-    override suspend fun toggleReaction(messageId: String, emoji: String): ChatResult<ChatMessage> =
-        commandMessage(messageId) {
-            copy(reactions = listOf(space.fishhub.android.data.chat.model.ChatReaction(emoji, 1, true)))
+    override suspend fun setReaction(
+        messageId: String,
+        emoji: String,
+        active: Boolean,
+    ): ChatResult<ChatMessage> {
+        reactionStates += active
+        reactionGate?.await()
+        return commandMessage(messageId) {
+            copy(
+                reactions = if (active) {
+                    listOf(space.fishhub.android.data.chat.model.ChatReaction(emoji, 1, true))
+                } else {
+                    emptyList()
+                },
+            )
         }
+    }
 
     override suspend fun sendTyping(conversationId: String, typing: Boolean) {
         typingEvents += typing

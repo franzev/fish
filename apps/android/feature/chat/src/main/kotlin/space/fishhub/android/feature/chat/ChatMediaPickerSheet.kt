@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -29,16 +28,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.viewinterop.AndroidView
-import android.view.ContextThemeWrapper
-import androidx.emoji2.emojipicker.EmojiPickerView
-import androidx.emoji2.emojipicker.RecentEmojiProvider
 import coil3.compose.AsyncImage
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
@@ -152,10 +146,11 @@ internal fun ChatMediaPickerContent(
             ),
         )
         when (state.activeTab) {
-            MediaPickerTab.Emoji -> EmojiTab(
+            MediaPickerTab.Emoji -> EmojiPickerContent(
                 query = state.emojiQuery,
                 results = state.emojiResults,
                 onSelect = onEmojiSelected,
+                modifier = Modifier.fillMaxSize(),
             )
             MediaPickerTab.Gif -> GifTab(
                 state = state,
@@ -196,54 +191,6 @@ private fun MediaTabRow(activeTab: MediaPickerTab, onTabSelected: (MediaPickerTa
                     )
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun EmojiTab(
-    query: String,
-    results: List<EmojiCatalogEntry>,
-    onSelect: (String) -> Unit,
-) {
-    if (query.isBlank()) {
-        val background = FishTheme.colors.surface.toArgb()
-        AndroidView(
-            factory = { context ->
-                EmojiPickerView(ContextThemeWrapper(context, R.style.FishEmojiPickerTheme)).apply {
-                    setRecentEmojiProvider(NoRecentEmojiProvider)
-                    setOnEmojiPickedListener { item -> onSelect(item.emoji) }
-                    setBackgroundColor(background)
-                }
-            },
-            update = { view -> view.setBackgroundColor(background) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .weightForPicker(),
-        )
-    } else if (results.isEmpty()) {
-        PickerEmptyText(stringResource(R.string.no_emoji_results))
-    } else {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(FishTheme.spacing.page),
-            horizontalArrangement = Arrangement.spacedBy(FishTheme.spacing.twoXs),
-            verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.twoXs),
-        ) {
-            items(results, key = EmojiCatalogEntry::slug) { entry ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(FishTheme.radii.control))
-                        .clickable { onSelect(entry.emoji) }
-                        .semantics { contentDescription = entry.name },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = entry.emoji, style = FishTheme.typography.heading)
-                }
-            }
         }
     }
 }
@@ -473,11 +420,4 @@ private fun KlipyAttribution() {
         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         style = FishTheme.typography.caption,
     )
-}
-
-private fun Modifier.weightForPicker(): Modifier = fillMaxHeight()
-
-private object NoRecentEmojiProvider : RecentEmojiProvider {
-    override fun recordSelection(emoji: String) = Unit
-    override suspend fun getRecentEmojiList(): List<String> = emptyList()
 }
