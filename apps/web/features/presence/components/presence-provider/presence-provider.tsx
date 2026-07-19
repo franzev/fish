@@ -10,6 +10,13 @@ import type {
   PresenceSnapshot,
 } from "@/lib/services";
 import {
+  createInitialPresenceState,
+  reducePresenceState,
+  selectPresenceIsChanging,
+  selectPresenceSnapshots,
+  type PresenceState,
+} from "@fish/core/presence";
+import {
   getBrowserServices,
   getPresenceCommandService,
   getPresenceRealtimeService,
@@ -22,12 +29,13 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useReducer,
   useState,
 } from "react";
 import {
+  getOwnPresenceDisplayStatus,
   getPresencePresentation,
   presenceLabels,
-  type PresenceDisplayStatus,
 } from "../../model/presentation";
 
 interface PresenceContextValue {
@@ -65,20 +73,18 @@ export function PresenceProvider({
   repository: repositoryOverride,
   realtime: realtimeOverride,
 }: PresenceProviderProps) {
-  const [snapshots, setSnapshots] = useState<Map<string, PresenceSnapshot>>(
-    () => new Map()
+  const [presenceState, dispatch] = useReducer(
+    reducePresenceState,
+    undefined,
+    createInitialPresenceState
   );
-  const [preferenceSetting, setPreferenceSetting] =
-    useState<PresencePreferenceSetting>({
-      preference: "automatic",
-      expiresAt: null,
-    });
-  const preferenceSettingRef = useRef(preferenceSetting);
-  const [preferenceRevision, setPreferenceRevision] = useState(0);
+  const presenceStateRef = useRef<PresenceState>(presenceState);
+  useEffect(() => {
+    presenceStateRef.current = presenceState;
+  }, [presenceState]);
   const [now, setNow] = useState(() => new Date());
-  const [changing, setChanging] = useState(false);
-  const changingRef = useRef(false);
   const visibleSubjectIdsRef = useRef(new Set([userId]));
+  const requestSequenceRef = useRef(0);
   const sessionRef = useRef<ReturnType<PresenceRealtimeService["startSession"]> | null>(
     null
   );
@@ -88,19 +94,19 @@ export function PresenceProvider({
     () => getPresenceRealtimeService(realtimeOverride),
     [realtimeOverride]
   );
+  const snapshots = useMemo(
+    () => selectPresenceSnapshots(presenceState),
+    [presenceState]
+  );
+  const preferenceSetting = presenceState.preferenceSetting;
+  const changing = selectPresenceIsChanging(presenceState);
 
   const mergeSnapshot = useCallback((snapshot: PresenceSnapshot) => {
     if (
       snapshot.userId !== userId &&
       !visibleSubjectIdsRef.current.has(snapshot.userId)
     ) return;
-    setSnapshots((current) => {
-      const previous = current.get(snapshot.userId);
-      if (previous && previous.revision >= snapshot.revision) return current;
-      const next = new Map(current);
-      next.set(snapshot.userId, snapshot);
-      return next;
-    });
+    dispatch({ type: "snapshotReceived", snapshot });
     setNow(new Date());
   }, [userId]);
 
@@ -115,27 +121,10 @@ export function PresenceProvider({
         userId,
         ...visible.data.map((snapshot) => snapshot.userId),
       ]);
-      setSnapshots((current) => {
-        const next = new Map<string, PresenceSnapshot>();
-        visible.data.forEach((snapshot) => {
-          const previous = current.get(snapshot.userId);
-          if (!previous || previous.revision < snapshot.revision) {
-            next.set(snapshot.userId, snapshot);
-          } else {
-            next.set(snapshot.userId, previous);
-          }
-        });
-        return next;
-      });
+      dispatch({ type: "snapshotsHydrated", snapshots: visible.data });
     }
     if (ownPreference.ok) {
-      setPreferenceRevision((current) => {
-        if (current === 0) {
-          preferenceSettingRef.current = ownPreference.data;
-          setPreferenceSetting(ownPreference.data);
-        }
-        return current;
-      });
+      dispatch({ type: "preferenceHydrated", setting: ownPreference.data });
     }
     setNow(new Date());
   }, [repositoryOverride, userId]);
@@ -165,11 +154,10 @@ export function PresenceProvider({
       subjectIds,
       mergeSnapshot,
       (nextSetting, revision) => {
-        setPreferenceRevision((current) => {
-          if (revision < current) return current;
-          preferenceSettingRef.current = nextSetting;
-          setPreferenceSetting(nextSetting);
-          return revision;
+        dispatch({
+          type: "preferenceChangeReceived",
+          setting: nextSetting,
+          revision,
         });
       },
       () => {
@@ -195,19 +183,20 @@ export function PresenceProvider({
     next: PresencePreference,
     durationSeconds: PresenceDurationSeconds | null = null
   ) => {
-    if (changingRef.current) return false;
-    const previousSetting = preferenceSettingRef.current;
+    if (presenceStateRef.current.pendingPreference) return false;
     const optimisticSetting: PresencePreferenceSetting = {
       preference: next,
       expiresAt: durationSeconds === null
         ? null
         : new Date(Date.now() + durationSeconds * 1_000).toISOString(),
     };
-    changingRef.current = true;
-    setChanging(true);
+    const requestId = `presence-preference-${++requestSequenceRef.current}`;
+    dispatch({
+      type: "preferenceSetRequested",
+      requestId,
+      setting: optimisticSetting,
+    });
     setCommandNotice(null);
-    preferenceSettingRef.current = optimisticSetting;
-    setPreferenceSetting(optimisticSetting);
     let result;
     try {
       result = await getPresenceCommandService(commandsOverride).setMode(
@@ -221,22 +210,19 @@ export function PresenceProvider({
         notice: "Your status could not change. Try again.",
       };
     }
-    changingRef.current = false;
-    setChanging(false);
     if (!result.ok) {
-      if (preferenceSettingRef.current === optimisticSetting) {
-        preferenceSettingRef.current = previousSetting;
-        setPreferenceSetting(previousSetting);
-      }
+      dispatch({ type: "preferenceSetFailed", requestId });
       setCommandNotice(result.notice);
       return false;
     }
-    preferenceSettingRef.current = result.setting;
-    setPreferenceSetting(result.setting);
-    setPreferenceRevision(result.snapshot.revision);
-    mergeSnapshot(result.snapshot);
+    dispatch({
+      type: "preferenceSetSucceeded",
+      requestId,
+      setting: result.setting,
+      snapshot: result.snapshot,
+    });
     return true;
-  }, [commandsOverride, mergeSnapshot]);
+  }, [commandsOverride]);
 
   useEffect(() => {
     if (!preferenceSetting.expiresAt) return;
@@ -246,13 +232,11 @@ export function PresenceProvider({
       Date.parse(expiresAt) - Date.now()
     );
     const timeout = window.setTimeout(() => {
-      if (preferenceSettingRef.current.expiresAt !== expiresAt) return;
-      const automaticSetting: PresencePreferenceSetting = {
-        preference: "automatic",
-        expiresAt: null,
-      };
-      preferenceSettingRef.current = automaticSetting;
-      setPreferenceSetting(automaticSetting);
+      if (presenceStateRef.current.preferenceSetting.expiresAt !== expiresAt) return;
+      dispatch({
+        type: "preferenceExpired",
+        now: new Date().toISOString(),
+      });
       void setPreference("automatic");
     }, remaining);
     return () => window.clearTimeout(timeout);
@@ -263,7 +247,7 @@ export function PresenceProvider({
     snapshots,
     preference: preferenceSetting.preference,
     expiresAt: preferenceSetting.expiresAt,
-    preferenceRevision,
+    preferenceRevision: presenceState.preferenceRevision,
     now,
     timeFormatPref,
     changing,
@@ -273,7 +257,7 @@ export function PresenceProvider({
     userId,
     snapshots,
     preferenceSetting,
-    preferenceRevision,
+    presenceState.preferenceRevision,
     now,
     timeFormatPref,
     changing,
@@ -323,15 +307,11 @@ export function useOwnPresence() {
       setPreference: (async () => false) as PresenceContextValue["setPreference"],
     };
   }
-  const displayStatus: PresenceDisplayStatus = context.preference === "invisible"
-    ? "invisible"
-    : context.preference === "away"
-      ? "away"
-      : context.preference === "busy"
-        ? "busy"
-        : context.changing
-          ? "online"
-          : base.status;
+  const displayStatus = getOwnPresenceDisplayStatus(
+    base.status,
+    context.preference,
+    context.changing
+  );
   return {
     ...base,
     displayStatus,

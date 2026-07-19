@@ -1,5 +1,6 @@
 import type {
   EffectivePresenceStatus,
+  PresencePreference,
   PresenceSnapshot,
 } from "@fish/core/presence";
 import {
@@ -17,6 +18,17 @@ export const presenceLabels: Record<PresenceDisplayStatus, string> = {
   invisible: "Invisible",
   offline: "Offline",
 };
+
+export function getOwnPresenceDisplayStatus(
+  status: EffectivePresenceStatus,
+  preference: PresencePreference,
+  changing: boolean
+): PresenceDisplayStatus {
+  if (preference === "invisible") return "invisible";
+  if (preference === "away") return "away";
+  if (preference === "busy") return "busy";
+  return changing ? "online" : status;
+}
 
 const minuteMs = 60_000;
 const hourMs = 60 * minuteMs;

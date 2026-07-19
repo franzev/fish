@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getPresencePresentation } from "./presentation";
+import {
+  getOwnPresenceDisplayStatus,
+  getPresencePresentation,
+} from "./presentation";
 
 const now = new Date("2026-07-14T05:00:00.000Z");
 
@@ -28,5 +31,17 @@ describe("getPresencePresentation", () => {
       revision: 2,
       updatedAt: "2026-07-14T05:00:00.000Z",
     }, now)).toEqual({ status: "offline", label: "Offline", detail: null });
+  });
+});
+
+describe("getOwnPresenceDisplayStatus", () => {
+  it.each([
+    ["offline", "automatic", false, "offline"],
+    ["idle", "automatic", true, "online"],
+    ["online", "away", false, "away"],
+    ["offline", "busy", false, "busy"],
+    ["online", "invisible", false, "invisible"],
+  ] as const)("maps %s/%s/%s to %s", (status, preference, changing, expected) => {
+    expect(getOwnPresenceDisplayStatus(status, preference, changing)).toBe(expected);
   });
 });
