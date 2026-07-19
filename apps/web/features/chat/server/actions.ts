@@ -71,10 +71,10 @@ export async function deleteMessageAction(
   return (await handlers()).deleteMessage(input);
 }
 
-export async function toggleReactionAction(
+export async function setReactionAction(
   input: unknown
 ): Promise<SendMessageActionState> {
-  return (await handlers()).toggleReaction(input);
+  return (await handlers()).setReaction(input);
 }
 
 export async function reportGifAction(

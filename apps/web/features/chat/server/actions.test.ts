@@ -53,7 +53,7 @@ import {
   refreshMessagesAction,
   refreshUnreadSummaryAction,
   sendMessageAction,
-  toggleReactionAction,
+  setReactionAction,
 } from "./actions";
 
 const validInput = {
@@ -465,15 +465,44 @@ describe("chat command actions", () => {
       }),
     });
 
-    const result = await toggleReactionAction({
+    const result = await setReactionAction({
       messageId: "message-1",
       emoji: "👍",
+      active: true,
     });
 
     expect(result.status).toBe("sent");
     expect(result.message?.reactions).toEqual([
       { emoji: "👍", count: 1, byMe: true },
     ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:54321/functions/v1/chat-command",
+      expect.objectContaining({
+        body: JSON.stringify({
+          action: "set-reaction",
+          messageId: "message-1",
+          emoji: "👍",
+          active: true,
+        }),
+      })
+    );
+  });
+
+  it("rejects text and multiple emoji before sending a reaction command", async () => {
+    const textResult = await setReactionAction({
+      messageId: "message-1",
+      emoji: "thanks",
+      active: true,
+    });
+    const multipleResult = await setReactionAction({
+      messageId: "message-1",
+      emoji: "👍🎉",
+      active: true,
+    });
+
+    expect(textResult.status).toBe("notice");
+    expect(multipleResult.status).toBe("notice");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("marks delivered and read state through the chat command Edge Function", async () => {

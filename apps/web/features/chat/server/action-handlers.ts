@@ -21,7 +21,7 @@ import {
   refreshMessagesSchema,
   reportGifSchema,
   sendMessageSchema,
-  toggleReactionSchema,
+  setReactionSchema,
 } from "./schemas";
 
 function messageActionState(
@@ -118,15 +118,15 @@ export function createChatActionHandlers(chat: ChatCommandService) {
       );
     },
 
-    async toggleReaction(input: unknown): Promise<SendMessageActionState> {
-      const parsed = toggleReactionSchema.safeParse(input);
+    async setReaction(input: unknown): Promise<SendMessageActionState> {
+      const parsed = setReactionSchema.safeParse(input);
       if (!parsed.success) {
         return { status: "notice", values: input, notice: sendNotice };
       }
       return messageActionState(
         parsed.data,
         await chat.executeMessageCommand({
-          kind: "toggleReaction",
+          kind: "setReaction",
           ...parsed.data,
         })
       );

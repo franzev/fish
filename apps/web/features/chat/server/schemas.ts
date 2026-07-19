@@ -4,6 +4,16 @@ import { z } from "zod";
 const httpsUrl = z.url().max(2000).refine((value) => value.startsWith("https://"), {
   message: "GIF URLs must use HTTPS",
 });
+const reactionSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+const reactionEmojiPattern =
+  /\p{Extended_Pictographic}|\p{Regional_Indicator}|[#*0-9]\uFE0F?\u20E3/u;
+
+function isReactionEmoji(value: string): boolean {
+  const segments = Array.from(reactionSegmenter.segment(value));
+  return reactionEmojiPattern.test(value)
+    && segments.length === 1
+    && segments[0]?.segment === value;
+}
 
 function hostname(value: string): string {
   try {
@@ -70,9 +80,10 @@ export const deleteMessageSchema = z.strictObject({
   messageId: z.string().trim().min(1),
 });
 
-export const toggleReactionSchema = z.strictObject({
+export const setReactionSchema = z.strictObject({
   messageId: z.string().trim().min(1),
-  emoji: z.string().trim().min(1).max(16),
+  emoji: z.string().trim().min(1).max(16).refine(isReactionEmoji),
+  active: z.boolean(),
 });
 
 export const reportGifSchema = z.strictObject({
