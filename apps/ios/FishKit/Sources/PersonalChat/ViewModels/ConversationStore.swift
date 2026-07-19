@@ -6,6 +6,8 @@ import Observation
 @MainActor @Observable
 public final class ConversationStore {
     public static let pageSize = 40
+    private static let reactionRefreshCooldown: TimeInterval = 2
+    private static let maximumReactionCodeUnits = 16
 
     public let conversationId: String
     public let currentUserId: String
@@ -47,6 +49,9 @@ public final class ConversationStore {
     private var readCommandInFlight = false
     private var queuedDeliveredMessageId: String?
     private var queuedReadMessageId: String?
+    private var pendingReactionMessageIds: Set<String> = []
+    private var refreshingReactionMessageIds: Set<String> = []
+    private var lastReactionRefreshAt: [String: Date] = [:]
 
     public init(
         conversationId: String,
@@ -220,7 +225,7 @@ public final class ConversationStore {
         case .edit(let id): beginEdit(id)
         case .delete(let id): Task { await delete(id) }
         case .toggleReaction(let id, let emoji):
-            Task { await toggleReaction(messageId: id, emoji: emoji) }
+            Task { await setReaction(messageId: id, emoji: emoji) }
         case .reportGif(let id): Task { await reportGif(id) }
         }
     }
@@ -287,12 +292,7 @@ public final class ConversationStore {
         case .readStateChanged(let read):
             mergeReadStateMonotonically(read)
         case .reactionsChanged(let messageId):
-            if let refreshed = try? await messaging.messages(ids: [messageId]).first {
-                reduce(.mergeRemoteMessage(
-                    message: refreshed.coreState,
-                    localRequestId: refreshed.clientRequestId
-                ))
-            }
+            await refreshReactions(messageId: messageId)
         case .typingChanged(let userId, let isTyping):
             guard userId == participantId else { return }
             receiveTyping(isTyping)
@@ -452,40 +452,21 @@ public final class ConversationStore {
         }
     }
 
-    private func toggleReaction(messageId: String, emoji: String) async {
-        guard ["👍", "❤️", "🎉", "🙏"].contains(emoji),
+    private func setReaction(messageId: String, emoji: String) async {
+        guard isValidReactionEmoji(emoji),
+              !pendingReactionMessageIds.contains(messageId),
               let original = message(messageId),
-              original.deletedAt == nil
+              original.deletedAt == nil,
+              original.localStatus == .sent
         else { return }
-        var optimistic = original
-        var reactions = optimistic.reactions ?? []
-        if let index = reactions.firstIndex(where: { $0.emoji == emoji }) {
-            let reaction = reactions[index]
-            if reaction.byMe {
-                if reaction.count == 1 {
-                    reactions.remove(at: index)
-                } else {
-                    reactions[index] = ChatReactionState(
-                        emoji: emoji,
-                        count: reaction.count - 1,
-                        byMe: false
-                    )
-                }
-            } else {
-                reactions[index] = ChatReactionState(
-                    emoji: emoji,
-                    count: reaction.count + 1,
-                    byMe: true
-                )
-            }
-        } else {
-            reactions.append(ChatReactionState(emoji: emoji, count: 1, byMe: true))
+        let active = !(original.reactions ?? []).contains {
+            $0.emoji == emoji && $0.byMe
         }
-        optimistic.reactions = reactions
-        reduce(.mergeRemoteMessage(message: optimistic, localRequestId: original.clientRequestId))
+        pendingReactionMessageIds.insert(messageId)
+        defer { pendingReactionMessageIds.remove(messageId) }
         do {
             let confirmed = try await commands.execute(
-                .toggleReaction(messageId: messageId, emoji: emoji)
+                .setReaction(messageId: messageId, emoji: emoji, active: active)
             )
             reduce(.mergeRemoteMessage(
                 message: confirmed.coreState,
@@ -493,16 +474,50 @@ public final class ConversationStore {
             ))
             notice = nil
         } catch let failure as ChatCommandFailure {
-            await reconcileFailedMutation(messageId: messageId, original: original) {
-                $0.reactions == reactions
-            }
+            await refreshReactions(messageId: messageId, bypassCooldown: true)
             notice = failure.notice
         } catch {
-            await reconcileFailedMutation(messageId: messageId, original: original) {
-                $0.reactions == reactions
-            }
+            await refreshReactions(messageId: messageId, bypassCooldown: true)
             notice = ChatCommandFailure.unavailable.notice
         }
+    }
+
+    private func refreshReactions(
+        messageId: String,
+        bypassCooldown: Bool = false
+    ) async {
+        guard !messageId.isEmpty,
+              !refreshingReactionMessageIds.contains(messageId)
+        else { return }
+        let refreshedAt = now()
+        if !bypassCooldown,
+           let lastRefreshAt = lastReactionRefreshAt[messageId],
+           refreshedAt.timeIntervalSince(lastRefreshAt) < Self.reactionRefreshCooldown {
+            return
+        }
+        refreshingReactionMessageIds.insert(messageId)
+        lastReactionRefreshAt[messageId] = refreshedAt
+        defer { refreshingReactionMessageIds.remove(messageId) }
+        if let refreshed = try? await messaging.messages(ids: [messageId]).first {
+            reduce(.mergeRemoteMessage(
+                message: refreshed.coreState,
+                localRequestId: refreshed.clientRequestId
+            ))
+        }
+    }
+
+    private func isValidReactionEmoji(_ emoji: String) -> Bool {
+        let trimmed = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed == emoji,
+              emoji.count == 1,
+              emoji.utf16.count <= Self.maximumReactionCodeUnits
+        else { return false }
+        let scalars = Array(emoji.unicodeScalars)
+        if let first = scalars.first,
+           first.value == 0x23 || first.value == 0x2A || (0x30...0x39).contains(first.value) {
+            return scalars.contains { $0.value == 0x20E3 }
+        }
+        return scalars.contains { $0.properties.isEmoji }
     }
 
     private func reconcileFailedMutation(
@@ -852,6 +867,7 @@ public final class ConversationStore {
                 reactions: deleted ? [] : (message.reactions ?? []).map {
                     MessageReactionUiModel(emoji: $0.emoji, count: $0.count, byMe: $0.byMe)
                 },
+                isReactionPending: pendingReactionMessageIds.contains(message.id),
                 isEdited: message.editedAt != nil,
                 isDeleted: deleted
             )

@@ -40,6 +40,12 @@ import TestSupport
         )
     }
 
+    @Test func reactionPickerSnapshots() {
+        let picker = ReactionPicker { _ in }
+        assertThemedSnapshots(of: picker, named: "reaction-picker")
+        assertAccessibilitySnapshots(of: picker, named: "reaction-picker")
+    }
+
     @Test func stickerSearchStates() {
         assertThemedSnapshots(
             of: StickerPanel(initialQuery: "otter") { _ in },

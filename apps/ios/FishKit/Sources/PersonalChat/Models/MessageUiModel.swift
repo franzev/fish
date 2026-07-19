@@ -54,6 +54,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
     public let delivery: MessageDeliveryStatus?
     public let replyPreview: MessageReplyPreviewUiModel?
     public let reactions: [MessageReactionUiModel]
+    public let isReactionPending: Bool
     public let isEdited: Bool
     public let isDeleted: Bool
 
@@ -69,6 +70,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         delivery: MessageDeliveryStatus? = nil,
         replyPreview: MessageReplyPreviewUiModel? = nil,
         reactions: [MessageReactionUiModel] = [],
+        isReactionPending: Bool = false,
         isEdited: Bool = false,
         isDeleted: Bool = false
     ) {
@@ -83,6 +85,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         self.delivery = delivery
         self.replyPreview = replyPreview
         self.reactions = reactions
+        self.isReactionPending = isReactionPending
         self.isEdited = isEdited
         self.isDeleted = isDeleted
     }

@@ -10,18 +10,22 @@ public struct MessageBubble: View {
     private let onRetry: ((String) -> Void)?
     private let onAction: (MessageAction) -> Void
     private let onReplyTap: (String) -> Void
+    private let reactionsEnabled: Bool
     private let attachmentCommands: (any AttachmentCommandProviding)?
     private let imageLoader: MessageImageLoader
     private let fileDownloader: AttachmentFileDownloader
     @Environment(\.locale) private var locale
     @Environment(\.timeZone) private var timeZone
+    @Environment(\.layoutDirection) private var layoutDirection
     @State private var confirmsDeletion = false
+    @State private var isReactionPickerPresented = false
 
     public init(
         row: MessageRowUiModel,
         onRetry: ((String) -> Void)? = nil,
         onAction: @escaping (MessageAction) -> Void = { _ in },
         onReplyTap: @escaping (String) -> Void = { _ in },
+        reactionsEnabled: Bool = true,
         attachmentCommands: (any AttachmentCommandProviding)? = nil,
         imageLoader: MessageImageLoader = .shared,
         fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader()
@@ -30,6 +34,7 @@ public struct MessageBubble: View {
         self.onRetry = onRetry
         self.onAction = onAction
         self.onReplyTap = onReplyTap
+        self.reactionsEnabled = reactionsEnabled
         self.attachmentCommands = attachmentCommands
         self.imageLoader = imageLoader
         self.fileDownloader = fileDownloader
@@ -119,6 +124,18 @@ public struct MessageBubble: View {
         .frame(maxWidth: .infinity, alignment: frameAlignment)
         .padding(isOutgoing ? .leading : .trailing, Spacing.twoXl)
         .contextMenu { actionMenu }
+        .popover(
+            isPresented: $isReactionPickerPresented,
+            attachmentAnchor: .rect(.bounds),
+            arrowEdge: isOutgoing ? .trailing : .leading
+        ) {
+            ReactionPicker { emoji in
+                onAction(.toggleReaction(messageId: row.message.id, emoji: emoji))
+            }
+        }
+        .onChange(of: canReact) { _, available in
+            if !available { isReactionPickerPresented = false }
+        }
         .confirmationDialog(
             "Delete this message?",
             isPresented: $confirmsDeletion,
@@ -148,13 +165,10 @@ public struct MessageBubble: View {
                     confirmsDeletion = true
                 }
             }
-            Menu("React") {
-                ForEach(["👍", "❤️", "🎉", "🙏"], id: \.self) { emoji in
-                    Button(emoji) {
-                        onAction(.toggleReaction(messageId: row.message.id, emoji: emoji))
-                    }
-                }
+            Button("Add a reaction", systemImage: "face.smiling") {
+                isReactionPickerPresented = true
             }
+            .disabled(!canReact)
             if isGifMessage {
                 Button("Report GIF", systemImage: "flag") {
                     onAction(.reportGif(row.message.id))
@@ -167,6 +181,10 @@ public struct MessageBubble: View {
         !row.message.isDeleted
             && row.message.delivery != .sending
             && row.message.delivery != .failed
+    }
+
+    private var canReact: Bool {
+        actionsAvailable && reactionsEnabled && !row.message.isReactionPending
     }
 
     private var isGifMessage: Bool {
@@ -201,28 +219,24 @@ public struct MessageBubble: View {
     }
 
     private var reactionPills: some View {
-        HStack(spacing: Spacing.nudge) {
+        ReactionFlowLayout(
+            spacing: Spacing.nudge,
+            alignment: isOutgoing ? .trailing : .leading,
+            layoutDirection: layoutDirection
+        ) {
             ForEach(row.message.reactions) { reaction in
-                Button {
+                ReactionPill(
+                    reaction: reaction,
+                    disabled: !canReact
+                ) {
                     onAction(.toggleReaction(
                         messageId: row.message.id,
                         emoji: reaction.emoji
                     ))
-                } label: {
-                    Text("\(reaction.emoji) \(reaction.count)")
-                        .textStyle(.caption)
-                        .foregroundStyle(Palette.foreground)
-                        .padding(.horizontal, Spacing.xs)
-                        .frame(minHeight: 44)
-                        .background(
-                            reaction.byMe ? Palette.surface2 : Palette.surface,
-                            in: Capsule()
-                        )
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                    "\(reaction.emoji), \(reaction.count) reaction\(reaction.count == 1 ? "" : "s")"
-                )
+            }
+            AddReactionPill(disabled: !canReact) {
+                isReactionPickerPresented = true
             }
         }
     }

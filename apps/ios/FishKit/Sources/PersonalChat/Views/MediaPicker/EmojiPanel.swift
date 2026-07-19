@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Grouped + searchable emoji grid over the shared catalog. Browsing shows one
 /// category at a time with a bottom icon strip (mirroring the web layout);
-/// typing flattens results across every category. Selection appends the glyph
-/// to the draft — the panel itself stays stateless beyond its query.
+/// typing flattens results across every category. The host decides what a
+/// selection means; the panel itself stays stateless beyond its query.
 struct EmojiPanel: View {
     let onSelect: (String) -> Void
 

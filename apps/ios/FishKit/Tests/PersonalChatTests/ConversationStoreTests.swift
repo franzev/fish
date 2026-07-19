@@ -17,6 +17,7 @@ private actor StoreMessaging: ChatMessagingProviding {
     var sendFailures = 0
     var nextSendDelay: Duration?
     var sent: [SendChatMessageRequest] = []
+    var messageIDRequests: [[String]] = []
 
     init(window: ChatNewestWindow) {
         self.window = window
@@ -76,7 +77,8 @@ private actor StoreMessaging: ChatMessagingProviding {
     }
 
     func messages(ids: [String]) async throws -> [ChatMessage] {
-        ids.compactMap { messagesById[$0] }
+        messageIDRequests.append(ids)
+        return ids.compactMap { messagesById[$0] }
     }
 
     func failNextSends(_ count: Int) { sendFailures = count }
@@ -89,6 +91,7 @@ private actor StoreMessaging: ChatMessagingProviding {
     }
     func put(_ message: ChatMessage) { messagesById[message.id] = message }
     func requests() -> [SendChatMessageRequest] { sent }
+    func requestedMessageIDs() -> [[String]] { messageIDRequests }
 }
 
 private actor StoreCommands: ChatCommandProviding {
@@ -101,9 +104,14 @@ private actor StoreCommands: ChatCommandProviding {
     var executed: [ChatMessageCommand] = []
     var reads: [ReadRequest] = []
     var reports: [String] = []
+    var nextExecutionDelay: Duration?
 
     func execute(_ command: ChatMessageCommand) async throws -> ChatMessage {
         executed.append(command)
+        if let delay = nextExecutionDelay {
+            nextExecutionDelay = nil
+            try await Task.sleep(for: delay)
+        }
         if let failure = nextFailure {
             nextFailure = nil
             throw failure
@@ -113,12 +121,14 @@ private actor StoreCommands: ChatCommandProviding {
             return message(id, body: body, editedAt: Date(timeIntervalSince1970: 300))
         case .delete(let id):
             return message(id, body: "", deletedAt: Date(timeIntervalSince1970: 300))
-        case .toggleReaction(let id, let emoji):
-            return message(id, body: "Hello", reactions: [ChatReaction(
-                emoji: emoji,
-                count: 1,
-                byMe: true
-            )])
+        case .setReaction(let id, let emoji, let active):
+            return message(
+                id,
+                body: "Hello",
+                reactions: active
+                    ? [ChatReaction(emoji: emoji, count: 1, byMe: true)]
+                    : []
+            )
         }
     }
 
@@ -150,6 +160,7 @@ private actor StoreCommands: ChatCommandProviding {
     }
 
     func failNext(_ failure: ChatCommandFailure = .unavailable) { nextFailure = failure }
+    func delayNextExecution(_ duration: Duration) { nextExecutionDelay = duration }
     func readRequests() -> [ReadRequest] { reads }
     func commands() -> [ChatMessageCommand] { executed }
 
@@ -510,7 +521,7 @@ struct ConversationStoreTests {
         store.stop()
     }
 
-    @Test func failedReactionReconcilesCanonicalServerStateBeforeRollback() async {
+    @Test func failedReactionRefreshesCanonicalServerState() async {
         let own = storeMessage("m1", sender: "me", at: 100)
         let (store, messaging, commands, _) = makeStore(window: storeWindow([own]))
         await store.start()
@@ -533,6 +544,58 @@ struct ConversationStoreTests {
         #expect(store.model.messages[0].reactions == [
             MessageReactionUiModel(emoji: "👍", count: 1, byMe: true),
         ])
+        store.stop()
+    }
+
+    @Test func reactionMutationUsesDesiredStateAndLocksTheMessageUntilAcknowledged() async {
+        let own = storeMessage("m1", sender: "me", at: 100)
+        let (store, _, commands, _) = makeStore(window: storeWindow([own]))
+        await store.start()
+        await commands.delayNextExecution(.milliseconds(100))
+
+        store.perform(.toggleReaction(messageId: "m1", emoji: "👩‍💻"))
+        store.perform(.toggleReaction(messageId: "m1", emoji: "👩‍💻"))
+
+        #expect(await eventually { store.model.messages[0].isReactionPending })
+        #expect(await eventually { !store.model.messages[0].isReactionPending })
+        #expect(await commands.commands() == [
+            .setReaction(messageId: "m1", emoji: "👩‍💻", active: true),
+        ])
+        #expect(store.model.messages[0].reactions == [
+            MessageReactionUiModel(emoji: "👩‍💻", count: 1, byMe: true),
+        ])
+
+        store.perform(.toggleReaction(messageId: "m1", emoji: "👩‍💻"))
+
+        #expect(await eventually { store.model.messages[0].reactions.isEmpty })
+        #expect(await commands.commands() == [
+            .setReaction(messageId: "m1", emoji: "👩‍💻", active: true),
+            .setReaction(messageId: "m1", emoji: "👩‍💻", active: false),
+        ])
+
+        store.perform(.toggleReaction(messageId: "m1", emoji: "❤"))
+        #expect(await eventually { store.model.messages[0].reactions.first?.emoji == "❤" })
+        store.perform(.toggleReaction(messageId: "m1", emoji: "1"))
+        try? await Task.sleep(for: .milliseconds(20))
+        #expect(await commands.commands().count == 3)
+        store.stop()
+    }
+
+    @Test func reactionRealtimeEventsRefreshAtMostOnceDuringTheCooldown() async throws {
+        let message = storeMessage("m1", sender: "them", at: 100)
+        let (store, messaging, _, realtime) = makeStore(window: storeWindow([message]))
+        await store.start()
+
+        realtime.event(.reactionsChanged(messageId: "m1"))
+        realtime.event(.reactionsChanged(messageId: "m1"))
+
+        var requests: [[String]] = []
+        for _ in 0..<100 where requests.isEmpty {
+            requests = await messaging.requestedMessageIDs()
+            if requests.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        }
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(await messaging.requestedMessageIDs() == [["m1"]])
         store.stop()
     }
 

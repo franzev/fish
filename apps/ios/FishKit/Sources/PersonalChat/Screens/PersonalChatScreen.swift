@@ -141,6 +141,7 @@ public struct PersonalChatScreen: View {
                         onRetryOlder: onRetryOlder,
                         onMessageAction: onMessageAction,
                         onVisibleMessage: onVisibleMessage,
+                        reactionsEnabled: model.connection != .offline,
                         attachmentCommands: attachmentCommands,
                         imageLoader: imageLoader,
                         fileDownloader: fileDownloader

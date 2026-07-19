@@ -174,6 +174,11 @@ struct MessageBubbleTests {
                         reactions: [
                             MessageReactionUiModel(emoji: "👍", count: 2, byMe: true),
                             MessageReactionUiModel(emoji: "🎉", count: 1, byMe: false),
+                            MessageReactionUiModel(emoji: "❤️", count: 12, byMe: false),
+                            MessageReactionUiModel(emoji: "🙏", count: 3, byMe: true),
+                            MessageReactionUiModel(emoji: "👩‍💻", count: 4, byMe: false),
+                            MessageReactionUiModel(emoji: "🌊", count: 2, byMe: false),
+                            MessageReactionUiModel(emoji: "🇵🇭", count: 1, byMe: false),
                         ],
                         isEdited: true
                     ),
@@ -190,6 +195,23 @@ struct MessageBubbleTests {
                         body: "Message deleted",
                         sentAt: date.addingTimeInterval(60),
                         isDeleted: true
+                    ),
+                    groupPosition: .solo,
+                    showsMeta: true,
+                    showsDeliveryStatus: false
+                ))
+                MessageBubble(row: MessageRowUiModel(
+                    message: MessageUiModel(
+                        id: "pending-reaction",
+                        direction: .incoming,
+                        senderId: "coach",
+                        senderName: "Sam Rivera",
+                        body: "This reaction is saving.",
+                        sentAt: date.addingTimeInterval(120),
+                        reactions: [
+                            MessageReactionUiModel(emoji: "👍", count: 2, byMe: true),
+                        ],
+                        isReactionPending: true
                     ),
                     groupPosition: .solo,
                     showsMeta: true,

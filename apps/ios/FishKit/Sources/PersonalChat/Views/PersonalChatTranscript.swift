@@ -10,6 +10,7 @@ public struct PersonalChatTranscript: View {
     private let onRetryOlder: () -> Void
     private let onMessageAction: (MessageAction) -> Void
     private let onVisibleMessage: (String) -> Void
+    private let reactionsEnabled: Bool
     private let attachmentCommands: (any AttachmentCommandProviding)?
     private let imageLoader: MessageImageLoader
     private let fileDownloader: AttachmentFileDownloader
@@ -21,6 +22,7 @@ public struct PersonalChatTranscript: View {
         onRetryOlder: @escaping () -> Void,
         onMessageAction: @escaping (MessageAction) -> Void = { _ in },
         onVisibleMessage: @escaping (String) -> Void = { _ in },
+        reactionsEnabled: Bool = true,
         attachmentCommands: (any AttachmentCommandProviding)? = nil,
         imageLoader: MessageImageLoader = .shared,
         fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader()
@@ -31,6 +33,7 @@ public struct PersonalChatTranscript: View {
         self.onRetryOlder = onRetryOlder
         self.onMessageAction = onMessageAction
         self.onVisibleMessage = onVisibleMessage
+        self.reactionsEnabled = reactionsEnabled
         self.attachmentCommands = attachmentCommands
         self.imageLoader = imageLoader
         self.fileDownloader = fileDownloader
@@ -59,6 +62,7 @@ public struct PersonalChatTranscript: View {
                             onReplyTap: { id in
                                 withAnimation { proxy.scrollTo(id, anchor: .center) }
                             },
+                            reactionsEnabled: reactionsEnabled,
                             attachmentCommands: attachmentCommands,
                             imageLoader: imageLoader,
                             fileDownloader: fileDownloader
