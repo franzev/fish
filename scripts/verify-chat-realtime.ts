@@ -65,10 +65,6 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function sameOrLaterInstant(value: string | null | undefined, reference: string): boolean {
-  return Boolean(value) && Date.parse(value!) >= Date.parse(reference);
-}
-
 async function waitFor<T>(
   label: string,
   read: () => T | undefined | null,
@@ -245,17 +241,51 @@ async function createPostgresCollector(
   filter: string,
 ) {
   const payloads: JsonRecord[] = [];
+  let subscribed = false;
+  let replicationReady = false;
+  let replicationError: string | null = null;
+  let settle = () => {};
   const channel = session.client
-    .channel(`${label}:${randomId()}`)
+    .channel(`${label}:${randomId()}`, {
+      config: { broadcast: { replication_ready: true } },
+    })
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table, filter },
       (payload) => {
         payloads.push(payload as JsonRecord);
       },
-    );
+    )
+    .on("system", {}, (payload) => {
+      if (payload.status === "ok") replicationReady = true;
+      if (payload.status === "error") replicationError = payload.message;
+      settle();
+    });
 
-  await subscribeChannel(channel, label);
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(
+      () => reject(new Error(`${label} replication subscription timed out`)),
+      10_000,
+    );
+    settle = () => {
+      if (replicationError) {
+        clearTimeout(timeout);
+        reject(new Error(`${label} replication failed: ${replicationError}`));
+      } else if (subscribed && replicationReady) {
+        clearTimeout(timeout);
+        resolve();
+      }
+    };
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        subscribed = true;
+        settle();
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        clearTimeout(timeout);
+        reject(new Error(`${label} subscription ${status}`));
+      }
+    });
+  });
 
   return {
     payloads,
@@ -381,7 +411,7 @@ async function main(): Promise<void> {
   const coachPresenceEvents = await createPostgresCollector(
     coach,
     "coach-presence-events",
-    "presence_sessions",
+    "presence_snapshots",
     `user_id=eq.${client.userId}`,
   );
 
@@ -395,74 +425,70 @@ async function main(): Promise<void> {
   await checked("Presence sync supports multiple tabs, activity, and offline transition", async () => {
     const sessionA = randomId();
     const sessionB = randomId();
-    const now = new Date().toISOString();
-
-    const { error: upsertAError } = await client.client.from("presence_sessions").upsert(
-      {
-        id: sessionA,
-        user_id: client.userId,
-        active_at: now,
-        last_heartbeat_at: now,
-        ended_at: null,
-      },
-      { onConflict: "id" },
-    );
-    if (upsertAError) throw upsertAError;
-
-    const { error: upsertBError } = await clientTab.client.from("presence_sessions").upsert(
-      {
-        id: sessionB,
-        user_id: client.userId,
-        active_at: now,
-        last_heartbeat_at: now,
-        ended_at: null,
-      },
-      { onConflict: "id" },
-    );
-    if (upsertBError) throw upsertBError;
-
-    await waitFor("presence inserts", () => {
-      const ids = new Set(
-        coachPresenceEvents.payloads
-          .map((payload) => (payload.new as { id?: string } | undefined)?.id)
-          .filter(Boolean),
-      );
-      return ids.has(sessionA) && ids.has(sessionB) ? true : null;
-    });
-
-    const activeAt = new Date(Date.now() + 1000).toISOString();
-    const { error: activeError } = await client.client
+    const sessionCleanup = await admin
       .from("presence_sessions")
-      .update({ active_at: activeAt, last_heartbeat_at: activeAt })
-      .eq("id", sessionA);
-    if (activeError) throw activeError;
+      .delete()
+      .eq("user_id", client.userId);
+    if (sessionCleanup.error) throw sessionCleanup.error;
+    const snapshotCleanup = await admin
+      .from("presence_snapshots")
+      .delete()
+      .eq("user_id", client.userId);
+    if (snapshotCleanup.error) throw snapshotCleanup.error;
 
+    const touch = async (
+      signedIn: SignedInUser,
+      sessionId: string,
+      activity: boolean,
+      ended: boolean,
+    ) => {
+      const { data, error } = await signedIn.client.rpc("touch_presence_session", {
+        p_session_id: sessionId,
+        p_activity: activity,
+        p_ended: ended,
+      });
+      if (error) throw error;
+      return data as { revision: number; status: string };
+    };
+
+    await touch(client, sessionA, true, false);
+    const secondTab = await touch(clientTab, sessionB, true, false);
+    await waitFor("presence becomes online", () =>
+      coachPresenceEvents.payloads.some((payload) => {
+        const row = payload.new as {
+          user_id?: string;
+          revision?: number | string;
+          status?: string;
+        } | undefined;
+        return row?.user_id === client.userId &&
+          Number(row.revision) === secondTab.revision &&
+          row.status === "online";
+      })
+        ? true
+        : null,
+    );
+
+    const activity = await touch(client, sessionA, true, false);
     await waitFor("presence activity update", () =>
+      coachPresenceEvents.payloads.some((payload) =>
+        Number((payload.new as { revision?: number | string } | undefined)?.revision) ===
+          activity.revision
+      )
+        ? true
+        : null,
+    );
+
+    const oneEnded = await touch(client, sessionA, false, true);
+    await waitFor("second tab keeps presence online", () =>
       coachPresenceEvents.payloads.some((payload) => {
-        const row = payload.new as { id?: string; active_at?: string } | undefined;
-        return row?.id === sessionA && sameOrLaterInstant(row.active_at, activeAt);
+        const row = payload.new as { revision?: number | string; status?: string } | undefined;
+        return Number(row?.revision) === oneEnded.revision && row?.status === "online";
       })
         ? true
         : null,
     );
 
-    const endedAt = new Date(Date.now() + 2000).toISOString();
-    const { error: endError } = await client.client
-      .from("presence_sessions")
-      .update({ ended_at: endedAt, last_heartbeat_at: endedAt })
-      .eq("id", sessionA);
-    if (endError) throw endError;
-
-    await waitFor("presence offline update", () =>
-      coachPresenceEvents.payloads.some((payload) => {
-        const row = payload.new as { id?: string; ended_at?: string | null } | undefined;
-        return row?.id === sessionA && sameOrLaterInstant(row.ended_at, endedAt);
-      })
-        ? true
-        : null,
-    );
-
-    const { data: rows, error: readError } = await coach.client
+    const { data: rows, error: readError } = await client.client
       .from("presence_sessions")
       .select("id, ended_at")
       .in("id", [sessionA, sessionB]);
@@ -472,6 +498,16 @@ async function main(): Promise<void> {
     assertCondition(
       rows.some((row) => row.id === sessionB && row.ended_at === null),
       "second tab should remain online",
+    );
+
+    const allEnded = await touch(clientTab, sessionB, false, true);
+    await waitFor("presence becomes offline", () =>
+      coachPresenceEvents.payloads.some((payload) => {
+        const row = payload.new as { revision?: number | string; status?: string } | undefined;
+        return Number(row?.revision) === allEnded.revision && row?.status === "offline";
+      })
+        ? true
+        : null,
     );
   });
 

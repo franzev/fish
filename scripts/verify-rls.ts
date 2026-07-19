@@ -469,10 +469,24 @@ async function queryChatConversationsForClient(
   supabase: Awaited<ReturnType<typeof signInAs>>,
   clientId: string,
 ): Promise<ChatConversationRow[] | null> {
+  // Resolve only the fixture id with the admin client. The conversation query
+  // below still uses the caller's session, so negative RLS checks do not need
+  // permission to read client1's assignment before proving they see no chat.
+  const { data: assignment, error: assignmentError } = await admin
+    .from("coach_clients")
+    .select("coach_id")
+    .eq("client_id", clientId)
+    .single();
+  if (assignmentError || !assignment) {
+    report(`${label}: assigned coach lookup succeeds`, false, assignmentError?.message);
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("conversations")
     .select("id, client_id, coach_id")
     .eq("client_id", clientId)
+    .eq("coach_id", assignment.coach_id)
     .neq("id", demoCommunityConversationId);
   checkNoRecursion(label, error);
   if (error) {
@@ -1029,12 +1043,35 @@ async function checkChatReactionsSoftDeleteAndIntegrity(): Promise<void> {
     return;
   }
 
-  const { error: addError } = await supabase.rpc("toggle_message_reaction", {
+  const { error: addError } = await supabase.rpc("set_message_reaction", {
     p_message_id: messageId,
     p_emoji: "👍",
+    p_active: true,
   });
   checkNoRecursion("CHAT-08 reactions: add", addError);
-  report("CHAT-08 reactions: add reaction RPC succeeds", !addError, addError?.message);
+  report("CHAT-08 reactions: set-active RPC succeeds", !addError, addError?.message);
+
+  const { error: retryAddError } = await supabase.rpc("set_message_reaction", {
+    p_message_id: messageId,
+    p_emoji: "👍",
+    p_active: true,
+  });
+  report(
+    "CHAT-08 reactions: repeated set-active RPC is idempotent",
+    !retryAddError,
+    retryAddError?.message,
+  );
+
+  const { data: summaries, error: summaryError } = await supabase.rpc(
+    "list_message_reaction_summaries",
+    { p_message_ids: [messageId] },
+  );
+  const summary = summaries?.[0];
+  report(
+    "CHAT-08 reactions: summary returns one viewer-owned reaction",
+    !summaryError && summary?.count === 1 && summary.by_me === true,
+    summaryError?.message,
+  );
 
   const { data: visibleRows, error: visibleError } = await supabase
     .from("message_reactions")
@@ -1043,12 +1080,24 @@ async function checkChatReactionsSoftDeleteAndIntegrity(): Promise<void> {
   checkNoRecursion("CHAT-08 reactions: select visible", visibleError);
   report("CHAT-08 reactions: active reaction is visible", !visibleError && (visibleRows ?? []).length === 1, visibleError?.message ?? `got ${(visibleRows ?? []).length}`);
 
-  const { error: removeError } = await supabase.rpc("toggle_message_reaction", {
+  const { error: removeError } = await supabase.rpc("set_message_reaction", {
     p_message_id: messageId,
     p_emoji: "👍",
+    p_active: false,
   });
   checkNoRecursion("CHAT-08 reactions: remove", removeError);
-  report("CHAT-08 reactions: remove reaction RPC succeeds", !removeError, removeError?.message);
+  report("CHAT-08 reactions: set-inactive RPC succeeds", !removeError, removeError?.message);
+
+  const { error: retryRemoveError } = await supabase.rpc("set_message_reaction", {
+    p_message_id: messageId,
+    p_emoji: "👍",
+    p_active: false,
+  });
+  report(
+    "CHAT-08 reactions: repeated set-inactive RPC is idempotent",
+    !retryRemoveError,
+    retryRemoveError?.message,
+  );
 
   const { data: hiddenRows, error: hiddenError } = await supabase
     .from("message_reactions")

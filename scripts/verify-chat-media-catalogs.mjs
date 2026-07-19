@@ -62,4 +62,22 @@ if (JSON.stringify(emojiCatalog) !== JSON.stringify(emojiSource)) {
   throw new Error("Emoji catalog is stale. Regenerate it from unicode-emoji-json 0.9.0.");
 }
 
-console.log(`Verified ${catalogIds.length} stickers and ${emojiCatalog.length} emoji groups.`);
+const reactionSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+const reactionEmojiPattern =
+  /\p{Extended_Pictographic}|\p{Regional_Indicator}|[#*0-9]\uFE0F?\u20E3/u;
+const emojiEntries = emojiCatalog.flatMap((group) => group.emojis);
+const unsupportedReaction = emojiEntries.find(({ emoji }) =>
+  !emoji ||
+  emoji.length > 16 ||
+  !reactionEmojiPattern.test(emoji) ||
+  Array.from(reactionSegmenter.segment(emoji)).length !== 1
+);
+if (unsupportedReaction) {
+  throw new Error(
+    `Emoji catalog entry ${unsupportedReaction.slug} is not accepted by the reaction API.`,
+  );
+}
+
+console.log(
+  `Verified ${catalogIds.length} stickers and ${emojiEntries.length} emoji in ${emojiCatalog.length} groups.`,
+);
