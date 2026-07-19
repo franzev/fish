@@ -53,7 +53,7 @@ async function signIn(page: Page, email: string, password: string) {
 }
 
 async function expectHdVideo(page: Page, label: string) {
-  const video = page.getByLabel(label);
+  const video = page.getByLabel(label, { exact: true });
   await expect(video).toBeVisible();
   await expect.poll(
     () => video.evaluate((element) => (element as HTMLVideoElement).videoWidth),
@@ -66,7 +66,7 @@ async function expectHdVideo(page: Page, label: string) {
 }
 
 async function expectPlayingVideo(page: Page, label: string) {
-  const video = page.getByLabel(label);
+  const video = page.getByLabel(label, { exact: true });
   await expect(video).toBeVisible();
   await expect.poll(
     () => video.evaluate((element) => (element as HTMLVideoElement).videoWidth),
@@ -149,7 +149,7 @@ test.describe.serial("one-to-one calls", () => {
 
       await expect(pair.client.getByRole("heading", { name: "Patty Cake is calling" }))
         .toBeVisible();
-      await pair.client.getByRole("button", { name: "Answer call" }).click();
+      await pair.client.getByRole("button", { name: "Answer" }).click();
 
       await expect(pair.coach.getByRole("heading", { name: "In call with Franz Eva" }))
         .toBeVisible();
@@ -265,7 +265,7 @@ test.describe.serial("one-to-one calls", () => {
       }).click();
       await expect(pair.client.getByRole("heading", { name: "Patty Cake is calling" }))
         .toBeVisible();
-      await pair.client.getByRole("button", { name: "Answer call" }).click();
+      await pair.client.getByRole("button", { name: "Answer" }).click();
       await expect(pair.client.getByRole("heading", { name: "In call with Patty Cake" }))
         .toBeVisible();
 

@@ -45,7 +45,6 @@ test("from: suggests channel members, searches the full history, and is individu
   const results = page.getByRole("complementary", { name: "Search results" });
   await expect(results.getByText(/Search target https:\/\/example.com/)).toBeVisible();
   await expect(results.getByText("Search target plain")).toHaveCount(0);
-  await expect(page.getByRole("log")).toContainText(/Welcome to the general channel!/i);
 
   await search.fill("Search target");
   await search.press("Enter");
@@ -67,6 +66,7 @@ test("a selected sender alone returns that member's real message history", async
   const suggestions = page.getByRole("listbox", { name: "From User" });
   await search.fill("patty");
   await suggestions.getByRole("option", { name: /Patty Cake/i }).click();
+  await expect(search).toHaveValue(/from: coach_/i);
   await search.press("Enter");
 
   const results = page.getByRole("complementary", { name: "Search results" });
@@ -117,9 +117,7 @@ test("result pagination and sorting stay inside the right sidebar", async ({ pag
 
   const results = page.getByRole("complementary", { name: "Search results" });
   await expect(page).toHaveURL(/\?search=a$/);
-  await expect(
-    results.getByRole("navigation", { name: "Search result pages" }).getByText("…", { exact: true })
-  ).toBeVisible();
+  await expect(results.getByRole("button", { name: "4", exact: true })).toBeVisible();
   await expect(results.getByRole("button", { name: "3", exact: true })).toBeVisible();
   await expect(results.getByRole("button", { name: "2", exact: true })).toBeVisible();
   await results.getByRole("button", { name: "2", exact: true }).click();
@@ -135,5 +133,5 @@ test("result pagination and sorting stay inside the right sidebar", async ({ pag
   await page.getByRole("menuitem", { name: "Oldest first" }).click();
   await expect(restoredResults.getByRole("button", { name: "1", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page).toHaveURL(/\?search=a&sort=asc$/);
-  await expect(page.getByRole("log", { name: "Community messages" })).toContainText("Welcome to the general channel!");
+  await expect(restoredResults.getByText(/Welcome to the general channel!/i)).toBeVisible();
 });

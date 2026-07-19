@@ -21,6 +21,7 @@ test("client opens seeded channels from the full community rail", async ({
     .getByRole("button", { name: "View Sam Okafor profile" })
     .last();
   await profileTrigger.scrollIntoViewIfNeeded();
+  await expect(profileTrigger).toBeVisible();
   await profileTrigger.click();
   await expect(
     page.getByRole("dialog", { name: "Sam Okafor" })

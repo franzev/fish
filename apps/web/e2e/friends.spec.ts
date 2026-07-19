@@ -21,6 +21,12 @@ async function signIn(page: Page, email: string) {
   await expect(page).toHaveURL(/\/home$/);
 }
 
+async function openFriends(page: Page) {
+  await page.getByRole("button", { name: /Account menu/ }).click();
+  await page.getByRole("menuitem", { name: "Friends" }).click();
+  await expect(page).toHaveURL(/\/friends$/);
+}
+
 test.describe.serial("client friendships", () => {
   const supabaseUrl = localEnv("NEXT_PUBLIC_SUPABASE_URL");
   const serviceRoleKey = localEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -110,18 +116,26 @@ test.describe.serial("client friendships", () => {
       await franzPage.getByRole("button", { name: "Add friend" }).click();
       await expect(franzPage.getByText(/Request sent/)).toBeVisible();
 
-      await samPage.getByRole("link", { name: /^Friends/ }).click();
+      const notificationButton = franzPage.locator(
+        'button[aria-label^="Notifications"]'
+      );
+      await expect(notificationButton).toBeVisible();
+      const initialNotificationLabel = await notificationButton.getAttribute("aria-label");
+      const initialUnreadCount = Number(
+        initialNotificationLabel?.match(/, (\d+) unread$/)?.[1] ?? 0
+      );
+
+      await openFriends(samPage);
       await samPage.getByRole("link", { name: /friend request is waiting/i }).click();
       await samPage.getByRole("link", { name: /Franz Eva/ }).click();
       await samPage.getByRole("button", { name: "Accept request" }).click();
       await expect(samPage).toHaveURL(/\/friends$/);
 
-      await expect(
-        franzPage.getByRole("button", { name: /Notifications, 1 unread/i })
-      ).toBeVisible();
-      await franzPage
-        .getByRole("button", { name: /Notifications, 1 unread/i })
-        .click();
+      await expect.poll(async () => {
+        const label = await notificationButton.getAttribute("aria-label");
+        return Number(label?.match(/, (\d+) unread$/)?.[1] ?? 0);
+      }).toBe(initialUnreadCount + 1);
+      await notificationButton.click();
       await expect(
         franzPage.getByText("Sam Okafor accepted your friend request")
       ).toBeVisible();
@@ -148,7 +162,7 @@ test.describe.serial("client friendships", () => {
       await samPage
         .getByRole("button", { name: "Close Franz Eva profile" })
         .click();
-      await samPage.getByRole("link", { name: /^Friends/ }).click();
+      await openFriends(samPage);
       await samPage.getByRole("link", { name: "Blocked people" }).click();
       await expect(samPage).toHaveURL(/\/friends\/blocked$/);
       await expect(samPage.getByText("Franz Eva")).toBeVisible();

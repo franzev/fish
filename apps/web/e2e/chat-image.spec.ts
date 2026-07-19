@@ -1,6 +1,11 @@
 import { expect, type Page, test } from "@playwright/test";
 import { deflateSync } from "node:zlib";
 
+const attachmentScannerConfigured = Boolean(
+  process.env.CHAT_ATTACHMENT_SCANNER_URL &&
+  process.env.CHAT_ATTACHMENT_SCANNER_TOKEN
+);
+
 interface TestFilePayload {
   name: string;
   mimeType: string;
@@ -281,6 +286,17 @@ test("client sends and opens a private text attachment", async ({ page }) => {
     mimeType: "text/plain",
     buffer: Buffer.from("Practice the opening sentence twice.\n", "utf8"),
   });
+
+  if (!attachmentScannerConfigured) {
+    // The local stack deliberately has no malware-scanner service. Verify the
+    // fail-closed behavior here; the send-and-open path runs when scanner
+    // credentials are supplied in a production-like E2E environment.
+    await expect(
+      page.getByRole("button", { name: /Upload failed for coaching-notes\.txt/i })
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Send message" })).toBeDisabled();
+    return;
+  }
 
   const sendButton = page.getByRole("button", { name: "Send message" });
   await expect(sendButton).toBeEnabled({ timeout: 30_000 });

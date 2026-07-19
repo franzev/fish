@@ -82,7 +82,11 @@ test("client edits an own message inline without losing a draft, then confirms d
 
   const actions = page.getByRole("dialog", { name: "Message actions" });
   await actions.getByRole("button", { name: "Delete message" }).click();
-  await actions.getByRole("button", { name: "Delete message" }).click();
+  const finalConfirmation = page.getByRole("dialog", {
+    name: "Delete this message?",
+  });
+  await expect(finalConfirmation).toBeVisible();
+  await finalConfirmation.getByRole("button", { name: "Delete message" }).click();
 
   await expect(page.locator(`#${rowId}`)).toContainText("Message deleted");
   await composer.fill("");

@@ -69,7 +69,8 @@ test("client searches, previews, sends, and reloads a GIF message", async ({ pag
 
   const gifRow = attribution.locator("xpath=ancestor::li[1]");
   await gifRow.hover();
-  await gifRow.getByRole("button", { name: "Report GIF" }).click();
+  await gifRow.getByRole("button", { name: "More actions for message" }).click();
+  await page.getByRole("button", { name: "Report GIF" }).click();
   await expect(page.getByText("Thanks. This GIF was reported.")).toBeVisible();
 
   await page.reload();
