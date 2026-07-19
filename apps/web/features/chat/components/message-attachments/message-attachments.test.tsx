@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MessageImages } from "./message-images";
+import { MessageAttachments } from "./message-attachments";
 
 const mocks = vi.hoisted(() => ({ refreshUrls: vi.fn() }));
 vi.mock("@/lib/services/runtime/browser", () => ({
@@ -17,7 +17,7 @@ const image = {
   displayPath: "chat/image/display.webp",
 };
 
-describe("MessageImages", () => {
+describe("MessageAttachments", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -27,7 +27,7 @@ describe("MessageImages", () => {
       { path: image.thumbnailPath, signedUrl: "https://storage.test/thumbnail" },
       { path: image.displayPath, signedUrl: "https://storage.test/display" },
     ]);
-    render(<MessageImages images={[image]} authorName="Alex" mine={false} />);
+    render(<MessageAttachments images={[image]} authorName="Alex" mine={false} />);
 
     expect(screen.getByLabelText("Loading image")).toBeInTheDocument();
     expect(screen.queryByText("Image unavailable")).not.toBeInTheDocument();
@@ -35,7 +35,7 @@ describe("MessageImages", () => {
   });
 
   it("renders a non-image attachment as a file card", () => {
-    render(<MessageImages images={[{
+    render(<MessageAttachments images={[{
       id: "file-1",
       status: "ready",
       kind: "file",
@@ -58,7 +58,7 @@ describe("MessageImages", () => {
     mocks.refreshUrls.mockResolvedValueOnce([
       { path: "chat/file/file.pdf", signedUrl: "https://storage.test/fresh-file" },
     ]);
-    render(<MessageImages images={[{
+    render(<MessageAttachments images={[{
       id: "file-1",
       status: "ready",
       kind: "file",
@@ -82,7 +82,7 @@ describe("MessageImages", () => {
       close,
     } as unknown as Window);
     mocks.refreshUrls.mockResolvedValueOnce([]);
-    render(<MessageImages images={[{
+    render(<MessageAttachments images={[{
       id: "file-1",
       status: "ready",
       kind: "file",
@@ -97,7 +97,7 @@ describe("MessageImages", () => {
   });
 
   it("preserves mixed attachment order around grouped image runs", () => {
-    const { container } = render(<MessageImages images={[
+    const { container } = render(<MessageAttachments images={[
       { ...image, id: "first", thumbnailUrl: "blob:first", displayUrl: "blob:first" },
       {
         id: "file-1",
@@ -117,7 +117,7 @@ describe("MessageImages", () => {
   });
 
   it("does not classify an uploaded image as a sticker from its filename", () => {
-    const { container } = render(<MessageImages
+    const { container } = render(<MessageAttachments
       images={[{
         ...image,
         originalName: "aquatic-awesome-dolphin.webp",
@@ -136,7 +136,7 @@ describe("MessageImages", () => {
   });
 
   it("crossfades from a blurred thumbnail to the sharp display image", () => {
-    const { container } = render(<MessageImages
+    const { container } = render(<MessageAttachments
       images={[{
         ...image,
         thumbnailUrl: "https://storage.test/thumbnail",
@@ -165,7 +165,7 @@ describe("MessageImages", () => {
     { count: 4, layout: "wrap" },
     { count: 5, layout: "wrap" },
   ])("lays out $count image(s) from left to right", ({ count, layout }) => {
-    const { container } = render(<MessageImages
+    const { container } = render(<MessageAttachments
       images={Array.from({ length: count }, (_, index) => ({
         ...image,
         id: `image-${index}`,
@@ -191,7 +191,7 @@ describe("MessageImages", () => {
   });
 
   it("bounds extreme preview frames without changing source order", () => {
-    const { container } = render(<MessageImages
+    const { container } = render(<MessageAttachments
       images={[
         { ...image, id: "tall", width: 200, height: 1200, thumbnailUrl: "blob:tall", displayUrl: "blob:tall" },
         { ...image, id: "wide", width: 1600, height: 200, thumbnailUrl: "blob:wide", displayUrl: "blob:wide" },
@@ -209,7 +209,7 @@ describe("MessageImages", () => {
     { mine: false, alignment: "justify-start", opposite: "justify-end" },
     { mine: true, alignment: "justify-end", opposite: "justify-start" },
   ])("aligns image previews with the message bubble when mine is $mine", ({ mine, alignment, opposite }) => {
-    const { container } = render(<MessageImages
+    const { container } = render(<MessageAttachments
       images={[{
         ...image,
         thumbnailUrl: "blob:aligned-image",

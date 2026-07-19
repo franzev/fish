@@ -1,7 +1,7 @@
 import type { ClientChatImage } from "@/lib/services";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
-import { MessageImages } from "./message-images";
+import { MessageAttachments } from "./message-attachments";
 
 function imageFixture(
   id: string,
@@ -85,7 +85,7 @@ const powerpoint = fileFixture(
 
 const meta = {
   title: "Chat/Attachments/MessageAttachments",
-  component: MessageImages,
+  component: MessageAttachments,
   tags: ["autodocs"],
   args: {
     images: [landscape],
@@ -99,7 +99,7 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof MessageImages>;
+} satisfies Meta<typeof MessageAttachments>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -129,7 +129,7 @@ export const SameAspectRatioCounts: Story = {
         return (
           <section key={count} data-story-scenario={`same-count-${count}`} className="flex flex-col gap-xs">
             <h3 className="text-ui-sm text-muted">{count} {count === 1 ? "image" : "images"}</h3>
-            <MessageImages {...args} images={images} />
+            <MessageAttachments {...args} images={images} />
           </section>
         );
       })}
@@ -150,7 +150,7 @@ export const MixedAspectRatioCounts: Story = {
         return (
           <section key={count} data-story-scenario={`mixed-count-${count}`} className="flex flex-col gap-xs">
             <h3 className="text-ui-sm text-muted">{count} {count === 1 ? "image" : "images"}</h3>
-            <MessageImages {...args} images={images} />
+            <MessageAttachments {...args} images={images} />
           </section>
         );
       })}
@@ -175,7 +175,7 @@ export const AspectRatioOverview: Story = {
       ].map(({ label, image }) => (
         <section key={label} data-story-scenario={`aspect-${image.id}`} className="flex flex-col gap-xs">
           <h3 className="text-ui-sm text-muted">{label}</h3>
-          <MessageImages {...args} images={[image]} />
+          <MessageAttachments {...args} images={[image]} />
         </section>
       ))}
     </div>
@@ -209,7 +209,7 @@ export const FileTypeOverview: Story = {
     <div className="flex flex-col gap-sm">
       {[pdf, text, csv, word, excel, powerpoint].map((file) => (
         <section key={file.id} data-story-scenario={`file-${file.id}`}>
-          <MessageImages {...args} images={[file]} />
+          <MessageAttachments {...args} images={[file]} />
         </section>
       ))}
     </div>

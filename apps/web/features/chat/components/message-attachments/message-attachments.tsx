@@ -7,8 +7,14 @@ import { cn } from "@/lib/utils";
 import { Dialog } from "@base-ui/react/dialog";
 import { IconDownload, IconFileText, IconRefresh, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  attachmentRuns,
+  fileTypeLabel,
+  formatFileSize,
+} from "./attachment-runs";
+import { deriveImageLoadState } from "./image-load-state";
 
-interface MessageImagesProps {
+interface MessageAttachmentsProps {
   images: ClientChatImage[];
   authorName: string;
   mine: boolean;
@@ -16,7 +22,7 @@ interface MessageImagesProps {
 
 const previewRevocationTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-function MessageImage({
+export function MessageImage({
   image,
   authorName,
   mine,
@@ -49,24 +55,20 @@ function MessageImage({
   // image again immediately after send.
   const thumbnailUrl = localPreviewUrl ?? refreshedThumbnailUrl ?? image.thumbnailUrl;
   const displayUrl = localPreviewUrl ?? refreshedDisplayUrl ?? image.displayUrl;
-  const thumbnailState = refreshing
-    ? "loading"
-    : !thumbnailUrl
-      ? urlRefreshFailed ? "failed" : "loading"
-      : failedThumbnailUrl === thumbnailUrl
-      ? "failed"
-      : loadedThumbnailUrl === thumbnailUrl
-        ? "loaded"
-        : "loading";
-  const displayState = refreshing
-    ? "loading"
-    : !displayUrl
-      ? urlRefreshFailed ? "failed" : "loading"
-      : failedDisplayUrl === displayUrl
-      ? "failed"
-      : loadedDisplayUrl === displayUrl
-        ? "loaded"
-        : "loading";
+  const thumbnailState = deriveImageLoadState({
+    refreshing,
+    url: thumbnailUrl,
+    loadedUrl: loadedThumbnailUrl,
+    failedUrl: failedThumbnailUrl,
+    urlRefreshFailed,
+  });
+  const displayState = deriveImageLoadState({
+    refreshing,
+    url: displayUrl,
+    loadedUrl: loadedDisplayUrl,
+    failedUrl: failedDisplayUrl,
+    urlRefreshFailed,
+  });
   const progressivelyLoads = Boolean(
     displayUrl && thumbnailUrl && displayUrl !== thumbnailUrl
   );
@@ -252,23 +254,7 @@ function MessageImage({
   );
 }
 
-function fileTypeLabel(mimeType = "application/octet-stream"): string {
-  if (mimeType === "application/pdf") return "PDF";
-  if (mimeType === "text/plain") return "Text file";
-  if (mimeType === "text/csv") return "CSV";
-  if (mimeType.includes("wordprocessingml")) return "Word document";
-  if (mimeType.includes("spreadsheetml")) return "Excel workbook";
-  if (mimeType.includes("presentationml")) return "PowerPoint presentation";
-  return "File";
-}
-
-function formatFileSize(bytes = 0): string {
-  return bytes < 1024 * 1024
-    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
-    : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
+export function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
   const [refreshing, setRefreshing] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
   async function openFresh() {
@@ -318,30 +304,7 @@ function MessageFile({ file, mine }: { file: ClientChatImage; mine: boolean }) {
   );
 }
 
-type AttachmentRun =
-  | { kind: "images"; items: ClientChatImage[] }
-  | { kind: "file"; item: ClientChatImage };
-
-function attachmentRuns(attachments: ClientChatImage[]): AttachmentRun[] {
-  const runs: AttachmentRun[] = [];
-  let images: ClientChatImage[] = [];
-  const flushImages = () => {
-    if (images.length > 0) runs.push({ kind: "images", items: images });
-    images = [];
-  };
-  for (const attachment of attachments) {
-    if (attachment.kind === "file") {
-      flushImages();
-      runs.push({ kind: "file", item: attachment });
-    } else {
-      images.push(attachment);
-    }
-  }
-  flushImages();
-  return runs;
-}
-
-export function MessageImages({ images, authorName, mine }: MessageImagesProps) {
+export function MessageAttachments({ images, authorName, mine }: MessageAttachmentsProps) {
   if (images.length === 0) return null;
   const runs = attachmentRuns(images);
   const fileCount = images.filter((attachment) => attachment.kind === "file").length;
