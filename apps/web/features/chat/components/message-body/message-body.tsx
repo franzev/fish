@@ -1,5 +1,13 @@
 import { cn } from "@/lib/utils";
 import { Fragment, type ReactNode } from "react";
+import {
+  EMOJI_ONLY_RE,
+  INLINE_RE,
+  sanitizeHref,
+  tokenize,
+  type BlockToken,
+  type ListToken,
+} from "./message-body-parser";
 
 interface MessageBodyProps {
   body: string;
@@ -15,194 +23,9 @@ interface MessageBodyProps {
    copy reads with structure instead of literal markdown characters, never to
    become a general-purpose renderer. */
 
-interface CodeBlockToken {
-  type: "code";
-  lang?: string;
-  code: string;
-}
 
-interface HeadingToken {
-  type: "heading";
-  level: 1 | 2 | 3;
-  text: string;
-}
-
-interface BlockquoteToken {
-  type: "blockquote";
-  lines: string[];
-}
-
-interface ListItemToken {
-  text: string;
-  children?: ListToken;
-}
-
-interface ListToken {
-  type: "list";
-  ordered: boolean;
-  items: ListItemToken[];
-}
-
-interface ParagraphToken {
-  type: "paragraph";
-  lines: string[];
-}
-
-type BlockToken =
-  | CodeBlockToken
-  | HeadingToken
-  | BlockquoteToken
-  | ListToken
-  | ParagraphToken;
-
-const FENCE_OPEN_RE = /^```\s*(\S*)\s*$/;
-const FENCE_CLOSE_RE = /^```\s*$/;
-const HEADING_RE = /^(#{1,3})\s+(.*)$/;
-const BLOCKQUOTE_RE = /^>\s?(.*)$/;
-const LIST_ITEM_RE = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
-
-// A standalone emoji gets the same visual emphasis it carries in conversation.
-// Keep this deliberately stricter than `\p{Emoji}`: that property also matches
-// ordinary digits and symbols unless they are part of an emoji sequence.
-const EMOJI_ONLY_RE = /^\s*(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\p{Emoji_Modifier})?)*)\s*$/u;
-
-function isListItemLine(line: string): boolean {
-  return LIST_ITEM_RE.test(line);
-}
-
-function isOtherBlockStart(line: string): boolean {
-  return (
-    FENCE_OPEN_RE.test(line) ||
-    HEADING_RE.test(line) ||
-    BLOCKQUOTE_RE.test(line) ||
-    isListItemLine(line)
-  );
-}
-
-function parseList(lines: string[], start: number, indent: number): { list: ListToken; nextIndex: number } {
-  const firstMatch = lines[start].match(LIST_ITEM_RE);
-  const ordered = firstMatch ? /^\d+\.$/.test(firstMatch[2]) : false;
-  const items: ListItemToken[] = [];
-  let i = start;
-
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim() === "") {
-      // A lone blank line inside a list is tolerated (keeps items together);
-      // anything after it that isn't another list line ends the list below.
-      i += 1;
-      continue;
-    }
-    const match = line.match(LIST_ITEM_RE);
-    if (!match) {
-      break;
-    }
-    const lineIndent = match[1].length;
-    if (lineIndent < indent) {
-      break;
-    }
-    if (lineIndent > indent) {
-      if (items.length === 0) {
-        break;
-      }
-      const nested = parseList(lines, i, lineIndent);
-      items[items.length - 1].children = nested.list;
-      i = nested.nextIndex;
-      continue;
-    }
-    if (/^\d+\.$/.test(match[2]) !== ordered) {
-      break;
-    }
-    items.push({ text: match[3] });
-    i += 1;
-  }
-
-  return { list: { type: "list", ordered, items }, nextIndex: i };
-}
-
-function tokenize(body: string): BlockToken[] {
-  const lines = body.replace(/\r\n/g, "\n").split("\n");
-  const blocks: BlockToken[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    if (line.trim() === "") {
-      i += 1;
-      continue;
-    }
-
-    const fenceMatch = line.match(FENCE_OPEN_RE);
-    if (fenceMatch) {
-      const lang = fenceMatch[1] || undefined;
-      const codeLines: string[] = [];
-      i += 1;
-      while (i < lines.length && !FENCE_CLOSE_RE.test(lines[i])) {
-        codeLines.push(lines[i]);
-        i += 1;
-      }
-      i += 1; // consume the closing fence (or end of input)
-      blocks.push({ type: "code", lang, code: codeLines.join("\n") });
-      continue;
-    }
-
-    const headingMatch = line.match(HEADING_RE);
-    if (headingMatch) {
-      blocks.push({
-        type: "heading",
-        level: headingMatch[1].length as 1 | 2 | 3,
-        text: headingMatch[2].trim(),
-      });
-      i += 1;
-      continue;
-    }
-
-    if (BLOCKQUOTE_RE.test(line)) {
-      const quoteLines: string[] = [];
-      while (i < lines.length && BLOCKQUOTE_RE.test(lines[i])) {
-        quoteLines.push(lines[i].replace(BLOCKQUOTE_RE, "$1"));
-        i += 1;
-      }
-      blocks.push({ type: "blockquote", lines: quoteLines });
-      continue;
-    }
-
-    if (isListItemLine(line)) {
-      const { list, nextIndex } = parseList(lines, i, 0);
-      blocks.push(list);
-      i = nextIndex;
-      continue;
-    }
-
-    const paragraphLines: string[] = [];
-    while (i < lines.length && lines[i].trim() !== "" && !isOtherBlockStart(lines[i])) {
-      paragraphLines.push(lines[i]);
-      i += 1;
-    }
-    blocks.push({ type: "paragraph", lines: paragraphLines });
-  }
-
-  return blocks;
-}
 
 /* ---- Inline parsing (bold/italic/code/links) + link sanitization ---- */
-
-/* The link URL group tolerates one level of balanced parens inside the URL
-   (e.g. `javascript:alert(1)`, or a legitimate `.../Article_(disambiguation)`
-   link) so the whole scheme is captured for sanitization — a naive
-   `[^)]+` stops at the first inner `)` and leaves a dangling paren as
-   literal text instead of neutralizing the full URL. */
-const INLINE_RE =
-  /`([^`]+)`|\*\*([^*]+)\*\*|\*([^*]+)\*|_([^_]+)_|\[([^\]]+)\]\(((?:[^()\s]|\([^()]*\))+)\)/g;
-
-/** SECURITY (T-p06-02): only http/https/mailto hrefs are allowed. Anything
- *  else (javascript:, data:, etc.) is neutralized — the link renders as
- *  plain text with no href, never a clickable/executable URL. */
-function sanitizeHref(url: string): string | null {
-  const trimmed = url.trim();
-  return /^(https?:|mailto:)/i.test(trimmed) ? trimmed : null;
-}
 
 function parseInline(text: string, keyPrefix: string, mine?: boolean): ReactNode[] {
   const nodes: ReactNode[] = [];

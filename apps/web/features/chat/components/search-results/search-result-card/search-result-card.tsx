@@ -1,7 +1,7 @@
 import type { LocalMessage } from "@/features/chat/hooks/use-chat-messages";
 import { Avatar } from "@/features/chat/components/avatar";
 import { MessageBody } from "@/features/chat/components/message-body";
-import { MessageImages } from "@/features/chat/components/message-images";
+import { MessageAttachments } from "@/features/chat/components/message-attachments";
 import { MessageMeta } from "@/features/chat/components/message-meta";
 import { visibleMessageBody } from "@/features/chat/components/message-presentation";
 
@@ -22,7 +22,7 @@ export function SearchResultCard({ message, currentUserId, authorName, avatarUrl
         <MessageMeta authorName={authorName} sentAt={message.createdAt} tag={message.senderRole === "coach" ? "Coach" : undefined} />
         {/* Same size the chat bubble wrapper applies — the renderer inherits. */}
         <MessageBody body={visibleMessageBody(message)} className="text-ui-sm" />
-        {attachments.length > 0 && <div className="mt-xs"><MessageImages images={attachments} authorName={authorName} mine={mine} /></div>}
+        {attachments.length > 0 && <div className="mt-xs"><MessageAttachments images={attachments} authorName={authorName} mine={mine} /></div>}
       </div>
     </article>
   );

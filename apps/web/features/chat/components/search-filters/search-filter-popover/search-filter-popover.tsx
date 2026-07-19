@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useEffect,
   type ChangeEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -14,15 +15,19 @@ import {
   addChatSearchHistory,
   appendChatSearchOperator,
   clearChatSearchHistory,
+  criterionFromSuggestion,
   criterionKey,
+  makeCriterion,
   parseChatSearchQuery,
   queryFromCriteria,
   readChatSearchHistory,
   reconcileCriteria,
   replaceChatSearchToken,
+  suggestionsForToken,
+  suggestionValue,
+  type SearchSuggestion,
   type ChatFilterCriterion,
   type ChatSearchChannel,
-  type ChatSearchContentKind,
   type ChatSearchHistoryEntry,
   type ChatSearchMember,
   type ChatSearchOperator,
@@ -35,7 +40,7 @@ import {
   searchDiscoverySelections,
   type SearchDiscoverySelection,
 } from "../search-discovery-menu";
-import { SearchSuggestions, type SearchSuggestion } from "../search-suggestions";
+import { SearchSuggestions } from "../search-suggestions";
 
 export interface SearchFilterPopoverProps {
   value: string;
@@ -51,25 +56,6 @@ export interface SearchFilterPopoverProps {
 const emptyCriteria: ChatFilterCriterion[] = [];
 const emptyMembers: ChatSearchMember[] = [];
 const emptyChannels: ChatSearchChannel[] = [];
-const contentKinds: ChatSearchContentKind[] = ["image", "video", "link", "file", "embed"];
-
-function suggestionValue(suggestion: SearchSuggestion): string {
-  if (suggestion.kind === "member") return suggestion.member.username;
-  if (suggestion.kind === "channel") return suggestion.channel.slug;
-  return String(suggestion.value);
-}
-
-function criterionFromSuggestion(operator: ChatSearchOperator, suggestion: SearchSuggestion): ChatFilterCriterion | null {
-  const value = suggestionValue(suggestion).toLocaleLowerCase();
-  if ((operator === "from" || operator === "mentions") && suggestion.kind === "member") return { id: `${operator}:${suggestion.member.id}`, kind: operator, member: suggestion.member };
-  if (operator === "in" && suggestion.kind === "channel") return { id: `in:${suggestion.channel.id}`, kind: "in", channel: suggestion.channel };
-  if (operator === "has" && suggestion.kind === "content") return { id: `has:${value}`, kind: "has", contentKind: suggestion.value };
-  if (operator === "author" && suggestion.kind === "author") return { id: `author:${value}`, kind: "author", authorType: suggestion.value };
-  if (operator === "pinned" && suggestion.kind === "pinned") return { id: `pinned:${value}`, kind: "pinned", value: suggestion.value };
-  if ((operator === "before" || operator === "after" || operator === "during") && suggestion.kind === "date") return { id: `${operator}:${value}`, kind: "date", operator, date: suggestion.value };
-  return null;
-}
-
 function renderTokenizedSearchValue(
   value: string,
   tokens: ChatSearchToken[]
@@ -122,6 +108,15 @@ export function SearchFilterPopover({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const tokenLayerRef = useRef<HTMLDivElement | null>(null);
+  const valueRef = useRef(value);
+  const criteriaRef = useRef(criteria);
+  const panelOpenRef = useRef(panelOpen);
+  const pendingSelectionRef = useRef<{ value: string; criteria: ChatFilterCriterion[] } | null>(null);
+  useEffect(() => {
+    valueRef.current = value;
+    criteriaRef.current = criteria;
+    panelOpenRef.current = panelOpen;
+  }, [criteria, panelOpen, value]);
   const parsed = useMemo(() => parseChatSearchQuery(value, caret), [caret, value]);
   const soleToken = parsed.tokens.length === 1 && parsed.tokens[0]?.start === 0 && parsed.text.length === 0
     ? parsed.tokens[0]
@@ -132,7 +127,10 @@ export function SearchFilterPopover({
   const tokenModeToken = soleToken && !criteria.some((criterion) => criterionKey(criterion) === soleTokenKey)
     ? soleToken
     : null;
-  const activeToken = parsed.activeToken ?? tokenModeToken;
+  // A selection closes the panel before focus returns to the input. Keep the
+  // selected token visible, but let the next Enter submit the selected
+  // criterion instead of reopening the same suggestion.
+  const activeToken = panelOpen ? (parsed.activeToken ?? tokenModeToken) : null;
   const tokenMode = tokenModeToken !== null;
   const showTokenLayer = !tokenMode && parsed.tokens.some((token) => token.value.length > 0);
   const canonicalCaret = (selectionStart: number | null) => {
@@ -140,26 +138,18 @@ export function SearchFilterPopover({
     return tokenModeToken ? tokenModeToken.valueStart + position : position;
   };
 
-  const suggestions = useMemo<SearchSuggestion[]>(() => {
-    if (!activeToken) return [];
-    const query = activeToken.value.trim().toLocaleLowerCase();
-    if (activeToken.operator === "from" || activeToken.operator === "mentions") {
-      return members.filter((member) => `${member.displayName} ${member.username}`.toLocaleLowerCase().includes(query)).map((member) => ({ kind: "member", member }));
-    }
-    if (activeToken.operator === "in") {
-      return channels.filter((channel) => `${channel.name} ${channel.slug}`.toLocaleLowerCase().includes(query)).map((channel) => ({ kind: "channel", channel }));
-    }
-    if (activeToken.operator === "has") return contentKinds.filter((kind) => kind.includes(query)).map((item) => ({ kind: "content", value: item }));
-    if (activeToken.operator === "author") return (["client", "coach"] as const).filter((item) => item.includes(query)).map((item) => ({ kind: "author", value: item }));
-    if (activeToken.operator === "pinned") return ([true, false] as const).filter((item) => String(item).includes(query)).map((item) => ({ kind: "pinned", value: item }));
-    const today = new Date().toISOString().slice(0, 10);
-    return [{ kind: "date", value: /^\d{4}-\d{2}-\d{2}$/.test(activeToken.value) ? activeToken.value : today }];
-  }, [activeToken, channels, members]);
+  const suggestions = useMemo(
+    () => (activeToken ? suggestionsForToken(activeToken, members, channels) : []),
+    [activeToken, channels, members]
+  );
 
   const discovery = !activeToken && value.trim() ? searchDiscoverySelections(value, members, channels) : [];
   const updateValue = (nextValue: string, nextCaret = nextValue.length) => {
+    pendingSelectionRef.current = null;
+    valueRef.current = nextValue;
+    criteriaRef.current = reconcileCriteria(nextValue, criteria);
     onValueChange(nextValue);
-    onCriteriaChange?.(reconcileCriteria(nextValue, criteria));
+    onCriteriaChange?.(criteriaRef.current);
     setCaret(nextCaret);
     setActiveIndex(0);
   };
@@ -178,10 +168,14 @@ export function SearchFilterPopover({
     const replacement = replaceChatSearchToken(value, activeToken, suggestionValue(suggestion));
     const criterion = criterionFromSuggestion(activeToken.operator, suggestion);
     const nextCriteria = criterion ? [...criteria.filter((item) => item.id !== criterion.id), criterion] : criteria;
+    valueRef.current = replacement.value;
+    criteriaRef.current = nextCriteria;
+    pendingSelectionRef.current = { value: replacement.value, criteria: nextCriteria };
     onValueChange(replacement.value);
     onCriteriaChange?.(nextCriteria);
     setCaret(replacement.caret);
     setActiveIndex(0);
+    panelOpenRef.current = false;
     setPanelOpen(false);
     focusAt(replacement.caret);
   };
@@ -189,12 +183,14 @@ export function SearchFilterPopover({
     if (selection.kind === "search") return submit(value, criteria);
     if (selection.kind === "filters") { setPanelOpen(false); onOpenFilters(); return; }
     const criterion: ChatFilterCriterion = selection.kind === "from"
-      ? { id: `from:${selection.member.id}`, kind: "from", member: selection.member }
+      ? makeCriterion("from", selection.member)
       : selection.kind === "mentions"
-        ? { id: `mentions:${selection.member.id}`, kind: "mentions", member: selection.member }
-        : { id: `in:${selection.channel.id}`, kind: "in", channel: selection.channel };
+        ? makeCriterion("mentions", selection.member)
+        : makeCriterion("in", selection.channel);
     const nextCriteria = [...criteria.filter((item) => item.id !== criterion.id), criterion];
     const nextQuery = queryFromCriteria(parsed.text, nextCriteria);
+    valueRef.current = nextQuery;
+    criteriaRef.current = nextCriteria;
     onValueChange(nextQuery);
     onCriteriaChange?.(nextCriteria);
     setCaret(nextQuery.length);
@@ -208,15 +204,23 @@ export function SearchFilterPopover({
     focusAt(next.caret);
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    const options = activeToken ? suggestions : discovery;
+    const panelIsOpen = panelOpenRef.current;
+    const currentActiveToken = panelIsOpen ? activeToken : null;
+    const options = currentActiveToken ? suggestions : panelIsOpen ? discovery : [];
     if (event.key === "ArrowDown") { event.preventDefault(); setActiveIndex((index) => Math.min(index + 1, Math.max(options.length - 1, 0))); return; }
     if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => Math.max(index - 1, 0)); return; }
     if (event.key === "Escape") { event.preventDefault(); setPanelOpen(false); return; }
     if (event.key === "Enter") {
       event.preventDefault();
-      if (activeToken && suggestions[activeIndex]) selectSuggestion(suggestions[activeIndex]);
-      else if (discovery[activeIndex]) selectDiscovery(discovery[activeIndex]);
-      else submit(value, criteria);
+      const pendingSelection = pendingSelectionRef.current;
+      if (pendingSelection) {
+        pendingSelectionRef.current = null;
+        submit(pendingSelection.value, pendingSelection.criteria);
+        return;
+      }
+      if (currentActiveToken && suggestions[activeIndex]) selectSuggestion(suggestions[activeIndex]);
+      else if (panelIsOpen && discovery[activeIndex]) selectDiscovery(discovery[activeIndex]);
+      else submit(valueRef.current, criteriaRef.current);
     }
   };
 
@@ -263,7 +267,7 @@ export function SearchFilterPopover({
             }}
             onClick={(event) => { setCaret(canonicalCaret(event.currentTarget.selectionStart)); setPanelOpen(true); }}
             onKeyUp={(event) => setCaret(canonicalCaret(event.currentTarget.selectionStart))}
-            onKeyDown={handleKeyDown}
+    onKeyDown={handleKeyDown}
             onScroll={(event) => {
               if (tokenLayerRef.current) {
                 tokenLayerRef.current.scrollLeft = event.currentTarget.scrollLeft;

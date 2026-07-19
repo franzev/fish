@@ -12,7 +12,7 @@ export * from "./media-picker-scroll-area";
 export * from "./media-picker-search";
 export * from "./message-body";
 export * from "./message-meta";
-export * from "./message-images";
+export * from "./message-attachments";
 export * from "./message-gif";
 export { getBubbleRadiusClasses } from "./message-presentation";
 export * from "./message-row";

@@ -1,10 +1,8 @@
 import { SearchOption } from "@/components/ui/search-option";
 import { Avatar } from "@/features/chat/components/avatar";
 import type {
-  ChatSearchChannel,
-  ChatSearchContentKind,
-  ChatSearchMember,
   ChatSearchOperator,
+  SearchSuggestion,
 } from "@/features/chat/model/search";
 import {
   IconCalendar,
@@ -17,14 +15,6 @@ import {
   IconUser,
   IconVideo,
 } from "@tabler/icons-react";
-
-export type SearchSuggestion =
-  | { kind: "member"; member: ChatSearchMember }
-  | { kind: "channel"; channel: ChatSearchChannel }
-  | { kind: "content"; value: ChatSearchContentKind }
-  | { kind: "author"; value: "client" | "coach" }
-  | { kind: "pinned"; value: boolean }
-  | { kind: "date"; value: string };
 
 interface SearchSuggestionsProps {
   operator: ChatSearchOperator;

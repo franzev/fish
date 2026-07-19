@@ -4,6 +4,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { cn } from "@/lib/utils";
 import { chatLimits } from "@fish/core/chat";
 import { IconCheck, IconX } from "@tabler/icons-react";
+import { resizeAutosizeTextarea } from "../../autosize-textarea";
 import {
   useId,
   useLayoutEffect,
@@ -20,15 +21,6 @@ export interface MessageEditorProps {
   onChange: (value: string) => void;
   onSave: () => void;
   onCancel: () => void;
-}
-
-function resizeEditor(textarea: HTMLTextAreaElement) {
-  textarea.style.height = "auto";
-  const contentHeight = textarea.scrollHeight;
-  textarea.style.height = `${contentHeight}px`;
-  textarea.style.overflowY = contentHeight > textarea.clientHeight
-    ? "auto"
-    : "hidden";
 }
 
 /** Keeps message revision in transcript context, with an explicit save path
@@ -56,14 +48,14 @@ export function MessageEditor({
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    resizeEditor(textarea);
+    resizeAutosizeTextarea(textarea);
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     textarea.scrollIntoView?.({ block: "nearest" });
   }, []);
 
   useLayoutEffect(() => {
-    if (textareaRef.current) resizeEditor(textareaRef.current);
+    if (textareaRef.current) resizeAutosizeTextarea(textareaRef.current);
   }, [draft]);
 
   function submit(event: FormEvent<HTMLFormElement>) {

@@ -6,15 +6,37 @@ import type {
   ClientChatUnreadSummary,
 } from "@/lib/services";
 import { IconArrowDown } from "@tabler/icons-react";
-import type { RefObject } from "react";
+import { useMemo, type RefObject } from "react";
 import type { CommunityMemberProfile } from "../member-profile-popover";
 import { TypingIndicator } from "../visual";
 import {
   ChatMessageRow,
-  type ChatMessageActions,
-  type ChatMessageEditingState,
 } from "./chat-message-row";
+import type { MessageActionResult } from "./message-actions";
+import type { SendWithRequestIdOptions } from "@/features/chat/hooks/use-send-message";
 import { OlderMessagesControl } from "./older-messages-control";
+import { findFirstUnreadMessageId } from "./first-unread";
+
+export interface ChatMessageActions {
+  canDelete: boolean;
+  reply: (message: LocalMessage) => void;
+  toggleReaction: (message: LocalMessage, emoji: string) => Promise<void>;
+  delete: (message: LocalMessage) => Promise<MessageActionResult>;
+  reportGif: (message: LocalMessage) => Promise<void>;
+  retry: (options: SendWithRequestIdOptions) => Promise<void>;
+}
+
+export interface ChatMessageEditingState {
+  enabled: boolean;
+  messageId: string | null;
+  draft: string;
+  notice: string | null;
+  saving: boolean;
+  start: (message: LocalMessage) => void;
+  change: (value: string) => void;
+  save: () => void;
+  cancel: () => void;
+}
 
 interface ChatMessageListProps {
   viewport: {
@@ -50,22 +72,6 @@ interface ChatMessageListProps {
   editing: ChatMessageEditingState;
 }
 
-function subMillisecondFraction(timestamp: string): string {
-  const fraction = timestamp.match(/\.(\d+)/)?.[1] ?? "";
-  return fraction.padEnd(9, "0").slice(3, 9);
-}
-
-function timestampsMatch(left: string, right: string): boolean {
-  if (left === right) {
-    return true;
-  }
-
-  return (
-    Date.parse(left) === Date.parse(right) &&
-    subMillisecondFraction(left) === subMillisecondFraction(right)
-  );
-}
-
 /** Coordinates transcript scrolling and delegates pagination and row details
  * to focused private components. */
 export function ChatMessageList({
@@ -95,15 +101,15 @@ export function ChatMessageList({
     ? "No messages yet. Say hello to the community."
     : "No messages yet.";
   const oldestUnreadAt = unreadBoundary.oldestUnreadAt;
-  const firstLoadedUnreadMessageId =
-    unreadBoundary.count > 0 && oldestUnreadAt
-      ? visibleMessages.find(
-          (message) =>
-            message.senderId !== chat.currentUserId &&
-            !message.deletedAt &&
-            timestampsMatch(message.createdAt, oldestUnreadAt)
-        )?.id ?? null
-      : null;
+  const firstLoadedUnreadMessageId = findFirstUnreadMessageId(
+    visibleMessages,
+    { count: unreadBoundary.count, oldestUnreadAt },
+    chat.currentUserId
+  );
+  const replyMessages = useMemo(
+    () => new Map(allMessages.map((message) => [message.id, message] as const)),
+    [allMessages]
+  );
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
@@ -140,6 +146,7 @@ export function ChatMessageList({
                   previous={visibleMessages[index - 1]}
                   next={visibleMessages[index + 1]}
                   messages={allMessages}
+                  replyMessages={replyMessages}
                   currentUserId={chat.currentUserId}
                   currentUserRole={chat.currentUserRole}
                   isCommunity={isCommunity}

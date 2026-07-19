@@ -4,6 +4,7 @@ import type {
   ChatFilterCriterion,
   ChatSearchDateOperator,
 } from "@/features/chat/model/search";
+import { makeCriterion } from "@/features/chat/model/search";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { DatePickerPopover } from "../date-picker-popover";
 
@@ -37,7 +38,7 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
             onChange={(event) =>
               update(criterion.id, {
                 operator: event.target.value as ChatSearchDateOperator,
-                id: `${event.target.value}:${criterion.date}`,
+                id: makeCriterion("date", { operator: event.target.value as ChatSearchDateOperator, date: criterion.date }).id,
               })
             }
             className="min-h-control w-full rounded-control bg-surface-2 px-sm text-ui-md text-foreground sm:w-filter-operator md:text-ui"
@@ -49,7 +50,7 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
           <DatePickerPopover
             label={`Date ${index + 1}`}
             value={criterion.date}
-            onChange={(date) => update(criterion.id, { date, id: `${criterion.operator}:${date}` })}
+            onChange={(date) => update(criterion.id, { date, id: makeCriterion("date", { operator: criterion.operator, date }).id })}
           />
           <IconButton
             label={`Remove date ${index + 1}`}
@@ -65,7 +66,10 @@ export function DateFilterField({ criteria, onChange }: DateFilterFieldProps) {
         fullWidth
         onClick={() => {
           const date = new Date().toISOString().slice(0, 10);
-          onChange([...criteria, { id: `before:${date}:${criteria.length}`, kind: "date", operator: "before", date }]);
+          onChange([
+            ...criteria,
+            makeCriterion("date", { operator: "before", date }, String(criteria.length)),
+          ]);
         }}
       >
         <span className="flex items-center gap-xs">

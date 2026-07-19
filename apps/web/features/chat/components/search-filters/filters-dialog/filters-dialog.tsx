@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   parseChatSearchQuery,
   queryFromCriteria,
+  makeCriterion,
   type ChatFilterCriterion,
   type ChatSearchAuthorType,
   type ChatSearchChannel,
@@ -59,60 +60,36 @@ function OpenFiltersDialog({
       (criterion): criterion is Extract<ChatFilterCriterion, { kind: typeof kind }> =>
         criterion.kind === kind
     );
-  const toggleMember = (kind: "from" | "mentions", member: ChatSearchMember) => {
-    const exists = draft.some(
-      (criterion) => criterion.kind === kind && criterion.member.id === member.id
-    );
-    setDraft(
-      exists
-        ? draft.filter(
-            (criterion) =>
-              !(criterion.kind === kind && criterion.member.id === member.id)
-          )
-        : [...draft, { id: `${kind}:${member.username}`, kind, member }]
+  const toggleCriterion = (
+    matches: (criterion: ChatFilterCriterion) => boolean,
+    make: () => ChatFilterCriterion
+  ) => {
+    setDraft((current) =>
+      current.some(matches)
+        ? current.filter((criterion) => !matches(criterion))
+        : [...current, make()]
     );
   };
-  const toggleChannel = (channel: ChatSearchChannel) => {
-    const exists = draft.some(
-      (criterion) => criterion.kind === "in" && criterion.channel.id === channel.id
+  const toggleMember = (kind: "from" | "mentions", member: ChatSearchMember) =>
+    toggleCriterion(
+      (criterion) => criterion.kind === kind && criterion.member.id === member.id,
+      () => makeCriterion(kind, member)
     );
-    setDraft(
-      exists
-        ? draft.filter(
-            (criterion) =>
-              !(criterion.kind === "in" && criterion.channel.id === channel.id)
-          )
-        : [...draft, { id: `in:${channel.slug}`, kind: "in", channel }]
+  const toggleChannel = (channel: ChatSearchChannel) =>
+    toggleCriterion(
+      (criterion) => criterion.kind === "in" && criterion.channel.id === channel.id,
+      () => makeCriterion("in", channel)
     );
-  };
-  const toggleContent = (contentKind: ChatSearchContentKind) => {
-    const exists = draft.some(
-      (criterion) =>
-        criterion.kind === "has" && criterion.contentKind === contentKind
+  const toggleContent = (contentKind: ChatSearchContentKind) =>
+    toggleCriterion(
+      (criterion) => criterion.kind === "has" && criterion.contentKind === contentKind,
+      () => makeCriterion("has", contentKind)
     );
-    setDraft(
-      exists
-        ? draft.filter(
-            (criterion) =>
-              !(criterion.kind === "has" && criterion.contentKind === contentKind)
-          )
-        : [...draft, { id: `has:${contentKind}`, kind: "has", contentKind }]
+  const toggleAuthor = (authorType: ChatSearchAuthorType) =>
+    toggleCriterion(
+      (criterion) => criterion.kind === "author" && criterion.authorType === authorType,
+      () => makeCriterion("author", authorType)
     );
-  };
-  const toggleAuthor = (authorType: ChatSearchAuthorType) => {
-    const exists = draft.some(
-      (criterion) =>
-        criterion.kind === "author" && criterion.authorType === authorType
-    );
-    setDraft(
-      exists
-        ? draft.filter(
-            (criterion) =>
-              !(criterion.kind === "author" && criterion.authorType === authorType)
-          )
-        : [...draft, { id: `author:${authorType}`, kind: "author", authorType }]
-    );
-  };
   const pinned = draft.find(
     (criterion): criterion is Extract<ChatFilterCriterion, { kind: "pinned" }> =>
       criterion.kind === "pinned"
@@ -206,7 +183,7 @@ function OpenFiltersDialog({
                     ...draft.filter((criterion) => criterion.kind !== "pinned"),
                     ...(value === null
                       ? []
-                      : [{ id: `pinned:${value}`, kind: "pinned" as const, value }]),
+                      : [makeCriterion("pinned", value)]),
                   ])
                 }
               />

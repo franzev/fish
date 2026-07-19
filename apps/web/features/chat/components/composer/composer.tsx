@@ -1,7 +1,7 @@
 "use client";
 
 import { IconButton } from "@/components/ui/icon-button";
-import { Tooltip } from "@base-ui/react/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   IconMoodSmile,
   IconSend,
@@ -22,6 +22,7 @@ import { MediaPickerButton } from "../media-picker-button";
 import type { ChatSticker } from "../sticker-picker";
 import type { ChatStickerId } from "@fish/core/chat";
 import { StickerSelectionThumbnail } from "./sticker-selection-thumbnail";
+import { resizeAutosizeTextarea } from "../autosize-textarea";
 
 export interface ComposerProps {
   /** Community channel name for the placeholder; direct chats omit it. */
@@ -48,7 +49,7 @@ export interface ComposerProps {
   stickerSelectionDisabled?: boolean;
 }
 
-function getSendDisabledReason(images: PendingChatImage[]): string | null {
+export function getSendDisabledReason(images: PendingChatImage[]): string | null {
   if (images.some((image) => image.status === "failed")) {
     return "Retry or remove the upload that didn't finish";
   }
@@ -70,15 +71,6 @@ function getSendDisabledReason(images: PendingChatImage[]): string | null {
   }
 
   return `Still finishing your ${subject}`;
-}
-
-function resizeComposer(textarea: HTMLTextAreaElement) {
-  textarea.style.height = "auto";
-  const contentHeight = textarea.scrollHeight;
-  textarea.style.height = `${contentHeight}px`;
-  textarea.style.overflowY = contentHeight > textarea.clientHeight
-    ? "auto"
-    : "hidden";
 }
 
 /** The message composer: one borderless surface-2 bar holding every input
@@ -128,7 +120,7 @@ export function Composer({
       resizedDraftRef.current = null;
       return;
     }
-    if (textareaRef.current) resizeComposer(textareaRef.current);
+    if (textareaRef.current) resizeAutosizeTextarea(textareaRef.current);
   }, [draft]);
 
   return (
@@ -158,7 +150,7 @@ export function Composer({
             aria-label="Message"
             value={draft}
             onChange={(event) => {
-              resizeComposer(event.currentTarget);
+              resizeAutosizeTextarea(event.currentTarget);
               resizedDraftRef.current = event.currentTarget.value;
               onDraftChange(event.currentTarget.value);
             }}
@@ -180,43 +172,29 @@ export function Composer({
             <IconMoodSmile size={20} stroke={1.75} aria-hidden="true" />
           </MediaPickerButton>
           {hasSendContent && (
-            <Tooltip.Provider delay={400} closeDelay={0}>
-              <Tooltip.Root disabled={!sendDisabledReason}>
-                <Tooltip.Trigger
-                  render={
-                    <span
-                      tabIndex={sendDisabledReason ? 0 : undefined}
-                      aria-label={sendDisabledReason
-                        ? `Send unavailable: ${sendDisabledReason}`
-                        : undefined}
-                      className="inline-flex size-control shrink-0 rounded-control"
-                    >
-                      <IconButton
-                        type="button"
-                        onClick={onSend}
-                        disabled={!canSend}
-                        className="shrink-0"
-                        label="Send message"
-                        appearance="solid"
-                        icon={<IconSend size={20} stroke={1.75} aria-hidden="true" />}
-                      />
-                    </span>
-                  }
+            <Tooltip
+              label={sendDisabledReason}
+              disabled={!sendDisabledReason}
+              positionerClassName="z-30"
+            >
+              <span
+                tabIndex={sendDisabledReason ? 0 : undefined}
+                aria-label={sendDisabledReason
+                  ? `Send unavailable: ${sendDisabledReason}`
+                  : undefined}
+                className="inline-flex size-control shrink-0 rounded-control"
+              >
+                <IconButton
+                  type="button"
+                  onClick={onSend}
+                  disabled={!canSend}
+                  className="shrink-0"
+                  label="Send message"
+                  appearance="solid"
+                  icon={<IconSend size={20} stroke={1.75} aria-hidden="true" />}
                 />
-                {sendDisabledReason && (
-                  <Tooltip.Portal>
-                    <Tooltip.Positioner side="top" sideOffset={4} className="z-30">
-                      <Tooltip.Popup
-                        role="tooltip"
-                        className="rounded-control bg-foreground px-xs py-2xs text-ui-2xs text-bg"
-                      >
-                        {sendDisabledReason}
-                      </Tooltip.Popup>
-                    </Tooltip.Positioner>
-                  </Tooltip.Portal>
-                )}
-              </Tooltip.Root>
-            </Tooltip.Provider>
+              </span>
+            </Tooltip>
           )}
           {!hasSendContent && (
             <span

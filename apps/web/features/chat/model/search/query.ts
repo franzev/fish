@@ -7,6 +7,7 @@ import {
   type ChatSearchToken,
   type ParsedChatSearchQuery,
 } from "./types";
+import { makeCriterion } from "./criterion";
 
 const operatorPattern = chatSearchOperators.join("|");
 const tokenPattern = new RegExp(
@@ -163,31 +164,34 @@ export function criteriaFromQuery(
       const value = token.value.toLocaleLowerCase();
       if (token.operator === "from" || token.operator === "mentions") {
         const member = memberByUsername.get(value);
-        return member
-          ? [{ id: `${token.operator}:${member.id}`, kind: token.operator, member }]
-          : [];
+        return member ? [makeCriterion(token.operator, member)] : [];
       }
       if (token.operator === "in") {
         const channel = channelBySlug.get(value);
-        return channel ? [{ id: `in:${channel.id}`, kind: "in", channel }] : [];
+        return channel ? [makeCriterion("in", channel)] : [];
       }
       if (
         token.operator === "has" &&
         ["image", "video", "link", "file", "embed"].includes(value)
       ) {
-        return [{ id: `has:${value}`, kind: "has", contentKind: value as Extract<ChatFilterCriterion, { kind: "has" }>["contentKind"] }];
+        return [
+          makeCriterion(
+            "has",
+            value as Extract<ChatFilterCriterion, { kind: "has" }>["contentKind"]
+          ),
+        ];
       }
       if (token.operator === "author" && (value === "client" || value === "coach")) {
-        return [{ id: `author:${value}`, kind: "author", authorType: value }];
+        return [makeCriterion("author", value)];
       }
       if (token.operator === "pinned" && (value === "true" || value === "false")) {
-        return [{ id: `pinned:${value}`, kind: "pinned", value: value === "true" }];
+        return [makeCriterion("pinned", value === "true")];
       }
       if (
         (token.operator === "before" || token.operator === "after" || token.operator === "during") &&
         /^\d{4}-\d{2}-\d{2}$/.test(value)
       ) {
-        return [{ id: `${token.operator}:${value}`, kind: "date", operator: token.operator, date: value }];
+        return [makeCriterion("date", { operator: token.operator, date: value })];
       }
       return [];
     }

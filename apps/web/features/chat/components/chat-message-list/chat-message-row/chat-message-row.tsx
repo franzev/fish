@@ -3,10 +3,9 @@ import {
   getMessageSnippet,
   getOutgoingMessageStatus,
 } from "@/features/chat/model/chat-state";
-import { belongsToSameMessageGroup } from "@/features/chat/model/message-grouping";
 import type { ClientChatReadState } from "@/lib/services";
 import { cn } from "@/lib/utils";
-import { isChatStickerId, type ChatStickerId } from "@fish/core/chat";
+import { isChatStickerId } from "@fish/core/chat";
 import { useEffect, useRef } from "react";
 import {
   Avatar,
@@ -14,7 +13,7 @@ import {
   getBubbleRadiusClasses,
   MessageBody,
   MessageMeta,
-  MessageImages,
+  MessageAttachments,
   MessageGif,
   StickerMedia,
   MessageStatus,
@@ -27,48 +26,22 @@ import {
   type CommunityMemberProfile,
 } from "../../member-profile-popover";
 import { UnreadDivider } from "../../unread-divider";
-import {
-  MessageActions,
-  type MessageActionResult,
-} from "../message-actions";
+import { MessageActions } from "../message-actions";
 import { MessageEditor } from "../message-editor";
-import { formatChatDayLabel } from "./chat-day-label";
-
-export interface ChatMessageActions {
-  canDelete: boolean;
-  reply: (message: LocalMessage) => void;
-  toggleReaction: (message: LocalMessage, emoji: string) => Promise<void>;
-  delete: (message: LocalMessage) => Promise<MessageActionResult>;
-  reportGif: (message: LocalMessage) => Promise<void>;
-  retry: (
-    body: string,
-    clientRequestId: string,
-    replyToMessageId: string | null,
-    clearComposer?: boolean,
-    attachmentIds?: string[],
-    images?: NonNullable<LocalMessage["images"]>,
-    stickerId?: ChatStickerId,
-    gif?: LocalMessage["gif"]
-  ) => Promise<void>;
-}
-
-export interface ChatMessageEditingState {
-  enabled: boolean;
-  messageId: string | null;
-  draft: string;
-  notice: string | null;
-  saving: boolean;
-  start: (message: LocalMessage) => void;
-  change: (value: string) => void;
-  save: () => void;
-  cancel: () => void;
-}
+import { DayDivider } from "../day-divider";
+import type { SendWithRequestIdOptions } from "@/features/chat/hooks/use-send-message";
+import type {
+  ChatMessageActions,
+  ChatMessageEditingState,
+} from "../chat-message-list";
+import { deriveRowPresentation } from "./row-presentation";
 
 interface ChatMessageRowProps {
   message: LocalMessage;
   previous?: LocalMessage;
   next?: LocalMessage;
   messages: LocalMessage[];
+  replyMessages: ReadonlyMap<string, LocalMessage>;
   currentUserId: string;
   currentUserRole: "client" | "coach";
   isCommunity: boolean;
@@ -90,6 +63,7 @@ export function ChatMessageRow({
   previous,
   next,
   messages,
+  replyMessages,
   currentUserId,
   currentUserRole,
   isCommunity,
@@ -115,58 +89,29 @@ export function ChatMessageRow({
     wasEditingRef.current = isEditing;
   }, [isEditing]);
 
-  const groupedWithPrevious = belongsToSameMessageGroup(previous, message);
-  const groupedWithNext = Boolean(
-    next && belongsToSameMessageGroup(message, next)
-  );
+  const replyMessage = message.replyToMessageId
+    ? replyMessages.get(message.replyToMessageId) ?? null
+    : null;
+  const presentation = deriveRowPresentation(message, previous, next, {
+    currentUserId,
+    isCommunity,
+    latestMineRequestId,
+    isEditing,
+    replyMessage,
+  });
+  const { groupedWithPrevious, groupedWithNext } = presentation;
   const connectedBubbleRadius = getBubbleRadiusClasses({
     mine,
     groupedWithPrevious,
     groupedWithNext,
   });
-  const compactSent =
-    mine &&
-    message.localStatus === "sent" &&
-    message.clientRequestId === latestMineRequestId;
   const deliveryStatus = mine
     ? getOutgoingMessageStatus(message, messages, participantReadState)
     : "sent";
-  const showStatus =
-    mine &&
-    (message.localStatus === "failed" || (compactSent && !isCommunity));
-  const replyMessage = message.replyToMessageId
-    ? messages.find((item) => item.id === message.replyToMessageId) ?? null
-    : null;
-  const startsCommunityGroup =
-    isCommunity && (!groupedWithPrevious || Boolean(replyMessage));
-  const showParticipantAvatar = isCommunity
-    ? startsCommunityGroup
-    : !mine && !groupedWithNext;
-  const messageDay = new Date(message.createdAt).toDateString();
-  const previousDay = previous
-    ? new Date(previous.createdAt).toDateString()
-    : null;
-  const dayDividerLabel =
-    previousDay !== messageDay ? formatChatDayLabel(message.createdAt) : null;
   const showMessageActions =
     message.localStatus === "sent" && !message.deletedAt && !interactionDisabled;
   const authorMember = getAuthorMember(message);
   const attachments = message.attachments ?? message.images ?? [];
-  const visualImageCount =
-    attachments.filter((attachment) => attachment.kind !== "file").length;
-  const messageSurfaceWidthClass = isEditing
-    ? "w-full max-w-message"
-    : visualImageCount === 1
-      ? "w-full max-w-chat-preview"
-      : visualImageCount > 1
-        ? "w-full max-w-message"
-        : attachments.length
-          ? "w-full max-w-chat-image"
-          : message.gif
-            ? "w-full max-w-chat-gif"
-            : message.stickerId
-              ? "w-fit max-w-message"
-              : "max-w-message";
 
   const messagePrimaryContent = (
     <>
@@ -191,7 +136,7 @@ export function ChatMessageRow({
           </span>
         </div>
       )}
-      {startsCommunityGroup && (
+      {presentation.startsCommunityGroup && (
         <MessageMeta
           authorName={getAuthorName(message)}
           sentAt={message.createdAt}
@@ -214,7 +159,7 @@ export function ChatMessageRow({
         />
       )}
       {attachments.length > 0 && !message.deletedAt && (
-        <MessageImages images={attachments} authorName={getAuthorName(message)} mine={mine} />
+        <MessageAttachments images={attachments} authorName={getAuthorName(message)} mine={mine} />
       )}
       {message.stickerId && !message.deletedAt && (
         <StickerMedia stickerId={message.stickerId} />
@@ -282,11 +227,11 @@ export function ChatMessageRow({
       <div
         className={cn(
           "flex min-h-5 items-center gap-xs text-ui-xs text-muted",
-          !showStatus && "hidden",
+          !presentation.showStatus && "hidden",
           mine && !isCommunity ? "justify-end" : "justify-start"
         )}
       >
-        {compactSent && <MessageStatus status={deliveryStatus} />}
+        {presentation.compactSent && <MessageStatus status={deliveryStatus} />}
         {mine && message.localStatus === "failed" && (
           <>
             <span>Not sent yet</span>
@@ -294,16 +239,16 @@ export function ChatMessageRow({
               type="button"
               className="min-h-control rounded-control px-xs py-2xs text-body underline"
               onClick={() =>
-                void actions.retry(
-                  message.body,
-                  message.clientRequestId,
-                  message.replyToMessageId ?? null,
-                  false,
-                  attachments.map((attachment) => attachment.id),
-                  attachments,
-                  isChatStickerId(message.stickerId) ? message.stickerId : undefined,
-                  message.gif
-                )
+                void actions.retry({
+                  body: message.body,
+                  clientRequestId: message.clientRequestId,
+                  replyToMessageId: message.replyToMessageId ?? null,
+                  clearComposer: false,
+                  attachmentIds: attachments.map((attachment) => attachment.id),
+                  optimisticImages: attachments,
+                  optimisticStickerId: isChatStickerId(message.stickerId) ? message.stickerId : undefined,
+                  optimisticGif: message.gif,
+                } satisfies SendWithRequestIdOptions)
               }
             >
               Retry
@@ -322,7 +267,7 @@ export function ChatMessageRow({
     </>
   );
 
-  const communityAvatarSlot = showParticipantAvatar ? (
+  const communityAvatarSlot = presentation.showParticipantAvatar ? (
     <MemberProfilePopover
       member={authorMember}
       currentUserId={currentUserId}
@@ -337,21 +282,12 @@ export function ChatMessageRow({
 
   return (
     <>
-      {dayDividerLabel && !showUnreadDivider && (
-        <li role="separator" className="mt-md flex items-center gap-xs">
-          <span aria-hidden="true" className="h-px flex-1 bg-border" />
-          <span
-            suppressHydrationWarning
-            className="text-ui-2xs font-medium text-muted"
-          >
-            {dayDividerLabel}
-          </span>
-          <span aria-hidden="true" className="h-px flex-1 bg-border" />
-        </li>
+      {presentation.dayDividerLabel && !showUnreadDivider && (
+        <DayDivider label={presentation.dayDividerLabel} />
       )}
       {showUnreadDivider && (
         <li role="none">
-          <UnreadDivider dateLabel={dayDividerLabel ?? undefined} />
+          <UnreadDivider dateLabel={presentation.dayDividerLabel ?? undefined} />
         </li>
       )}
       <li
@@ -372,7 +308,7 @@ export function ChatMessageRow({
         {isCommunity ? (
           <CommunityMessageRowLayout
             avatarSlot={communityAvatarSlot}
-            startsGroup={startsCommunityGroup}
+            startsGroup={presentation.startsCommunityGroup}
             hasPrecedingRow={Boolean(previous)}
             interactive
             className={cn(
@@ -384,7 +320,7 @@ export function ChatMessageRow({
         ) : (
           <>
             {!mine &&
-              (showParticipantAvatar ? (
+              (presentation.showParticipantAvatar ? (
                 <Avatar
                   profileId={message.senderId}
                   src={getAuthorAvatar(message) ?? undefined}
@@ -398,7 +334,7 @@ export function ChatMessageRow({
             <div
               className={cn(
                 "flex flex-col",
-                messageSurfaceWidthClass,
+                presentation.surfaceWidthClass,
                 mine && "items-end"
               )}
             >
