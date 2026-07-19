@@ -10,6 +10,10 @@ export default defineConfig({
     timeout: 10_000,
   },
   fullyParallel: false,
+  // E2E specs intentionally share the seeded users and mutate their chat,
+  // friendship, booking, and call state. Keep files on one worker so those
+  // fixtures cannot invalidate another signed-in browser mid-scenario.
+  workers: 1,
   reporter: [["list"]],
   use: {
     baseURL,

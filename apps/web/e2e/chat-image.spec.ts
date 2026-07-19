@@ -154,7 +154,7 @@ test("photo preparation falls back when the image worker cannot decode it", asyn
   });
 
   await page.goto("/sign-in");
-  await page.getByLabel("Email").fill("member1@fish.dev");
+  await page.getByLabel("Email").fill("client2@fish.dev");
   await page.getByLabel("Password", { exact: true }).fill("fish-client-dev");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/home$/);
