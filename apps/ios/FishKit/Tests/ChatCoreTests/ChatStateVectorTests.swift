@@ -6,7 +6,7 @@ import TestSupport
 struct ChatStateVectorTests {
     @Test func sharedReducerAndSelectorVectorsReplay() throws {
         let vectors = try ChatStateVectors.load()
-        #expect(vectors.count == 24)
+        #expect(vectors.count == 27)
 
         for vector in vectors {
             let actual = ChatStateReducer.apply(vector.events, to: vector.initialState)
@@ -107,6 +107,19 @@ struct ChatStateVectorTests {
                 participantName: input.participantName,
                 currentUserName: input.currentUserName
             ) == input.expected, Comment(rawValue: name))
+        }
+        if let input = selectors.composer {
+            let composer = try #require(state.conversations[input.conversationId]?.composer)
+            #expect(composer.selectedGif?.providerId == input.selectedGifProviderId, Comment(rawValue: name))
+            #expect(composer.selectedStickerId == input.selectedStickerId, Comment(rawValue: name))
+            #expect((composer.selectedGifQuery ?? "") == input.selectedGifQuery, Comment(rawValue: name))
+            #expect((composer.selectionRevision ?? 0) == input.selectionRevision, Comment(rawValue: name))
+        }
+        if let input = selectors.messageDeletedAt {
+            let message = try #require(state.conversations[input.conversationId]?.messages.first {
+                $0.id == input.messageId
+            })
+            #expect(message.deletedAt == input.expected, Comment(rawValue: name))
         }
     }
 

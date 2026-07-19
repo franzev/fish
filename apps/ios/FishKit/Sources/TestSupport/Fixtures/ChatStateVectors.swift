@@ -28,11 +28,25 @@ public struct ChatStateVector: Decodable, Sendable {
             public let currentUserName: String
             public let expected: ReplyPreview
         }
+        public struct Composer: Decodable, Sendable {
+            public let conversationId: String
+            public let selectedGifProviderId: String?
+            public let selectedStickerId: String?
+            public let selectedGifQuery: String
+            public let selectionRevision: Int
+        }
+        public struct MessageDeletedAt: Decodable, Sendable {
+            public let conversationId: String
+            public let messageId: String
+            public let expected: String?
+        }
 
         public let unreadCount: UnreadCount?
         public let snippet: Snippet?
         public let outgoingStatus: OutgoingStatus?
         public let replyPreview: Reply?
+        public let composer: Composer?
+        public let messageDeletedAt: MessageDeletedAt?
     }
 
     public let name: String

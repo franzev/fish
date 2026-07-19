@@ -220,11 +220,30 @@ public struct ChatComposerState: Codable, Sendable, Equatable {
     public var draft: String
     public var replyTargetId: ChatMessageId?
     public var editTargetId: ChatMessageId?
+    public var selectedGif: ChatStateGif?
+    public var selectedGifQuery: String?
+    public var selectedStickerId: String?
+    public var selectionRevision: Int?
+    public var pendingDeleteByMessageId: [ChatMessageId: String]?
 
-    public init(draft: String = "", replyTargetId: ChatMessageId? = nil, editTargetId: ChatMessageId? = nil) {
+    public init(
+        draft: String = "",
+        replyTargetId: ChatMessageId? = nil,
+        editTargetId: ChatMessageId? = nil,
+        selectedGif: ChatStateGif? = nil,
+        selectedGifQuery: String? = nil,
+        selectedStickerId: String? = nil,
+        selectionRevision: Int? = nil,
+        pendingDeleteByMessageId: [ChatMessageId: String]? = nil
+    ) {
         self.draft = draft
         self.replyTargetId = replyTargetId
         self.editTargetId = editTargetId
+        self.selectedGif = selectedGif
+        self.selectedGifQuery = selectedGifQuery
+        self.selectedStickerId = selectedStickerId
+        self.selectionRevision = selectionRevision
+        self.pendingDeleteByMessageId = pendingDeleteByMessageId
     }
 }
 

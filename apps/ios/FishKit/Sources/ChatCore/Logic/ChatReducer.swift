@@ -46,6 +46,59 @@ public enum ChatStateReducer {
                 $0.readStates = ChatSelectors.mergeReadState($0.readStates, readState)
             }
 
+        case .composerGifSelected(let id, let gif, let query):
+            return updating(state, id: id) {
+                $0.composer.selectedGif = gif
+                $0.composer.selectedGifQuery = query
+                $0.composer.selectedStickerId = nil
+                $0.composer.selectionRevision = ($0.composer.selectionRevision ?? 0) + 1
+            }
+
+        case .composerStickerSelected(let id, let stickerId):
+            return updating(state, id: id) {
+                $0.composer.selectedGif = nil
+                $0.composer.selectedGifQuery = ""
+                $0.composer.selectedStickerId = stickerId
+                $0.composer.selectionRevision = ($0.composer.selectionRevision ?? 0) + 1
+            }
+
+        case .composerSelectionCleared(let id):
+            return updating(state, id: id) {
+                $0.composer.selectedGif = nil
+                $0.composer.selectedGifQuery = ""
+                $0.composer.selectedStickerId = nil
+                $0.composer.selectionRevision = ($0.composer.selectionRevision ?? 0) + 1
+            }
+
+        case .deleteRequested(let id, let messageId, let at):
+            return updating(state, id: id) { conversation in
+                guard conversation.messages.contains(where: { $0.id == messageId }) else { return }
+                conversation.messages = conversation.messages.map { message in
+                    guard message.id == messageId else { return message }
+                    var next = message
+                    next.deletedAt = at
+                    return next
+                }
+                var pendingDeletes = conversation.composer.pendingDeleteByMessageId ?? [:]
+                pendingDeletes[messageId] = at
+                conversation.composer.pendingDeleteByMessageId = pendingDeletes
+            }
+
+        case .deleteFailed(let id, let messageId):
+            return updating(state, id: id) { conversation in
+                guard let pendingAt = conversation.composer.pendingDeleteByMessageId?[messageId] else { return }
+                conversation.composer.pendingDeleteByMessageId?[messageId] = nil
+                if conversation.composer.pendingDeleteByMessageId?.isEmpty == true {
+                    conversation.composer.pendingDeleteByMessageId = nil
+                }
+                conversation.messages = conversation.messages.map { message in
+                    guard message.id == messageId, message.deletedAt == pendingAt else { return message }
+                    var next = message
+                    next.deletedAt = nil
+                    return next
+                }
+            }
+
         case .setReplyTarget(let id, let messageId):
             return updating(state, id: id) { $0.composer.replyTargetId = messageId }
 

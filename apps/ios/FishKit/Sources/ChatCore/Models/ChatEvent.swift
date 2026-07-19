@@ -8,6 +8,11 @@ public enum ChatEvent: Sendable, Equatable, Codable {
     case markMessageFailed(conversationId: String, clientRequestId: String, reason: String?)
     case mergeRemoteMessage(message: ChatMessageState, localRequestId: String?)
     case mergeReadState(conversationId: String, readState: ChatReadState)
+    case composerGifSelected(conversationId: String, gif: ChatStateGif, query: String)
+    case composerStickerSelected(conversationId: String, stickerId: String)
+    case composerSelectionCleared(conversationId: String)
+    case deleteRequested(conversationId: String, messageId: String, at: String)
+    case deleteFailed(conversationId: String, messageId: String)
     case setReplyTarget(conversationId: String, messageId: String?)
     case setEditTarget(conversationId: String, messageId: String?)
     case setRealtimeStatus(conversationId: String, status: RealtimeConnectionState)
@@ -31,13 +36,15 @@ public enum ChatEvent: Sendable, Equatable, Codable {
     private enum CodingKeys: String, CodingKey {
         case type, conversationId, messages, readStates, draft, message
         case localRequestId, clientRequestId, reason, readState, messageId
-        case status, hasMoreOlder, oldestCursor
+        case status, hasMoreOlder, oldestCursor, gif, query, stickerId, at
     }
 
     private enum Kind: String, Codable {
         case hydrateConversation, draftChanged, sendOptimisticMessage
         case confirmSentMessage, markMessageFailed, mergeRemoteMessage
-        case mergeReadState, setReplyTarget, setEditTarget, setRealtimeStatus
+        case mergeReadState, composerGifSelected, composerStickerSelected
+        case composerSelectionCleared, deleteRequested, deleteFailed
+        case setReplyTarget, setEditTarget, setRealtimeStatus
         case clearComposer, hydrateWindow, olderMessagesRequested
         case olderPageLoaded, olderPageLoadFailed
     }
@@ -79,6 +86,32 @@ public enum ChatEvent: Sendable, Equatable, Codable {
             self = try .mergeReadState(
                 conversationId: values.decode(String.self, forKey: .conversationId),
                 readState: values.decode(ChatReadState.self, forKey: .readState)
+            )
+        case .composerGifSelected:
+            self = try .composerGifSelected(
+                conversationId: values.decode(String.self, forKey: .conversationId),
+                gif: values.decode(ChatStateGif.self, forKey: .gif),
+                query: values.decode(String.self, forKey: .query)
+            )
+        case .composerStickerSelected:
+            self = try .composerStickerSelected(
+                conversationId: values.decode(String.self, forKey: .conversationId),
+                stickerId: values.decode(String.self, forKey: .stickerId)
+            )
+        case .composerSelectionCleared:
+            self = try .composerSelectionCleared(
+                conversationId: values.decode(String.self, forKey: .conversationId)
+            )
+        case .deleteRequested:
+            self = try .deleteRequested(
+                conversationId: values.decode(String.self, forKey: .conversationId),
+                messageId: values.decode(String.self, forKey: .messageId),
+                at: values.decode(String.self, forKey: .at)
+            )
+        case .deleteFailed:
+            self = try .deleteFailed(
+                conversationId: values.decode(String.self, forKey: .conversationId),
+                messageId: values.decode(String.self, forKey: .messageId)
             )
         case .setReplyTarget:
             self = try .setReplyTarget(
@@ -151,6 +184,27 @@ public enum ChatEvent: Sendable, Equatable, Codable {
             try values.encode(Kind.mergeReadState, forKey: .type)
             try values.encode(id, forKey: .conversationId)
             try values.encode(readState, forKey: .readState)
+        case .composerGifSelected(let id, let gif, let query):
+            try values.encode(Kind.composerGifSelected, forKey: .type)
+            try values.encode(id, forKey: .conversationId)
+            try values.encode(gif, forKey: .gif)
+            try values.encode(query, forKey: .query)
+        case .composerStickerSelected(let id, let stickerId):
+            try values.encode(Kind.composerStickerSelected, forKey: .type)
+            try values.encode(id, forKey: .conversationId)
+            try values.encode(stickerId, forKey: .stickerId)
+        case .composerSelectionCleared(let id):
+            try values.encode(Kind.composerSelectionCleared, forKey: .type)
+            try values.encode(id, forKey: .conversationId)
+        case .deleteRequested(let id, let messageId, let at):
+            try values.encode(Kind.deleteRequested, forKey: .type)
+            try values.encode(id, forKey: .conversationId)
+            try values.encode(messageId, forKey: .messageId)
+            try values.encode(at, forKey: .at)
+        case .deleteFailed(let id, let messageId):
+            try values.encode(Kind.deleteFailed, forKey: .type)
+            try values.encode(id, forKey: .conversationId)
+            try values.encode(messageId, forKey: .messageId)
         case .setReplyTarget(let id, let messageId):
             try values.encode(Kind.setReplyTarget, forKey: .type)
             try values.encode(id, forKey: .conversationId)
