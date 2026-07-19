@@ -11,7 +11,11 @@ import { createBrowserSupabaseClient } from "./browser";
 import type { AppSupabaseClient } from "./types";
 import type { MessageReadRow, MessageRow } from "@fish/supabase";
 import { chatTypingContract, type ChatTypingPayload } from "@fish/core";
-import { readChatStickerId } from "./chat-mapping";
+import {
+  toClientChatMessage as mapClientChatMessage,
+  toClientReadState as mapClientReadState,
+  type MessageResponseRow,
+} from "./chat-mapping";
 import type {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
@@ -19,26 +23,12 @@ import type {
   RealtimePostgresUpdatePayload,
 } from "@supabase/supabase-js";
 
-interface VoiceRecordingPayload {
-  userId: string;
-  recording: boolean;
-}
-
 interface TypingBroadcastPayload {
   payload?: Partial<ChatTypingPayload>;
 }
 
-interface VoiceRecordingBroadcastPayload {
-  payload?: Partial<VoiceRecordingPayload>;
-}
-
 export interface ConversationTypingSubscription {
   sendTyping: (typing: boolean) => void;
-  unsubscribe: () => void;
-}
-
-export interface ConversationVoiceRecordingSubscription {
-  sendRecording: (recording: boolean) => void;
   unsubscribe: () => void;
 }
 
@@ -98,40 +88,36 @@ function isChatSenderRole(value: string): value is ClientChatMessage["senderRole
   return value === "client" || value === "coach";
 }
 
-function toClientChatMessage(row: MessageRow): ClientChatMessage | null {
+function toRealtimeChatMessage(row: MessageRow): ClientChatMessage | null {
   if (!isChatSenderRole(row.sender_role)) {
     return null;
   }
-  const stickerId = readChatStickerId(row.sticker_id);
-
-  return {
+  return mapClientChatMessage({
     id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    senderRole: row.sender_role,
+    conversation_id: row.conversation_id,
+    sender_id: row.sender_id,
+    sender_role: row.sender_role,
+    sender_display_name: null,
     body: row.body,
-    clientRequestId: row.client_request_id,
-    createdAt: row.created_at,
-    editedAt: "edited_at" in row ? row.edited_at ?? null : null,
-    deletedAt: "deleted_at" in row ? row.deleted_at ?? null : null,
-    replyToMessageId: "reply_to_message_id" in row ? row.reply_to_message_id ?? null : null,
-    ...(stickerId ? { stickerId } : {}),
+    client_request_id: row.client_request_id,
+    created_at: row.created_at,
+    edited_at: "edited_at" in row ? row.edited_at ?? null : null,
+    deleted_at: "deleted_at" in row ? row.deleted_at ?? null : null,
+    reply_to_message_id: "reply_to_message_id" in row ? row.reply_to_message_id ?? null : null,
+    sticker_id: "sticker_id" in row ? row.sticker_id ?? null : null,
     reactions: [],
     images: [],
-  };
+  } satisfies MessageResponseRow);
 }
 
-function toClientChatReadState(row: MessageReadRow): ClientChatReadState {
-  return {
-    userId: row.user_id,
-    lastDeliveredMessageId:
-      "last_delivered_message_id" in row
-        ? row.last_delivered_message_id ?? null
-        : null,
-    deliveredAt: "delivered_at" in row ? row.delivered_at ?? null : null,
-    lastReadMessageId: row.last_read_message_id,
-    readAt: row.read_at,
-  };
+function toRealtimeReadState(row: MessageReadRow): ClientChatReadState {
+  return mapClientReadState({
+    user_id: row.user_id,
+    last_delivered_message_id: "last_delivered_message_id" in row ? row.last_delivered_message_id ?? null : null,
+    delivered_at: "delivered_at" in row ? row.delivered_at ?? null : null,
+    last_read_message_id: row.last_read_message_id,
+    read_at: row.read_at,
+  });
 }
 
 export function subscribeToConversationMessages(
@@ -151,7 +137,7 @@ export function subscribeToConversationMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload: RealtimePostgresInsertPayload<MessageRow>) => {
-        const message = toClientChatMessage(payload.new);
+        const message = toRealtimeChatMessage(payload.new);
         if (message) {
           onMessage(message);
         }
@@ -166,7 +152,7 @@ export function subscribeToConversationMessages(
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload: RealtimePostgresUpdatePayload<MessageRow>) => {
-        const message = toClientChatMessage(payload.new);
+        const message = toRealtimeChatMessage(payload.new);
         if (message) {
           onMessage(message);
         }
@@ -218,7 +204,7 @@ export function subscribeToConversationReadStates(
       },
       (payload: RealtimePostgresChangesPayload<MessageReadRow>) => {
         if ("new" in payload && payload.new) {
-          onReadState(toClientChatReadState(payload.new as MessageReadRow));
+          onReadState(toRealtimeReadState(payload.new as MessageReadRow));
         }
       }
     )
@@ -325,53 +311,9 @@ export function subscribeToConversationTyping(
   };
 }
 
-export function subscribeToConversationVoiceRecording(
-  conversationId: string,
-  currentUserId: string,
-  onRecordingChange: (recording: boolean) => void
-): ConversationVoiceRecordingSubscription {
-  const deferred = subscribeAfterAuth((supabase) => supabase
-    .channel(`conversation:${conversationId}:voice-recording`, {
-      config: {
-        broadcast: { self: false },
-      },
-    })
-    .on(
-      "broadcast",
-      { event: "voice-recording" },
-      (event: VoiceRecordingBroadcastPayload) => {
-        const { userId, recording } = event.payload ?? {};
-
-        if (typeof userId !== "string" || userId === currentUserId) {
-          return;
-        }
-
-        if (typeof recording === "boolean") {
-          onRecordingChange(recording);
-        }
-      }
-    )
-    .subscribe());
-
-  return {
-    sendRecording(recording) {
-      void deferred.getChannel()?.send({
-        type: "broadcast",
-        event: "voice-recording",
-        payload: {
-          userId: currentUserId,
-          recording,
-        },
-      });
-    },
-    unsubscribe: deferred.unsubscribe,
-  };
-}
-
 export const supabaseChatRealtimeService: ChatRealtimeService = {
   subscribeToMessages: subscribeToConversationMessages,
   subscribeToReadStates: subscribeToConversationReadStates,
   subscribeToReactionChanges: subscribeToConversationReactionChanges,
   subscribeToTyping: subscribeToConversationTyping,
-  subscribeToRecording: subscribeToConversationVoiceRecording,
 };

@@ -7,13 +7,9 @@ import type {
   NotificationPage,
   NotificationSummary,
 } from "@fish/core/notification-state";
-import {
-  serviceFailure,
-  serviceSuccess,
-  type ServiceResult,
-} from "@/lib/services/errors";
+import { serviceSuccess, type ServiceResult } from "@/lib/services/errors";
 import type { NotificationRepository } from "../contracts";
-import { mapSupabaseError, safely } from "./shared";
+import { failWith, safely } from "./shared";
 import type { AppSupabaseClient } from "./types";
 
 const defaultPageSize = 30;
@@ -36,17 +32,6 @@ const categoryByDatabaseValue: Record<string, NotificationCategory> = {
   direct: "direct",
   update: "update",
 };
-
-function notificationFailure(operation: string, message: string, error: unknown) {
-  return serviceFailure(
-    mapSupabaseError(error as { message?: string; code?: string } | null, {
-      code: "database",
-      fallbackMessage: message,
-      operation,
-      recoverable: true,
-    })
-  );
-}
 
 function socialHref(row: {
   kind: string;
@@ -161,11 +146,10 @@ export class SupabaseNotificationRepository implements NotificationRepository {
     return safely("notifications.getSummary", async () => {
       const { data, error } = await this.client.rpc("get_notification_summary");
       if (error) {
-        return notificationFailure(
+        return failWith(
           "notifications.getSummary",
-          "Could not refresh notifications.",
-          error
-        );
+          "Could not refresh notifications."
+        )(error);
       }
       const row = data?.[0];
       return serviceSuccess({
@@ -195,11 +179,10 @@ export class SupabaseNotificationRepository implements NotificationRepository {
           : {}),
       });
       if (error) {
-        return notificationFailure(
+        return failWith(
           "notifications.listPage",
-          "Could not load notifications.",
-          error
-        );
+          "Could not load notifications."
+        )(error);
       }
 
       const mapped = (data ?? []).map(toItem).filter((item): item is NotificationItem => item !== null);
@@ -225,11 +208,10 @@ export class SupabaseNotificationRepository implements NotificationRepository {
         p_limit: 500,
       });
       if (error) {
-        return notificationFailure(
+        return failWith(
           "notifications.listChanges",
-          "Could not catch up notifications.",
-          error
-        );
+          "Could not catch up notifications."
+        )(error);
       }
       return serviceSuccess(
         (data ?? []).map((row) => ({

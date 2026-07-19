@@ -5,13 +5,9 @@ import type {
   PresenceRepository,
   PresenceSnapshot,
 } from "../contracts";
-import {
-  mapSupabaseError,
-  safely,
-  type SupabaseResponse,
-} from "./shared";
+import { failWith, safely, type SupabaseResponse } from "./shared";
 import type { AppSupabaseClient } from "./types";
-import { serviceFailure, serviceSuccess } from "../errors";
+import { serviceSuccess } from "../errors";
 
 type SnapshotRow = {
   user_id: string;
@@ -40,12 +36,7 @@ export class SupabasePresenceRepository implements PresenceRepository {
     return safely("presence.listVisible", async () => {
       const { data, error } = await this.client.rpc("list_visible_presence");
       if (error) {
-        return serviceFailure(mapSupabaseError(error, {
-          code: "database",
-          fallbackMessage: "Could not load presence.",
-          operation: "presence.listVisible",
-          recoverable: true,
-        }));
+        return failWith("presence.listVisible", "Could not load presence.")(error);
       }
       return serviceSuccess(((data ?? []) as SnapshotRow[]).map(toSnapshot));
     });
@@ -59,14 +50,9 @@ export class SupabasePresenceRepository implements PresenceRepository {
         .maybeSingle() as SupabaseResponse<{
           mode: PresencePreference;
           expires_at: string | null;
-        }>;
+      }>;
       if (response.error) {
-        return serviceFailure(mapSupabaseError(response.error, {
-          code: "database",
-          fallbackMessage: "Could not load your status.",
-          operation: "presence.getOwnPreference",
-          recoverable: true,
-        }));
+        return failWith("presence.getOwnPreference", "Could not load your status.")(response.error);
       }
       const setting: PresencePreferenceSetting = response.data && (
         response.data.expires_at === null ||

@@ -14,24 +14,31 @@ import type {
 } from "../contracts";
 import type { Json } from "@fish/supabase";
 import { createServerSupabaseClient } from "./server";
+import type { AppSupabaseClient } from "./types";
 import {
   chatOlderPageSize,
   mapChatErrorNotice,
   type MessageResponseRow,
   type ReadStateResponseRow,
-  reactionPageSize,
   saveNotice,
   sendNotice,
   toClientChatMessage,
   toClientReadState,
 } from "./chat-mapping";
 import { loadSenderDisplayNames } from "./chat-sender-profiles";
+import {
+  fetchAttachmentUrls,
+  fetchReactionsFor,
+  indexAttachments,
+} from "./chat-enrichment";
 
-async function getLocalFallbackContext(): Promise<{
-  client: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+export async function getLocalFallbackContext(
+  providedClient?: AppSupabaseClient
+): Promise<{
+  client: AppSupabaseClient;
   userId: string;
 } | null> {
-  const client = await createServerSupabaseClient();
+  const client = providedClient ?? await createServerSupabaseClient();
   const { data, error } = await client.auth.getUser();
 
   if (error || !data.user) {
@@ -41,10 +48,15 @@ async function getLocalFallbackContext(): Promise<{
   return { client, userId: data.user.id };
 }
 
+export type LocalChatCommandContext = NonNullable<
+  Awaited<ReturnType<typeof getLocalFallbackContext>>
+>;
+
 export async function reportGifViaLocalRpc(
-  values: ReportGifInput
+  values: ReportGifInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<ChatOperationResult<void>> {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) return { ok: false, notice: saveNotice };
   const { data, error } = await context.client.rpc("report_message_gif", {
     p_message_id: values.messageId,
@@ -52,38 +64,6 @@ export async function reportGifViaLocalRpc(
   return error || !data
     ? { ok: false, notice: "That report did not send yet. Try again." }
     : { ok: true, data: undefined };
-}
-
-function aggregateReactions(
-  rows: Array<{ message_id: string; emoji: string; user_id: string }>,
-  currentUserId: string
-): Map<string, MessageResponseRow["reactions"]> {
-  const grouped = new Map<
-    string,
-    Map<string, { emoji: string; count: number; by_me: boolean }>
-  >();
-
-  for (const row of rows) {
-    const reactions = grouped.get(row.message_id) ?? new Map();
-    const current = reactions.get(row.emoji) ?? {
-      emoji: row.emoji,
-      count: 0,
-      by_me: false,
-    };
-    reactions.set(row.emoji, {
-      emoji: row.emoji,
-      count: current.count + 1,
-      by_me: current.by_me || row.user_id === currentUserId,
-    });
-    grouped.set(row.message_id, reactions);
-  }
-
-  return new Map(
-    Array.from(grouped.entries()).map(([messageId, reactions]) => [
-      messageId,
-      Array.from(reactions.values()),
-    ])
-  );
 }
 
 async function addReactionAggregates(
@@ -95,40 +75,16 @@ async function addReactionAggregates(
     return messages;
   }
 
-  const reactionRows: Array<{ message_id: string; emoji: string; user_id: string }> = [];
-
-  for (let batchStart = 0; batchStart < ids.length; batchStart += 25) {
-    const batchIds = ids.slice(batchStart, batchStart + 25);
-    for (let from = 0;; from += reactionPageSize) {
-      const { data, error } = await context.client
-        .from("message_reactions")
-        .select("message_id, emoji, user_id")
-        .in("message_id", batchIds)
-        .is("removed_at", null)
-        .range(from, from + reactionPageSize - 1);
-
-      if (error) {
-        return messages.map((message) => ({ ...message, reactions: [] }));
-      }
-
-      reactionRows.push(
-        ...(data ?? []).map((row) => ({
-          message_id: row.message_id,
-          emoji: row.emoji,
-          user_id: row.user_id,
-        }))
-      );
-
-      if ((data ?? []).length < reactionPageSize) {
-        break;
-      }
-    }
+  let reactionsByMessage: Awaited<ReturnType<typeof fetchReactionsFor>>;
+  try {
+    reactionsByMessage = await fetchReactionsFor(
+      context.client,
+      ids,
+      context.userId
+    );
+  } catch {
+    return messages.map((message) => ({ ...message, reactions: [] }));
   }
-
-  const reactionsByMessage = aggregateReactions(
-    reactionRows,
-    context.userId
-  );
 
   return messages.map((message) => ({
     ...message,
@@ -169,36 +125,25 @@ async function addImageAttachments(
   const { data, error } = response;
   if (error || !data) return messages.map((message) => ({ ...message, images: [] }));
 
-  const paths = data.flatMap((image) =>
-    [image.thumbnail_path, image.display_path].filter((path): path is string => Boolean(path))
-  );
-  const signed = paths.length > 0
-    ? await context.client.storage.from("chat-images").createSignedUrls(paths, 15 * 60)
-    : { data: [], error: null };
-  const urls = new Map(
-    (signed.data ?? []).flatMap((item) =>
-      item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : []
-    )
-  );
-  const byMessage = new Map<string, NonNullable<MessageResponseRow["images"]>>();
-  for (const image of data) {
-    if (!image.message_id || !image.display_path || !image.stored_mime_type || !image.stored_byte_size) continue;
-    const images = byMessage.get(image.message_id) ?? [];
-    images.push({
-      id: image.id,
-      status: "ready",
-      kind: image.kind as "image" | "file",
-      original_name: image.original_name,
-      stored_mime_type: image.stored_mime_type,
-      stored_byte_size: image.stored_byte_size,
-      width: image.width,
-      height: image.height,
-      thumbnail_path: image.thumbnail_path,
-      display_path: image.display_path,
-      thumbnail_url: image.thumbnail_path ? urls.get(image.thumbnail_path) : undefined,
-      display_url: urls.get(image.display_path),
-    });
-    byMessage.set(image.message_id, images);
+  const attachmentRows = (data as unknown as Array<{
+    id: string;
+    message_id: string;
+    status: "ready";
+    kind: "image" | "file";
+    original_name: string;
+    stored_mime_type: string | null;
+    stored_byte_size: number | null;
+    width: number | null;
+    height: number | null;
+    thumbnail_path: string | null;
+    display_path: string | null;
+  }>).filter((image) => image.message_id && image.display_path);
+  let byMessage: Map<string, NonNullable<MessageResponseRow["images"]>>;
+  try {
+    const urls = await fetchAttachmentUrls(context.client, attachmentRows);
+    byMessage = indexAttachments(attachmentRows, urls);
+  } catch {
+    byMessage = new Map();
   }
   return messages.map((message) => ({ ...message, images: byMessage.get(message.id) ?? [] }));
 }
@@ -230,9 +175,10 @@ async function addGifAttachments(
 }
 
 export async function toClientChatMessagesWithSenders(
-  messages: MessageResponseRow[]
+  messages: MessageResponseRow[],
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<ClientChatMessage[]> {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   const namedMessages = context
     ? await addSenderDisplayNames(context, messages)
     : messages;
@@ -246,9 +192,10 @@ export async function toClientChatMessagesWithSenders(
 }
 
 export async function sendMessageViaLocalRpc(
-  values: SendMessageInput
+  values: SendMessageInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<ChatOperationResult<ClientChatMessage>> {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -269,14 +216,15 @@ export async function sendMessageViaLocalRpc(
     return { ok: false, notice: mapChatErrorNotice(error, sendNotice) };
   }
 
-  const [message] = await toClientChatMessagesWithSenders([data as MessageResponseRow]);
+  const [message] = await toClientChatMessagesWithSenders([data as MessageResponseRow], context);
   return { ok: true, data: message };
 }
 
 export async function commandMessageViaLocalRpc(
-  command: ChatMessageCommand
+  command: ChatMessageCommand,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<ChatOperationResult<ClientChatMessage>> {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: saveNotice };
   }
@@ -306,14 +254,15 @@ export async function commandMessageViaLocalRpc(
     data as MessageResponseRow,
   ]);
 
-  const [mapped] = await toClientChatMessagesWithSenders([message]);
+  const [mapped] = await toClientChatMessagesWithSenders([message], context);
   return { ok: true, data: mapped };
 }
 
 export async function markReadStateViaLocalRpc(
-  values: MarkReadStateInput
+  values: MarkReadStateInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<ChatOperationResult<ClientChatReadState>> {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -336,9 +285,10 @@ export async function markReadStateViaLocalRpc(
 }
 
 export async function refreshMessagesViaLocalRpc(
-  values: RefreshMessagesInput
+  values: RefreshMessagesInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<ChatOperationResult<ClientChatMessage[]>> {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -359,18 +309,19 @@ export async function refreshMessagesViaLocalRpc(
   );
   const messagesWithSenders = await addSenderDisplayNames(context, messages);
 
-  return { ok: true, data: await toClientChatMessagesWithSenders(messagesWithSenders) };
+  return { ok: true, data: await toClientChatMessagesWithSenders(messagesWithSenders, context) };
 }
 
 export async function refreshConversationViaLocalRpc(
-  values: ConversationInput
+  values: ConversationInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<
   ChatOperationResult<{
     messages: ClientChatMessage[];
     readStates: ClientChatReadState[];
   }>
 > {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -404,21 +355,22 @@ export async function refreshConversationViaLocalRpc(
   return {
     ok: true,
     data: {
-    messages: await toClientChatMessagesWithSenders(messagesWithSenders),
+    messages: await toClientChatMessagesWithSenders(messagesWithSenders, context),
     readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
     },
   };
 }
 
 export async function loadOlderMessagesViaLocalRpc(
-  values: LoadOlderMessagesInput
+  values: LoadOlderMessagesInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<
   ChatOperationResult<{
     messages: ClientChatMessage[];
     hasMoreOlder: boolean;
   }>
 > {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -457,19 +409,20 @@ export async function loadOlderMessagesViaLocalRpc(
 
   return {
     ok: true,
-    data: { messages: await toClientChatMessagesWithSenders(withSenders), hasMoreOlder },
+    data: { messages: await toClientChatMessagesWithSenders(withSenders, context), hasMoreOlder },
   };
 }
 
 export async function backfillMessagesViaLocalRpc(
-  values: BackfillMessagesInput
+  values: BackfillMessagesInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<
   ChatOperationResult<{
     messages: ClientChatMessage[];
     needsReset: boolean;
   }>
 > {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -502,12 +455,13 @@ export async function backfillMessagesViaLocalRpc(
 
   return {
     ok: true,
-    data: { messages: await toClientChatMessagesWithSenders(withSenders), needsReset },
+    data: { messages: await toClientChatMessagesWithSenders(withSenders, context), needsReset },
   };
 }
 
 export async function loadNewestMessagesViaLocalRpc(
-  values: LoadNewestMessagesInput
+  values: LoadNewestMessagesInput,
+  contextOverride?: LocalChatCommandContext | null
 ): Promise<
   ChatOperationResult<{
     messages: ClientChatMessage[];
@@ -516,7 +470,7 @@ export async function loadNewestMessagesViaLocalRpc(
     oldestCursor: { createdAt: string; id: string } | null;
   }>
 > {
-  const context = await getLocalFallbackContext();
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
   if (!context) {
     return { ok: false, notice: sendNotice };
   }
@@ -558,7 +512,7 @@ export async function loadNewestMessagesViaLocalRpc(
   return {
     ok: true,
     data: {
-      messages: await toClientChatMessagesWithSenders(withSenders),
+      messages: await toClientChatMessagesWithSenders(withSenders, context),
       readStates: (readRows as ReadStateResponseRow[]).map(toClientReadState),
       hasMoreOlder,
       oldestCursor,

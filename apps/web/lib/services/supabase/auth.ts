@@ -1,9 +1,8 @@
 import {
-  serviceFailure,
   serviceSuccess,
   type ServiceResult,
 } from "@/lib/services/errors";
-import { mapSupabaseError, safely } from "./shared";
+import { failWith, safely } from "./shared";
 import type { AuthSessionEvent, AuthService, AuthUser, EmailTokenKind } from "../contracts";
 import type { AppSupabaseClient } from "./types";
 
@@ -64,14 +63,11 @@ export class SupabaseAuthServiceImpl implements AuthService {
           return serviceSuccess(null);
         }
 
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not read the current user.",
-            operation: "auth.getCurrentUser",
-            recoverable: true,
-          })
-        );
+        return failWith(
+          "auth.getCurrentUser",
+          "Could not read the current user.",
+          "auth"
+        )(error);
       }
 
       return serviceSuccess(data.user ? toAuthUser(data.user) : null);
@@ -82,7 +78,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
     return safely("auth.exchangeCode", async () => {
       const { error } = await this.client.auth.exchangeCodeForSession(code);
       return error
-        ? serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not complete sign in.", operation: "auth.exchangeCode", recoverable: true }))
+        ? failWith("auth.exchangeCode", "Could not complete sign in.", "auth")(error)
         : serviceSuccess(undefined);
     });
   }
@@ -97,7 +93,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
             : kind;
       const { error } = await this.client.auth.verifyOtp({ token_hash: tokenHash, type });
       return error
-        ? serviceFailure(mapSupabaseError(error, { code: "auth", fallbackMessage: "Could not verify this link.", operation: "auth.verifyEmailToken", recoverable: true }))
+        ? failWith("auth.verifyEmailToken", "Could not verify this link.", "auth")(error)
         : serviceSuccess(undefined);
     });
   }
@@ -117,14 +113,11 @@ export class SupabaseAuthServiceImpl implements AuthService {
           return serviceSuccess(undefined);
         }
 
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not refresh the session.",
-            operation: "auth.refreshSessionClaims",
-            recoverable: true,
-          })
-        );
+        return failWith(
+          "auth.refreshSessionClaims",
+          "Could not refresh the session.",
+          "auth"
+        )(error);
       }
 
       return serviceSuccess(undefined);
@@ -138,14 +131,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
     return safely("auth.signInWithPassword", async () => {
       const { error } = await this.client.auth.signInWithPassword(input);
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not sign in.",
-            operation: "auth.signInWithPassword",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.signInWithPassword", "Could not sign in.", "auth")(error);
       }
 
       return serviceSuccess(undefined);
@@ -165,14 +151,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
       });
 
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not create the account.",
-            operation: "auth.signUpWithPassword",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.signUpWithPassword", "Could not create the account.", "auth")(error);
       }
 
       return serviceSuccess({
@@ -190,14 +169,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
       });
 
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not start Google sign-in.",
-            operation: "auth.signInWithGoogle",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.signInWithGoogle", "Could not start Google sign-in.", "auth")(error);
       }
 
       return serviceSuccess(undefined);
@@ -208,14 +180,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
     return safely("auth.resendSignupEmail", async () => {
       const { error } = await this.client.auth.resend({ type: "signup", email });
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not resend the signup email.",
-            operation: "auth.resendSignupEmail",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.resendSignupEmail", "Could not resend the signup email.", "auth")(error);
       }
 
       return serviceSuccess(undefined);
@@ -226,14 +191,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
     return safely("auth.requestPasswordReset", async () => {
       const { error } = await this.client.auth.resetPasswordForEmail(email);
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not request a password reset.",
-            operation: "auth.requestPasswordReset",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.requestPasswordReset", "Could not request a password reset.", "auth")(error);
       }
 
       return serviceSuccess(undefined);
@@ -244,14 +202,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
     return safely("auth.updatePassword", async () => {
       const { error } = await this.client.auth.updateUser({ password });
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not update the password.",
-            operation: "auth.updatePassword",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.updatePassword", "Could not update the password.", "auth")(error);
       }
 
       return serviceSuccess(undefined);
@@ -262,14 +213,7 @@ export class SupabaseAuthServiceImpl implements AuthService {
     return safely("auth.signOut", async () => {
       const { error } = await this.client.auth.signOut();
       if (error) {
-        return serviceFailure(
-          mapSupabaseError(error, {
-            code: "auth",
-            fallbackMessage: "Could not sign out.",
-            operation: "auth.signOut",
-            recoverable: true,
-          })
-        );
+        return failWith("auth.signOut", "Could not sign out.", "auth")(error);
       }
 
       return serviceSuccess(undefined);

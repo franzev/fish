@@ -34,6 +34,10 @@ import { SupabasePresenceCommandService } from "../supabase/presence-command-ser
 import { supabasePresenceRealtimeService } from "../supabase/presence-realtime";
 
 let services: AppServices | null = null;
+let callCommands: CallCommandService | null = null;
+let friendCommands: FriendCommandService | null = null;
+let notificationCommands: NotificationCommandService | null = null;
+let presenceCommands: PresenceCommandService | null = null;
 
 function observeBrowserService<T extends object>(
   service: T,
@@ -69,10 +73,12 @@ export function getAvatarCommandService(
 export function getCallCommandService(
   override?: CallCommandService
 ): CallCommandService {
-  return override ?? observeBrowserService(
+  if (override) return override;
+  callCommands ??= observeBrowserService(
     new SupabaseCallCommandService(createBrowserSupabaseClient()),
     "services.callCommands"
   );
+  return callCommands;
 }
 
 export function getCallRealtimeService(
@@ -84,10 +90,12 @@ export function getCallRealtimeService(
 export function getFriendCommandService(
   override?: FriendCommandService
 ): FriendCommandService {
-  return override ?? observeBrowserService(
+  if (override) return override;
+  friendCommands ??= observeBrowserService(
     new SupabaseFriendCommandService(createBrowserSupabaseClient()),
     "services.friendCommands"
   );
+  return friendCommands;
 }
 
 export function getFriendRealtimeService(
@@ -99,10 +107,12 @@ export function getFriendRealtimeService(
 export function getNotificationCommandService(
   override?: NotificationCommandService
 ): NotificationCommandService {
-  return override ?? observeBrowserService(
+  if (override) return override;
+  notificationCommands ??= observeBrowserService(
     new SupabaseNotificationCommandService(createBrowserSupabaseClient()),
     "services.notificationCommands"
   );
+  return notificationCommands;
 }
 
 export function getNotificationRealtimeService(
@@ -126,10 +136,12 @@ export function getAttentionRealtimeService(
 export function getPresenceCommandService(
   override?: PresenceCommandService
 ): PresenceCommandService {
-  return override ?? observeBrowserService(
+  if (override) return override;
+  presenceCommands ??= observeBrowserService(
     new SupabasePresenceCommandService(createBrowserSupabaseClient()),
     "services.presenceCommands"
   );
+  return presenceCommands;
 }
 
 export function getPresenceRealtimeService(

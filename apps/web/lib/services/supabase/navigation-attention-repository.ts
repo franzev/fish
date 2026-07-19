@@ -1,13 +1,9 @@
-import {
-  serviceFailure,
-  serviceSuccess,
-  type ServiceResult,
-} from "@/lib/services/errors";
+import { serviceSuccess, type ServiceResult } from "@/lib/services/errors";
 import type {
   NavigationAttention,
   NavigationAttentionRepository,
 } from "../contracts";
-import { mapSupabaseError, safely } from "./shared";
+import { failWith, safely } from "./shared";
 import type { AppSupabaseClient } from "./types";
 
 export class SupabaseNavigationAttentionRepository
@@ -19,12 +15,7 @@ export class SupabaseNavigationAttentionRepository
     return safely("attention.list", async () => {
       const { data, error } = await this.client.rpc("list_navigation_attention");
       if (error) {
-        return serviceFailure(mapSupabaseError(error, {
-          code: "database",
-          fallbackMessage: "Could not refresh activity badges.",
-          operation: "attention.list",
-          recoverable: true,
-        }));
+        return failWith("attention.list", "Could not refresh activity badges.")(error);
       }
       const items: NavigationAttention[] = [];
       for (const row of data ?? []) {

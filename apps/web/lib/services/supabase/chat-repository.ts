@@ -5,7 +5,6 @@ import type {
   ConversationRow,
   MessageAttachmentRow,
   MessageGifRow,
-  MessageReactionRow,
   MessageReadRow,
   MessageRow,
   ProfileRow,
@@ -14,70 +13,28 @@ import type {
   ChatRepository,
   ClientChatData,
   ClientDirectConversationPreview,
-  ClientChatMessage,
   ClientChatUnreadSummary,
 } from "../contracts";
-import { readChatStickerId } from "./chat-mapping";
+import {
+  toClientChatMessage as mapClientChatMessage,
+  type MessageResponseRow,
+  toClientReadState,
+} from "./chat-mapping";
+import {
+  fetchAttachmentUrls,
+  fetchReactionsFor,
+  indexAttachments,
+  type AttachmentIndexRow,
+} from "./chat-enrichment";
 import { mapSupabaseError, safely, type SupabaseResponse } from "./shared";
 import type { AppSupabaseClient } from "./types";
 
 const demoCommunityConversationId = "11111111-1111-4111-8111-111111111111";
 const demoCommunityTitle = "FISH Community";
-const reactionPageSize = 1000;
-const reactionMessageBatchSize = 25;
 // Bounded newest-message window for the initial SSR load (CLOAD-01). One
 // reusable page size keeps the initial fetch and every later "load earlier"
 // page (Plan 10-02 actions.ts) consistent.
 const chatInitialWindowSize = 40;
-async function fetchConversationReactions(
-  client: AppSupabaseClient,
-  conversationId: string,
-  messageIds: string[]
-): Promise<{ data: MessageReactionRow[]; error: SupabaseResponse<unknown>["error"] }> {
-  const rows: MessageReactionRow[] = [];
-
-  if (messageIds.length === 0) {
-    return { data: rows, error: null };
-  }
-
-  for (
-    let batchStart = 0;
-    batchStart < messageIds.length;
-    batchStart += reactionMessageBatchSize
-  ) {
-    const batchIds = messageIds.slice(
-      batchStart,
-      batchStart + reactionMessageBatchSize
-    );
-
-    for (let from = 0;; from += reactionPageSize) {
-      const { data, error } = (await client
-        .from("message_reactions")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .in("message_id", batchIds)
-        .range(from, from + reactionPageSize - 1)) as {
-        data: MessageReactionRow[] | null;
-        error: SupabaseResponse<unknown>["error"];
-      };
-
-      if (error) {
-        return { data: rows, error };
-      }
-
-      rows.push(...(data ?? []));
-      if ((data ?? []).length < reactionPageSize) {
-        break;
-      }
-    }
-  }
-
-  return { data: rows, error: null };
-}
-
-
-
-
 export class SupabaseChatRepository implements ChatRepository {
   constructor(private readonly client: AppSupabaseClient) {}
 
@@ -90,7 +47,7 @@ export class SupabaseChatRepository implements ChatRepository {
       );
       if (error) {
         return serviceFailure(
-          mapSupabaseError(error, {
+          mapSupabaseError(error as Parameters<typeof mapSupabaseError>[0], {
             code: "database",
             fallbackMessage: "Could not load direct conversations.",
             operation: "chat.listDirectConversations",
@@ -188,7 +145,7 @@ export class SupabaseChatRepository implements ChatRepository {
       });
       if (error) {
         return serviceFailure(
-          mapSupabaseError(error, {
+          mapSupabaseError(error as Parameters<typeof mapSupabaseError>[0], {
             code: "database",
             fallbackMessage: "Could not load unread messages.",
             operation: "chat.getUnreadSummary",
@@ -455,16 +412,17 @@ export class SupabaseChatRepository implements ChatRepository {
         }
       }
 
-      const { data: reactions, error: reactionError } =
-        await fetchConversationReactions(
+      let reactionsByMessage: Awaited<ReturnType<typeof fetchReactionsFor>>;
+      try {
+        reactionsByMessage = await fetchReactionsFor(
           this.client,
-          conversation.id,
-          messages.map((message) => message.id)
+          messages.map((message) => message.id),
+          userId,
+          conversation.id
         );
-
-      if (reactionError) {
+      } catch (error) {
         return serviceFailure(
-          mapSupabaseError(reactionError, {
+          mapSupabaseError(error as Parameters<typeof mapSupabaseError>[0], {
             code: "database",
             fallbackMessage: "Could not load message reactions.",
             operation: "chat.getAssignedConversation.reactions",
@@ -495,17 +453,22 @@ export class SupabaseChatRepository implements ChatRepository {
           })
         );
       }
-      const imagePaths = (attachmentRows ?? []).flatMap((image) =>
-        [image.thumbnail_path, image.display_path].filter((path): path is string => Boolean(path))
-      );
-      const signedImages = imagePaths.length > 0
-        ? await this.client.storage.from("chat-images").createSignedUrls(imagePaths, 15 * 60)
-        : { data: [], error: null };
-      const imageUrls = new Map(
-        (signedImages.data ?? []).flatMap((item) =>
-          item.path && item.signedUrl ? [[item.path, item.signedUrl] as const] : []
-        )
-      );
+      let imageUrls: Map<string, string>;
+      try {
+        imageUrls = await fetchAttachmentUrls(
+          this.client,
+          (attachmentRows ?? []) as unknown as AttachmentIndexRow[]
+        );
+      } catch (error) {
+        return serviceFailure(
+          mapSupabaseError(error as Parameters<typeof mapSupabaseError>[0], {
+            code: "database",
+            fallbackMessage: "Could not load message images.",
+            operation: "chat.getAssignedConversation.attachmentUrls",
+            recoverable: true,
+          })
+        );
+      }
 
       const { data: gifRows, error: gifError } = messageIds.length > 0
         ? (await this.client
@@ -589,18 +552,27 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
 
-      const clientMessages = messages.map((message) =>
-        toClientChatMessage(
-          message,
-          reactions,
-          userId,
-          senderDisplayNames,
-          (attachmentRows ?? []).filter((image) => image.message_id === message.id),
-          imageUrls,
-          (gifRows ?? []).find((gif) => gif.message_id === message.id)
-        )
+      const attachmentByMessage = indexAttachments(
+        (attachmentRows ?? []) as unknown as AttachmentIndexRow[],
+        imageUrls
       );
-      const clientReadStates = (readStates ?? []).map(toClientChatReadState);
+      const gifByMessage = new Map<string, MessageResponseRow["gif"]>(
+        (gifRows ?? []).map((gif) => [
+          gif.message_id,
+          gif as unknown as NonNullable<MessageResponseRow["gif"]>,
+        ])
+      );
+      const clientMessages = messages.map((message) =>
+        mapClientChatMessage({
+          ...message,
+          sender_role: message.sender_role as "client" | "coach",
+          sender_display_name: senderDisplayNames.get(message.sender_id) ?? null,
+          reactions: reactionsByMessage.get(message.id) ?? [],
+          images: attachmentByMessage.get(message.id) ?? [],
+          gif: gifByMessage.get(message.id),
+        } as MessageResponseRow)
+      );
+      const clientReadStates = (readStates ?? []).map(toClientReadState);
 
       return serviceSuccess({
         conversationId: conversation.id,
@@ -647,98 +619,4 @@ export class SupabaseChatRepository implements ChatRepository {
       });
     });
   }
-}
-
-function toClientChatMessage(
-  row: MessageRow,
-  reactions: MessageReactionRow[] = [],
-  currentUserId = "",
-  senderDisplayNames: Map<string, string> = new Map(),
-  images: MessageAttachmentRow[] = [],
-  imageUrls: Map<string, string> = new Map(),
-  gif?: MessageGifRow
-): ClientChatMessage {
-  const reactionCounts = new Map<string, { count: number; byMe: boolean }>();
-
-  for (const reaction of reactions) {
-    if (reaction.message_id !== row.id) {
-      continue;
-    }
-
-    const current = reactionCounts.get(reaction.emoji) ?? {
-      count: 0,
-      byMe: false,
-    };
-    reactionCounts.set(reaction.emoji, {
-      count: current.count + 1,
-      byMe: current.byMe || reaction.user_id === currentUserId,
-    });
-  }
-  const stickerId = readChatStickerId(row.sticker_id);
-  const attachments = images.flatMap((image) =>
-    image.display_path && image.stored_mime_type && image.stored_byte_size
-      ? [{
-          id: image.id,
-          status: "ready" as const,
-          kind: image.kind as "image" | "file",
-          originalName: image.original_name,
-          mimeType: image.stored_mime_type,
-          byteSize: image.stored_byte_size,
-          width: image.width ?? undefined,
-          height: image.height ?? undefined,
-          thumbnailPath: image.thumbnail_path ?? undefined,
-          displayPath: image.display_path,
-          thumbnailUrl: image.thumbnail_path ? imageUrls.get(image.thumbnail_path) : undefined,
-          displayUrl: imageUrls.get(image.display_path),
-        }]
-      : []
-  );
-
-  return {
-    id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    senderRole: row.sender_role as ClientChatMessage["senderRole"],
-    senderDisplayName: senderDisplayNames.get(row.sender_id) ?? null,
-    body: row.body,
-    clientRequestId: row.client_request_id,
-    createdAt: row.created_at,
-    editedAt: row.edited_at,
-    deletedAt: row.deleted_at,
-    replyToMessageId: row.reply_to_message_id,
-    pinnedAt: row.pinned_at,
-    pinnedBy: row.pinned_by,
-    reactions: Array.from(reactionCounts.entries()).map(([emoji, reaction]) => ({
-      emoji,
-      count: reaction.count,
-      byMe: reaction.byMe,
-    })),
-    gif: gif
-      ? {
-          provider: gif.provider as "klipy" | "giphy",
-          providerId: gif.provider_content_id,
-          title: gif.title,
-          description: gif.description,
-          sourceUrl: gif.source_url,
-          posterUrl: gif.poster_url,
-          previewUrl: gif.preview_url,
-          mediaUrl: gif.media_url,
-          width: gif.width,
-          height: gif.height,
-        }
-      : undefined,
-    ...(stickerId ? { stickerId } : {}),
-    attachments,
-    images: attachments,
-  };
-}
-
-function toClientChatReadState(row: MessageReadRow) {
-  return {
-    userId: row.user_id,
-    lastDeliveredMessageId: row.last_delivered_message_id,
-    deliveredAt: row.delivered_at,
-    lastReadMessageId: row.last_read_message_id,
-    readAt: row.read_at,
-  };
 }

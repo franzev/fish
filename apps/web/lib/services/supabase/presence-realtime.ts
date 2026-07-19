@@ -16,6 +16,10 @@ import type {
   PresenceSnapshot,
 } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
+import {
+  heartbeatActivityState,
+  heartbeatRetryDelay,
+} from "../presence/heartbeat-policy";
 
 const statuses = new Set<EffectivePresenceStatus>([
   "online",
@@ -156,6 +160,7 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
     });
     const channels = [preferenceChannel, ...snapshotChannels];
     expectedChannelCount = channels.length;
+
     void client.realtime.setAuth().then(() => {
       if (!active) return;
       channels.forEach((channel) => {
@@ -261,8 +266,7 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
         return;
       }
       if (stopped || ended || retryTimer) return;
-      const delays = [5_000, 10_000, 30_000];
-      const delay = delays[Math.min(retryAttempt, delays.length - 1)] ?? 30_000;
+      const delay = heartbeatRetryDelay(retryAttempt);
       retryAttempt += 1;
       retryTimer = setTimeout(() => {
         retryTimer = null;
@@ -273,18 +277,27 @@ export const supabasePresenceRealtimeService: PresenceRealtimeService = {
     function markActive() {
       if (stopped) return;
       const now = Date.now();
-      const wasIdle = now - lastActivityAt >= PRESENCE_IDLE_MS;
-      lastActivityAt = now;
-      activityVersion += 1;
-      if (wasIdle) void write(false);
+      const activity = heartbeatActivityState("activity", now, lastActivityAt, PRESENCE_IDLE_MS);
+      lastActivityAt = activity.nextActivityAt;
+      if (activity.incrementsActivityVersion) activityVersion += 1;
+      if (activity.shouldWrite) void write(false);
     }
 
     function handleVisibility() {
-      if (document.visibilityState === "visible") markActive();
+      if (document.visibilityState !== "visible" || stopped) return;
+      const now = Date.now();
+      const activity = heartbeatActivityState("visible", now, lastActivityAt, PRESENCE_IDLE_MS);
+      lastActivityAt = activity.nextActivityAt;
+      if (activity.incrementsActivityVersion) activityVersion += 1;
+      if (activity.shouldWrite) void write(false);
     }
 
     function handleOnline() {
-      markActive();
+      if (stopped) return;
+      const now = Date.now();
+      const activity = heartbeatActivityState("online", now, lastActivityAt, PRESENCE_IDLE_MS);
+      lastActivityAt = activity.nextActivityAt;
+      if (activity.incrementsActivityVersion) activityVersion += 1;
       void write(false);
     }
 

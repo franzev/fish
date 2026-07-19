@@ -15,6 +15,9 @@ import {
 } from "../supabase/server";
 
 function lazyChatCommands(): ChatCommandService {
+  // This explicit adapter is intentional: each server action gets a fresh
+  // request-scoped Supabase client, while the public command contract stays
+  // independent of the provider implementation.
   async function adapter() {
     return new SupabaseChatCommandService(await createServerSupabaseClient());
   }

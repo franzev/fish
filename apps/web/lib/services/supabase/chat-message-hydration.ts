@@ -4,6 +4,7 @@ import {
   type MessageResponseRow,
 } from "./chat-mapping";
 import { loadSenderDisplayNames } from "./chat-sender-profiles";
+import { aggregateReactions, indexAttachments } from "./chat-enrichment";
 import type { AppSupabaseClient } from "./types";
 
 export async function hydrateClientChatMessages(
@@ -44,33 +45,22 @@ export async function hydrateClientChatMessages(
     )
   );
 
-  const imagesByMessage = new Map<
-    string,
-    NonNullable<MessageResponseRow["images"]>
-  >();
-  for (const attachment of attachments ?? []) {
-    if (!attachment.message_id) continue;
-    const images = imagesByMessage.get(attachment.message_id) ?? [];
-    images.push({
-      id: attachment.id,
-      status: "ready",
-      kind: attachment.kind as "image" | "file",
-      original_name: attachment.original_name,
-      stored_mime_type: attachment.stored_mime_type ?? "application/octet-stream",
-      stored_byte_size: attachment.stored_byte_size ?? 0,
-      width: attachment.width,
-      height: attachment.height,
-      thumbnail_path: attachment.thumbnail_path,
-      display_path: attachment.display_path ?? "",
-      thumbnail_url: attachment.thumbnail_path
-        ? urls.get(attachment.thumbnail_path)
-        : undefined,
-      display_url: attachment.display_path
-        ? urls.get(attachment.display_path)
-        : undefined,
-    });
-    imagesByMessage.set(attachment.message_id, images);
-  }
+  const imagesByMessage = indexAttachments(
+    (attachments ?? []) as Array<{
+      id: string;
+      message_id: string;
+      status: "ready";
+      kind: "image" | "file";
+      original_name: string;
+      stored_mime_type: string | null;
+      stored_byte_size: number | null;
+      width: number | null;
+      height: number | null;
+      thumbnail_path: string | null;
+      display_path: string | null;
+    }>,
+    urls
+  );
 
   const reactionRows: Array<{ message_id: string; emoji: string; user_id: string }> = [];
   for (let batchStart = 0; batchStart < messageIds.length; batchStart += 25) {
@@ -86,24 +76,7 @@ export async function hydrateClientChatMessages(
       if ((reactions ?? []).length < 1000) break;
     }
   }
-  const reactionsByMessage = new Map<
-    string,
-    Map<string, { emoji: string; count: number; by_me: boolean }>
-  >();
-  for (const reaction of reactionRows) {
-    const messageReactions = reactionsByMessage.get(reaction.message_id) ?? new Map();
-    const aggregate = messageReactions.get(reaction.emoji) ?? {
-      emoji: reaction.emoji,
-      count: 0,
-      by_me: false,
-    };
-    messageReactions.set(reaction.emoji, {
-      ...aggregate,
-      count: aggregate.count + 1,
-      by_me: aggregate.by_me || reaction.user_id === currentUserId,
-    });
-    reactionsByMessage.set(reaction.message_id, messageReactions);
-  }
+  const reactionsByMessage = aggregateReactions(reactionRows, currentUserId);
 
   return messages.map((message) =>
     toClientChatMessage({
@@ -111,7 +84,7 @@ export async function hydrateClientChatMessages(
       sender_display_name:
         message.sender_display_name ?? displayNames.get(message.sender_id) ?? null,
       images: imagesByMessage.get(message.id) ?? message.images ?? [],
-      reactions: Array.from(reactionsByMessage.get(message.id)?.values() ?? []),
+      reactions: reactionsByMessage.get(message.id) ?? [],
     })
   );
 }

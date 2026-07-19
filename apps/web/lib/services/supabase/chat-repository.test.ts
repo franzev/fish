@@ -22,7 +22,7 @@ function createChainStub<T>(value: T) {
     then: (resolve: (outcome: typeof result) => unknown) =>
       Promise.resolve(result).then(resolve),
   };
-  for (const method of ["select", "eq", "in", "order", "limit", "range"]) {
+  for (const method of ["select", "eq", "in", "is", "order", "limit", "range"]) {
     builder[method] = vi.fn(() => builder);
   }
   return builder;
@@ -581,6 +581,7 @@ describe("Supabase service registry", () => {
           }
           return builder;
         }),
+        is: vi.fn(() => builder),
         range: vi.fn(() => builder),
         then: (
           resolve: (outcome: { data: typeof reactionRows; error: null }) => unknown

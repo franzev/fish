@@ -34,6 +34,7 @@ import {
   reportGifViaLocalRpc,
   sendMessageViaLocalRpc,
   toClientChatMessagesWithSenders,
+  getLocalFallbackContext,
 } from "./local-chat-commands";
 import type { AppSupabaseClient } from "./types";
 
@@ -41,6 +42,10 @@ type EdgePayload = Record<string, unknown> & { error?: string };
 
 export class SupabaseChatCommandService implements ChatCommandService {
   constructor(private readonly client: AppSupabaseClient) {}
+
+  private async localContext() {
+    return getLocalFallbackContext(this.client);
+  }
 
   private async accessToken(): Promise<string | null> {
     try {
@@ -89,7 +94,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
             ...(input.stickerId ? { stickerId: input.stickerId } : {}),
           }
     );
-    if (!edge) return sendMessageViaLocalRpc(input);
+    if (!edge) return sendMessageViaLocalRpc(input, await this.localContext());
 
     const messageValue = edge.payload?.message;
     const message = Array.isArray(messageValue)
@@ -126,7 +131,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
               emoji: command.emoji,
             };
     const edge = await this.post("chat-command", wireCommand);
-    if (!edge) return commandMessageViaLocalRpc(command);
+    if (!edge) return commandMessageViaLocalRpc(command, await this.localContext());
 
     const messageValue = edge.payload?.message;
     const message = Array.isArray(messageValue)
@@ -150,7 +155,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
       action: "report-gif",
       messageId: input.messageId,
     });
-    if (!edge) return reportGifViaLocalRpc(input);
+    if (!edge) return reportGifViaLocalRpc(input, await this.localContext());
     if (!edge.response.ok || edge.payload?.reported !== true) {
       return {
         ok: false,
@@ -171,7 +176,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
       lastDeliveredMessageId: input.lastDeliveredMessageId,
       lastReadMessageId: input.lastReadMessageId,
     });
-    if (!edge) return markReadStateViaLocalRpc(input);
+    if (!edge) return markReadStateViaLocalRpc(input, await this.localContext());
 
     const readState = edge.payload?.readState;
     if (!edge.response.ok || !readState) {
@@ -196,7 +201,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
       action: "refresh-messages",
       messageIds: Array.from(new Set(input.messageIds)),
     });
-    if (!edge) return refreshMessagesViaLocalRpc(input);
+    if (!edge) return refreshMessagesViaLocalRpc(input, await this.localContext());
 
     const messages = edge.payload?.messages;
     if (!edge.response.ok || !Array.isArray(messages)) {
@@ -228,7 +233,7 @@ export class SupabaseChatCommandService implements ChatCommandService {
       action: "refresh-conversation",
       conversationId: input.conversationId,
     });
-    if (!edge) return refreshConversationViaLocalRpc(input);
+    if (!edge) return refreshConversationViaLocalRpc(input, await this.localContext());
 
     const messages = edge.payload?.messages;
     const readStates = edge.payload?.readStates;
@@ -258,15 +263,15 @@ export class SupabaseChatCommandService implements ChatCommandService {
     };
   }
 
-  loadOlderMessages(input: LoadOlderMessagesInput) {
-    return loadOlderMessagesViaLocalRpc(input);
+  async loadOlderMessages(input: LoadOlderMessagesInput) {
+    return loadOlderMessagesViaLocalRpc(input, await this.localContext());
   }
 
-  backfillMessages(input: BackfillMessagesInput) {
-    return backfillMessagesViaLocalRpc(input);
+  async backfillMessages(input: BackfillMessagesInput) {
+    return backfillMessagesViaLocalRpc(input, await this.localContext());
   }
 
-  loadNewestMessages(input: LoadNewestMessagesInput) {
-    return loadNewestMessagesViaLocalRpc(input);
+  async loadNewestMessages(input: LoadNewestMessagesInput) {
+    return loadNewestMessagesViaLocalRpc(input, await this.localContext());
   }
 }
