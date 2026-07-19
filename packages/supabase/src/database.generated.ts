@@ -2512,6 +2512,16 @@ export type Database = {
           username: string
         }[]
       }
+      list_message_reaction_summaries: {
+        Args: { p_message_ids: string[] }
+        Returns: {
+          by_me: boolean
+          count: number
+          emoji: string
+          first_created_at: string
+          message_id: string
+        }[]
+      }
       list_navigation_attention: {
         Args: never
         Returns: {
@@ -2860,6 +2870,30 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "friend_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_message_reaction: {
+        Args: { p_active: boolean; p_emoji: string; p_message_id: string }
+        Returns: {
+          body: string
+          client_request_id: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+          sender_role: string
+          sticker_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "messages"
           isOneToOne: true
           isSetofReturn: false
         }

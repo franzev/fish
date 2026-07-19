@@ -14,6 +14,12 @@ type ChatCommand =
       emoji: string;
     }
   | {
+      action: "set-reaction";
+      messageId: string;
+      emoji: string;
+      active: boolean;
+    }
+  | {
       action: "report-gif";
       messageId: string;
     }
@@ -35,7 +41,8 @@ type ChatCommand =
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
 };
-const reactionPageSize = 1000;
+const reactionSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+const emojiPattern = /\p{Extended_Pictographic}|\p{Regional_Indicator}|[#*0-9]\uFE0F?\u20E3/u;
 
 function calmError(error: string, status: number): Response {
   return Response.json({ error }, { status, headers: jsonHeaders });
@@ -103,62 +110,64 @@ async function rpc(
   });
 }
 
+function readReactionEmoji(value: unknown): string | null {
+  const emoji = typeof value === "string" ? value.trim() : "";
+  if (!emoji || emoji.length > 16 || !emojiPattern.test(emoji)) return null;
+  const segments = Array.from(reactionSegmenter.segment(emoji));
+  return segments.length === 1 && segments[0]?.segment === emoji ? emoji : null;
+}
+
+async function enrichMessages(
+  supabaseUrl: string,
+  apiKey: string,
+  authHeader: string,
+  messages: Record<string, unknown>[],
+): Promise<Record<string, unknown>[]> {
+  const messageIds = messages.map((message) => String(message.id ?? "")).filter(Boolean);
+  if (messageIds.length === 0) return messages.map((message) => ({ ...message, reactions: [] }));
+
+  const reactionsByMessage = new Map<
+    string,
+    Array<{ emoji: string; count: number; by_me: boolean }>
+  >();
+  for (let start = 0; start < messageIds.length; start += 50) {
+    const response = await rpc(
+      supabaseUrl,
+      apiKey,
+      authHeader,
+      "list_message_reaction_summaries",
+      { p_message_ids: messageIds.slice(start, start + 50) },
+    );
+    const payload = await readJson(response);
+    if (!response.ok || !Array.isArray(payload)) continue;
+
+    for (const row of payload as Array<Record<string, unknown>>) {
+      const messageId = typeof row.message_id === "string" ? row.message_id : "";
+      const emoji = typeof row.emoji === "string" ? row.emoji : "";
+      const count = typeof row.count === "number" ? row.count : Number(row.count);
+      if (!messageId || !emoji || !Number.isSafeInteger(count) || count < 1) continue;
+      const reactions = reactionsByMessage.get(messageId) ?? [];
+      reactions.push({ emoji, count, by_me: row.by_me === true });
+      reactionsByMessage.set(messageId, reactions);
+    }
+  }
+
+  return messages.map((message) => ({
+    ...message,
+    reactions: reactionsByMessage.get(String(message.id ?? "")) ?? [],
+  }));
+}
+
 async function enrichMessage(
   supabaseUrl: string,
   apiKey: string,
   authHeader: string,
-  callerId: string,
   message: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const messageId = String(message.id ?? "");
-  if (!messageId) {
-    return { ...message, reactions: [] };
-  }
-
-  const rows: Array<{ emoji?: string; user_id?: string }> = [];
-
-  for (let offset = 0;; offset += reactionPageSize) {
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/message_reactions?select=emoji,user_id&message_id=eq.${messageId}&removed_at=is.null&limit=${reactionPageSize}&offset=${offset}`,
-      {
-        headers: {
-          apikey: apiKey,
-          Authorization: authHeader,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      return { ...message, reactions: [] };
-    }
-
-    const page = (await readJson(response)) as
-      | Array<{ emoji?: string; user_id?: string }>
-      | null;
-    rows.push(...(page ?? []));
-
-    if ((page ?? []).length < reactionPageSize) {
-      break;
-    }
-  }
-
-  const reactions = new Map<string, { emoji: string; count: number; by_me: boolean }>();
-
-  for (const row of rows) {
-    if (!row.emoji) continue;
-    const current = reactions.get(row.emoji) ?? {
-      emoji: row.emoji,
-      count: 0,
-      by_me: false,
-    };
-    reactions.set(row.emoji, {
-      emoji: row.emoji,
-      count: current.count + 1,
-      by_me: current.by_me || row.user_id === callerId,
-    });
-  }
-
-  return { ...message, reactions: Array.from(reactions.values()) };
+  return (await enrichMessages(supabaseUrl, apiKey, authHeader, [message]))[0] ?? {
+    ...message,
+    reactions: [],
+  };
 }
 
 function mapCommandError(payload: unknown): { error: string; status: number } {
@@ -230,7 +239,6 @@ Deno.serve(async (request) => {
     if (!command.messageId || !body) {
       return calmError("Add a message before saving.", 400);
     }
-
     response = await rpc(supabaseUrl, apiKey, authHeader, "edit_chat_message", {
       p_message_id: command.messageId,
       p_body: body,
@@ -244,7 +252,7 @@ Deno.serve(async (request) => {
       p_message_id: command.messageId,
     });
   } else if (command.action === "toggle-reaction") {
-    const emoji = command.emoji?.trim() ?? "";
+    const emoji = readReactionEmoji(command.emoji);
     if (!command.messageId || !emoji) {
       return calmError("That reaction is not available.", 400);
     }
@@ -252,6 +260,17 @@ Deno.serve(async (request) => {
     response = await rpc(supabaseUrl, apiKey, authHeader, "toggle_message_reaction", {
       p_message_id: command.messageId,
       p_emoji: emoji,
+    });
+  } else if (command.action === "set-reaction") {
+    const emoji = readReactionEmoji(command.emoji);
+    if (!command.messageId || !emoji || typeof command.active !== "boolean") {
+      return calmError("That reaction is not available.", 400);
+    }
+
+    response = await rpc(supabaseUrl, apiKey, authHeader, "set_message_reaction", {
+      p_message_id: command.messageId,
+      p_emoji: emoji,
+      p_active: command.active,
     });
   } else if (command.action === "report-gif") {
     if (!command.messageId) {
@@ -296,16 +315,11 @@ Deno.serve(async (request) => {
 
     return Response.json(
       {
-        messages: await Promise.all(
-          messagesPayload.map((message) =>
-            enrichMessage(
-              supabaseUrl,
-              apiKey,
-              authHeader,
-              callerId,
-              message as Record<string, unknown>,
-            )
-          ),
+        messages: await enrichMessages(
+          supabaseUrl,
+          apiKey,
+          authHeader,
+          messagesPayload as Record<string, unknown>[],
         ),
       },
       { headers: jsonHeaders },
@@ -347,16 +361,11 @@ Deno.serve(async (request) => {
 
     return Response.json(
       {
-        messages: await Promise.all(
-          messagesPayload.map((message) =>
-            enrichMessage(
-              supabaseUrl,
-              apiKey,
-              authHeader,
-              callerId,
-              message as Record<string, unknown>,
-            )
-          ),
+        messages: await enrichMessages(
+          supabaseUrl,
+          apiKey,
+          authHeader,
+          messagesPayload as Record<string, unknown>[],
         ),
         readStates: readStatesPayload,
       },
@@ -391,7 +400,6 @@ Deno.serve(async (request) => {
         supabaseUrl,
         apiKey,
         authHeader,
-        callerId,
         message,
       ),
     },
