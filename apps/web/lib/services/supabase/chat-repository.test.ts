@@ -560,42 +560,8 @@ describe("Supabase service registry", () => {
         created_at: "2026-07-05T01:01:00.000Z",
       },
     ];
-    const reactionConversationIds: string[] = [];
     const reactionMessageIdBatches: string[][] = [];
-    const createReactionChain = () => {
-      let conversationId: string | null = null;
-      let messageIds: string[] | null = null;
-      const builder: Record<string, unknown> = {
-        select: vi.fn(() => builder),
-        eq: vi.fn((column: string, value: string) => {
-          if (column === "conversation_id") {
-            conversationId = value;
-            reactionConversationIds.push(value);
-          }
-          return builder;
-        }),
-        in: vi.fn((column: string, values: string[]) => {
-          if (column === "message_id") {
-            messageIds = values;
-            reactionMessageIdBatches.push(values);
-          }
-          return builder;
-        }),
-        is: vi.fn(() => builder),
-        range: vi.fn(() => builder),
-        then: (
-          resolve: (outcome: { data: typeof reactionRows; error: null }) => unknown
-        ) => {
-          const data = reactionRows.filter(
-            (reaction) =>
-              (!conversationId || reaction.conversation_id === conversationId) &&
-              (!messageIds || messageIds.includes(reaction.message_id))
-          );
-          return Promise.resolve({ data, error: null }).then(resolve);
-        },
-      };
-      return builder;
-    };
+    const baseRpc = createUnreadSummaryRpc();
     const client = {
       auth: {
         getUser: vi.fn(async () => ({
@@ -603,14 +569,29 @@ describe("Supabase service registry", () => {
           error: null,
         })),
       },
-      rpc: createUnreadSummaryRpc(),
+      rpc: vi.fn(async (name: string, parameters?: { p_message_ids?: string[] }) => {
+        if (name !== "list_message_reaction_summaries") {
+          return baseRpc(name);
+        }
+        const messageIds = parameters?.p_message_ids ?? [];
+        reactionMessageIdBatches.push(messageIds);
+        return {
+          data: reactionRows
+            .filter((reaction) => messageIds.includes(reaction.message_id))
+            .map((reaction) => ({
+              message_id: reaction.message_id,
+              emoji: reaction.emoji,
+              count: 1,
+              by_me: reaction.user_id === "user-1",
+              first_created_at: reaction.created_at,
+            })),
+          error: null,
+        };
+      }),
       from: vi.fn((table: string) => {
         if (table === "profiles") {
           const queue = queues.profiles;
           return createChainStub(queue.length > 1 ? queue.shift() : queue[0]);
-        }
-        if (table === "message_reactions") {
-          return createReactionChain();
         }
         return createChainStub(tables[table]);
       }),
@@ -632,11 +613,7 @@ describe("Supabase service registry", () => {
         createdAt: "2026-07-05T00:01:00.000Z",
         id: "message-001",
       });
-      expect(reactionConversationIds).toEqual([
-        demoConversationId,
-        demoConversationId,
-      ]);
-      expect(reactionMessageIdBatches.every((ids) => ids.length <= 25)).toBe(true);
+      expect(reactionMessageIdBatches.every((ids) => ids.length <= 50)).toBe(true);
       expect(new Set(reactionMessageIdBatches.flat())).toEqual(
         new Set(result.data?.messages.map((message) => message.id))
       );
@@ -693,7 +670,9 @@ describe("Supabase service registry", () => {
         })),
       },
       rpc: vi.fn(async (name: string) =>
-        name === "list_channel_member_profiles"
+        name === "list_message_reaction_summaries"
+          ? { data: [], error: null }
+          : name === "list_channel_member_profiles"
           ? { data: [], error: null }
           : {
               data: null,

@@ -77,11 +77,7 @@ async function addReactionAggregates(
 
   let reactionsByMessage: Awaited<ReturnType<typeof fetchReactionsFor>>;
   try {
-    reactionsByMessage = await fetchReactionsFor(
-      context.client,
-      ids,
-      context.userId
-    );
+    reactionsByMessage = await fetchReactionsFor(context.client, ids);
   } catch {
     return messages.map((message) => ({ ...message, reactions: [] }));
   }
@@ -239,9 +235,10 @@ export async function commandMessageViaLocalRpc(
         ? context.client.rpc("delete_chat_message", {
             p_message_id: command.messageId,
           })
-        : context.client.rpc("toggle_message_reaction", {
+        : context.client.rpc("set_message_reaction", {
             p_message_id: command.messageId,
             p_emoji: command.emoji,
+            p_active: command.active,
           });
 
   const { data, error } = await rpcCall;

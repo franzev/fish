@@ -126,9 +126,10 @@ export class SupabaseChatCommandService implements ChatCommandService {
         : command.kind === "delete"
           ? { action: "delete-message", messageId: command.messageId }
           : {
-              action: "toggle-reaction",
+              action: "set-reaction",
               messageId: command.messageId,
               emoji: command.emoji,
+              active: command.active,
             };
     const edge = await this.post("chat-command", wireCommand);
     if (!edge) return commandMessageViaLocalRpc(command, await this.localContext());

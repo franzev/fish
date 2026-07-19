@@ -4,7 +4,7 @@ import {
   type MessageResponseRow,
 } from "./chat-mapping";
 import { loadSenderDisplayNames } from "./chat-sender-profiles";
-import { aggregateReactions, indexAttachments } from "./chat-enrichment";
+import { fetchReactionsFor, indexAttachments } from "./chat-enrichment";
 import type { AppSupabaseClient } from "./types";
 
 export async function hydrateClientChatMessages(
@@ -14,9 +14,6 @@ export async function hydrateClientChatMessages(
   if (messages.length === 0) return [];
 
   const displayNames = await loadSenderDisplayNames(client, messages);
-
-  const { data: userData } = await client.auth.getUser();
-  const currentUserId = userData.user?.id ?? "";
 
   const messageIds = messages.map((message) => message.id);
   const { data: attachments, error: attachmentsError } = await client
@@ -62,21 +59,7 @@ export async function hydrateClientChatMessages(
     urls
   );
 
-  const reactionRows: Array<{ message_id: string; emoji: string; user_id: string }> = [];
-  for (let batchStart = 0; batchStart < messageIds.length; batchStart += 25) {
-    const batch = messageIds.slice(batchStart, batchStart + 25);
-    for (let from = 0;; from += 1000) {
-      const { data: reactions } = await client
-        .from("message_reactions")
-        .select("message_id, emoji, user_id")
-        .in("message_id", batch)
-        .is("removed_at", null)
-        .range(from, from + 999);
-      reactionRows.push(...(reactions ?? []));
-      if ((reactions ?? []).length < 1000) break;
-    }
-  }
-  const reactionsByMessage = aggregateReactions(reactionRows, currentUserId);
+  const reactionsByMessage = await fetchReactionsFor(client, messageIds);
 
   return messages.map((message) =>
     toClientChatMessage({

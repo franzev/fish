@@ -1,35 +1,6 @@
 import type { AppSupabaseClient } from "./types";
 import type { MessageResponseRow } from "./chat-mapping";
 
-export interface ReactionRow {
-  message_id: string;
-  emoji: string;
-  user_id: string;
-}
-
-export function aggregateReactions(
-  rows: ReactionRow[],
-  currentUserId: string
-): Map<string, NonNullable<MessageResponseRow["reactions"]>> {
-  const grouped = new Map<string, Map<string, { emoji: string; count: number; by_me: boolean }>>();
-  for (const row of rows) {
-    const reactions = grouped.get(row.message_id) ?? new Map();
-    const current = reactions.get(row.emoji) ?? { emoji: row.emoji, count: 0, by_me: false };
-    reactions.set(row.emoji, {
-      emoji: row.emoji,
-      count: current.count + 1,
-      by_me: current.by_me || row.user_id === currentUserId,
-    });
-    grouped.set(row.message_id, reactions);
-  }
-  return new Map(
-    Array.from(grouped.entries()).map(([messageId, reactions]) => [
-      messageId,
-      Array.from(reactions.values()),
-    ])
-  );
-}
-
 export interface AttachmentIndexRow {
   id: string;
   message_id: string;
@@ -72,29 +43,25 @@ export function indexAttachments(
 
 export async function fetchReactionsFor(
   client: AppSupabaseClient,
-  messageIds: string[],
-  currentUserId: string,
-  conversationId?: string
+  messageIds: string[]
 ) {
-  const rows: ReactionRow[] = [];
-  for (let batchStart = 0; batchStart < messageIds.length; batchStart += 25) {
-    const batch = messageIds.slice(batchStart, batchStart + 25);
-    for (let from = 0; ; from += 1000) {
-      const query = client
-        .from("message_reactions")
-        .select("message_id, emoji, user_id")
-        .in("message_id", batch)
-        .is("removed_at", null);
-      if (conversationId) {
-        query.eq("conversation_id", conversationId);
-      }
-      const { data, error } = await query.range(from, from + 999);
-      if (error) throw error;
-      rows.push(...(data ?? []));
-      if ((data ?? []).length < 1000) break;
+  const byMessage = new Map<
+    string,
+    NonNullable<MessageResponseRow["reactions"]>
+  >();
+  for (let batchStart = 0; batchStart < messageIds.length; batchStart += 50) {
+    const { data, error } = await client.rpc(
+      "list_message_reaction_summaries",
+      { p_message_ids: messageIds.slice(batchStart, batchStart + 50) }
+    );
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const summaries = byMessage.get(row.message_id) ?? [];
+      summaries.push({ emoji: row.emoji, count: row.count, by_me: row.by_me });
+      byMessage.set(row.message_id, summaries);
     }
   }
-  return aggregateReactions(rows, currentUserId);
+  return byMessage;
 }
 
 export async function fetchAttachmentUrls(

@@ -1,15 +1,32 @@
-import { describe, expect, it } from "vitest";
-import { aggregateReactions, indexAttachments } from "./chat-enrichment";
+import { describe, expect, it, vi } from "vitest";
+import { fetchReactionsFor, indexAttachments } from "./chat-enrichment";
 
 describe("chat enrichment folds", () => {
-  it("aggregates reaction counts and current-user state without query assumptions", () => {
-    expect(aggregateReactions([
-      { message_id: "m1", emoji: "👍", user_id: "u1" },
-      { message_id: "m1", emoji: "👍", user_id: "u2" },
-      { message_id: "m1", emoji: "❤️", user_id: "u3" },
-    ], "u2").get("m1")).toEqual([
-      { emoji: "👍", count: 2, by_me: true },
-      { emoji: "❤️", count: 1, by_me: false },
+  it("loads stable viewer-specific summaries in bounded batches", async () => {
+    const messageIds = Array.from({ length: 51 }, (_, index) => `m${index}`);
+    const rpc = vi.fn(async (_name: string, input: { p_message_ids: string[] }) => ({
+      data: input.p_message_ids.flatMap((messageId) =>
+        messageId === "m0"
+          ? [
+              { message_id: "m0", emoji: "❤️", count: 2, by_me: false },
+              { message_id: "m0", emoji: "👍", count: 1, by_me: true },
+            ]
+          : messageId === "m50"
+            ? [{ message_id: "m50", emoji: "🎉", count: 3, by_me: true }]
+            : []
+      ),
+      error: null,
+    }));
+
+    const summaries = await fetchReactionsFor({ rpc } as never, messageIds);
+
+    expect(rpc.mock.calls.map(([, input]) => input.p_message_ids.length)).toEqual([50, 1]);
+    expect(summaries.get("m0")).toEqual([
+      { emoji: "❤️", count: 2, by_me: false },
+      { emoji: "👍", count: 1, by_me: true },
+    ]);
+    expect(summaries.get("m50")).toEqual([
+      { emoji: "🎉", count: 3, by_me: true },
     ]);
   });
 

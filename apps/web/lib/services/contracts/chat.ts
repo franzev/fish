@@ -143,12 +143,12 @@ export interface SendMessageInput {
 }
 export interface EditMessageInput { messageId: string; body: string }
 export interface DeleteMessageInput { messageId: string }
-export interface ToggleReactionInput { messageId: string; emoji: string }
+export interface SetReactionInput { messageId: string; emoji: string; active: boolean }
 export interface ReportGifInput { messageId: string }
 export type ChatMessageCommand =
   | ({ kind: "edit" } & EditMessageInput)
   | ({ kind: "delete" } & DeleteMessageInput)
-  | ({ kind: "toggleReaction" } & ToggleReactionInput);
+  | ({ kind: "setReaction" } & SetReactionInput);
 export interface MarkReadStateInput {
   conversationId: string;
   lastDeliveredMessageId: string | null;

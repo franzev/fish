@@ -416,9 +416,7 @@ export class SupabaseChatRepository implements ChatRepository {
       try {
         reactionsByMessage = await fetchReactionsFor(
           this.client,
-          messages.map((message) => message.id),
-          userId,
-          conversation.id
+          messages.map((message) => message.id)
         );
       } catch (error) {
         return serviceFailure(
