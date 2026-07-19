@@ -24,6 +24,13 @@ import type {
   AttentionRealtimeService,
   NavigationAttentionRepository,
 } from "@/lib/services";
+import { useBrowserTabTitle } from "../../hooks/use-browser-tab-title";
+import { useNavigationAttention } from "../../hooks/use-navigation-attention";
+import {
+  markSeenThroughChangeSeq,
+  planMarkSeenOutcome,
+  unseenNotificationIds,
+} from "../../model/mark-seen";
 import {
   createContext,
   useCallback,
@@ -55,29 +62,7 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
-const browserTabBaseTitle = "FISH";
-const browserTabCountLimit = 9;
 const markSeenSnapshotRetryLimit = 3;
-
-function countUnreadConversations(attention: NavigationAttention[]): number {
-  return new Set(
-    attention.flatMap((item) =>
-      (item.surface === "direct" || item.surface === "channel") &&
-      item.conversationId &&
-      item.unreadCount > 0
-        ? [item.conversationId]
-        : []
-    )
-  ).size;
-}
-
-function formatBrowserTabTitle(unreadConversationCount: number): string {
-  if (unreadConversationCount === 0) return browserTabBaseTitle;
-  const count = unreadConversationCount > browserTabCountLimit
-    ? `${browserTabCountLimit}+`
-    : unreadConversationCount;
-  return `(${count}) ${browserTabBaseTitle}`;
-}
 
 interface NotificationProviderProps {
   userId: string;
@@ -148,27 +133,19 @@ export function NotificationProvider({
   );
   const stateRef = useRef(state);
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const attentionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [archiveBatchId, setArchiveBatchId] = useState<string | null>(null);
-  const [attention, setAttention] = useState(initialAttention);
-  const unreadConversationCount = countUnreadConversations(attention);
-  const attentionConversationKey = attention
-    .flatMap((item) => item.conversationId ? [item.conversationId] : [])
-    .sort()
-    .join("|");
-
-  useEffect(() => {
-    const initialTitle = document.title || browserTabBaseTitle;
-    return () => {
-      document.title = initialTitle;
-    };
-  }, []);
-
-  useEffect(() => {
-    document.title = formatBrowserTabTitle(unreadConversationCount);
-  }, [unreadConversationCount]);
+  const {
+    attention,
+    unreadConversationCount,
+    refreshAttention,
+  } = useNavigationAttention({
+    initialAttention,
+    repository: attentionRepository,
+    realtime: attentionRealtime,
+  });
+  useBrowserTabTitle(unreadConversationCount);
 
   useEffect(() => {
     stateRef.current = state;
@@ -176,10 +153,10 @@ export function NotificationProvider({
 
   const refreshForFilter = useCallback(async (filter: NotificationFilter) => {
     setIsRefreshing(true);
-    const [page, summary, nextAttention] = await Promise.all([
+    const [page, summary] = await Promise.all([
       repository.listPage({ filter }),
       repository.getSummary(),
-      attentionRepository.list(),
+      refreshAttention(),
     ]);
     setIsRefreshing(false);
     if (!page.ok || !summary.ok) {
@@ -187,19 +164,13 @@ export function NotificationProvider({
       return;
     }
     setNotice(null);
-    if (nextAttention.ok) setAttention(nextAttention.data);
     dispatch({
       type: "hydrate",
       page: page.data,
       summary: summary.data,
       filter,
     });
-  }, [attentionRepository, repository]);
-
-  const refreshAttention = useCallback(async () => {
-    const result = await attentionRepository.list();
-    if (result.ok) setAttention(result.data);
-  }, [attentionRepository]);
+  }, [refreshAttention, repository]);
 
   const refresh = useCallback(
     () => refreshForFilter(stateRef.current.filter),
@@ -249,28 +220,6 @@ export function NotificationProvider({
     };
   }, [realtime, scheduleRecovery, userId]);
 
-  useEffect(() => {
-    const conversationIds = attentionConversationKey
-      ? attentionConversationKey.split("|")
-      : [];
-    const schedule = () => {
-      if (attentionTimerRef.current) clearTimeout(attentionTimerRef.current);
-      attentionTimerRef.current = setTimeout(() => {
-        attentionTimerRef.current = null;
-        void refreshAttention();
-      }, 150);
-    };
-    const unsubscribe = attentionRealtime.subscribe(
-      conversationIds,
-      schedule,
-      schedule
-    );
-    return () => {
-      unsubscribe();
-      if (attentionTimerRef.current) clearTimeout(attentionTimerRef.current);
-    };
-  }, [attentionConversationKey, attentionRealtime, refreshAttention]);
-
   const runItemOperation = useCallback(async (
     kind: "seen" | "read",
     itemIds: string[]
@@ -309,10 +258,10 @@ export function NotificationProvider({
   const refreshAndMarkLoadedSeen = useCallback(async () => {
     const filter = stateRef.current.filter;
     setIsRefreshing(true);
-    const [page, summary, nextAttention] = await Promise.all([
+    const [page, summary] = await Promise.all([
       repository.listPage({ filter }),
       repository.getSummary(),
-      attentionRepository.list(),
+      refreshAttention(),
     ]);
 
     if (!page.ok || !summary.ok) {
@@ -321,55 +270,40 @@ export function NotificationProvider({
       return;
     }
 
-    if (nextAttention.ok) setAttention(nextAttention.data);
     let nextPage = page.data;
     let nextSummary = summary.data;
     let nextNotice: string | null = null;
 
     for (let attempt = 0; attempt < markSeenSnapshotRetryLimit; attempt += 1) {
-      const unseenIds = nextPage.items
-        .filter((item) => item.seenAt === null)
-        .map((item) => item.id);
+      const unseenIds = unseenNotificationIds(nextPage);
       if (unseenIds.length === 0) break;
-      const throughChangeSeq = Math.max(
-        nextSummary.latestChangeSeq,
-        ...nextPage.items.map((item) => item.changeSeq)
-      );
+      const throughChangeSeq = markSeenThroughChangeSeq(nextPage, nextSummary);
       const result = await commands.execute({
         action: "mark-seen",
         notificationIds: unseenIds,
         throughChangeSeq,
       });
-      if (result.ok) {
-        const seenAt = new Date().toISOString();
-        const unseenIdSet = new Set(unseenIds);
-        const optimisticPage = {
-          ...nextPage,
-          items: nextPage.items.map((item) =>
-            unseenIdSet.has(item.id) ? { ...item, seenAt } : item
-          ),
-        };
-        const [settledPage, settledSummary] = await Promise.all([
-          repository.listPage({ filter }),
-          repository.getSummary(),
-        ]);
-        if (!settledPage.ok || !settledSummary.ok) {
-          nextNotice = "Notifications will catch up when the connection settles.";
-          if (result.updated >= unseenIds.length) {
-            nextPage = optimisticPage;
-            nextSummary = {
-              ...nextSummary,
-              unseenCount: Math.max(0, nextSummary.unseenCount - unseenIds.length),
-            };
-          }
-          break;
-        }
-        nextPage = settledPage.data;
-        nextSummary = settledSummary.data;
-      } else {
-        nextNotice = result.notice;
-        break;
-      }
+      const [settledPage, settledSummary] = result.ok
+        ? await Promise.all([
+            repository.listPage({ filter }),
+            repository.getSummary(),
+          ])
+        : [{ ok: false as const }, { ok: false as const }];
+      const plan = planMarkSeenOutcome({
+        page: nextPage,
+        summary: nextSummary,
+        commandResult: result,
+        attempt,
+        settled: {
+          page: settledPage.ok ? settledPage.data : null,
+          summary: settledSummary.ok ? settledSummary.data : null,
+        },
+        seenAt: new Date().toISOString(),
+      });
+      nextPage = plan.nextPage;
+      nextSummary = plan.nextSummary;
+      nextNotice = plan.notice;
+      if (!plan.retry) break;
     }
 
     dispatch({
@@ -380,7 +314,7 @@ export function NotificationProvider({
     });
     setNotice(nextNotice);
     setIsRefreshing(false);
-  }, [attentionRepository, commands, repository]);
+  }, [commands, refreshAttention, repository]);
 
   const markRead = useCallback(async (item: NotificationItem) => {
     if (item.readAt === null) await runItemOperation("read", [item.id]);
