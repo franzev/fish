@@ -41,6 +41,8 @@ import {
 import {
   closeFailedMediaConnection,
 } from "./call-exit";
+import { planCallEvents } from "./apply-call";
+import { permissionNotice } from "./permission-notice";
 
 export interface CallContextValue {
   state: CallState;
@@ -78,6 +80,18 @@ export interface CallContextValue {
   setVideoQualityPreference(preference: VideoQualityPreference): void;
 }
 
+export type CallMedia = Pick<
+  LiveKitCallMedia,
+  | "connect"
+  | "disconnect"
+  | "setMuted"
+  | "setCameraEnabled"
+  | "startAudio"
+  | "microphones"
+  | "switchMicrophone"
+  | "setVideoQualityPreference"
+>;
+
 const CallContext = createContext<CallContextValue | null>(null);
 
 interface CallProviderProps {
@@ -85,6 +99,10 @@ interface CallProviderProps {
   children: React.ReactNode;
   commands?: CallCommandService;
   realtime?: CallRealtimeService;
+  media?: CallMedia;
+  requestPermission?: (
+    kind: CallKind
+  ) => Promise<Awaited<ReturnType<typeof requestMediaPermission>>>;
 }
 
 export function CallProvider({
@@ -92,6 +110,8 @@ export function CallProvider({
   children,
   commands: commandsOverride,
   realtime: realtimeOverride,
+  media: mediaOverride,
+  requestPermission: requestPermissionOverride,
 }: CallProviderProps) {
   const [state, dispatch] = useReducer(
     reduceCallState,
@@ -128,8 +148,8 @@ export function CallProvider({
     () => getCallRealtimeService(realtimeOverride),
     [realtimeOverride]
   );
-  const [media] = useState(() =>
-    new LiveKitCallMedia(
+  const [media] = useState<CallMedia>(() =>
+    mediaOverride ?? new LiveKitCallMedia(
       {
         onConnected(callId) {
           dispatch({
@@ -177,71 +197,17 @@ export function CallProvider({
   }, [state]);
 
   const applyCall = useCallback((call: ClientCall, counterpartName: string) => {
-    const counterpartId = call.coachId === userId ? call.clientId : call.coachId;
-    if (call.status === "ringing") {
-      dispatch({
-        type: call.initiatedBy === userId
-          ? "outgoingCallCreated"
-          : "incomingCallReceived",
-        callId: call.id,
-        counterpartId,
-        counterpartName,
-        kind: call.kind,
-        expiresAt: call.expiresAt,
-      });
-      return;
-    }
-    if (call.status === "connecting" || call.status === "active") {
-      if (stateRef.current.current.callId !== call.id) {
-        dispatch({
-          type: call.initiatedBy === userId
-            ? "outgoingCallCreated"
-            : "incomingCallReceived",
-          callId: call.id,
-          counterpartId,
-          counterpartName,
-          kind: call.kind,
-          expiresAt: call.expiresAt,
-        });
+    const plan = planCallEvents(call, stateRef.current, {
+      userId,
+      counterpartName,
+    });
+    plan.events.forEach((event) => dispatch(event));
+    if (plan.shouldDisconnect) {
+      if (connectedCallIdRef.current === call.id) {
+        connectedCallIdRef.current = null;
       }
-      dispatch({ type: "callAccepted", callId: call.id });
-      if (call.status === "active") {
-        dispatch({
-          type: "mediaConnected",
-          callId: call.id,
-          connectedAt: call.connectedAt ?? new Date().toISOString(),
-        });
-      }
-      return;
+      void media.disconnect();
     }
-
-    if (stateRef.current.current.callId !== call.id) {
-      dispatch({
-        type: call.initiatedBy === userId
-          ? "outgoingCallCreated"
-          : "incomingCallReceived",
-        callId: call.id,
-        counterpartId,
-        counterpartName,
-        kind: call.kind,
-        expiresAt: call.expiresAt,
-      });
-    }
-    const event = call.status === "rejected"
-      ? "callRejected"
-      : call.status === "cancelled"
-      ? "callCancelled"
-      : call.status === "missed"
-      ? "callMissed"
-      : call.status === "ended"
-      ? "callEnded"
-      : null;
-    if (event) dispatch({ type: event, callId: call.id });
-    else dispatch({ type: "callFailed", callId: call.id, reason: "connectFailed" });
-    if (connectedCallIdRef.current === call.id) {
-      connectedCallIdRef.current = null;
-    }
-    void media.disconnect();
   }, [media, userId]);
 
   const failMediaConnection = useCallback(async (callId: string) => {
@@ -385,6 +351,65 @@ export function CallProvider({
     }
   }, [busy, media]);
 
+  const startCallFlow = useCallback(
+    (input: {
+      kind: CallKind;
+      counterpartId: string;
+      counterpartName: string;
+      permissionFlow: "call" | "lesson";
+      busyNotice: string;
+      initiate: () => Promise<CallCommandResult>;
+    }) => run(async () => {
+      if (selectHasLiveCall(stateRef.current)) {
+        setNotice(input.busyNotice);
+        return;
+      }
+      dispatch({
+        type: "permissionRequested",
+        counterpartId: input.counterpartId,
+        counterpartName: input.counterpartName,
+        kind: input.kind,
+      });
+      const permission = await (requestPermissionOverride ?? requestMediaPermission)(input.kind);
+      if (permission !== "granted") {
+        const denial = permissionNotice(input.kind, permission, input.permissionFlow);
+        dispatch({ type: "permissionDenied", reason: denial.reason });
+        setNotice(denial.notice);
+        return;
+      }
+      const result = await input.initiate();
+      if (!result.ok) {
+        dispatch({ type: "callFailed", reason: "providerUnavailable" });
+        setNotice(result.notice);
+        return;
+      }
+      dispatch({
+        type: "outgoingCallCreated",
+        callId: result.call.id,
+        counterpartId: input.counterpartId,
+        counterpartName: input.counterpartName,
+        kind: input.kind,
+        expiresAt: result.call.expiresAt,
+      });
+    }),
+    [requestPermissionOverride, run]
+  );
+
+  const terminate = useCallback(
+    async (
+      command: "reject" | "cancel" | "end",
+      eventType: "callRejected" | "callCancelled" | "callEnded"
+    ) => run(async () => {
+      const callId = stateRef.current.current.callId;
+      if (!callId) return;
+      const result = await commands[command](callId);
+      if (!result.ok) setNotice(result.notice);
+      else dispatch({ type: eventType, callId });
+      await media.disconnect();
+    }),
+    [commands, media, run]
+  );
+
   const value = useMemo<CallContextValue>(() => ({
     state,
     notice,
@@ -398,110 +423,31 @@ export function CallProvider({
     localVideoStream,
     remoteVideoTrack,
     videoQualityPreference,
-    startCall: async (recipientId, recipientName, kind) => run(async () => {
-      if (selectHasLiveCall(stateRef.current)) {
-        setNotice("Finish the current call before starting another one.");
-        return;
-      }
-      dispatch({
-        type: "permissionRequested",
-        counterpartId: recipientId,
-        counterpartName: recipientName,
-        kind,
-      });
-      const permission = await requestMediaPermission(kind);
-      if (permission !== "granted") {
-        dispatch({
-          type: "permissionDenied",
-          reason: permission === "denied"
-            ? "permissionDenied"
-            : "deviceUnavailable",
-        });
-        setNotice(
-          permission === "denied"
-            ? kind === "video"
-              ? "Allow camera and microphone access, then try the video call again."
-              : "Allow microphone access in your browser, then try the call again."
-            : kind === "video"
-            ? "We couldn’t find a camera and microphone. Check your devices and try again."
-            : "We couldn’t find a microphone. Check your device and try again."
-        );
-        return;
-      }
-      const result = await commands.initiate({
-        recipientId,
-        kind,
-        clientRequestId: crypto.randomUUID(),
-      });
-      if (!result.ok) {
-        dispatch({ type: "callFailed", reason: "providerUnavailable" });
-        setNotice(result.notice);
-        return;
-      }
-      dispatch({
-        type: "outgoingCallCreated",
-        callId: result.call.id,
-        counterpartId: recipientId,
-        counterpartName: recipientName,
-        kind,
-        expiresAt: result.call.expiresAt,
-      });
+    startCall: (recipientId, recipientName, kind) => startCallFlow({
+      kind,
+      counterpartId: recipientId,
+      counterpartName: recipientName,
+      permissionFlow: "call",
+      busyNotice: "Finish the current call before starting another one.",
+      initiate: () => commands.initiate({ recipientId, kind, clientRequestId: crypto.randomUUID() }),
     }),
-    startLessonCall: async (lessonId, coachId, coachName) => run(async () => {
-      if (selectHasLiveCall(stateRef.current)) {
-        setNotice("Finish the current call before joining your lesson.");
-        return;
-      }
-      dispatch({
-        type: "permissionRequested",
-        counterpartId: coachId,
-        counterpartName: coachName,
-        kind: "video",
-      });
-      const permission = await requestMediaPermission("video");
-      if (permission !== "granted") {
-        dispatch({
-          type: "permissionDenied",
-          reason: permission === "denied"
-            ? "permissionDenied"
-            : "deviceUnavailable",
-        });
-        setNotice(
-          permission === "denied"
-            ? "Allow camera and microphone access, then join your lesson again."
-            : "We couldn’t find a camera and microphone. Check your devices and try again."
-        );
-        return;
-      }
-      const result = await commands.initiateLesson({
-        lessonId,
-        clientRequestId: crypto.randomUUID(),
-      });
-      if (!result.ok) {
-        dispatch({ type: "callFailed", reason: "providerUnavailable" });
-        setNotice(result.notice);
-        return;
-      }
-      dispatch({
-        type: "outgoingCallCreated",
-        callId: result.call.id,
-        counterpartId: coachId,
-        counterpartName: coachName,
-        kind: "video",
-        expiresAt: result.call.expiresAt,
-      });
+    startLessonCall: (lessonId, coachId, coachName) => startCallFlow({
+      kind: "video",
+      counterpartId: coachId,
+      counterpartName: coachName,
+      permissionFlow: "lesson",
+      busyNotice: "Finish the current call before joining your lesson.",
+      initiate: () => commands.initiateLesson({ lessonId, clientRequestId: crypto.randomUUID() }),
     }),
     answer: async () => run(async () => {
       const callId = stateRef.current.current.callId;
       if (!callId) return;
       const callKind = stateRef.current.current.kind;
-      const permission = await requestMediaPermission(callKind);
+      const permission = await (requestPermissionOverride ?? requestMediaPermission)(callKind);
       if (permission !== "granted") {
-        setNotice(
-          callKind === "video"
-            ? "Allow camera and microphone access, then answer again."
-            : "Allow microphone access in your browser, then answer again."
-        );
+        const denial = permissionNotice(callKind, permission, "answer");
+        dispatch({ type: "permissionDenied", reason: denial.reason });
+        setNotice(denial.notice);
         return;
       }
       await connectCall(
@@ -510,30 +456,9 @@ export function CallProvider({
         () => dispatch({ type: "callAccepted", callId }),
       );
     }),
-    decline: async () => run(async () => {
-      const callId = stateRef.current.current.callId;
-      if (!callId) return;
-      const result = await commands.reject(callId);
-      if (!result.ok) setNotice(result.notice);
-      else dispatch({ type: "callRejected", callId });
-      await media.disconnect();
-    }),
-    cancel: async () => run(async () => {
-      const callId = stateRef.current.current.callId;
-      if (!callId) return;
-      const result = await commands.cancel(callId);
-      if (!result.ok) setNotice(result.notice);
-      else dispatch({ type: "callCancelled", callId });
-      await media.disconnect();
-    }),
-    end: async () => run(async () => {
-      const callId = stateRef.current.current.callId;
-      if (!callId) return;
-      const result = await commands.end(callId);
-      if (!result.ok) setNotice(result.notice);
-      else dispatch({ type: "callEnded", callId });
-      await media.disconnect();
-    }),
+    decline: () => terminate("reject", "callRejected"),
+    cancel: () => terminate("cancel", "callCancelled"),
+    end: () => terminate("end", "callEnded"),
     toggleMute: async () => {
       const muted = !stateRef.current.current.muted;
       await media.setMuted(muted);
@@ -581,7 +506,7 @@ export function CallProvider({
       media.setVideoQualityPreference(preference);
       writeVideoQualityPreference(preference);
     },
-  }), [audioBlocked, busy, clearCall, commands, connectCall, localVideoStream, media, notice, remoteMuted, remoteVideoTrack, run, speaking, state, videoQualityPreference]);
+  }), [audioBlocked, busy, clearCall, commands, connectCall, localVideoStream, media, notice, remoteMuted, remoteVideoTrack, requestPermissionOverride, run, speaking, state, startCallFlow, terminate, videoQualityPreference]);
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
 }

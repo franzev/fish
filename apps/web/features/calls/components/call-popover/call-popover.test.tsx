@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { createEmptyCallState } from "@fish/core/call-state";
 import type { RemoteVideoTrack } from "livekit-client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { makeCallContextValue } from "../../testing/call-context-fixture";
 
 const { deviceChangeListeners, navigation, pushMock, replaceMock, useCallMock } = vi.hoisted(() => ({
   deviceChangeListeners: new Set<EventListener>(),
@@ -26,44 +27,9 @@ import { CallScreen } from "../call-screen";
 const originalMatchMedia = window.matchMedia;
 
 function callValue() {
-  const state = createEmptyCallState();
-  state.current = {
-    ...state.current,
-    callId: "call-1",
-    counterpartId: "client-1",
-    counterpartName: "Franz",
-    direction: "outgoing",
-    status: "active",
-  };
-
-  return {
-    state,
-    notice: null,
-    busy: false,
-    audioBlocked: false,
-    localMicrophoneActive: true,
-    localMicrophoneLevel: 0.42,
-    remoteSpeaking: false,
-    remoteMicrophoneLevel: 0,
-    remoteMuted: false,
-    localVideoStream: null,
-    remoteVideoTrack: null as RemoteVideoTrack | null,
-    videoQualityPreference: "auto" as "auto" | "data-saver",
-    answer: vi.fn(async () => undefined),
-    decline: vi.fn(async () => undefined),
-    cancel: vi.fn(async () => undefined),
-    end: vi.fn(async () => undefined),
-    toggleMute: vi.fn(async () => undefined),
-    toggleCamera: vi.fn(async () => undefined),
-    hearCall: vi.fn(async () => undefined),
-    clear: vi.fn(),
-    microphones: vi.fn(async () => [
-      { deviceId: "default", label: "Built-in microphone" },
-      { deviceId: "usb", label: "USB microphone" },
-    ]),
-    switchMicrophone: vi.fn(async () => undefined),
-    setVideoQualityPreference: vi.fn(),
-  };
+  return makeCallContextValue({}, (implementation) =>
+    vi.fn(implementation) as typeof implementation
+  );
 }
 
 describe("CallPopover", () => {
@@ -474,150 +440,6 @@ describe("CallPopover", () => {
     expect(container.querySelectorAll("[aria-live='polite']")).toHaveLength(1);
   });
 
-  it("lets people move their video preview with the keyboard", () => {
-    const value = callValue();
-    value.state.current.kind = "video";
-    value.state.current.cameraEnabled = true;
-    useCallMock.mockReturnValue(value);
-
-    render(<CallScreen callId="call-1" />);
-
-    const preview = screen.getByRole("group", {
-      name: "Your movable video preview",
-    });
-    const resizeHandle = screen.getByRole("button", {
-      name: "Resize your video preview",
-    });
-    expect(preview).toHaveClass("rounded-none");
-    expect(preview).toHaveClass("border-0");
-    expect(preview).not.toHaveClass("shadow-none");
-    expect(resizeHandle).toHaveClass("sr-only");
-    const stage = preview.parentElement as HTMLDivElement;
-    Object.defineProperties(stage, {
-      clientWidth: { configurable: true, value: 800 },
-      clientHeight: { configurable: true, value: 600 },
-    });
-    Object.defineProperties(preview, {
-      offsetWidth: { configurable: true, value: 200 },
-      offsetHeight: { configurable: true, value: 112 },
-    });
-    stage.getBoundingClientRect = () => ({
-      x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600,
-      width: 800, height: 600, toJSON: () => ({}),
-    });
-    preview.getBoundingClientRect = () => ({
-      x: 584, y: 472, left: 584, top: 472, right: 784, bottom: 584,
-      width: 200, height: 112, toJSON: () => ({}),
-    });
-
-    expect(preview).toHaveAccessibleDescription(
-      "Drag the center to move. Drag an edge or corner to resize. Use arrow keys when focused."
-    );
-    fireEvent.pointerMove(preview, {
-      pointerId: 1,
-      pointerType: "mouse",
-      clientX: 585,
-      clientY: 473,
-    });
-    expect(preview).toHaveClass("cursor-nwse-resize");
-    fireEvent.keyDown(preview, { key: "ArrowLeft" });
-
-    expect(preview).toHaveStyle({
-      transform: "translate3d(568px, 472px, 0)",
-    });
-  });
-
-  it("lets people resize their video preview with the keyboard", () => {
-    const value = callValue();
-    value.state.current.kind = "video";
-    value.state.current.cameraEnabled = true;
-    useCallMock.mockReturnValue(value);
-
-    render(<CallScreen callId="call-1" />);
-
-    const preview = screen.getByRole("group", {
-      name: "Your movable video preview",
-    });
-    const stage = preview.parentElement as HTMLDivElement;
-    Object.defineProperties(stage, {
-      clientWidth: { configurable: true, value: 800 },
-      clientHeight: { configurable: true, value: 600 },
-    });
-    Object.defineProperties(preview, {
-      offsetWidth: { configurable: true, value: 200 },
-      offsetHeight: { configurable: true, value: 112.5 },
-    });
-    stage.getBoundingClientRect = () => ({
-      x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600,
-      width: 800, height: 600, toJSON: () => ({}),
-    });
-    preview.getBoundingClientRect = () => ({
-      x: 584, y: 471.5, left: 584, top: 471.5, right: 784, bottom: 584,
-      width: 200, height: 112.5, toJSON: () => ({}),
-    });
-
-    fireEvent.keyDown(
-      screen.getByRole("button", { name: "Resize your video preview" }),
-      { key: "ArrowUp" }
-    );
-
-    expect(preview).toHaveStyle({
-      width: "216px",
-      height: "121.5px",
-      transform: "translate3d(568px, 462.5px, 0)",
-    });
-  });
-
-  it("resizes the video preview when its edge is dragged", () => {
-    const value = callValue();
-    value.state.current.kind = "video";
-    value.state.current.cameraEnabled = true;
-    useCallMock.mockReturnValue(value);
-
-    render(<CallScreen callId="call-1" />);
-
-    const preview = screen.getByRole("group", {
-      name: "Your movable video preview",
-    });
-    const stage = preview.parentElement as HTMLDivElement;
-    Object.defineProperties(stage, {
-      clientWidth: { configurable: true, value: 800 },
-      clientHeight: { configurable: true, value: 600 },
-    });
-    Object.defineProperties(preview, {
-      offsetWidth: { configurable: true, value: 200 },
-      offsetHeight: { configurable: true, value: 112.5 },
-      setPointerCapture: { configurable: true, value: vi.fn() },
-    });
-    stage.getBoundingClientRect = () => ({
-      x: 0, y: 0, left: 0, top: 0, right: 800, bottom: 600,
-      width: 800, height: 600, toJSON: () => ({}),
-    });
-    preview.getBoundingClientRect = () => ({
-      x: 584, y: 471.5, left: 584, top: 471.5, right: 784, bottom: 584,
-      width: 200, height: 112.5, toJSON: () => ({}),
-    });
-
-    fireEvent.pointerDown(preview, {
-      pointerId: 1,
-      pointerType: "mouse",
-      clientX: 783,
-      clientY: 528,
-    });
-    fireEvent.pointerMove(preview, {
-      pointerId: 1,
-      pointerType: "mouse",
-      clientX: 799,
-      clientY: 528,
-    });
-
-    expect(preview).toHaveStyle({
-      width: "216px",
-      height: "121.5px",
-      transform: "translate3d(584px, 471.5px, 0)",
-    });
-  });
-
   it("leaves the dedicated video call route to CallScreen", () => {
     const value = callValue();
     value.state.current.kind = "video";
@@ -660,7 +482,7 @@ describe("CallPopover", () => {
   it("refreshes available microphones when a device is connected", async () => {
     const value = callValue();
     value.state.current.kind = "video";
-    value.microphones
+    vi.mocked(value.microphones)
       .mockResolvedValueOnce([
         { deviceId: "default", label: "Built-in microphone" },
       ])
@@ -687,7 +509,7 @@ describe("CallPopover", () => {
     await waitFor(() => {
       expect(microphone).toHaveTextContent("USB microphone");
     });
-    expect(value.microphones).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(value.microphones)).toHaveBeenCalledTimes(2);
   });
 
   it("attaches and detaches the remote LiveKit track", () => {

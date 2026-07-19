@@ -44,7 +44,7 @@ export interface CallPopoverViewProps extends Omit<
   presentation?: "popover" | "screen";
 }
 
-function getCallCopy(call: CallSessionState) {
+export function getCallCopy(call: CallSessionState) {
   const name = call.counterpartName ?? "your call partner";
   if (call.status === "requestingPermission") return { heading: `Preparing your call with ${name}`, status: "Your browser may ask for device permission." };
   if (call.status === "ringing" && call.direction === "incoming") return {

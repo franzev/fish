@@ -3,6 +3,10 @@
 import { cn } from "@/lib/utils";
 import { IconVideoOff } from "@tabler/icons-react";
 import {
+  computeResizedBox,
+  type ResizeEdges,
+} from "./resize-geometry";
+import {
   useCallback,
   useEffect,
   useId,
@@ -21,13 +25,6 @@ interface Position {
 interface PreviewSize {
   width: number;
   height: number;
-}
-
-interface ResizeEdges {
-  top: boolean;
-  right: boolean;
-  bottom: boolean;
-  left: boolean;
 }
 
 export interface DraggableVideoPreviewProps {
@@ -162,47 +159,25 @@ export function DraggableVideoPreview({
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
     const resize = resizeRef.current;
     if (resize?.pointerId === event.pointerId) {
-      const horizontalWidth = resize.edges.left
-        ? resize.startWidth - (event.clientX - resize.clientX)
-        : resize.edges.right
-          ? resize.startWidth + (event.clientX - resize.clientX)
-          : resize.startWidth;
-      const verticalWidth = (resize.edges.top
-        ? resize.startHeight - (event.clientY - resize.clientY)
-        : resize.startHeight + (event.clientY - resize.clientY)) * VIDEO_ASPECT_RATIO;
-      const hasHorizontalEdge = resize.edges.left || resize.edges.right;
-      const hasVerticalEdge = resize.edges.top || resize.edges.bottom;
-      const nextWidth = hasHorizontalEdge && hasVerticalEdge
-        ? Math.abs(horizontalWidth - resize.startWidth) >= Math.abs(verticalWidth - resize.startWidth)
-          ? horizontalWidth
-          : verticalWidth
-        : hasHorizontalEdge
-          ? horizontalWidth
-          : verticalWidth;
-      const maximumWidth = Math.min(
-        resize.edges.left
-          ? resize.position.x + resize.startWidth
-          : resize.stageWidth - resize.position.x,
-        (resize.edges.top
-          ? resize.position.y + resize.startHeight
-          : resize.stageHeight - resize.position.y) * VIDEO_ASPECT_RATIO
-      );
       const minimumWidth = minimumWidthRef.current ?? resize.startWidth;
-      const width = clamp(
-        nextWidth,
-        Math.min(minimumWidth, maximumWidth),
-        maximumWidth
+      const box = computeResizedBox(
+        resize.edges,
+        {
+          x: resize.position.x,
+          y: resize.position.y,
+          width: resize.startWidth,
+          height: resize.startHeight,
+        },
+        {
+          x: event.clientX - resize.clientX,
+          y: event.clientY - resize.clientY,
+        },
+        { width: resize.stageWidth, height: resize.stageHeight },
+        minimumWidth,
+        VIDEO_ASPECT_RATIO
       );
-      const height = width / VIDEO_ASPECT_RATIO;
-      setSize({ width, height });
-      setPosition({
-        x: resize.edges.left
-          ? resize.position.x + resize.startWidth - width
-          : resize.position.x,
-        y: resize.edges.top
-          ? resize.position.y + resize.startHeight - height
-          : resize.position.y,
-      });
+      setSize({ width: box.width, height: box.height });
+      setPosition({ x: box.x, y: box.y });
       return;
     }
 

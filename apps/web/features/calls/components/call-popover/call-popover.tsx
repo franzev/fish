@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CallPopoverView } from "../call-popover-view";
+import { CallPopoverView, toCallPopoverViewProps } from "../call-popover-view";
 import { useCall } from "../call-provider";
 
 const terminalStatuses = ["ended", "rejected", "cancelled", "missed", "failed"] as const;
@@ -82,31 +82,11 @@ export function CallPopover({ loadChatPreviewsAction }: CallPopoverProps) {
   return (
     <CallPopoverView
       key={call.callId ?? "idle"}
-      call={call}
-      openChat={openChat}
-      openingChat={openingChat}
-      presentation="popover"
-      notice={context.notice}
-      busy={context.busy}
-      audioBlocked={context.audioBlocked}
-      localMicrophoneActive={context.localMicrophoneActive}
-      localMicrophoneLevel={context.localMicrophoneLevel}
-      remoteSpeaking={context.remoteSpeaking}
-      remoteMicrophoneLevel={context.remoteMicrophoneLevel}
-      remoteMuted={context.remoteMuted}
-      localVideoStream={context.localVideoStream}
-      remoteVideoTrack={context.remoteVideoTrack}
-      videoQualityPreference={context.videoQualityPreference}
-      answer={context.answer}
-      decline={context.decline}
-      cancel={context.cancel}
-      end={context.end}
-      toggleMute={context.toggleMute}
-      toggleCamera={context.toggleCamera}
-      hearCall={context.hearCall}
-      microphones={context.microphones}
-      switchMicrophone={context.switchMicrophone}
-      setVideoQualityPreference={context.setVideoQualityPreference}
+      {...toCallPopoverViewProps(context, {
+        openChat,
+        openingChat,
+        presentation: "popover",
+      })}
     />
   );
 }

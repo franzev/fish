@@ -5,27 +5,23 @@ import type {
   ClientCall,
 } from "@/lib/services";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CallProvider, useCall, type CallMedia } from "./call-provider";
 
-const { connectMock, disconnectMock } = vi.hoisted(() => ({
-  connectMock: vi.fn(async () => undefined),
-  disconnectMock: vi.fn(async () => undefined),
-}));
+const connectMock = vi.fn(async () => undefined);
+const disconnectMock = vi.fn(async () => undefined);
 
-vi.mock("../../client/call-media", () => ({
-  LiveKitCallMedia: class {
-    connect = connectMock;
-    disconnect = disconnectMock;
-    setMuted = vi.fn(async () => undefined);
-    setCameraEnabled = vi.fn(async () => undefined);
-    startAudio = vi.fn(async () => undefined);
-    microphones = vi.fn(async () => []);
-    switchMicrophone = vi.fn(async () => undefined);
-    setVideoQualityPreference = vi.fn();
-  },
-  requestMediaPermission: vi.fn(async () => "granted"),
-}));
-
-import { CallProvider, useCall } from "./call-provider";
+function fakeMedia(): CallMedia {
+  return {
+    connect: connectMock,
+    disconnect: disconnectMock,
+    setMuted: vi.fn(async () => undefined),
+    setCameraEnabled: vi.fn(async () => undefined),
+    startAudio: vi.fn(async () => undefined),
+    microphones: vi.fn(async () => []),
+    switchMicrophone: vi.fn(async () => undefined),
+    setVideoQualityPreference: vi.fn(),
+  };
+}
 
 const ringingCall: ClientCall = {
   id: "call-1",
@@ -95,7 +91,7 @@ describe("CallProvider", () => {
     const { commands, realtime } = services(ringingCall);
 
     render(
-      <CallProvider userId="client-1" commands={commands} realtime={realtime}>
+      <CallProvider userId="client-1" commands={commands} realtime={realtime} media={fakeMedia()} requestPermission={async () => "granted"}>
         <Probe />
       </CallProvider>
     );
@@ -116,7 +112,7 @@ describe("CallProvider", () => {
     const { commands, realtime } = services(activeCall);
 
     render(
-      <CallProvider userId="client-1" commands={commands} realtime={realtime}>
+      <CallProvider userId="client-1" commands={commands} realtime={realtime} media={fakeMedia()} requestPermission={async () => "granted"}>
         <Probe />
       </CallProvider>
     );
@@ -148,7 +144,7 @@ describe("CallProvider", () => {
     );
 
     render(
-      <CallProvider userId="client-1" commands={commands} realtime={realtime}>
+      <CallProvider userId="client-1" commands={commands} realtime={realtime} media={fakeMedia()} requestPermission={async () => "granted"}>
         <Probe />
       </CallProvider>
     );
@@ -175,7 +171,7 @@ describe("CallProvider", () => {
     });
 
     render(
-      <CallProvider userId="client-1" commands={commands} realtime={realtime}>
+      <CallProvider userId="client-1" commands={commands} realtime={realtime} media={fakeMedia()} requestPermission={async () => "granted"}>
         <Probe />
       </CallProvider>
     );

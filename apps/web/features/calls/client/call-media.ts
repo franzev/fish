@@ -14,6 +14,11 @@ import {
   type RemoteVideoTrack,
 } from "livekit-client";
 import type { VideoQualityPreference } from "./video-quality-preference";
+import {
+  isSpeakingActive,
+  speakingActivityUntil,
+  smoothSpeakingLevels,
+} from "./speaking-level";
 
 export interface CallMediaCallbacks {
   onConnected(callId: string): void;
@@ -395,35 +400,35 @@ export class LiveKitCallMedia {
     const readLevel = () => {
       if (this.room !== room) return;
       const now = Date.now();
-      const measuredLevel = room.localParticipant.isMicrophoneEnabled
-        ? Math.min(1, room.localParticipant.audioLevel / 0.3)
-        : 0;
-      const response = measuredLevel > this.localMicrophoneLevel ? 0.35 : 0.12;
-      const smoothedLevel = this.localMicrophoneLevel +
-        (measuredLevel - this.localMicrophoneLevel) * response;
+      const measuredLevel = room.localParticipant.audioLevel;
+      const smoothedLevel = smoothSpeakingLevels(
+        this.localMicrophoneLevel,
+        room.localParticipant.isMicrophoneEnabled ? measuredLevel : 0
+      );
       let measuredRemoteLevel = 0;
       if (!this.remoteMuted) {
         room.remoteParticipants.forEach((participant) => {
           measuredRemoteLevel = Math.max(
             measuredRemoteLevel,
-            Math.min(1, participant.audioLevel / 0.3)
+            participant.audioLevel
           );
         });
       }
-      const remoteResponse = measuredRemoteLevel > this.remoteMicrophoneLevel
-        ? 0.35
-        : 0.12;
-      const smoothedRemoteLevel = this.remoteMicrophoneLevel +
-        (measuredRemoteLevel - this.remoteMicrophoneLevel) * remoteResponse;
-      if (
-        room.localParticipant.isMicrophoneEnabled &&
-        room.localParticipant.audioLevel >= 0.025
-      ) {
-        this.localActiveUntil = now + 250;
-      }
-      const microphoneActive =
-        room.localParticipant.isMicrophoneEnabled &&
-        now < this.localActiveUntil;
+      const smoothedRemoteLevel = smoothSpeakingLevels(
+        this.remoteMicrophoneLevel,
+        measuredRemoteLevel
+      );
+      this.localActiveUntil = speakingActivityUntil(
+        now,
+        measuredLevel,
+        room.localParticipant.isMicrophoneEnabled,
+        this.localActiveUntil
+      );
+      const microphoneActive = isSpeakingActive(
+        now,
+        this.localActiveUntil,
+        room.localParticipant.isMicrophoneEnabled
+      );
       this.updateSpeaking(
         callId,
         microphoneActive,
