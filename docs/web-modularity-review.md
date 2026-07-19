@@ -2,6 +2,8 @@
 
 Date: 2026-07-18 · Scope: `apps/web`, `packages/core`, `packages/supabase` (native apps excluded) · Method: full reads of every non-test source file over ~300 lines, plus churn analysis (`git log --since=2026-04-01`) and test-cost comparison. Analysis only — no code was changed.
 
+> **Execution plan:** the sequenced, task-level plan derived from this review lives in [web-refactoring-plan.md](./web-refactoring-plan.md).
+
 ---
 
 ## 1. Baseline: what "normal" looks like in this repo
@@ -288,3 +290,24 @@ Calibrated to this repo's actual distribution (median 35, p90 ≈ 200):
 **Function-level:** a function that needs a mock to test a *decision* is two functions (decision + effect). Positional argument lists past ~5 become an options object (`sendWithRequestId`'s 9 are the current outlier).
 
 **The deletion test, as the final arbiter:** imagine deleting the module. If its complexity would vanish, it was a pass-through — inline it. If its complexity would reappear across N callers (core reducer: every platform), it is earning its size. That, not line count, is the standard.
+
+## 8. Refactor verification snapshot
+
+The implementation pass re-ran the size sweep after the structural work. The
+largest intentional survivors remain deep infrastructure or integration
+modules; the newly extracted pure logic now has direct table coverage.
+
+| Area | Before | After / disposition |
+| --- | ---: | --- |
+| `chat-client.tsx` | 600+ | 538; retained as the composition root for the chat surface |
+| `use-chat-composer.ts` | 500+ | 241; send and mutation workflows moved into focused hooks |
+| `notification-provider.tsx` | 529 | 463; attention, title, retry, and subscription concerns extracted |
+| `presence-provider.tsx` | 345 | 323; state transitions now live in core fixture-backed reducer |
+| `message-images.tsx` | 394 | removed; replaced by `message-attachments/` component folders |
+| `contracts.ts` | 500+ | forwarding entry; contracts live in bounded-context modules |
+| `chat-client` tests | 3,840 | integration hub retained with added read-state/realtime siblings and colocated hook tests |
+
+Validation completed: full web Vitest suite (223 files, 1,214 tests), 32-test
+Playwright browser suite, workspace typechecks, lint, production build,
+module/service boundary suites, iOS chat vector sync/check, and chat-media
+catalog verification.
