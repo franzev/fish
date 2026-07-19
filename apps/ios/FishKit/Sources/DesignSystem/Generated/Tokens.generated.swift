@@ -54,6 +54,8 @@ public enum Metrics {
     public static let attachmentComposerTile: CGFloat = 96
     public static let attachmentBubbleTile: CGFloat = 160
     public static let attachmentSingleMaxWidth: CGFloat = 320
+    public static let reactionPickerWidth: CGFloat = 360
+    public static let reactionPickerHeight: CGFloat = 480
     public static let callPanel: CGFloat = 360
     public static let callSettings: CGFloat = 336
     public static let callPreview: CGFloat = 112

@@ -99,6 +99,8 @@
     "attachmentComposerTile": 96,
     "attachmentBubbleTile": 160,
     "attachmentSingleMaxWidth": 320,
+    "reactionPickerWidth": 360,
+    "reactionPickerHeight": 480,
     "callPanel": 360,
     "callSettings": 336,
     "callPreview": 112
