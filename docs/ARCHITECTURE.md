@@ -51,7 +51,9 @@ Routes and shared components import the owning feature entry points directly.
 Client-safe barrels never re-export poisoned server entries, and the app does
 not retain legacy re-export files for internal paths.
 
-Application-owned interfaces and DTOs live in `apps/web/lib/services/contracts.ts`.
+Application-owned interfaces and DTOs live in the bounded-context modules under
+`apps/web/lib/services/contracts/`, with `contracts.ts` retained as a stable
+forwarding entry point.
 Routes, features, hooks, and components depend on these capabilities rather
 than SDK clients or generated database rows. Concrete adapters live only in
 `apps/web/lib/services/supabase/`; table names, RPCs, bearer-token transport,

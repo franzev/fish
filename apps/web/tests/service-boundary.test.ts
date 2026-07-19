@@ -130,10 +130,10 @@ describe("service abstraction boundary", () => {
   });
 
   it("keeps application contracts free of transport and persistence shapes", () => {
-    const source = readFileSync(
-      join(process.cwd(), "lib/services/contracts.ts"),
-      "utf-8"
-    );
+    const root = process.cwd();
+    const source = collectProductionFiles(join(root, "lib/services/contracts"))
+      .map((file) => readFileSync(file, "utf-8"))
+      .join("\n");
 
     expect(source).not.toMatch(
       /\bResponse\b|send-message|chat-command|accessToken|bearer|@supabase|@fish\/supabase/
