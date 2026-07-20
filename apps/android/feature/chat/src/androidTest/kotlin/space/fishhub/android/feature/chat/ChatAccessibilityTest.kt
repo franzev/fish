@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
@@ -194,6 +195,28 @@ class ChatAccessibilityTest {
         val fields = composeRule.onAllNodes(hasSetTextAction())
         fields[0].performClick().performImeAction()
         fields[1].assertIsFocused()
+    }
+
+    @Test
+    fun forgotPasswordIsAnAccessibleAction() {
+        var opened = false
+        composeRule.setContent {
+            FishTheme {
+                SignInScreen(
+                    state = ChatRouteUiState.SignedOut(),
+                    onEmailChange = {},
+                    onPasswordChange = {},
+                    onSignIn = {},
+                    onForgotPassword = { opened = true },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithText("Forgot password")
+            .assert(hasClickAction())
+            .performClick()
+        assertTrue(opened)
     }
 
     @Test

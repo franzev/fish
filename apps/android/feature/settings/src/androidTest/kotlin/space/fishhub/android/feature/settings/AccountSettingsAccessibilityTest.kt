@@ -38,5 +38,12 @@ class AccountSettingsAccessibilityTest {
             .assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithContentDescription("Close")
             .assertHeightIsAtLeast(48.dp)
+
+        composeRule.setContent {
+            FishTheme { AccountSettingsPreviewContent(page = "blocked") }
+        }
+        composeRule.onNodeWithText("Sam")
+            .assertHeightIsAtLeast(48.dp)
+            .assertWidthIsAtLeast(48.dp)
     }
 }
