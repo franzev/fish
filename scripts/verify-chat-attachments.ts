@@ -89,6 +89,13 @@ const tinyDocx = Uint8Array.from(Buffer.from(
   "base64",
 ));
 
+const tinyM4a = Uint8Array.from([
+  0, 0, 0, 20, ...Buffer.from("ftyp"), ...Buffer.from("M4A "), 0, 0, 0, 0,
+  ...Buffer.from("M4A "),
+  0, 0, 0, 11, ...Buffer.from("mdat"), 1, 2, 3,
+  0, 0, 0, 12, ...Buffer.from("moov"), 0, 0, 0, 1,
+]);
+
 async function initialize(
   client: SupabaseClient,
   input: { name: string; mime: string; bytes: number; hash?: string | null; request?: string },
@@ -146,6 +153,15 @@ try {
   if (typeof documentRow?.id === "string") createdAttachmentIds.push(documentRow.id);
   report("10 MiB document source boundary is accepted", !document.error, document.error?.message);
   report("document name is sanitized", documentRow?.original_name === "report.pdf");
+
+  const voice = await initialize(owner, {
+    name: "Voice message.m4a",
+    mime: "audio/mp4",
+    bytes: tinyM4a.length,
+  });
+  const voiceRow = rowOf(voice);
+  if (typeof voiceRow?.id === "string") createdAttachmentIds.push(voiceRow.id);
+  report("audio/mp4 voice attachment initializes as a file", !voice.error && voiceRow?.kind === "file", voice.error?.message);
 
   const badHash = await initialize(owner, {
     name: "report.pdf",

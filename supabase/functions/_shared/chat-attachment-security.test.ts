@@ -3,6 +3,9 @@ import test from "node:test";
 import {
   inspectNormalizedImage,
   inspectDocument,
+  extensionForDocumentMime,
+  kindForSourceMime,
+  sourceNameMatchesMime,
   isSupportedNormalizedImage,
   isValidSha256,
   sanitizeAttachmentName,
@@ -113,6 +116,22 @@ function findSignature(bytes: Uint8Array, signature: number): number {
 
 const docxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
+function makeM4a(): Uint8Array {
+  const encoder = new TextEncoder();
+  const box = (type: string, payload: Uint8Array): number[] => [
+    ...u32(payload.length + 8).reverse(),
+    ...encoder.encode(type),
+    ...payload,
+  ];
+  return Uint8Array.from([
+    ...box("ftyp", Uint8Array.from([
+      ...encoder.encode("M4A "), 0, 0, 0, 0, ...encoder.encode("M4A "),
+    ])),
+    ...box("mdat", Uint8Array.from([1, 2, 3])),
+    ...box("moov", Uint8Array.from([0, 0, 0, 1])),
+  ]);
+}
+
 function makeJpeg(width: number, height: number): Uint8Array {
   return Uint8Array.from([
     0xff, 0xd8,
@@ -147,6 +166,22 @@ test("attachment names are neutral for photos and safe for documents", () => {
   assert.equal(sanitizeAttachmentName("../private/\u202esecret\u0000 report.pdf", "file"), "secret report.pdf");
   assert.equal(sanitizeAttachmentName("..", "file"), "File");
   assert.ok([...sanitizeAttachmentName(`${"a".repeat(300)}.pdf`, "file")].length <= 180);
+});
+
+test("voice attachments use the file contract and require an MP4 container", async () => {
+  const valid = makeM4a();
+  assert.equal(extensionForDocumentMime("audio/mp4"), "m4a");
+  assert.equal(kindForSourceMime("audio/mp4"), "file");
+  assert.equal(sourceNameMatchesMime("Voice message.m4a", "audio/mp4"), true);
+  assert.deepEqual(await inspectDocument(valid, "audio/mp4"), { ok: true });
+  assert.deepEqual(await inspectDocument(valid.slice(0, -1), "audio/mp4"), {
+    ok: false,
+    code: "invalid_file",
+  });
+  assert.deepEqual(await inspectDocument(Uint8Array.from([1, 2, 3]), "audio/mp4"), {
+    ok: false,
+    code: "invalid_file",
+  });
 });
 
 test("sha256 is deterministic and strictly validated", async () => {

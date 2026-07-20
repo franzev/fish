@@ -41,6 +41,7 @@ export type ScanVerdict =
   | { verdict: "unavailable"; reason: "not_configured" | "provider_unavailable" };
 
 const fileExtensions: Readonly<Record<string, string>> = {
+  "audio/mp4": "m4a",
   "application/pdf": "pdf",
   "text/plain": "txt",
   "text/csv": "csv",
@@ -531,6 +532,7 @@ async function inspectOoxml(bytes: Uint8Array, mime: string): Promise<FileInspec
 }
 
 export async function inspectDocument(bytes: Uint8Array, mime: string): Promise<FileInspection> {
+  if (mime === "audio/mp4") return inspectAudioMp4(bytes);
   if (mime === "application/pdf") {
     const header = new TextDecoder().decode(bytes.slice(0, 8));
     const tail = new TextDecoder().decode(bytes.slice(Math.max(0, bytes.length - 2048)));
@@ -548,6 +550,57 @@ export async function inspectDocument(bytes: Uint8Array, mime: string): Promise<
     }
   }
   return await inspectOoxml(bytes, mime);
+}
+
+function readBigEndianUint32(bytes: Uint8Array, offset: number): number {
+  return ((bytes[offset]! * 0x1000000)
+    + (bytes[offset + 1]! << 16)
+    + (bytes[offset + 2]! << 8)
+    + bytes[offset + 3]!) >>> 0;
+}
+
+function inspectAudioMp4(bytes: Uint8Array): FileInspection {
+  let offset = 0;
+  let hasFileType = false;
+  let hasMovie = false;
+  let hasMediaData = false;
+  let boxCount = 0;
+
+  while (offset < bytes.length) {
+    if (bytes.length - offset < 8 || boxCount++ > 256) {
+      return { ok: false, code: "invalid_file" };
+    }
+    const declaredSize = readBigEndianUint32(bytes, offset);
+    const type = new TextDecoder().decode(bytes.slice(offset + 4, offset + 8));
+    let headerSize = 8;
+    let boxSize = declaredSize;
+    if (declaredSize === 1) {
+      if (bytes.length - offset < 16) return { ok: false, code: "invalid_file" };
+      const high = readBigEndianUint32(bytes, offset + 8);
+      const low = readBigEndianUint32(bytes, offset + 12);
+      if (high !== 0) return { ok: false, code: "invalid_file" };
+      boxSize = low;
+      headerSize = 16;
+    } else if (declaredSize === 0) {
+      boxSize = bytes.length - offset;
+    }
+    if (boxSize < headerSize || boxSize > bytes.length - offset) {
+      return { ok: false, code: "invalid_file" };
+    }
+    if (type === "ftyp") {
+      if (boxSize < headerSize + 8) return { ok: false, code: "invalid_file" };
+      hasFileType = true;
+    } else if (type === "moov" && boxSize > headerSize) {
+      hasMovie = true;
+    } else if (type === "mdat" && boxSize > headerSize) {
+      hasMediaData = true;
+    }
+    offset += boxSize;
+  }
+
+  return hasFileType && hasMovie && hasMediaData
+    ? { ok: true }
+    : { ok: false, code: "invalid_file" };
 }
 
 export async function scanDocument(input: {
