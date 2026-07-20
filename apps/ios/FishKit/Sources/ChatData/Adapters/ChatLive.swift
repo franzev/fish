@@ -15,20 +15,58 @@ public struct ChatLiveSession: Sendable {
 }
 
 public enum ChatLive {
+    /// Restores the signed-in session from Supabase's platform storage.
+    /// Returns `nil` when this installation has no valid session yet.
+    public static func restore(
+        supabaseUrl: URL,
+        anonKey: String
+    ) async throws -> ChatLiveSession? {
+        let client = makeClient(supabaseUrl: supabaseUrl, anonKey: anonKey)
+        guard let auth = try? await client.auth.session else { return nil }
+        return await makeSession(client: client, auth: auth, supabaseUrl: supabaseUrl, anonKey: anonKey)
+    }
+
     public static func signIn(
         supabaseUrl: URL,
         anonKey: String,
         email: String,
-        password: String
+        password: String,
+        persistSession: Bool = true
     ) async throws -> ChatLiveSession {
-        let client = SupabaseClient(
+        let client = makeClient(
+            supabaseUrl: supabaseUrl,
+            anonKey: anonKey,
+            persistSession: persistSession
+        )
+        let auth = try await client.auth.signIn(email: email, password: password)
+        return await makeSession(client: client, auth: auth, supabaseUrl: supabaseUrl, anonKey: anonKey)
+    }
+
+    private static func makeClient(
+        supabaseUrl: URL,
+        anonKey: String,
+        persistSession: Bool = true
+    ) -> SupabaseClient {
+        SupabaseClient(
             supabaseURL: supabaseUrl,
             supabaseKey: anonKey,
             options: SupabaseClientOptions(
-                auth: .init(storage: ChatInMemoryAuthStorage())
+                auth: .init(
+                    storage: persistSession
+                        ? AuthClient.Configuration.defaultLocalStorage
+                        : ChatInMemoryAuthStorage(),
+                    storageKey: "fish.auth"
+                )
             )
         )
-        let auth = try await client.auth.signIn(email: email, password: password)
+    }
+
+    private static func makeSession(
+        client: SupabaseClient,
+        auth: Session,
+        supabaseUrl: URL,
+        anonKey: String
+    ) async -> ChatLiveSession {
         let userId = auth.user.id.uuidString.lowercased()
         await client.realtimeV2.setAuth(auth.accessToken)
         let backend = ChatBackendConfiguration(
@@ -64,6 +102,97 @@ public enum ChatLive {
 
     public static func signOut(_ session: ChatLiveSession) async {
         try? await session.client.auth.signOut()
+    }
+
+    public static func registerPushDevice(
+        _ session: ChatLiveSession,
+        installationId: UUID,
+        providerInstallationId: String,
+        platform: String,
+        appVersion: String
+    ) async throws {
+        let request = PushDeviceCommand(
+            action: "register",
+            installationId: installationId,
+            providerInstallationId: providerInstallationId,
+            platform: platform,
+            appVersion: appVersion
+        )
+        try await session.client.functions.invoke(
+            "push-command",
+            options: FunctionInvokeOptions(body: request)
+        )
+    }
+
+    public static func unregisterPushDevice(
+        _ session: ChatLiveSession,
+        installationId: UUID
+    ) async throws {
+        try await session.client.functions.invoke(
+            "push-command",
+            options: FunctionInvokeOptions(
+                body: PushDeviceCommand(
+                    action: "unregister",
+                    installationId: installationId
+                )
+            )
+        )
+    }
+}
+
+private struct PushDeviceCommand: Encodable, Sendable {
+    let action: String
+    let installationId: UUID
+    let providerInstallationId: String?
+    let platform: String?
+    let appVersion: String?
+
+    init(
+        action: String,
+        installationId: UUID,
+        providerInstallationId: String? = nil,
+        platform: String? = nil,
+        appVersion: String? = nil
+    ) {
+        self.action = action
+        self.installationId = installationId
+        self.providerInstallationId = providerInstallationId
+        self.platform = platform
+        self.appVersion = appVersion
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(action, forKey: .action)
+        try container.encode(installationId, forKey: .installationId)
+        try container.encodeIfPresent(providerInstallationId, forKey: .providerInstallationId)
+        try container.encodeIfPresent(platform, forKey: .platform)
+        try container.encodeIfPresent(appVersion, forKey: .appVersion)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case action
+        case installationId
+        case providerInstallationId
+        case platform
+        case appVersion
+    }
+}
+
+private final class ChatInMemoryAuthStorage: AuthLocalStorage, @unchecked Sendable {
+    private var values: [String: Data] = [:]
+    private let lock = NSLock()
+
+    func store(key: String, value: Data) throws {
+        lock.withLock { values[key] = value }
+    }
+
+    func retrieve(key: String) throws -> Data? {
+        lock.withLock { values[key] }
+    }
+
+    func remove(key: String) throws {
+        lock.withLock { values[key] = nil }
     }
 }
 
@@ -106,22 +235,5 @@ private func attentionEvents(
             continuation.finish()
         }
         continuation.onTermination = { _ in task.cancel() }
-    }
-}
-
-private final class ChatInMemoryAuthStorage: AuthLocalStorage, @unchecked Sendable {
-    private var values: [String: Data] = [:]
-    private let lock = NSLock()
-
-    func store(key: String, value: Data) throws {
-        lock.withLock { values[key] = value }
-    }
-
-    func retrieve(key: String) throws -> Data? {
-        lock.withLock { values[key] }
-    }
-
-    func remove(key: String) throws {
-        lock.withLock { values[key] = nil }
     }
 }

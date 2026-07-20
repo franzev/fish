@@ -28,6 +28,7 @@
     "ios:guard": "node scripts/ios-token-guard.mjs",
     "ios:build": "cd apps/ios/FishKit && xcodebuild build -scheme FishKit-Package -destination \"platform=iOS Simulator,name=${FISH_IOS_SIM:-iPhone 17 Pro}\"",
     "ios:test": "cd apps/ios/FishKit && xcodebuild test -scheme FishKit-Package -destination \"platform=iOS Simulator,name=${FISH_IOS_SIM:-iPhone 17 Pro}\"",
+    "ios:app:build": "cd apps/ios/App && xcodegen generate --spec project.yml && xcodebuild build -project Fish.xcodeproj -scheme Fish -destination \"platform=iOS Simulator,name=${FISH_IOS_SIM:-iPhone 17 Pro}\" CODE_SIGNING_ALLOWED=NO",
     "ios:catalog": "cd apps/ios/Catalog && xcodegen generate && xcodebuild test -project Catalog.xcodeproj -scheme Catalog -destination \"platform=iOS Simulator,name=${FISH_IOS_SIM:-iPhone 17 Pro}\"",
     "storybook": "pnpm --filter @fish/web storybook",
     "test:storybook": "pnpm --filter @fish/web test:storybook",

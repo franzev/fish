@@ -1,0 +1,362 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1EAEB9D218D1DFE18737D20D /* ChatData in Frameworks */ = {isa = PBXBuildFile; productRef = BF3F734419E9BEC0FF504B65 /* ChatData */; };
+		5C24F41D8C2845280E583402 /* UIComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 20E83DC5C6A63E1B069F468B /* UIComponents */; };
+		D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 83168A43E32F0C01BDF1133F /* DesignSystem */; };
+		F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E5EB18FA42EA4D7E193BB /* FishApp.swift */; };
+		FFC50F51A759B18B9B766856 /* PersonalChat in Frameworks */ = {isa = PBXBuildFile; productRef = B821BA6D07778D0EA77672B9 /* PersonalChat */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		227E5EB18FA42EA4D7E193BB /* FishApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishApp.swift; sourceTree = "<group>"; };
+		323AD597C6079F6C90636877 /* Fish.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Fish.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4775B54857D0E072B6B0E150 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4B52387CF5B0AAFF2A75259B /* Fish.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fish.entitlements; sourceTree = "<group>"; };
+		89AAFB7A8309ADCB125EF882 /* FishKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FishKit; path = ../FishKit; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		820B7C1913A5B772A360462A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */,
+				5C24F41D8C2845280E583402 /* UIComponents in Frameworks */,
+				1EAEB9D218D1DFE18737D20D /* ChatData in Frameworks */,
+				FFC50F51A759B18B9B766856 /* PersonalChat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		693237D25CA975BA04083AE6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				323AD597C6079F6C90636877 /* Fish.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		83F82C8B932691E65BEAE422 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				4B52387CF5B0AAFF2A75259B /* Fish.entitlements */,
+				227E5EB18FA42EA4D7E193BB /* FishApp.swift */,
+				4775B54857D0E072B6B0E150 /* Info.plist */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		C1D185FC05B680CC7DF6A847 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				89AAFB7A8309ADCB125EF882 /* FishKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		F8A1B14E66BDF492A23335A1 = {
+			isa = PBXGroup;
+			children = (
+				C1D185FC05B680CC7DF6A847 /* Packages */,
+				83F82C8B932691E65BEAE422 /* Sources */,
+				693237D25CA975BA04083AE6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2A3B6237B79DEFDA31997CAE /* Fish */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D8437C1E46241A5A504039C1 /* Build configuration list for PBXNativeTarget "Fish" */;
+			buildPhases = (
+				5860723F07814D680C1F5B07 /* Sources */,
+				820B7C1913A5B772A360462A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Fish;
+			packageProductDependencies = (
+				83168A43E32F0C01BDF1133F /* DesignSystem */,
+				20E83DC5C6A63E1B069F468B /* UIComponents */,
+				BF3F734419E9BEC0FF504B65 /* ChatData */,
+				B821BA6D07778D0EA77672B9 /* PersonalChat */,
+			);
+			productName = Fish;
+			productReference = 323AD597C6079F6C90636877 /* Fish.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		93ED2E134B0B4E7EC2BC34C6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 2F8DA3C5F973FFCBD8E50593 /* Build configuration list for PBXProject "Fish" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F8A1B14E66BDF492A23335A1;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				34BD44FB3A63C09C7CCB6C74 /* XCLocalSwiftPackageReference "../FishKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 693237D25CA975BA04083AE6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2A3B6237B79DEFDA31997CAE /* Fish */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5860723F07814D680C1F5B07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		31F97F34EB1415FC5FF4DA39 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6312587947E80FF74A0901C5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = development;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/Fish.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FISH;
+				KLIPY_API_KEY = "${FISH_KLIPY_API_KEY}";
+				KLIPY_CLIENT_KEY = "${FISH_KLIPY_CLIENT_KEY}";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.fish.mobile;
+				SDKROOT = iphoneos;
+				SUPABASE_ANON_KEY = "${FISH_SUPABASE_ANON_KEY}";
+				SUPABASE_URL = "${FISH_SUPABASE_URL}";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CCEAAD8130378805AF0FC340 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = production;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/Fish.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FISH;
+				KLIPY_API_KEY = "${FISH_KLIPY_API_KEY}";
+				KLIPY_CLIENT_KEY = "${FISH_KLIPY_CLIENT_KEY}";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.fish.mobile;
+				SDKROOT = iphoneos;
+				SUPABASE_ANON_KEY = "${FISH_SUPABASE_ANON_KEY}";
+				SUPABASE_URL = "${FISH_SUPABASE_URL}";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D2928437F44CC20291A818A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2F8DA3C5F973FFCBD8E50593 /* Build configuration list for PBXProject "Fish" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				31F97F34EB1415FC5FF4DA39 /* Debug */,
+				D2928437F44CC20291A818A0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D8437C1E46241A5A504039C1 /* Build configuration list for PBXNativeTarget "Fish" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6312587947E80FF74A0901C5 /* Debug */,
+				CCEAAD8130378805AF0FC340 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		34BD44FB3A63C09C7CCB6C74 /* XCLocalSwiftPackageReference "../FishKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../FishKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		20E83DC5C6A63E1B069F468B /* UIComponents */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = UIComponents;
+		};
+		83168A43E32F0C01BDF1133F /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		B821BA6D07778D0EA77672B9 /* PersonalChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PersonalChat;
+		};
+		BF3F734419E9BEC0FF504B65 /* ChatData */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ChatData;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 93ED2E134B0B4E7EC2BC34C6 /* Project object */;
+}

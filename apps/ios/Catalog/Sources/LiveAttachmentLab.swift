@@ -69,7 +69,8 @@ final class LiveChatLab {
                 supabaseUrl: configuration.supabaseUrl,
                 anonKey: configuration.anonKey,
                 email: configuration.email,
-                password: configuration.password
+                password: configuration.password,
+                persistSession: false
             )
             self.session = session
             currentUserId = session.userId

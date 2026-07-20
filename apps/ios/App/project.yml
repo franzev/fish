@@ -1,0 +1,58 @@
+name: Fish
+options:
+  bundleIdPrefix: app.fish
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  FishKit:
+    path: ../FishKit
+targets:
+  Fish:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    dependencies:
+      - package: FishKit
+        product: DesignSystem
+      - package: FishKit
+        product: UIComponents
+      - package: FishKit
+        product: ChatData
+      - package: FishKit
+        product: PersonalChat
+    info:
+      path: Sources/Info.plist
+      properties:
+        UILaunchScreen: {}
+        CFBundleDisplayName: FISH
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: app.fish.mobile
+            CFBundleURLSchemes: [fish]
+        NSPhotoLibraryUsageDescription: FISH uses photos you choose to share in a conversation.
+        NSPhotoLibraryAddUsageDescription: FISH can save photos you choose to your library.
+        SUPABASE_URL: $(SUPABASE_URL)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+        KLIPY_API_KEY: $(KLIPY_API_KEY)
+        KLIPY_CLIENT_KEY: $(KLIPY_CLIENT_KEY)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.fish.mobile
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_ENTITLEMENTS: Sources/Fish.entitlements
+        SUPABASE_URL: ${FISH_SUPABASE_URL}
+        SUPABASE_ANON_KEY: ${FISH_SUPABASE_ANON_KEY}
+        KLIPY_API_KEY: ${FISH_KLIPY_API_KEY}
+        KLIPY_CLIENT_KEY: ${FISH_KLIPY_CLIENT_KEY}
+        APS_ENVIRONMENT: development
+        INFOPLIST_KEY_CFBundleDisplayName: FISH
+      configs:
+        Release:
+          APS_ENVIRONMENT: production
+    schemes:
+      Fish:
+        build:
+          targets:
+            Fish: all

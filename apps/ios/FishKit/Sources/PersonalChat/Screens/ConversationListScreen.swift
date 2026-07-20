@@ -9,6 +9,7 @@ public struct ConversationListScreen: View {
     private let notice: String?
     private let onOpen: (String) -> Void
     private let onRetry: (() -> Void)?
+    private let trailing: TopBarAction?
     private let now: Date
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -18,6 +19,7 @@ public struct ConversationListScreen: View {
         notice: String? = nil,
         onOpen: @escaping (String) -> Void,
         onRetry: (() -> Void)? = nil,
+        trailing: TopBarAction? = nil,
         now: Date = Date()
     ) {
         self.conversations = conversations
@@ -25,12 +27,13 @@ public struct ConversationListScreen: View {
         self.notice = notice
         self.onOpen = onOpen
         self.onRetry = onRetry
+        self.trailing = trailing
         self.now = now
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            TopBar(title: "Messages")
+            TopBar(title: "Messages", trailing: trailing)
             if conversations.isEmpty {
                 Spacer()
                 VStack(spacing: Spacing.md) {
