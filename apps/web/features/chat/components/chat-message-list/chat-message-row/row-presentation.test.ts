@@ -46,9 +46,10 @@ describe("deriveRowPresentation", () => {
   it("adds a divider when the local calendar day changes", () => {
     const previous = message({ createdAt: "2026-07-18T15:59:59.999Z" });
     const current = message({ createdAt: "2026-07-18T16:00:00.000Z" });
-    expect(deriveRowPresentation(current, previous, undefined, context).dayDividerLabel).toBe(
-      "Today"
-    );
+    expect(
+      deriveRowPresentation(current, previous, undefined, context, new Date(current.createdAt))
+        .dayDividerLabel
+    ).toBe("Today");
   });
 
   it("derives media widths without embedding layout branching in the row", () => {

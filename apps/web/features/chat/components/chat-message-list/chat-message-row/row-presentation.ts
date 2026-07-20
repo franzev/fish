@@ -42,7 +42,8 @@ export function deriveRowPresentation(
   message: LocalMessage,
   previous: LocalMessage | undefined,
   next: LocalMessage | undefined,
-  context: RowPresentationContext
+  context: RowPresentationContext,
+  now = new Date()
 ): RowPresentation {
   const mine = message.senderId === context.currentUserId;
   const groupedWithPrevious = belongsToSameMessageGroup(previous, message);
@@ -65,7 +66,7 @@ export function deriveRowPresentation(
       new Date(previous.createdAt),
       new Date(message.createdAt)
     )
-      ? formatChatDayLabel(message.createdAt)
+      ? formatChatDayLabel(message.createdAt, now)
       : null;
 
   return {
