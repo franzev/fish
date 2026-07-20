@@ -23,6 +23,14 @@ pnpm typecheck
 
 **Coach-first, code-second.** Don't build a feature until a coach has proven the technique works manually with a real client. If asked to build a learning feature (exercises, the community feed, gamification), check it has been validated first; if unclear, ask rather than assume.
 
+## Native mobile scope (iOS and Android)
+
+The native mobile apps are intentionally **direct-chat-only for now**. Keep
+their product surface centered on direct conversations and capabilities that
+support those conversations. Do not propose or add mobile home/dashboard,
+lesson booking, assigned-work, learning-exercise, community, marketplace, or
+other web-product surfaces unless the user explicitly changes this scope.
+
 ## Design rules (non-negotiable, apply to every screen)
 
 These are the reason the UI looks sparse. Do not "improve" screens by adding options.
