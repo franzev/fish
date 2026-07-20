@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.0";
+import { dispatchDirectMessageApns } from "./apns.ts";
 
 type ServiceAccount = {
   project_id: string;
@@ -138,20 +139,28 @@ export async function dispatchDirectMessagePush(
   admin: SupabaseClient,
   push: DirectMessagePush,
 ): Promise<void> {
-  await dispatchAndroidDataPush(admin, {
-    recipientIds: push.recipientIds,
-    data: {
-      version: "1",
-      type: "chat_message",
+  await Promise.all([
+    dispatchAndroidDataPush(admin, {
+      recipientIds: push.recipientIds,
+      data: {
+        version: "1",
+        type: "chat_message",
+        conversationId: push.conversationId,
+        messageId: push.messageId,
+        senderId: push.senderId,
+        senderName: push.senderName,
+      },
+      priority: "HIGH",
+      ttl: "604800s",
+      collapseKey: `fish_message_${push.conversationId}`,
+    }),
+    dispatchDirectMessageApns(admin, {
       conversationId: push.conversationId,
       messageId: push.messageId,
-      senderId: push.senderId,
       senderName: push.senderName,
-    },
-    priority: "HIGH",
-    ttl: "604800s",
-    collapseKey: `fish_message_${push.conversationId}`,
-  });
+      recipientIds: push.recipientIds,
+    }),
+  ]);
 }
 
 async function dispatchAndroidDataPush(
@@ -167,6 +176,7 @@ async function dispatchAndroidDataPush(
   await admin.from("push_devices")
     .update({ revoked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .is("revoked_at", null)
+    .eq("platform", "android")
     .lt("last_seen_at", staleBefore);
   const { data: devices, error } = await admin.from("push_devices")
     .select("id, provider_installation_id")

@@ -57,5 +57,8 @@ verify_jwt = true
 [functions.presence-command]
 verify_jwt = true
 
+[functions.push-command]
+verify_jwt = true
+
 [functions.livekit-webhook]
 verify_jwt = false

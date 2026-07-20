@@ -16,7 +16,7 @@ const commandSchema = z.discriminatedUnion("action", [
     action: z.literal("register"),
     installationId: z.uuid(),
     providerInstallationId: z.string().trim().min(8).max(256),
-    platform: z.literal("android"),
+    platform: z.enum(["android", "ios"]),
     appVersion: z.string().trim().min(1).max(64),
   }),
   z.object({
@@ -32,12 +32,12 @@ function calmError(code: string, error: string, status: number): Response {
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") {
-    return calmError("method_not_allowed", "Use a post request for call notifications.", 405);
+    return calmError("method_not_allowed", "Use a post request for notifications.", 405);
   }
 
   const parsed = commandSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return calmError("invalid_request", "Call notifications are not ready yet.", 400);
+    return calmError("invalid_request", "Notifications are not ready yet.", 400);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? new URL(request.url).origin;
@@ -45,7 +45,7 @@ Deno.serve(async (request) => {
     Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
   const authHeader = request.headers.get("Authorization") ?? "";
   if (!publishableKey || !authHeader) {
-    return calmError("not_authenticated", "Sign in to use call notifications.", 401);
+    return calmError("not_authenticated", "Sign in to use notifications.", 401);
   }
 
   const caller = createClient(supabaseUrl, publishableKey, {
@@ -54,7 +54,7 @@ Deno.serve(async (request) => {
   });
   const { data: userData } = await caller.auth.getUser();
   if (!userData.user) {
-    return calmError("not_authenticated", "Sign in to use call notifications.", 401);
+    return calmError("not_authenticated", "Sign in to use notifications.", 401);
   }
 
   const command = parsed.data;
@@ -73,7 +73,7 @@ Deno.serve(async (request) => {
     console.error("push command failed", { action: command.action, code: error.code });
     return calmError(
       "push_unavailable",
-      "Call notifications could not update. In-app calls still work.",
+      "Notifications could not update. Messages still work in the app.",
       503,
     );
   }
