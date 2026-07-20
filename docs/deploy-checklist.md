@@ -27,7 +27,7 @@ is done.
 ## 3. Push migrations to the hosted database
 
 - [ ] Run `supabase db push` against the linked project. This applies every
-      committed migration through `0049_android_call_push_devices.sql`, including profiles,
+      committed migration through `0054_ios_direct_message_push.sql`, including profiles,
       client profiles, assignments, chat, realtime features, reactions, the
       seeded `general` channel, call control plane, presence, notifications,
       and conflict-safe lesson slots.
@@ -52,6 +52,11 @@ is done.
       store its complete JSON as the `FCM_SERVICE_ACCOUNT_JSON` Edge Function
       secret, and deploy `push-command` with JWT verification. Never expose the
       service account to Android, web, logs, or a client-readable table.
+- [ ] For iOS direct-message alerts, create an APNs signing key and store
+      `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY`, and
+      `APNS_ENDPOINT` as Edge Function secrets. Use the production endpoint for
+      App Store builds and the sandbox endpoint for development builds. Never
+      put the `.p8` key in the app or repository.
 - [ ] Confirm authenticated users can execute `register_push_device` and
       `unregister_push_device`, cannot select `push_devices`, and cannot mutate
       another user's installation. Verify a provider `UNREGISTERED` response

@@ -1,7 +1,7 @@
 # Native iOS chat parity implementation plan (live spine + web-parity features)
 
-Status: implemented — phases 1–8 complete; phase 9 planning complete and its
-credential/device-gated implementation remains intentionally deferred.
+Status: implemented — phases 1–8 complete; the Phase 9 direct-message slice is
+implemented, with credentials/device verification and iOS call push deferred.
 Written 2026-07-18 from a full parity audit of the web direct-chat feature set,
 the iOS codebase, the Supabase backend contracts, and the existing iOS plan
 documents. The companion audit (feature matrix, per-feature evidence, and the
@@ -38,10 +38,9 @@ spine** and the parity features stacked on it.
   header), no read-state or typing transport, `onSend` wired only in the lab.
 - Message bodies render as plain `Text` (`PersonalChat/Views/MessageBubble.swift:106`)
   while web renders a sanitized markdown subset — same message, different look.
-- Backend is ready for every phase below except push: all needed RPCs, Edge
-  Functions, realtime channels, and iOS JPEG staging (migration `0051`)
-  already exist. Push infra is Android-calls-only (FCM); iOS push is the one
-  gap that needs backend work, and it is deliberately staged last.
+- Backend is ready for direct chat and the iOS direct-message push slice. The
+  `0054_ios_direct_message_push` migration extends push registration and the
+  APNs dispatcher runs beside Android FCM. iOS call push remains deferred.
 
 ### Included
 
@@ -51,14 +50,14 @@ spine** and the parity features stacked on it.
 - Realtime receive, keyset pagination, reconnect gap-backfill, read receipts,
   unread transport, typing transport.
 - A production-shaped `ConversationStore` fusing chat + presence + connection
-  state behind the existing stateless views, hosted in a Catalog live lab
-  until the app-shell/auth milestone provides a production host.
+  state behind the existing stateless views, hosted by the native iOS app shell
+  and still available in the Catalog live lab for isolated verification.
 - Message actions: reply, edit, delete, reactions, report GIF.
 - Attachments bound to the live send/receive path.
 - Conversation list + navigation attention (assigned-never-chosen rules).
 - Call entry from the chat header; real transcript in the in-call pane.
-- A plan document (not implementation) for the notifications/push milestone,
-  plus iOS ADR coverage of the decisions made here.
+- The direct-message APNs implementation and the remaining notification plan
+  for iOS call push, plus iOS ADR coverage of the decisions made here.
 
 ### Excluded (deliberate; matching web's own deferrals and product rules)
 
@@ -67,9 +66,8 @@ spine** and the parity features stacked on it.
 - Link previews (`message_embeds` has no producer anywhere).
 - Copy/forward/pin actions (absent on web; copy is a product decision, not
   parity — do not add without one).
-- A production app shell, auth/session manager, or push implementation —
-  separate workstreams; every phase here stays deliverable behind Catalog
-  labs with injected dev sessions, exactly like calls and presence staged.
+- iOS call push (PushKit/CallKit), badge state-vector parity, and notification
+  action categories — separate workstreams until the call experience is ready.
 - Durable (cross-relaunch) drafts — web loses drafts on reload too; parity
   is per-conversation in-memory drafts. A durable outbox is a product call.
 
@@ -83,8 +81,9 @@ spine** and the parity features stacked on it.
 - **P1 — daily-use parity (Phases 2, 5, 6, 7, 8).** Mutually independent
   once the spine exists; each is a small, shippable slice. Markdown parity
   (Phase 2) has no dependencies at all and can land first or in parallel.
-- **P2 — platform maturity (Phase 9).** Notifications/push. Needs its own
-  plan doc first, backend additions, APNs credentials, and device testing.
+- **P2 — platform maturity (Phase 9).** Direct-message APNs is implemented;
+  APNs credentials and physical-device testing remain release gates. Call push
+  is deferred.
 
 ---
 
@@ -358,16 +357,16 @@ XL/RTL); busy-guard unit; catalog audit on the fused page; lab check that
 starting a call from the header reaches the existing `CallSessionModel`
 lifecycle.
 
-### Phase 9 — Notifications + push (P2; plan doc first; externally gated)
+### Phase 9 — Notifications + push (P2; direct messages landed; call push gated)
 
-Write `docs/ios-notifications-push-plan.md` before any code: APNs + PushKit/
-CallKit for call ringing (the calling plan's documented deferral), a
-`push_devices` platform extension (backend change — the only one in this
-whole plan), app badge from navigation attention, a minimal notification
-surface replaying `notification-state-vectors.json`, and deep-links (incl.
-the Phase 8 missed-call landing). Implementation is gated on APNs
-credentials, entitlements, physical-device testing, and the product pass on
-notification categories — none of which a code-only session can verify.
+The direct-message slice is implemented: the native app registers APNs tokens,
+the backend stores iOS devices and dispatches message alerts beside Android
+FCM, and notification taps resolve authorized conversation deep-links after
+auth restoration. Remaining work is externally gated: install APNs
+credentials, verify development/production entitlements on physical devices,
+and decide whether iOS call push should use PushKit/CallKit. App badge state
+vectors and notification actions remain deferred until those product decisions
+are made.
 
 ---
 
@@ -408,5 +407,6 @@ server-side recency (RPC body not read line-by-line); supabase-swift joins
 the non-private typing topic with web-equivalent auth semantics (presence
 proved private broadcast + postgres_changes; this exact topic is untested
 from Swift — verify in the Phase 3 spike before building on it); the
-app-shell/auth milestone remains a separate workstream, so labs stay the
-delivery vehicle throughout.
+  app-shell/auth milestone is now complete for the direct-chat slice; the
+  Catalog remains a verification host rather than the production delivery
+  vehicle.
