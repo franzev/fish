@@ -54,6 +54,8 @@ class ChatViewModel(
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<ChatRouteUiState>(ChatRouteUiState.Loading)
     val uiState: StateFlow<ChatRouteUiState> = mutableUiState.asStateFlow()
+    private val mutableBlockedPeople = MutableStateFlow<BlockedPeopleUiState>(BlockedPeopleUiState.Idle)
+    val blockedPeople: StateFlow<BlockedPeopleUiState> = mutableBlockedPeople.asStateFlow()
     private val mutableAttachmentOpenRequests = MutableSharedFlow<AttachmentOpenRequest>(extraBufferCapacity = 1)
     val attachmentOpenRequests: SharedFlow<AttachmentOpenRequest> =
         mutableAttachmentOpenRequests.asSharedFlow()
@@ -89,6 +91,9 @@ class ChatViewModel(
     private val refreshingAttachmentIds = mutableSetOf<String>()
     private val pendingReactionMessageIds = mutableSetOf<String>()
 
+    val currentUserRole: space.fishhub.android.data.chat.model.UserRole?
+        get() = currentUser?.role
+
     init {
         viewModelScope.launch {
             repository.authState.collectLatest { auth ->
@@ -101,6 +106,7 @@ class ChatViewModel(
                         pendingVoiceDraftId = null
                         pendingVoiceConversationId = null
                         clearPendingMedia(recordRevision = true)
+                        mutableBlockedPeople.value = BlockedPeopleUiState.Idle
                         mutableUiState.value = ChatRouteUiState.SignedOut()
                     }
                     is ChatAuthState.SignedIn -> loadConversations()
@@ -129,6 +135,57 @@ class ChatViewModel(
 
     fun signOut() {
         viewModelScope.launch { repository.signOut() }
+    }
+
+    fun loadBlockedPeople() {
+        if (currentUserRole != space.fishhub.android.data.chat.model.UserRole.Client) return
+        if (mutableBlockedPeople.value !is BlockedPeopleUiState.Idle &&
+            mutableBlockedPeople.value !is BlockedPeopleUiState.Failed
+        ) return
+        mutableBlockedPeople.value = BlockedPeopleUiState.Loading
+        viewModelScope.launch {
+            mutableBlockedPeople.value = when (val result = repository.listBlockedPeople()) {
+                is ChatResult.Success -> BlockedPeopleUiState.Loaded(
+                    people = result.value.map { person ->
+                        BlockedPersonUiModel(
+                            userId = person.userId,
+                            displayName = person.displayName,
+                            username = person.username,
+                        )
+                    },
+                )
+                is ChatResult.Failure -> BlockedPeopleUiState.Failed(result.message)
+            }
+        }
+    }
+
+    fun unblockBlockedPerson(userId: String) {
+        val state = mutableBlockedPeople.value as? BlockedPeopleUiState.Loaded ?: return
+        val person = state.people.firstOrNull { it.userId == userId } ?: return
+        if (userId in state.busyIds) return
+        mutableBlockedPeople.value = state.copy(
+            busyIds = state.busyIds + userId,
+            notice = null,
+        )
+        viewModelScope.launch {
+            when (val result = repository.unblockUser(userId)) {
+                is ChatResult.Success -> {
+                    val latest = mutableBlockedPeople.value as? BlockedPeopleUiState.Loaded ?: return@launch
+                    mutableBlockedPeople.value = latest.copy(
+                        people = latest.people.filterNot { it.userId == userId },
+                        busyIds = latest.busyIds - userId,
+                        notice = "${person.displayName} is no longer blocked.",
+                    )
+                }
+                is ChatResult.Failure -> {
+                    val latest = mutableBlockedPeople.value as? BlockedPeopleUiState.Loaded ?: return@launch
+                    mutableBlockedPeople.value = latest.copy(
+                        busyIds = latest.busyIds - userId,
+                        notice = result.message,
+                    )
+                }
+            }
+        }
     }
 
     fun selectConversation(conversationId: String) {

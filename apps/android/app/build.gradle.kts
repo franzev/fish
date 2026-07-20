@@ -30,6 +30,9 @@ val firebaseApiKey = providers.environmentVariable("FISH_FIREBASE_API_KEY")
 val firebaseSenderId = providers.environmentVariable("FISH_FIREBASE_SENDER_ID")
     .orElse(providers.gradleProperty("FISH_FIREBASE_SENDER_ID"))
     .getOrElse("")
+val webBaseUrl = providers.environmentVariable("FISH_ANDROID_WEB_BASE_URL")
+    .orElse(providers.gradleProperty("FISH_ANDROID_WEB_BASE_URL"))
+    .getOrElse("")
 val releaseStorePath = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PATH")
     .orElse(providers.gradleProperty("FISH_ANDROID_KEYSTORE_PATH"))
 val releaseStorePassword = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PASSWORD")
@@ -86,6 +89,7 @@ android {
         buildConfigField("String", "FIREBASE_APPLICATION_ID", firebaseApplicationId.asBuildConfigString())
         buildConfigField("String", "FIREBASE_API_KEY", firebaseApiKey.asBuildConfigString())
         buildConfigField("String", "FIREBASE_SENDER_ID", firebaseSenderId.asBuildConfigString())
+        buildConfigField("String", "WEB_BASE_URL", webBaseUrl.asBuildConfigString())
     }
 
     buildTypes {
@@ -111,6 +115,7 @@ dependencies {
     implementation(project(":feature:chat"))
     implementation(project(":feature:call"))
     implementation(project(":feature:presence"))
+    implementation(project(":feature:settings"))
     implementation(project(":data:chat"))
     implementation(project(":data:call"))
     implementation(project(":data:presence"))
@@ -122,6 +127,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.core.telecom)
     implementation(platform(libs.firebase.bom))

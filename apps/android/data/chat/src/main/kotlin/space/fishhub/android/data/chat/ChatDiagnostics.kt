@@ -16,6 +16,8 @@ internal enum class ChatOperation {
     ToggleReaction,
     RemoveFriend,
     BlockUser,
+    ListBlockedPeople,
+    UnblockUser,
     ReportGif,
     MarkRead,
     ReconnectBackfill,

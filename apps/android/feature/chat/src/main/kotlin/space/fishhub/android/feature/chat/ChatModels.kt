@@ -310,6 +310,25 @@ data class AttachmentImportUiState(
     val notice: String? = null,
 )
 
+@Immutable
+data class BlockedPersonUiModel(
+    val userId: String,
+    val displayName: String,
+    val username: String?,
+)
+
+@Immutable
+sealed interface BlockedPeopleUiState {
+    data object Idle : BlockedPeopleUiState
+    data object Loading : BlockedPeopleUiState
+    data class Loaded(
+        val people: List<BlockedPersonUiModel>,
+        val busyIds: Set<String> = emptySet(),
+        val notice: String? = null,
+    ) : BlockedPeopleUiState
+    data class Failed(val message: String) : BlockedPeopleUiState
+}
+
 enum class MessageDeliveryUiState { Sending, Sent, Delivered, Read, Failed }
 enum class ChatConnectionUiState { Connected, Connecting, Reconnecting, Offline }
 enum class OlderMessagesUiState { Idle, Loading, Failed }

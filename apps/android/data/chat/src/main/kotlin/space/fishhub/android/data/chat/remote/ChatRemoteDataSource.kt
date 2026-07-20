@@ -7,6 +7,7 @@ import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.AuthorizedChatDirectory
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
+import space.fishhub.android.data.chat.BlockedPerson
 import space.fishhub.android.data.chat.MessagePage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
@@ -55,6 +56,8 @@ internal interface ChatRemoteDataSource {
     suspend fun sendTyping(conversationId: String, userId: String, typing: Boolean) = Unit
     suspend fun removeFriend(userId: String): Unit = error("Friend commands are not configured.")
     suspend fun blockUser(userId: String): Unit = error("Friend commands are not configured.")
+    suspend fun listBlockedPeople(): List<BlockedPerson> = error("Blocked people are not configured.")
+    suspend fun unblockUser(userId: String): Unit = error("Friend commands are not configured.")
     suspend fun reportGif(messageId: String)
     suspend fun markRead(
         conversationId: String,

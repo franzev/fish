@@ -10,6 +10,7 @@ import space.fishhub.android.data.chat.GifRepository
 import space.fishhub.android.data.presence.PresenceDataModule
 import space.fishhub.android.data.presence.PresenceRepository
 import space.fishhub.android.feature.call.CallCoordinator
+import space.fishhub.android.settings.AppPreferenceStore
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
@@ -62,6 +63,8 @@ class FishApplication : Application(), Configuration.Provider {
     }
 
     val callScope: CoroutineScope get() = callDependencies.scope
+
+    val appPreferenceStore: AppPreferenceStore by lazy { AppPreferenceStore(this) }
 
     val chatRepository: ChatRepository get() = chatDependencies.chatRepository
     val gifRepository: GifRepository get() = chatDependencies.gifRepository

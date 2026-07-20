@@ -17,6 +17,7 @@ import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.MessagePage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
+import space.fishhub.android.data.chat.BlockedPerson
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -64,6 +65,7 @@ import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID
 
 internal class SupabaseChatRemoteDataSource(
     private val client: SupabaseClient,
@@ -404,6 +406,13 @@ internal class SupabaseChatRemoteDataSource(
 
     override suspend fun blockUser(userId: String) = friendCommand("block-user", userId)
 
+    override suspend fun listBlockedPeople(): List<BlockedPerson> =
+        client.postgrest.rpc("list_blocked_users")
+            .decodeList<BlockedPersonDto>()
+            .map { it.toDomain() }
+
+    override suspend fun unblockUser(userId: String) = friendCommand("unblock-user", userId)
+
     private suspend fun friendCommand(action: String, userId: String) {
         val response = client.functions.invoke(
             function = "friend-command",
@@ -416,6 +425,19 @@ internal class SupabaseChatRemoteDataSource(
         if (!response.status.isSuccess()) {
             throw RemoteCommandException(readError(payload, DefaultFriendError))
         }
+    }
+
+    private fun BlockedPersonDto.toDomain(): BlockedPerson {
+        val safeId = userId?.trim()?.takeIf(String::isNotBlank)
+            ?.takeIf { runCatching { UUID.fromString(it) }.isSuccess }
+            ?: throw RemoteCommandException("Blocked people aren’t available yet. Try again.")
+        val safeName = displayName?.trim()?.takeIf(String::isNotBlank)
+            ?: throw RemoteCommandException("Blocked people aren’t available yet. Try again.")
+        return BlockedPerson(
+            userId = safeId,
+            displayName = safeName,
+            username = username?.trim()?.takeIf(String::isNotBlank),
+        )
     }
 
     private suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> {

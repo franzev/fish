@@ -98,6 +98,7 @@ const guardedRoots = [
   "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component",
   "apps/android/feature/chat/src/main",
   "apps/android/feature/presence/src/main",
+  "apps/android/feature/settings/src/main",
 ];
 for (const relativeRoot of guardedRoots) {
   for (const file of walk(path.join(root, relativeRoot)).filter((value) => value.endsWith(".kt"))) {
@@ -145,6 +146,17 @@ const importGuards = [
       /^import io\.livekit/m,
     ],
     label: "provider-neutral presence feature",
+  },
+  {
+    root: "apps/android/feature/settings/src/main",
+    forbidden: [
+      /^import android\./m,
+      /^import .*supabase/m,
+      /^import androidx\.room/m,
+      /^import space\.fishhub\.android\.data\./m,
+      /^import space\.fishhub\.android\.feature\./m,
+    ],
+    label: "provider-neutral settings feature",
   },
 ];
 for (const guard of importGuards) {

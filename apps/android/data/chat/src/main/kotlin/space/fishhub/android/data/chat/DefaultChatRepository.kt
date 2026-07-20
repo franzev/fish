@@ -391,6 +391,16 @@ internal class DefaultChatRepository(
         "Friends is taking a break. Chat still works.",
     ) { remote.blockUser(userId) }
 
+    override suspend fun listBlockedPeople(): ChatResult<List<BlockedPerson>> = resultOf(
+        ChatOperation.ListBlockedPeople,
+        "Blocked people aren’t available yet. Try again.",
+    ) { remote.listBlockedPeople() }
+
+    override suspend fun unblockUser(userId: String): ChatResult<Unit> = resultOf(
+        ChatOperation.UnblockUser,
+        "That person is still blocked. Try again.",
+    ) { remote.unblockUser(userId) }
+
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = resultOf(
         ChatOperation.ReportGif,
         "That GIF report did not send yet. Try again.",

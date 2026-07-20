@@ -48,6 +48,12 @@ data class AuthorizedChatIdentity(
     val displayName: String,
 )
 
+data class BlockedPerson(
+    val userId: String,
+    val displayName: String,
+    val username: String?,
+)
+
 data class AuthorizedChatDirectory(
     val currentUser: AuthorizedChatIdentity,
     val conversations: List<AuthorizedConversation>,
@@ -187,6 +193,8 @@ interface ChatRepository {
     suspend fun sendTyping(conversationId: String, typing: Boolean)
     suspend fun removeFriend(userId: String): ChatResult<Unit>
     suspend fun blockUser(userId: String): ChatResult<Unit>
+    suspend fun listBlockedPeople(): ChatResult<List<BlockedPerson>>
+    suspend fun unblockUser(userId: String): ChatResult<Unit>
     suspend fun reportGif(messageId: String): ChatResult<Unit>
     suspend fun markRead(
         conversationId: String,

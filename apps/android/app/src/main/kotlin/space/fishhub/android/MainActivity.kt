@@ -12,6 +12,7 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -26,12 +27,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.createSavedStateHandle
@@ -59,6 +60,9 @@ import space.fishhub.android.feature.chat.ParticipantUiModel
 import space.fishhub.android.feature.chat.VoiceRecordingUiState
 import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
+import space.fishhub.android.feature.settings.AccountSettingsMotion
+import space.fishhub.android.feature.settings.AccountSettingsNotificationStatus
+import space.fishhub.android.feature.settings.AccountSettingsTheme
 import space.fishhub.android.messaging.ChatDestination
 import space.fishhub.android.messaging.ChatIntents
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,6 +71,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import space.fishhub.android.settings.AppMotionPreference
+import space.fishhub.android.settings.AppPreferences
+import space.fishhub.android.settings.AppThemePreference
+import space.fishhub.android.settings.effectiveReducedMotion
+import space.fishhub.android.settings.isDark
 
 class MainActivity : ComponentActivity() {
     private lateinit var fishApplication: FishApplication
@@ -76,6 +85,10 @@ class MainActivity : ComponentActivity() {
     private var activeVideoCall = false
     private val attachmentImportState = MutableStateFlow(AttachmentImportUiState())
     private val pendingChatDestination = MutableStateFlow<ChatDestination?>(null)
+    private val systemDisabledAnimations = MutableStateFlow(!ValueAnimator.areAnimatorsEnabled())
+    private val preferenceNotice = MutableStateFlow<String?>(null)
+    private val notificationStatus = MutableStateFlow(AccountSettingsNotificationStatus.Off)
+    private val canRequestNotifications = MutableStateFlow(false)
     private var attachmentConversationId: String? = null
     private var pendingCameraFile: File? = null
     private var pendingCameraUri: Uri? = null
@@ -129,19 +142,22 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {
+        refreshNotificationState()
+    }
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         pendingPermissionAction?.let(::completePermissionAction)
         pendingPermissionAction = null
     }
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fishApplication = application as FishApplication
+        refreshNotificationState()
         attachmentFileOpener = AttachmentFileOpener(this, BuildConfig.SUPABASE_URL)
         voiceMessageRecorder = VoiceMessageRecorder(this)
         attachmentConversationId = savedInstanceState?.getString(AttachmentConversationStateKey)
@@ -156,7 +172,16 @@ class MainActivity : ComponentActivity() {
             val formatter = remember { AndroidChatFormatter(applicationContext) }
             val mediaCatalog = remember { ChatMediaCatalog.load(applicationContext) }
             val presenceFormatter = remember { PresenceFormatter(applicationContext) }
-            val animationsEnabled = remember { ValueAnimator.areAnimatorsEnabled() }
+            val appPreferences by fishApplication.appPreferenceStore.preferences
+                .collectAsStateWithLifecycle(initialValue = AppPreferences())
+            val systemAnimationsDisabled by systemDisabledAnimations.collectAsStateWithLifecycle()
+            val settingsNotice by preferenceNotice.collectAsStateWithLifecycle()
+            val currentNotificationStatus by notificationStatus.collectAsStateWithLifecycle()
+            val currentCanRequestNotifications by canRequestNotifications.collectAsStateWithLifecycle()
+            val reducedMotion = effectiveReducedMotion(
+                systemDisabledAnimations = systemAnimationsDisabled,
+                explicitMotion = appPreferences.motion,
+            )
             val factory = remember(repository, gifRepository, formatter, mediaCatalog) {
                 viewModelFactory {
                     initializer {
@@ -170,13 +195,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            val mediaPickerFactory = remember(gifRepository, mediaCatalog, animationsEnabled) {
+            val mediaPickerFactory = remember(gifRepository, mediaCatalog, reducedMotion) {
                 viewModelFactory {
                     initializer {
                         MediaPickerViewModel(
                             catalog = mediaCatalog,
                             gifRepository = gifRepository,
-                            animationsEnabled = animationsEnabled,
+                            animationsEnabled = !reducedMotion,
                         )
                     }
                 }
@@ -205,7 +230,10 @@ class MainActivity : ComponentActivity() {
                     pendingChatDestination.value = null
                 }
             }
-            FishTheme(reducedMotion = !animationsEnabled) {
+            FishTheme(
+                darkTheme = appPreferences.theme.isDark(isSystemInDarkTheme()),
+                reducedMotion = reducedMotion,
+            ) {
                 Box(Modifier.fillMaxSize()) {
                     ChatRoute(
                         viewModel = chatViewModel,
@@ -256,6 +284,42 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
+                        appearance = appPreferences.theme.toAccountSettingsTheme(),
+                        accessibility = appPreferences.motion.toAccountSettingsMotion(),
+                        notificationStatus = currentNotificationStatus,
+                        canRequestNotifications = currentCanRequestNotifications,
+                        settingsNotice = settingsNotice,
+                        onClearSettingsNotice = { preferenceNotice.value = null },
+                        onAppearanceSelected = { selected ->
+                            lifecycleScope.launch {
+                                if (!fishApplication.appPreferenceStore.setTheme(
+                                        selected.toAppThemePreference(),
+                                    )
+                                ) {
+                                    preferenceNotice.value =
+                                        getString(R.string.preference_write_failed)
+                                }
+                            }
+                        },
+                        onAccessibilitySelected = { selected ->
+                            lifecycleScope.launch {
+                                if (!fishApplication.appPreferenceStore.setMotion(
+                                        selected.toAppMotionPreference(),
+                                    )
+                                ) {
+                                    preferenceNotice.value =
+                                        getString(R.string.preference_write_failed)
+                                }
+                            }
+                        },
+                        onAllowNotifications = ::requestNotificationPermission,
+                        onOpenNotifications = ::openNotificationSettings,
+                        onOpenPasswordRecovery = {
+                            openExternalWebPage("/forgot-password", R.string.password_help_unavailable)
+                        },
+                        onOpenPrivacyPolicy = {
+                            openExternalWebPage("/privacy", R.string.privacy_policy_unavailable)
+                        },
                     )
                     CallRoute(
                         coordinator = fishApplication.callCoordinator,
@@ -269,7 +333,6 @@ class MainActivity : ComponentActivity() {
             }
         }
         observeCallForPictureInPicture()
-        observeNotificationPermission()
         observeAttachmentPrivacyCleanup()
         handleCallIntent(intent)
         handleChatIntent(intent)
@@ -291,6 +354,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        systemDisabledAnimations.value = !ValueAnimator.areAnimatorsEnabled()
+        refreshNotificationState()
         fishApplication.presenceRepository.markActive()
     }
 
@@ -659,27 +724,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun observeNotificationPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                fishApplication.chatRepository.authState.collectLatest { auth ->
-                    if (auth !is ChatAuthState.SignedIn) return@collectLatest
-                    val preferences = getSharedPreferences("fish-permissions", MODE_PRIVATE)
-                    if (
-                        preferences.getBoolean("notification-requested", false) ||
-                        ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.POST_NOTIFICATIONS,
-                        ) == PackageManager.PERMISSION_GRANTED
-                    ) return@collectLatest
-                    preferences.edit { putBoolean("notification-requested", true) }
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        }
-    }
-
     private fun observeAttachmentPrivacyCleanup() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -687,6 +731,70 @@ class MainActivity : ComponentActivity() {
                     if (auth is ChatAuthState.SignedOut) attachmentFileOpener.cleanupAll()
                 }
             }
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            openNotificationSettings()
+        }
+    }
+
+    private fun refreshNotificationState() {
+        val requiresRuntimePermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        val runtimePermissionGranted = !requiresRuntimePermission ||
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+        notificationStatus.value = if (
+            notificationDeliveryEnabled(
+                notificationsEnabledBySystem = NotificationManagerCompat.from(this)
+                    .areNotificationsEnabled(),
+                runtimePermissionGranted = runtimePermissionGranted,
+                requiresRuntimePermission = requiresRuntimePermission,
+            )
+        ) {
+            AccountSettingsNotificationStatus.On
+        } else {
+            AccountSettingsNotificationStatus.Off
+        }
+        canRequestNotifications.value = requiresRuntimePermission &&
+            !runtimePermissionGranted &&
+            !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun openNotificationSettings() {
+        val notificationSettings = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        if (notificationSettings.resolveActivity(packageManager) != null) {
+            startActivity(notificationSettings)
+            return
+        }
+        val appSettings = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:$packageName"),
+        )
+        if (appSettings.resolveActivity(packageManager) != null) {
+            startActivity(appSettings)
+        } else {
+            preferenceNotice.value = "Notification settings aren’t available in this build."
+        }
+    }
+
+    private fun openExternalWebPage(path: String, unavailableMessageRes: Int) {
+        val uri = ExternalWebLinkPolicy.build(
+            baseUrl = BuildConfig.WEB_BASE_URL,
+            path = path,
+            isRelease = BuildConfig.BUILD_TYPE == "release",
+        )
+        val intent = uri?.let { Intent(Intent.ACTION_VIEW, Uri.parse(it)) }
+        if (intent != null && intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            preferenceNotice.value = getString(unavailableMessageRes)
         }
     }
 
@@ -745,4 +853,26 @@ class MainActivity : ComponentActivity() {
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         )
     }
+}
+
+private fun AppThemePreference.toAccountSettingsTheme() = when (this) {
+    AppThemePreference.System -> AccountSettingsTheme.System
+    AppThemePreference.Light -> AccountSettingsTheme.Light
+    AppThemePreference.Dark -> AccountSettingsTheme.Dark
+}
+
+private fun AppMotionPreference.toAccountSettingsMotion() = when (this) {
+    AppMotionPreference.System -> AccountSettingsMotion.System
+    AppMotionPreference.ReduceMotion -> AccountSettingsMotion.ReduceMotion
+}
+
+private fun AccountSettingsTheme.toAppThemePreference() = when (this) {
+    AccountSettingsTheme.System -> AppThemePreference.System
+    AccountSettingsTheme.Light -> AppThemePreference.Light
+    AccountSettingsTheme.Dark -> AppThemePreference.Dark
+}
+
+private fun AccountSettingsMotion.toAppMotionPreference() = when (this) {
+    AccountSettingsMotion.System -> AppMotionPreference.System
+    AccountSettingsMotion.ReduceMotion -> AppMotionPreference.ReduceMotion
 }

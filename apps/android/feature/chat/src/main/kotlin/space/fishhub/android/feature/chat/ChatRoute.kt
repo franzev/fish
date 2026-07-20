@@ -1,6 +1,7 @@
 package space.fishhub.android.feature.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -34,15 +35,31 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishEmptyState
 import space.fishhub.android.core.designsystem.component.FishNotice
 import space.fishhub.android.core.designsystem.component.FishTextField
-import space.fishhub.android.feature.presence.PresenceAccountSheet
 import space.fishhub.android.feature.presence.PresenceAccountTrigger
+import space.fishhub.android.feature.presence.PresenceUiState
 import space.fishhub.android.feature.presence.PresenceViewModel
+import space.fishhub.android.data.presence.PresenceConnectionState
+import space.fishhub.android.data.presence.PresenceDisplayStatus
+import space.fishhub.android.data.presence.PresenceDuration
+import space.fishhub.android.data.presence.PresencePreference
+import space.fishhub.android.feature.settings.AccountSettingsPresence
+import space.fishhub.android.feature.settings.AccountSettingsPresenceDuration
+import space.fishhub.android.feature.settings.AccountSettingsPresenceStatus
+import space.fishhub.android.feature.settings.AccountSettingsPresenceVisibility
+import space.fishhub.android.feature.settings.AccountSettingsBlockedPeopleState
+import space.fishhub.android.feature.settings.AccountSettingsBlockedPerson
+import space.fishhub.android.feature.settings.AccountSettingsSheet
+import space.fishhub.android.feature.settings.AccountSettingsMotion
+import space.fishhub.android.feature.settings.AccountSettingsTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
 
@@ -66,11 +83,25 @@ fun ChatRoute(
     onFinishVoiceRecording: () -> Unit = {},
     onCancelVoiceRecording: () -> Unit = {},
     onAttachmentFlowFinished: () -> Unit = {},
+    appearance: AccountSettingsTheme = AccountSettingsTheme.System,
+    accessibility: AccountSettingsMotion = AccountSettingsMotion.System,
+    notificationStatus: space.fishhub.android.feature.settings.AccountSettingsNotificationStatus =
+        space.fishhub.android.feature.settings.AccountSettingsNotificationStatus.Off,
+    canRequestNotifications: Boolean = false,
+    onOpenNotifications: () -> Unit = {},
+    onOpenPasswordRecovery: () -> Unit = {},
+    onOpenPrivacyPolicy: () -> Unit = {},
+    onAllowNotifications: () -> Unit = {},
+    settingsNotice: String? = null,
+    onClearSettingsNotice: () -> Unit = {},
+    onAppearanceSelected: (AccountSettingsTheme) -> Unit = {},
+    onAccessibilitySelected: (AccountSettingsMotion) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val routeState by viewModel.uiState.collectAsStateWithLifecycle()
     val mediaPickerState by mediaPickerViewModel.uiState.collectAsStateWithLifecycle()
     val presenceState by presenceViewModel.uiState.collectAsStateWithLifecycle()
+    val blockedPeopleState by viewModel.blockedPeople.collectAsStateWithLifecycle()
     val composerState = rememberTextFieldState()
     var mediaPickerVisible by remember { mutableStateOf(false) }
     var accountSheetVisible by remember { mutableStateOf(false) }
@@ -81,6 +112,8 @@ fun ChatRoute(
         is ChatRouteUiState.ConversationList -> state.currentUserDisplayName
         else -> ""
     }
+    val canManageBlockedPeople = viewModel.currentUserRole ==
+        space.fishhub.android.data.chat.model.UserRole.Client
     val accountContent: (@Composable () -> Unit)? = currentUserDisplayName
         .takeIf(String::isNotBlank)
         ?.let { displayName ->
@@ -117,6 +150,7 @@ fun ChatRoute(
             onEmailChange = viewModel::updateEmail,
             onPasswordChange = viewModel::updatePassword,
             onSignIn = viewModel::signIn,
+            onForgotPassword = onOpenPasswordRecovery,
             modifier = modifier,
         )
         is ChatRouteUiState.Conversation -> {
@@ -262,16 +296,40 @@ fun ChatRoute(
     }
 
     if (accountSheetVisible && currentUserDisplayName.isNotBlank()) {
-        PresenceAccountSheet(
+        AccountSettingsSheet(
             displayName = currentUserDisplayName,
-            state = presenceState,
-            onDismiss = { accountSheetVisible = false },
-            onSetPreference = presenceViewModel::setPreference,
+            presence = presenceState.toAccountSettingsPresence(),
+            appearance = appearance,
+            accessibility = accessibility,
+            notificationStatus = notificationStatus,
+            canRequestNotifications = canRequestNotifications,
+            canManageBlockedPeople = canManageBlockedPeople,
+            blockedPeopleState = blockedPeopleState.toAccountSettingsState(),
+            onOpenNotifications = onOpenNotifications,
+            onOpenPrivacyPolicy = onOpenPrivacyPolicy,
+            onResetPassword = onOpenPasswordRecovery,
+            onAllowNotifications = onAllowNotifications,
+            notice = settingsNotice,
+            onDismiss = {
+                accountSheetVisible = false
+                onClearSettingsNotice()
+            },
+            onSetPresence = { visibility, duration ->
+                presenceViewModel.setPreference(
+                    visibility.toPresencePreference(),
+                    duration.toPresenceDuration(),
+                )
+            },
+            onClearPresenceNotice = presenceViewModel::clearNotice,
+            onClearNotice = onClearSettingsNotice,
+            onLoadBlockedPeople = viewModel::loadBlockedPeople,
+            onUnblockBlockedPerson = viewModel::unblockBlockedPerson,
+            onAppearanceSelected = onAppearanceSelected,
+            onAccessibilitySelected = onAccessibilitySelected,
             onSignOut = {
                 accountSheetVisible = false
                 viewModel.signOut()
             },
-            onClearNotice = presenceViewModel::clearNotice,
         )
     }
 
@@ -288,6 +346,65 @@ fun ChatRoute(
             onLoadError = viewModel::refreshAttachment,
         )
     }
+}
+
+private fun PresenceUiState.toAccountSettingsPresence() = AccountSettingsPresence(
+    status = own.status.toAccountSettingsStatus(),
+    label = own.label,
+    visibility = ownPreference.toAccountSettingsVisibility(),
+    updating = updating,
+    reconnecting = connection == PresenceConnectionState.Connecting ||
+        connection == PresenceConnectionState.Disconnected,
+    notice = notice,
+)
+
+private fun BlockedPeopleUiState.toAccountSettingsState(): AccountSettingsBlockedPeopleState = when (this) {
+    BlockedPeopleUiState.Idle -> AccountSettingsBlockedPeopleState.Hidden
+    BlockedPeopleUiState.Loading -> AccountSettingsBlockedPeopleState.Loading
+    is BlockedPeopleUiState.Failed -> AccountSettingsBlockedPeopleState.Failed(message)
+    is BlockedPeopleUiState.Loaded -> AccountSettingsBlockedPeopleState.Loaded(
+        people = people.map { person ->
+            AccountSettingsBlockedPerson(
+                userId = person.userId,
+                displayName = person.displayName,
+                username = person.username,
+            )
+        },
+        busyIds = busyIds,
+        notice = notice,
+    )
+}
+
+private fun PresenceDisplayStatus.toAccountSettingsStatus() = when (this) {
+    PresenceDisplayStatus.Online -> AccountSettingsPresenceStatus.Online
+    PresenceDisplayStatus.Idle -> AccountSettingsPresenceStatus.Idle
+    PresenceDisplayStatus.Away -> AccountSettingsPresenceStatus.Away
+    PresenceDisplayStatus.Busy -> AccountSettingsPresenceStatus.Busy
+    PresenceDisplayStatus.Invisible -> AccountSettingsPresenceStatus.Invisible
+    PresenceDisplayStatus.Offline -> AccountSettingsPresenceStatus.Offline
+}
+
+private fun PresencePreference.toAccountSettingsVisibility() = when (this) {
+    PresencePreference.Automatic -> AccountSettingsPresenceVisibility.Automatic
+    PresencePreference.Away -> AccountSettingsPresenceVisibility.Away
+    PresencePreference.Busy -> AccountSettingsPresenceVisibility.Busy
+    PresencePreference.Invisible -> AccountSettingsPresenceVisibility.Invisible
+}
+
+private fun AccountSettingsPresenceVisibility.toPresencePreference() = when (this) {
+    AccountSettingsPresenceVisibility.Automatic -> PresencePreference.Automatic
+    AccountSettingsPresenceVisibility.Away -> PresencePreference.Away
+    AccountSettingsPresenceVisibility.Busy -> PresencePreference.Busy
+    AccountSettingsPresenceVisibility.Invisible -> PresencePreference.Invisible
+}
+
+private fun AccountSettingsPresenceDuration.toPresenceDuration() = when (this) {
+    AccountSettingsPresenceDuration.FifteenMinutes -> PresenceDuration.FifteenMinutes
+    AccountSettingsPresenceDuration.OneHour -> PresenceDuration.OneHour
+    AccountSettingsPresenceDuration.EightHours -> PresenceDuration.EightHours
+    AccountSettingsPresenceDuration.OneDay -> PresenceDuration.OneDay
+    AccountSettingsPresenceDuration.ThreeDays -> PresenceDuration.ThreeDays
+    AccountSettingsPresenceDuration.Forever -> PresenceDuration.Forever
 }
 
 @Composable
@@ -314,6 +431,7 @@ internal fun SignInScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSignIn: () -> Unit,
+    onForgotPassword: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -366,6 +484,14 @@ internal fun SignInScreen(
                     imeAction = ImeAction.Done,
                 ),
                 keyboardActions = KeyboardActions(onDone = { onSignIn() }),
+            )
+            Text(
+                text = stringResource(R.string.forgot_password),
+                color = FishTheme.colors.body,
+                style = FishTheme.typography.ui.copy(textDecoration = TextDecoration.Underline),
+                modifier = Modifier
+                    .clickable(role = Role.Button, onClick = onForgotPassword)
+                    .padding(vertical = FishTheme.spacing.twoXs),
             )
             if (state.notice != null) {
                 FishNotice(message = state.notice)

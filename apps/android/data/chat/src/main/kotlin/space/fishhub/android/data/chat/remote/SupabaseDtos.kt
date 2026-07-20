@@ -47,6 +47,13 @@ internal data class FriendCommandRequest(
 )
 
 @Serializable
+internal data class BlockedPersonDto(
+    @SerialName("user_id") val userId: String? = null,
+    @SerialName("display_name") val displayName: String? = null,
+    val username: String? = null,
+)
+
+@Serializable
 internal data class ConversationPreviewDto(
     @SerialName("conversation_id") val conversationId: String,
     @SerialName("participant_id") val participantId: String,

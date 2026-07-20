@@ -162,6 +162,27 @@ class SupabaseContractTest {
             "{\"action\":\"block-user\",\"targetId\":\"friend-1\"}",
             json.encodeToString(FriendCommandRequest("block-user", "friend-1")),
         )
+        assertEquals(
+            "{\"action\":\"unblock-user\",\"targetId\":\"friend-1\"}",
+            json.encodeToString(FriendCommandRequest("unblock-user", "friend-1")),
+        )
+    }
+
+    @Test
+    fun blockedPeopleRpcUsesSafeProfileFields() {
+        val row = json.decodeFromString<BlockedPersonDto>(
+            """
+            {
+              "user_id":"client-2",
+              "display_name":"Sam",
+              "username":"sam"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("client-2", row.userId)
+        assertEquals("Sam", row.displayName)
+        assertEquals("sam", row.username)
     }
 
     @Test

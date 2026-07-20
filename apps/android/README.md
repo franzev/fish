@@ -78,6 +78,7 @@ export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_PUBLISHABLE_KEY="your-publishable-key"
 export FISH_ANDROID_KLIPY_API_KEY="your-public-klipy-key"
 export FISH_ANDROID_KLIPY_CLIENT_KEY="fish_chat_android"
+export FISH_ANDROID_WEB_BASE_URL="https://fishhub.space"
 export FISH_FIREBASE_PROJECT_ID="your-firebase-project"
 export FISH_FIREBASE_APPLICATION_ID="1:123456789:android:abcdef"
 export FISH_FIREBASE_API_KEY="your-public-android-api-key"
@@ -94,6 +95,10 @@ tab visible with calm unavailable copy; emoji and local stickers remain
 bundled. Missing Firebase values leave background push registration disabled;
 foreground Supabase recovery still works. Never put the Firebase service
 account, Supabase service-role key, or LiveKit secret in an Android build.
+
+`FISH_ANDROID_WEB_BASE_URL` is the trusted web origin used for privacy policy
+and password recovery. Release builds require HTTPS; debug builds may use a
+configured local HTTP origin.
 
 Release builds reject cleartext traffic. Debug builds allow it so an emulator
 can reach a local Supabase stack through `10.0.2.2`.

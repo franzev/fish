@@ -84,6 +84,57 @@ class ChatViewModelTest {
         }
 
     @Test
+    fun `blocked people load once and an unblock removes only after success`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository().apply {
+                blockedPeople = listOf(
+                    space.fishhub.android.data.chat.BlockedPerson("blocked-1", "Sam", "sam"),
+                )
+            }
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.loadBlockedPeople()
+            advanceUntilIdle()
+            viewModel.loadBlockedPeople()
+            assertEquals(1, repository.listBlockedCalls)
+
+            viewModel.unblockBlockedPerson("blocked-1")
+            viewModel.unblockBlockedPerson("blocked-1")
+            advanceUntilIdle()
+
+            assertEquals(listOf("blocked-1"), repository.unblockCalls)
+            val state = viewModel.blockedPeople.value as BlockedPeopleUiState.Loaded
+            assertTrue(state.people.isEmpty())
+            assertEquals("Sam is no longer blocked.", state.notice)
+        }
+
+    @Test
+    fun `failed unblock keeps blocked person visible`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository().apply {
+                blockedPeople = listOf(
+                    space.fishhub.android.data.chat.BlockedPerson("blocked-1", "Sam", "sam"),
+                )
+                unblockResult = ChatResult.Failure(
+                    "That person is still blocked. Try again.",
+                    true,
+                    space.fishhub.android.data.chat.FailureCategory.Network,
+                )
+            }
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            viewModel.loadBlockedPeople()
+            advanceUntilIdle()
+            viewModel.unblockBlockedPerson("blocked-1")
+            advanceUntilIdle()
+
+            val state = viewModel.blockedPeople.value as BlockedPeopleUiState.Loaded
+            assertEquals(listOf("blocked-1"), state.people.map { it.userId })
+            assertEquals("That person is still blocked. Try again.", state.notice)
+        }
+
+    @Test
     fun `armed voice draft auto sends exactly once when upload is ready`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository()
@@ -759,6 +810,10 @@ private class FakeChatRepository(
     val typingEvents = mutableListOf<Boolean>()
     val removedUserIds = mutableListOf<String>()
     val blockedUserIds = mutableListOf<String>()
+    var blockedPeople: List<space.fishhub.android.data.chat.BlockedPerson> = emptyList()
+    var listBlockedCalls: Int = 0
+    val unblockCalls = mutableListOf<String>()
+    var unblockResult: ChatResult<Unit> = ChatResult.Success(Unit)
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> = messages
     override fun observeReadStates(conversationId: String): Flow<List<ChatReadState>> = readStates
@@ -880,6 +935,12 @@ private class FakeChatRepository(
     override suspend fun blockUser(userId: String): ChatResult<Unit> {
         blockedUserIds += userId
         return ChatResult.Success(Unit)
+    }
+    override suspend fun listBlockedPeople(): ChatResult<List<space.fishhub.android.data.chat.BlockedPerson>> =
+        ChatResult.Success(blockedPeople).also { listBlockedCalls += 1 }
+    override suspend fun unblockUser(userId: String): ChatResult<Unit> {
+        unblockCalls += userId
+        return unblockResult
     }
     override suspend fun markRead(
         conversationId: String,

@@ -8,4 +8,8 @@
     <string name="chat_notification_message">Sent you a message</string>
     <string name="microphone_permission_needed">Microphone access is needed. Allow it, then hold again.</string>
     <string name="voice_recording_failed">That recording could not be sent. Try again.</string>
+    <string name="forgot_password">Forgot password</string>
+    <string name="password_help_unavailable">Password help isn’t available in this build.</string>
+    <string name="privacy_policy_unavailable">The privacy policy isn’t available in this build.</string>
+    <string name="preference_write_failed">This setting could not be saved. It will return next time.</string>
 </resources>

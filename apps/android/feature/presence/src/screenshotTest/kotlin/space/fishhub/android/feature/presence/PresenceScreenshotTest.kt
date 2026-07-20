@@ -12,8 +12,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.presence.PresenceDisplayStatus
-import space.fishhub.android.data.presence.PresencePreference
-import space.fishhub.android.data.presence.PresenceConnectionState
 
 @PreviewTest
 @Preview(name = "presence light", widthDp = 412, heightDp = 915, showBackground = true)
@@ -46,21 +44,6 @@ fun PresenceLargeFontScreenshot() = PresenceStatusFrame(false)
 @Composable
 fun PresenceRtlScreenshot() = PresenceStatusFrame(false)
 
-@PreviewTest
-@Preview(name = "account sheet", widthDp = 412, heightDp = 640)
-@Composable
-fun PresenceAccountScreenshot() = SheetFrame("account")
-
-@PreviewTest
-@Preview(name = "status sheet", widthDp = 412, heightDp = 640)
-@Composable
-fun PresenceStatusSheetScreenshot() = SheetFrame("status")
-
-@PreviewTest
-@Preview(name = "duration sheet", widthDp = 412, heightDp = 640)
-@Composable
-fun PresenceDurationSheetScreenshot() = SheetFrame("duration")
-
 @Composable
 private fun PresenceStatusFrame(darkTheme: Boolean) {
     FishTheme(darkTheme = darkTheme, reducedMotion = true) {
@@ -92,23 +75,5 @@ private fun PresenceStatusFrame(darkTheme: Boolean) {
                 onClick = {},
             )
         }
-    }
-}
-
-@Composable
-private fun SheetFrame(page: String) {
-    FishTheme(reducedMotion = true) {
-        PresenceAccountSheetPreviewContent(
-            page = page,
-            state = PresenceUiState(
-                own = PresencePresentation(PresenceDisplayStatus.Away, "Away"),
-                ownPreference = PresencePreference.Away,
-                connection = if (page == "account") {
-                    PresenceConnectionState.Disconnected
-                } else {
-                    PresenceConnectionState.Connected
-                },
-            ),
-        )
     }
 }
