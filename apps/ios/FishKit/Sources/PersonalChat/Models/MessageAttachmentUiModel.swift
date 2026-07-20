@@ -40,4 +40,8 @@ public struct MessageAttachmentUiModel: Identifiable, Equatable, Sendable {
         guard let width, let height, width > 0, height > 0 else { return 1 }
         return Double(width) / Double(height)
     }
+
+    public var isVoiceMessage: Bool {
+        mimeType?.lowercased() == "audio/mp4"
+    }
 }

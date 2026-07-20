@@ -13,6 +13,7 @@ public enum AttachmentRules {
     ]
 
     public static let documentMimeTypes: Set<String> = [
+        "audio/mp4",
         "application/pdf",
         "text/plain",
         "text/csv",
@@ -22,6 +23,8 @@ public enum AttachmentRules {
     ]
 
     public static let allowedSourceMimeTypes = imageMimeTypes.union(documentMimeTypes)
+
+    public static let voiceMimeTypes: Set<String> = ["audio/mp4"]
 
     public static func validate(
         _ candidate: AttachmentCandidate,

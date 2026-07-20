@@ -28,12 +28,14 @@ public struct MessageComposer: View {
     private let context: ComposerContextUiModel?
     private let onCancelContext: () -> Void
     private let onFocusChanged: (Bool) -> Void
+    private let onVoiceRecorded: (AttachmentCandidate) -> Void
 
     @State private var showsAttachmentMenu = false
     @State private var showsPhotoPicker = false
     @State private var showsFileImporter = false
     @State private var photoItems: [PhotosPickerItem] = []
     @FocusState private var isMessageFocused: Bool
+    @State private var voiceRecorder = VoiceMessageRecorder()
 
     public init(
         draft: Binding<String>,
@@ -44,6 +46,7 @@ public struct MessageComposer: View {
         context: ComposerContextUiModel? = nil,
         onCancelContext: @escaping () -> Void = {},
         onFocusChanged: @escaping (Bool) -> Void = { _ in },
+        onVoiceRecorded: @escaping (AttachmentCandidate) -> Void = { _ in },
         onSend: @escaping () -> Void,
         onOpenMediaPicker: @escaping () -> Void
     ) {
@@ -55,6 +58,7 @@ public struct MessageComposer: View {
         self.context = context
         self.onCancelContext = onCancelContext
         self.onFocusChanged = onFocusChanged
+        self.onVoiceRecorded = onVoiceRecorded
         self.onSend = onSend
         self.onOpenMediaPicker = onOpenMediaPicker
     }
@@ -163,9 +167,20 @@ public struct MessageComposer: View {
                         ) else { return }
                         onSend()
                     }
+                } else if canRecordVoice {
+                    VoiceRecordingControl(
+                        recorder: voiceRecorder,
+                        onRecord: onVoiceRecorded
+                    )
                 }
             }
             if let notice = attachmentUploads?.notice {
+                Text(notice)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.notice)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let notice = voiceRecorder.notice {
                 Text(notice)
                     .textStyle(.caption)
                     .foregroundStyle(Palette.notice)
@@ -228,6 +243,10 @@ public struct MessageComposer: View {
         ) { result in
             importDocuments(result)
         }
+        .onChange(of: canRecordVoice) { _, available in
+            if !available { voiceRecorder.cancel() }
+        }
+        .onDisappear { voiceRecorder.cancel() }
     }
 
     private func composerContext(_ context: ComposerContextUiModel) -> some View {
@@ -262,6 +281,17 @@ public struct MessageComposer: View {
 
     private var availableAttachmentSlots: Int {
         max(1, AttachmentRules.maxCount - (attachmentUploads?.items.count ?? 0))
+    }
+
+    private var canRecordVoice: Bool {
+        guard attachmentUploads != nil,
+              sendState == .ready,
+              draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              selection == .none,
+              attachmentUploads?.items.isEmpty == true
+        else { return false }
+        if case .edit = context { return false }
+        return true
     }
 
     private func loadPhotos(_ selected: [PhotosPickerItem]) {

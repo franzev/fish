@@ -79,6 +79,7 @@ public actor AttachmentFileDownloader {
         originalName: String
     ) -> String {
         switch mimeType {
+        case "audio/mp4": "m4a"
         case "image/webp": "webp"
         case "image/jpeg": "jpg"
         case "application/pdf": "pdf"

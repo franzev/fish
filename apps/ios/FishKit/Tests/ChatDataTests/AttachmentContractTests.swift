@@ -73,7 +73,8 @@ struct AttachmentContractTests {
         #expect(AttachmentRules.imageMimeTypes == [
             "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/avif",
         ])
-        #expect(AttachmentRules.documentMimeTypes.count == 6)
+        #expect(AttachmentRules.documentMimeTypes.count == 7)
+        #expect(AttachmentRules.voiceMimeTypes == ["audio/mp4"])
     }
 
     @Test func validationReportsTypeSizeCountAndEmptyDataIndependently() {
@@ -122,6 +123,14 @@ struct AttachmentContractTests {
         #expect(!ByteSignature.matches(Data("%PDF-1.7".utf8), mimeType: "image/jpeg"))
         #expect(ByteSignature.matches(Data("plain text".utf8), mimeType: "text/plain"))
         #expect(!ByteSignature.matches(Data([65, 0, 66]), mimeType: "text/plain"))
+
+        let m4a = Data([
+            0, 0, 0, 16, 102, 116, 121, 112, 77, 52, 65, 32, 0, 0, 0, 0,
+            0, 0, 0, 12, 109, 111, 111, 118, 0, 0, 0, 0,
+            0, 0, 0, 12, 109, 100, 97, 116, 0, 0, 0, 0,
+        ])
+        #expect(ByteSignature.matches(m4a, mimeType: "audio/mp4"))
+        #expect(!ByteSignature.matches(Data([0, 1, 2]), mimeType: "audio/mp4"))
 
         let safeOffice = Data("PK\u{3}\u{4} [Content_Types].xml word/document.xml".utf8)
         let macroOffice = Data("PK\u{3}\u{4} [Content_Types].xml word/vbaProject.bin".utf8)

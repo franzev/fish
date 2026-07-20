@@ -139,12 +139,14 @@ public final class AttachmentUploadsModel {
         announce("1 file didn't finish")
     }
 
+    @discardableResult
     public func add(
         _ incoming: [AttachmentCandidate],
         admissionFailures: [AttachmentFailureReason] = []
-    ) {
+    ) -> [String] {
         notice = nil
         var failures = admissionFailures
+        var addedIds: [String] = []
         for candidate in incoming {
             guard items.count < AttachmentRules.maxCount else {
                 failures.append(.serverRejected("too_many_attachments"))
@@ -158,9 +160,11 @@ public final class AttachmentUploadsModel {
                 name: candidate.originalName,
                 kind: AttachmentRules.imageMimeTypes.contains(candidate.sourceMimeType) ? .image : .file
             ) else { continue }
+            addedIds.append(id)
             fulfillLoadingItem(id, with: candidate)
         }
         if !failures.isEmpty { setAdmissionNotice(failures: failures) }
+        return addedIds
     }
 
     public func retry(_ id: String, automatic: Bool = false) {

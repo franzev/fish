@@ -94,7 +94,7 @@ public struct StagedAttachmentTile: View {
                 .scaledToFill()
         } else if item.kind == .file {
             VStack(spacing: Spacing.xs) {
-                Icon.fileText.image
+                (item.sourceMimeType == "audio/mp4" ? Icon.microphone : Icon.fileText).image
                     .frame(width: Metrics.targetTouch, height: Metrics.targetTouch)
                     .foregroundStyle(Palette.body)
             }

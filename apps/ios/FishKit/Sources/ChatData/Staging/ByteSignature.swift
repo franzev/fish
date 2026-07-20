@@ -29,9 +29,10 @@ public enum ByteSignature {
     public static func matches(_ data: Data, mimeType: String) -> Bool {
         switch mimeType.lowercased() {
         case "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/avif",
-             "application/pdf":
+             "application/pdf", "audio/mp4":
             let detected = detectedMimeType(data)
             if mimeType == "image/heif" { return detected == "image/heif" || detected == "image/heic" }
+            if mimeType == "audio/mp4" { return isValidAudioMp4(data) }
             return detected == mimeType
         case "text/plain", "text/csv":
             return !data.isEmpty && !data.contains(0) && String(data: data, encoding: .utf8) != nil
@@ -57,5 +58,45 @@ public enum ByteSignature {
               !archiveText.localizedCaseInsensitiveContains("vbaProject.bin")
         else { return false }
         return true
+    }
+
+    private static func isValidAudioMp4(_ data: Data) -> Bool {
+        var offset = 0
+        var hasFileType = false
+        var hasMovie = false
+        var hasMediaData = false
+        var boxCount = 0
+
+        while offset < data.count {
+            guard data.count - offset >= 8, boxCount < 256 else { return false }
+            boxCount += 1
+            let size = Int(readBigEndianUInt32(data, offset: offset))
+            let type = String(decoding: data[(offset + 4)..<(offset + 8)], as: UTF8.self)
+            var headerSize = 8
+            var boxSize = size
+            if size == 1 {
+                guard data.count - offset >= 16,
+                      readBigEndianUInt32(data, offset: offset + 8) == 0 else { return false }
+                boxSize = Int(readBigEndianUInt32(data, offset: offset + 12))
+                headerSize = 16
+            } else if size == 0 {
+                boxSize = data.count - offset
+            }
+            guard boxSize >= headerSize, boxSize <= data.count - offset else { return false }
+            if type == "ftyp" {
+                guard boxSize >= headerSize + 8 else { return false }
+                hasFileType = true
+            } else if type == "moov" && boxSize > headerSize {
+                hasMovie = true
+            } else if type == "mdat" && boxSize > headerSize {
+                hasMediaData = true
+            }
+            offset += boxSize
+        }
+        return hasFileType && hasMovie && hasMediaData
+    }
+
+    private static func readBigEndianUInt32(_ data: Data, offset: Int) -> UInt32 {
+        data[offset..<(offset + 4)].reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }
     }
 }

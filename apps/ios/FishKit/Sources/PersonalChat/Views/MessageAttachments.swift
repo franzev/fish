@@ -29,11 +29,18 @@ public struct MessageAttachments: View {
     }
 
     private var files: [MessageAttachmentUiModel] {
-        attachments.filter { $0.kind == .file }
+        attachments.filter { $0.kind == .file && !$0.isVoiceMessage }
+    }
+
+    private var voiceMessages: [MessageAttachmentUiModel] {
+        attachments.filter(\.isVoiceMessage)
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Spacing.twoXs) {
+            ForEach(voiceMessages) { voice in
+                MessageVoicePlayer(attachment: voice, downloader: downloader)
+            }
             if !images.isEmpty {
                 AttachmentFlowLayout {
                     ForEach(Array(images.enumerated()), id: \.element.id) { index, image in

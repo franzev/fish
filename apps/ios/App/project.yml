@@ -32,6 +32,7 @@ targets:
             CFBundleURLSchemes: [fish]
         NSPhotoLibraryUsageDescription: FISH uses photos you choose to share in a conversation.
         NSPhotoLibraryAddUsageDescription: FISH can save photos you choose to your library.
+        NSMicrophoneUsageDescription: FISH uses your microphone when you hold the record button to send a voice message.
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         KLIPY_API_KEY: $(KLIPY_API_KEY)

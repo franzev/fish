@@ -44,6 +44,7 @@ public struct PersonalChatScreen: View {
     private let fileDownloader: AttachmentFileDownloader
 
     @State private var isMediaPickerPresented = false
+    @State private var pendingVoiceUploadId: String?
     @Environment(\.scenePhase) private var scenePhase
 
     public init(
@@ -172,6 +173,12 @@ public struct PersonalChatScreen: View {
             default: break
             }
         }
+        .onChange(of: attachmentUploads?.items ?? []) { _, items in
+            sendPendingVoiceIfReady(items)
+        }
+        .onChange(of: model.connection) { _, _ in
+            sendPendingVoiceIfReady(attachmentUploads?.items ?? [])
+        }
         .onDisappear {
             attachmentUploads?.dismiss()
             onComposerFocusChanged(false)
@@ -205,6 +212,10 @@ public struct PersonalChatScreen: View {
                     context: model.composerContext,
                     onCancelContext: onCancelComposerContext,
                     onFocusChanged: onComposerFocusChanged,
+                    onVoiceRecorded: { candidate in
+                        guard let attachmentUploads else { return }
+                        pendingVoiceUploadId = attachmentUploads.add([candidate]).first
+                    },
                     onSend: {
                         let payload = ChatSendPayload(
                             body: draft,
@@ -220,6 +231,24 @@ public struct PersonalChatScreen: View {
             }
             .background(Palette.bg)
         }
+    }
+
+    private func sendPendingVoiceIfReady(_ items: [StagedAttachment]) {
+        guard let pendingVoiceUploadId,
+              Self.composerState(for: model) == .ready,
+              let item = items.first(where: { $0.id == pendingVoiceUploadId }),
+              item.isReady,
+              let attachmentUploads
+        else { return }
+
+        self.pendingVoiceUploadId = nil
+        onSend(ChatSendPayload(
+            body: "",
+            selection: .none,
+            attachmentIds: attachmentUploads.readyAttachmentIds,
+            optimisticAttachments: attachmentUploads.optimisticAttachments
+        ))
+        attachmentUploads.consumeAfterSend()
     }
 }
 

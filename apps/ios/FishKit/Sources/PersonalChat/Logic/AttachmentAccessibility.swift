@@ -3,7 +3,9 @@ import Foundation
 
 public enum AttachmentAccessibility {
     public static func tileLabel(_ item: StagedAttachment) -> String {
-        let name = item.originalName.isEmpty ? "Photo" : item.originalName
+        let name = item.sourceMimeType == "audio/mp4"
+            ? "Voice message"
+            : (item.originalName.isEmpty ? "Photo" : item.originalName)
         return switch item.status {
         case .loading: "\(name), loading"
         case .preparing: "\(name), preparing"
@@ -19,9 +21,15 @@ public enum AttachmentAccessibility {
     ) -> String? {
         guard !attachments.isEmpty else { return nil }
         let photos = attachments.filter { $0.kind == .image }.count
-        let files = attachments.filter { $0.kind == .file }
+        let voices = attachments.filter(\.isVoiceMessage)
+        let files = attachments.filter { $0.kind == .file && !$0.isVoiceMessage }
         var parts: [String] = []
         if photos > 0 { parts.append("\(photos) \(photos == 1 ? "photo" : "photos")") }
+        if !voices.isEmpty {
+            parts.append(contentsOf: voices.map {
+                "\($0.originalName), voice message, \(formattedByteSize($0.byteSize))"
+            })
+        }
         parts.append(contentsOf: files.map {
             "\($0.originalName), \(fileTypeLabel($0.mimeType)), \(formattedByteSize($0.byteSize))"
         })
@@ -30,6 +38,7 @@ public enum AttachmentAccessibility {
 
     public static func fileTypeLabel(_ mimeType: String?) -> String {
         switch mimeType {
+        case "audio/mp4": "Voice message"
         case "application/pdf": "PDF"
         case "text/plain": "Text file"
         case "text/csv": "CSV"
