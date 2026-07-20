@@ -82,6 +82,8 @@ class ChatViewModel(
     private var pendingMedia: ComposerMediaUiModel? = null
     private var pendingGifQuery: String = ""
     private var attachmentDrafts: List<LocalAttachmentUiModel> = emptyList()
+    private var pendingVoiceDraftId: String? = null
+    private var pendingVoiceConversationId: String? = null
     private var selectionRevision = 0L
     private val mediaJson = Json { ignoreUnknownKeys = true }
     private val refreshingAttachmentIds = mutableSetOf<String>()
@@ -96,6 +98,8 @@ class ChatViewModel(
                         activeCollection?.cancel()
                         currentUser = null
                         conversations = emptyList()
+                        pendingVoiceDraftId = null
+                        pendingVoiceConversationId = null
                         clearPendingMedia(recordRevision = true)
                         mutableUiState.value = ChatRouteUiState.SignedOut()
                     }
@@ -336,6 +340,14 @@ class ChatViewModel(
     fun commitAttachmentPreview() {
         val conversationId = activeConversation?.conversationId ?: return
         viewModelScope.launch { repository.commitAttachmentPreview(conversationId) }
+    }
+
+    /** Arms the normal attachment send path for a recording imported by the app boundary. */
+    fun armVoiceAutoSend(attachmentId: String) {
+        val conversation = activeConversation ?: return
+        pendingVoiceDraftId = attachmentId
+        pendingVoiceConversationId = conversation.conversationId
+        maybeSendVoiceMessage()
     }
 
     fun retryAttachmentDraft(attachmentId: String) {
@@ -677,6 +689,8 @@ class ChatViewModel(
     private fun openConversation(conversation: AuthorizedConversation) {
         val previousConversationId = activeConversation?.conversationId
         if (previousConversationId != null && previousConversationId != conversation.conversationId) {
+            pendingVoiceDraftId = null
+            pendingVoiceConversationId = null
             stopLocalTyping(previousConversationId)
         }
         participantTypingReset?.cancel()
@@ -742,6 +756,7 @@ class ChatViewModel(
                 repository.observeAttachmentDrafts(conversation.conversationId).collectLatest { drafts ->
                     attachmentDrafts = drafts.map(LocalAttachmentUiModel::from)
                     publish()
+                    maybeSendVoiceMessage()
                 }
             }
             launch {
@@ -1129,6 +1144,27 @@ class ChatViewModel(
         return attachmentDrafts.none { !it.inPreview } &&
             chatState.conversations[conversation.conversationId]?.realtime?.status !=
                 RealtimeConnectionStatus.Disconnected
+    }
+
+    private fun maybeSendVoiceMessage() {
+        val voiceId = pendingVoiceDraftId ?: return
+        val conversation = activeConversation ?: return
+        if (pendingVoiceConversationId != conversation.conversationId || sending) return
+        val state = chatState.conversations[conversation.conversationId] ?: return
+        if (state.realtime.status == RealtimeConnectionStatus.Disconnected) return
+        val voice = attachmentDrafts.firstOrNull { it.id == voiceId } ?: return
+        if (voice.inPreview || !voice.ready || voice.serverAttachmentId == null) return
+        val selectedAttachments = attachmentDrafts.filterNot { it.inPreview }
+        if (state.composer.draft.isNotBlank() || pendingMedia != null ||
+            selectedAttachments.size != 1 || selectedAttachments.single().id != voiceId
+        ) {
+            pendingVoiceDraftId = null
+            pendingVoiceConversationId = null
+            return
+        }
+        pendingVoiceDraftId = null
+        pendingVoiceConversationId = null
+        sendMessage()
     }
 
     private fun StickerCatalogItem.toUiModel(): StickerUiModel = StickerUiModel(

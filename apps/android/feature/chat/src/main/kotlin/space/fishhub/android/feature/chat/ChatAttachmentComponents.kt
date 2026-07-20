@@ -54,6 +54,9 @@ fun MessageAttachmentGroup(
     onPhotoClick: (String) -> Unit,
     onFileClick: (String) -> Unit,
     onPhotoLoadError: (String) -> Unit,
+    playingVoiceId: String? = null,
+    onToggleVoice: (String) -> Unit = {},
+    onAttachmentLoadError: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -70,6 +73,14 @@ fun MessageAttachmentGroup(
                     onLoadError = onPhotoLoadError,
                 )
                 is AttachmentRun.Item -> when (run.item.kind) {
+                    AttachmentUiKind.Voice -> VoiceMessageMedia(
+                        attachment = run.item,
+                        author = author,
+                        timeLabel = timeLabel,
+                        playing = run.item.id == playingVoiceId,
+                        onTogglePlayback = { onToggleVoice(run.item.id) },
+                        onPlaybackError = { onAttachmentLoadError(run.item.id) },
+                    )
                     AttachmentUiKind.File -> FileAttachmentCard(
                         attachment = run.item,
                         author = author,

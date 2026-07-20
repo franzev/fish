@@ -446,6 +446,7 @@ internal class DefaultChatRepository(
         val remaining = (MaxMessageAttachments - composer.size).coerceAtLeast(0)
         val knownHashes = composer.mapTo(mutableSetOf()) { it.sha256 }
         val issues = mutableListOf<AttachmentImportIssue>()
+        val importedIds = mutableListOf<String>()
         var imported = 0
         for (source in sources) {
             if (imported >= remaining) {
@@ -468,6 +469,7 @@ internal class DefaultChatRepository(
                     continue
                 }
                 dao.insertAttachmentDraft(draft)
+                importedIds += draft.id
                 imported += 1
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -478,7 +480,7 @@ internal class DefaultChatRepository(
                 )
             }
         }
-        AttachmentImportResult(imported, issues.distinctBy { it.message })
+        AttachmentImportResult(imported, issues.distinctBy { it.message }, importedIds)
     }
 
     override suspend fun commitAttachmentPreview(conversationId: String) =

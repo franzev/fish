@@ -84,6 +84,36 @@ class ChatViewModelTest {
         }
 
     @Test
+    fun `armed voice draft auto sends exactly once when upload is ready`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("voice", 0, LocalAttachmentScope.Composer).copy(
+                        kind = LocalAttachmentKind.File,
+                        displayName = "Voice message.m4a",
+                        sourceMimeType = "audio/mp4",
+                        storedMimeType = "audio/mp4",
+                        serverAttachmentId = "server-voice",
+                        transferState = LocalAttachmentTransferState.Ready,
+                        progressBytes = 12_000,
+                        byteSize = 12_000,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.armVoiceAutoSend("voice")
+            advanceUntilIdle()
+
+            assertEquals(1, repository.sendCalls)
+            assertEquals(listOf("server-voice"), repository.lastSentContent?.attachmentIds)
+            assertEquals("", repository.lastSentContent?.body)
+        }
+
+    @Test
     fun `one failed attachment blocks subset send and keeps every row`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository()

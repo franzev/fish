@@ -80,6 +80,11 @@ fun ChatAdaptiveLayout(
     onRetryConversation: () -> Unit = {},
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    voiceRecording: VoiceRecordingUiState = VoiceRecordingUiState(),
+    voiceRecordingEnabled: Boolean = false,
+    onStartVoiceRecording: () -> Unit = {},
+    onFinishVoiceRecording: () -> Unit = {},
+    onCancelVoiceRecording: () -> Unit = {},
     participantPresence: PresencePresentation = PresencePresentation(),
     accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -136,6 +141,11 @@ fun ChatAdaptiveLayout(
                         onAttachmentLoadError = onAttachmentLoadError,
                         onStartAudioCall = onStartAudioCall,
                         onStartVideoCall = onStartVideoCall,
+                        voiceRecording = voiceRecording,
+                        voiceRecordingEnabled = voiceRecordingEnabled,
+                        onStartVoiceRecording = onStartVoiceRecording,
+                        onFinishVoiceRecording = onFinishVoiceRecording,
+                        onCancelVoiceRecording = onCancelVoiceRecording,
                         participantPresence = participantPresence,
                         accountContent = accountContent,
                         modifier = Modifier
@@ -179,6 +189,11 @@ fun ChatAdaptiveLayout(
                     onAttachmentLoadError = onAttachmentLoadError,
                     onStartAudioCall = onStartAudioCall,
                     onStartVideoCall = onStartVideoCall,
+                    voiceRecording = voiceRecording,
+                    voiceRecordingEnabled = voiceRecordingEnabled,
+                    onStartVoiceRecording = onStartVoiceRecording,
+                    onFinishVoiceRecording = onFinishVoiceRecording,
+                    onCancelVoiceRecording = onCancelVoiceRecording,
                     participantPresence = participantPresence,
                     accountContent = accountContent,
                     modifier = Modifier
@@ -221,6 +236,11 @@ fun ChatScreen(
     onAttachmentLoadError: (String) -> Unit = {},
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    voiceRecording: VoiceRecordingUiState = VoiceRecordingUiState(),
+    voiceRecordingEnabled: Boolean = false,
+    onStartVoiceRecording: () -> Unit = {},
+    onFinishVoiceRecording: () -> Unit = {},
+    onCancelVoiceRecording: () -> Unit = {},
     participantPresence: PresencePresentation = PresencePresentation(),
     accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -330,6 +350,11 @@ fun ChatScreen(
                     sendEnabled = model.connection != ChatConnectionUiState.Offline &&
                         pendingAttachments.all { it.ready },
                     sending = model.isSending,
+                    voiceRecording = voiceRecording,
+                    voiceRecordingEnabled = voiceRecordingEnabled,
+                    onStartVoiceRecording = onStartVoiceRecording,
+                    onFinishVoiceRecording = onFinishVoiceRecording,
+                    onCancelVoiceRecording = onCancelVoiceRecording,
                     modifier = Modifier
                         .navigationBarsPadding()
                         .imePadding(),
@@ -406,8 +431,12 @@ fun ChatTranscript(
     var handledFocusMessageId by remember { mutableStateOf<String?>(null) }
     var transcriptPositioned by remember { mutableStateOf(false) }
     var playingGifId by remember { mutableStateOf<String?>(null) }
+    var playingVoiceId by remember { mutableStateOf<String?>(null) }
     var showNewMessages by remember { mutableStateOf(false) }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { playingGifId = null }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        playingGifId = null
+        playingVoiceId = null
+    }
     val lastMessageId = messages.lastOrNull()?.id
     LaunchedEffect(lastMessageId, focusedMessageId) {
         if (focusedMessageId != null && handledFocusMessageId != focusedMessageId) {
@@ -446,6 +475,9 @@ fun ChatTranscript(
     }
     LaunchedEffect(messages.map(MessageUiModel::id)) {
         if (playingGifId !in messages.map(MessageUiModel::id)) playingGifId = null
+        if (playingVoiceId !in messages.flatMap { it.attachments }.map(AttachmentUiModel::id)) {
+            playingVoiceId = null
+        }
     }
     LaunchedEffect(focusedMessageId, messages.map(MessageUiModel::id)) {
         val focusedIndex = messages.indexOfFirst { it.id == focusedMessageId }
@@ -485,6 +517,11 @@ fun ChatTranscript(
                     onReportGif = { onReportGif(message.id) },
                     onPhotoAttachmentClick = onPhotoAttachmentClick,
                     onFileAttachmentClick = onFileAttachmentClick,
+                    playingVoiceId = playingVoiceId,
+                    onToggleVoice = { attachmentId ->
+                        playingVoiceId = if (playingVoiceId == attachmentId) null else attachmentId
+                        if (playingVoiceId == attachmentId) playingGifId = null
+                    },
                     onAttachmentLoadError = onAttachmentLoadError,
                     onRetry = { onRetryMessage(message.id) },
                     onOpenActions = { onOpenMessageActions(message.id) },

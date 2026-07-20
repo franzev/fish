@@ -6,4 +6,6 @@
     <string name="chat_channel_name">Messages</string>
     <string name="chat_channel_description">Direct messages in FISH</string>
     <string name="chat_notification_message">Sent you a message</string>
+    <string name="microphone_permission_needed">Microphone access is needed. Allow it, then hold again.</string>
+    <string name="voice_recording_failed">That recording could not be sent. Try again.</string>
 </resources>

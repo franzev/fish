@@ -6,4 +6,7 @@
     <cache-path
         name="chat_opened_attachments"
         path="chat-opened-attachments/" />
+    <cache-path
+        name="chat_voice_recordings"
+        path="chat-voice-recordings/" />
 </paths>

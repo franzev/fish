@@ -91,6 +91,7 @@ data class AttachmentImportIssue(
 data class AttachmentImportResult(
     val importedCount: Int,
     val issues: List<AttachmentImportIssue> = emptyList(),
+    val importedIds: List<String> = emptyList(),
 ) {
     val message: String?
         get() = when {

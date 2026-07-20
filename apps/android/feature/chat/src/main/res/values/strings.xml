@@ -3,6 +3,17 @@
     <string name="back">Back</string>
     <string name="message_label">Message</string>
     <string name="message_placeholder">Write a message</string>
+    <string name="record_voice_message">Record voice message</string>
+    <string name="recording_voice_message">Recording %1$s</string>
+    <string name="slide_to_cancel_voice_message">Slide away to cancel</string>
+    <string name="cancel_voice_recording">Cancel voice recording</string>
+    <string name="send_voice_recording">Send voice recording</string>
+    <string name="microphone_permission_needed">Microphone access is needed. Allow it, then hold again.</string>
+    <string name="voice_recording_failed">That recording could not be sent. Try again.</string>
+    <string name="voice_message">Voice message</string>
+    <string name="play_voice_message">Play voice message</string>
+    <string name="pause_voice_message">Pause voice message</string>
+    <string name="voice_message_accessibility">%1$s. Voice message, %2$s. %3$s</string>
     <string name="send_message">Send message</string>
     <string name="sending_message">Sending message</string>
     <string name="message_limit">This message is a little long. Try sending it in two parts.</string>

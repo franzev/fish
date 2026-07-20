@@ -124,9 +124,14 @@ fun messageSnippet(message: ChatMessage): String {
     if (body.isEmpty() && message.gifUnavailable) return "GIF"
     if (body.isEmpty() && message.attachments.isNotEmpty()) {
         if (message.attachments.size == 1) {
-            return when (message.attachments.first().kind) {
+            val attachment = message.attachments.first()
+            return when (attachment.kind) {
                 ChatAttachmentKind.Image -> "Photo"
-                ChatAttachmentKind.File -> "File"
+                ChatAttachmentKind.File -> if (attachment.mimeType == "audio/mp4") {
+                    "Voice message"
+                } else {
+                    "File"
+                }
                 ChatAttachmentKind.Unavailable -> "Attachment"
             }
         }

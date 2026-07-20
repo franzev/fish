@@ -2,6 +2,7 @@ package space.fishhub.android
 
 import android.Manifest
 import android.os.Bundle
+import android.os.SystemClock
 import android.animation.ValueAnimator
 import android.app.PictureInPictureParams
 import android.content.Intent
@@ -55,6 +56,7 @@ import space.fishhub.android.feature.chat.AttachmentImportUiState
 import space.fishhub.android.feature.chat.ChatMediaCatalog
 import space.fishhub.android.feature.chat.MediaPickerViewModel
 import space.fishhub.android.feature.chat.ParticipantUiModel
+import space.fishhub.android.feature.chat.VoiceRecordingUiState
 import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
 import space.fishhub.android.messaging.ChatDestination
@@ -63,6 +65,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 class MainActivity : ComponentActivity() {
     private lateinit var fishApplication: FishApplication
@@ -76,6 +80,10 @@ class MainActivity : ComponentActivity() {
     private var pendingCameraFile: File? = null
     private var pendingCameraUri: Uri? = null
     private lateinit var attachmentFileOpener: AttachmentFileOpener
+    private lateinit var voiceMessageRecorder: VoiceMessageRecorder
+    private val voiceRecordingState = MutableStateFlow(VoiceRecordingUiState())
+    private var voiceRecordingTicker: kotlinx.coroutines.Job? = null
+    private var voiceRecordingStartedAt = 0L
 
     private val photoPickerLauncher = registerForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(MaxMessageAttachments),
@@ -113,6 +121,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val voicePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        voiceRecordingState.value = VoiceRecordingUiState(
+            notice = if (granted) null else getString(R.string.microphone_permission_needed),
+        )
+    }
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
@@ -127,6 +143,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         fishApplication = application as FishApplication
         attachmentFileOpener = AttachmentFileOpener(this, BuildConfig.SUPABASE_URL)
+        voiceMessageRecorder = VoiceMessageRecorder(this)
         attachmentConversationId = savedInstanceState?.getString(AttachmentConversationStateKey)
         pendingCameraFile = savedInstanceState?.getString(CameraFileStateKey)?.let(::File)
             ?.takeIf(File::exists)
@@ -180,6 +197,7 @@ class MainActivity : ComponentActivity() {
             val callMinimized by minimized.collectAsStateWithLifecycle()
             val pip by pictureInPicture.collectAsStateWithLifecycle()
             val attachmentImport by attachmentImportState.collectAsStateWithLifecycle()
+            val voiceRecording by voiceRecordingState.collectAsStateWithLifecycle()
             val chatDestination by pendingChatDestination.collectAsStateWithLifecycle()
             LaunchedEffect(chatDestination, chatViewModel) {
                 chatDestination?.let { destination ->
@@ -218,6 +236,13 @@ class MainActivity : ComponentActivity() {
                                 documentPickerLauncher.launch(SupportedDocumentMimeTypes)
                             }
                         },
+                        voiceRecording = voiceRecording,
+                        voiceRecordingEnabled = packageManager.hasSystemFeature(
+                            PackageManager.FEATURE_MICROPHONE,
+                        ),
+                        onStartVoiceRecording = { startVoiceRecording(chatViewModel) },
+                        onFinishVoiceRecording = { finishVoiceRecording(chatViewModel) },
+                        onCancelVoiceRecording = ::cancelVoiceRecording,
                         onAttachmentFlowFinished = {
                             attachmentImportState.value = AttachmentImportUiState()
                             attachmentConversationId = null
@@ -267,6 +292,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         fishApplication.presenceRepository.markActive()
+    }
+
+    override fun onStop() {
+        cancelVoiceRecording()
+        super.onStop()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -479,6 +509,86 @@ class MainActivity : ComponentActivity() {
                 if (cameraCapture) clearPendingCameraCapture()
             }
         }
+    }
+
+    private fun startVoiceRecording(viewModel: ChatViewModel) {
+        if (voiceRecordingState.value.recording) return
+        val conversationId = selectedConversationId(viewModel)
+        if (conversationId == null) return
+        voiceRecordingState.value = VoiceRecordingUiState()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        if (!voiceMessageRecorder.start()) {
+            voiceRecordingState.value = VoiceRecordingUiState(
+                notice = getString(R.string.voice_recording_failed),
+            )
+            return
+        }
+        voiceRecordingStartedAt = SystemClock.elapsedRealtime()
+        voiceRecordingState.value = VoiceRecordingUiState(recording = true)
+        voiceRecordingTicker?.cancel()
+        voiceRecordingTicker = lifecycleScope.launch {
+            while (isActive) {
+                voiceRecordingState.value = VoiceRecordingUiState(
+                    recording = true,
+                    elapsedMillis = SystemClock.elapsedRealtime() - voiceRecordingStartedAt,
+                )
+                delay(250)
+            }
+        }
+    }
+
+    private fun finishVoiceRecording(viewModel: ChatViewModel) {
+        if (!voiceRecordingState.value.recording) return
+        val conversationId = selectedConversationId(viewModel)
+        stopVoiceRecordingState()
+        val uri = voiceMessageRecorder.stop()
+        if (conversationId == null || uri == null) {
+            voiceMessageRecorder.cleanupCompleted()
+            voiceRecordingState.value = VoiceRecordingUiState(
+                notice = getString(R.string.voice_recording_failed),
+            )
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                val result = fishApplication.chatRepository.importAttachments(
+                    conversationId,
+                    listOf(AttachmentImportSource(uri, AttachmentImportKind.File)),
+                )
+                val importedId = result.importedIds.singleOrNull()
+                if (importedId == null) {
+                    voiceRecordingState.value = VoiceRecordingUiState(
+                        notice = result.message ?: getString(R.string.voice_recording_failed),
+                    )
+                    return@launch
+                }
+                fishApplication.chatRepository.commitAttachmentPreview(conversationId)
+                viewModel.armVoiceAutoSend(importedId)
+                voiceRecordingState.value = VoiceRecordingUiState()
+            } catch (_: Throwable) {
+                voiceRecordingState.value = VoiceRecordingUiState(
+                    notice = getString(R.string.voice_recording_failed),
+                )
+            } finally {
+                voiceMessageRecorder.cleanupCompleted()
+            }
+        }
+    }
+
+    private fun cancelVoiceRecording() {
+        stopVoiceRecordingState()
+        voiceMessageRecorder.cancel()
+    }
+
+    private fun stopVoiceRecordingState() {
+        voiceRecordingTicker?.cancel()
+        voiceRecordingTicker = null
+        voiceRecordingState.value = VoiceRecordingUiState()
     }
 
     private fun requestAttachmentCamera() {

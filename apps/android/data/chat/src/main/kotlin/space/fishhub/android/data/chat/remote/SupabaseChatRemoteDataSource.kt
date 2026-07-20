@@ -972,6 +972,7 @@ private fun unavailableAttachment(id: String, position: Int): ChatAttachment = C
 )
 
 private val SupportedDocumentMimes = setOf(
+    "audio/mp4",
     "application/pdf",
     "text/plain",
     "text/csv",

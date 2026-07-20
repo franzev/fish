@@ -126,6 +126,35 @@ class AttachmentImporterInstrumentedTest {
         importer.delete(result)
     }
 
+    @Test
+    fun m4aIsAcceptedAsAnAudioFileAndMalformedContainerIsRejected() = runTest {
+        val input = File(inputDirectory, "voice.m4a").apply { writeBytes(m4a()) }
+        val uri = TestAttachmentProvider.register(input, "Voice message.m4a", "audio/mp4")
+
+        val result = importer.import(
+            AttachmentImportSource(uri, AttachmentImportKind.File),
+            "conversation-1",
+            "client-1",
+            0,
+        )
+
+        assertEquals("audio/mp4", result.storedMimeType)
+        assertEquals("Voice message.m4a", result.displayName)
+        importer.delete(result)
+
+        val invalid = File(inputDirectory, "invalid.m4a").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        val invalidUri = TestAttachmentProvider.register(invalid, "invalid.m4a", "audio/mp4")
+        val error = runCatching {
+            importer.import(
+                AttachmentImportSource(invalidUri, AttachmentImportKind.File),
+                "conversation-1",
+                "client-1",
+                0,
+            )
+        }.exceptionOrNull()
+        assertTrue(error is AttachmentImportException)
+    }
+
     private fun jpeg(name: String, width: Int, height: Int): File {
         val file = File(inputDirectory, name)
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -147,4 +176,12 @@ class AttachmentImporterInstrumentedTest {
         }
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
+
+    private fun m4a(): ByteArray = byteArrayOf(
+        0, 0, 0, 20, 'f'.code.toByte(), 't'.code.toByte(), 'y'.code.toByte(), 'p'.code.toByte(),
+        'M'.code.toByte(), '4'.code.toByte(), 'A'.code.toByte(), ' '.code.toByte(),
+        0, 0, 0, 0, 'M'.code.toByte(), '4'.code.toByte(), 'A'.code.toByte(), ' '.code.toByte(),
+        0, 0, 0, 11, 'm'.code.toByte(), 'd'.code.toByte(), 'a'.code.toByte(), 't'.code.toByte(), 1, 2, 3,
+        0, 0, 0, 12, 'm'.code.toByte(), 'o'.code.toByte(), 'o'.code.toByte(), 'v'.code.toByte(), 0, 0, 0, 1,
+    )
 }

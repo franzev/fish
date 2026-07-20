@@ -458,9 +458,60 @@ internal class AttachmentImporter(
             }
             DocumentSignature.Text -> validateText(file)
             DocumentSignature.Zip -> validateOfficeZip(file, expected.officeRoot!!)
+            DocumentSignature.Audio -> validateAudioMp4(file)
         }
         return expected.mime
     }
+
+    private fun validateAudioMp4(file: File) {
+        val bytes = file.readBytes()
+        var offset = 0
+        var hasFileType = false
+        var hasMovie = false
+        var hasMediaData = false
+        var boxCount = 0
+        while (offset < bytes.size) {
+            if (bytes.size - offset < 8 || boxCount++ > 256) {
+                throw AttachmentImportException("That recording could not be read. Try recording it again.")
+            }
+            val declaredSize = readBigEndianUInt32(bytes, offset)
+            val type = bytes.copyOfRange(offset + 4, offset + 8).decodeToString()
+            var headerSize = 8
+            var boxSize = declaredSize
+            if (declaredSize == 1L) {
+                if (bytes.size - offset < 16 || readBigEndianUInt32(bytes, offset + 8) != 0L) {
+                    throw AttachmentImportException("That recording could not be read. Try recording it again.")
+                }
+                boxSize = readBigEndianUInt32(bytes, offset + 12)
+                headerSize = 16
+            } else if (declaredSize == 0L) {
+                boxSize = (bytes.size - offset).toLong()
+            }
+            if (boxSize < headerSize || boxSize > bytes.size - offset) {
+                throw AttachmentImportException("That recording could not be read. Try recording it again.")
+            }
+            when (type) {
+                "ftyp" -> {
+                    if (boxSize < headerSize + 8) {
+                        throw AttachmentImportException("That recording could not be read. Try recording it again.")
+                    }
+                    hasFileType = true
+                }
+                "moov" -> hasMovie = boxSize > headerSize
+                "mdat" -> hasMediaData = boxSize > headerSize
+            }
+            offset += boxSize.toInt()
+        }
+        if (!hasFileType || !hasMovie || !hasMediaData) {
+            throw AttachmentImportException("That recording could not be read. Try recording it again.")
+        }
+    }
+
+    private fun readBigEndianUInt32(bytes: ByteArray, offset: Int): Long =
+        ((bytes[offset].toLong() and 0xff) shl 24) or
+            ((bytes[offset + 1].toLong() and 0xff) shl 16) or
+            ((bytes[offset + 2].toLong() and 0xff) shl 8) or
+            (bytes[offset + 3].toLong() and 0xff)
 
     private fun validateText(file: File) {
         try {
@@ -620,7 +671,7 @@ private fun startsWith(file: File, signature: ByteArray): Boolean {
     return read == signature.size && actual.contentEquals(signature)
 }
 
-private enum class DocumentSignature { Pdf, Text, Zip }
+private enum class DocumentSignature { Pdf, Text, Zip, Audio }
 
 private data class DocumentType(
     val mime: String,
@@ -634,6 +685,7 @@ private const val MimePng = "image/png"
 private const val MimeWebp = "image/webp"
 private const val MimeHeic = "image/heic"
 private const val MimeAvif = "image/avif"
+private const val MimeAudioMp4 = "audio/mp4"
 private const val MaxImageSourceBytes = 25L * 1024L * 1024L
 private const val MaxDocumentBytes = 10L * 1024L * 1024L
 private const val MaxNormalizedImageBytes = 5L * 1024L * 1024L
@@ -666,6 +718,7 @@ private val ImageExtensions = mapOf(
     MimeAvif to setOf("avif"),
 )
 private val DocumentTypes = mapOf(
+    "m4a" to DocumentType(MimeAudioMp4, setOf(MimeAudioMp4), DocumentSignature.Audio),
     "pdf" to DocumentType("application/pdf", setOf("application/pdf"), DocumentSignature.Pdf),
     "txt" to DocumentType("text/plain", setOf("text/plain"), DocumentSignature.Text),
     "csv" to DocumentType("text/csv", setOf("text/csv", "text/plain", "application/csv"), DocumentSignature.Text),

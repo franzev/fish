@@ -90,7 +90,14 @@ data class ReactionUiModel(
     val byMe: Boolean,
 )
 
-enum class AttachmentUiKind { Photo, File, Unavailable }
+enum class AttachmentUiKind { Photo, Voice, File, Unavailable }
+
+@Immutable
+data class VoiceRecordingUiState(
+    val recording: Boolean = false,
+    val elapsedMillis: Long = 0L,
+    val notice: String? = null,
+)
 
 @Immutable
 data class AttachmentUiModel(
@@ -113,7 +120,11 @@ data class AttachmentUiModel(
             position = attachment.position,
             kind = when (attachment.kind) {
                 ChatAttachmentKind.Image -> AttachmentUiKind.Photo
-                ChatAttachmentKind.File -> AttachmentUiKind.File
+                ChatAttachmentKind.File -> if (attachment.mimeType == "audio/mp4") {
+                    AttachmentUiKind.Voice
+                } else {
+                    AttachmentUiKind.File
+                }
                 ChatAttachmentKind.Unavailable -> AttachmentUiKind.Unavailable
             },
             available = attachment.available,
@@ -220,6 +231,7 @@ data class LocalAttachmentUiModel(
     val failureReason: AttachmentFailureUiReason? = null,
 ) {
     val ready: Boolean get() = transferState == AttachmentTransferUiState.Ready
+    val isVoice: Boolean get() = mimeType == "audio/mp4"
 
     companion object {
         fun from(draft: LocalAttachmentDraft) = LocalAttachmentUiModel(

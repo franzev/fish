@@ -533,6 +533,7 @@ class ChatAccessibilityTest {
         name = name,
         mimeType = when (kind) {
             AttachmentUiKind.Photo -> "image/webp"
+            AttachmentUiKind.Voice -> "audio/mp4"
             AttachmentUiKind.File -> "application/pdf"
             AttachmentUiKind.Unavailable -> null
         },

@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import android.net.Uri
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -35,6 +36,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.PlayerSurface
@@ -42,6 +46,13 @@ import coil3.compose.AsyncImage
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishIconButton
+import space.fishhub.android.core.designsystem.component.FishIconButtonVariant
+import space.fishhub.android.core.designsystem.component.FishProgress
+import java.io.File
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
 
 @Composable
 fun ComposerMediaPreview(
@@ -249,4 +260,139 @@ private fun TranscriptGifPlayer(gif: GifUiModel, modifier: Modifier = Modifier) 
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { player.pause() }
     PlayerSurface(player = player, modifier = modifier)
+}
+
+@Composable
+fun VoiceMessageMedia(
+    attachment: AttachmentUiModel,
+    author: String,
+    timeLabel: String,
+    playing: Boolean,
+    onTogglePlayback: () -> Unit,
+    onPlaybackError: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val source = attachment.displayUrl
+    if (source == null) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+                .clip(RoundedCornerShape(FishTheme.radii.chat))
+                .background(FishTheme.colors.surfaceAlt)
+                .padding(FishTheme.spacing.md),
+        ) {
+            Text(
+                text = stringResource(R.string.voice_message),
+                color = FishTheme.colors.body,
+                style = FishTheme.typography.body,
+            )
+        }
+        return
+    }
+    var durationMs by remember(source) { mutableLongStateOf(0L) }
+    var positionMs by remember(source) { mutableLongStateOf(0L) }
+    var endedNotified by remember(source) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val player = if (playing) {
+        remember(source) {
+            ExoPlayer.Builder(context).build().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(C.USAGE_MEDIA)
+                        .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+                        .build(),
+                    true,
+                )
+                setMediaItem(MediaItem.fromUri(source.toMediaUri()))
+                addListener(object : Player.Listener {
+                    override fun onPlayerError(error: PlaybackException) {
+                        onPlaybackError()
+                    }
+                })
+                prepare()
+            }
+        }
+    } else {
+        null
+    }
+    LaunchedEffect(player) {
+        if (player == null) return@LaunchedEffect
+        while (isActive) {
+            durationMs = player.duration.takeIf { it > 0 } ?: durationMs
+            positionMs = player.currentPosition.coerceAtLeast(0L)
+            if (player.playbackState == Player.STATE_ENDED && !endedNotified) {
+                endedNotified = true
+                onTogglePlayback()
+            }
+            delay(250)
+        }
+    }
+    LaunchedEffect(player, playing) {
+        if (playing) {
+            endedNotified = false
+            if (player?.playbackState == Player.STATE_ENDED) player.seekTo(0)
+            player?.play()
+        } else {
+            player?.pause()
+        }
+    }
+    player?.let { activePlayer ->
+        DisposableEffect(activePlayer) {
+            onDispose { activePlayer.release() }
+        }
+        LifecycleEventEffect(Lifecycle.Event.ON_STOP) { activePlayer.pause() }
+    }
+    val durationLabel = if (durationMs > 0) formatVoiceDuration(durationMs) else "--:--"
+    val spoken = stringResource(
+        R.string.voice_message_accessibility,
+        author,
+        durationLabel,
+        timeLabel,
+    )
+    Column(
+        modifier = modifier
+            .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+            .clip(RoundedCornerShape(FishTheme.radii.chat))
+            .background(FishTheme.colors.surfaceAlt)
+            .padding(horizontal = FishTheme.spacing.sm, vertical = FishTheme.spacing.xs)
+            .semantics { contentDescription = spoken },
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FishIconButton(
+                icon = if (playing) FishIcons.Pause else FishIcons.Play,
+                contentDescription = stringResource(
+                    if (playing) R.string.pause_voice_message else R.string.play_voice_message,
+                ),
+                onClick = onTogglePlayback,
+                enabled = attachment.available,
+                variant = if (playing) FishIconButtonVariant.Filled else FishIconButtonVariant.Quiet,
+                size = FishTheme.sizes.touchTarget,
+            )
+            Text(
+                text = if (playing || durationMs > 0) {
+                    "${formatVoiceDuration(positionMs)} / $durationLabel"
+                } else {
+                    stringResource(R.string.voice_message)
+                },
+                modifier = Modifier.weight(1f),
+                color = FishTheme.colors.foreground,
+                style = FishTheme.typography.label,
+            )
+        }
+        if (durationMs > 0) {
+            FishProgress(
+                progress = positionMs.toFloat() / durationMs.toFloat(),
+                contentDescription = spoken,
+                modifier = Modifier.padding(horizontal = FishTheme.spacing.xs),
+            )
+        }
+    }
+}
+
+private fun String.toMediaUri(): Uri = Uri.parse(this).takeIf { !it.scheme.isNullOrBlank() }
+    ?: Uri.fromFile(File(this))
+
+private fun formatVoiceDuration(milliseconds: Long): String {
+    val totalSeconds = (milliseconds / 1_000L).coerceAtLeast(0L)
+    return "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
 }

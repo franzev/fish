@@ -7,6 +7,8 @@ import space.fishhub.android.data.chat.model.LocalAttachmentDraft
 import space.fishhub.android.data.chat.model.LocalAttachmentKind
 import space.fishhub.android.data.chat.model.LocalAttachmentScope
 import space.fishhub.android.data.chat.model.LocalAttachmentTransferState
+import space.fishhub.android.data.chat.model.ChatAttachment
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
 
 class ChatAttachmentComponentsTest {
     @Test
@@ -46,6 +48,25 @@ class ChatAttachmentComponentsTest {
 
         assertTrue(run is AttachmentRun.Item)
         assertEquals("unavailable", (run as AttachmentRun.Item).item.id)
+    }
+
+    @Test
+    fun `audio file is rendered as a voice attachment`() {
+        val voice = AttachmentUiModel.from(
+            ChatAttachment(
+                id = "voice-1",
+                position = 0,
+                kind = ChatAttachmentKind.File,
+                available = true,
+                originalName = "Voice message.m4a",
+                mimeType = "audio/mp4",
+                byteSize = 12_000,
+                displayUrl = "https://example.test/voice.m4a",
+            ),
+        )
+
+        assertEquals(AttachmentUiKind.Voice, voice.kind)
+        assertEquals("audio/mp4", voice.mimeType)
     }
 
     @Test
