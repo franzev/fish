@@ -18,7 +18,7 @@ public struct GifMedia: View {
 
     @State private var posterFailed = false
     @State private var playRequested: Bool?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
 
     /// - Parameters:
     ///   - preview: grid-tile mode — plays the tiny rendition and fills a

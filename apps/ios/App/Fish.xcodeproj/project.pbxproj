@@ -7,14 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1EAEB9D218D1DFE18737D20D /* ChatData in Frameworks */ = {isa = PBXBuildFile; productRef = BF3F734419E9BEC0FF504B65 /* ChatData */; };
+		1AF6A5708344D455E8EAEF38 /* PersonalChat in Frameworks */ = {isa = PBXBuildFile; productRef = B821BA6D07778D0EA77672B9 /* PersonalChat */; };
+		1EAEB9D218D1DFE18737D20D /* AccountSettings in Frameworks */ = {isa = PBXBuildFile; productRef = 29992C6DCA677AF27B18AFCD /* AccountSettings */; };
 		5C24F41D8C2845280E583402 /* UIComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 20E83DC5C6A63E1B069F468B /* UIComponents */; };
 		D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 83168A43E32F0C01BDF1133F /* DesignSystem */; };
 		F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E5EB18FA42EA4D7E193BB /* FishApp.swift */; };
-		FFC50F51A759B18B9B766856 /* PersonalChat in Frameworks */ = {isa = PBXBuildFile; productRef = B821BA6D07778D0EA77672B9 /* PersonalChat */; };
+		F3FB0B78B20C254B388A296C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */; };
+		FFC50F51A759B18B9B766856 /* ChatData in Frameworks */ = {isa = PBXBuildFile; productRef = BF3F734419E9BEC0FF504B65 /* ChatData */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		227E5EB18FA42EA4D7E193BB /* FishApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishApp.swift; sourceTree = "<group>"; };
 		323AD597C6079F6C90636877 /* Fish.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Fish.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4775B54857D0E072B6B0E150 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -29,8 +32,9 @@
 			files = (
 				D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */,
 				5C24F41D8C2845280E583402 /* UIComponents in Frameworks */,
-				1EAEB9D218D1DFE18737D20D /* ChatData in Frameworks */,
-				FFC50F51A759B18B9B766856 /* PersonalChat in Frameworks */,
+				1EAEB9D218D1DFE18737D20D /* AccountSettings in Frameworks */,
+				FFC50F51A759B18B9B766856 /* ChatData in Frameworks */,
+				1AF6A5708344D455E8EAEF38 /* PersonalChat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,6 +55,7 @@
 				4B52387CF5B0AAFF2A75259B /* Fish.entitlements */,
 				227E5EB18FA42EA4D7E193BB /* FishApp.swift */,
 				4775B54857D0E072B6B0E150 /* Info.plist */,
+				20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -80,6 +85,7 @@
 			buildConfigurationList = D8437C1E46241A5A504039C1 /* Build configuration list for PBXNativeTarget "Fish" */;
 			buildPhases = (
 				5860723F07814D680C1F5B07 /* Sources */,
+				68CE09C69FB9AD1113C0B822 /* Resources */,
 				820B7C1913A5B772A360462A /* Frameworks */,
 			);
 			buildRules = (
@@ -90,6 +96,7 @@
 			packageProductDependencies = (
 				83168A43E32F0C01BDF1133F /* DesignSystem */,
 				20E83DC5C6A63E1B069F468B /* UIComponents */,
+				29992C6DCA677AF27B18AFCD /* AccountSettings */,
 				BF3F734419E9BEC0FF504B65 /* ChatData */,
 				B821BA6D07778D0EA77672B9 /* PersonalChat */,
 			);
@@ -129,6 +136,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		68CE09C69FB9AD1113C0B822 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F3FB0B78B20C254B388A296C /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5860723F07814D680C1F5B07 /* Sources */ = {
@@ -226,6 +244,7 @@
 				SUPABASE_URL = "${FISH_SUPABASE_URL}";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				WEB_BASE_URL = "${FISH_WEB_BASE_URL}";
 			};
 			name = Debug;
 		};
@@ -250,6 +269,7 @@
 				SUPABASE_URL = "${FISH_SUPABASE_URL}";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				WEB_BASE_URL = "${FISH_WEB_BASE_URL}";
 			};
 			name = Release;
 		};
@@ -343,6 +363,10 @@
 		20E83DC5C6A63E1B069F468B /* UIComponents */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = UIComponents;
+		};
+		29992C6DCA677AF27B18AFCD /* AccountSettings */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AccountSettings;
 		};
 		83168A43E32F0C01BDF1133F /* DesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;

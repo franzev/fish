@@ -1,3 +1,4 @@
+import AccountSettings
 import ChatData
 import DesignSystem
 import Foundation
@@ -11,6 +12,7 @@ import UserNotifications
 @main
 struct FishApp: App {
     @State private var model = FishAppModel(configuration: .fromBundle())
+    @State private var deviceSettings = DeviceSettingsStore()
     @UIApplicationDelegateAdaptor(FishAppDelegate.self) private var appDelegate
 
     init() {
@@ -19,7 +21,7 @@ struct FishApp: App {
 
     var body: some Scene {
         WindowGroup {
-            FishRoot(model: model)
+            FishRoot(model: model, deviceSettings: deviceSettings)
                 .onOpenURL { url in
                     model.handle(url: url)
                 }
@@ -35,8 +37,10 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
     ) -> Bool {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
-        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-            guard granted else { return }
+        center.getNotificationSettings { settings in
+            guard [.authorized, .provisional, .ephemeral].contains(settings.authorizationStatus) else {
+                return
+            }
             DispatchQueue.main.async {
                 application.registerForRemoteNotifications()
             }
@@ -89,6 +93,9 @@ private extension Notification.Name {
 
 struct FishRoot: View {
     @Bindable var model: FishAppModel
+    @Bindable var deviceSettings: DeviceSettingsStore
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -106,7 +113,49 @@ struct FishRoot: View {
             }
         }
         .background(Palette.bg)
-        .task { await model.start() }
+        .preferredColorScheme(deviceSettings.appearance.colorScheme)
+        .environment(
+            \.fishReduceMotion,
+            deviceSettings.effectiveReduceMotion(systemReduceMotion: systemReduceMotion)
+        )
+        .sheet(isPresented: $model.isShowingAccountSettings) {
+            AccountSettingsView(
+                displayName: model.accountDisplayName,
+                presence: model.accountPresence,
+                notificationStatus: model.notificationStatus,
+                appearance: deviceSettings.appearance,
+                motion: deviceSettings.motion,
+                canManageBlockedPeople: model.canManageBlockedPeople,
+                notice: model.notice,
+                blockedPeopleState: model.blockedPeopleState,
+                onRefreshNotifications: { model.refreshNotificationSettingsIfNeeded() },
+                onAllowNotifications: { model.requestNotifications() },
+                onOpenNotificationSettings: { model.openNotificationSettings() },
+                onSetPresence: { visibility, duration in
+                    model.setPresence(visibility: visibility, duration: duration)
+                },
+                onLoadBlockedPeople: { model.loadBlockedPeople() },
+                onUnblock: { userId in model.unblock(userId: userId) },
+                onOpenPrivacyPolicy: { model.openWebPage(.privacy) },
+                onSetAppearance: deviceSettings.setAppearance,
+                onSetMotion: deviceSettings.setMotion,
+                onResetPassword: { model.openWebPage(.forgotPassword) },
+                onSignOut: {
+                    model.isShowingAccountSettings = false
+                    Task { await model.signOut() }
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            model.refreshNotificationSettingsIfNeeded()
+        }
+        .task {
+            model.refreshNotificationSettingsIfNeeded()
+            await model.start()
+        }
     }
 }
 
@@ -144,6 +193,9 @@ private struct SignInView: View {
                     text: $model.password,
                     isSecure: true
                 )
+                ActionButton("Forgot password", variant: .link, fullWidth: true) {
+                    model.openWebPage(.forgotPassword)
+                }
                 if let notice = model.notice {
                     Notice(tone: .notice, title: notice)
                 }
@@ -178,8 +230,8 @@ private struct InboxView: View {
                 onRetry: { Task { await model.refreshDirectory() } },
                 trailing: TopBarAction(
                     icon: .person,
-                    accessibilityLabel: "Sign out",
-                    action: { Task { await model.signOut() } }
+                    accessibilityLabel: "Account settings",
+                    action: model.showAccountSettings
                 )
             )
         } else {
@@ -239,6 +291,7 @@ final class FishAppModel {
     var phase: Phase = .loading
     var email = ""
     var password = ""
+    var isShowingAccountSettings = false
     private(set) var notice: String?
     private(set) var isSubmitting = false
     private(set) var session: ChatLiveSession?
@@ -246,15 +299,30 @@ final class FishAppModel {
     private(set) var conversationStore: ConversationStore?
     private(set) var uploads: AttachmentUploadsModel?
     private(set) var currentUserId = ""
+    private(set) var notificationStatus: AccountNotificationAuthorization = .notDetermined
+    private(set) var accountPresence = AccountSettingsPresence()
+    private(set) var blockedPeopleState = AccountSettingsBlockedPeopleState.hidden
     private let pushInstallationId: UUID
     private let appVersion: String
+    private let notificationCenter: UNUserNotificationCenter
+    private let application: UIApplication
     private var pendingPushToken: String?
     private var pendingConversationId: String?
     private var pushTokenObserver: NSObjectProtocol?
     private var openConversationObserver: NSObjectProtocol?
+    private var isRefreshingNotifications = false
+    private var isRequestingNotifications = false
+    private var isLoadingBlockedPeople = false
+    private var accountSettingsGeneration = UUID()
 
-    init(configuration: FishAppConfiguration) {
+    init(
+        configuration: FishAppConfiguration,
+        notificationCenter: UNUserNotificationCenter = .current(),
+        application: UIApplication = .shared
+    ) {
         self.configuration = configuration
+        self.notificationCenter = notificationCenter
+        self.application = application
         gifProvider = KlipyGifProvider(
             apiKey: configuration.klipyApiKey,
             clientKey: configuration.klipyClientKey
@@ -271,6 +339,211 @@ final class FishAppModel {
             UserDefaults.standard.set(uuid.uuidString, forKey: "fish.push.installation-id")
         }
         observeNotifications()
+    }
+
+    var accountDisplayName: String {
+        session?.account?.displayName ?? "Your account"
+    }
+
+    var canManageBlockedPeople: Bool {
+        session?.account?.role == .client
+    }
+
+    func showAccountSettings() {
+        guard phase == .inbox else { return }
+        notice = nil
+        isShowingAccountSettings = true
+        loadAccountPresence()
+    }
+
+    func refreshNotificationSettingsIfNeeded() {
+        guard !isRefreshingNotifications else { return }
+        isRefreshingNotifications = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { isRefreshingNotifications = false }
+            let settings = await notificationCenter.notificationSettings()
+            notificationStatus = AccountNotificationAuthorization(
+                authorizationStatus: settings.authorizationStatus
+            )
+            if [.authorized, .provisional, .ephemeral].contains(settings.authorizationStatus) {
+                application.registerForRemoteNotifications()
+            }
+        }
+    }
+
+    func requestNotifications() {
+        guard !isRequestingNotifications else { return }
+        isRequestingNotifications = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { isRequestingNotifications = false }
+            let granted = (try? await notificationCenter.requestAuthorization(
+                options: [.alert, .badge, .sound]
+            )) == true
+            if granted {
+                application.registerForRemoteNotifications()
+            }
+            let settings = await notificationCenter.notificationSettings()
+            notificationStatus = AccountNotificationAuthorization(
+                authorizationStatus: settings.authorizationStatus
+            )
+            if [.authorized, .provisional, .ephemeral].contains(settings.authorizationStatus) {
+                application.registerForRemoteNotifications()
+            }
+        }
+    }
+
+    func openNotificationSettings() {
+        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else {
+            notice = "Notification settings aren’t available in this build."
+            return
+        }
+        application.open(url, options: [:]) { [weak self] opened in
+            guard !opened else { return }
+            Task { @MainActor [weak self] in
+                self?.notice = "Notification settings aren’t available in this build."
+            }
+        }
+    }
+
+    func setPresence(
+        visibility: AccountPresenceVisibility,
+        duration: AccountPresenceDuration
+    ) {
+        guard let session, !accountPresence.updating else { return }
+        guard let chatVisibility = ChatPresenceVisibility(rawValue: visibility.rawValue),
+              let chatDuration = ChatPresenceDuration(rawValue: duration.rawValue)
+        else { return }
+        accountPresence.updating = true
+        accountPresence.notice = nil
+        let generation = accountSettingsGeneration
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let result = try await ChatLive.setPresencePreference(
+                    session,
+                    visibility: chatVisibility,
+                    duration: chatDuration
+                )
+                guard accountSettingsGeneration == generation,
+                      self.session?.userId == session.userId
+                else { return }
+                accountPresence = AccountSettingsPresence(
+                    visibility: AccountPresenceVisibility(
+                        rawValue: result.preference.visibility.rawValue
+                    ) ?? .automatic
+                )
+            } catch {
+                accountPresence.updating = false
+                accountPresence.notice = "Your status could not change. Try again."
+            }
+        }
+    }
+
+    func loadBlockedPeople() {
+        guard canManageBlockedPeople,
+              let session,
+              !isLoadingBlockedPeople
+        else { return }
+        isLoadingBlockedPeople = true
+        blockedPeopleState = .loading
+        let generation = accountSettingsGeneration
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if accountSettingsGeneration == generation {
+                    isLoadingBlockedPeople = false
+                }
+            }
+            do {
+                let people = try await ChatLive.listBlockedPeople(session)
+                guard accountSettingsGeneration == generation,
+                      self.session?.userId == session.userId
+                else { return }
+                blockedPeopleState = .loaded(
+                    people: people.map { person in
+                        AccountSettingsBlockedPerson(
+                            userId: person.userId,
+                            displayName: person.displayName,
+                            username: person.username
+                        )
+                    }
+                )
+            } catch {
+                blockedPeopleState = .failed
+            }
+        }
+    }
+
+    func unblock(userId: String) {
+        guard canManageBlockedPeople,
+              let session,
+              case .loaded(let people, let busyIds, _) = blockedPeopleState,
+              let person = people.first(where: { $0.userId == userId }),
+              !busyIds.contains(userId)
+        else { return }
+        blockedPeopleState = .loaded(
+            people: people,
+            busyIds: busyIds.union([userId])
+        )
+        let generation = accountSettingsGeneration
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await ChatLive.unblockUser(session, userId: userId)
+                guard accountSettingsGeneration == generation,
+                      self.session?.userId == session.userId
+                else { return }
+                blockedPeopleState = .loaded(
+                    people: people.filter { $0.userId != userId },
+                    notice: "\(person.displayName) is no longer blocked."
+                )
+            } catch {
+                blockedPeopleState = .loaded(
+                    people: people,
+                    notice: "Blocked people aren’t available yet. Try again."
+                )
+            }
+        }
+    }
+
+    func openWebPage(_ path: AccountSettingsWebPath) {
+        guard let url = configuration.webURL(path) else {
+            notice = path == .privacy
+                ? "The privacy policy isn’t available in this build."
+                : "Password help isn’t available in this build."
+            return
+        }
+        application.open(url, options: [:]) { [weak self] opened in
+            guard !opened else { return }
+            Task { @MainActor [weak self] in
+                self?.notice = path == .privacy
+                    ? "The privacy policy isn’t available in this build."
+                    : "Password help isn’t available in this build."
+            }
+        }
+    }
+
+    private func loadAccountPresence() {
+        guard let session else { return }
+        let generation = accountSettingsGeneration
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let preference = try await ChatLive.ownPresencePreference(session)
+                guard accountSettingsGeneration == generation,
+                      self.session?.userId == session.userId
+                else { return }
+                accountPresence = AccountSettingsPresence(
+                    visibility: AccountPresenceVisibility(
+                        rawValue: preference.visibility.rawValue
+                    ) ?? .automatic
+                )
+            } catch {
+                accountPresence = AccountSettingsPresence()
+            }
+        }
     }
 
     func start() async {
@@ -330,6 +603,11 @@ final class FishAppModel {
     }
 
     func signOut() async {
+        isShowingAccountSettings = false
+        accountSettingsGeneration = UUID()
+        accountPresence = AccountSettingsPresence()
+        blockedPeopleState = .hidden
+        isLoadingBlockedPeople = false
         stopConversation()
         directory?.stop()
         if let session {
@@ -482,8 +760,19 @@ struct FishAppConfiguration: Sendable {
     let anonKey: String?
     let klipyApiKey: String?
     let klipyClientKey: String
+    let webBaseURL: URL?
+    let isRelease: Bool
 
-    static func fromBundle(_ bundle: Bundle = .main) -> FishAppConfiguration {
+    static func fromBundle(
+        _ bundle: Bundle = .main,
+        isRelease: Bool = {
+            #if DEBUG
+            false
+            #else
+            true
+            #endif
+        }()
+    ) -> FishAppConfiguration {
         func value(_ key: String) -> String? {
             let raw = bundle.object(forInfoDictionaryKey: key) as? String
             let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -495,7 +784,30 @@ struct FishAppConfiguration: Sendable {
             supabaseUrl: value("SUPABASE_URL").flatMap(URL.init(string:)),
             anonKey: value("SUPABASE_ANON_KEY"),
             klipyApiKey: value("KLIPY_API_KEY"),
-            klipyClientKey: value("KLIPY_CLIENT_KEY") ?? "fish_chat_ios"
+            klipyClientKey: value("KLIPY_CLIENT_KEY") ?? "fish_chat_ios",
+            webBaseURL: value("WEB_BASE_URL").flatMap(URL.init(string:)),
+            isRelease: isRelease
         )
+    }
+
+    func webURL(_ path: AccountSettingsWebPath) -> URL? {
+        AccountSettingsWebLinkPolicy.url(
+            baseURL: webBaseURL,
+            path: path,
+            isRelease: isRelease
+        )
+    }
+}
+
+private extension AccountNotificationAuthorization {
+    init(authorizationStatus: UNAuthorizationStatus) {
+        switch authorizationStatus {
+        case .authorized: self = .authorized
+        case .provisional: self = .provisional
+        case .ephemeral: self = .ephemeral
+        case .denied: self = .denied
+        case .notDetermined: self = .notDetermined
+        @unknown default: self = .notDetermined
+        }
     }
 }

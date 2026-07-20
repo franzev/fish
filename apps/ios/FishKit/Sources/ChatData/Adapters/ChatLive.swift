@@ -5,6 +5,7 @@ import Supabase
 /// ChatData; feature code receives provider-neutral protocols only.
 public struct ChatLiveSession: Sendable {
     public let userId: String
+    public let account: ChatAccountProfile?
     public let messaging: any ChatMessagingProviding
     public let commands: any ChatCommandProviding
     public let realtime: any ChatRealtimeProviding
@@ -90,6 +91,7 @@ public enum ChatLive {
         )
         return ChatLiveSession(
             userId: userId,
+            account: try? await loadAccountProfile(client: client, userId: userId),
             messaging: messaging,
             commands: EdgeFunctionChatCommands(configuration: backend),
             realtime: realtime,
@@ -138,6 +140,70 @@ public enum ChatLive {
             )
         )
     }
+
+    public static func ownPresencePreference(
+        _ session: ChatLiveSession
+    ) async throws -> ChatPresencePreference {
+        let rows: [ChatPresencePreferenceWire] = try await session.client
+            .from("presence_preferences")
+            .select("mode, expires_at")
+            .limit(1)
+            .execute()
+            .value
+        return rows.first?.domain.effective() ?? ChatPresencePreference()
+    }
+
+    public static func setPresencePreference(
+        _ session: ChatLiveSession,
+        visibility: ChatPresenceVisibility,
+        duration: ChatPresenceDuration
+    ) async throws -> ChatPresenceCommandResult {
+        let response: ChatPresenceCommandWire = try await session.client.functions.invoke(
+            "presence-command",
+            options: FunctionInvokeOptions(
+                body: ChatPresenceCommandRequest(
+                    mode: visibility,
+                    durationSeconds: duration.seconds
+                )
+            )
+        )
+        return response.domain
+    }
+
+    public static func listBlockedPeople(
+        _ session: ChatLiveSession
+    ) async throws -> [ChatBlockedPerson] {
+        let rows: [ChatBlockedPersonWire] = try await session.client
+            .rpc("list_blocked_users")
+            .execute()
+            .value
+        return rows.map(\.domain)
+    }
+
+    public static func unblockUser(
+        _ session: ChatLiveSession,
+        userId: String
+    ) async throws {
+        let _: Bool = try await session.client
+            .rpc("unblock_user", params: UnblockUserRequest(targetId: userId))
+            .execute()
+            .value
+    }
+}
+
+private func loadAccountProfile(
+    client: SupabaseClient,
+    userId: String
+) async throws -> ChatAccountProfile {
+    let rows: [ChatAccountProfileWire] = try await client
+        .from("profiles")
+        .select("display_name, username, role")
+        .eq("id", value: userId)
+        .limit(1)
+        .execute()
+        .value
+    guard let row = rows.first else { throw ChatAccountProfileError.missing }
+    return row.domain
 }
 
 private struct PushDeviceCommand: Encodable, Sendable {

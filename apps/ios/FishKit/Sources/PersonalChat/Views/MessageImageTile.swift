@@ -10,7 +10,7 @@ public struct MessageImageTile: View {
     private let commands: (any AttachmentCommandProviding)?
     private let onOpen: () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
     @Environment(\.displayScale) private var displayScale
     @State private var thumbnail: UIImage?
     @State private var display: UIImage?

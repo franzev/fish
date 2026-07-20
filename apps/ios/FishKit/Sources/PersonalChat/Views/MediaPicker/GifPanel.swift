@@ -15,7 +15,7 @@ struct GifPanel: View {
     let onToggleAnimations: () -> Void
     let onRetry: () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
 
     private var animationsPaused: Bool {
         state.animationPreference ?? reduceMotion

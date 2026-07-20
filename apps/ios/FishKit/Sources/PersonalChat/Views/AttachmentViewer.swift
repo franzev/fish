@@ -11,7 +11,7 @@ public struct AttachmentViewer: View {
     private let downloader: AttachmentFileDownloader
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
     @State private var selection: Int
     @State private var isPreparingShare = false
     @State private var shareUrl: URL?

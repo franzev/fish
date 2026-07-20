@@ -47,6 +47,8 @@
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_URL</key>
 	<string>$(SUPABASE_URL)</string>
+	<key>WEB_BASE_URL</key>
+	<string>$(WEB_BASE_URL)</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

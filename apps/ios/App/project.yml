@@ -12,11 +12,14 @@ targets:
     type: application
     platform: iOS
     sources: [Sources]
+    resources: [Sources/PrivacyInfo.xcprivacy]
     dependencies:
       - package: FishKit
         product: DesignSystem
       - package: FishKit
         product: UIComponents
+      - package: FishKit
+        product: AccountSettings
       - package: FishKit
         product: ChatData
       - package: FishKit
@@ -37,6 +40,7 @@ targets:
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         KLIPY_API_KEY: $(KLIPY_API_KEY)
         KLIPY_CLIENT_KEY: $(KLIPY_CLIENT_KEY)
+        WEB_BASE_URL: $(WEB_BASE_URL)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.fish.mobile
@@ -47,6 +51,7 @@ targets:
         SUPABASE_ANON_KEY: ${FISH_SUPABASE_ANON_KEY}
         KLIPY_API_KEY: ${FISH_KLIPY_API_KEY}
         KLIPY_CLIENT_KEY: ${FISH_KLIPY_CLIENT_KEY}
+        WEB_BASE_URL: ${FISH_WEB_BASE_URL}
         APS_ENVIRONMENT: development
         INFOPLIST_KEY_CFBundleDisplayName: FISH
       configs:

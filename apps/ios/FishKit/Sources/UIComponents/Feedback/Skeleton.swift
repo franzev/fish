@@ -5,7 +5,7 @@ import SwiftUI
 /// Reduce Motion. They are silent to assistive technology.
 public struct SkeletonBar: View {
     private let width: CGFloat?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
     @State private var pulsing = false
 
     public init(width: CGFloat? = nil) {
@@ -32,7 +32,7 @@ public struct SkeletonBar: View {
 
 public struct SkeletonAvatar: View {
     private let size: Avatar.Size
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
     @State private var pulsing = false
 
     public init(size: Avatar.Size) {

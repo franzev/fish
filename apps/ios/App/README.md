@@ -13,8 +13,10 @@ xcodegen generate --spec project.yml
 ```
 
 Pass the Supabase and optional Klipy values as Xcode build settings (or set
-`FISH_SUPABASE_URL`, `FISH_SUPABASE_ANON_KEY`, `FISH_KLIPY_API_KEY`, and
-`FISH_KLIPY_CLIENT_KEY` in the environment), then build the `Fish` scheme.
+`FISH_SUPABASE_URL`, `FISH_SUPABASE_ANON_KEY`, `FISH_KLIPY_API_KEY`,
+`FISH_KLIPY_CLIENT_KEY`, and `FISH_WEB_BASE_URL` in the environment), then
+build the `Fish` scheme. Release builds require an HTTPS web origin; debug
+builds may use an explicitly configured local HTTP origin.
 
 APNs delivery is configured only in the deployment environment. Set the
 `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_BUNDLE_ID`, `APNS_PRIVATE_KEY`, and

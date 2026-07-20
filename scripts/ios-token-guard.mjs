@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve("apps/ios/FishKit/Sources");
+const APP_SOURCE = path.resolve("apps/ios/App/Sources/FishApp.swift");
 const violations = [];
 
 const RULES = [
@@ -78,6 +79,10 @@ const FORBIDDEN_IMPORTS = {
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
     "CallMediaLiveKit", "Supabase", "LiveKit",
   ],
+  AccountSettings: [
+    "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
+    "CallMediaLiveKit", "PresenceData", "Presence", "Supabase", "LiveKit",
+  ],
 };
 
 function walk(directory) {
@@ -135,6 +140,15 @@ function report(file, line, message) {
 }
 
 walk(ROOT);
+
+const appSource = readFileSync(APP_SOURCE, "utf8");
+const launchBody = appSource.match(
+  /didFinishLaunchingWithOptions[\s\S]*?return true/
+);
+if (launchBody?.[0].includes("requestAuthorization")) {
+  report(APP_SOURCE, 1, "launch must not request notification authorization");
+}
+
 if (violations.length > 0) {
   console.error(
     "[ios-guard] policy violations:\n" +

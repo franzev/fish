@@ -4,7 +4,7 @@ import SwiftUI
 /// Restrained dots plus a text label. Dots become static under Reduce Motion.
 public struct TypingIndicator: View {
     private let name: String
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
     @State private var animating = false
 
     public init(name: String) {

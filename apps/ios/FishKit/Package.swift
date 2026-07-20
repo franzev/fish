@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "CallMediaLiveKit", targets: ["CallMediaLiveKit"]),
         .library(name: "PresenceData", targets: ["PresenceData"]),
         .library(name: "Presence", targets: ["Presence"]),
+        .library(name: "AccountSettings", targets: ["AccountSettings"]),
         .library(name: "TestSupport", targets: ["TestSupport"]),
     ],
     dependencies: [
@@ -69,6 +70,10 @@ let package = Package(
             dependencies: ["DesignSystem", "UIComponents", "PresenceData"]
         ),
         .target(
+            name: "AccountSettings",
+            dependencies: ["DesignSystem", "UIComponents"]
+        ),
+        .target(
             name: "CallMediaLiveKit",
             dependencies: [
                 "Calls",
@@ -105,6 +110,13 @@ let package = Package(
             dependencies: [
                 "Presence",
                 "TestSupport",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+            ]
+        ),
+        .testTarget(
+            name: "AccountSettingsTests",
+            dependencies: [
+                "AccountSettings", "DesignSystem",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ]
         ),

@@ -18,7 +18,7 @@ public struct MediaPickerSheet: View {
     @State private var selection: MediaPickerTab
     @State private var gifModel: GifSearchModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.fishReduceMotion) private var reduceMotion
 
     public init(
         gifProvider: any GifProviding,
