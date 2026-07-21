@@ -66,6 +66,8 @@ import space.fishhub.android.feature.settings.AccountSettingsNotificationStatus
 import space.fishhub.android.feature.settings.AccountSettingsTheme
 import space.fishhub.android.messaging.ChatDestination
 import space.fishhub.android.messaging.ChatIntents
+import space.fishhub.android.messaging.ChatShareContent
+import space.fishhub.android.messaging.ChatShareIntents
 import space.fishhub.android.messaging.ChatNotificationFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -87,6 +89,7 @@ class MainActivity : ComponentActivity() {
     private var activeVideoCall = false
     private val attachmentImportState = MutableStateFlow(AttachmentImportUiState())
     private val pendingChatDestination = MutableStateFlow<ChatDestination?>(null)
+    private val pendingShareContent = MutableStateFlow<ChatShareContent?>(null)
     private val systemDisabledAnimations = MutableStateFlow(!ValueAnimator.areAnimatorsEnabled())
     private val preferenceNotice = MutableStateFlow<String?>(null)
     private val notificationStatus = MutableStateFlow(AccountSettingsNotificationStatus.Off)
@@ -232,17 +235,30 @@ class MainActivity : ComponentActivity() {
             val mediaPickerViewModel: MediaPickerViewModel = viewModel(factory = mediaPickerFactory)
             val messageSearchViewModel: MessageSearchViewModel = viewModel(factory = messageSearchFactory)
             val presenceViewModel: PresenceViewModel = viewModel(factory = presenceFactory)
+            val chatRouteState by chatViewModel.uiState.collectAsStateWithLifecycle()
             val callMinimized by minimized.collectAsStateWithLifecycle()
             val pip by pictureInPicture.collectAsStateWithLifecycle()
             val attachmentImport by attachmentImportState.collectAsStateWithLifecycle()
             val voiceRecording by voiceRecordingState.collectAsStateWithLifecycle()
             val chatDestination by pendingChatDestination.collectAsStateWithLifecycle()
+            val shareContent by pendingShareContent.collectAsStateWithLifecycle()
+            val shareConversationId = (chatRouteState as?
+                space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+                ?.model
+                ?.selectedConversationId
             LaunchedEffect(chatDestination, chatViewModel) {
                 chatDestination?.let { destination ->
                     chatViewModel.focusMessage(destination.conversationId, destination.messageId)
                     ChatNotificationFactory.clear(this@MainActivity, destination.conversationId)
                     pendingChatDestination.value = null
                 }
+            }
+            LaunchedEffect(shareContent, shareConversationId) {
+                val content = shareContent ?: return@LaunchedEffect
+                val conversationId = shareConversationId
+                    ?: return@LaunchedEffect
+                pendingShareContent.value = null
+                importSharedContent(chatViewModel, conversationId, content)
             }
             FishTheme(
                 darkTheme = appPreferences.theme.isDark(isSystemInDarkTheme()),
@@ -351,6 +367,8 @@ class MainActivity : ComponentActivity() {
         observeAttachmentPrivacyCleanup()
         handleCallIntent(intent)
         handleChatIntent(intent)
+        pendingShareContent.value = ChatShareIntents.content(intent)
+        intent.action = null
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -365,6 +383,8 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         handleCallIntent(intent)
         handleChatIntent(intent)
+        pendingShareContent.value = ChatShareIntents.content(intent)
+        intent.action = null
     }
 
     override fun onResume() {
@@ -517,6 +537,71 @@ class MainActivity : ComponentActivity() {
         intent?.action = null
         intent?.data = null
     }
+
+    private fun importSharedContent(
+        viewModel: ChatViewModel,
+        conversationId: String,
+        content: ChatShareContent,
+    ) {
+        content.text?.let { sharedText ->
+            val currentDraft = (viewModel.uiState.value as?
+                space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+                ?.draft
+                .orEmpty()
+            viewModel.draftChanged(
+                listOf(currentDraft, sharedText)
+                    .filter(String::isNotBlank)
+                    .joinToString("\n")
+            )
+        }
+        if (content.uris.isEmpty()) return
+
+        attachmentConversationId = conversationId
+        attachmentImportState.value = AttachmentImportUiState(active = true, importing = true)
+        lifecycleScope.launch {
+            try {
+                val result = fishApplication.chatRepository.importAttachments(
+                    conversationId,
+                    content.uris.take(MaxMessageAttachments).map { uri ->
+                        AttachmentImportSource(
+                            uri = uri,
+                            kind = if (
+                                contentTypeFor(uri).startsWith("image/") ||
+                                content.mimeType.orEmpty().startsWith("image/")
+                            ) {
+                                AttachmentImportKind.Image
+                            } else {
+                                AttachmentImportKind.File
+                            },
+                        )
+                    },
+                )
+                val omitted = (content.uris.size - MaxMessageAttachments).coerceAtLeast(0)
+                val notice = when {
+                    omitted > 0 && result.message != null ->
+                        "Some shared items were not added. ${result.message}"
+                    omitted > 0 -> "Some shared items were not added."
+                    else -> result.message
+                }
+                attachmentImportState.value = AttachmentImportUiState(
+                    active = true,
+                    importing = false,
+                    notice = notice,
+                )
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                attachmentImportState.value = AttachmentImportUiState(
+                    active = true,
+                    importing = false,
+                    notice = "Those shared items could not be prepared. Please try again.",
+                )
+            }
+        }
+    }
+
+    private fun contentTypeFor(uri: Uri): String =
+        contentResolver.getType(uri).orEmpty().lowercase()
 
     private fun openAppSettings() {
         startActivity(
