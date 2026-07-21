@@ -1,6 +1,6 @@
 # iOS message search implementation plan
 
-**Status:** Proposed
+**Status:** Implemented
 
 **Sequence:** Implement after the Android message-search plan is complete and its shared behavior is validated
 
