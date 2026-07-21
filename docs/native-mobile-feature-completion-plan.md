@@ -564,6 +564,8 @@ iOS simulator.
 - Target Supabase migrations and Edge Functions are deployed.
 - APNs standard and VoIP topics, LiveKit, Firebase, and signing credentials
   are installed in the target environment.
+- The iOS App Group `group.app.fish.mobile` is registered for the app and
+  share-extension bundle IDs before signing a device build.
 - At least one physical iPhone and one physical Android device are available;
   web supplies the third interoperability endpoint.
 
@@ -634,16 +636,19 @@ iOS simulator.
 
 ## Deferred until there is concrete need
 
-- Link previews, message forwarding, pinning, and a general share-message
-  action.
+- Link previews, message forwarding, and pinning.
 - Notification quick reply, custom notification actions, quiet hours, and
   per-conversation notification settings.
-- Exact iOS app-icon unread counts across background and multiple devices.
+- Truthful iOS app-icon unread counts across background and multiple devices;
+  wait until a user asks for them because each APNs payload needs a
+  recipient-specific absolute unread count and multi-device reconciliation.
 - A native missed-call inbox or call-history screen; the existing conversation
   remains the destination.
 - A custom camera, video attachments, image editing, or automatic photo-library
   saving.
-- Replacing iOS call polling with Supabase Broadcast.
+- Replacing the current three-second iOS call polling with Supabase Broadcast;
+  do this only if pilot evidence shows that foreground ring latency is
+  noticeably annoying.
 - iOS video picture-in-picture.
 - Call recording, transcription, screen sharing, group calls, or scheduled
   lesson-call surfaces.
