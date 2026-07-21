@@ -21,6 +21,12 @@ targets:
       - package: FishKit
         product: AccountSettings
       - package: FishKit
+        product: CallData
+      - package: FishKit
+        product: Calls
+      - package: FishKit
+        product: CallMediaLiveKit
+      - package: FishKit
         product: ChatData
       - package: FishKit
         product: PersonalChat

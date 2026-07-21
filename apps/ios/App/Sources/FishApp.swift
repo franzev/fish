@@ -1,4 +1,7 @@
 import AccountSettings
+import CallData
+import CallMediaLiveKit
+import Calls
 import ChatData
 import DesignSystem
 import Foundation
@@ -125,18 +128,27 @@ struct FishRoot: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        Group {
-            switch model.phase {
-            case .loading:
-                LoadingView()
-            case .signedOut:
-                SignInView(model: model)
-            case .inbox:
-                InboxView(model: model)
-            case .opening:
-                LoadingView(message: "Opening conversation…")
-            case .conversation:
-                ConversationView(model: model)
+        ZStack {
+            Group {
+                switch model.phase {
+                case .loading:
+                    LoadingView()
+                case .signedOut:
+                    SignInView(model: model)
+                case .inbox:
+                    InboxView(model: model)
+                case .opening:
+                    LoadingView(message: "Opening conversation…")
+                case .conversation:
+                    ConversationView(model: model)
+                }
+            }
+            if let callModel = model.callModel, let callMedia = model.callMedia {
+                CallOverlay(
+                    model: callModel,
+                    localVideo: { callMedia.localVideoView() },
+                    remoteVideo: { callMedia.remoteVideoView() }
+                )
             }
         }
         .background(Palette.bg)
@@ -306,11 +318,28 @@ private struct ConversationView: View {
                 onComposerFocusChanged: store.composerFocusChanged,
                 onBack: model.closeConversation,
                 trailingContent: AnyView(
-                    IconButton(
-                        .search,
-                        accessibilityLabel: "Search messages",
-                        action: store.openMessageSearch
-                    )
+                    HStack(spacing: Spacing.xs) {
+                        if let callModel = model.callModel {
+                            CallEntryButtons(
+                                recipientName: store.participantName,
+                                busy: callModel.busy,
+                                onStartCall: { kind in
+                                    Task {
+                                        await callModel.startCall(
+                                            recipientId: store.participantId,
+                                            recipientName: store.participantName,
+                                            kind: kind
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                        IconButton(
+                            .search,
+                            accessibilityLabel: "Search messages",
+                            action: store.openMessageSearch
+                        )
+                    }
                 )
             )
             .sheet(isPresented: searchPresented, onDismiss: search.close) {
@@ -351,6 +380,8 @@ final class FishAppModel {
     private(set) var uploads: AttachmentUploadsModel?
     private(set) var currentUserId = ""
     private(set) var notificationStatus: AccountNotificationAuthorization = .notDetermined
+    private(set) var callModel: CallSessionModel?
+    private(set) var callMedia: LiveKitCallMedia?
     private(set) var accountPresence = AccountSettingsPresence()
     private(set) var blockedPeopleState = AccountSettingsBlockedPeopleState.hidden
     private let pushInstallationId: UUID
@@ -660,6 +691,9 @@ final class FishAppModel {
         blockedPeopleState = .hidden
         isLoadingBlockedPeople = false
         stopConversation()
+        callModel?.shutdown()
+        callModel = nil
+        callMedia = nil
         directory?.stop()
         if let session {
             try? await ChatLive.unregisterPushDevice(session, installationId: pushInstallationId)
@@ -750,6 +784,23 @@ final class FishAppModel {
     private func attach(_ session: ChatLiveSession) async {
         self.session = session
         currentUserId = session.userId
+        let callBackend = CallBackendConfiguration(
+            supabaseUrl: session.backend.supabaseUrl,
+            anonKey: session.backend.anonKey,
+            accessToken: session.backend.accessToken
+        )
+        let callMedia = LiveKitCallMedia()
+        let callModel = CallSessionModel(
+            userId: session.userId,
+            commands: EdgeFunctionCallCommands(configuration: callBackend),
+            realtime: PollingCallRealtime(
+                directory: RestCallDirectory(configuration: callBackend)
+            ),
+            media: callMedia
+        )
+        self.callMedia = callMedia
+        self.callModel = callModel
+        await callModel.start()
         await registerPushDeviceIfPossible()
         let directory = ConversationDirectoryStore(directory: session.directory)
         self.directory = directory
