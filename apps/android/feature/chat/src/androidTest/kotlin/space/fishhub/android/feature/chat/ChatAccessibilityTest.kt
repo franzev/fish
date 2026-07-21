@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsSelected
@@ -493,6 +494,7 @@ class ChatAccessibilityTest {
                 ChatMessageActionsSheet(
                     message = actionableMessage(),
                     onDismiss = {},
+                    onCopy = {},
                     onReply = { replied = true },
                     onEdit = {},
                     onDelete = { deleted = true },
@@ -520,6 +522,7 @@ class ChatAccessibilityTest {
                 ChatMessageActionsSheet(
                     message = actionableMessage(),
                     onDismiss = {},
+                    onCopy = {},
                     onReply = {},
                     onEdit = {},
                     onDelete = {},
@@ -545,6 +548,54 @@ class ChatAccessibilityTest {
         composeRule.onNodeWithContentDescription("thumbs up").performClick()
 
         assertEquals("👍", reaction)
+    }
+
+    @Test
+    fun messageActionsCopyPreservesTheOriginalBodyAndClosesTheSheet() {
+        var copied: String? = null
+        composeRule.setContent {
+            FishTheme {
+                ChatMessageActionsSheet(
+                    message = actionableMessage().copy(body = "  Pause first — then speak. 😊  "),
+                    onDismiss = {},
+                    onCopy = { copied = it },
+                    onReply = {},
+                    onEdit = {},
+                    onDelete = {},
+                    onReact = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Copy").performClick()
+
+        assertEquals("  Pause first — then speak. 😊  ", copied)
+        composeRule.onNodeWithTag("message-actions-sheet").assertDoesNotExist()
+    }
+
+    @Test
+    fun messageActionsHideCopyForDeletedSendingAndBodylessMessages() {
+        listOf(
+            actionableMessage().copy(deleted = true),
+            actionableMessage().copy(delivery = MessageDeliveryUiState.Sending),
+            actionableMessage().copy(body = ""),
+        ).forEach { message ->
+            composeRule.setContent {
+                FishTheme {
+                    ChatMessageActionsSheet(
+                        message = message,
+                        onDismiss = {},
+                        onCopy = {},
+                        onReply = {},
+                        onEdit = {},
+                        onDelete = {},
+                        onReact = {},
+                    )
+                }
+            }
+
+            composeRule.onAllNodesWithText("Copy").assertCountEquals(0)
+        }
     }
 
     @Test

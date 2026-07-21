@@ -1,6 +1,7 @@
 import ChatData
 import DesignSystem
 import SwiftUI
+import UIKit
 import UIComponents
 
 /// One message bubble. Direction is conveyed by alignment, corners, and fill;
@@ -155,6 +156,11 @@ public struct MessageBubble: View {
             Button("Reply", systemImage: "arrowshape.turn.up.left") {
                 onAction(.reply(row.message.id))
             }
+            if canCopyMessage {
+                Button("Copy", systemImage: "doc.on.doc") {
+                    UIPasteboard.general.string = row.message.body
+                }
+            }
             if isOutgoing && !row.message.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button("Edit", systemImage: "pencil") {
                     onAction(.edit(row.message.id))
@@ -181,6 +187,10 @@ public struct MessageBubble: View {
         !row.message.isDeleted
             && row.message.delivery != .sending
             && row.message.delivery != .failed
+    }
+
+    internal var canCopyMessage: Bool {
+        actionsAvailable && !row.message.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var canReact: Bool {

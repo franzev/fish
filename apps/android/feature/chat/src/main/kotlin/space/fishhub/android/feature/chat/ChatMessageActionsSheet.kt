@@ -39,6 +39,7 @@ private enum class MessageActionsView { Actions, Reactions, Edit, Delete }
 fun ChatMessageActionsSheet(
     message: MessageUiModel,
     onDismiss: () -> Unit,
+    onCopy: (String) -> Unit = {},
     onReply: () -> Unit,
     onEdit: (String) -> Unit,
     onDelete: () -> Unit,
@@ -99,6 +100,20 @@ fun ChatMessageActionsSheet(
                         modifier = Modifier.fillMaxWidth(),
                         variant = FishButtonVariant.Secondary,
                     )
+                    if (!message.deleted && message.body.isNotBlank() &&
+                        message.delivery != MessageDeliveryUiState.Sending &&
+                        message.delivery != MessageDeliveryUiState.Failed
+                    ) {
+                        FishButton(
+                            label = stringResource(R.string.copy_message),
+                            onClick = {
+                                onCopy(message.body)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            variant = FishButtonVariant.Secondary,
+                        )
+                    }
                     if (message.canEdit) {
                         FishButton(
                             label = stringResource(R.string.edit_message),

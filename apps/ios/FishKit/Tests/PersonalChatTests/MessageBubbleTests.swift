@@ -14,6 +14,7 @@ private func row(
     position: MessageGroupPosition,
     showsMeta: Bool,
     delivery: MessageDeliveryStatus? = nil,
+    isDeleted: Bool = false,
     showsStatus: Bool = false
 ) -> MessageRowUiModel {
     MessageRowUiModel(
@@ -25,7 +26,8 @@ private func row(
             body: body,
             media: media,
             sentAt: Date(timeIntervalSince1970: 1_784_200_000 + seconds),
-            delivery: delivery
+            delivery: delivery,
+            isDeleted: isDeleted
         ),
         groupPosition: position,
         showsMeta: showsMeta,
@@ -34,6 +36,44 @@ private func row(
 }
 
 struct MessageBubbleTests {
+    @MainActor @Test func copyAvailabilityMatchesMessageState() {
+        #expect(MessageBubble(row: row(
+            "copy",
+            direction: .incoming,
+            body: "Pause before the key point.",
+            at: 0,
+            position: .solo,
+            showsMeta: true,
+            delivery: .delivered
+        )).canCopyMessage)
+        #expect(!MessageBubble(row: row(
+            "deleted",
+            direction: .incoming,
+            body: "Message deleted",
+            at: 0,
+            position: .solo,
+            showsMeta: true,
+            isDeleted: true
+        )).canCopyMessage)
+        #expect(!MessageBubble(row: row(
+            "bodyless",
+            direction: .incoming,
+            body: "",
+            at: 0,
+            position: .solo,
+            showsMeta: true
+        )).canCopyMessage)
+        #expect(!MessageBubble(row: row(
+            "sending",
+            direction: .outgoing,
+            body: "Still sending",
+            at: 0,
+            position: .solo,
+            showsMeta: true,
+            delivery: .sending
+        )).canCopyMessage)
+    }
+
     @MainActor @Test func snapshots() {
         let strip = ScrollView {
             VStack(spacing: Spacing.xs) {

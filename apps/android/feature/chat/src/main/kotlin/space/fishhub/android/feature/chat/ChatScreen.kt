@@ -65,6 +65,7 @@ fun ChatAdaptiveLayout(
     onRemovePendingAttachment: (String) -> Unit = {},
     onRetryPendingAttachment: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
+    onCopyMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
     onReplyMessage: (String) -> Unit = {},
     onEditMessage: (String, String) -> Unit = { _, _ -> },
@@ -128,6 +129,7 @@ fun ChatAdaptiveLayout(
                         onRemovePendingAttachment = onRemovePendingAttachment,
                         onRetryPendingAttachment = onRetryPendingAttachment,
                         onRetryMessage = onRetryMessage,
+                        onCopyMessage = onCopyMessage,
                         onReportGif = onReportGif,
                         onReplyMessage = onReplyMessage,
                         onEditMessage = onEditMessage,
@@ -177,6 +179,7 @@ fun ChatAdaptiveLayout(
                     onRemovePendingAttachment = onRemovePendingAttachment,
                     onRetryPendingAttachment = onRetryPendingAttachment,
                     onRetryMessage = onRetryMessage,
+                    onCopyMessage = onCopyMessage,
                     onReportGif = onReportGif,
                     onReplyMessage = onReplyMessage,
                     onEditMessage = onEditMessage,
@@ -225,6 +228,7 @@ fun ChatScreen(
     onRemovePendingAttachment: (String) -> Unit = {},
     onRetryPendingAttachment: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
+    onCopyMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
     onReplyMessage: (String) -> Unit = {},
     onEditMessage: (String, String) -> Unit = { _, _ -> },
@@ -371,6 +375,7 @@ fun ChatScreen(
         ChatMessageActionsSheet(
             message = selectedMessage,
             onDismiss = { selectedMessageId = null },
+            onCopy = onCopyMessage,
             onReply = {
                 selectedMessageId = null
                 onReplyMessage(selectedMessage.id)

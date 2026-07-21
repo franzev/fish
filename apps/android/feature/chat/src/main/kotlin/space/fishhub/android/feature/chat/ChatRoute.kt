@@ -1,5 +1,6 @@
 package space.fishhub.android.feature.chat
 
+import android.content.ClipData
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.ImeAction
@@ -62,6 +66,7 @@ import space.fishhub.android.feature.settings.AccountSettingsMotion
 import space.fishhub.android.feature.settings.AccountSettingsTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatRoute(
@@ -99,6 +104,8 @@ fun ChatRoute(
     onAccessibilitySelected: (AccountSettingsMotion) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     val routeState by viewModel.uiState.collectAsStateWithLifecycle()
     val mediaPickerState by mediaPickerViewModel.uiState.collectAsStateWithLifecycle()
     val messageSearchState by messageSearchViewModel.uiState.collectAsStateWithLifecycle()
@@ -207,6 +214,11 @@ fun ChatRoute(
                     onRemovePendingAttachment = viewModel::removeAttachmentDraft,
                     onRetryPendingAttachment = viewModel::retryAttachmentDraft,
                     onRetryMessage = viewModel::retryMessage,
+                    onCopyMessage = { body ->
+                        clipboardScope.launch {
+                            clipboard.setClipEntry(ClipData.newPlainText("message", body).toClipEntry())
+                        }
+                    },
                     onReportGif = viewModel::reportGif,
                     onReplyMessage = viewModel::replyToMessage,
                     onEditMessage = viewModel::editMessage,
