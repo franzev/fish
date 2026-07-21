@@ -141,6 +141,41 @@ public enum ChatLive {
         )
     }
 
+    public static func registerVoipPushDevice(
+        _ session: ChatLiveSession,
+        installationId: UUID,
+        providerInstallationId: String,
+        appVersion: String
+    ) async throws {
+        try await session.client.functions.invoke(
+            "push-command",
+            options: FunctionInvokeOptions(
+                body: PushDeviceCommand(
+                    action: "register_voip",
+                    installationId: installationId,
+                    providerInstallationId: providerInstallationId,
+                    platform: "ios",
+                    appVersion: appVersion
+                )
+            )
+        )
+    }
+
+    public static func unregisterVoipPushDevice(
+        _ session: ChatLiveSession,
+        installationId: UUID
+    ) async throws {
+        try await session.client.functions.invoke(
+            "push-command",
+            options: FunctionInvokeOptions(
+                body: PushDeviceCommand(
+                    action: "unregister_voip",
+                    installationId: installationId
+                )
+            )
+        )
+    }
+
     public static func ownPresencePreference(
         _ session: ChatLiveSession
     ) async throws -> ChatPresencePreference {

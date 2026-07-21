@@ -39,6 +39,11 @@
 	<string>$(KLIPY_CLIENT_KEY)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>FISH uses your microphone when you hold the record button to send a voice message.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>voip</string>
+	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>FISH can save photos you choose to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

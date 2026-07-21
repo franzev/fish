@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.0";
-import { dispatchDirectMessageApns } from "./apns.ts";
+import { dispatchDirectMessageApns, dispatchVoipCallApns } from "./apns.ts";
 
 type ServiceAccount = {
   project_id: string;
@@ -118,21 +118,33 @@ export async function dispatchCallPush(
   admin: SupabaseClient,
   push: CallPush,
 ): Promise<void> {
-  await dispatchAndroidDataPush(admin, {
-    recipientIds: push.recipientIds,
-    data: {
-      version: "1",
-      event: push.event,
-      callId: push.callId,
-      kind: push.kind,
-      counterpartId: push.counterpartId,
-      counterpartName: push.counterpartName,
-      expiresAt: push.expiresAt,
-    },
-    priority: "HIGH",
-    ttl: `${push.event === "ringing" ? ttlSeconds(push.expiresAt) : 45}s`,
-    collapseKey: "fish_call",
-  });
+  await Promise.all([
+    dispatchAndroidDataPush(admin, {
+      recipientIds: push.recipientIds,
+      data: {
+        version: "1",
+        event: push.event,
+        callId: push.callId,
+        kind: push.kind,
+        counterpartId: push.counterpartId,
+        counterpartName: push.counterpartName,
+        expiresAt: push.expiresAt,
+      },
+      priority: "HIGH",
+      ttl: `${push.event === "ringing" ? ttlSeconds(push.expiresAt) : 45}s`,
+      collapseKey: "fish_call",
+    }),
+    push.event === "ringing"
+      ? dispatchVoipCallApns(admin, {
+        callId: push.callId,
+        kind: push.kind,
+        callerId: push.counterpartId,
+        callerName: push.counterpartName,
+        expiresAt: push.expiresAt,
+        recipientIds: push.recipientIds,
+      })
+      : Promise.resolve(),
+  ]);
 }
 
 export async function dispatchDirectMessagePush(
@@ -177,11 +189,13 @@ async function dispatchAndroidDataPush(
     .update({ revoked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .is("revoked_at", null)
     .eq("platform", "android")
+    .eq("push_kind", "standard")
     .lt("last_seen_at", staleBefore);
   const { data: devices, error } = await admin.from("push_devices")
     .select("id, provider_installation_id")
     .in("user_id", push.recipientIds)
     .eq("platform", "android")
+    .eq("push_kind", "standard")
     .is("revoked_at", null);
   if (error || !devices?.length) return;
 

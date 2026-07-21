@@ -38,6 +38,34 @@ public final class LiveKitCallMedia: CallMediaProviding {
         self.videoQualityPreference = videoQualityPreference
     }
 
+    /// CallKit, rather than LiveKit's automatic observer, owns the audio
+    /// session while a system call is being negotiated.
+    public func prepareForCallKit() {
+        AudioManager.shared.audioSession.isAutomaticConfigurationEnabled = false
+        try? AudioManager.shared.setEngineAvailability(.none)
+    }
+
+    public func callKitDidActivateAudioSession(_ session: AVAudioSession) {
+        do {
+            try session.setCategory(
+                .playAndRecord,
+                mode: .voiceChat,
+            options: [.allowBluetoothHFP, .allowBluetoothA2DP]
+            )
+            try session.setActive(true)
+            try AudioManager.shared.setEngineAvailability(.default)
+        } catch {
+            // The call model reports connection failures through its existing
+            // calm error path if the media engine cannot start.
+        }
+    }
+
+    public func callKitDidDeactivateAudioSession(_ session: AVAudioSession) {
+        try? AudioManager.shared.setEngineAvailability(.none)
+        try? session.setActive(false, options: .notifyOthersOnDeactivation)
+        AudioManager.shared.audioSession.isAutomaticConfigurationEnabled = true
+    }
+
     // MARK: - CallMediaProviding
 
     public func connect(

@@ -43,6 +43,7 @@ targets:
         NSPhotoLibraryAddUsageDescription: FISH can save photos you choose to your library.
         NSCameraUsageDescription: FISH uses your camera when you choose to take a photo for a conversation.
         NSMicrophoneUsageDescription: FISH uses your microphone when you hold the record button to send a voice message.
+        UIBackgroundModes: [audio, voip]
         SUPABASE_URL: $(SUPABASE_URL)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         KLIPY_API_KEY: $(KLIPY_API_KEY)
@@ -64,8 +65,22 @@ targets:
       configs:
         Release:
           APS_ENVIRONMENT: production
-    schemes:
-      Fish:
-        build:
-          targets:
-            Fish: all
+  FishTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: Fish
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.fish.mobile-tests
+schemes:
+  Fish:
+    build:
+      targets:
+        Fish: all
+        FishTests: [test]
+    test:
+      targets:
+        - FishTests

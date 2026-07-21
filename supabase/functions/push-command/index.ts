@@ -20,7 +20,18 @@ const commandSchema = z.discriminatedUnion("action", [
     appVersion: z.string().trim().min(1).max(64),
   }),
   z.object({
+    action: z.literal("register_voip"),
+    installationId: z.uuid(),
+    providerInstallationId: z.string().trim().min(8).max(256),
+    platform: z.literal("ios"),
+    appVersion: z.string().trim().min(1).max(64),
+  }),
+  z.object({
     action: z.literal("unregister"),
+    installationId: z.uuid(),
+  }),
+  z.object({
+    action: z.literal("unregister_voip"),
     installationId: z.uuid(),
   }),
 ]);
@@ -64,6 +75,16 @@ Deno.serve(async (request) => {
       p_provider_installation_id: command.providerInstallationId,
       p_platform: command.platform,
       p_app_version: command.appVersion,
+    })
+    : command.action === "register_voip"
+    ? await caller.rpc("register_voip_push_device", {
+      p_installation_id: command.installationId,
+      p_provider_installation_id: command.providerInstallationId,
+      p_app_version: command.appVersion,
+    })
+    : command.action === "unregister_voip"
+    ? await caller.rpc("unregister_voip_push_device", {
+      p_installation_id: command.installationId,
     })
     : await caller.rpc("unregister_push_device", {
       p_installation_id: command.installationId,

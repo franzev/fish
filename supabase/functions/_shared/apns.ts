@@ -16,6 +16,15 @@ export type DirectMessageApnsPush = {
   recipientIds: string[];
 };
 
+export type VoipCallApnsPush = {
+  callId: string;
+  kind: "audio" | "video";
+  callerId: string;
+  callerName: string;
+  expiresAt: string;
+  recipientIds: string[];
+};
+
 let cachedProviderToken: { value: string; expiresAt: number } | null = null;
 
 function credentials(): ApnsCredentials | null {
@@ -82,11 +91,13 @@ export async function dispatchDirectMessageApns(
     })
     .is("revoked_at", null)
     .eq("platform", "ios")
+    .eq("push_kind", "standard")
     .lt("last_seen_at", staleBefore);
   const { data: devices, error } = await admin.from("push_devices")
     .select("id, provider_installation_id")
     .in("user_id", push.recipientIds)
     .eq("platform", "ios")
+    .eq("push_kind", "standard")
     .is("revoked_at", null);
   if (error || !devices?.length) return;
 
@@ -124,6 +135,84 @@ export async function dispatchDirectMessageApns(
         if (
           !response.ok && (response.status === 429 || response.status >= 500)
         ) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          response = await fetch(url, request);
+        }
+        if (response.ok) return;
+        const payload = await response.json().catch(() => null);
+        if (shouldRevoke(response.status, payload)) {
+          await admin.from("push_devices")
+            .update({
+              revoked_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", device.id);
+        }
+      },
+    ),
+  );
+}
+
+function voipExpiration(expiresAt: string): string {
+  const timestamp = Date.parse(expiresAt);
+  if (!Number.isFinite(timestamp) || timestamp <= Date.now()) return "0";
+  return String(Math.floor(timestamp / 1_000));
+}
+
+export async function dispatchVoipCallApns(
+  admin: SupabaseClient,
+  push: VoipCallApnsPush,
+): Promise<void> {
+  const config = credentials();
+  if (!config || push.recipientIds.length === 0) return;
+  const bearer = await providerToken(config);
+  if (!bearer) return;
+
+  const staleBefore = new Date(Date.now() - 90 * 24 * 60 * 60 * 1_000)
+    .toISOString();
+  await admin.from("push_devices")
+    .update({
+      revoked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .is("revoked_at", null)
+    .eq("platform", "ios")
+    .eq("push_kind", "voip")
+    .lt("last_seen_at", staleBefore);
+  const { data: devices, error } = await admin.from("push_devices")
+    .select("id, provider_installation_id")
+    .in("user_id", push.recipientIds)
+    .eq("platform", "ios")
+    .eq("push_kind", "voip")
+    .is("revoked_at", null);
+  if (error || !devices?.length) return;
+
+  await Promise.all(
+    devices.map(
+      async (device: { id: string; provider_installation_id: string }) => {
+        const request = {
+          method: "POST",
+          headers: {
+            authorization: `bearer ${bearer}`,
+            "apns-topic": `${config.topic}.voip`,
+            "apns-push-type": "voip",
+            "apns-priority": "10",
+            "apns-expiration": voipExpiration(push.expiresAt),
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            aps: { "content-available": 1 },
+            type: "call",
+            callId: push.callId,
+            kind: push.kind,
+            callerId: push.callerId,
+            callerName: push.callerName,
+            expiresAt: push.expiresAt,
+          }),
+        };
+        const url = `${config.endpoint.replace(/\/$/, "")}/3/device/${device.provider_installation_id}`;
+        let response = await fetch(url, request);
+        if (!response.ok && (response.status === 429 || response.status >= 500)) {
           await new Promise((resolve) => setTimeout(resolve, 250));
           response = await fetch(url, request);
         }

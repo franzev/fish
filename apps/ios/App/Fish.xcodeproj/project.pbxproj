@@ -7,22 +7,44 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1AF6A5708344D455E8EAEF38 /* PersonalChat in Frameworks */ = {isa = PBXBuildFile; productRef = B821BA6D07778D0EA77672B9 /* PersonalChat */; };
+		1AF6A5708344D455E8EAEF38 /* Calls in Frameworks */ = {isa = PBXBuildFile; productRef = E3B497C9D85A87EC0137B354 /* Calls */; };
 		1EAEB9D218D1DFE18737D20D /* AccountSettings in Frameworks */ = {isa = PBXBuildFile; productRef = 29992C6DCA677AF27B18AFCD /* AccountSettings */; };
+		362FA6D9B02CD7BD5198C453 /* CallMediaLiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0D54CEC388E682DC72C5B43F /* CallMediaLiveKit */; };
 		5C24F41D8C2845280E583402 /* UIComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 20E83DC5C6A63E1B069F468B /* UIComponents */; };
+		8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */; };
+		895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */; };
+		D2104016159DB2EBE41A18E2 /* ChatData in Frameworks */ = {isa = PBXBuildFile; productRef = BF3F734419E9BEC0FF504B65 /* ChatData */; };
+		D21D7B6CFE14B2F494A754ED /* CallKitCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */; };
 		D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 83168A43E32F0C01BDF1133F /* DesignSystem */; };
+		E00B76BFB95EFF3C8B518FAB /* PersonalChat in Frameworks */ = {isa = PBXBuildFile; productRef = B821BA6D07778D0EA77672B9 /* PersonalChat */; };
 		F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E5EB18FA42EA4D7E193BB /* FishApp.swift */; };
+		F3FAE6AA07276C657AD3D96E /* VoipPushCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */; };
 		F3FB0B78B20C254B388A296C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */; };
-		FFC50F51A759B18B9B766856 /* ChatData in Frameworks */ = {isa = PBXBuildFile; productRef = BF3F734419E9BEC0FF504B65 /* ChatData */; };
+		FFC50F51A759B18B9B766856 /* CallData in Frameworks */ = {isa = PBXBuildFile; productRef = 239C7890602CF20AE775B499 /* CallData */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5FC3700B857E6DD4F7D05261 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 93ED2E134B0B4E7EC2BC34C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A3B6237B79DEFDA31997CAE;
+			remoteInfo = Fish;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		227E5EB18FA42EA4D7E193BB /* FishApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishApp.swift; sourceTree = "<group>"; };
 		323AD597C6079F6C90636877 /* Fish.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Fish.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitCoordinatorTests.swift; sourceTree = "<group>"; };
+		3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoipPushCoordinator.swift; sourceTree = "<group>"; };
+		443D4337196AD1103BDDCADE /* FishTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FishTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4775B54857D0E072B6B0E150 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitCoordinator.swift; sourceTree = "<group>"; };
 		4B52387CF5B0AAFF2A75259B /* Fish.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fish.entitlements; sourceTree = "<group>"; };
 		89AAFB7A8309ADCB125EF882 /* FishKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FishKit; path = ../FishKit; sourceTree = SOURCE_ROOT; };
+		99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoipPushCoordinatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,18 +55,31 @@
 				D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */,
 				5C24F41D8C2845280E583402 /* UIComponents in Frameworks */,
 				1EAEB9D218D1DFE18737D20D /* AccountSettings in Frameworks */,
-				FFC50F51A759B18B9B766856 /* ChatData in Frameworks */,
-				1AF6A5708344D455E8EAEF38 /* PersonalChat in Frameworks */,
+				FFC50F51A759B18B9B766856 /* CallData in Frameworks */,
+				1AF6A5708344D455E8EAEF38 /* Calls in Frameworks */,
+				362FA6D9B02CD7BD5198C453 /* CallMediaLiveKit in Frameworks */,
+				D2104016159DB2EBE41A18E2 /* ChatData in Frameworks */,
+				E00B76BFB95EFF3C8B518FAB /* PersonalChat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		57B549906547CD8D561F5E34 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */,
+				99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		693237D25CA975BA04083AE6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				323AD597C6079F6C90636877 /* Fish.app */,
+				443D4337196AD1103BDDCADE /* FishTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -52,10 +87,12 @@
 		83F82C8B932691E65BEAE422 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */,
 				4B52387CF5B0AAFF2A75259B /* Fish.entitlements */,
 				227E5EB18FA42EA4D7E193BB /* FishApp.swift */,
 				4775B54857D0E072B6B0E150 /* Info.plist */,
 				20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */,
+				3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -73,6 +110,7 @@
 			children = (
 				C1D185FC05B680CC7DF6A847 /* Packages */,
 				83F82C8B932691E65BEAE422 /* Sources */,
+				57B549906547CD8D561F5E34 /* Tests */,
 				693237D25CA975BA04083AE6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -97,12 +135,33 @@
 				83168A43E32F0C01BDF1133F /* DesignSystem */,
 				20E83DC5C6A63E1B069F468B /* UIComponents */,
 				29992C6DCA677AF27B18AFCD /* AccountSettings */,
+				239C7890602CF20AE775B499 /* CallData */,
+				E3B497C9D85A87EC0137B354 /* Calls */,
+				0D54CEC388E682DC72C5B43F /* CallMediaLiveKit */,
 				BF3F734419E9BEC0FF504B65 /* ChatData */,
 				B821BA6D07778D0EA77672B9 /* PersonalChat */,
 			);
 			productName = Fish;
 			productReference = 323AD597C6079F6C90636877 /* Fish.app */;
 			productType = "com.apple.product-type.application";
+		};
+		FF59EA093BFC15E4312C98AB /* FishTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D339DF9A10F9ED0D91E62683 /* Build configuration list for PBXNativeTarget "FishTests" */;
+			buildPhases = (
+				23D39405BC34E35ACEA64580 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				364DEFE48F71F408131AAA58 /* PBXTargetDependency */,
+			);
+			name = FishTests;
+			packageProductDependencies = (
+			);
+			productName = FishTests;
+			productReference = 443D4337196AD1103BDDCADE /* FishTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -133,6 +192,7 @@
 			projectRoot = "";
 			targets = (
 				2A3B6237B79DEFDA31997CAE /* Fish */,
+				FF59EA093BFC15E4312C98AB /* FishTests */,
 			);
 		};
 /* End PBXProject section */
@@ -149,17 +209,53 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		23D39405BC34E35ACEA64580 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */,
+				F3FAE6AA07276C657AD3D96E /* VoipPushCoordinatorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5860723F07814D680C1F5B07 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D21D7B6CFE14B2F494A754ED /* CallKitCoordinator.swift in Sources */,
 				F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */,
+				895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		364DEFE48F71F408131AAA58 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A3B6237B79DEFDA31997CAE /* Fish */;
+			targetProxy = 5FC3700B857E6DD4F7D05261 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		251C66DF61E2F85A0FECB8DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "app.fish.mobile-tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Fish.app/Fish";
+			};
+			name = Release;
+		};
 		31F97F34EB1415FC5FF4DA39 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -220,6 +316,23 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		35B6194726E4B87CD2178505 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "app.fish.mobile-tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Fish.app/Fish";
 			};
 			name = Debug;
 		};
@@ -341,6 +454,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		D339DF9A10F9ED0D91E62683 /* Build configuration list for PBXNativeTarget "FishTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				35B6194726E4B87CD2178505 /* Debug */,
+				251C66DF61E2F85A0FECB8DC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		D8437C1E46241A5A504039C1 /* Build configuration list for PBXNativeTarget "Fish" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -360,9 +482,17 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0D54CEC388E682DC72C5B43F /* CallMediaLiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CallMediaLiveKit;
+		};
 		20E83DC5C6A63E1B069F468B /* UIComponents */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = UIComponents;
+		};
+		239C7890602CF20AE775B499 /* CallData */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CallData;
 		};
 		29992C6DCA677AF27B18AFCD /* AccountSettings */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -379,6 +509,10 @@
 		BF3F734419E9BEC0FF504B65 /* ChatData */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ChatData;
+		};
+		E3B497C9D85A87EC0137B354 /* Calls */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Calls;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

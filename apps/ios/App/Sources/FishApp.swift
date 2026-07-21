@@ -34,6 +34,8 @@ struct FishApp: App {
 
 @MainActor
 final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificationCenterDelegate {
+    private let voipPushCoordinator = VoipPushCoordinator()
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -319,18 +321,20 @@ private struct ConversationView: View {
                 onBack: model.closeConversation,
                 trailingContent: AnyView(
                     HStack(spacing: Spacing.xs) {
-                        if let callModel = model.callModel {
+                        if let callModel = model.callModel,
+                           let callMedia = model.callMedia,
+                           let callKit = model.callKit {
                             CallEntryButtons(
                                 recipientName: store.participantName,
                                 busy: callModel.busy,
                                 onStartCall: { kind in
-                                    Task {
-                                        await callModel.startCall(
-                                            recipientId: store.participantId,
-                                            recipientName: store.participantName,
-                                            kind: kind
-                                        )
-                                    }
+                                    callKit.startOutgoing(
+                                        model: callModel,
+                                        media: callMedia,
+                                        recipientId: store.participantId,
+                                        recipientName: store.participantName,
+                                        kind: kind
+                                    )
                                 }
                             )
                         }
@@ -382,6 +386,7 @@ final class FishAppModel {
     private(set) var notificationStatus: AccountNotificationAuthorization = .notDetermined
     private(set) var callModel: CallSessionModel?
     private(set) var callMedia: LiveKitCallMedia?
+    private(set) var callKit: CallKitCoordinator?
     private(set) var accountPresence = AccountSettingsPresence()
     private(set) var blockedPeopleState = AccountSettingsBlockedPeopleState.hidden
     private let pushInstallationId: UUID
@@ -389,8 +394,14 @@ final class FishAppModel {
     private let notificationCenter: UNUserNotificationCenter
     private let application: UIApplication
     private var pendingPushToken: String?
+    private var pendingVoipPushToken: String?
+    private var pendingVoipCall: FishVoipPushDestination?
+    private var handledVoipCallIds = Set<String>()
     private var pendingConversation: PendingConversationDestination?
     private var pushTokenObserver: NSObjectProtocol?
+    private var voipPushTokenObserver: NSObjectProtocol?
+    private var voipPushInvalidationObserver: NSObjectProtocol?
+    private var incomingVoipCallObserver: NSObjectProtocol?
     private var openConversationObserver: NSObjectProtocol?
     private var isRefreshingNotifications = false
     private var isRequestingNotifications = false
@@ -420,7 +431,11 @@ final class FishAppModel {
             pushInstallationId = uuid
             UserDefaults.standard.set(uuid.uuidString, forKey: "fish.push.installation-id")
         }
+        callKit = CallKitCoordinator()
         observeNotifications()
+        if let pending = VoipPushCoordinator.consumePendingDestination() {
+            handleIncomingVoipCall(pending)
+        }
     }
 
     var accountDisplayName: String {
@@ -691,12 +706,24 @@ final class FishAppModel {
         blockedPeopleState = .hidden
         isLoadingBlockedPeople = false
         stopConversation()
+        if let callModel, callModel.state.hasLiveCall {
+            if callModel.state.current.status == .ringing,
+               callModel.state.current.direction == .incoming {
+                await callModel.decline()
+            } else {
+                await callModel.end()
+            }
+        }
+        callKit?.endAll()
         callModel?.shutdown()
         callModel = nil
         callMedia = nil
+        pendingVoipCall = nil
+        handledVoipCallIds.removeAll()
         directory?.stop()
         if let session {
             try? await ChatLive.unregisterPushDevice(session, installationId: pushInstallationId)
+            try? await ChatLive.unregisterVoipPushDevice(session, installationId: pushInstallationId)
             await ChatLive.signOut(session)
         }
         session = nil
@@ -798,10 +825,17 @@ final class FishAppModel {
             ),
             media: callMedia
         )
+        let callKit = callKit ?? CallKitCoordinator()
+        callKit.bind(model: callModel, media: callMedia)
+        callModel.onStateChange = { [weak callKit] state in
+            callKit?.sync(state: state)
+        }
         self.callMedia = callMedia
         self.callModel = callModel
+        self.callKit = callKit
         await callModel.start()
         await registerPushDeviceIfPossible()
+        await recoverPendingVoipCallIfReady()
         let directory = ConversationDirectoryStore(directory: session.directory)
         self.directory = directory
         await directory.start()
@@ -851,17 +885,91 @@ final class FishAppModel {
                 await self?.openPendingConversationIfReady()
             }
         }
+        voipPushTokenObserver = NotificationCenter.default.addObserver(
+            forName: .fishVoipPushToken,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let token = notification.object as? String else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                pendingVoipPushToken = token
+                await registerPushDeviceIfPossible()
+            }
+        }
+        voipPushInvalidationObserver = NotificationCenter.default.addObserver(
+            forName: .fishVoipPushTokenInvalidated,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                pendingVoipPushToken = nil
+                if let session {
+                    try? await ChatLive.unregisterVoipPushDevice(
+                        session,
+                        installationId: pushInstallationId
+                    )
+                }
+            }
+        }
+        incomingVoipCallObserver = NotificationCenter.default.addObserver(
+            forName: .fishIncomingVoipCall,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let destination = notification.object as? FishVoipPushDestination else { return }
+            Task { @MainActor [weak self] in
+                self?.handleIncomingVoipCall(destination)
+            }
+        }
     }
 
     private func registerPushDeviceIfPossible() async {
-        guard let session, let token = pendingPushToken else { return }
-        try? await ChatLive.registerPushDevice(
-            session,
-            installationId: pushInstallationId,
-            providerInstallationId: token,
-            platform: "ios",
-            appVersion: appVersion
+        guard let session else { return }
+        if let token = pendingPushToken {
+            try? await ChatLive.registerPushDevice(
+                session,
+                installationId: pushInstallationId,
+                providerInstallationId: token,
+                platform: "ios",
+                appVersion: appVersion
+            )
+        }
+        if let token = pendingVoipPushToken {
+            try? await ChatLive.registerVoipPushDevice(
+                session,
+                installationId: pushInstallationId,
+                providerInstallationId: token,
+                appVersion: appVersion
+            )
+        }
+    }
+
+    private func handleIncomingVoipCall(_ destination: FishVoipPushDestination) {
+        guard handledVoipCallIds.insert(destination.callId).inserted else { return }
+        pendingVoipCall = destination
+        callKit?.reportIncoming(
+            callId: destination.callId,
+            kind: CallKind(rawValue: destination.kind) ?? .audio,
+            callerId: destination.callerId,
+            callerName: destination.callerName
         )
+        Task { @MainActor [weak self] in
+            await self?.recoverPendingVoipCallIfReady()
+        }
+    }
+
+    private func recoverPendingVoipCallIfReady() async {
+        guard let destination = pendingVoipCall,
+              let callModel,
+              session != nil
+        else { return }
+        let recovered = await callModel.recover(callId: destination.callId)
+        if !recovered {
+            callKit?.end(callId: destination.callId, reason: .failed)
+        }
+        pendingVoipCall = nil
     }
 
     @discardableResult

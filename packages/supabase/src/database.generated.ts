@@ -1593,6 +1593,7 @@ export type Database = {
           installation_id: string
           last_seen_at: string
           platform: string
+          push_kind: string
           provider_installation_id: string
           revoked_at: string | null
           updated_at: string
@@ -1605,6 +1606,7 @@ export type Database = {
           installation_id: string
           last_seen_at?: string
           platform: string
+          push_kind?: string
           provider_installation_id: string
           revoked_at?: string | null
           updated_at?: string
@@ -1617,6 +1619,7 @@ export type Database = {
           installation_id?: string
           last_seen_at?: string
           platform?: string
+          push_kind?: string
           provider_installation_id?: string
           revoked_at?: string | null
           updated_at?: string
@@ -2706,6 +2709,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      register_voip_push_device: {
+        Args: {
+          p_app_version: string
+          p_installation_id: string
+          p_provider_installation_id: string
+        }
+        Returns: undefined
+      }
       reject_call: {
         Args: { p_call_id: string }
         Returns: {
@@ -2954,6 +2965,10 @@ export type Database = {
       }
       unblock_user: { Args: { p_target_id: string }; Returns: boolean }
       unregister_push_device: {
+        Args: { p_installation_id: string }
+        Returns: undefined
+      }
+      unregister_voip_push_device: {
         Args: { p_installation_id: string }
         Returns: undefined
       }

@@ -58,6 +58,7 @@ public struct CallPanelState: Equatable, Sendable {
 @MainActor @Observable
 public final class CallSessionModel {
     public private(set) var state = CallStateReducer.emptyState()
+    public var onStateChange: (@MainActor (CallSessionState) -> Void)?
     public private(set) var notice: String?
     public private(set) var busy = false
     public private(set) var speaking = CallMediaSpeaking()
@@ -150,6 +151,14 @@ public final class CallSessionModel {
                 }
             }
         }
+    }
+
+    /// Re-reads one call after a native push wakes the app. Push payloads are
+    /// hints only; the RLS-protected row remains the source of truth.
+    @discardableResult
+    public func recover(callId: String) async -> Bool {
+        await loadCall(callId)
+        return state.current.callId == callId && state.current.status != .failed
     }
 
     /// The web unmount path: identity reset plus media teardown.
@@ -341,7 +350,7 @@ public final class CallSessionModel {
         guard let found = try? await realtime.findCall(id: callId, userId: userId)
         else {
             notice = CallCopy.callNoLongerAvailable
-            dispatch(.callFailed(callId: nil, reason: .notAllowed))
+            dispatch(.callFailed(callId: callId, reason: .notAllowed))
             return
         }
         applyCall(found)
@@ -531,6 +540,7 @@ public final class CallSessionModel {
 
     private func dispatch(_ event: CallEvent) {
         state = CallStateReducer.reduce(state, event)
+        onStateChange?(state.current)
         if !state.hasLiveCall {
             connectedCallId = nil
         }
