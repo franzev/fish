@@ -23,6 +23,7 @@ import space.fishhub.android.data.chat.local.MIGRATION_2_3
 import space.fishhub.android.data.chat.local.MIGRATION_3_4
 import space.fishhub.android.data.chat.local.MIGRATION_4_5
 import space.fishhub.android.data.chat.local.MIGRATION_5_6
+import space.fishhub.android.data.chat.local.MIGRATION_6_7
 import androidx.work.WorkerFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,7 @@ object ChatDataModule {
             MIGRATION_3_4,
             MIGRATION_4_5,
             MIGRATION_5_6,
+            MIGRATION_6_7,
         ).build()
         val remote = SupabaseChatRemoteDataSource(supabaseClient, scope, onBeforeSignOut)
         val attachmentImporter = AttachmentImporter(context.applicationContext)

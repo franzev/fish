@@ -614,7 +614,9 @@ private fun ConversationRail(
             items(conversations, key = { it.conversationId }) { conversation ->
                 ConversationRow(
                     name = conversation.participantName,
-                    snippet = conversation.snippet,
+                    snippet = if (conversation.hasDraft) {
+                        "Draft · ${conversation.snippet}"
+                    } else conversation.snippet,
                     time = conversation.timeLabel,
                     unreadCount = conversation.unreadCount,
                     selected = conversation.conversationId == selectedConversationId,
@@ -679,7 +681,9 @@ fun ConversationListScreen(
                 items(conversations, key = { it.conversationId }) { conversation ->
                     ConversationRow(
                         name = conversation.participantName,
-                        snippet = conversation.snippet,
+                        snippet = if (conversation.hasDraft) {
+                            "Draft · ${conversation.snippet}"
+                        } else conversation.snippet,
                         time = conversation.timeLabel,
                         unreadCount = conversation.unreadCount,
                         selected = conversation.conversationId == selectedConversationId,

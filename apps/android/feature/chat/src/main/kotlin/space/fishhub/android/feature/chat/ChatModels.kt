@@ -2,6 +2,7 @@ package space.fishhub.android.feature.chat
 
 import androidx.compose.runtime.Immutable
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatLinkPreview
 import space.fishhub.android.data.chat.model.ChatAttachment
 import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.model.LocalAttachmentDraft
@@ -47,6 +48,7 @@ data class ConversationPreviewUiModel(
     val snippet: String,
     val timeLabel: String,
     val unreadCount: Int,
+    val hasDraft: Boolean = false,
 )
 
 @Immutable
@@ -64,6 +66,7 @@ data class MessageUiModel(
     val deleted: Boolean = false,
     val edited: Boolean = false,
     val replyPreview: ReplyPreviewUiModel? = null,
+    val linkPreview: ChatLinkPreview? = null,
     val reactions: List<ReactionUiModel> = emptyList(),
     val actionsEnabled: Boolean = false,
     val reactionsEnabled: Boolean = actionsEnabled,

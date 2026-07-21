@@ -41,6 +41,15 @@ data class ChatGif(
 )
 
 @Serializable
+data class ChatLinkPreview(
+    val url: String,
+    val hostname: String,
+    val title: String? = null,
+    val description: String? = null,
+    val siteName: String? = null,
+)
+
+@Serializable
 enum class ChatAttachmentKind {
     @SerialName("image") Image,
     @SerialName("file") File,
@@ -84,6 +93,7 @@ data class ChatMessage(
     val body: String,
     val gif: ChatGif? = null,
     val gifUnavailable: Boolean = false,
+    val linkPreview: ChatLinkPreview? = null,
     val stickerId: String? = null,
     val attachments: List<ChatAttachment> = emptyList(),
     @kotlinx.serialization.Transient val attachmentsHydrated: Boolean = true,

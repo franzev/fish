@@ -7,6 +7,7 @@ import space.fishhub.android.data.chat.model.ChatReadState
 import space.fishhub.android.data.chat.model.LocalMessageStatus
 import space.fishhub.android.data.chat.model.UserRole
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatLinkPreview
 import space.fishhub.android.data.chat.model.ChatReaction
 import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.AttachmentDelivery
@@ -31,6 +32,9 @@ internal fun MessageEntity.toDomain(
     body = body,
     gif = gifJson?.takeUnless { it == UnavailableGifJson }?.let { encoded ->
         runCatching { mediaJson.decodeFromString<ChatGif>(encoded) }.getOrNull()
+    },
+    linkPreview = linkPreviewJson?.let { encoded ->
+        runCatching { mediaJson.decodeFromString<ChatLinkPreview>(encoded) }.getOrNull()
     },
     gifUnavailable = gifJson == UnavailableGifJson,
     stickerId = stickerId,
@@ -76,6 +80,7 @@ internal fun ChatMessage.toEntity(): MessageEntity = MessageEntity(
     stickerId = stickerId,
     gifJson = gif?.let { mediaJson.encodeToString(it) }
         ?: UnavailableGifJson.takeIf { gifUnavailable },
+    linkPreviewJson = linkPreview?.let { mediaJson.encodeToString(it) },
     clientRequestId = clientRequestId,
     createdAt = createdAt,
     editedAt = editedAt,

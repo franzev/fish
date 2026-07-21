@@ -4,6 +4,7 @@ import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatAttachment
 import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.data.chat.model.ChatLinkPreview
 import space.fishhub.android.data.chat.model.ChatMessageCursor
 import space.fishhub.android.data.chat.model.ChatReadState
 import space.fishhub.android.data.chat.model.ChatReaction
@@ -190,6 +191,7 @@ internal class SupabaseChatRemoteDataSource(
         val gifsByMessageId = loadGifs(pageRows.map { it.id })
         val attachmentJoin = loadAttachments(pageRows.map { it.id })
         val reactionsByMessageId = loadReactions(pageRows.map(MessageDto::id))
+        val linkPreviewsByMessageId = loadLinkPreviews(pageRows.map(MessageDto::id))
         val messages = pageRows.mapNotNull {
             val attachments = attachmentJoin.byMessageId[it.id].orEmpty().toMutableList()
             val attachmentOnlyMayBeUnhydrated = attachments.isEmpty() && it.body.isBlank() &&
@@ -200,6 +202,7 @@ internal class SupabaseChatRemoteDataSource(
             it.copy(reactions = reactionsByMessageId[it.id].orEmpty()).toDomainOrNull(
                 conversation,
                 gifsByMessageId[it.id],
+                linkPreviewsByMessageId[it.id],
                 attachments,
                 attachmentsHydrated = attachmentJoin.complete && !attachmentOnlyMayBeUnhydrated,
             )
@@ -354,6 +357,7 @@ internal class SupabaseChatRemoteDataSource(
         } else {
             loadAttachments(listOf(row.id))
         }
+        val linkPreview = loadLinkPreviews(listOf(row.id))[row.id]
         val attachments = attachmentJoin.byMessageId[row.id].orEmpty().toMutableList()
         val attachmentsComplete = attachmentJoin.complete &&
             attachments.map(ChatAttachment::id) == content.attachmentIds
@@ -365,6 +369,7 @@ internal class SupabaseChatRemoteDataSource(
         return row.toDomainOrNull(
             conversation,
             content.gif?.let { GifJoin(it, unavailable = false) },
+            linkPreview,
             hydratedAttachments = attachments,
             attachmentsHydrated = attachmentsComplete,
         )
@@ -552,7 +557,8 @@ internal class SupabaseChatRemoteDataSource(
                 val message = row?.toDomainOrNull(
                     conversation,
                     gif,
-                    attachments,
+                    linkPreview = row.let { loadLinkPreviews(listOf(it.id))[it.id] },
+                    hydratedAttachments = attachments,
                     attachmentsHydrated = attachmentJoin?.complete != false &&
                         !attachmentOnlyMayBeUnhydrated,
                 )
@@ -709,10 +715,12 @@ internal class SupabaseChatRemoteDataSource(
         row: MessageDto,
     ): ChatMessage? {
         val gif = loadGifs(listOf(row.id))[row.id]
+        val linkPreview = loadLinkPreviews(listOf(row.id))[row.id]
         val attachmentJoin = loadAttachments(listOf(row.id))
         return row.toDomainOrNull(
             conversation = conversation,
             gifJoin = gif,
+            linkPreview = linkPreview,
             hydratedAttachments = attachmentJoin.byMessageId[row.id].orEmpty(),
             attachmentsHydrated = attachmentJoin.complete,
         )
@@ -732,6 +740,27 @@ internal class SupabaseChatRemoteDataSource(
                 .mapValues { (_, rows) ->
                     rows.map { row -> ReactionDto(row.emoji, row.count, row.byMe) }
                 }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Throwable) {
+            emptyMap()
+        }
+    }
+
+    private suspend fun loadLinkPreviews(messageIds: List<String>): Map<String, ChatLinkPreview> {
+        if (messageIds.isEmpty()) return emptyMap()
+        return try {
+            client.from("message_link_previews").select {
+                filter { isIn("message_id", messageIds) }
+            }.decodeList<ChatLinkPreviewDto>().associate { row ->
+                row.messageId to ChatLinkPreview(
+                    url = row.url,
+                    hostname = row.hostname,
+                    title = row.title,
+                    description = row.description,
+                    siteName = row.siteName,
+                )
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Throwable) {
@@ -826,6 +855,7 @@ internal class SupabaseChatRemoteDataSource(
     private fun MessageDto.toDomainOrNull(
         conversation: AuthorizedConversation,
         gifJoin: GifJoin? = null,
+        linkPreview: ChatLinkPreview? = null,
         hydratedAttachments: List<ChatAttachment>? = null,
         attachmentsHydrated: Boolean = true,
     ): ChatMessage? {
@@ -857,6 +887,7 @@ internal class SupabaseChatRemoteDataSource(
             },
             body = body,
             gif = gifJoin?.gif,
+            linkPreview = linkPreview,
             gifUnavailable = gifJoin?.unavailable == true,
             stickerId = stickerId,
             attachments = attachmentModels,

@@ -12,6 +12,7 @@ import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatAttachment
 import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.model.ChatReaction
+import space.fishhub.android.data.chat.model.ChatLinkPreview
 import space.fishhub.android.data.chat.model.UserRole
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -242,6 +243,36 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
+    fun migrationSixToSevenAddsNullableLinkPreviewCache() {
+        helper.createDatabase(DatabaseName, 6).apply {
+            execSQL(
+                """
+                INSERT INTO messages (
+                    id, conversation_id, sender_id, sender_role, sender_display_name,
+                    body, sticker_id, gif_json, client_request_id, created_at, edited_at,
+                    deleted_at, reply_to_message_id, reactions_json, local_status, failure_reason
+                ) VALUES (
+                    'message-link-preview', 'conversation-1', 'client-1', 'client', 'Franz',
+                    'Saved link', NULL, NULL, 'request-link-preview', '2026-07-18T00:00:00Z', NULL,
+                    NULL, NULL, NULL, 'sent', NULL
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 7, true, MIGRATION_6_7).use { database ->
+            database.query(
+                "SELECT body, link_preview_json FROM messages WHERE id = 'message-link-preview'",
+            ).use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Saved link", cursor.getString(0))
+                assertNull(cursor.getString(1))
+            }
+        }
+    }
+
+    @Test
     fun currentVersionRoundTripsReactionAggregates() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val database = Room.inMemoryDatabaseBuilder(context, ChatDatabase::class.java).build()
@@ -264,9 +295,37 @@ class ChatDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun currentVersionRoundTripsLinkPreviewMetadata() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, ChatDatabase::class.java).build()
+        try {
+            val original = message(id = "linked").copy(
+                body = "Read this",
+                linkPreview = ChatLinkPreview(
+                    url = "https://example.com/article",
+                    hostname = "example.com",
+                    title = "A calm title",
+                    description = "A useful description",
+                    siteName = "Example",
+                ),
+            )
+            database.chatDao().upsertMessage(original.toEntity())
+
+            val restored = database.chatDao().observeMessages("conversation-1")
+                .first()
+                .single()
+                .toDomain()
+            assertEquals(original.linkPreview, restored.linkPreview)
+        } finally {
+            database.close()
+        }
+    }
+
     private fun message(
         id: String,
         gif: ChatGif? = null,
+        linkPreview: ChatLinkPreview? = null,
         stickerId: String? = null,
         gifUnavailable: Boolean = false,
     ) = ChatMessage(
@@ -276,6 +335,7 @@ class ChatDatabaseMigrationTest {
         senderRole = UserRole.Client,
         body = "",
         gif = gif,
+        linkPreview = linkPreview,
         gifUnavailable = gifUnavailable,
         stickerId = stickerId,
         clientRequestId = "request-$id",

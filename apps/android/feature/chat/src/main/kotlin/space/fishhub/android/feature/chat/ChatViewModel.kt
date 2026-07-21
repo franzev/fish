@@ -40,6 +40,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
@@ -67,6 +69,8 @@ class ChatViewModel(
     private var activeCollection: Job? = null
     private var directoryRefreshJob: Job? = null
     private var draftSave: Job? = null
+    private var draftObservers: Job? = null
+    private var draftConversationIds: Set<String> = emptySet()
     private var latestNotice: String? = null
     private var lastMarkedReadMessageId: String? = null
     private var markingReadMessageId: String? = null
@@ -104,6 +108,8 @@ class ChatViewModel(
                     ChatAuthState.Loading -> mutableUiState.value = ChatRouteUiState.Loading
                     ChatAuthState.SignedOut -> {
                         activeCollection?.cancel()
+                        draftObservers?.cancel()
+                        draftConversationIds = emptySet()
                         currentUser = null
                         conversations = emptyList()
                         pendingVoiceDraftId = null
@@ -233,6 +239,7 @@ class ChatViewModel(
             if (result !is ChatResult.Success) return@launch
             currentUser = result.value.currentUser
             conversations = result.value.conversations
+            observeConversationDrafts()
             val activeId = activeConversation?.conversationId
             if (activeId != null && conversations.none { it.conversationId == activeId }) {
                 handleConversationUnavailable(activeId)
@@ -726,6 +733,7 @@ class ChatViewModel(
             is ChatResult.Success -> {
                 currentUser = result.value.currentUser
                 conversations = result.value.conversations
+                observeConversationDrafts()
                 val restoredId = savedStateHandle.get<String>(ActiveConversationKey)
                 val selected = conversations.firstOrNull {
                     it.conversationId == pendingFocusConversationId
@@ -1101,6 +1109,7 @@ class ChatViewModel(
                             snippet = formatter.messageUnavailable,
                         )
                 },
+                linkPreview = if (message.deletedAt == null) message.linkPreview else null,
                 reactions = message.reactions.map { reaction ->
                     ReactionUiModel(reaction.emoji, reaction.count, reaction.byMe)
                 },
@@ -1182,7 +1191,28 @@ class ChatViewModel(
             } else {
                 unreadMessageSummary(local.messages, item.currentUserId, currentRead).count
             },
+            hasDraft = draftConversationIds.contains(item.conversationId),
         )
+    }
+
+    private fun observeConversationDrafts() {
+        draftObservers?.cancel()
+        val tracked = conversations
+        if (tracked.isEmpty()) {
+            draftConversationIds = emptySet()
+            return
+        }
+        draftObservers = viewModelScope.launch {
+            combine(tracked.map { conversation ->
+                repository.observeDraft(conversation.conversationId)
+                    .map { body -> conversation.conversationId to body.isNotEmpty() }
+            }) { values ->
+                values.filter { it.second }.mapTo(mutableSetOf()) { it.first }
+            }.collectLatest { ids ->
+                draftConversationIds = ids
+                publish()
+            }
+        }
     }
 
     private fun String.sameDayAs(other: String): Boolean = runCatching {

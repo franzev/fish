@@ -44,6 +44,25 @@ class SupabaseContractTest {
     }
 
     @Test
+    fun linkPreviewRowUsesSnakeCaseMetadataFields() {
+        val row = json.decodeFromString<ChatLinkPreviewDto>(
+            """
+            {
+              "message_id":"message-1",
+              "url":"https://example.com/article",
+              "hostname":"example.com",
+              "title":"A calm title",
+              "description":"A useful description",
+              "site_name":"Example"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("message-1", row.messageId)
+        assertEquals("Example", row.siteName)
+    }
+
+    @Test
     fun searchRpcUsesMinimalFirstPageParametersAndProbeRow() {
         val payload = searchMessagesRpcParameters(
             conversationId = "conversation-1",

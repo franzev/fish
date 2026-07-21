@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DraftEntity::class,
         AttachmentDraftEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -125,5 +125,11 @@ val MIGRATION_4_5: Migration = object : Migration(4, 5) {
 val MIGRATION_5_6: Migration = object : Migration(5, 6) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE messages ADD COLUMN reactions_json TEXT")
+    }
+}
+
+val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE messages ADD COLUMN link_preview_json TEXT")
     }
 }

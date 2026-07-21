@@ -132,6 +132,16 @@ internal data class MessageAttachmentDto(
 )
 
 @Serializable
+internal data class ChatLinkPreviewDto(
+    @SerialName("message_id") val messageId: String,
+    val url: String,
+    val hostname: String,
+    val title: String? = null,
+    val description: String? = null,
+    @SerialName("site_name") val siteName: String? = null,
+)
+
+@Serializable
 internal data class RefreshAttachmentUrlsRequest(
     val action: String = "refresh-attachment-urls",
     val attachmentIds: List<String>,

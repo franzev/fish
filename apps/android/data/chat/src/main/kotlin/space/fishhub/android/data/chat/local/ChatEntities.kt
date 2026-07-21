@@ -36,6 +36,7 @@ data class MessageEntity(
     val body: String,
     @ColumnInfo(name = "sticker_id") val stickerId: String? = null,
     @ColumnInfo(name = "gif_json") val gifJson: String? = null,
+    @ColumnInfo(name = "link_preview_json") val linkPreviewJson: String? = null,
     @ColumnInfo(name = "client_request_id") val clientRequestId: String,
     @ColumnInfo(name = "created_at") val createdAt: String,
     @ColumnInfo(name = "edited_at") val editedAt: String?,

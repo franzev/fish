@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import coil3.compose.rememberAsyncImagePainter
@@ -251,6 +252,9 @@ fun MessageBubble(
                 )
             }
         }
+        message.linkPreview?.let { preview ->
+            LinkPreviewSurface(preview)
+        }
         if (message.delivery != null) {
             MessageDeliveryStatus(
                 status = message.delivery,
@@ -310,6 +314,41 @@ fun MessageBubble(
                     top = FishTheme.spacing.twoXs,
                     end = FishTheme.spacing.xs,
                 ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LinkPreviewSurface(preview: space.fishhub.android.data.chat.model.ChatLinkPreview) {
+    val uriHandler = LocalUriHandler.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+            .clip(RoundedCornerShape(FishTheme.radii.control))
+            .background(FishTheme.colors.surfaceAlt)
+            .clickable { runCatching { uriHandler.openUri(preview.url) } }
+            .padding(horizontal = FishTheme.spacing.sm, vertical = FishTheme.spacing.sm),
+    ) {
+        Text(
+            text = preview.siteName ?: preview.hostname,
+            color = FishTheme.colors.muted,
+            style = FishTheme.typography.caption,
+        )
+        Text(
+            text = preview.title ?: preview.hostname,
+            color = FishTheme.colors.foreground,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = FishTheme.typography.label,
+        )
+        preview.description?.let {
+            Text(
+                text = it,
+                color = FishTheme.colors.body,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                style = FishTheme.typography.caption,
             )
         }
     }
