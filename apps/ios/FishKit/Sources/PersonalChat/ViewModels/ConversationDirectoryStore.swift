@@ -11,17 +11,20 @@ public final class ConversationDirectoryStore {
     public private(set) var notice: String?
 
     private let directory: any ConversationDirectoryProviding
+    private let drafts: (any ChatDraftProviding)?
     private let sleep: @Sendable (Duration) async throws -> Void
     private var attentionTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
 
     public init(
         directory: any ConversationDirectoryProviding,
+        drafts: (any ChatDraftProviding)? = nil,
         sleep: @escaping @Sendable (Duration) async throws -> Void = {
             try await Task.sleep(for: $0)
         }
     ) {
         self.directory = directory
+        self.drafts = drafts
         self.sleep = sleep
     }
 
@@ -49,7 +52,27 @@ public final class ConversationDirectoryStore {
 
     public func refresh() async {
         do {
-            conversations = try await directory.conversations()
+            let loaded = try await directory.conversations()
+            let draftIds: Set<String>
+            if let drafts {
+                let local = try? await drafts.drafts(for: loaded.map(\.conversationId))
+                draftIds = Set(local?.keys.map { $0 } ?? [])
+            } else {
+                draftIds = []
+            }
+            conversations = loaded.map { preview in
+                ChatConversationPreview(
+                    conversationId: preview.conversationId,
+                    participantId: preview.participantId,
+                    participantRole: preview.participantRole,
+                    participantDisplayName: preview.participantDisplayName,
+                    latestMessageSenderId: preview.latestMessageSenderId,
+                    latestMessageText: preview.latestMessageText,
+                    latestMessageCreatedAt: preview.latestMessageCreatedAt,
+                    unreadCount: preview.unreadCount,
+                    hasDraft: draftIds.contains(preview.conversationId)
+                )
+            }
             phase = .ready
             notice = nil
         } catch {

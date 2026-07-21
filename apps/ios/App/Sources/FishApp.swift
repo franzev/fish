@@ -35,6 +35,7 @@ struct FishApp: App {
 @MainActor
 final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificationCenterDelegate {
     private let voipPushCoordinator = VoipPushCoordinator()
+    private let notificationReplyStore = FileChatNotificationReplyStore.shared
 
     func application(
         _ application: UIApplication,
@@ -42,6 +43,22 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
     ) -> Bool {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
+        center.setNotificationCategories([
+            UNNotificationCategory(
+                identifier: fishMessageNotificationCategory,
+                actions: [
+                    UNTextInputNotificationAction(
+                        identifier: fishMessageReplyAction,
+                        title: "Reply",
+                        options: [],
+                        textInputButtonTitle: "Send",
+                        textInputPlaceholder: "Message"
+                    )
+                ],
+                intentIdentifiers: [],
+                options: [.hiddenPreviewsShowTitle]
+            )
+        ])
         center.getNotificationSettings { settings in
             guard [.authorized, .provisional, .ephemeral].contains(settings.authorizationStatus) else {
                 return
@@ -89,6 +106,24 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
             let messageId = (userInfo["messageId"] as? String)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
                 .nilIfEmpty
+            if response.actionIdentifier == fishMessageReplyAction,
+               let textResponse = response as? UNTextInputNotificationResponse {
+                let body = textResponse.userText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !body.isEmpty, body.count <= 4_000 else {
+                    completionHandler()
+                    return
+                }
+                let reply = ChatNotificationReply(conversationId: conversationId, body: body)
+                Task { @MainActor [notificationReplyStore] in
+                    try? await notificationReplyStore.enqueue(reply)
+                    NotificationCenter.default.post(
+                        name: .fishQuickReply,
+                        object: reply
+                    )
+                    completionHandler()
+                }
+                return
+            }
             NotificationCenter.default.post(
                 name: .fishOpenConversation,
                 object: FishNotificationDestination(
@@ -105,7 +140,11 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
 private extension Notification.Name {
     static let fishPushToken = Notification.Name("fish.push-token")
     static let fishOpenConversation = Notification.Name("fish.open-conversation")
+    static let fishQuickReply = Notification.Name("fish.quick-reply")
 }
+
+private let fishMessageNotificationCategory = "fish.message"
+private let fishMessageReplyAction = "fish.message.reply"
 
 private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
@@ -387,6 +426,9 @@ final class FishAppModel {
     private(set) var callModel: CallSessionModel?
     private(set) var callMedia: LiveKitCallMedia?
     private(set) var callKit: CallKitCoordinator?
+    private var draftStore: (any ChatDraftProviding)?
+    private let notificationReplyStore = FileChatNotificationReplyStore.shared
+    private var isProcessingNotificationReplies = false
     private(set) var accountPresence = AccountSettingsPresence()
     private(set) var blockedPeopleState = AccountSettingsBlockedPeopleState.hidden
     private let pushInstallationId: UUID
@@ -707,7 +749,11 @@ final class FishAppModel {
         accountPresence = AccountSettingsPresence()
         blockedPeopleState = .hidden
         isLoadingBlockedPeople = false
-        stopConversation()
+        await stopConversation()
+        if let draftStore {
+            try? await draftStore.removeAllDrafts()
+        }
+        try? await notificationReplyStore.removeAll()
         if let callModel, callModel.state.hasLiveCall {
             if callModel.state.current.status == .ringing,
                callModel.state.current.direction == .incoming {
@@ -730,13 +776,16 @@ final class FishAppModel {
         }
         session = nil
         directory = nil
+        draftStore = nil
         currentUserId = ""
+        try? await notificationCenter.setBadgeCount(0)
         notice = nil
         phase = .signedOut
     }
 
     func refreshDirectory() async {
         await directory?.refresh()
+        await updateApplicationBadge()
     }
 
     @discardableResult
@@ -748,7 +797,7 @@ final class FishAppModel {
         guard let session, let preview = directory?.conversations.first(where: {
             $0.conversationId == id
         }) else { return false }
-        stopConversation()
+        await stopConversation()
         phase = .opening
         do {
             let store = ConversationStore(
@@ -760,7 +809,8 @@ final class FishAppModel {
                 messaging: session.messaging,
                 commands: session.commands,
                 realtime: session.realtime,
-                gifProvider: gifProvider
+                gifProvider: gifProvider,
+                drafts: draftStore
             )
             let staging = try AttachmentStaging()
             let uploads = AttachmentUploadsModel(
@@ -786,7 +836,7 @@ final class FishAppModel {
             }
             return true
         } catch {
-            stopConversation()
+            await stopConversation()
             notice = "That conversation didn’t open yet. Try again."
             phase = .inbox
             return false
@@ -794,9 +844,12 @@ final class FishAppModel {
     }
 
     func closeConversation() {
-        stopConversation()
-        phase = .inbox
-        Task { await directory?.refresh() }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await stopConversation()
+            phase = .inbox
+            await directory?.refresh()
+        }
     }
 
     func handle(url: URL) {
@@ -820,6 +873,7 @@ final class FishAppModel {
     private func attach(_ session: ChatLiveSession) async {
         self.session = session
         currentUserId = session.userId
+        draftStore = FileChatDraftStore(accountId: session.userId)
         let callBackend = CallBackendConfiguration(
             supabaseUrl: session.backend.supabaseUrl,
             anonKey: session.backend.anonKey,
@@ -845,9 +899,14 @@ final class FishAppModel {
         await callModel.start()
         await registerPushDeviceIfPossible()
         await recoverPendingVoipCallIfReady()
-        let directory = ConversationDirectoryStore(directory: session.directory)
+        let directory = ConversationDirectoryStore(
+            directory: session.directory,
+            drafts: draftStore
+        )
         self.directory = directory
         await directory.start()
+        await updateApplicationBadge()
+        await processPendingNotificationReplies()
         if pendingConversation != nil {
             if await openPendingConversationIfReady() {
                 return
@@ -859,11 +918,21 @@ final class FishAppModel {
         }
     }
 
-    private func stopConversation() {
+    private func stopConversation() async {
         uploads?.dismiss()
-        conversationStore?.stop()
+        if let conversationStore {
+            await conversationStore.flushDraft()
+            conversationStore.stop()
+        }
         conversationStore = nil
         uploads = nil
+    }
+
+    private func updateApplicationBadge() async {
+        let total = directory?.conversations.reduce(into: 0) { result, preview in
+            result += max(0, preview.unreadCount)
+        } ?? 0
+        try? await notificationCenter.setBadgeCount(total)
     }
 
     private func applyPendingShareIfReady() async {
@@ -962,6 +1031,52 @@ final class FishAppModel {
             guard let destination = notification.object as? FishVoipPushDestination else { return }
             Task { @MainActor [weak self] in
                 self?.handleIncomingVoipCall(destination)
+            }
+        }
+        NotificationCenter.default.addObserver(
+            forName: .fishQuickReply,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.processPendingNotificationReplies()
+            }
+        }
+    }
+
+    private func processPendingNotificationReplies() async {
+        guard !isProcessingNotificationReplies,
+              let session,
+              let directory,
+              directory.phase != .loading
+        else { return }
+        isProcessingNotificationReplies = true
+        defer { isProcessingNotificationReplies = false }
+        let replies = (try? await notificationReplyStore.pendingReplies()) ?? []
+        for reply in replies {
+            guard directory.conversations.contains(where: {
+                $0.conversationId == reply.conversationId
+            }) else {
+                // The current account cannot access this conversation. Do not
+                // retain a reply that could be sent after an account switch.
+                try? await notificationReplyStore.remove(id: reply.id)
+                continue
+            }
+            let request = SendChatMessageRequest(
+                conversationId: reply.conversationId,
+                body: reply.body,
+                clientRequestId: reply.id
+            )
+            do {
+                _ = try await session.messaging.send(request)
+                try? await notificationReplyStore.remove(id: reply.id)
+            } catch let failure as ChatCommandFailure {
+                if failure.statusCode == 401 || failure.statusCode == 403 ||
+                    ["conversation_not_available", "invalid_request"].contains(failure.code) {
+                    try? await notificationReplyStore.remove(id: reply.id)
+                }
+            } catch {
+                // Keep network failures durable for the next foreground pass.
             }
         }
     }

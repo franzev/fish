@@ -310,7 +310,8 @@ private func storeWindow(
 @MainActor
 private func makeStore(
     window: ChatNewestWindow,
-    sleeper: StoreSleeper? = nil
+    sleeper: StoreSleeper? = nil,
+    drafts: (any ChatDraftProviding)? = nil
 ) -> (ConversationStore, StoreMessaging, StoreCommands, StoreRealtime) {
     let messaging = StoreMessaging(window: window)
     let commands = StoreCommands()
@@ -326,7 +327,8 @@ private func makeStore(
         now: { Date(timeIntervalSince1970: 400) },
         sleep: { duration in
             if let sleeper { try await sleeper.sleep(duration) }
-        }
+        },
+        drafts: drafts
     )
     return (store, messaging, commands, realtime)
 }
@@ -582,6 +584,42 @@ struct ConversationStoreTests {
         #expect(store.model.messages.first?.delivery == .sent)
         #expect(store.draft.isEmpty)
         #expect(store.model.notice == nil)
+        store.stop()
+    }
+
+    @Test func recoveredSendOutsideNewestWindowReusesRequestId() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fish-recovered-send-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let drafts = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let pending = ChatPendingTextSend(
+            conversationId: "c1",
+            clientRequestId: "recovered-request",
+            body: "Please send this once"
+        )
+        try await drafts.savePendingTextSend(pending)
+
+        let (store, messaging, _, _) = makeStore(
+            window: storeWindow([]),
+            drafts: drafts
+        )
+        await store.start()
+
+        #expect(store.draft == pending.body)
+        #expect(try await drafts.pendingTextSends() == [pending])
+
+        await store.send(ChatSendPayload(
+            body: pending.body,
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: []
+        ))
+
+        let requests = await messaging.requests()
+        #expect(requests.count == 1)
+        #expect(requests[0].clientRequestId == pending.clientRequestId)
+        #expect(try await drafts.pendingTextSends().isEmpty)
+        #expect(try await drafts.draft(for: "c1") == nil)
         store.stop()
     }
 

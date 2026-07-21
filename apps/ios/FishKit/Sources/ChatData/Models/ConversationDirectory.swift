@@ -10,6 +10,7 @@ public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
     public let latestMessageText: String
     public let latestMessageCreatedAt: Date?
     public let unreadCount: Int
+    public let hasDraft: Bool
 
     public init(
         conversationId: String,
@@ -19,7 +20,8 @@ public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
         latestMessageSenderId: String?,
         latestMessageText: String,
         latestMessageCreatedAt: Date?,
-        unreadCount: Int
+        unreadCount: Int,
+        hasDraft: Bool = false
     ) {
         self.conversationId = conversationId
         self.participantId = participantId
@@ -29,6 +31,7 @@ public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
         self.latestMessageText = latestMessageText
         self.latestMessageCreatedAt = latestMessageCreatedAt
         self.unreadCount = max(0, unreadCount)
+        self.hasDraft = hasDraft
     }
 }
 

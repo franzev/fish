@@ -129,9 +129,9 @@ public struct ConversationListScreen: View {
     }
 
     private func snippetText(_ preview: ChatConversationPreview) -> some View {
-        Text(snippet(preview))
+        Text(preview.hasDraft ? "Draft · \(snippet(preview))" : snippet(preview))
             .textStyle(.body)
-            .foregroundStyle(Palette.body)
+            .foregroundStyle(preview.hasDraft ? Palette.notice : Palette.body)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

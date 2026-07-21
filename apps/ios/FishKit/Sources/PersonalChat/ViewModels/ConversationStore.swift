@@ -23,6 +23,7 @@ public final class ConversationStore {
             guard draft != oldValue else { return }
             reduce(.draftChanged(conversationId: conversationId, draft: draft))
             scheduleTyping(for: draft)
+            persistDraft()
         }
     }
     public var selection = ComposerSelection.none
@@ -34,6 +35,8 @@ public final class ConversationStore {
     private let gifProvider: (any GifProviding)?
     private let now: @Sendable () -> Date
     private let sleep: @Sendable (Duration) async throws -> Void
+    private let drafts: (any ChatDraftProviding)?
+    private var draftSaveTask: Task<Void, Never>?
 
     private var state = ChatState()
     private var phase = PersonalChatPhase.loading
@@ -72,7 +75,8 @@ public final class ConversationStore {
         now: @escaping @Sendable () -> Date = Date.init,
         sleep: @escaping @Sendable (Duration) async throws -> Void = {
             try await Task.sleep(for: $0)
-        }
+        },
+        drafts: (any ChatDraftProviding)? = nil
     ) {
         self.conversationId = conversationId
         self.currentUserId = currentUserId
@@ -87,6 +91,7 @@ public final class ConversationStore {
         self.presence = presence
         self.now = now
         self.sleep = sleep
+        self.drafts = drafts
         self.messageSearch = MessageSearchModel(
             conversationId: conversationId,
             currentUserId: currentUserId,
@@ -117,6 +122,9 @@ public final class ConversationStore {
         guard !started else { return }
         started = true
         phase = .loading
+        if let drafts, let restored = try? await drafts.draft(for: conversationId) {
+            draft = restored.body
+        }
         reduce(.setRealtimeStatus(conversationId: conversationId, status: .connecting))
         do {
             let window = try await messaging.newestWindow(
@@ -130,6 +138,7 @@ public final class ConversationStore {
                 hasMoreOlder: window.hasMoreOlder,
                 oldestCursor: window.oldestCursor
             ))
+            await reconcilePendingTextSends(with: window.messages)
             phase = .ready
             subscribe()
             if let incoming = latestIncomingMessageId() {
@@ -146,6 +155,7 @@ public final class ConversationStore {
         clearFocusedMessage()
         typingIdleTask?.cancel()
         typingWatchdogTask?.cancel()
+        draftSaveTask?.cancel()
         eventTask?.cancel()
         connectionTask?.cancel()
         if let subscription {
@@ -155,6 +165,17 @@ public final class ConversationStore {
         subscription = nil
         participantTyping = false
         started = false
+    }
+
+    /// Flushes the latest composer value before the owning screen is torn
+    /// down. Sign-out calls this before clearing the account-scoped store.
+    public func flushDraft() async {
+        guard let drafts else { return }
+        let pendingSave = draftSaveTask
+        draftSaveTask = nil
+        pendingSave?.cancel()
+        await pendingSave?.value
+        try? await drafts.saveDraft(draft, conversationId: conversationId)
     }
 
     public func openMessageSearch() {
@@ -212,8 +233,25 @@ public final class ConversationStore {
             notice = "Send the expression or the attachments in a separate message."
             return
         }
-        let requestId = UUID().uuidString.lowercased()
+        let durableTextSend = payload.selection == .none
+            && payload.attachmentIds.isEmpty
+            && payload.optimisticAttachments.isEmpty
+            && currentConversation.composer.replyTargetId == nil
+            && !payload.body.isEmpty
+        let requestId = await requestIdForSend(
+            body: payload.body,
+            durableTextSend: durableTextSend
+        )
         let request = makeRequest(payload, clientRequestId: requestId)
+        if let drafts, durableTextSend {
+            try? await drafts.savePendingTextSend(
+                ChatPendingTextSend(
+                    conversationId: conversationId,
+                    clientRequestId: requestId,
+                    body: request.body
+                )
+            )
+        }
         let optimistic = optimisticMessage(
             payload,
             requestId: requestId,
@@ -277,6 +315,66 @@ public final class ConversationStore {
         typingIdleTask?.cancel()
         typingVersion += 1
         Task { await subscription?.sendTyping(false) }
+    }
+
+    private func persistDraft() {
+        guard let drafts else { return }
+        let body = draft
+        draftSaveTask?.cancel()
+        draftSaveTask = Task { [conversationId, drafts] in
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+                try Task.checkCancellation()
+                try await drafts.saveDraft(body, conversationId: conversationId)
+            } catch { /* Local continuity must never block chat. */ }
+        }
+    }
+
+    private func reconcilePendingTextSends(with messages: [ChatMessage]) async {
+        guard let drafts else { return }
+        let pending = (try? await drafts.pendingTextSends())?.filter {
+            $0.conversationId == conversationId
+        } ?? []
+        guard !pending.isEmpty else { return }
+
+        let confirmedRequestIds = Set(messages.map(\.clientRequestId))
+        for item in pending {
+            if confirmedRequestIds.contains(item.clientRequestId) {
+                try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
+                // Do not erase a newer composer value that was typed after
+                // this send was accepted by the server.
+                if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                    draft == item.body {
+                    try? await drafts.removeDraft(conversationId: conversationId)
+                }
+            } else {
+                if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    draft = item.body
+                }
+            }
+        }
+    }
+
+    private func requestIdForSend(body: String, durableTextSend: Bool) async -> String {
+        guard durableTextSend, let drafts else {
+            return UUID().uuidString.lowercased()
+        }
+
+        let pending = (try? await drafts.pendingTextSends())?.filter {
+            $0.conversationId == conversationId
+        } ?? []
+        let reusable = pending
+            .filter { $0.body == body }
+            .max { $0.createdAt < $1.createdAt }
+
+        // A newly composed message supersedes recovered sends with a different
+        // body. Keeping those markers would restore stale text on a later
+        // launch, while the server's request id already makes an accepted send
+        // safe to leave in the conversation.
+        for item in pending where item.clientRequestId != reusable?.clientRequestId {
+            try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
+        }
+        return reusable?.clientRequestId ?? UUID().uuidString.lowercased()
     }
 
     public func perform(_ action: MessageAction) {
@@ -405,21 +503,25 @@ public final class ConversationStore {
                 localRequestId: request.clientRequestId
             ))
             pendingSends[request.clientRequestId] = nil
+            if let drafts {
+                try? await drafts.removePendingTextSend(clientRequestId: request.clientRequestId)
+                try? await drafts.removeDraft(conversationId: conversationId)
+            }
             if let gif = request.gif {
                 await gifProvider?.registerShare(gif: gif, query: "")
             }
             notice = nil
         } catch let failure as ChatCommandFailure {
-            handleSendFailure(request, failure: failure)
+            await handleSendFailure(request, failure: failure)
         } catch {
-            handleSendFailure(request, failure: .sendUnavailable)
+            await handleSendFailure(request, failure: .sendUnavailable)
         }
     }
 
     private func handleSendFailure(
         _ request: SendChatMessageRequest,
         failure: ChatCommandFailure
-    ) {
+    ) async {
         reduce(.markMessageFailed(
             conversationId: conversationId,
             clientRequestId: request.clientRequestId,
@@ -430,6 +532,9 @@ public final class ConversationStore {
         }) else {
             pendingSends[request.clientRequestId] = nil
             return
+        }
+        if let drafts {
+            try? await drafts.removePendingTextSend(clientRequestId: request.clientRequestId)
         }
         if draft.isEmpty { draft = request.body }
         notice = failure.notice
@@ -932,6 +1037,7 @@ public final class ConversationStore {
                 sentAt: ChatTimestamp.date(message.createdAt) ?? .distantPast,
                 delivery: delivery,
                 replyPreview: deleted ? nil : reply,
+                linkPreview: deleted ? nil : message.linkPreview.flatMap(MessageLinkPreviewUiModel.init),
                 reactions: deleted ? [] : (message.reactions ?? []).map {
                     MessageReactionUiModel(emoji: $0.emoji, count: $0.count, byMe: $0.byMe)
                 },
