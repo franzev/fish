@@ -78,6 +78,28 @@ public struct ChatStateGif: Codable, Sendable, Equatable {
     }
 }
 
+public struct ChatStateLinkPreview: Codable, Sendable, Equatable {
+    public var url: String
+    public var hostname: String
+    public var title: String?
+    public var description: String?
+    public var siteName: String?
+
+    public init(
+        url: String,
+        hostname: String,
+        title: String? = nil,
+        description: String? = nil,
+        siteName: String? = nil
+    ) {
+        self.url = url
+        self.hostname = hostname
+        self.title = title
+        self.description = description
+        self.siteName = siteName
+    }
+}
+
 public struct ChatStateAttachment: Codable, Sendable, Equatable {
     public var id: String
     public var status: String
@@ -129,6 +151,7 @@ public struct ChatMessageState: Codable, Sendable, Equatable, Identifiable {
     public var senderDisplayName: String?
     public var body: String
     public var gif: ChatStateGif?
+    public var linkPreview: ChatStateLinkPreview?
     public var stickerId: String?
     public var attachments: [ChatStateAttachment]?
     public var images: [ChatStateAttachment]?
@@ -149,6 +172,7 @@ public struct ChatMessageState: Codable, Sendable, Equatable, Identifiable {
         senderDisplayName: String? = nil,
         body: String,
         gif: ChatStateGif? = nil,
+        linkPreview: ChatStateLinkPreview? = nil,
         stickerId: String? = nil,
         attachments: [ChatStateAttachment]? = nil,
         images: [ChatStateAttachment]? = nil,
@@ -168,6 +192,7 @@ public struct ChatMessageState: Codable, Sendable, Equatable, Identifiable {
         self.senderDisplayName = senderDisplayName
         self.body = body
         self.gif = gif
+        self.linkPreview = linkPreview
         self.stickerId = stickerId
         self.attachments = attachments
         self.images = images

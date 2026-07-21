@@ -13,6 +13,38 @@ public struct ChatReaction: Equatable, Sendable, Codable {
     }
 }
 
+public struct ChatLinkPreview: Equatable, Sendable, Codable {
+    public let url: URL
+    public let hostname: String
+    public let title: String?
+    public let description: String?
+    public let siteName: String?
+
+    public init(
+        url: URL,
+        hostname: String,
+        title: String? = nil,
+        description: String? = nil,
+        siteName: String? = nil
+    ) {
+        self.url = url
+        self.hostname = hostname
+        self.title = title
+        self.description = description
+        self.siteName = siteName
+    }
+
+    public var coreState: ChatStateLinkPreview {
+        ChatStateLinkPreview(
+            url: url.absoluteString,
+            hostname: hostname,
+            title: title,
+            description: description,
+            siteName: siteName
+        )
+    }
+}
+
 public struct ChatMessage: Identifiable, Equatable, Sendable {
     public let id: String
     public let conversationId: String
@@ -20,6 +52,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
     public let senderRole: String
     public let senderDisplayName: String?
     public let body: String
+    public let linkPreview: ChatLinkPreview?
     public let clientRequestId: String
     public let createdAt: Date
     public let editedAt: Date?
@@ -37,6 +70,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
         senderRole: String,
         senderDisplayName: String? = nil,
         body: String,
+        linkPreview: ChatLinkPreview? = nil,
         clientRequestId: String? = nil,
         createdAt: Date,
         editedAt: Date? = nil,
@@ -53,6 +87,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
         self.senderRole = senderRole
         self.senderDisplayName = senderDisplayName
         self.body = body
+        self.linkPreview = linkPreview
         self.clientRequestId = clientRequestId ?? id
         self.createdAt = createdAt
         self.editedAt = editedAt
@@ -67,6 +102,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
     public func enriched(
         displayName: String? = nil,
         gif: ChatGif? = nil,
+        linkPreview: ChatLinkPreview? = nil,
         reactions: [ChatReaction]? = nil,
         attachments: [ChatAttachment]? = nil
     ) -> Self {
@@ -77,6 +113,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
             senderRole: senderRole,
             senderDisplayName: displayName ?? senderDisplayName,
             body: body,
+            linkPreview: linkPreview ?? self.linkPreview,
             clientRequestId: clientRequestId,
             createdAt: createdAt,
             editedAt: editedAt,
@@ -111,6 +148,7 @@ public struct ChatMessage: Identifiable, Equatable, Sendable {
                     height: $0.height
                 )
             },
+            linkPreview: linkPreview?.coreState,
             stickerId: stickerId,
             attachments: attachments.map(\.coreState),
             images: attachments.map(\.coreState),

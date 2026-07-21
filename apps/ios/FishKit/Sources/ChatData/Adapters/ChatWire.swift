@@ -17,9 +17,10 @@ struct ChatMessageWire: Decodable {
     let reactions: [ChatReactionWire]?
     let images: [ChatAttachmentWire]?
     let gif: ChatGifWire?
+    let linkPreview: ChatLinkPreviewWire?
 
     enum CodingKeys: String, CodingKey {
-        case id, body, reactions, images, gif
+        case id, body, reactions, images, gif, linkPreview = "message_link_previews"
         case conversationId = "conversation_id"
         case senderId = "sender_id"
         case senderRole = "sender_role"
@@ -40,6 +41,7 @@ struct ChatMessageWire: Decodable {
             senderRole: senderRole,
             senderDisplayName: senderDisplayName,
             body: body,
+            linkPreview: linkPreview?.domain,
             clientRequestId: clientRequestId,
             createdAt: createdAt,
             editedAt: editedAt,
@@ -49,6 +51,29 @@ struct ChatMessageWire: Decodable {
             stickerId: stickerId?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             reactions: reactions?.map(\.domain) ?? [],
             attachments: images?.map(\.domain) ?? []
+        )
+    }
+}
+
+struct ChatLinkPreviewWire: Decodable {
+    let url: URL
+    let hostname: String
+    let title: String?
+    let description: String?
+    let siteName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case url, hostname, title, description
+        case siteName = "site_name"
+    }
+
+    var domain: ChatLinkPreview {
+        ChatLinkPreview(
+            url: url,
+            hostname: hostname,
+            title: title,
+            description: description,
+            siteName: siteName
         )
     }
 }

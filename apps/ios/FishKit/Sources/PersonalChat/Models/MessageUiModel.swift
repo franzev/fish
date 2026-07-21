@@ -1,3 +1,5 @@
+import ChatCore
+import ChatData
 import Foundation
 
 public enum MessageDirection: Sendable, Equatable {
@@ -22,6 +24,31 @@ public struct MessageReplyPreviewUiModel: Equatable, Sendable {
         self.messageId = messageId
         self.authorName = authorName
         self.snippet = snippet
+    }
+}
+
+public struct MessageLinkPreviewUiModel: Equatable, Sendable {
+    public let url: URL
+    public let hostname: String
+    public let title: String?
+    public let description: String?
+    public let siteName: String?
+
+    public init(preview: ChatLinkPreview) {
+        url = preview.url
+        hostname = preview.hostname
+        title = preview.title
+        description = preview.description
+        siteName = preview.siteName
+    }
+
+    public init?(preview: ChatStateLinkPreview) {
+        guard let parsedURL = URL(string: preview.url) else { return nil }
+        url = parsedURL
+        hostname = preview.hostname
+        title = preview.title
+        description = preview.description
+        siteName = preview.siteName
     }
 }
 
@@ -53,6 +80,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
     public let sentAt: Date
     public let delivery: MessageDeliveryStatus?
     public let replyPreview: MessageReplyPreviewUiModel?
+    public let linkPreview: MessageLinkPreviewUiModel?
     public let reactions: [MessageReactionUiModel]
     public let isReactionPending: Bool
     public let isEdited: Bool
@@ -69,6 +97,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         sentAt: Date,
         delivery: MessageDeliveryStatus? = nil,
         replyPreview: MessageReplyPreviewUiModel? = nil,
+        linkPreview: MessageLinkPreviewUiModel? = nil,
         reactions: [MessageReactionUiModel] = [],
         isReactionPending: Bool = false,
         isEdited: Bool = false,
@@ -84,6 +113,7 @@ public struct MessageUiModel: Identifiable, Equatable, Sendable {
         self.sentAt = sentAt
         self.delivery = delivery
         self.replyPreview = replyPreview
+        self.linkPreview = linkPreview
         self.reactions = reactions
         self.isReactionPending = isReactionPending
         self.isEdited = isEdited

@@ -115,6 +115,10 @@ public struct MessageBubble: View {
             ))
             .accessibilitySortPriority(1)
 
+            if let linkPreview = row.message.linkPreview {
+                linkPreviewCard(linkPreview)
+            }
+
             if row.showsDeliveryStatus, row.message.delivery == .failed {
                 failedLine
             }
@@ -268,6 +272,31 @@ public struct MessageBubble: View {
                 )
             )
             .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func linkPreviewCard(_ preview: MessageLinkPreviewUiModel) -> some View {
+        Link(destination: preview.url) {
+            VStack(alignment: .leading, spacing: Spacing.nudge) {
+                Text(preview.siteName ?? preview.hostname)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.muted)
+                Text(preview.title ?? preview.hostname)
+                    .textStyle(.label)
+                    .foregroundStyle(Palette.foreground)
+                    .lineLimit(2)
+                if let description = preview.description {
+                    Text(description)
+                        .textStyle(.caption)
+                        .foregroundStyle(Palette.body)
+                        .lineLimit(3)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.sm)
+            .background(Palette.surface2, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Link preview for \(preview.title ?? preview.hostname)")
     }
 
     private func unavailableMedia(_ label: String) -> some View {

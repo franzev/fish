@@ -178,14 +178,17 @@ public struct RestChatMessaging: ChatMessagingProviding {
         async let hydratedAttachments = hydration.readyAttachments(forMessageIds: ids)
         async let gifs = gifRows(messageIds: ids)
         async let reactions = reactionRows(messageIds: ids)
-        let (attachments, gifsByMessage, reactionsByMessage) = try await (
+        async let linkPreviews = linkPreviewRows(messageIds: ids)
+        let (attachments, gifsByMessage, reactionsByMessage, previewsByMessage) = try await (
             hydratedAttachments,
             gifs,
-            reactions
+            reactions,
+            linkPreviews
         )
         return messages.map { message in
             message.enriched(
                 gif: gifsByMessage[message.id],
+                linkPreview: previewsByMessage[message.id],
                 reactions: reactionsByMessage[message.id] ?? message.reactions,
                 attachments: attachments[message.id] ?? message.attachments
             )
@@ -207,6 +210,33 @@ public struct RestChatMessaging: ChatMessagingProviding {
             let rows = try ChatWireDecoder.make().decode([ChatGifWire].self, from: data)
             return Dictionary(uniqueKeysWithValues: rows.compactMap { row in
                 row.messageId.map { ($0, row.domain) }
+            })
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return [:]
+        }
+    }
+
+    private func linkPreviewRows(messageIds: [String]) async throws -> [String: ChatLinkPreview] {
+        do {
+            let data = try await get(
+                table: "message_link_previews",
+                query: [
+                    URLQueryItem(name: "select", value: "message_id,url,hostname,title,description,site_name"),
+                    URLQueryItem(name: "message_id", value: "in.(\(messageIds.joined(separator: ",")))"),
+                ]
+            )
+            let rows = try ChatWireDecoder.make().decode([ChatLinkPreviewRow].self, from: data)
+            return Dictionary(uniqueKeysWithValues: rows.compactMap { row in
+                guard let url = URL(string: row.url) else { return nil }
+                return (row.messageId, ChatLinkPreview(
+                    url: url,
+                    hostname: row.hostname,
+                    title: row.title,
+                    description: row.description,
+                    siteName: row.siteName
+                ))
             })
         } catch is CancellationError {
             throw CancellationError()
@@ -344,6 +374,21 @@ public struct RestChatMessaging: ChatMessagingProviding {
 
     private func cursor(for message: ChatMessage) -> ChatMessageCursor {
         ChatMessageCursor(createdAt: ChatTimestamp.string(message.createdAt), id: message.id)
+    }
+}
+
+private struct ChatLinkPreviewRow: Decodable {
+    let messageId: String
+    let url: String
+    let hostname: String
+    let title: String?
+    let description: String?
+    let siteName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case url, hostname, title, description
+        case messageId = "message_id"
+        case siteName = "site_name"
     }
 }
 
