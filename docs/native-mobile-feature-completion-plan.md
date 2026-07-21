@@ -1,6 +1,6 @@
 # Native mobile feature completion plan
 
-Status: Ready to execute
+Status: Implemented; physical-device release sign-off remains external
 Written: 2026-07-21
 
 ## Outcome
