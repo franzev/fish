@@ -78,9 +78,20 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        if let conversationId = response.notification.request.content.userInfo["conversationId"] as? String,
+        let userInfo = response.notification.request.content.userInfo
+        if let conversationId = userInfo["conversationId"] as? String,
            !conversationId.isEmpty {
-            NotificationCenter.default.post(name: .fishOpenConversation, object: conversationId)
+            let messageId = (userInfo["messageId"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .nilIfEmpty
+            NotificationCenter.default.post(
+                name: .fishOpenConversation,
+                object: FishNotificationDestination(
+                    conversationId: conversationId,
+                    messageId: messageId,
+                    notificationId: response.notification.request.identifier
+                )
+            )
         }
         completionHandler()
     }
@@ -89,6 +100,22 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
 private extension Notification.Name {
     static let fishPushToken = Notification.Name("fish.push-token")
     static let fishOpenConversation = Notification.Name("fish.open-conversation")
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
+}
+
+private struct FishNotificationDestination {
+    let conversationId: String
+    let messageId: String?
+    let notificationId: String
+}
+
+private struct PendingConversationDestination {
+    let conversationId: String
+    let messageId: String?
+    let notificationId: String?
 }
 
 struct FishRoot: View {
@@ -331,7 +358,7 @@ final class FishAppModel {
     private let notificationCenter: UNUserNotificationCenter
     private let application: UIApplication
     private var pendingPushToken: String?
-    private var pendingConversationId: String?
+    private var pendingConversation: PendingConversationDestination?
     private var pushTokenObserver: NSObjectProtocol?
     private var openConversationObserver: NSObjectProtocol?
     private var isRefreshingNotifications = false
@@ -649,10 +676,15 @@ final class FishAppModel {
         await directory?.refresh()
     }
 
-    func openConversation(_ id: String) async {
+    @discardableResult
+    func openConversation(
+        _ id: String,
+        messageId: String? = nil,
+        notificationId: String? = nil
+    ) async -> Bool {
         guard let session, let preview = directory?.conversations.first(where: {
             $0.conversationId == id
-        }) else { return }
+        }) else { return false }
         stopConversation()
         phase = .opening
         do {
@@ -682,10 +714,18 @@ final class FishAppModel {
             )
             phase = .conversation
             await store.start()
+            if let messageId {
+                await store.focusMessage(messageId)
+            }
+            if let notificationId {
+                notificationCenter.removeDeliveredNotifications(withIdentifiers: [notificationId])
+            }
+            return true
         } catch {
             stopConversation()
             notice = "That conversation didn’t open yet. Try again."
             phase = .inbox
+            return false
         }
     }
 
@@ -699,7 +739,11 @@ final class FishAppModel {
         guard url.scheme == "fish", url.host == "messages" else { return }
         let parts = url.pathComponents.filter { $0 != "/" }
         guard let conversationId = parts.first else { return }
-        pendingConversationId = conversationId
+        pendingConversation = PendingConversationDestination(
+            conversationId: conversationId,
+            messageId: nil,
+            notificationId: nil
+        )
         Task { await openPendingConversationIfReady() }
     }
 
@@ -710,7 +754,7 @@ final class FishAppModel {
         let directory = ConversationDirectoryStore(directory: session.directory)
         self.directory = directory
         await directory.start()
-        if pendingConversationId != nil {
+        if pendingConversation != nil {
             if await openPendingConversationIfReady() {
                 return
             }
@@ -746,9 +790,13 @@ final class FishAppModel {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let conversationId = notification.object as? String else { return }
+            guard let destination = notification.object as? FishNotificationDestination else { return }
             Task { @MainActor [weak self] in
-                self?.pendingConversationId = conversationId
+                self?.pendingConversation = PendingConversationDestination(
+                    conversationId: destination.conversationId,
+                    messageId: destination.messageId,
+                    notificationId: destination.notificationId
+                )
                 await self?.openPendingConversationIfReady()
             }
         }
@@ -767,15 +815,20 @@ final class FishAppModel {
 
     @discardableResult
     private func openPendingConversationIfReady() async -> Bool {
-        guard let id = pendingConversationId, let directory else { return false }
+        guard let pendingConversation, let directory else { return false }
         guard directory.phase != .loading else { return false }
-        guard directory.conversations.contains(where: { $0.conversationId == id }) else {
-            pendingConversationId = nil
+        guard directory.conversations.contains(where: {
+            $0.conversationId == pendingConversation.conversationId
+        }) else {
+            self.pendingConversation = nil
             return false
         }
-        pendingConversationId = nil
-        await openConversation(id)
-        return true
+        self.pendingConversation = nil
+        return await openConversation(
+            pendingConversation.conversationId,
+            messageId: pendingConversation.messageId,
+            notificationId: pendingConversation.notificationId
+        )
     }
 }
 

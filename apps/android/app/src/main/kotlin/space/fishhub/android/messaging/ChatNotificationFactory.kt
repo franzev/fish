@@ -64,6 +64,10 @@ internal object ChatNotificationFactory {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-    private fun notificationId(conversationId: String): Int =
+    fun clear(context: Context, conversationId: String) {
+        context.getSystemService(NotificationManager::class.java).cancel(notificationId(conversationId))
+    }
+
+    fun notificationId(conversationId: String): Int =
         7_100 + (conversationId.hashCode() and Int.MAX_VALUE) % 800
 }

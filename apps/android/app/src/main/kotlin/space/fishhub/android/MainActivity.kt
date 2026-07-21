@@ -66,6 +66,7 @@ import space.fishhub.android.feature.settings.AccountSettingsNotificationStatus
 import space.fishhub.android.feature.settings.AccountSettingsTheme
 import space.fishhub.android.messaging.ChatDestination
 import space.fishhub.android.messaging.ChatIntents
+import space.fishhub.android.messaging.ChatNotificationFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CancellationException
@@ -239,6 +240,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(chatDestination, chatViewModel) {
                 chatDestination?.let { destination ->
                     chatViewModel.focusMessage(destination.conversationId, destination.messageId)
+                    ChatNotificationFactory.clear(this@MainActivity, destination.conversationId)
                     pendingChatDestination.value = null
                 }
             }

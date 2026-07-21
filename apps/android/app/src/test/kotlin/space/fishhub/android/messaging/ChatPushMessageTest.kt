@@ -67,4 +67,12 @@ class ChatPushMessageTest {
         assertNull(ChatIntents.destination(Intent.ACTION_VIEW, null, null, "fish://messages/one"))
         assertNull(ChatIntents.destination(ChatIntents.ActionOpenMessage, "", "message-1", null))
     }
+
+    @Test
+    fun `message notification id is stable per conversation`() {
+        assertEquals(
+            ChatNotificationFactory.notificationId("conversation-1"),
+            ChatNotificationFactory.notificationId("conversation-1"),
+        )
+    }
 }
