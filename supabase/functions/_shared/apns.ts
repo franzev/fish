@@ -14,6 +14,7 @@ export type DirectMessageApnsPush = {
   messageId: string;
   senderName: string;
   recipientIds: string[];
+  unreadCountByUser?: Record<string, number>;
 };
 
 export type VoipCallApnsPush = {
@@ -94,7 +95,7 @@ export async function dispatchDirectMessageApns(
     .eq("push_kind", "standard")
     .lt("last_seen_at", staleBefore);
   const { data: devices, error } = await admin.from("push_devices")
-    .select("id, provider_installation_id")
+    .select("id, user_id, provider_installation_id")
     .in("user_id", push.recipientIds)
     .eq("platform", "ios")
     .eq("push_kind", "standard")
@@ -103,7 +104,7 @@ export async function dispatchDirectMessageApns(
 
   await Promise.all(
     devices.map(
-      async (device: { id: string; provider_installation_id: string }) => {
+      async (device: { id: string; provider_installation_id: string; user_id?: string }) => {
         const body = JSON.stringify({
           aps: {
             alert: {
@@ -111,6 +112,10 @@ export async function dispatchDirectMessageApns(
               body: "New message",
             },
             sound: "default",
+            category: "fish.message",
+            ...(device.user_id && push.unreadCountByUser
+              ? { badge: Math.max(0, push.unreadCountByUser[device.user_id] ?? 0) }
+              : {}),
             "thread-id": `fish-message-${push.conversationId}`,
           },
           type: "chat_message",

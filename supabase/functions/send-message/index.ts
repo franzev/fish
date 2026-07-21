@@ -3,6 +3,12 @@ import {
   dispatchDirectMessagePush,
   type DirectMessagePush,
 } from "../_shared/fcm.ts";
+import {
+  enqueueLinkPreviewJob,
+  processLinkPreviewJobs,
+} from "../_shared/link-preview.ts";
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 
 type SendMessageCommand = {
   conversationId: string;
@@ -142,6 +148,15 @@ async function dispatchMessagePush(input: {
   const recipientIds = [conversation.client_id, conversation.coach_id]
     .filter((id): id is string => typeof id === "string" && id !== input.senderId);
   if (recipientIds.length === 0) return;
+  const unreadCountEntries = await Promise.all(
+    recipientIds.map(async (recipientId) => {
+      const { data } = await admin.rpc("get_mobile_unread_count", {
+        p_user_id: recipientId,
+      });
+      const count = typeof data === "number" ? data : Number(data);
+      return [recipientId, Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : 0] as const;
+    }),
+  );
   const push: DirectMessagePush = {
     conversationId: input.conversationId,
     messageId: input.messageId,
@@ -150,6 +165,7 @@ async function dispatchMessagePush(input: {
       ? sender.display_name.trim()
       : "Someone in FISH",
     recipientIds,
+    unreadCountByUser: Object.fromEntries(unreadCountEntries),
   };
   await dispatchDirectMessagePush(admin, push);
 }
@@ -321,6 +337,9 @@ Deno.serve(async (request) => {
   const messageId = messageIdFromPayload(payload);
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
   if (messageId && serviceRoleKey) {
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
     await dispatchMessagePush({
       supabaseUrl,
       serviceRoleKey,
@@ -333,6 +352,14 @@ Deno.serve(async (request) => {
         messageId,
       });
     });
+    await enqueueLinkPreviewJob(admin, messageId, body).catch(() => false);
+    // The job is durable in Postgres; this opportunistic pass keeps previews
+    // fast without making message sends wait on third-party websites.
+    try {
+      EdgeRuntime.waitUntil(processLinkPreviewJobs(admin, 1));
+    } catch {
+      // EdgeRuntime is not present in local function tests.
+    }
   }
 
   return Response.json({ message: payload }, { headers: jsonHeaders });

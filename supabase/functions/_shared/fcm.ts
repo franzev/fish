@@ -23,6 +23,7 @@ export type DirectMessagePush = {
   senderId: string;
   senderName: string;
   recipientIds: string[];
+  unreadCountByUser?: Record<string, number>;
 };
 
 type AndroidDataPush = {
@@ -152,8 +153,8 @@ export async function dispatchDirectMessagePush(
   push: DirectMessagePush,
 ): Promise<void> {
   await Promise.all([
-    dispatchAndroidDataPush(admin, {
-      recipientIds: push.recipientIds,
+    ...push.recipientIds.map((recipientId) => dispatchAndroidDataPush(admin, {
+      recipientIds: [recipientId],
       data: {
         version: "1",
         type: "chat_message",
@@ -161,16 +162,18 @@ export async function dispatchDirectMessagePush(
         messageId: push.messageId,
         senderId: push.senderId,
         senderName: push.senderName,
+        unreadCount: String(Math.max(0, push.unreadCountByUser?.[recipientId] ?? 0)),
       },
       priority: "HIGH",
       ttl: "604800s",
       collapseKey: `fish_message_${push.conversationId}`,
-    }),
+    })),
     dispatchDirectMessageApns(admin, {
       conversationId: push.conversationId,
       messageId: push.messageId,
       senderName: push.senderName,
       recipientIds: push.recipientIds,
+      unreadCountByUser: push.unreadCountByUser,
     }),
   ]);
 }

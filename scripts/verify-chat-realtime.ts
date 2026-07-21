@@ -535,6 +535,9 @@ async function main(): Promise<void> {
           : null,
       );
 
+      // Give the realtime server a brief turn to finish the prior broadcast;
+      // the mobile clients also debounce typing-stop signals in practice.
+      await delay(100);
       await typing.send({ userId: client.userId, typing: false });
       await waitFor("typing false", () =>
         typing.payloads.some((payload) => {

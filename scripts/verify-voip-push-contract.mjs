@@ -22,7 +22,8 @@ check("VoIP registration is iOS-only at the command boundary", source.command.in
 check("VoIP APNs uses the .voip topic and high-priority header", source.apns.includes('`${config.topic}.voip`') && source.apns.includes('"apns-push-type": "voip"') && source.apns.includes('"apns-priority": "10"'));
 check("VoIP APNs queries voip rows only", source.apns.includes('.eq("push_kind", "voip")'));
 check("VoIP APNs retries transient failures and revokes stale tokens", source.apns.includes("response.status === 429") && source.apns.includes("shouldRevoke(response.status, payload)"));
-check("VoIP payload avoids message content and carries only call recovery data", source.apns.includes("callId: push.callId") && source.apns.includes("callerName: push.callerName") && !source.apns.includes("push.message"));
+const voipDispatcher = source.apns.slice(source.apns.indexOf("export async function dispatchVoipCallApns"));
+check("VoIP payload avoids message content and carries only call recovery data", voipDispatcher.includes("callId: push.callId") && voipDispatcher.includes("callerName: push.callerName") && !voipDispatcher.includes("messageId") && !voipDispatcher.includes("senderName"));
 check("call push dispatch sends APNs only for ringing", source.fcm.includes('push.event === "ringing"') && source.fcm.includes("dispatchVoipCallApns"));
 check("PushKit requests voIP tokens and always completes delivery", source.ios.includes("desiredPushTypes = [.voIP]") && source.ios.includes("defer { completion() }"));
 check("iOS app declares audio and voip background modes", source.project.includes("UIBackgroundModes: [audio, voip]"));
