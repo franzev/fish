@@ -3,6 +3,7 @@ package space.fishhub.android.data.chat.remote
 import space.fishhub.android.data.chat.model.ChatGif
 import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.AttachmentDelivery
+import space.fishhub.android.data.chat.MessageSearchCursor
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.Instant
@@ -40,6 +41,49 @@ class SupabaseContractTest {
         assertEquals("conversation-1", row.conversationId)
         assertEquals("request-1", row.clientRequestId)
         assertEquals(null, row.stickerId)
+    }
+
+    @Test
+    fun searchRpcUsesMinimalFirstPageParametersAndProbeRow() {
+        val payload = searchMessagesRpcParameters(
+            conversationId = "conversation-1",
+            query = "  practice!  ",
+            cursor = null,
+            limit = 25,
+        ).toString()
+
+        assertTrue(payload.contains("\"p_conversation_id\":\"conversation-1\""))
+        assertTrue(payload.contains("\"p_query\":\"  practice!  \""))
+        assertTrue(payload.contains("\"p_limit\":26"))
+        assertTrue(payload.contains("\"p_sort_direction\":\"desc\""))
+        assertTrue(!payload.contains("p_before_created_at"))
+        assertTrue(!payload.contains("p_before_id"))
+    }
+
+    @Test
+    fun searchRpcCarriesCompositeCursorAndLightweightRowDecodes() {
+        val payload = searchMessagesRpcParameters(
+            conversationId = "conversation-1",
+            query = "practice",
+            cursor = MessageSearchCursor("2026-07-16T00:00:00Z", "message-25"),
+            limit = 25,
+        ).toString()
+        val row = json.decodeFromString<MessageSearchHitDto>(
+            """
+            {
+              "id":"message-24",
+              "conversation_id":"conversation-1",
+              "sender_id":"coach-1",
+              "body":"Try this wording.",
+              "created_at":"2026-07-15T00:00:00Z"
+            }
+            """.trimIndent(),
+        )
+
+        assertTrue(payload.contains("\"p_before_created_at\":\"2026-07-16T00:00:00Z\""))
+        assertTrue(payload.contains("\"p_before_id\":\"message-25\""))
+        assertEquals("message-24", row.id)
+        assertEquals("Try this wording.", row.body)
     }
 
     @Test

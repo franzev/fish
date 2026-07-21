@@ -17,6 +17,8 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.MessagePage
+import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.remote.ChatRemoteDataSource
 import space.fishhub.android.data.chat.local.ChatDatabase
 import space.fishhub.android.data.chat.local.toEntity
@@ -70,6 +72,51 @@ class DefaultChatRepositoryTest {
             (result as ChatResult.Success).value.conversations.single().conversationId,
         )
         assertEquals("Franz", result.value.currentUser.displayName)
+    }
+
+    @Test
+    fun searchTrimsQueryBoundsPageAndPropagatesCursorForAuthorizedConversation() = runTest {
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        val cursor = MessageSearchCursor("2026-07-15T00:00:00Z", "message-2")
+        remote.searchPage = MessageSearchPage(emptyList(), cursor)
+
+        val result = repository.searchMessages(
+            conversationId = "conversation-1",
+            query = "  practice  ",
+            cursor = cursor,
+            limit = 500,
+        )
+
+        assertTrue(result is ChatResult.Success)
+        assertEquals("practice", remote.lastSearchQuery)
+        assertEquals(cursor, remote.lastSearchCursor)
+        assertEquals(99, remote.lastSearchLimit)
+    }
+
+    @Test
+    fun blankOrUnauthorizedSearchNeverCallsRemote() = runTest {
+        assertTrue(
+            repository.searchMessages("conversation-1", "   ") is ChatResult.Failure,
+        )
+        assertTrue(
+            repository.searchMessages("not-authorized", "practice") is ChatResult.Failure,
+        )
+        assertEquals(0, remote.searchCalls)
+    }
+
+    @Test
+    fun searchFailureUsesCalmNotice() = runTest {
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        remote.failSearch = true
+
+        val result = repository.searchMessages("conversation-1", "practice")
+
+        assertTrue(result is ChatResult.Failure)
+        assertEquals(
+            "Search is taking a little longer. Check your connection and try again.",
+            (result as ChatResult.Failure).message,
+        )
+        assertEquals(FailureCategory.Network, result.category)
     }
 
     @Test
@@ -581,6 +628,12 @@ private class FakeRemote : ChatRemoteDataSource {
     var sendCalls = 0
     var sendAttachmentsHydrated = true
     var lastSentContent: OutgoingMessageContent? = null
+    var searchCalls = 0
+    var failSearch = false
+    var lastSearchQuery: String? = null
+    var lastSearchCursor: MessageSearchCursor? = null
+    var lastSearchLimit: Int? = null
+    var searchPage = MessageSearchPage(emptyList(), null)
 
     override suspend fun signIn(email: String, password: String) = Unit
     override suspend fun signOut() = Unit
@@ -601,6 +654,19 @@ private class FakeRemote : ChatRemoteDataSource {
     ) = MessagePage(pageMessages, false, pageMessages.firstOrNull()?.let {
         ChatMessageCursor(it.createdAt, it.id)
     })
+    override suspend fun searchMessages(
+        conversation: AuthorizedConversation,
+        query: String,
+        cursor: MessageSearchCursor?,
+        limit: Int,
+    ): MessageSearchPage {
+        searchCalls += 1
+        lastSearchQuery = query
+        lastSearchCursor = cursor
+        lastSearchLimit = limit
+        if (failSearch) throw IOException("offline")
+        return searchPage
+    }
     override suspend fun loadReadStates(conversationId: String) = emptyList<ChatReadState>()
     override suspend fun refreshAttachmentUrls(attachmentIds: List<String>) = attachmentIds.map {
         refreshCalls += 1

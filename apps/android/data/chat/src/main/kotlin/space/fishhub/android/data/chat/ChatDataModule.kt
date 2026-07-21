@@ -10,6 +10,8 @@ import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationSnapshot
 import space.fishhub.android.data.chat.FailureCategory
 import space.fishhub.android.data.chat.MessagePage
+import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatMessageCursor
 import space.fishhub.android.data.chat.model.ChatReadState
@@ -169,6 +171,12 @@ private object UnconfiguredChatRepository : ChatRepository {
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,
     ): ChatResult<List<AttachmentDelivery>> = failure
+    override suspend fun searchMessages(
+        conversationId: String,
+        query: String,
+        cursor: MessageSearchCursor?,
+        limit: Int,
+    ): ChatResult<MessageSearchPage> = failure
     override suspend fun sendMessage(
         conversationId: String,
         content: OutgoingMessageContent,

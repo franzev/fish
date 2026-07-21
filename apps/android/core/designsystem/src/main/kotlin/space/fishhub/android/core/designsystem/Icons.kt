@@ -98,6 +98,19 @@ object FishIcons {
         }
     }
 
+    val Search: ImageVector by lazy {
+        fishIcon("Search") {
+            moveTo(10.8f, 4f)
+            curveTo(14.55f, 4f, 17.6f, 7.05f, 17.6f, 10.8f)
+            curveTo(17.6f, 14.55f, 14.55f, 17.6f, 10.8f, 17.6f)
+            curveTo(7.05f, 17.6f, 4f, 14.55f, 4f, 10.8f)
+            curveTo(4f, 7.05f, 7.05f, 4f, 10.8f, 4f)
+            close()
+            moveTo(16f, 16f)
+            lineTo(21f, 21f)
+        }
+    }
+
     val Send: ImageVector by lazy {
         fishIcon("Send") {
             moveTo(22f, 2f)

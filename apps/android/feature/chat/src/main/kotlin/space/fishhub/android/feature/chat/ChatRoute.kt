@@ -67,6 +67,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun ChatRoute(
     viewModel: ChatViewModel,
     mediaPickerViewModel: MediaPickerViewModel,
+    messageSearchViewModel: MessageSearchViewModel,
     presenceViewModel: PresenceViewModel,
     mediaCatalog: ChatMediaCatalog,
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
@@ -100,6 +101,7 @@ fun ChatRoute(
 ) {
     val routeState by viewModel.uiState.collectAsStateWithLifecycle()
     val mediaPickerState by mediaPickerViewModel.uiState.collectAsStateWithLifecycle()
+    val messageSearchState by messageSearchViewModel.uiState.collectAsStateWithLifecycle()
     val presenceState by presenceViewModel.uiState.collectAsStateWithLifecycle()
     val blockedPeopleState by viewModel.blockedPeople.collectAsStateWithLifecycle()
     val composerState = rememberTextFieldState()
@@ -112,6 +114,10 @@ fun ChatRoute(
         is ChatRouteUiState.ConversationList -> state.currentUserDisplayName
         else -> ""
     }
+    val currentConversation = viewModel.currentConversation
+    val selectedConversationId = (routeState as? ChatRouteUiState.Conversation)
+        ?.model
+        ?.selectedConversationId
     val canManageBlockedPeople = viewModel.currentUserRole ==
         space.fishhub.android.data.chat.model.UserRole.Client
     val accountContent: (@Composable () -> Unit)? = currentUserDisplayName
@@ -133,6 +139,10 @@ fun ChatRoute(
     }
     LaunchedEffect(viewModel, onOpenAttachment) {
         viewModel.attachmentOpenRequests.collectLatest(onOpenAttachment)
+    }
+    LaunchedEffect(selectedConversationId) {
+        // Search is intentionally session-only and must not follow a different conversation.
+        messageSearchViewModel.close()
     }
 
     when (val state = routeState) {
@@ -165,49 +175,68 @@ fun ChatRoute(
                 protocolDraft = state.draft,
                 onDraftChanged = viewModel::draftChanged,
             )
-            ChatAdaptiveLayout(
-                model = state.model.copy(notice = state.notice),
-                composerState = composerState,
-                emojiCatalog = mediaCatalog,
-                onSend = viewModel::sendMessage,
-                onBack = viewModel::showConversationList,
-                onRetryConversation = viewModel::retryConversation,
-                onRetryEarlier = viewModel::loadEarlier,
-                onSelectConversation = viewModel::selectConversation,
-                pendingMedia = state.pendingMedia,
-                onOpenMediaPicker = { mediaPickerVisible = true },
-                onRemovePendingMedia = viewModel::removePendingMedia,
-                pendingAttachments = composerAttachments,
-                onOpenAttachmentPicker = { attachmentSourceVisible = true },
-                onRemovePendingAttachment = viewModel::removeAttachmentDraft,
-                onRetryPendingAttachment = viewModel::retryAttachmentDraft,
-                onRetryMessage = viewModel::retryMessage,
-                onReportGif = viewModel::reportGif,
-                onReplyMessage = viewModel::replyToMessage,
-                onEditMessage = viewModel::editMessage,
-                onDeleteMessage = viewModel::deleteMessage,
-                onToggleReaction = viewModel::toggleReaction,
-                onFocusMessage = viewModel::focusCurrentMessage,
-                onClearReplyTarget = viewModel::clearReplyTarget,
-                onRemoveFriend = viewModel::removeFriend,
-                onBlockParticipant = viewModel::blockParticipant,
-                onPhotoAttachmentClick = { attachmentId ->
-                    selectedPhotoId = attachmentId
-                    viewModel.refreshAttachment(attachmentId)
-                },
-                onFileAttachmentClick = viewModel::openFileAttachment,
-                onAttachmentLoadError = viewModel::refreshAttachment,
-                onStartAudioCall = onStartAudioCall,
-                onStartVideoCall = onStartVideoCall,
-                voiceRecording = voiceRecording,
-                voiceRecordingEnabled = voiceRecordingEnabled,
-                onStartVoiceRecording = onStartVoiceRecording,
-                onFinishVoiceRecording = onFinishVoiceRecording,
-                onCancelVoiceRecording = onCancelVoiceRecording,
-                participantPresence = presenceState.presentationFor(state.model.participant?.id),
-                accountContent = accountContent,
-                modifier = modifier,
-            )
+            if (messageSearchState.visible && currentConversation != null) {
+                MessageSearchScreen(
+                    state = messageSearchState,
+                    onQueryChanged = messageSearchViewModel::updateQuery,
+                    onSubmitQuery = messageSearchViewModel::submitQuery,
+                    onRetry = messageSearchViewModel::retry,
+                    onLoadMore = messageSearchViewModel::loadMore,
+                    onResultSelected = { messageId ->
+                        messageSearchViewModel.close()
+                        viewModel.focusCurrentMessage(messageId)
+                    },
+                    onClose = messageSearchViewModel::close,
+                    modifier = modifier,
+                )
+            } else {
+                ChatAdaptiveLayout(
+                    model = state.model.copy(notice = state.notice),
+                    composerState = composerState,
+                    emojiCatalog = mediaCatalog,
+                    onSend = viewModel::sendMessage,
+                    onBack = viewModel::showConversationList,
+                    onRetryConversation = viewModel::retryConversation,
+                    onRetryEarlier = viewModel::loadEarlier,
+                    onSelectConversation = viewModel::selectConversation,
+                    pendingMedia = state.pendingMedia,
+                    onOpenMediaPicker = { mediaPickerVisible = true },
+                    onRemovePendingMedia = viewModel::removePendingMedia,
+                    pendingAttachments = composerAttachments,
+                    onOpenAttachmentPicker = { attachmentSourceVisible = true },
+                    onRemovePendingAttachment = viewModel::removeAttachmentDraft,
+                    onRetryPendingAttachment = viewModel::retryAttachmentDraft,
+                    onRetryMessage = viewModel::retryMessage,
+                    onReportGif = viewModel::reportGif,
+                    onReplyMessage = viewModel::replyToMessage,
+                    onEditMessage = viewModel::editMessage,
+                    onDeleteMessage = viewModel::deleteMessage,
+                    onToggleReaction = viewModel::toggleReaction,
+                    onFocusMessage = viewModel::focusCurrentMessage,
+                    onOpenMessageSearch = {
+                        currentConversation?.let(messageSearchViewModel::open)
+                    },
+                    onClearReplyTarget = viewModel::clearReplyTarget,
+                    onRemoveFriend = viewModel::removeFriend,
+                    onBlockParticipant = viewModel::blockParticipant,
+                    onPhotoAttachmentClick = { attachmentId ->
+                        selectedPhotoId = attachmentId
+                        viewModel.refreshAttachment(attachmentId)
+                    },
+                    onFileAttachmentClick = viewModel::openFileAttachment,
+                    onAttachmentLoadError = viewModel::refreshAttachment,
+                    onStartAudioCall = onStartAudioCall,
+                    onStartVideoCall = onStartVideoCall,
+                    voiceRecording = voiceRecording,
+                    voiceRecordingEnabled = voiceRecordingEnabled,
+                    onStartVoiceRecording = onStartVoiceRecording,
+                    onFinishVoiceRecording = onFinishVoiceRecording,
+                    onCancelVoiceRecording = onCancelVoiceRecording,
+                    participantPresence = presenceState.presentationFor(state.model.participant?.id),
+                    accountContent = accountContent,
+                    modifier = modifier,
+                )
+            }
             if (attachmentImportState.active || previewAttachments.isNotEmpty()) {
                 AttachmentPreviewScreen(
                     attachments = previewAttachments,

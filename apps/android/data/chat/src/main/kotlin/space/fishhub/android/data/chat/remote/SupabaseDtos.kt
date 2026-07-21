@@ -83,6 +83,15 @@ internal data class MessageDto(
 )
 
 @Serializable
+internal data class MessageSearchHitDto(
+    val id: String,
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("sender_id") val senderId: String,
+    val body: String,
+    @SerialName("created_at") val createdAt: String,
+)
+
+@Serializable
 internal data class ReactionDto(
     val emoji: String,
     val count: Int = 0,

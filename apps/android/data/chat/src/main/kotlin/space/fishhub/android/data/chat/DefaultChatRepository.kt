@@ -249,6 +249,35 @@ internal class DefaultChatRepository(
         }
     }
 
+    override suspend fun searchMessages(
+        conversationId: String,
+        query: String,
+        cursor: MessageSearchCursor?,
+        limit: Int,
+    ): ChatResult<MessageSearchPage> {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isBlank()) {
+            return ChatResult.Failure(
+                message = "Search needs a word or phrase.",
+                recoverable = false,
+                category = FailureCategory.Local,
+            )
+        }
+        val conversation = dao.conversation(conversationId)?.toDomain()
+            ?: return unavailableFailure()
+        return resultOf(
+            ChatOperation.SearchMessages,
+            "Search is taking a little longer. Check your connection and try again.",
+        ) {
+            remote.searchMessages(
+                conversation = conversation,
+                query = trimmedQuery,
+                cursor = cursor,
+                limit = limit.coerceIn(1, MaxSearchPageSize),
+            )
+        }
+    }
+
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,
     ): ChatResult<List<AttachmentDelivery>> {
@@ -746,6 +775,7 @@ private class ConversationUnavailableException : IllegalStateException()
 private const val DefaultRealtimeRetryDelayMs = 5_000L
 private const val MaxMessageAttachments = 5
 private const val MaxRefreshMessageCount = 50
+private const val MaxSearchPageSize = 99
 private const val AttachmentScopePreview = "preview"
 private const val AttachmentScopeComposer = "composer"
 private const val AttachmentStateWaiting = "waiting_for_network"

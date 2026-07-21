@@ -9,6 +9,8 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.BlockedPerson
 import space.fishhub.android.data.chat.MessagePage
+import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +30,12 @@ internal interface ChatRemoteDataSource {
         conversation: AuthorizedConversation,
         messageIds: List<String>,
     ): List<ChatMessage> = emptyList()
+    suspend fun searchMessages(
+        conversation: AuthorizedConversation,
+        query: String,
+        cursor: MessageSearchCursor? = null,
+        limit: Int = 25,
+    ): MessageSearchPage
     suspend fun loadReadStates(conversationId: String): List<ChatReadState>
     suspend fun refreshAttachmentUrls(attachmentIds: List<String>): List<AttachmentDelivery>
     suspend fun initializeAttachmentUpload(command: InitializeAttachmentUpload): AttachmentUploadAuthorization

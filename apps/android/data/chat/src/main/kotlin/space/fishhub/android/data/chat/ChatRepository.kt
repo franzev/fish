@@ -73,6 +73,24 @@ data class MessagePage(
     val oldestCursor: ChatMessageCursor?,
 )
 
+data class MessageSearchCursor(
+    val createdAt: String,
+    val id: String,
+)
+
+data class MessageSearchHit(
+    val id: String,
+    val conversationId: String,
+    val senderId: String,
+    val body: String,
+    val createdAt: String,
+)
+
+data class MessageSearchPage(
+    val items: List<MessageSearchHit>,
+    val nextCursor: MessageSearchCursor?,
+)
+
 /** Ephemeral delivery credentials. These values are never persisted in Room. */
 data class AttachmentDelivery(
     val attachmentId: String,
@@ -181,6 +199,12 @@ interface ChatRepository {
         conversationId: String,
         messageIds: List<String>,
     ): ChatResult<List<ChatMessage>> = ChatResult.Success(emptyList())
+    suspend fun searchMessages(
+        conversationId: String,
+        query: String,
+        cursor: MessageSearchCursor? = null,
+        limit: Int = 25,
+    ): ChatResult<MessageSearchPage>
     suspend fun refreshAttachmentUrls(attachmentIds: List<String>): ChatResult<List<AttachmentDelivery>>
     suspend fun sendMessage(
         conversationId: String,

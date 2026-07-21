@@ -12,6 +12,8 @@ import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationSnapshot
 import space.fishhub.android.data.chat.MessagePage
+import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.GifRepository
 import space.fishhub.android.data.chat.GifPage
@@ -853,6 +855,12 @@ private class FakeChatRepository(
             refreshedMessages.filter { it.conversationId == conversationId && it.id in messageIds },
         )
     }
+    override suspend fun searchMessages(
+        conversationId: String,
+        query: String,
+        cursor: MessageSearchCursor?,
+        limit: Int,
+    ): ChatResult<MessageSearchPage> = ChatResult.Success(MessageSearchPage(emptyList(), null))
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,
     ): ChatResult<List<space.fishhub.android.data.chat.AttachmentDelivery>> {

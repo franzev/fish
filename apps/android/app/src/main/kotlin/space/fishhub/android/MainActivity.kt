@@ -56,6 +56,7 @@ import space.fishhub.android.feature.chat.ChatViewModel
 import space.fishhub.android.feature.chat.AttachmentImportUiState
 import space.fishhub.android.feature.chat.ChatMediaCatalog
 import space.fishhub.android.feature.chat.MediaPickerViewModel
+import space.fishhub.android.feature.chat.MessageSearchViewModel
 import space.fishhub.android.feature.chat.ParticipantUiModel
 import space.fishhub.android.feature.chat.VoiceRecordingUiState
 import space.fishhub.android.feature.presence.PresenceFormatter
@@ -206,6 +207,16 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            val messageSearchFactory = remember(repository, formatter) {
+                viewModelFactory {
+                    initializer {
+                        MessageSearchViewModel(
+                            repository = repository,
+                            formatter = formatter,
+                        )
+                    }
+                }
+            }
             val presenceFactory = remember(fishApplication.presenceRepository, presenceFormatter) {
                 viewModelFactory {
                     initializer {
@@ -218,6 +229,7 @@ class MainActivity : ComponentActivity() {
             }
             val chatViewModel: ChatViewModel = viewModel(factory = factory)
             val mediaPickerViewModel: MediaPickerViewModel = viewModel(factory = mediaPickerFactory)
+            val messageSearchViewModel: MessageSearchViewModel = viewModel(factory = messageSearchFactory)
             val presenceViewModel: PresenceViewModel = viewModel(factory = presenceFactory)
             val callMinimized by minimized.collectAsStateWithLifecycle()
             val pip by pictureInPicture.collectAsStateWithLifecycle()
@@ -238,6 +250,7 @@ class MainActivity : ComponentActivity() {
                     ChatRoute(
                         viewModel = chatViewModel,
                         mediaPickerViewModel = mediaPickerViewModel,
+                        messageSearchViewModel = messageSearchViewModel,
                         presenceViewModel = presenceViewModel,
                         mediaCatalog = mediaCatalog,
                         onStartAudioCall = { requestOutgoing(it, CallKind.Audio) },

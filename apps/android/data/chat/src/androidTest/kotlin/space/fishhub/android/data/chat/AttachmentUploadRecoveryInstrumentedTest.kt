@@ -225,6 +225,12 @@ private class RecoveryRemote : ChatRemoteDataSource {
     ) = error("Unused")
     override suspend fun loadReadStates(conversationId: String) = error("Unused")
     override suspend fun refreshAttachmentUrls(attachmentIds: List<String>) = error("Unused")
+    override suspend fun searchMessages(
+        conversation: AuthorizedConversation,
+        query: String,
+        cursor: MessageSearchCursor?,
+        limit: Int,
+    ): MessageSearchPage = MessageSearchPage(emptyList(), null)
     override suspend fun cancelAttachmentUpload(attachmentId: String) = error("Unused")
     override suspend fun sendMessage(
         conversation: AuthorizedConversation,

@@ -111,6 +111,15 @@
     <string name="gif_results">GIF results</string>
     <string name="voice_call_participant">Voice call %1$s</string>
     <string name="video_call_participant">Video call %1$s</string>
+    <string name="search_messages">Search messages</string>
+    <string name="search_messages_placeholder">Search this conversation</string>
+    <string name="search_this_conversation">Search this conversation.</string>
+    <string name="no_message_search_results">No messages match this search.</string>
+    <string name="message_search_try_different">Try a different word or phrase.</string>
+    <string name="message_search_retry">Try again</string>
+    <string name="message_search_loading">Searching messages</string>
+    <string name="message_search_loading_more">Loading more results</string>
+    <string name="message_search_show_more">Show more results</string>
     <string name="participant_details">Conversation details</string>
     <string name="close_participant_details">Close conversation details</string>
     <string name="unfriend">Unfriend</string>

@@ -80,6 +80,7 @@ fun ChatTopBar(
     onBack: () -> Unit,
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    onOpenMessageSearch: () -> Unit = {},
     onOpenParticipantDetails: () -> Unit = {},
     accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -121,6 +122,11 @@ fun ChatTopBar(
                     participant.displayName,
                 ),
                 onClick = { onStartVideoCall(participant) },
+            )
+            FishIconButton(
+                icon = FishIcons.Search,
+                contentDescription = stringResource(R.string.search_messages),
+                onClick = onOpenMessageSearch,
             )
             accountContent?.invoke()
         },

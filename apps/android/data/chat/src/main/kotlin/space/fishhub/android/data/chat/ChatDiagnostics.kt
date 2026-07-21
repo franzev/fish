@@ -9,6 +9,7 @@ internal enum class ChatOperation {
     SyncNewest,
     LoadOlder,
     RefreshMessages,
+    SearchMessages,
     RefreshAttachmentUrls,
     SendMessage,
     EditMessage,

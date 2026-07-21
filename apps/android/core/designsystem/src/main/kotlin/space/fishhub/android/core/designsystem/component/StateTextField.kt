@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.OutlinedTextField
@@ -19,8 +20,11 @@ fun FishStateTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    label: String? = null,
+    leadingIcon: (@Composable () -> Unit)? = null,
     inputTransformation: InputTransformation? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    onKeyboardAction: KeyboardActionHandler? = null,
     lineLimits: TextFieldLineLimits = TextFieldLineLimits.Default,
 ) {
     val shape = RoundedCornerShape(FishTheme.radii.control)
@@ -33,6 +37,12 @@ fun FishStateTextField(
             )
             .fishFocusBorder(shape),
         enabled = enabled,
+        label = label?.let { value ->
+            {
+                Text(text = value, style = FishTheme.typography.label)
+            }
+        },
+        leadingIcon = leadingIcon,
         textStyle = FishTheme.typography.body.copy(color = FishTheme.colors.foreground),
         placeholder = {
             Text(
@@ -43,6 +53,7 @@ fun FishStateTextField(
         },
         inputTransformation = inputTransformation,
         keyboardOptions = keyboardOptions,
+        onKeyboardAction = onKeyboardAction,
         lineLimits = lineLimits,
         shape = shape,
         colors = OutlinedTextFieldDefaults.colors(

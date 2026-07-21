@@ -1,8 +1,9 @@
 # FISH Android personal chat, presence, and calling
 
 Native Kotlin and Jetpack Compose implementation of FISH's authorized
-one-to-one coaching chat, including text, emoji, GIF, and bundled sticker
-messages plus native one-to-one audio/video calling. Calling is available only
+one-to-one coaching chat, including text, emoji, GIF, bundled sticker messages,
+and conversation-scoped message search plus native one-to-one audio/video
+calling. Calling is available only
 from authorized direct chat; background incoming calls are restored through
 the shared Supabase control plane and Firebase Cloud Messaging.
 Presence appears in direct-chat headers and the signed-in account sheet using

@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
+import space.fishhub.android.data.chat.MessageSearchCursor
 import space.fishhub.android.core.designsystem.FishTheme
 
 @PreviewTest
@@ -56,6 +57,113 @@ fun FailedSendScreenshot() {
 @Composable
 fun LoadingScreenshot() {
     ScreenshotFrame(model = ChatSamples.loading, darkTheme = false)
+}
+
+@PreviewTest
+@Preview(name = "message search initial", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun MessageSearchInitialScreenshot() {
+    MessageSearchScreenshot(state = MessageSearchUiState(visible = true))
+}
+
+@PreviewTest
+@Preview(name = "message search loading", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun MessageSearchLoadingScreenshot() {
+    MessageSearchScreenshot(
+        state = MessageSearchUiState(
+            visible = true,
+            query = "practice",
+            submittedQuery = "practice",
+            loading = true,
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "message search results", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun MessageSearchResultsScreenshot() {
+    MessageSearchScreenshot(state = searchResultsState())
+}
+
+@PreviewTest
+@Preview(name = "message search empty", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun MessageSearchEmptyScreenshot() {
+    MessageSearchScreenshot(
+        state = MessageSearchUiState(
+            visible = true,
+            query = "unfamiliar",
+            submittedQuery = "unfamiliar",
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "message search failure", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun MessageSearchFailureScreenshot() {
+    MessageSearchScreenshot(
+        state = MessageSearchUiState(
+            visible = true,
+            query = "practice",
+            submittedQuery = "practice",
+            notice = "Search is taking a little longer. Check your connection and try again.",
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "message search loading more", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun MessageSearchLoadingMoreScreenshot() {
+    MessageSearchScreenshot(
+        state = searchResultsState().copy(
+            loadingMore = true,
+            nextCursor = MessageSearchCursor("2026-07-16T00:00:00Z", "message-2"),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "message search dark",
+    widthDp = 412,
+    heightDp = 915,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+)
+@Composable
+fun MessageSearchDarkScreenshot() {
+    MessageSearchScreenshot(state = searchResultsState(), darkTheme = true)
+}
+
+@PreviewTest
+@Preview(name = "message search large font", widthDp = 412, heightDp = 915, fontScale = 2f, showBackground = true)
+@Composable
+fun MessageSearchLargeFontScreenshot() {
+    MessageSearchScreenshot(state = searchResultsState())
+}
+
+@PreviewTest
+@Preview(
+    name = "message search rtl",
+    widthDp = 412,
+    heightDp = 915,
+    locale = "ar",
+    showBackground = true,
+)
+@Composable
+fun MessageSearchRtlScreenshot() {
+    MessageSearchScreenshot(state = searchResultsState())
+}
+
+@PreviewTest
+@Preview(name = "message search expanded", widthDp = 1280, heightDp = 800, showBackground = true)
+@Composable
+fun MessageSearchExpandedScreenshot() {
+    MessageSearchScreenshot(state = searchResultsState())
 }
 
 @PreviewTest
@@ -402,6 +510,48 @@ private fun PickerScreenshot(state: MediaPickerUiState) {
         }
     }
 }
+
+@Composable
+private fun MessageSearchScreenshot(
+    state: MessageSearchUiState,
+    darkTheme: Boolean = false,
+) {
+    FishTheme(darkTheme = darkTheme, reducedMotion = true) {
+        MessageSearchScreen(
+            state = state,
+            onQueryChanged = {},
+            onSubmitQuery = {},
+            onRetry = {},
+            onLoadMore = {},
+            onResultSelected = {},
+            onClose = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+}
+
+private fun searchResultsState() = MessageSearchUiState(
+    visible = true,
+    query = "practice",
+    submittedQuery = "practice",
+    results = listOf(
+        MessageSearchResultUiModel(
+            id = "message-1",
+            senderLabel = "You",
+            dateTimeLabel = "Today, 10:30 AM",
+            excerpt = "I will practice this sentence before our next call.",
+            accessibilityLabel = "You. I will practice this sentence before our next call. Today, 10:30 AM",
+        ),
+        MessageSearchResultUiModel(
+            id = "message-2",
+            senderLabel = "Coach Jordan",
+            dateTimeLabel = "Yesterday, 4:15 PM",
+            excerpt = "Try using ‘could you’ when you want the request to feel softer.",
+            accessibilityLabel = "Coach Jordan. Try using could you when you want the request to feel softer. Yesterday, 4:15 PM",
+        ),
+    ),
+    nextCursor = MessageSearchCursor("2026-07-16T00:00:00Z", "message-2"),
+)
 
 @Composable
 private fun AttachmentQueueScreenshot(

@@ -49,6 +49,107 @@ class ChatAccessibilityTest {
     }
 
     @Test
+    fun messageSearchHasFocusedFieldBackTargetAndReadableResult() {
+        var selected: String? = null
+        var closed = false
+        composeRule.setContent {
+            FishTheme {
+                MessageSearchScreen(
+                    state = MessageSearchUiState(
+                        visible = true,
+                        results = listOf(
+                            MessageSearchResultUiModel(
+                                id = "message-1",
+                                senderLabel = "You",
+                                dateTimeLabel = "Today, 10:30 AM",
+                                excerpt = "Try this wording.",
+                                accessibilityLabel = "You. Try this wording. Today, 10:30 AM",
+                            ),
+                        ),
+                    ),
+                    onQueryChanged = {},
+                    onSubmitQuery = {},
+                    onRetry = {},
+                    onLoadMore = {},
+                    onResultSelected = { selected = it },
+                    onClose = { closed = true },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithText("Search messages").assertExists()
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(hasSetTextAction())[0].assertIsFocused()
+        composeRule.onNodeWithContentDescription("Back")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithContentDescription(
+            "You. Try this wording. Today, 10:30 AM",
+        ).assertHeightIsAtLeast(48.dp).performClick()
+
+        assertTrue(closed)
+        assertEquals("message-1", selected)
+    }
+
+    @Test
+    fun messageSearchImeActionAndFailureRetryRemainAccessible() {
+        var submitted = false
+        var retried = false
+        composeRule.setContent {
+            FishTheme {
+                MessageSearchScreen(
+                    state = MessageSearchUiState(
+                        visible = true,
+                        submittedQuery = "practice",
+                        notice = "Search is taking a little longer. Check your connection and try again.",
+                    ),
+                    onQueryChanged = {},
+                    onSubmitQuery = { submitted = true },
+                    onRetry = { retried = true },
+                    onLoadMore = {},
+                    onResultSelected = {},
+                    onClose = {},
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onAllNodes(hasSetTextAction())[0].performImeAction()
+        composeRule.onNodeWithText("Try again")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertTrue(submitted)
+        assertTrue(retried)
+    }
+
+    @Test
+    fun conversationTopBarExposesOneQuietSearchAction() {
+        var opened = false
+        composeRule.setContent {
+            FishTheme {
+                ChatAdaptiveLayout(
+                    model = ChatSamples.loaded,
+                    composerState = rememberTextFieldState(),
+                    onSend = {},
+                    onBack = {},
+                    onRetryEarlier = {},
+                    onSelectConversation = {},
+                    onOpenMessageSearch = { opened = true },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithContentDescription("Search messages")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertTrue(opened)
+    }
+
+    @Test
     fun sendActionRetainsTargetAndInvokesOnce() {
         var sent = false
         composeRule.setContent {

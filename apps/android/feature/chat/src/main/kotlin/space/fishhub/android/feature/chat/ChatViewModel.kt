@@ -94,6 +94,9 @@ class ChatViewModel(
     val currentUserRole: space.fishhub.android.data.chat.model.UserRole?
         get() = currentUser?.role
 
+    val currentConversation: AuthorizedConversation?
+        get() = activeConversation
+
     init {
         viewModelScope.launch {
             repository.authState.collectLatest { auth ->

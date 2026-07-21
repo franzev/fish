@@ -15,6 +15,9 @@ import space.fishhub.android.data.chat.AuthorizedChatIdentity
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.MessagePage
+import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.data.chat.MessageSearchPage
+import space.fishhub.android.data.chat.MessageSearchHit
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
 import space.fishhub.android.data.chat.BlockedPerson
@@ -657,6 +660,43 @@ internal class SupabaseChatRemoteDataSource(
         }
     }
 
+    override suspend fun searchMessages(
+        conversation: AuthorizedConversation,
+        query: String,
+        cursor: MessageSearchCursor?,
+        limit: Int,
+    ): MessageSearchPage {
+        require(limit in 1..MaxSearchPageSize)
+        val rows = client.postgrest.rpc(
+            function = "search_chat_messages",
+            parameters = searchMessagesRpcParameters(
+                conversationId = conversation.conversationId,
+                query = query,
+                cursor = cursor,
+                limit = limit,
+            ),
+        ).decodeList<MessageSearchHitDto>()
+        val retained = rows.take(limit)
+        return MessageSearchPage(
+            items = retained.map { row ->
+                MessageSearchHit(
+                    id = row.id,
+                    conversationId = row.conversationId,
+                    senderId = row.senderId,
+                    body = row.body,
+                    createdAt = row.createdAt,
+                )
+            },
+            nextCursor = if (rows.size > limit) {
+                retained.lastOrNull()?.let { row ->
+                    MessageSearchCursor(row.createdAt, row.id)
+                }
+            } else {
+                null
+            },
+        )
+    }
+
     private suspend fun refreshMessage(
         conversation: AuthorizedConversation,
         messageId: String,
@@ -905,6 +945,7 @@ internal class SupabaseChatRemoteDataSource(
 
     private companion object {
         const val PageSize = 40
+        const val MaxSearchPageSize = 99
         const val DefaultSendError = "That did not send yet. Keep this open and try again."
         const val DefaultReadError = "Your read position did not update yet. Your messages are still here."
         const val DefaultReportError = "That GIF report did not send yet. Try again."
@@ -912,6 +953,22 @@ internal class SupabaseChatRemoteDataSource(
         const val DefaultFriendError = "Friends is taking a break. Chat still works."
         const val DefaultAttachmentError = "That attachment did not load yet. Try again."
     }
+}
+
+internal fun searchMessagesRpcParameters(
+    conversationId: String,
+    query: String,
+    cursor: MessageSearchCursor?,
+    limit: Int,
+): JsonObject = buildJsonObject {
+    put("p_conversation_id", JsonPrimitive(conversationId))
+    put("p_query", JsonPrimitive(query))
+    if (cursor != null) {
+        put("p_before_created_at", JsonPrimitive(cursor.createdAt))
+        put("p_before_id", JsonPrimitive(cursor.id))
+    }
+    put("p_limit", JsonPrimitive(limit + 1))
+    put("p_sort_direction", JsonPrimitive("desc"))
 }
 
 internal fun parseRetryAfterSeconds(value: String?, now: Instant = Instant.now()): Long? {
