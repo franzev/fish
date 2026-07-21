@@ -43,6 +43,8 @@
 	<string>FISH can save photos you choose to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>FISH uses photos you choose to share in a conversation.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>FISH uses your camera when you choose to take a photo for a conversation.</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_URL</key>

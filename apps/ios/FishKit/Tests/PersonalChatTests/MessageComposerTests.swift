@@ -1,10 +1,33 @@
+import ChatData
 import DesignSystem
 import SwiftUI
 import Testing
 import TestSupport
+import UIKit
 @testable import PersonalChat
 
 struct MessageComposerTests {
+    @Test func cameraActionFollowsSystemAvailability() {
+        #expect(MessageComposer.shouldShowCameraAction(sourceTypeAvailable: true))
+        #expect(!MessageComposer.shouldShowCameraAction(sourceTypeAvailable: false))
+    }
+
+    @Test func capturedPhotoBecomesAnAdmissiblePhotoCandidate() {
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 2, height: 2)).image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+        }
+        let candidate = MessageComposer.cameraCandidate(from: image)
+
+        #expect(candidate?.originalName == "Photo")
+        #expect(candidate?.sourceMimeType == "image/jpeg")
+        #expect(candidate != nil)
+        if let candidate {
+            #expect(AttachmentRules.validate(candidate, currentCount: 0) == nil)
+            #expect(AttachmentRules.validate(candidate, currentCount: AttachmentRules.maxCount) != nil)
+        }
+    }
+
     @Test func sendControlVisibility() {
         #expect(!MessageComposer.showsSend(draft: "", selection: .none, sendState: .ready))
         #expect(!MessageComposer.showsSend(draft: "   ", selection: .none, sendState: .ready))

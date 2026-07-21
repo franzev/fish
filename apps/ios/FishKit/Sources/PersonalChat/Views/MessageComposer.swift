@@ -1,6 +1,7 @@
 import ChatData
 import CoreTransferable
 import DesignSystem
+import AVFoundation
 import PhotosUI
 import SwiftUI
 import UIComponents
@@ -32,8 +33,11 @@ public struct MessageComposer: View {
 
     @State private var showsAttachmentMenu = false
     @State private var showsPhotoPicker = false
+    @State private var showsCameraPicker = false
     @State private var showsFileImporter = false
     @State private var photoItems: [PhotosPickerItem] = []
+    @State private var cameraAttachmentId: String?
+    @State private var cameraNotice: String?
     @FocusState private var isMessageFocused: Bool
     @State private var voiceRecorder = VoiceMessageRecorder()
 
@@ -180,6 +184,12 @@ public struct MessageComposer: View {
                     .foregroundStyle(Palette.notice)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if let cameraNotice {
+                Text(cameraNotice)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.notice)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let notice = voiceRecorder.notice {
                 Text(notice)
                     .textStyle(.caption)
@@ -219,7 +229,15 @@ public struct MessageComposer: View {
             isPresented: $showsAttachmentMenu,
             titleVisibility: .visible
         ) {
-            Button("Photo library") { showsPhotoPicker = true }
+            Button("Photo library") {
+                cameraNotice = nil
+                showsPhotoPicker = true
+            }
+            if Self.shouldShowCameraAction(
+                sourceTypeAvailable: UIImagePickerController.isSourceTypeAvailable(.camera)
+            ) {
+                Button("Take photo") { beginCameraCapture() }
+            }
             Button("File") { showsFileImporter = true }
             Button("Cancel", role: .cancel) {}
         }
@@ -242,6 +260,30 @@ public struct MessageComposer: View {
             allowsMultipleSelection: true
         ) { result in
             importDocuments(result)
+        }
+        .sheet(isPresented: $showsCameraPicker) {
+            CameraPhotoPicker(
+                onImage: { image in
+                    showsCameraPicker = false
+                    guard let id = cameraAttachmentId else { return }
+                    cameraAttachmentId = nil
+                    guard let candidate = Self.cameraCandidate(from: image) else {
+                        attachmentUploads?.failLoadingItem(id)
+                        return
+                    }
+                    attachmentUploads?.fulfillLoadingItem(id, with: candidate)
+                },
+                onCancel: {
+                    showsCameraPicker = false
+                    releaseCameraReservation()
+                },
+                onFailure: {
+                    showsCameraPicker = false
+                    guard let id = cameraAttachmentId else { return }
+                    cameraAttachmentId = nil
+                    attachmentUploads?.failLoadingItem(id)
+                }
+            )
         }
         .onChange(of: canRecordVoice) { _, available in
             if !available { voiceRecorder.cancel() }
@@ -292,6 +334,54 @@ public struct MessageComposer: View {
         else { return false }
         if case .edit = context { return false }
         return true
+    }
+
+    internal static func shouldShowCameraAction(sourceTypeAvailable: Bool) -> Bool {
+        sourceTypeAvailable
+    }
+
+    internal static func cameraCandidate(from image: UIImage) -> AttachmentCandidate? {
+        guard let data = image.jpegData(compressionQuality: 0.95) else { return nil }
+        return AttachmentCandidate(
+            data: data,
+            originalName: "Photo",
+            sourceMimeType: ByteSignature.detectedMimeType(data) ?? "image/jpeg"
+        )
+    }
+
+    private func beginCameraCapture() {
+        cameraNotice = nil
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .denied, .restricted:
+            cameraNotice = "Camera access is off. Photo library is still available."
+        case .authorized:
+            reserveCameraSlotAndPresent()
+        case .notDetermined:
+            Task { @MainActor in
+                if await AVCaptureDevice.requestAccess(for: .video) {
+                    reserveCameraSlotAndPresent()
+                } else {
+                    cameraNotice = "Camera access is off. Photo library is still available."
+                }
+            }
+        @unknown default:
+            cameraNotice = "Camera access is unavailable. Photo library is still available."
+        }
+    }
+
+    private func reserveCameraSlotAndPresent() {
+        guard let attachmentUploads,
+              let id = attachmentUploads.reserveLoadingItem(name: "Photo")
+        else { return }
+        cameraAttachmentId = id
+        showsCameraPicker = true
+    }
+
+    private func releaseCameraReservation() {
+        if let id = cameraAttachmentId {
+            attachmentUploads?.remove(id)
+            cameraAttachmentId = nil
+        }
     }
 
     private func loadPhotos(_ selected: [PhotosPickerItem]) {
@@ -396,6 +486,48 @@ private struct AttachmentPhotoTransfer: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(importedContentType: .image) { data in
             Self(data: data)
+        }
+    }
+}
+
+private struct CameraPhotoPicker: UIViewControllerRepresentable {
+    let onImage: (UIImage) -> Void
+    let onCancel: () -> Void
+    let onFailure: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.mediaTypes = [UTType.image.identifier]
+        picker.allowsEditing = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        private let parent: CameraPhotoPicker
+
+        init(_ parent: CameraPhotoPicker) {
+            self.parent = parent
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.onCancel()
+        }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            guard let image = info[.originalImage] as? UIImage else {
+                parent.onFailure()
+                return
+            }
+            parent.onImage(image)
         }
     }
 }
