@@ -32,6 +32,7 @@ public struct PersonalChatScreen: View {
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
     private let onMessageAction: (MessageAction) -> Void
+    private let onFocusMessage: (String) -> Void
     private let onVisibleMessage: (String) -> Void
     private let onCancelComposerContext: () -> Void
     private let onComposerFocusChanged: (Bool) -> Void
@@ -61,6 +62,7 @@ public struct PersonalChatScreen: View {
         onRetryMessage: @escaping (String) -> Void,
         onRetryOlder: @escaping () -> Void,
         onMessageAction: @escaping (MessageAction) -> Void = { _ in },
+        onFocusMessage: @escaping (String) -> Void = { _ in },
         onVisibleMessage: @escaping (String) -> Void = { _ in },
         onCancelComposerContext: @escaping () -> Void = {},
         onComposerFocusChanged: @escaping (Bool) -> Void = { _ in },
@@ -81,6 +83,7 @@ public struct PersonalChatScreen: View {
         self.onRetryMessage = onRetryMessage
         self.onRetryOlder = onRetryOlder
         self.onMessageAction = onMessageAction
+        self.onFocusMessage = onFocusMessage
         self.onVisibleMessage = onVisibleMessage
         self.onCancelComposerContext = onCancelComposerContext
         self.onComposerFocusChanged = onComposerFocusChanged
@@ -141,6 +144,8 @@ public struct PersonalChatScreen: View {
                         onRetryMessage: onRetryMessage,
                         onRetryOlder: onRetryOlder,
                         onMessageAction: onMessageAction,
+                        focusedMessageId: model.focusedMessageId,
+                        onFocusMessage: onFocusMessage,
                         onVisibleMessage: onVisibleMessage,
                         reactionsEnabled: model.connection != .offline,
                         attachmentCommands: attachmentCommands,

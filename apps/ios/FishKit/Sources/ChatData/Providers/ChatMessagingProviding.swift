@@ -14,6 +14,12 @@ public protocol ChatMessagingProviding: Sendable {
         limit: Int
     ) async throws -> ChatBackfillPage
     func messages(ids: [String]) async throws -> [ChatMessage]
+    func searchMessages(
+        conversationId: String,
+        query: String,
+        before: ChatMessageSearchCursor?,
+        limit: Int
+    ) async throws -> ChatMessageSearchPage
 }
 
 public extension ChatMessagingProviding {

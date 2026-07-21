@@ -15,19 +15,29 @@ public struct InputField: View {
     private let isSecure: Bool
     @Binding private var text: String
     private let support: Support
+    private let submitLabel: SubmitLabel
+    private let onSubmit: (() -> Void)?
+    private let autoFocus: Bool
     @FocusState private var isFocused: Bool
+    @State private var didAutoFocus = false
     @Environment(\.isEnabled) private var isEnabled
 
     public init(
         label: String,
         text: Binding<String>,
         support: Support = .none,
-        isSecure: Bool = false
+        isSecure: Bool = false,
+        submitLabel: SubmitLabel = .done,
+        onSubmit: (() -> Void)? = nil,
+        autoFocus: Bool = false
     ) {
         self.label = label
         self._text = text
         self.support = support
         self.isSecure = isSecure
+        self.submitLabel = submitLabel
+        self.onSubmit = onSubmit
+        self.autoFocus = autoFocus
     }
 
     nonisolated static func supportText(for support: Support) -> String? {
@@ -69,6 +79,8 @@ public struct InputField: View {
             }
         }
         .textInputStyle(.body)
+        .submitLabel(submitLabel)
+        .onSubmit { onSubmit?() }
         .foregroundStyle(isEnabled ? Palette.foreground : Palette.muted)
         .focused($isFocused)
         .padding(.horizontal, Spacing.sm)
@@ -86,5 +98,10 @@ public struct InputField: View {
             .strokeBorder(Palette.border, lineWidth: 1)
         }
         .accessibilityLabel(label)
+        .onAppear {
+            guard autoFocus, !didAutoFocus else { return }
+            didAutoFocus = true
+            isFocused = true
+        }
     }
 }

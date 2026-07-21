@@ -247,6 +247,7 @@ private struct ConversationView: View {
         if let store = model.conversationStore,
            let session = model.session,
            let uploads = model.uploads {
+            @Bindable var search = store.messageSearch
             let draft = Binding<String>(
                 get: { store.draft },
                 set: { store.draft = $0 }
@@ -254,6 +255,10 @@ private struct ConversationView: View {
             let selection = Binding<ComposerSelection>(
                 get: { store.selection },
                 set: { store.selection = $0 }
+            )
+            let searchPresented = Binding<Bool>(
+                get: { search.isPresented },
+                set: { if !$0 { search.close() } }
             )
             PersonalChatScreen(
                 model: store.model,
@@ -268,11 +273,30 @@ private struct ConversationView: View {
                 onRetryMessage: { id in Task { await store.retry(messageId: id) } },
                 onRetryOlder: { Task { await store.loadOlder() } },
                 onMessageAction: store.perform,
+                onFocusMessage: { id in Task { await store.focusMessage(id) } },
                 onVisibleMessage: store.visibleMessage,
                 onCancelComposerContext: store.cancelComposerContext,
                 onComposerFocusChanged: store.composerFocusChanged,
-                onBack: model.closeConversation
+                onBack: model.closeConversation,
+                trailingContent: AnyView(
+                    IconButton(
+                        .search,
+                        accessibilityLabel: "Search messages",
+                        action: store.openMessageSearch
+                    )
+                )
             )
+            .sheet(isPresented: searchPresented, onDismiss: search.close) {
+                MessageSearchScreen(
+                    model: search,
+                    onSelect: { id in
+                        search.close()
+                        Task { await store.focusMessage(id) }
+                    }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
         } else {
             LoadingView(message: "Opening conversation…")
         }

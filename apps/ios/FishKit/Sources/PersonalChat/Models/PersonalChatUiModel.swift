@@ -46,6 +46,7 @@ public struct PersonalChatUiModel: Sendable, Equatable {
     public let isParticipantTyping: Bool
     public let composerContext: ComposerContextUiModel?
     public let notice: String?
+    public let focusedMessageId: String?
 
     public init(
         participantName: String,
@@ -57,7 +58,8 @@ public struct PersonalChatUiModel: Sendable, Equatable {
         unreadAfterMessageId: String? = nil,
         isParticipantTyping: Bool = false,
         composerContext: ComposerContextUiModel? = nil,
-        notice: String? = nil
+        notice: String? = nil,
+        focusedMessageId: String? = nil
     ) {
         self.participantName = participantName
         self.presence = presence
@@ -69,5 +71,6 @@ public struct PersonalChatUiModel: Sendable, Equatable {
         self.isParticipantTyping = isParticipantTyping
         self.composerContext = composerContext
         self.notice = notice
+        self.focusedMessageId = focusedMessageId
     }
 }

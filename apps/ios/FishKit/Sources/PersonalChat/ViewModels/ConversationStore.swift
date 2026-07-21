@@ -6,6 +6,7 @@ import Observation
 @MainActor @Observable
 public final class ConversationStore {
     public static let pageSize = 40
+    public static let messageUnavailableNotice = "Earlier message unavailable"
     private static let reactionRefreshCooldown: TimeInterval = 2
     private static let maximumReactionCodeUnits = 16
 
@@ -15,6 +16,7 @@ public final class ConversationStore {
     public let participantName: String
     public let currentUserName: String
     public let currentUserRole: ChatUserRole
+    public let messageSearch: MessageSearchModel
 
     public var draft = "" {
         didSet {
@@ -52,6 +54,8 @@ public final class ConversationStore {
     private var pendingReactionMessageIds: Set<String> = []
     private var refreshingReactionMessageIds: Set<String> = []
     private var lastReactionRefreshAt: [String: Date] = [:]
+    private var focusGeneration = 0
+    private var focusedMessageId: String?
 
     public init(
         conversationId: String,
@@ -83,6 +87,13 @@ public final class ConversationStore {
         self.presence = presence
         self.now = now
         self.sleep = sleep
+        self.messageSearch = MessageSearchModel(
+            conversationId: conversationId,
+            currentUserId: currentUserId,
+            participantName: participantName,
+            messaging: messaging,
+            now: now
+        )
     }
 
     public var model: PersonalChatUiModel {
@@ -97,7 +108,8 @@ public final class ConversationStore {
             unreadAfterMessageId: unreadMarker(conversation),
             isParticipantTyping: participantTyping,
             composerContext: composerContext(conversation),
-            notice: notice
+            notice: notice,
+            focusedMessageId: focusedMessageId
         )
     }
 
@@ -130,6 +142,8 @@ public final class ConversationStore {
     }
 
     public func stop() {
+        messageSearch.close()
+        clearFocusedMessage()
         typingIdleTask?.cancel()
         typingWatchdogTask?.cancel()
         eventTask?.cancel()
@@ -141,6 +155,52 @@ public final class ConversationStore {
         subscription = nil
         participantTyping = false
         started = false
+    }
+
+    public func openMessageSearch() {
+        clearFocusedMessage()
+        messageSearch.open()
+    }
+
+    public func clearFocusedMessage() {
+        focusGeneration += 1
+        focusedMessageId = nil
+    }
+
+    public func focusMessage(_ messageId: String) async {
+        let id = messageId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !id.isEmpty else {
+            notice = Self.messageUnavailableNotice
+            return
+        }
+        clearFocusedMessage()
+        let generation = focusGeneration
+
+        if let loaded = message(id),
+           loaded.conversationId == conversationId,
+           loaded.deletedAt == nil {
+            publishFocus(id, generation: generation)
+            return
+        }
+
+        do {
+            let fetched = try await messaging.messages(ids: [id])
+            guard generation == focusGeneration else { return }
+            guard let target = fetched.first(where: {
+                $0.id == id && $0.conversationId == conversationId && $0.deletedAt == nil
+            }) else {
+                notice = Self.messageUnavailableNotice
+                return
+            }
+            reduce(.mergeRemoteMessage(
+                message: target.coreState,
+                localRequestId: target.clientRequestId
+            ))
+            publishFocus(id, generation: generation)
+        } catch {
+            guard generation == focusGeneration else { return }
+            notice = Self.messageUnavailableNotice
+        }
     }
 
     public func send(_ payload: ChatSendPayload) async {
@@ -660,6 +720,14 @@ public final class ConversationStore {
 
     private var currentConversation: ChatConversationState {
         state.conversations[conversationId] ?? ChatConversationState(conversationId: conversationId)
+    }
+
+    private func publishFocus(_ id: String, generation: Int) {
+        guard generation == focusGeneration else { return }
+        focusedMessageId = id
+        if notice == Self.messageUnavailableNotice {
+            notice = nil
+        }
     }
 
     private func reduce(_ event: ChatEvent) {

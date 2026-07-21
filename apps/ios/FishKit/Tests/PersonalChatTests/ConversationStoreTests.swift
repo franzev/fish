@@ -16,6 +16,7 @@ private actor StoreMessaging: ChatMessagingProviding {
     var messagesById: [String: ChatMessage] = [:]
     var sendFailures = 0
     var nextSendDelay: Duration?
+    var nextMessageIDDelay: Duration?
     var sent: [SendChatMessageRequest] = []
     var messageIDRequests: [[String]] = []
 
@@ -78,11 +79,25 @@ private actor StoreMessaging: ChatMessagingProviding {
 
     func messages(ids: [String]) async throws -> [ChatMessage] {
         messageIDRequests.append(ids)
+        if let delay = nextMessageIDDelay {
+            nextMessageIDDelay = nil
+            try await Task.sleep(for: delay)
+        }
         return ids.compactMap { messagesById[$0] }
+    }
+
+    func searchMessages(
+        conversationId: String,
+        query: String,
+        before: ChatMessageSearchCursor?,
+        limit: Int
+    ) async throws -> ChatMessageSearchPage {
+        ChatMessageSearchPage(hits: [], nextCursor: nil)
     }
 
     func failNextSends(_ count: Int) { sendFailures = count }
     func delayNextSend(_ duration: Duration) { nextSendDelay = duration }
+    func delayNextMessageIDs(_ duration: Duration) { nextMessageIDDelay = duration }
     func setOlder(_ values: [OlderResult]) { olderPages = values }
     func setBackfills(_ values: [ChatBackfillPage]) { backfills = values }
     func setWindow(_ value: ChatNewestWindow) {
@@ -404,6 +419,95 @@ struct ConversationStoreTests {
         #expect(store.model.olderMessages == .hidden)
         #expect(store.model.messages.map(\.id) == ["m1", "m2"])
         store.stop()
+    }
+
+    @Test func focusUsesLoadedMessageOrFetchesAndPreservesPaging() async throws {
+        let visible = storeMessage("m2", sender: "them", at: 200)
+        let older = storeMessage("m1", sender: "them", body: "An earlier note", at: 100)
+        let (store, messaging, _, _) = makeStore(window: storeWindow([visible], hasMore: true))
+        await messaging.put(older)
+        await store.start()
+
+        await store.focusMessage("m2")
+        #expect(store.model.focusedMessageId == "m2")
+        #expect(await messaging.requestedMessageIDs().isEmpty)
+
+        store.clearFocusedMessage()
+        await store.focusMessage("m1")
+        #expect(store.model.focusedMessageId == "m1")
+        #expect(store.model.messages.map(\.id) == ["m1", "m2"])
+        #expect(store.model.olderMessages == .idle)
+        #expect(await messaging.requestedMessageIDs() == [["m1"]])
+        store.stop()
+    }
+
+    @Test func focusRejectsWrongConversationDeletedAndMissingRows() async throws {
+        let visible = storeMessage("m1", sender: "them", at: 100)
+        let (store, messaging, _, _) = makeStore(window: storeWindow([visible]))
+        await messaging.put(ChatMessage(
+            id: "wrong",
+            conversationId: "c2",
+            senderId: "them",
+            senderRole: "coach",
+            body: "Wrong conversation",
+            createdAt: Date(timeIntervalSince1970: 50)
+        ))
+        await messaging.put(ChatMessage(
+            id: "deleted",
+            conversationId: "c1",
+            senderId: "them",
+            senderRole: "coach",
+            body: "Gone",
+            createdAt: Date(timeIntervalSince1970: 60),
+            deletedAt: Date(timeIntervalSince1970: 60)
+        ))
+        await store.start()
+
+        await store.focusMessage("wrong")
+        #expect(store.model.focusedMessageId == nil)
+        #expect(store.model.notice == ConversationStore.messageUnavailableNotice)
+        #expect(store.model.messages.map(\.id) == ["m1"])
+
+        await store.focusMessage("deleted")
+        #expect(store.model.focusedMessageId == nil)
+        #expect(store.model.notice == ConversationStore.messageUnavailableNotice)
+        #expect(store.model.messages.map(\.id) == ["m1"])
+
+        await store.focusMessage("missing")
+        #expect(store.model.focusedMessageId == nil)
+        #expect(store.model.notice == ConversationStore.messageUnavailableNotice)
+        #expect(store.model.messages.map(\.id) == ["m1"])
+        store.stop()
+    }
+
+    @Test func stopInvalidatesLateFocusAndClearsSessionSearch() async throws {
+        let visible = storeMessage("m1", sender: "them", at: 100)
+        let older = storeMessage("m0", sender: "them", at: 50)
+        let (store, messaging, _, _) = makeStore(window: storeWindow([visible]))
+        await messaging.put(older)
+        await store.start()
+        store.openMessageSearch()
+        store.messageSearch.query = "note"
+        #expect(store.messageSearch.isPresented)
+        await messaging.delayNextMessageIDs(.milliseconds(100))
+
+        let focusTask = Task { await store.focusMessage("m0") }
+        var requestStarted = false
+        for _ in 0..<100 {
+            if !(await messaging.requestedMessageIDs()).isEmpty {
+                requestStarted = true
+                break
+            }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        #expect(requestStarted)
+        store.stop()
+        await focusTask.value
+
+        #expect(store.messageSearch.isPresented == false)
+        #expect(store.messageSearch.query.isEmpty)
+        #expect(store.model.focusedMessageId == nil)
+        #expect(store.model.messages.map(\.id) == ["m1"])
     }
 
     @Test func failedAttachmentSendRetriesTheExactIdempotencyRequest() async throws {

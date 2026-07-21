@@ -123,6 +123,97 @@ struct ChatLiveDataTests {
         #expect(query.first { $0.name == "or" }?.value?.contains("id.lt.m4") == true)
     }
 
+    @Test func searchUsesMinimalRpcContractAndCursorProbe() async throws {
+        let firstPageRows = (1...26).reversed().map { row("m\($0)") }.joined(separator: ",")
+        ChatDataURLProtocol.reset { request in
+            #expect(request.url?.path() == "/rest/v1/rpc/search_chat_messages")
+            #expect(request.httpMethod == "POST")
+            #expect(request.value(forHTTPHeaderField: "apikey") == "anon")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer token")
+            let body = try #require(request.httpBody)
+            let object = try #require(
+                JSONSerialization.jsonObject(with: body) as? [String: Any]
+            )
+            if object["p_before_id"] == nil {
+                #expect(Set(object.keys) == [
+                    "p_conversation_id", "p_query", "p_limit", "p_sort_direction",
+                ])
+                #expect(object["p_conversation_id"] as? String == "c1")
+                #expect(object["p_query"] as? String == "practice")
+                #expect(object["p_limit"] as? Int == 26)
+                #expect(object["p_sort_direction"] as? String == "desc")
+                return (200, Data("[\(firstPageRows)]".utf8))
+            }
+            #expect(object["p_before_created_at"] as? String == "2026-07-18T00:00:00.000Z")
+            #expect(object["p_before_id"] as? String == "m2")
+            #expect(object["p_limit"] as? Int == 26)
+            #expect(object["p_sort_direction"] as? String == "desc")
+            return (200, Data("[\(row("m1"))]".utf8))
+        }
+
+        let messaging = RestChatMessaging(
+            configuration: chatBackend,
+            hydration: NoAttachments(),
+            session: chatSession()
+        )
+        let first = try await messaging.searchMessages(
+            conversationId: "c1",
+            query: "  practice ",
+            before: nil,
+            limit: 25
+        )
+        #expect(first.hits.count == 25)
+        #expect(first.hits.first?.id == "m26")
+        #expect(first.hits.last?.id == "m2")
+        #expect(first.nextCursor == ChatMessageSearchCursor(
+            createdAt: "2026-07-18T00:00:00.000Z",
+            id: "m2"
+        ))
+
+        let second = try await messaging.searchMessages(
+            conversationId: "c1",
+            query: "practice",
+            before: first.nextCursor,
+            limit: 25
+        )
+        #expect(second.hits.map(\.id) == ["m1"])
+        #expect(second.nextCursor == nil)
+        #expect(ChatDataURLProtocol.capturedRequests.count == 2)
+    }
+
+    @Test func blankSearchIsRejectedBeforeNetworkAndMalformedSearchFails() async throws {
+        ChatDataURLProtocol.reset { _ in (200, Data("not-json".utf8)) }
+        let messaging = RestChatMessaging(
+            configuration: chatBackend,
+            hydration: NoAttachments(),
+            session: chatSession()
+        )
+        do {
+            _ = try await messaging.searchMessages(
+                conversationId: "c1",
+                query: " \n\t ",
+                before: nil,
+                limit: 25
+            )
+            Issue.record("Expected blank search to be rejected")
+        } catch let failure as ChatCommandFailure {
+            #expect(failure == .invalidRequest)
+        }
+        #expect(ChatDataURLProtocol.capturedRequests.isEmpty)
+
+        do {
+            _ = try await messaging.searchMessages(
+                conversationId: "c1",
+                query: "practice",
+                before: nil,
+                limit: 25
+            )
+            Issue.record("Expected malformed search response to fail")
+        } catch {
+            #expect(!(error is ChatCommandFailure))
+        }
+    }
+
     @Test func backfillSignalsResetWhenGapExceedsOnePage() async throws {
         ChatDataURLProtocol.reset { request in
             switch request.url?.path() {

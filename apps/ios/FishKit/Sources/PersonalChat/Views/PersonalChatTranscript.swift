@@ -9,11 +9,14 @@ public struct PersonalChatTranscript: View {
     private let onRetryMessage: (String) -> Void
     private let onRetryOlder: () -> Void
     private let onMessageAction: (MessageAction) -> Void
+    private let onFocusMessage: (String) -> Void
     private let onVisibleMessage: (String) -> Void
     private let reactionsEnabled: Bool
     private let attachmentCommands: (any AttachmentCommandProviding)?
     private let imageLoader: MessageImageLoader
     private let fileDownloader: AttachmentFileDownloader
+    private let focusedMessageId: String?
+    @Environment(\.fishReduceMotion) private var reduceMotion
 
     public init(
         items: [TranscriptItem],
@@ -21,6 +24,8 @@ public struct PersonalChatTranscript: View {
         onRetryMessage: @escaping (String) -> Void,
         onRetryOlder: @escaping () -> Void,
         onMessageAction: @escaping (MessageAction) -> Void = { _ in },
+        focusedMessageId: String? = nil,
+        onFocusMessage: @escaping (String) -> Void = { _ in },
         onVisibleMessage: @escaping (String) -> Void = { _ in },
         reactionsEnabled: Bool = true,
         attachmentCommands: (any AttachmentCommandProviding)? = nil,
@@ -32,6 +37,8 @@ public struct PersonalChatTranscript: View {
         self.onRetryMessage = onRetryMessage
         self.onRetryOlder = onRetryOlder
         self.onMessageAction = onMessageAction
+        self.focusedMessageId = focusedMessageId
+        self.onFocusMessage = onFocusMessage
         self.onVisibleMessage = onVisibleMessage
         self.reactionsEnabled = reactionsEnabled
         self.attachmentCommands = attachmentCommands
@@ -55,19 +62,20 @@ public struct PersonalChatTranscript: View {
                     case .unreadDivider:
                         UnreadMessagesDivider()
                     case .message(let row):
-                        MessageBubble(
-                            row: row,
-                            onRetry: onRetryMessage,
-                            onAction: onMessageAction,
-                            onReplyTap: { id in
-                                withAnimation { proxy.scrollTo(id, anchor: .center) }
-                            },
-                            reactionsEnabled: reactionsEnabled,
-                            attachmentCommands: attachmentCommands,
-                            imageLoader: imageLoader,
-                            fileDownloader: fileDownloader
+                        focusTreatment(
+                            MessageBubble(
+                                row: row,
+                                onRetry: onRetryMessage,
+                                onAction: onMessageAction,
+                                onReplyTap: onFocusMessage,
+                                reactionsEnabled: reactionsEnabled,
+                                attachmentCommands: attachmentCommands,
+                                imageLoader: imageLoader,
+                                fileDownloader: fileDownloader
+                            )
+                            .id(row.id),
+                            isFocused: focusedMessageId == row.id
                         )
-                        .id(row.id)
                         .onAppear { onVisibleMessage(row.id) }
                     }
                 }
@@ -79,6 +87,49 @@ public struct PersonalChatTranscript: View {
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
+            .onAppear { scrollToFocusedMessage(using: proxy) }
+            .onChange(of: focusedMessageId) { _, _ in
+                scrollToFocusedMessage(using: proxy)
+            }
+            .onChange(of: messageIDs) { _, _ in
+                scrollToFocusedMessage(using: proxy)
+            }
+        }
+    }
+
+    private var messageIDs: [String] {
+        items.compactMap { item in
+            guard case .message(let row) = item else { return nil }
+            return row.id
+        }
+    }
+
+    @ViewBuilder
+    private func focusTreatment<Content: View>(
+        _ content: Content,
+        isFocused: Bool
+    ) -> some View {
+        if isFocused {
+            content
+                .padding(.vertical, Spacing.nudge)
+                .background(
+                    Palette.chatActive,
+                    in: RoundedRectangle(
+                        cornerRadius: Radius.card,
+                        style: .continuous
+                    )
+                )
+        } else {
+            content
+        }
+    }
+
+    private func scrollToFocusedMessage(using proxy: ScrollViewProxy) {
+        guard let focusedMessageId, messageIDs.contains(focusedMessageId) else { return }
+        if reduceMotion {
+            proxy.scrollTo(focusedMessageId, anchor: .center)
+        } else {
+            withAnimation { proxy.scrollTo(focusedMessageId, anchor: .center) }
         }
     }
 }

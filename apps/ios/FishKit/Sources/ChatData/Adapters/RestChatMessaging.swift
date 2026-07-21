@@ -6,6 +6,7 @@ import Foundation
 public struct RestChatMessaging: ChatMessagingProviding {
     public static let defaultPageSize = 40
     public static let maximumPageSize = 100
+    private static let maximumSearchPageSize = 99
     private static let reactionSummaryBatchSize = 50
 
     private let configuration: ChatBackendConfiguration
@@ -112,6 +113,47 @@ public struct RestChatMessaging: ChatMessagingProviding {
             URLQueryItem(name: "order", value: "created_at.asc,id.asc"),
         ])
         return try await enrich(rows.map(\.domain))
+    }
+
+    public func searchMessages(
+        conversationId: String,
+        query: String,
+        before cursor: ChatMessageSearchCursor?,
+        limit requestedLimit: Int
+    ) async throws -> ChatMessageSearchPage {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { throw ChatCommandFailure.invalidRequest }
+        let limit = min(max(1, requestedLimit), Self.maximumSearchPageSize)
+        let data = try await authenticatedRequest(
+            path: "rest/v1/rpc/search_chat_messages",
+            method: "POST",
+            body: JSONEncoder().encode(SearchMessagesRequest(
+                conversationId: conversationId,
+                query: query,
+                cursor: cursor,
+                limit: limit
+            ))
+        )
+        let rows = try ChatWireDecoder.make().decode([ChatMessageWire].self, from: data)
+        let retained = Array(rows.prefix(limit))
+        let hits = retained.map { row in
+            ChatMessageSearchHit(
+                id: row.id,
+                conversationId: row.conversationId,
+                senderId: row.senderId,
+                body: row.body,
+                createdAt: row.createdAt
+            )
+        }
+        let nextCursor = rows.count > limit
+            ? hits.last.map { hit in
+                ChatMessageSearchCursor(
+                    createdAt: ChatTimestamp.string(hit.createdAt),
+                    id: hit.id
+                )
+            }
+            : nil
+        return ChatMessageSearchPage(hits: hits, nextCursor: nextCursor)
     }
 
     // MARK: - Reads and enrichment
@@ -306,6 +348,38 @@ public struct RestChatMessaging: ChatMessagingProviding {
 }
 
 private struct SendResponse: Decodable { let message: ChatMessageWire }
+
+private struct SearchMessagesRequest: Encodable {
+    let conversationId: String
+    let query: String
+    let beforeCreatedAt: String?
+    let beforeId: String?
+    let limit: Int
+    let sortDirection: String
+
+    init(
+        conversationId: String,
+        query: String,
+        cursor: ChatMessageSearchCursor?,
+        limit: Int
+    ) {
+        self.conversationId = conversationId
+        self.query = query
+        beforeCreatedAt = cursor?.createdAt
+        beforeId = cursor?.id
+        self.limit = limit + 1
+        sortDirection = "desc"
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId = "p_conversation_id"
+        case query = "p_query"
+        case beforeCreatedAt = "p_before_created_at"
+        case beforeId = "p_before_id"
+        case limit = "p_limit"
+        case sortDirection = "p_sort_direction"
+    }
+}
 
 struct ChatFailureWire: Decodable {
     let code: String?

@@ -52,6 +52,31 @@ struct PersonalChatScreenTests {
         )
     }
 
+    @MainActor @Test func focusedMessageSnapshots() {
+        let base = PersonalChatFixtures.loaded
+        let focused = PersonalChatUiModel(
+            participantName: base.participantName,
+            presence: base.presence,
+            phase: base.phase,
+            connection: base.connection,
+            olderMessages: base.olderMessages,
+            messages: base.messages,
+            unreadAfterMessageId: base.unreadAfterMessageId,
+            isParticipantTyping: base.isParticipantTyping,
+            composerContext: base.composerContext,
+            notice: base.notice,
+            focusedMessageId: "m2"
+        )
+        assertThemedSnapshots(
+            of: screen(model: focused, draft: ""),
+            named: "screen-focused"
+        )
+        assertAccessibilitySnapshots(
+            of: screen(model: focused, draft: ""),
+            named: "screen-focused"
+        )
+    }
+
     @MainActor
     private func screen(
         model: PersonalChatUiModel,
