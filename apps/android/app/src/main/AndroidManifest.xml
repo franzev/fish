@@ -109,5 +109,8 @@
         <receiver
             android:name=".calling.CallActionReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".messaging.ChatReplyReceiver"
+            android:exported="false" />
     </application>
 </manifest>

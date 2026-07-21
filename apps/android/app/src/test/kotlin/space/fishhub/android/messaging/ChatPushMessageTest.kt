@@ -16,12 +16,14 @@ class ChatPushMessageTest {
                 "messageId" to "message-1",
                 "senderId" to "sender-1",
                 "senderName" to "  Coach Jordan  ",
+                "unreadCount" to "7",
             ),
         )
 
         assertEquals("conversation-1", push?.conversationId)
         assertEquals("message-1", push?.messageId)
         assertEquals("Coach Jordan", push?.senderName)
+        assertEquals(7, push?.unreadCount)
     }
 
     @Test

@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.app.RemoteInput
 import androidx.core.content.ContextCompat
 import space.fishhub.android.MainActivity
 import space.fishhub.android.R
@@ -36,7 +37,9 @@ internal object ChatNotificationFactory {
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setNumber(push.unreadCount)
             .setAutoCancel(true)
+            .addAction(replyAction(context, push))
             .build()
 
     private fun ensureChannel(context: Context, manager: NotificationManager) {
@@ -63,6 +66,25 @@ internal object ChatNotificationFactory {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    private fun replyAction(context: Context, push: ChatPushMessage): NotificationCompat.Action {
+        val intent = Intent(context, ChatReplyReceiver::class.java)
+            .putExtra(ChatIntents.ExtraConversationId, push.conversationId)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            push.conversationId.hashCode() xor 0x52_45_50,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+        )
+        val input = RemoteInput.Builder(ChatReplyReceiver.RemoteInputKey)
+            .setLabel(context.getString(R.string.chat_notification_reply_hint))
+            .build()
+        return NotificationCompat.Action.Builder(
+            R.drawable.ic_call_notification,
+            context.getString(R.string.chat_notification_reply),
+            pendingIntent,
+        ).addRemoteInput(input).build()
+    }
 
     fun clear(context: Context, conversationId: String) {
         context.getSystemService(NotificationManager::class.java).cancel(notificationId(conversationId))
