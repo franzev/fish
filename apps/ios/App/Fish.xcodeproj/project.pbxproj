@@ -8,14 +8,19 @@
 
 /* Begin PBXBuildFile section */
 		1AF6A5708344D455E8EAEF38 /* Calls in Frameworks */ = {isa = PBXBuildFile; productRef = E3B497C9D85A87EC0137B354 /* Calls */; };
+		1BA8C3E5361668E89BCE6107 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1ECDB7260CBFB8C6ACB4ADB /* ShareViewController.swift */; };
 		1EAEB9D218D1DFE18737D20D /* AccountSettings in Frameworks */ = {isa = PBXBuildFile; productRef = 29992C6DCA677AF27B18AFCD /* AccountSettings */; };
 		362FA6D9B02CD7BD5198C453 /* CallMediaLiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0D54CEC388E682DC72C5B43F /* CallMediaLiveKit */; };
+		52477F532BC4EBCB41F1433A /* FishShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4D79453224BFD04920136767 /* FishShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5C24F41D8C2845280E583402 /* UIComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 20E83DC5C6A63E1B069F468B /* UIComponents */; };
 		8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */; };
 		895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */; };
+		BF9301FDC28A1032B398593E /* FishSharePayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */; };
+		CBA7E24FB23A3803FC4B9FEC /* FishSharePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20183F23477C1DCD0B20CC9E /* FishSharePayload.swift */; };
 		D2104016159DB2EBE41A18E2 /* ChatData in Frameworks */ = {isa = PBXBuildFile; productRef = BF3F734419E9BEC0FF504B65 /* ChatData */; };
 		D21D7B6CFE14B2F494A754ED /* CallKitCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */; };
 		D38F370142F11C487C4C5DDF /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 83168A43E32F0C01BDF1133F /* DesignSystem */; };
+		D506FF4E8B5828A57A818E8A /* FishSharePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20183F23477C1DCD0B20CC9E /* FishSharePayload.swift */; };
 		E00B76BFB95EFF3C8B518FAB /* PersonalChat in Frameworks */ = {isa = PBXBuildFile; productRef = B821BA6D07778D0EA77672B9 /* PersonalChat */; };
 		F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E5EB18FA42EA4D7E193BB /* FishApp.swift */; };
 		F3FAE6AA07276C657AD3D96E /* VoipPushCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */; };
@@ -31,9 +36,32 @@
 			remoteGlobalIDString = 2A3B6237B79DEFDA31997CAE;
 			remoteInfo = Fish;
 		};
+		E28CB7DA867A7DD456531B95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 93ED2E134B0B4E7EC2BC34C6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03C4A45AA34892E819F840D9;
+			remoteInfo = FishShareExtension;
+		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		39DE49C4AE312CAB2F0D4F48 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				52477F532BC4EBCB41F1433A /* FishShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		12700FF4D7F22D9479AF1D51 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		20183F23477C1DCD0B20CC9E /* FishSharePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishSharePayload.swift; sourceTree = "<group>"; };
 		20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		227E5EB18FA42EA4D7E193BB /* FishApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishApp.swift; sourceTree = "<group>"; };
 		323AD597C6079F6C90636877 /* Fish.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Fish.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -43,8 +71,12 @@
 		4775B54857D0E072B6B0E150 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitCoordinator.swift; sourceTree = "<group>"; };
 		4B52387CF5B0AAFF2A75259B /* Fish.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fish.entitlements; sourceTree = "<group>"; };
+		4D79453224BFD04920136767 /* FishShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FishShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishSharePayloadTests.swift; sourceTree = "<group>"; };
 		89AAFB7A8309ADCB125EF882 /* FishKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FishKit; path = ../FishKit; sourceTree = SOURCE_ROOT; };
 		99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoipPushCoordinatorTests.swift; sourceTree = "<group>"; };
+		9C0EF1FBB296D6DD50EDBB11 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
+		A1ECDB7260CBFB8C6ACB4ADB /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,10 +98,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0D48A9A6A4191320FA9348A5 /* ShareSupport */ = {
+			isa = PBXGroup;
+			children = (
+				20183F23477C1DCD0B20CC9E /* FishSharePayload.swift */,
+			);
+			path = ShareSupport;
+			sourceTree = "<group>";
+		};
 		57B549906547CD8D561F5E34 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
 				399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */,
+				648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */,
 				99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */,
 			);
 			path = Tests;
@@ -79,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				323AD597C6079F6C90636877 /* Fish.app */,
+				4D79453224BFD04920136767 /* FishShareExtension.appex */,
 				443D4337196AD1103BDDCADE /* FishTests.xctest */,
 			);
 			name = Products;
@@ -97,6 +139,16 @@
 			path = Sources;
 			sourceTree = "<group>";
 		};
+		9B8385FEEE172FBFED9DB23B /* ios */ = {
+			isa = PBXGroup;
+			children = (
+				E44B797F24E933C6FFA7F776 /* ShareExtension */,
+				0D48A9A6A4191320FA9348A5 /* ShareSupport */,
+			);
+			name = ios;
+			path = ..;
+			sourceTree = "<group>";
+		};
 		C1D185FC05B680CC7DF6A847 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -105,9 +157,20 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		E44B797F24E933C6FFA7F776 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				12700FF4D7F22D9479AF1D51 /* Info.plist */,
+				9C0EF1FBB296D6DD50EDBB11 /* ShareExtension.entitlements */,
+				A1ECDB7260CBFB8C6ACB4ADB /* ShareViewController.swift */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
 		F8A1B14E66BDF492A23335A1 = {
 			isa = PBXGroup;
 			children = (
+				9B8385FEEE172FBFED9DB23B /* ios */,
 				C1D185FC05B680CC7DF6A847 /* Packages */,
 				83F82C8B932691E65BEAE422 /* Sources */,
 				57B549906547CD8D561F5E34 /* Tests */,
@@ -118,6 +181,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		03C4A45AA34892E819F840D9 /* FishShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13FC5B82FA0868548D022251 /* Build configuration list for PBXNativeTarget "FishShareExtension" */;
+			buildPhases = (
+				8B4933865E87A02B1980623B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FishShareExtension;
+			packageProductDependencies = (
+			);
+			productName = FishShareExtension;
+			productReference = 4D79453224BFD04920136767 /* FishShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		2A3B6237B79DEFDA31997CAE /* Fish */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D8437C1E46241A5A504039C1 /* Build configuration list for PBXNativeTarget "Fish" */;
@@ -125,10 +205,12 @@
 				5860723F07814D680C1F5B07 /* Sources */,
 				68CE09C69FB9AD1113C0B822 /* Resources */,
 				820B7C1913A5B772A360462A /* Frameworks */,
+				39DE49C4AE312CAB2F0D4F48 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				CA1ED1E671DAAD8DA189F363 /* PBXTargetDependency */,
 			);
 			name = Fish;
 			packageProductDependencies = (
@@ -192,6 +274,7 @@
 			projectRoot = "";
 			targets = (
 				2A3B6237B79DEFDA31997CAE /* Fish */,
+				03C4A45AA34892E819F840D9 /* FishShareExtension */,
 				FF59EA093BFC15E4312C98AB /* FishTests */,
 			);
 		};
@@ -214,6 +297,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */,
+				BF9301FDC28A1032B398593E /* FishSharePayloadTests.swift in Sources */,
 				F3FAE6AA07276C657AD3D96E /* VoipPushCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -224,7 +308,17 @@
 			files = (
 				D21D7B6CFE14B2F494A754ED /* CallKitCoordinator.swift in Sources */,
 				F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */,
+				CBA7E24FB23A3803FC4B9FEC /* FishSharePayload.swift in Sources */,
 				895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8B4933865E87A02B1980623B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D506FF4E8B5828A57A818E8A /* FishSharePayload.swift in Sources */,
+				1BA8C3E5361668E89BCE6107 /* ShareViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +329,11 @@
 			isa = PBXTargetDependency;
 			target = 2A3B6237B79DEFDA31997CAE /* Fish */;
 			targetProxy = 5FC3700B857E6DD4F7D05261 /* PBXContainerItemProxy */;
+		};
+		CA1ED1E671DAAD8DA189F363 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03C4A45AA34892E819F840D9 /* FishShareExtension */;
+			targetProxy = E28CB7DA867A7DD456531B95 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -336,6 +435,25 @@
 			};
 			name = Debug;
 		};
+		525BB97C7DA4B572DBB3EE09 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				APS_ENVIRONMENT = production;
+				CODE_SIGN_ENTITLEMENTS = ../ShareExtension/ShareExtension.entitlements;
+				INFOPLIST_FILE = ../ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.fish.mobile.share;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		6312587947E80FF74A0901C5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -358,6 +476,24 @@
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				WEB_BASE_URL = "${FISH_WEB_BASE_URL}";
+			};
+			name = Debug;
+		};
+		994FF3036B58F9337FA57C4C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ../ShareExtension/ShareExtension.entitlements;
+				INFOPLIST_FILE = ../ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.fish.mobile.share;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -445,6 +581,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		13FC5B82FA0868548D022251 /* Build configuration list for PBXNativeTarget "FishShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				994FF3036B58F9337FA57C4C /* Debug */,
+				525BB97C7DA4B572DBB3EE09 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		2F8DA3C5F973FFCBD8E50593 /* Build configuration list for PBXProject "Fish" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

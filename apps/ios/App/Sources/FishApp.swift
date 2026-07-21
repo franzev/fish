@@ -398,6 +398,7 @@ final class FishAppModel {
     private var pendingVoipCall: FishVoipPushDestination?
     private var handledVoipCallIds = Set<String>()
     private var pendingConversation: PendingConversationDestination?
+    private var pendingShare: FishSharePayload?
     private var pushTokenObserver: NSObjectProtocol?
     private var voipPushTokenObserver: NSObjectProtocol?
     private var voipPushInvalidationObserver: NSObjectProtocol?
@@ -432,6 +433,7 @@ final class FishAppModel {
             UserDefaults.standard.set(uuid.uuidString, forKey: "fish.push.installation-id")
         }
         callKit = CallKitCoordinator()
+        pendingShare = FishShareStore.read()
         observeNotifications()
         if let pending = VoipPushCoordinator.consumePendingDestination() {
             handleIncomingVoipCall(pending)
@@ -775,6 +777,7 @@ final class FishAppModel {
             )
             phase = .conversation
             await store.start()
+            await applyPendingShareIfReady()
             if let messageId {
                 await store.focusMessage(messageId)
             }
@@ -797,7 +800,13 @@ final class FishAppModel {
     }
 
     func handle(url: URL) {
-        guard url.scheme == "fish", url.host == "messages" else { return }
+        guard url.scheme == "fish" else { return }
+        if url.host == "share" {
+            pendingShare = FishShareStore.read()
+            Task { await applyPendingShareIfReady() }
+            return
+        }
+        guard url.host == "messages" else { return }
         let parts = url.pathComponents.filter { $0 != "/" }
         guard let conversationId = parts.first else { return }
         pendingConversation = PendingConversationDestination(
@@ -855,6 +864,38 @@ final class FishAppModel {
         conversationStore?.stop()
         conversationStore = nil
         uploads = nil
+    }
+
+    private func applyPendingShareIfReady() async {
+        guard let payload = pendingShare,
+              let store = conversationStore,
+              let uploads
+        else { return }
+
+        let sharedText = payload.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let sharedText, !sharedText.isEmpty {
+            let existing = store.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+            store.draft = [existing, sharedText]
+                .filter { !$0.isEmpty }
+                .joined(separator: "\n")
+        }
+
+        let candidates = payload.items.compactMap { item -> AttachmentCandidate? in
+            guard let data = FishShareStore.data(for: item) else { return nil }
+            return AttachmentCandidate(
+                data: data,
+                originalName: item.originalName,
+                sourceMimeType: item.sourceMimeType
+            )
+        }
+        let missingCount = payload.items.count - candidates.count
+        let extraFailures = Array(
+            repeating: AttachmentFailureReason.serverRejected("share_unavailable"),
+            count: missingCount + payload.omittedCount
+        )
+        uploads.add(candidates, admissionFailures: extraFailures)
+        pendingShare = nil
+        FishShareStore.clear(payload)
     }
 
     private func observeNotifications() {
