@@ -21,6 +21,7 @@ import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.MessageSearchHit
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
+import space.fishhub.android.data.chat.ChatCallActivity
 import space.fishhub.android.data.chat.BlockedPerson
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -215,6 +216,33 @@ internal class SupabaseChatRemoteDataSource(
         client.from("message_reads").select {
             filter { eq("conversation_id", conversationId) }
         }.decodeList<ReadStateDto>().map { it.toDomain() }
+
+    override suspend fun loadCallActivity(
+        conversation: AuthorizedConversation,
+        beforeEndedAt: String?,
+        limit: Int,
+    ): List<ChatCallActivity> {
+        require(limit in 1..100)
+        return client.postgrest.rpc(
+            function = "get_conversation_call_activity",
+            parameters = buildJsonObject {
+                put("p_conversation_id", JsonPrimitive(conversation.conversationId))
+                if (beforeEndedAt != null) put("p_before_ended_at", JsonPrimitive(beforeEndedAt))
+                put("p_limit", JsonPrimitive(limit))
+            },
+        ).decodeList<CallActivityDto>().map { row ->
+            ChatCallActivity(
+                id = row.id,
+                kind = row.kind,
+                status = row.status,
+                initiatedBy = row.initiatedBy,
+                createdAt = row.createdAt,
+                connectedAt = row.connectedAt,
+                endedAt = row.endedAt,
+                endReason = row.endReason,
+            )
+        }
+    }
 
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,

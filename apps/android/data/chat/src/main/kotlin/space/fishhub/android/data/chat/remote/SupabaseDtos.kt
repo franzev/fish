@@ -92,6 +92,18 @@ internal data class MessageSearchHitDto(
 )
 
 @Serializable
+internal data class CallActivityDto(
+    val id: String,
+    val kind: String,
+    val status: String,
+    @SerialName("initiated_by") val initiatedBy: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("connected_at") val connectedAt: String? = null,
+    @SerialName("ended_at") val endedAt: String? = null,
+    @SerialName("end_reason") val endReason: String? = null,
+)
+
+@Serializable
 internal data class ReactionDto(
     val emoji: String,
     val count: Int = 0,

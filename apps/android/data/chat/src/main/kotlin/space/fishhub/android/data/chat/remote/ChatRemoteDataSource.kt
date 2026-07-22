@@ -13,6 +13,7 @@ import space.fishhub.android.data.chat.MessageSearchCursor
 import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
+import space.fishhub.android.data.chat.ChatCallActivity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -30,6 +31,11 @@ internal interface ChatRemoteDataSource {
         conversation: AuthorizedConversation,
         messageIds: List<String>,
     ): List<ChatMessage> = emptyList()
+    suspend fun loadCallActivity(
+        conversation: AuthorizedConversation,
+        beforeEndedAt: String? = null,
+        limit: Int = 50,
+    ): List<ChatCallActivity> = emptyList()
     suspend fun searchMessages(
         conversation: AuthorizedConversation,
         query: String,

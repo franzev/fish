@@ -16,6 +16,7 @@ data class ChatUiModel(
     val currentUserDisplayName: String = "",
     val participant: ParticipantUiModel? = null,
     val messages: List<MessageUiModel> = emptyList(),
+    val callActivities: List<CallActivityUiModel> = emptyList(),
     val conversations: List<ConversationPreviewUiModel> = emptyList(),
     val selectedConversationId: String? = null,
     val connection: ChatConnectionUiState = ChatConnectionUiState.Connected,
@@ -77,6 +78,18 @@ data class MessageUiModel(
     val gifPlaying: Boolean = false,
     val gifUnavailable: Boolean = false,
     val attachments: List<AttachmentUiModel> = emptyList(),
+    val occurredAt: String = "",
+)
+
+@Immutable
+data class CallActivityUiModel(
+    val id: String,
+    val kind: String,
+    val label: String,
+    val timeLabel: String,
+    val occurredAt: String,
+    val durationLabel: String? = null,
+    val canCallBack: Boolean = false,
 )
 
 @Immutable

@@ -17,6 +17,7 @@ import space.fishhub.android.feature.chat.state.unreadMessageSummary
 import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.AuthorizedChatIdentity
 import space.fishhub.android.data.chat.ChatAuthState
+import space.fishhub.android.data.chat.ChatCallActivity
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatResult
@@ -88,6 +89,7 @@ class ChatViewModel(
     private var pendingMedia: ComposerMediaUiModel? = null
     private var pendingGifQuery: String = ""
     private var attachmentDrafts: List<LocalAttachmentUiModel> = emptyList()
+    private var callActivities: List<ChatCallActivity> = emptyList()
     private var pendingVoiceDraftId: String? = null
     private var pendingVoiceConversationId: String? = null
     private var selectionRevision = 0L
@@ -101,6 +103,13 @@ class ChatViewModel(
     val currentConversation: AuthorizedConversation?
         get() = activeConversation
 
+    fun refreshCallActivity() {
+        val conversation = activeConversation ?: return
+        viewModelScope.launch {
+            loadCallActivity(conversation.conversationId)
+        }
+    }
+
     init {
         viewModelScope.launch {
             repository.authState.collectLatest { auth ->
@@ -112,6 +121,7 @@ class ChatViewModel(
                         draftConversationIds = emptySet()
                         currentUser = null
                         conversations = emptyList()
+                        callActivities = emptyList()
                         pendingVoiceDraftId = null
                         pendingVoiceConversationId = null
                         clearPendingMedia(recordRevision = true)
@@ -773,6 +783,7 @@ class ChatViewModel(
         readMarkJob?.cancel()
         showingConversationList = false
         activeConversation = conversation
+        callActivities = emptyList()
         lastMarkedReadMessageId = null
         markingReadMessageId = null
         mutableUiState.value = ChatRouteUiState.Conversation(
@@ -887,6 +898,7 @@ class ChatViewModel(
                 }
                 publish()
             }
+            launch { loadCallActivity(conversation.conversationId) }
         }
         requestFocusedMessage(conversation)
     }
@@ -990,6 +1002,7 @@ class ChatViewModel(
         val model = baseModel(conversation).copy(
             screenState = ChatScreenState.Available,
             messages = current?.messages.toUiMessages(conversation, current?.readStates.orEmpty()),
+            callActivities = callActivities.toUiCallActivities(conversation),
             connection = when (current?.realtime?.status) {
                 RealtimeConnectionStatus.Connecting -> if (current.realtime.hasConnected) {
                     ChatConnectionUiState.Reconnecting
@@ -1127,7 +1140,61 @@ class ChatViewModel(
                     .sortedWith(compareBy({ it.position }, { it.id }))
                     .map(AttachmentUiModel::from),
                 sticker = message.stickerId?.let(::stickerUiModel),
+                occurredAt = message.createdAt,
             )
+        }
+    }
+
+    private suspend fun loadCallActivity(conversationId: String) {
+        when (val result = repository.loadCallActivity(conversationId)) {
+            is ChatResult.Success -> {
+                callActivities = result.value
+                publish()
+            }
+            is ChatResult.Failure -> Unit
+        }
+    }
+
+    private fun List<ChatCallActivity>.toUiCallActivities(
+        conversation: AuthorizedConversation,
+    ): List<CallActivityUiModel> = map { call ->
+        val audio = call.kind != "video"
+        val noun = if (audio) "audio call" else "video call"
+        val duration = call.durationLabel()
+        val (label, canCallBack) = when (call.status) {
+            "missed" -> "Missed $noun" to true
+            "rejected" -> "$noun declined" to true
+            "cancelled" -> "$noun cancelled" to false
+            "failed" -> "$noun couldn't connect" to true
+            else -> (if (duration != null) {
+                "${if (audio) "Audio" else "Video"} call · $duration"
+            } else {
+                if (audio) "Audio call" else "Video call"
+            }) to false
+        }
+        CallActivityUiModel(
+            id = call.id,
+            kind = call.kind,
+            label = label,
+            timeLabel = formatter.timeLabel(call.occurredAt),
+            occurredAt = call.occurredAt,
+            durationLabel = duration,
+            canCallBack = canCallBack && conversation.participantId.isNotBlank(),
+        )
+    }
+
+    private fun ChatCallActivity.durationLabel(): String? {
+        val start = connectedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        val end = endedAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+        val seconds = if (start != null && end != null) {
+            Duration.between(start, end).seconds.coerceAtLeast(0)
+        } else return null
+        val minutes = seconds / 60
+        val remainder = seconds % 60
+        return if (minutes > 0) {
+            if (remainder >= 30) "${minutes + 1} min" else "$minutes min"
+        } else {
+            "${seconds.coerceAtLeast(1)} sec"
         }
     }
 

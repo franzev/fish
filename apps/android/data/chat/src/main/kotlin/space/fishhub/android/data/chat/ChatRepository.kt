@@ -91,6 +91,20 @@ data class MessageSearchPage(
     val nextCursor: MessageSearchCursor?,
 )
 
+/** Completed call lifecycle rows rendered inline in the conversation timeline. */
+data class ChatCallActivity(
+    val id: String,
+    val kind: String,
+    val status: String,
+    val initiatedBy: String,
+    val createdAt: String,
+    val connectedAt: String? = null,
+    val endedAt: String? = null,
+    val endReason: String? = null,
+) {
+    val occurredAt: String get() = endedAt ?: createdAt
+}
+
 /** Ephemeral delivery credentials. These values are never persisted in Room. */
 data class AttachmentDelivery(
     val attachmentId: String,
@@ -199,6 +213,11 @@ interface ChatRepository {
         conversationId: String,
         messageIds: List<String>,
     ): ChatResult<List<ChatMessage>> = ChatResult.Success(emptyList())
+    suspend fun loadCallActivity(
+        conversationId: String,
+        beforeEndedAt: String? = null,
+        limit: Int = 50,
+    ): ChatResult<List<ChatCallActivity>> = ChatResult.Success(emptyList())
     suspend fun searchMessages(
         conversationId: String,
         query: String,
