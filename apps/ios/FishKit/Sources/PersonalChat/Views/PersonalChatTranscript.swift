@@ -11,6 +11,7 @@ public struct PersonalChatTranscript: View {
     private let onMessageAction: (MessageAction) -> Void
     private let onFocusMessage: (String) -> Void
     private let onVisibleMessage: (String) -> Void
+    private let onCallBack: (String) -> Void
     private let reactionsEnabled: Bool
     private let attachmentCommands: (any AttachmentCommandProviding)?
     private let imageLoader: MessageImageLoader
@@ -27,6 +28,7 @@ public struct PersonalChatTranscript: View {
         focusedMessageId: String? = nil,
         onFocusMessage: @escaping (String) -> Void = { _ in },
         onVisibleMessage: @escaping (String) -> Void = { _ in },
+        onCallBack: @escaping (String) -> Void = { _ in },
         reactionsEnabled: Bool = true,
         attachmentCommands: (any AttachmentCommandProviding)? = nil,
         imageLoader: MessageImageLoader = .shared,
@@ -40,6 +42,7 @@ public struct PersonalChatTranscript: View {
         self.focusedMessageId = focusedMessageId
         self.onFocusMessage = onFocusMessage
         self.onVisibleMessage = onVisibleMessage
+        self.onCallBack = onCallBack
         self.reactionsEnabled = reactionsEnabled
         self.attachmentCommands = attachmentCommands
         self.imageLoader = imageLoader
@@ -77,6 +80,8 @@ public struct PersonalChatTranscript: View {
                             isFocused: focusedMessageId == row.id
                         )
                         .onAppear { onVisibleMessage(row.id) }
+                    case .callActivity(let activity):
+                        CallActivityRow(activity: activity, onCallBack: onCallBack)
                     }
                 }
             }

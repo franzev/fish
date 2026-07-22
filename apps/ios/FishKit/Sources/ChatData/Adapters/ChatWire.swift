@@ -203,6 +203,39 @@ struct ChatReadStateWire: Decodable {
     }
 }
 
+struct ChatCallActivityWire: Decodable {
+    let id: String
+    let kind: String
+    let status: String
+    let initiatedBy: String
+    let createdAt: Date
+    let connectedAt: Date?
+    let endedAt: Date?
+    let endReason: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind, status
+        case initiatedBy = "initiated_by"
+        case createdAt = "created_at"
+        case connectedAt = "connected_at"
+        case endedAt = "ended_at"
+        case endReason = "end_reason"
+    }
+
+    var domain: ChatCallActivity {
+        ChatCallActivity(
+            id: id,
+            kind: kind,
+            status: status,
+            initiatedBy: initiatedBy,
+            createdAt: createdAt,
+            connectedAt: connectedAt,
+            endedAt: endedAt,
+            endReason: endReason
+        )
+    }
+}
+
 enum ChatWireDecoder {
     static func make() -> JSONDecoder {
         let decoder = JSONDecoder()

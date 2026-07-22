@@ -34,6 +34,7 @@ public struct PersonalChatScreen: View {
     private let onMessageAction: (MessageAction) -> Void
     private let onFocusMessage: (String) -> Void
     private let onVisibleMessage: (String) -> Void
+    private let onCallBack: (String) -> Void
     private let onCancelComposerContext: () -> Void
     private let onComposerFocusChanged: (Bool) -> Void
     private let onBack: (() -> Void)?
@@ -64,6 +65,7 @@ public struct PersonalChatScreen: View {
         onMessageAction: @escaping (MessageAction) -> Void = { _ in },
         onFocusMessage: @escaping (String) -> Void = { _ in },
         onVisibleMessage: @escaping (String) -> Void = { _ in },
+        onCallBack: @escaping (String) -> Void = { _ in },
         onCancelComposerContext: @escaping () -> Void = {},
         onComposerFocusChanged: @escaping (Bool) -> Void = { _ in },
         onBack: (() -> Void)? = nil,
@@ -85,6 +87,7 @@ public struct PersonalChatScreen: View {
         self.onMessageAction = onMessageAction
         self.onFocusMessage = onFocusMessage
         self.onVisibleMessage = onVisibleMessage
+        self.onCallBack = onCallBack
         self.onCancelComposerContext = onCancelComposerContext
         self.onComposerFocusChanged = onComposerFocusChanged
         self.onBack = onBack
@@ -124,7 +127,7 @@ public struct PersonalChatScreen: View {
             case .loading:
                 TranscriptSkeleton()
             case .ready:
-                if model.messages.isEmpty {
+                if model.messages.isEmpty && model.callActivities.isEmpty {
                     Spacer()
                     EmptyState(
                         title: "No messages yet",
@@ -135,6 +138,7 @@ public struct PersonalChatScreen: View {
                     PersonalChatTranscript(
                         items: TranscriptBuilder.build(
                             messages: model.messages,
+                            callActivities: model.callActivities,
                             unreadAfterMessageId: model.unreadAfterMessageId,
                             calendar: context.calendar,
                             now: context.now,
@@ -147,6 +151,7 @@ public struct PersonalChatScreen: View {
                         focusedMessageId: model.focusedMessageId,
                         onFocusMessage: onFocusMessage,
                         onVisibleMessage: onVisibleMessage,
+                        onCallBack: onCallBack,
                         reactionsEnabled: model.connection != .offline,
                         attachmentCommands: attachmentCommands,
                         imageLoader: imageLoader,

@@ -232,6 +232,32 @@ struct TranscriptBuilderTests {
         }
         #expect(rows.allSatisfy { !$0.showsDeliveryStatus })
     }
+
+    @Test func callActivityBreaksMessageGroupsAndUsesStableDayIdentity() {
+        let activity = CallActivityUiModel(
+            id: "call-1",
+            kind: "video",
+            label: "Video call · 2 min",
+            timeLabel: "9:30 AM",
+            occurredAt: date("2026-07-16T09:30:00Z")
+        )
+        let items = TranscriptBuilder.build(
+            messages: Array(conversation.prefix(4)),
+            callActivities: [activity],
+            calendar: utc,
+            now: now,
+            locale: enUS
+        )
+
+        #expect(items.map(\.id) == [
+            "day-m1", "m1", "m2", "m3", "day-call-1", "call-1", "m4",
+        ])
+        let rows = items.compactMap { item -> MessageRowUiModel? in
+            if case .message(let row) = item { return row }
+            return nil
+        }
+        #expect(rows.map(\.groupPosition) == [.first, .middle, .last, .solo])
+    }
 }
 
 struct BubbleShapeTests {

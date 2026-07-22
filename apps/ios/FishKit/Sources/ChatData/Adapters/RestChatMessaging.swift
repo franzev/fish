@@ -156,6 +156,24 @@ public struct RestChatMessaging: ChatMessagingProviding {
         return ChatMessageSearchPage(hits: hits, nextCursor: nextCursor)
     }
 
+    public func callActivity(
+        conversationId: String,
+        before: Date?,
+        limit requestedLimit: Int
+    ) async throws -> [ChatCallActivity] {
+        let limit = min(max(1, requestedLimit), Self.maximumPageSize)
+        let data = try await authenticatedRequest(
+            path: "rest/v1/rpc/get_conversation_call_activity",
+            method: "POST",
+            body: JSONEncoder().encode(CallActivityRequest(
+                conversationId: conversationId,
+                beforeEndedAt: before.map { ChatTimestamp.string($0) },
+                limit: limit
+            ))
+        )
+        return try ChatWireDecoder.make().decode([ChatCallActivityWire].self, from: data).map(\.domain)
+    }
+
     // MARK: - Reads and enrichment
 
     private func readStates(conversationId: String) async throws -> [ChatReadState] {
@@ -423,6 +441,18 @@ private struct SearchMessagesRequest: Encodable {
         case beforeId = "p_before_id"
         case limit = "p_limit"
         case sortDirection = "p_sort_direction"
+    }
+}
+
+private struct CallActivityRequest: Encodable {
+    let conversationId: String
+    let beforeEndedAt: String?
+    let limit: Int
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId = "p_conversation_id"
+        case beforeEndedAt = "p_before_ended_at"
+        case limit = "p_limit"
     }
 }
 

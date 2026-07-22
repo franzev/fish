@@ -1,4 +1,5 @@
 import ChatCore
+import Foundation
 
 public protocol ChatMessagingProviding: Sendable {
     func send(_ request: SendChatMessageRequest) async throws -> ChatMessage
@@ -20,6 +21,12 @@ public protocol ChatMessagingProviding: Sendable {
         before: ChatMessageSearchCursor?,
         limit: Int
     ) async throws -> ChatMessageSearchPage
+
+    func callActivity(
+        conversationId: String,
+        before: Date?,
+        limit: Int
+    ) async throws -> [ChatCallActivity]
 }
 
 public extension ChatMessagingProviding {
@@ -30,6 +37,12 @@ public extension ChatMessagingProviding {
             limit: 40
         ).messages
     }
+
+    func callActivity(
+        conversationId: String,
+        before: Date? = nil,
+        limit: Int = 50
+    ) async throws -> [ChatCallActivity] { [] }
 }
 
 public enum ChatMessageCommand: Equatable, Sendable {

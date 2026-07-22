@@ -59,6 +59,7 @@ public final class ConversationStore {
     private var lastReactionRefreshAt: [String: Date] = [:]
     private var focusGeneration = 0
     private var focusedMessageId: String?
+    private var callActivities: [ChatCallActivity] = []
 
     public init(
         conversationId: String,
@@ -110,6 +111,7 @@ public final class ConversationStore {
             connection: connectionModel(conversation.realtime.status),
             olderMessages: olderModel(conversation.pagination),
             messages: presentationMessages(conversation),
+            callActivities: presentationCallActivities(),
             unreadAfterMessageId: unreadMarker(conversation),
             isParticipantTyping: participantTyping,
             composerContext: composerContext(conversation),
@@ -139,6 +141,11 @@ public final class ConversationStore {
                 oldestCursor: window.oldestCursor
             ))
             await reconcilePendingTextSends(with: window.messages)
+            callActivities = (try? await messaging.callActivity(
+                conversationId: conversationId,
+                before: nil,
+                limit: 50
+            )) ?? []
             phase = .ready
             subscribe()
             if let incoming = latestIncomingMessageId() {
@@ -148,6 +155,15 @@ public final class ConversationStore {
             phase = .unavailable
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .disconnected))
         }
+    }
+
+    public func refreshCallActivity() async {
+        guard started else { return }
+        callActivities = (try? await messaging.callActivity(
+            conversationId: conversationId,
+            before: nil,
+            limit: 50
+        )) ?? callActivities
     }
 
     public func stop() {
@@ -165,6 +181,55 @@ public final class ConversationStore {
         subscription = nil
         participantTyping = false
         started = false
+    }
+
+    private func presentationCallActivities() -> [CallActivityUiModel] {
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        timeFormatter.dateStyle = .none
+        return callActivities.map { activity in
+            let noun = activity.kind == "video" ? "video call" : "audio call"
+            let duration = activity.duration.map(Self.formatDuration)
+            let label: String
+            let canCallBack: Bool
+            switch activity.status {
+            case "missed":
+                label = "Missed \(noun)"
+                canCallBack = true
+            case "rejected":
+                label = "\(noun.capitalized) declined"
+                canCallBack = true
+            case "failed":
+                label = "\(noun.capitalized) couldn't connect"
+                canCallBack = true
+            case "cancelled":
+                label = "\(noun.capitalized) cancelled"
+                canCallBack = false
+            default:
+                label = duration.map {
+                    "\(activity.kind == "video" ? "Video" : "Audio") call · \($0)"
+                } ?? "\(activity.kind == "video" ? "Video" : "Audio") call"
+                canCallBack = false
+            }
+            return CallActivityUiModel(
+                id: activity.id,
+                kind: activity.kind,
+                label: label,
+                timeLabel: timeFormatter.string(from: activity.occurredAt),
+                occurredAt: activity.occurredAt,
+                durationLabel: duration,
+                canCallBack: canCallBack
+            )
+        }
+        .sorted { $0.occurredAt < $1.occurredAt }
+    }
+
+    private static func formatDuration(_ duration: TimeInterval) -> String {
+        let seconds = max(0, Int(duration.rounded()))
+        let minutes = seconds / 60
+        let remainder = seconds % 60
+        if minutes > 0 { return "\(minutes + (remainder >= 30 ? 1 : 0)) min" }
+        return "\(max(1, seconds)) sec"
     }
 
     /// Flushes the latest composer value before the owning screen is torn

@@ -355,6 +355,18 @@ private struct ConversationView: View {
                 onMessageAction: store.perform,
                 onFocusMessage: { id in Task { await store.focusMessage(id) } },
                 onVisibleMessage: store.visibleMessage,
+                onCallBack: { kind in
+                    guard let callModel = model.callModel,
+                          let callMedia = model.callMedia,
+                          let callKit = model.callKit else { return }
+                    callKit.startOutgoing(
+                        model: callModel,
+                        media: callMedia,
+                        recipientId: store.participantId,
+                        recipientName: store.participantName,
+                        kind: CallKind(rawValue: kind) ?? .audio
+                    )
+                },
                 onCancelComposerContext: store.cancelComposerContext,
                 onComposerFocusChanged: store.composerFocusChanged,
                 onBack: model.closeConversation,
@@ -890,8 +902,16 @@ final class FishAppModel {
         )
         let callKit = callKit ?? CallKitCoordinator()
         callKit.bind(model: callModel, media: callMedia)
-        callModel.onStateChange = { [weak callKit] state in
+        callModel.onStateChange = { [weak self, weak callKit] state in
             callKit?.sync(state: state)
+            guard let self,
+                  let counterpartId = state.counterpartId,
+                  self.conversationStore?.participantId == counterpartId,
+                  [.ended, .rejected, .cancelled, .missed, .failed].contains(state.status)
+            else { return }
+            Task { @MainActor [weak self] in
+                await self?.conversationStore?.refreshCallActivity()
+            }
         }
         self.callMedia = callMedia
         self.callModel = callModel
