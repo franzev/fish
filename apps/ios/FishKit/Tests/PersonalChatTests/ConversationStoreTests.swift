@@ -15,6 +15,7 @@ private actor StoreMessaging: ChatMessagingProviding {
     var backfills: [ChatBackfillPage] = []
     var messagesById: [String: ChatMessage] = [:]
     var sendFailures = 0
+    var nextFailure: ChatCommandFailure?
     var nextSendDelay: Duration?
     var nextMessageIDDelay: Duration?
     var sent: [SendChatMessageRequest] = []
@@ -34,6 +35,10 @@ private actor StoreMessaging: ChatMessagingProviding {
         if sendFailures > 0 {
             sendFailures -= 1
             throw ChatCommandFailure.sendUnavailable
+        }
+        if let failure = nextFailure {
+            nextFailure = nil
+            throw failure
         }
         return ChatMessage(
             id: "sent-\(request.clientRequestId)",
@@ -96,6 +101,7 @@ private actor StoreMessaging: ChatMessagingProviding {
     }
 
     func failNextSends(_ count: Int) { sendFailures = count }
+    func failNextSend(with failure: ChatCommandFailure) { nextFailure = failure }
     func delayNextSend(_ duration: Duration) { nextSendDelay = duration }
     func delayNextMessageIDs(_ duration: Duration) { nextMessageIDDelay = duration }
     func setOlder(_ values: [OlderResult]) { olderPages = values }
@@ -620,6 +626,55 @@ struct ConversationStoreTests {
         #expect(requests[0].clientRequestId == pending.clientRequestId)
         #expect(try await drafts.pendingTextSends().isEmpty)
         #expect(try await drafts.draft(for: "c1") == nil)
+        store.stop()
+    }
+
+    @Test func identicalOfflineSendsKeepSeparateRequestIds() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fish-duplicate-offline-(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let drafts = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
+        await messaging.failNextSends(2)
+        await store.start()
+
+        let payload = ChatSendPayload(
+            body: "Same note",
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: []
+        )
+        await store.send(payload)
+        await store.send(payload)
+
+        let requests = await messaging.requests()
+        #expect(requests.count == 2)
+        #expect(requests[0].clientRequestId != requests[1].clientRequestId)
+        #expect(try await drafts.pendingTextSends().count == 2)
+        #expect(store.model.messages.count == 2)
+        #expect(store.model.messages.allSatisfy { $0.delivery == .sending })
+        store.stop()
+    }
+
+    @Test func permanentTextSendFailureDoesNotStayInOutbox() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fish-permanent-send-(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let drafts = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
+        await messaging.failNextSend(with: .invalidRequest)
+        await store.start()
+
+        await store.send(ChatSendPayload(
+            body: "No longer valid",
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: []
+        ))
+
+        #expect(store.model.messages.first?.delivery == .failed)
+        #expect(store.model.notice == ChatCommandFailure.invalidRequest.notice)
+        #expect(try await drafts.pendingTextSends().isEmpty)
         store.stop()
     }
 

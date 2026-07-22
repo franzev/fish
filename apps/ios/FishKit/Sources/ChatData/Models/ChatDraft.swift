@@ -18,18 +18,34 @@ public struct ChatPendingTextSend: Codable, Equatable, Sendable {
     public let conversationId: String
     public let clientRequestId: String
     public let body: String
+    public let replyToMessageId: String?
     public let createdAt: Date
 
     public init(
         conversationId: String,
         clientRequestId: String,
         body: String,
+        replyToMessageId: String? = nil,
         createdAt: Date = Date()
     ) {
         self.conversationId = conversationId
         self.clientRequestId = clientRequestId
         self.body = body
+        self.replyToMessageId = replyToMessageId
         self.createdAt = createdAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case conversationId, clientRequestId, body, replyToMessageId, createdAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        conversationId = try values.decode(String.self, forKey: .conversationId)
+        clientRequestId = try values.decode(String.self, forKey: .clientRequestId)
+        body = try values.decode(String.self, forKey: .body)
+        replyToMessageId = try values.decodeIfPresent(String.self, forKey: .replyToMessageId)
+        createdAt = try values.decode(Date.self, forKey: .createdAt)
     }
 }
 

@@ -50,6 +50,8 @@ public final class ConversationStore {
     private var typingVersion = 0
     private var started = false
     private var pendingSends: [String: SendChatMessageRequest] = [:]
+    private var pendingSendOrder: [String] = []
+    private var recoveredRequestIds: Set<String> = []
     private var draftBeforeEdit: String?
     private var readCommandInFlight = false
     private var queuedDeliveredMessageId: String?
@@ -301,11 +303,11 @@ public final class ConversationStore {
         let durableTextSend = payload.selection == .none
             && payload.attachmentIds.isEmpty
             && payload.optimisticAttachments.isEmpty
-            && currentConversation.composer.replyTargetId == nil
-            && !payload.body.isEmpty
+            && !payload.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let requestId = await requestIdForSend(
             body: payload.body,
-            durableTextSend: durableTextSend
+            durableTextSend: durableTextSend,
+            replyToMessageId: currentConversation.composer.replyTargetId
         )
         let request = makeRequest(payload, clientRequestId: requestId)
         if let drafts, durableTextSend {
@@ -313,7 +315,8 @@ public final class ConversationStore {
                 ChatPendingTextSend(
                     conversationId: conversationId,
                     clientRequestId: requestId,
-                    body: request.body
+                    body: request.body,
+                    replyToMessageId: request.replyToMessageId
                 )
             )
         }
@@ -323,6 +326,7 @@ public final class ConversationStore {
             replyToMessageId: request.replyToMessageId
         )
         pendingSends[requestId] = request
+        enqueuePendingSend(requestId)
         reduce(.sendOptimisticMessage(message: optimistic))
         clearComposerAfterSend()
         await send(request)
@@ -403,7 +407,7 @@ public final class ConversationStore {
         guard !pending.isEmpty else { return }
 
         let confirmedRequestIds = Set(messages.map(\.clientRequestId))
-        for item in pending {
+        for item in pending.sorted(by: { $0.createdAt < $1.createdAt }) {
             if confirmedRequestIds.contains(item.clientRequestId) {
                 try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
                 // Do not erase a newer composer value that was typed after
@@ -413,6 +417,32 @@ public final class ConversationStore {
                     try? await drafts.removeDraft(conversationId: conversationId)
                 }
             } else {
+                let request = SendChatMessageRequest(
+                    conversationId: conversationId,
+                    body: item.body,
+                    clientRequestId: item.clientRequestId,
+                    replyToMessageId: item.replyToMessageId,
+                    attachmentIds: [],
+                    gif: nil,
+                    stickerId: nil
+                )
+                pendingSends[item.clientRequestId] = request
+                enqueuePendingSend(item.clientRequestId)
+                recoveredRequestIds.insert(item.clientRequestId)
+                if !messages.contains(where: { $0.clientRequestId == item.clientRequestId }) {
+                    reduce(.queueMessage(message: ChatMessageState(
+                        id: "pending-\(item.clientRequestId)",
+                        conversationId: conversationId,
+                        senderId: currentUserId,
+                        senderRole: currentUserRole,
+                        senderDisplayName: currentUserName,
+                        body: item.body,
+                        clientRequestId: item.clientRequestId,
+                        createdAt: ChatTimestamp.string(item.createdAt),
+                        replyToMessageId: item.replyToMessageId,
+                        localStatus: .pending
+                    )))
+                }
                 if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     draft = item.body
                 }
@@ -420,7 +450,11 @@ public final class ConversationStore {
         }
     }
 
-    private func requestIdForSend(body: String, durableTextSend: Bool) async -> String {
+    private func requestIdForSend(
+        body: String,
+        durableTextSend: Bool,
+        replyToMessageId: String?
+    ) async -> String {
         guard durableTextSend, let drafts else {
             return UUID().uuidString.lowercased()
         }
@@ -429,17 +463,18 @@ public final class ConversationStore {
             $0.conversationId == conversationId
         } ?? []
         let reusable = pending
-            .filter { $0.body == body }
+            .filter {
+                $0.body == body &&
+                    $0.replyToMessageId == replyToMessageId &&
+                    (pendingSends[$0.clientRequestId] == nil ||
+                        recoveredRequestIds.contains($0.clientRequestId))
+            }
             .max { $0.createdAt < $1.createdAt }
-
-        // A newly composed message supersedes recovered sends with a different
-        // body. Keeping those markers would restore stale text on a later
-        // launch, while the server's request id already makes an accepted send
-        // safe to leave in the conversation.
-        for item in pending where item.clientRequestId != reusable?.clientRequestId {
-            try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
+        if let reusable {
+            recoveredRequestIds.remove(reusable.clientRequestId)
+            return reusable.clientRequestId
         }
-        return reusable?.clientRequestId ?? UUID().uuidString.lowercased()
+        return UUID().uuidString.lowercased()
     }
 
     public func perform(_ action: MessageAction) {
@@ -492,10 +527,12 @@ public final class ConversationStore {
         case .connected:
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .connected))
             await backfillGap()
+            await flushPendingTextSends()
         case .reconnected:
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .connecting))
             await backfillGap()
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .connected))
+            await flushPendingTextSends()
         case .disconnected:
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .disconnected))
         }
@@ -560,7 +597,8 @@ public final class ConversationStore {
 
     // MARK: - Sends and actions
 
-    private func send(_ request: SendChatMessageRequest) async {
+    @discardableResult
+    private func send(_ request: SendChatMessageRequest) async -> Bool {
         do {
             let sent = try await messaging.send(request)
             reduce(.confirmSentMessage(
@@ -568,6 +606,7 @@ public final class ConversationStore {
                 localRequestId: request.clientRequestId
             ))
             pendingSends[request.clientRequestId] = nil
+            dequeuePendingSend(request.clientRequestId)
             if let drafts {
                 try? await drafts.removePendingTextSend(clientRequestId: request.clientRequestId)
                 try? await drafts.removeDraft(conversationId: conversationId)
@@ -576,17 +615,46 @@ public final class ConversationStore {
                 await gifProvider?.registerShare(gif: gif, query: "")
             }
             notice = nil
+            return true
         } catch let failure as ChatCommandFailure {
-            await handleSendFailure(request, failure: failure)
+            return await handleSendFailure(request, failure: failure)
         } catch {
-            await handleSendFailure(request, failure: .sendUnavailable)
+            return await handleSendFailure(request, failure: .sendUnavailable)
         }
     }
 
     private func handleSendFailure(
         _ request: SendChatMessageRequest,
         failure: ChatCommandFailure
-    ) async {
+    ) async -> Bool {
+        let isDurableTextRequest = request.gif == nil && request.stickerId == nil &&
+            request.attachmentIds.isEmpty &&
+            !request.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if isDurableTextRequest && shouldQueueAfterFailure(failure) {
+            if currentConversation.messages.contains(where: {
+                $0.clientRequestId == request.clientRequestId && $0.localStatus == .sent
+            }) {
+                pendingSends[request.clientRequestId] = nil
+                dequeuePendingSend(request.clientRequestId)
+                return true
+            }
+            let message = currentConversation.messages.first(where: {
+                $0.clientRequestId == request.clientRequestId
+            }) ?? ChatMessageState(
+                id: "pending-\(request.clientRequestId)",
+                conversationId: conversationId,
+                senderId: currentUserId,
+                senderRole: currentUserRole,
+                senderDisplayName: currentUserName,
+                body: request.body,
+                clientRequestId: request.clientRequestId,
+                createdAt: ChatTimestamp.string(now()),
+                replyToMessageId: request.replyToMessageId,
+                localStatus: .pending
+            )
+            reduce(.queueMessage(message: message))
+            return false
+        }
         reduce(.markMessageFailed(
             conversationId: conversationId,
             clientRequestId: request.clientRequestId,
@@ -596,13 +664,43 @@ public final class ConversationStore {
             $0.clientRequestId == request.clientRequestId && $0.localStatus == .failed
         }) else {
             pendingSends[request.clientRequestId] = nil
-            return
+            dequeuePendingSend(request.clientRequestId)
+            return false
         }
         if let drafts {
             try? await drafts.removePendingTextSend(clientRequestId: request.clientRequestId)
         }
         if draft.isEmpty { draft = request.body }
         notice = failure.notice
+        return false
+    }
+
+    private func flushPendingTextSends() async {
+        for requestId in pendingSendOrder {
+            guard let request = pendingSends[requestId] else { continue }
+            let sent = await send(request)
+            if !sent && pendingSends[request.clientRequestId] != nil {
+                break
+            }
+        }
+    }
+
+    private func enqueuePendingSend(_ requestId: String) {
+        if !pendingSendOrder.contains(requestId) {
+            pendingSendOrder.append(requestId)
+        }
+    }
+
+    private func dequeuePendingSend(_ requestId: String) {
+        pendingSendOrder.removeAll { $0 == requestId }
+    }
+
+    private func shouldQueueAfterFailure(_ failure: ChatCommandFailure) -> Bool {
+        failure.code == ChatCommandFailure.unavailable.code ||
+            failure.code == ChatCommandFailure.sendUnavailable.code ||
+            failure.statusCode == 408 ||
+            failure.statusCode == 429 ||
+            (failure.statusCode ?? 0) >= 500
     }
 
     private func beginReply(to id: String) {

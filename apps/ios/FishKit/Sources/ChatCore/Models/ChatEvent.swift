@@ -4,6 +4,7 @@ public enum ChatEvent: Sendable, Equatable, Codable {
     case hydrateConversation(conversationId: String, messages: [ChatMessageState], readStates: [ChatReadState])
     case draftChanged(conversationId: String, draft: String)
     case sendOptimisticMessage(message: ChatMessageState)
+    case queueMessage(message: ChatMessageState)
     case confirmSentMessage(message: ChatMessageState, localRequestId: String?)
     case markMessageFailed(conversationId: String, clientRequestId: String, reason: String?)
     case mergeRemoteMessage(message: ChatMessageState, localRequestId: String?)
@@ -40,7 +41,7 @@ public enum ChatEvent: Sendable, Equatable, Codable {
     }
 
     private enum Kind: String, Codable {
-        case hydrateConversation, draftChanged, sendOptimisticMessage
+        case hydrateConversation, draftChanged, sendOptimisticMessage, queueMessage
         case confirmSentMessage, markMessageFailed, mergeRemoteMessage
         case mergeReadState, composerGifSelected, composerStickerSelected
         case composerSelectionCleared, deleteRequested, deleteFailed
@@ -66,6 +67,8 @@ public enum ChatEvent: Sendable, Equatable, Codable {
             )
         case .sendOptimisticMessage:
             self = try .sendOptimisticMessage(message: values.decode(ChatMessageState.self, forKey: .message))
+        case .queueMessage:
+            self = try .queueMessage(message: values.decode(ChatMessageState.self, forKey: .message))
         case .confirmSentMessage:
             self = try .confirmSentMessage(
                 message: values.decode(ChatMessageState.self, forKey: .message),
@@ -166,6 +169,9 @@ public enum ChatEvent: Sendable, Equatable, Codable {
             try values.encode(draft, forKey: .draft)
         case .sendOptimisticMessage(let message):
             try values.encode(Kind.sendOptimisticMessage, forKey: .type)
+            try values.encode(message, forKey: .message)
+        case .queueMessage(let message):
+            try values.encode(Kind.queueMessage, forKey: .type)
             try values.encode(message, forKey: .message)
         case .confirmSentMessage(let message, let requestId):
             try values.encode(Kind.confirmSentMessage, forKey: .type)

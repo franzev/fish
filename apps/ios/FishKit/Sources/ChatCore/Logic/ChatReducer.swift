@@ -24,6 +24,9 @@ public enum ChatStateReducer {
         case .sendOptimisticMessage(let message):
             return merging(normalize(message, status: .sending), into: state)
 
+        case .queueMessage(let message):
+            return merging(normalize(strippingFailure(message), status: .pending), into: state)
+
         case .confirmSentMessage(let message, let localRequestId):
             return merging(
                 normalize(strippingFailure(message), status: .sent),
