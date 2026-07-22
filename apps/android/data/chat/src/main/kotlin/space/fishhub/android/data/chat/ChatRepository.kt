@@ -230,6 +230,8 @@ interface ChatRepository {
         content: OutgoingMessageContent,
         clientRequestId: String,
     ): ChatResult<ChatMessage>
+    /** Flushes plain-text sends saved locally while the device was offline. */
+    suspend fun flushTextOutbox(conversationId: String): ChatResult<Unit> = ChatResult.Success(Unit)
     suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage>
     suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage>
     suspend fun setReaction(messageId: String, emoji: String, active: Boolean): ChatResult<ChatMessage>

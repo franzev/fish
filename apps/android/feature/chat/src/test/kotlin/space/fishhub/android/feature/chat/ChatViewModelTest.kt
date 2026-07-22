@@ -25,6 +25,7 @@ import space.fishhub.android.data.chat.model.LocalAttachmentDraft
 import space.fishhub.android.data.chat.model.LocalAttachmentKind
 import space.fishhub.android.data.chat.model.LocalAttachmentScope
 import space.fishhub.android.data.chat.model.LocalAttachmentTransferState
+import space.fishhub.android.data.chat.model.LocalMessageStatus
 import space.fishhub.android.data.chat.AttachmentImportResult
 import space.fishhub.android.data.chat.AttachmentImportSource
 import kotlinx.coroutines.CompletableDeferred
@@ -378,7 +379,7 @@ class ChatViewModelTest {
         }
 
     @Test
-    fun `offline draft stays editable and is not sent`() = runTest(mainDispatcherRule.dispatcher) {
+    fun `offline text send is accepted for durable delivery`() = runTest(mainDispatcherRule.dispatcher) {
         val repository = FakeChatRepository()
         val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
         advanceUntilIdle()
@@ -390,7 +391,8 @@ class ChatViewModelTest {
 
         val state = viewModel.uiState.value as ChatRouteUiState.Conversation
         assertEquals("Keep this draft", state.draft)
-        assertEquals(0, repository.sendCalls)
+        assertEquals(1, repository.sendCalls)
+        assertEquals(MessageDeliveryUiState.Sending, state.model.messages.first().delivery)
     }
 
     @Test
@@ -901,6 +903,11 @@ private class FakeChatRepository(
                 replyToMessageId = content.replyToMessageId,
                 clientRequestId = clientRequestId,
                 createdAt = "2026-07-16T00:00:00Z",
+                localStatus = if (realtime.value == ChatRealtimeEvent.Disconnected) {
+                    LocalMessageStatus.Pending
+                } else {
+                    null
+                },
             ),
         )
         }

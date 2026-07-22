@@ -107,6 +107,10 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     @Serializable
+    @SerialName("queueMessage")
+    data class QueueMessage(val message: ChatMessage) : ChatEvent
+
+    @Serializable
     @SerialName("markMessageFailed")
     data class MarkMessageFailed(
         val conversationId: String,

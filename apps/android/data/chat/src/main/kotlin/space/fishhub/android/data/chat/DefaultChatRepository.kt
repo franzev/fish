@@ -18,6 +18,7 @@ import space.fishhub.android.data.chat.remote.ChatRemoteDataSource
 import space.fishhub.android.data.chat.remote.RemoteCommandException
 import space.fishhub.android.data.chat.local.ChatDao
 import space.fishhub.android.data.chat.local.DraftEntity
+import space.fishhub.android.data.chat.local.PendingTextSendEntity
 import space.fishhub.android.data.chat.local.toDomain
 import space.fishhub.android.data.chat.local.toEntity
 import io.github.jan.supabase.exceptions.HttpRequestException
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -58,6 +60,7 @@ internal class DefaultChatRepository(
     override val authState = remote.authState
     private val attachmentDeliveries = MutableStateFlow<Map<String, AttachmentDelivery>>(emptyMap())
     private val attachmentDraftMutex = Mutex()
+    private val textOutboxMutex = Mutex()
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> =
         combine(
@@ -360,6 +363,11 @@ internal class DefaultChatRepository(
             localStatus = LocalMessageStatus.Sending,
         )
         reconcileMessage(optimistic)
+        val plainText = content.normalizedBody.isNotBlank() &&
+            content.gif == null && content.stickerId == null && content.attachmentIds.isEmpty()
+        if (plainText && !networkMonitor.isOnline().first()) {
+            return queueTextSend(conversation, content, clientRequestId, optimistic)
+        }
         return when (val result = resultOf(
             ChatOperation.SendMessage,
             "That did not send yet. Keep this open and try again.",
@@ -377,13 +385,100 @@ internal class DefaultChatRepository(
                     },
                 )
                 reconcileMessage(enriched)
+                if (plainText) {
+                    dao.deletePendingTextSend(
+                        conversationId,
+                        conversation.currentUserId,
+                        clientRequestId,
+                    )
+                }
                 ChatResult.Success(enriched)
             }
             is ChatResult.Failure -> {
-                dao.markMessageFailed(conversationId, clientRequestId, result.message)
-                result
+                if (plainText && result.category == FailureCategory.Network) {
+                    queueTextSend(conversation, content, clientRequestId, optimistic, result.message)
+                } else {
+                    dao.markMessageFailed(conversationId, clientRequestId, result.message)
+                    result
+                }
             }
         }
+    }
+
+    override suspend fun flushTextOutbox(conversationId: String): ChatResult<Unit> =
+        textOutboxMutex.withLock {
+            val conversation = dao.conversation(conversationId)?.toDomain()
+                ?: return@withLock ChatResult.Success(Unit)
+            if (!networkMonitor.isOnline().first()) return@withLock ChatResult.Success(Unit)
+            dao.pendingTextSends(conversationId, conversation.currentUserId).forEach { pending ->
+                val content = OutgoingMessageContent(
+                    body = pending.body,
+                    replyToMessageId = pending.replyToMessageId,
+                )
+                when (val result = resultOf(
+                    ChatOperation.SendMessage,
+                    "That did not send yet. Keep this open and try again.",
+                ) {
+                    remote.sendMessage(conversation, content, pending.clientRequestId)
+                }) {
+                    is ChatResult.Success -> {
+                        reconcileMessage(result.value)
+                        dao.deletePendingTextSend(
+                            conversationId,
+                            conversation.currentUserId,
+                            pending.clientRequestId,
+                        )
+                    }
+                    is ChatResult.Failure -> {
+                        if (result.category != FailureCategory.Network) {
+                            dao.markMessageFailed(
+                                conversationId,
+                                pending.clientRequestId,
+                                result.message,
+                            )
+                            dao.deletePendingTextSend(
+                                conversationId,
+                                conversation.currentUserId,
+                                pending.clientRequestId,
+                            )
+                        } else {
+                            return@withLock ChatResult.Success(Unit)
+                        }
+                    }
+                }
+            }
+            ChatResult.Success(Unit)
+        }
+
+    private suspend fun queueTextSend(
+        conversation: AuthorizedConversation,
+        content: OutgoingMessageContent,
+        clientRequestId: String,
+        optimistic: ChatMessage,
+        failureReason: String? = null,
+    ): ChatResult<ChatMessage> {
+        dao.upsertPendingTextSend(
+            PendingTextSendEntity(
+                conversationId = conversation.conversationId,
+                userId = conversation.currentUserId,
+                clientRequestId = clientRequestId,
+                body = content.normalizedBody,
+                replyToMessageId = content.replyToMessageId,
+                createdAt = optimistic.createdAt,
+            ),
+        )
+        reconcileMessage(
+            optimistic.copy(
+                localStatus = LocalMessageStatus.Pending,
+                failureReason = failureReason,
+            ),
+        )
+        return ChatResult.Success(
+            optimistic.copy(
+                localStatus = LocalMessageStatus.Pending,
+                failureReason = failureReason,
+            ),
+        )
     }
 
     override suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage> {

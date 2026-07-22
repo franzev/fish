@@ -103,6 +103,20 @@ data class DraftEntity(
 )
 
 @Entity(
+    tableName = "pending_text_sends",
+    primaryKeys = ["conversation_id", "user_id", "client_request_id"],
+    indices = [Index(value = ["conversation_id", "user_id", "created_at"])],
+)
+data class PendingTextSendEntity(
+    @ColumnInfo(name = "conversation_id") val conversationId: String,
+    @ColumnInfo(name = "user_id") val userId: String,
+    @ColumnInfo(name = "client_request_id") val clientRequestId: String,
+    val body: String,
+    @ColumnInfo(name = "reply_to_message_id") val replyToMessageId: String?,
+    @ColumnInfo(name = "created_at") val createdAt: String,
+)
+
+@Entity(
     tableName = "attachment_drafts",
     indices = [
         Index(value = ["conversation_id", "user_id", "scope", "position"], unique = true),

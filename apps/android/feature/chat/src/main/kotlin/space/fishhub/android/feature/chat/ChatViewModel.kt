@@ -450,8 +450,9 @@ class ChatViewModel(
         val selectedAttachments = attachmentDrafts
             .filterNot { it.inPreview }
             .sortedWith(compareBy({ it.position }, { it.id }))
+        val durableText = body.isNotEmpty() && selectedMedia == null && selectedAttachments.isEmpty()
         if ((body.isEmpty() && selectedMedia == null && selectedAttachments.isEmpty()) || sending ||
-            state.realtime.status == RealtimeConnectionStatus.Disconnected
+            (state.realtime.status == RealtimeConnectionStatus.Disconnected && !durableText)
         ) return
         if (selectedAttachments.any { !it.ready } ||
             selectedAttachments.any { it.serverAttachmentId == null }
@@ -530,7 +531,11 @@ class ChatViewModel(
                 is ChatResult.Success -> {
                     chatState = reduceChatState(
                         chatState,
-                        ChatEvent.ConfirmSentMessage(result.value, requestId),
+                        if (result.value.localStatus == LocalMessageStatus.Pending) {
+                            ChatEvent.QueueMessage(result.value)
+                        } else {
+                            ChatEvent.ConfirmSentMessage(result.value, requestId)
+                        },
                     )
                     latestNotice = null
                     selectedGif?.let { gif ->
@@ -871,6 +876,7 @@ class ChatViewModel(
                         )
                         publish()
                         if (status == RealtimeConnectionStatus.Connected) {
+                            repository.flushTextOutbox(conversation.conversationId)
                             markLatestRead(
                                 conversation,
                                 chatState.conversations[conversation.conversationId]?.messages.orEmpty(),
@@ -880,6 +886,7 @@ class ChatViewModel(
                 }
             }
             launch {
+                repository.flushTextOutbox(conversation.conversationId)
                 when (val result = repository.syncNewest(conversation.conversationId)) {
                     is ChatResult.Success -> {
                         chatState = reduceChatState(

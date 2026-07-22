@@ -12,9 +12,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MessageAttachmentEntity::class,
         ReadStateEntity::class,
         DraftEntity::class,
+        PendingTextSendEntity::class,
         AttachmentDraftEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -131,5 +132,27 @@ val MIGRATION_5_6: Migration = object : Migration(5, 6) {
 val MIGRATION_6_7: Migration = object : Migration(6, 7) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE messages ADD COLUMN link_preview_json TEXT")
+    }
+}
+
+val MIGRATION_7_8: Migration = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `pending_text_sends` (
+                `conversation_id` TEXT NOT NULL,
+                `user_id` TEXT NOT NULL,
+                `client_request_id` TEXT NOT NULL,
+                `body` TEXT NOT NULL,
+                `reply_to_message_id` TEXT,
+                `created_at` TEXT NOT NULL,
+                PRIMARY KEY(`conversation_id`, `user_id`, `client_request_id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_pending_text_sends_conversation_id_user_id_created_at` " +
+                "ON `pending_text_sends` (`conversation_id`, `user_id`, `created_at`)",
+        )
     }
 }

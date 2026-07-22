@@ -26,6 +26,9 @@ fun reduceChatState(state: ChatState, event: ChatEvent): ChatState = when (event
         event.message.stripFailure().normalized(LocalMessageStatus.Sent),
         event.localRequestId ?: event.message.clientRequestId,
     )
+    is ChatEvent.QueueMessage -> state.mergeMessage(
+        event.message.stripFailure().normalized(LocalMessageStatus.Pending),
+    )
     is ChatEvent.MarkMessageFailed -> state.markMessageFailed(event)
     is ChatEvent.MergeRemoteMessage -> state.mergeMessage(
         event.message.stripFailure().normalized(LocalMessageStatus.Sent),

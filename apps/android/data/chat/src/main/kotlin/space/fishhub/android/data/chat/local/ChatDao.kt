@@ -342,6 +342,31 @@ interface ChatDao {
 
     @Query(
         """
+        SELECT * FROM pending_text_sends
+        WHERE conversation_id = :conversationId AND user_id = :userId
+        ORDER BY created_at ASC, client_request_id ASC
+        """,
+    )
+    suspend fun pendingTextSends(conversationId: String, userId: String): List<PendingTextSendEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertPendingTextSend(send: PendingTextSendEntity)
+
+    @Query(
+        """
+        DELETE FROM pending_text_sends
+        WHERE conversation_id = :conversationId AND user_id = :userId
+          AND client_request_id = :clientRequestId
+        """,
+    )
+    suspend fun deletePendingTextSend(
+        conversationId: String,
+        userId: String,
+        clientRequestId: String,
+    )
+
+    @Query(
+        """
         DELETE FROM messages
         WHERE conversation_id = :conversationId
           AND client_request_id = :clientRequestId
@@ -408,6 +433,9 @@ interface ChatDao {
     @Query("DELETE FROM drafts")
     suspend fun clearDrafts()
 
+    @Query("DELETE FROM pending_text_sends")
+    suspend fun clearPendingTextSends()
+
     @Query("DELETE FROM conversations")
     suspend fun clearConversations()
 
@@ -419,6 +447,9 @@ interface ChatDao {
 
     @Query("DELETE FROM drafts WHERE conversation_id = :conversationId")
     suspend fun deleteConversationDrafts(conversationId: String)
+
+    @Query("DELETE FROM pending_text_sends WHERE conversation_id = :conversationId")
+    suspend fun deleteConversationPendingTextSends(conversationId: String)
 
     @Query("DELETE FROM attachment_drafts WHERE conversation_id = :conversationId")
     suspend fun deleteConversationAttachmentDrafts(conversationId: String)
@@ -432,6 +463,7 @@ interface ChatDao {
         deleteConversationMessages(conversationId)
         deleteConversationReadStates(conversationId)
         deleteConversationDrafts(conversationId)
+        deleteConversationPendingTextSends(conversationId)
         deleteConversation(conversationId)
     }
 
@@ -441,6 +473,7 @@ interface ChatDao {
         clearMessages()
         clearReadStates()
         clearDrafts()
+        clearPendingTextSends()
         clearConversations()
     }
 }
