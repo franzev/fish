@@ -5,6 +5,12 @@ import Testing
 @testable import PersonalChat
 
 struct VoiceMessageTests {
+    @Test func playbackSpeedOffersCalmPersistedChoices() {
+        #expect(VoicePlaybackSpeed.allCases.map(\.rawValue) == [0.75, 1.0, 1.5, 2.0])
+        #expect(VoicePlaybackSpeed.fast.label == "1.5×")
+        #expect(VoicePlaybackSpeed.normal.accessibilityLabel == "Normal speed")
+    }
+
     @Test func holdControlUsesTheExpectedCancelDirection() {
         #expect(VoiceRecordingControl.isCancelTranslation(
             -Metrics.controlPrimary,

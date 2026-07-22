@@ -18,10 +18,20 @@ private final class VoicePlaybackModel {
     private(set) var progress: Double = 0
     private(set) var duration: TimeInterval = 0
     private(set) var notice: String?
+    private(set) var speed: VoicePlaybackSpeed
 
     init(attachment: MessageAttachmentUiModel, downloader: AttachmentFileDownloader) {
         self.attachment = attachment
         self.downloader = downloader
+        speed = .persisted
+    }
+
+    func setSpeed(_ speed: VoicePlaybackSpeed) {
+        self.speed = speed
+        speed.persist()
+        if isPlaying {
+            player?.rate = speed.rawValue
+        }
     }
 
     func toggle() async {
@@ -33,7 +43,7 @@ private final class VoicePlaybackModel {
                 isPlaying = false
             } else {
                 activatePlaybackSession()
-                player.play()
+                player.playImmediately(atRate: speed.rawValue)
                 isPlaying = true
             }
             return
@@ -49,7 +59,7 @@ private final class VoicePlaybackModel {
             self.player = player
             installObservers(for: player, item: item)
             activatePlaybackSession()
-            player.play()
+            player.playImmediately(atRate: speed.rawValue)
             isPlaying = true
         } catch {
             notice = "This voice message couldn't be played. Try again."
@@ -130,47 +140,72 @@ public struct MessageVoicePlayer: View {
     }
 
     public var body: some View {
-        Button {
-            Task { await playback.toggle() }
-        } label: {
-            HStack(spacing: Spacing.xs) {
-                if playback.isLoading {
-                    ProgressView()
-                        .frame(width: Metrics.iconGlyph, height: Metrics.iconGlyph)
-                } else {
-                    (playback.isPlaying ? Icon.pause : Icon.play).image
-                        .glyphFrame()
-                }
-                VStack(alignment: .leading, spacing: Spacing.threeXs) {
-                    Text("Voice message")
-                        .textStyle(.label)
-                        .foregroundStyle(Palette.foreground)
-                    HStack(spacing: Spacing.twoXs) {
-                        Text(Self.durationLabel(playback.progress * playback.duration))
-                        Text("/")
-                        Text(Self.durationLabel(playback.duration))
+        HStack(spacing: Spacing.xs) {
+            Button {
+                Task { await playback.toggle() }
+            } label: {
+                HStack(spacing: Spacing.xs) {
+                    if playback.isLoading {
+                        ProgressView()
+                            .frame(width: Metrics.iconGlyph, height: Metrics.iconGlyph)
+                    } else {
+                        (playback.isPlaying ? Icon.pause : Icon.play).image
+                            .glyphFrame()
                     }
-                    .textStyle(.caption)
-                    .foregroundStyle(playback.notice == nil ? Palette.muted : Palette.notice)
-                    ProgressView(value: playback.progress)
-                        .tint(Palette.body)
+                    VStack(alignment: .leading, spacing: Spacing.threeXs) {
+                        Text("Voice message")
+                            .textStyle(.label)
+                            .foregroundStyle(Palette.foreground)
+                        HStack(spacing: Spacing.twoXs) {
+                            Text(Self.durationLabel(playback.progress * playback.duration))
+                            Text("/")
+                            Text(Self.durationLabel(playback.duration))
+                        }
+                        .textStyle(.caption)
+                        .foregroundStyle(playback.notice == nil ? Palette.muted : Palette.notice)
+                        ProgressView(value: playback.progress)
+                            .tint(Palette.body)
+                    }
+                    Spacer(minLength: Spacing.xs)
                 }
-                Spacer(minLength: Spacing.xs)
+                .frame(maxWidth: .infinity, minHeight: Metrics.targetTouch, alignment: .leading)
             }
-            .padding(Spacing.sm)
-            .frame(maxWidth: Metrics.attachmentSingleMaxWidth, minHeight: Metrics.targetTouch)
-            .background(
-                Palette.surface2,
-                in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+            .buttonStyle(.plain)
+            .disabled(playback.isLoading)
+            .accessibilityLabel("Voice message")
+            .accessibilityValue(
+                playback.notice ?? "\(Self.durationLabel(playback.duration)), \(playback.speed.accessibilityLabel)"
             )
+            .accessibilityHint(playback.notice == nil ? "Play voice message" : "Try again")
+
+            Menu {
+                ForEach(VoicePlaybackSpeed.allCases) { speed in
+                    Button {
+                        playback.setSpeed(speed)
+                    } label: {
+                        if speed == playback.speed {
+                            Label(speed.label, systemImage: "checkmark")
+                        } else {
+                            Text(speed.label)
+                        }
+                    }
+                }
+            } label: {
+                Text(playback.speed.label)
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.body)
+                    .frame(width: Metrics.targetTouch, height: Metrics.targetTouch)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Playback speed")
+            .accessibilityValue(playback.speed.accessibilityLabel)
         }
-        .buttonStyle(.plain)
-        .disabled(playback.isLoading)
-        .accessibilityLabel("Voice message")
-        .accessibilityValue(
-            playback.notice ?? "\(Self.durationLabel(playback.duration))"
+        .padding(Spacing.sm)
+        .frame(maxWidth: Metrics.attachmentSingleMaxWidth, minHeight: Metrics.targetTouch)
+        .background(
+            Palette.surface2,
+            in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
         )
-        .accessibilityHint(playback.notice == nil ? "Play voice message" : "Try again")
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { playback.stop() }
         }
