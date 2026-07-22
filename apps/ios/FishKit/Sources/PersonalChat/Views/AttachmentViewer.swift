@@ -156,19 +156,6 @@ public struct AttachmentViewer: View {
     }
 }
 
-private struct AttachmentActivitySheet: UIViewControllerRepresentable {
-    let item: URL
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [item], applicationActivities: nil)
-    }
-
-    func updateUIViewController(
-        _ uiViewController: UIActivityViewController,
-        context: Context
-    ) {}
-}
-
 private struct ZoomableAttachmentImage: View {
     let attachment: MessageAttachmentUiModel
     let loader: MessageImageLoader
