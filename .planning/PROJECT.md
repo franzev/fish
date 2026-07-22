@@ -22,13 +22,16 @@ What works today:
 
 Known tech debt (non-blocking): from the v1.0 audit — Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind caret-range pinning; stale dev seed password for client1. From the v1.2 audit — vite@8 wants `@types/node` >= 22.12.0 (installed 22.10.7, warning only). Full lists: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`, `.planning/milestones/v1.2-MILESTONE-AUDIT.md`.
 
-## Next Milestone Goals
+## Current Milestone: v1.3 Shared conversation content
 
-Not yet defined — run `/gsd-new-milestone` (questioning → research → requirements → roadmap). Standing candidates from the deferred list:
-- Native Android/iOS chat implementations against the shipped `@fish/core/chat-state` contract (fixture-vector parity)
-- Assignment UI (coach→client assignment is still seed/manual-only)
-- Privacy tooling (consent flows, export, delete, retention) — precedes public launch
-- Coach-validated learning techniques (coach-first rule; nothing built until validated manually)
+**Goal:** Give clients and coaches one calm place to find and manage content previously shared in each direct conversation on Android and iOS.
+
+**Target features:**
+- A per-conversation gallery reachable from both the conversation header and conversation details on Android and iOS
+- Calm categories for media, documents, and other content types already supported by chat, without adding new sending pipelines
+- Preview or open, sender and date context, jump to the source message, native share, save, and download actions
+- Sender-only deletion that removes the source message for everyone through the existing conversation authorization boundary
+- Cross-platform parity for access control, loading, empty, offline, failure, and recovery behavior
 
 ## Core Value
 
@@ -72,7 +75,12 @@ A calm, choice-free experience: the coach assigns, the app presents, and nothing
 
 ### Active
 
-(None — the next milestone defines fresh requirements via `/gsd-new-milestone`.)
+- [ ] Clients and coaches can open a shared-content gallery for each direct conversation on Android and iOS.
+- [ ] The gallery includes every content type already supported by chat and does not introduce new video, audio-file, or voice-message sending pipelines.
+- [ ] Users can preview or open an item, see its sender and date, and return to the source message.
+- [ ] Users can share, save, or download gallery content through native platform actions.
+- [ ] A sender can delete their shared item by deleting its source message for everyone; other conversation members cannot delete it.
+- [ ] Android and iOS provide equivalent private, conversation-scoped loading, empty, offline, failure, and recovery behavior.
 
 ### Out of Scope
 
@@ -93,7 +101,7 @@ Deferred (in the build order, just not scheduled):
 - Web stack: Next.js 16.2.9, React 19.2.7, Tailwind CSS v4.3.1 (CSS-first `@theme` — **never** create `tailwind.config.js`; keep `tailwindcss` and `@tailwindcss/postcss` on the same version).
 - Design rules (non-negotiable, AGENTS.md): one primary action per screen; assigned never chosen; min 56px tap targets; progress visual never a grade; reward-only gamification; copy never scolds (soft notice, never alarming red — structural UI stays monochrome; alerts are the one deliberate exception, using calm desaturated tone colors per the 02-08 user decision).
 - API boundary: direct Supabase reads under RLS; Edge Functions for command-style writes (messages, assignments, moderation).
-- **Current state (2026-07-11):** v1.2 shipped. Chat state lives in `@fish/core/chat-state` (portable reducer + 17 fixture vectors) with a web-only Zustand adapter; the canonical chat surface is the community room at `/channels/:id` (the 1-on-1 `/chat` route was removed 2026-07-10, with dated supersede notes on CSTATE-02/06 and D-09). Message loading is bounded (40+1 keyset SSR window, cursor-based load-earlier, coalesced reconnect backfill). The product is web-only; Android/iOS get the same event contract for future native implementations. The unvalidated learning-flow implementations remain removed.
+- **Current state (2026-07-22):** v1.2 shipped. Chat state lives in `@fish/core/chat-state` (portable reducer + 17 fixture vectors) with a web-only Zustand adapter; the canonical web chat surface is the community room at `/channels/:id` (the 1-on-1 `/chat` route was removed 2026-07-10, with dated supersede notes on CSTATE-02/06 and D-09). Message loading is bounded (40+1 keyset SSR window, cursor-based load-earlier, coalesced reconnect backfill). Native Android and iOS direct-chat apps now exist and remain intentionally direct-chat-only. v1.3 adds per-conversation shared-content discovery and management to those native apps without adding web-product surfaces or new attachment-sending pipelines. The unvalidated learning-flow implementations remain removed.
 
 ## Constraints
 
@@ -146,4 +154,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-11 after v1.2 milestone*
+*Last updated: 2026-07-22 after starting v1.3 milestone*

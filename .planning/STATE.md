@@ -1,18 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Cross-platform Chat State Foundation
-current_phase: null
-status: Milestone v1.2 shipped — awaiting next milestone
-stopped_at: v1.2 archived and tagged — run /gsd-new-milestone
-last_updated: "2026-07-11T01:45:00.000Z"
-last_activity: 2026-07-11
+milestone: v1.3
+milestone_name: Shared conversation content
+status: planning
+last_updated: "2026-07-22T02:23:38.083Z"
+last_activity: 2026-07-22
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 26
-  completed_plans: 26
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: FISH
@@ -21,12 +19,10 @@ progress:
 
 ## Current Position
 
-- **Status:** Between milestones; v1.2 is shipped, archived, and tagged.
-- **Next action:** Run `/gsd-new-milestone`.
-- **Core value:** A calm, choice-free experience: the coach assigns, the app
-  presents, and nothing on screen competes for the client's attention.
-
-See `.planning/PROJECT.md` for current product context and durable decisions.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-22 — Milestone v1.3 started
 
 ## Shipped Milestones
 
@@ -41,6 +37,7 @@ See `.planning/PROJECT.md` for current product context and durable decisions.
 - [ ] Define the next milestone.
 - [ ] Configure hosted Supabase staging/production environments, email
   templates, Site URL, and redirect allow-lists.
+
 - [ ] Upgrade `@types/node` when dependencies are next refreshed; Vite 8
   currently warns that it prefers version 22.12 or newer.
 
