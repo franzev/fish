@@ -53,6 +53,7 @@ fun MessageAttachmentGroup(
     timeLabel: String,
     onPhotoClick: (String) -> Unit,
     onFileClick: (String) -> Unit,
+    onFileShare: (String) -> Unit = {},
     onPhotoLoadError: (String) -> Unit,
     playingVoiceId: String? = null,
     onToggleVoice: (String) -> Unit = {},
@@ -81,11 +82,22 @@ fun MessageAttachmentGroup(
                         onTogglePlayback = { onToggleVoice(run.item.id) },
                         onPlaybackError = { onAttachmentLoadError(run.item.id) },
                     )
+                    AttachmentUiKind.Video -> VideoMessageMedia(
+                        attachment = run.item,
+                        author = author,
+                        timeLabel = timeLabel,
+                        playing = run.item.id == playingVoiceId,
+                        onTogglePlayback = { onToggleVoice(run.item.id) },
+                        onPlaybackError = { onAttachmentLoadError(run.item.id) },
+                        onFileClick = { onFileClick(run.item.id) },
+                        onFileShare = { onFileShare(run.item.id) },
+                    )
                     AttachmentUiKind.File -> FileAttachmentCard(
                         attachment = run.item,
                         author = author,
                         timeLabel = timeLabel,
                         onClick = { onFileClick(run.item.id) },
+                        onShare = { onFileShare(run.item.id) },
                     )
                     AttachmentUiKind.Unavailable -> UnavailableAttachmentCard(
                         attachment = run.item,
@@ -302,11 +314,12 @@ private fun AttachmentPhotoImage(
 }
 
 @Composable
-private fun FileAttachmentCard(
+internal fun FileAttachmentCard(
     attachment: AttachmentUiModel,
     author: String,
     timeLabel: String,
     onClick: () -> Unit,
+    onShare: () -> Unit,
 ) {
     val type = attachment.mimeType.toFileTypeLabel()
     val detail = listOfNotNull(type, attachment.byteSize?.let(::formatFileSize)).joinToString(" · ")
@@ -317,38 +330,51 @@ private fun FileAttachmentCard(
         detail,
         timeLabel,
     )
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = FishTheme.sizes.touchTarget)
             .clip(RoundedCornerShape(FishTheme.radii.control))
-            .background(FishTheme.colors.surfaceAlt)
-            .clickable(
-                enabled = attachment.available,
-                role = Role.Button,
-                onClickLabel = stringResource(R.string.open_file),
-                onClick = onClick,
-            )
-            .padding(horizontal = FishTheme.spacing.md, vertical = FishTheme.spacing.sm)
-            .semantics {
-                contentDescription = spoken
-                role = Role.Button
-            },
+            .background(FishTheme.colors.surfaceAlt),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = attachment.name,
-            color = FishTheme.colors.foreground,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = FishTheme.typography.label,
-        )
-        if (detail.isNotBlank()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(
+                    enabled = attachment.available,
+                    role = Role.Button,
+                    onClickLabel = stringResource(R.string.open_file),
+                    onClick = onClick,
+                )
+                .padding(horizontal = FishTheme.spacing.md, vertical = FishTheme.spacing.sm)
+                .semantics {
+                    contentDescription = spoken
+                    role = Role.Button
+                },
+        ) {
             Text(
-                text = detail,
-                color = FishTheme.colors.body,
-                style = FishTheme.typography.caption,
+                text = attachment.name,
+                color = FishTheme.colors.foreground,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = FishTheme.typography.label,
             )
+            if (detail.isNotBlank()) {
+                Text(
+                    text = detail,
+                    color = FishTheme.colors.body,
+                    style = FishTheme.typography.caption,
+                )
+            }
         }
+        FishIconButton(
+            icon = FishIcons.Share,
+            contentDescription = stringResource(R.string.share_file),
+            onClick = onShare,
+            enabled = attachment.available,
+            modifier = Modifier.padding(end = FishTheme.spacing.twoXs),
+        )
     }
 }
 

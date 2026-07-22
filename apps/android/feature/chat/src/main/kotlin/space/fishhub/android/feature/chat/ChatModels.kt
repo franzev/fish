@@ -160,12 +160,16 @@ data class AttachmentUiModel(
 
 /** One-shot handoff to the app-owned private download/FileProvider boundary. */
 @Immutable
+enum class AttachmentOpenAction { Open, Share }
+
+@Immutable
 data class AttachmentOpenRequest(
     val attachmentId: String,
     val name: String,
     val mimeType: String,
     val expectedByteSize: Long,
     val signedUrl: String,
+    val action: AttachmentOpenAction = AttachmentOpenAction.Open,
 )
 
 @Immutable

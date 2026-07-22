@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import space.fishhub.android.data.chat.OpenedAttachmentCacheDirectory
+import space.fishhub.android.feature.chat.AttachmentOpenAction
 import space.fishhub.android.feature.chat.AttachmentOpenRequest
 
 internal class AttachmentFileOpener(
@@ -59,24 +60,43 @@ internal class AttachmentFileOpener(
                 "${activity.packageName}.fileprovider",
                 destination,
             )
-            val view = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, expected.mimeType)
+            val handoff = when (request.action) {
+                AttachmentOpenAction.Open -> Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, expected.mimeType)
+                }
+                AttachmentOpenAction.Share -> Intent(Intent.ACTION_SEND).apply {
+                    type = expected.mimeType
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                }
+            }.apply {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 clipData = android.content.ClipData.newUri(activity.contentResolver, "Attachment", uri)
             }
-            if (activity.packageManager.queryIntentActivities(view, 0).isEmpty()) {
+            if (activity.packageManager.queryIntentActivities(handoff, 0).isEmpty()) {
                 destination.delete()
                 return@withContext OpenAttachmentResult.Failed(
-                    "No app on this device can open that file type yet.",
+                    when (request.action) {
+                        AttachmentOpenAction.Open -> "No app on this device can open that file type yet."
+                        AttachmentOpenAction.Share -> "No app on this device can share that file type yet."
+                    },
                 )
             }
             withContext(Dispatchers.Main) {
                 try {
-                    activity.startActivity(Intent.createChooser(view, "Open attachment"))
+                    val chooserTitle = when (request.action) {
+                        AttachmentOpenAction.Open -> "Open attachment"
+                        AttachmentOpenAction.Share -> "Share attachment"
+                    }
+                    activity.startActivity(Intent.createChooser(handoff, chooserTitle))
                     OpenAttachmentResult.Opened
                 } catch (_: ActivityNotFoundException) {
                     destination.delete()
-                    OpenAttachmentResult.Failed("No app on this device can open that file type yet.")
+                    OpenAttachmentResult.Failed(
+                        when (request.action) {
+                            AttachmentOpenAction.Open -> "No app on this device can open that file type yet."
+                            AttachmentOpenAction.Share -> "No app on this device can share that file type yet."
+                        },
+                    )
                 } catch (_: SecurityException) {
                     destination.delete()
                     OpenAttachmentResult.Failed("That file could not be opened safely.")

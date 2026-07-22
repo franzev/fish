@@ -138,6 +138,7 @@
     <string name="photo_viewer_unavailable_accessibility">Photo viewer: %1$s. Photo unavailable.</string>
     <string name="open_photo">Open photo</string>
     <string name="open_file">Open file</string>
+    <string name="share_file">Share or save file</string>
     <string name="close_photo_viewer">Close photo viewer</string>
     <string name="photo_unavailable">Photo unavailable</string>
     <string name="attachment_unavailable">Attachment unavailable</string>

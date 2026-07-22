@@ -654,6 +654,14 @@ class ChatViewModel(
     }
 
     fun openFileAttachment(attachmentId: String) {
+        requestFileAttachment(attachmentId, AttachmentOpenAction.Open)
+    }
+
+    fun shareFileAttachment(attachmentId: String) {
+        requestFileAttachment(attachmentId, AttachmentOpenAction.Share)
+    }
+
+    private fun requestFileAttachment(attachmentId: String, action: AttachmentOpenAction) {
         val attachment = findAttachment(attachmentId)
         val mimeType = attachment?.mimeType
         val byteSize = attachment?.byteSize
@@ -676,6 +684,7 @@ class ChatViewModel(
                                 mimeType = mimeType,
                                 expectedByteSize = byteSize,
                                 signedUrl = signedUrl,
+                                action = action,
                             ),
                         )
                     } else {

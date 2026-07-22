@@ -205,6 +205,32 @@ object FishIcons {
         }
     }
 
+    val Share: ImageVector by lazy {
+        fishIcon("Share") {
+            moveTo(18f, 8f)
+            curveTo(20.2f, 8f, 22f, 6.2f, 22f, 4f)
+            curveTo(22f, 1.8f, 20.2f, 0f, 18f, 0f)
+            curveTo(15.8f, 0f, 14f, 1.8f, 14f, 4f)
+            curveTo(14f, 4.3f, 14f, 4.6f, 14.1f, 4.9f)
+            lineTo(7.9f, 8.4f)
+            curveTo(7.2f, 7.5f, 6.1f, 7f, 5f, 7f)
+            curveTo(2.2f, 7f, 0f, 9.2f, 0f, 12f)
+            curveTo(0f, 14.8f, 2.2f, 17f, 5f, 17f)
+            curveTo(6.1f, 17f, 7.2f, 16.5f, 7.9f, 15.6f)
+            lineTo(14.1f, 19.1f)
+            curveTo(14f, 19.4f, 14f, 19.7f, 14f, 20f)
+            curveTo(14f, 22.2f, 15.8f, 24f, 18f, 24f)
+            curveTo(20.2f, 24f, 22f, 22.2f, 22f, 20f)
+            curveTo(22f, 17.8f, 20.2f, 16f, 18f, 16f)
+            curveTo(16.9f, 16f, 15.8f, 16.5f, 15.1f, 17.4f)
+            lineTo(8.9f, 13.9f)
+            curveTo(9f, 13.6f, 9f, 13.3f, 9f, 13f)
+            curveTo(9f, 12.7f, 9f, 12.4f, 8.9f, 12.1f)
+            lineTo(15.1f, 8.6f)
+            curveTo(15.8f, 9.5f, 16.9f, 10f, 18f, 10f)
+        }
+    }
+
     val Close: ImageVector by lazy {
         fishIcon("Close") {
             moveTo(6f, 6f)
