@@ -249,6 +249,21 @@ internal class DefaultChatRepository(
         }
     }
 
+    override suspend fun loadCallActivity(
+        conversationId: String,
+        beforeEndedAt: String?,
+        limit: Int,
+    ): ChatResult<List<ChatCallActivity>> {
+        val conversation = dao.conversation(conversationId)?.toDomain()
+            ?: return unavailableFailure()
+        return resultOf(
+            ChatOperation.SyncNewest,
+            "Call history is taking a little longer. Try again.",
+        ) {
+            remote.loadCallActivity(conversation, beforeEndedAt, limit.coerceIn(1, 100))
+        }
+    }
+
     override suspend fun searchMessages(
         conversationId: String,
         query: String,
