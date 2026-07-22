@@ -46,8 +46,8 @@ class AttachmentFilePolicyTest {
     @Test
     fun sizePolicyRejectsEmptyAndOversizeDownloads() {
         assertFalse(isAllowedOpenedAttachmentSize(0))
-        assertTrue(isAllowedOpenedAttachmentSize(10L * 1024L * 1024L))
-        assertFalse(isAllowedOpenedAttachmentSize(10L * 1024L * 1024L + 1))
+        assertTrue(isAllowedOpenedAttachmentSize(25L * 1024L * 1024L))
+        assertFalse(isAllowedOpenedAttachmentSize(25L * 1024L * 1024L + 1))
     }
 
     @Test

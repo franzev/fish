@@ -318,6 +318,25 @@ class SupabaseContractTest {
     }
 
     @Test
+    fun boundedVideoAttachmentRemainsAvailableAtTwentyFiveMegabytes() {
+        val attachment = MessageAttachmentDto(
+            id = "video-1",
+            messageId = "message-1",
+            position = 0,
+            kind = "file",
+            status = "ready",
+            originalName = "clip.mp4",
+            storedMimeType = "video/mp4",
+            storedByteSize = 25L * 1024L * 1024L,
+            displayPath = "conversation-1/video-1/clip.mp4",
+        ).toDomain("fallback", 0, null)
+
+        assertEquals(ChatAttachmentKind.File, attachment.kind)
+        assertEquals(true, attachment.available)
+        assertEquals("video/mp4", attachment.mimeType)
+    }
+
+    @Test
     fun malformedAttachmentBecomesVisibleUnavailablePlaceholder() {
         val attachment = MessageAttachmentDto(
             id = "attachment-unknown",

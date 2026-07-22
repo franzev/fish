@@ -178,6 +178,7 @@ private fun validateOpenedAttachment(file: File, type: SafeFileType) {
             throw AttachmentOpenValidationException()
         }
         FileSignature.Text -> validateOpenedUtf8(file)
+        FileSignature.Mp4 -> validateOpenedMp4(file)
         is FileSignature.Office -> validateOpenedOffice(file, type.signature.root)
     }
 }
@@ -198,6 +199,50 @@ private fun validateOpenedUtf8(file: File) {
             .decode(ByteBuffer.wrap(bytes))
     }.getOrElse { throw AttachmentOpenValidationException() }
 }
+
+private fun validateOpenedMp4(file: File) {
+    val bytes = file.readBytes()
+    var offset = 0
+    var hasFileType = false
+    var hasMovie = false
+    var hasMediaData = false
+    var boxCount = 0
+    while (offset < bytes.size) {
+        if (bytes.size - offset < 8 || boxCount++ >= 256) throw AttachmentOpenValidationException()
+        val declaredSize = readBigEndianUInt32(bytes, offset)
+        val type = String(bytes, offset + 4, 4, Charsets.US_ASCII)
+        var headerSize = 8
+        var boxSize = declaredSize
+        if (declaredSize == 1L) {
+            if (bytes.size - offset < 16 || readBigEndianUInt32(bytes, offset + 8) != 0L) {
+                throw AttachmentOpenValidationException()
+            }
+            boxSize = readBigEndianUInt32(bytes, offset + 12)
+            headerSize = 16
+        } else if (declaredSize == 0L) {
+            boxSize = (bytes.size - offset).toLong()
+        }
+        if (boxSize < headerSize || boxSize > bytes.size - offset) {
+            throw AttachmentOpenValidationException()
+        }
+        when (type) {
+            "ftyp" -> {
+                if (boxSize < headerSize + 8) throw AttachmentOpenValidationException()
+                hasFileType = true
+            }
+            "moov" -> hasMovie = boxSize > headerSize
+            "mdat" -> hasMediaData = boxSize > headerSize
+        }
+        offset += boxSize.toInt()
+    }
+    if (!hasFileType || !hasMovie || !hasMediaData) throw AttachmentOpenValidationException()
+}
+
+private fun readBigEndianUInt32(bytes: ByteArray, offset: Int): Long =
+    ((bytes[offset].toLong() and 0xff) shl 24) or
+        ((bytes[offset + 1].toLong() and 0xff) shl 16) or
+        ((bytes[offset + 2].toLong() and 0xff) shl 8) or
+        (bytes[offset + 3].toLong() and 0xff)
 
 private fun validateOpenedOffice(file: File, expectedRoot: String) {
     try {
@@ -256,10 +301,11 @@ private data class SafeFileType(
 private sealed interface FileSignature {
     data object Pdf : FileSignature
     data object Text : FileSignature
+    data object Mp4 : FileSignature
     data class Office(val root: String) : FileSignature
 }
 
-private const val MaximumDownloadBytes = 10L * 1024L * 1024L
+private const val MaximumDownloadBytes = 25L * 1024L * 1024L
 private const val MaximumExpandedBytes = 50L * 1024L * 1024L
 private const val MaximumZipEntries = 1_000
 private const val BufferBytes = 32 * 1024
@@ -268,6 +314,8 @@ private const val ReadTimeoutMs = 30_000
 private val CacheTtl = Duration.ofDays(1)
 
 private val SupportedTypes = listOf(
+    SafeFileType("audio/mp4", "m4a", FileSignature.Mp4),
+    SafeFileType("video/mp4", "mp4", FileSignature.Mp4),
     SafeFileType("application/pdf", "pdf", FileSignature.Pdf),
     SafeFileType("text/plain", "txt", FileSignature.Text),
     SafeFileType("text/csv", "csv", FileSignature.Text),

@@ -70,6 +70,25 @@ class ChatAttachmentComponentsTest {
     }
 
     @Test
+    fun `mp4 file is rendered as a video attachment`() {
+        val video = AttachmentUiModel.from(
+            ChatAttachment(
+                id = "video-1",
+                position = 0,
+                kind = ChatAttachmentKind.File,
+                available = true,
+                originalName = "clip.mp4",
+                mimeType = "video/mp4",
+                byteSize = 12_000,
+                displayUrl = "https://example.test/clip.mp4",
+            ),
+        )
+
+        assertEquals(AttachmentUiKind.Video, video.kind)
+        assertEquals("video/mp4", video.mimeType)
+    }
+
+    @Test
     fun `attachment failure codes map to resource ready presentation reasons`() {
         val safetyFailure = LocalAttachmentUiModel.from(
             draft.copy(

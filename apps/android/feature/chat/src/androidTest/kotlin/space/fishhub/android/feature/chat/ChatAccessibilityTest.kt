@@ -6,12 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -570,7 +570,7 @@ class ChatAccessibilityTest {
         composeRule.onNodeWithText("Copy").performClick()
 
         assertEquals("  Pause first — then speak. 😊  ", copied)
-        composeRule.onNodeWithTag("message-actions-sheet").assertDoesNotExist()
+        composeRule.onAllNodes(hasTestTag("message-actions-sheet")).assertCountEquals(0)
     }
 
     @Test
@@ -709,6 +709,7 @@ class ChatAccessibilityTest {
         mimeType = when (kind) {
             AttachmentUiKind.Photo -> "image/webp"
             AttachmentUiKind.Voice -> "audio/mp4"
+            AttachmentUiKind.Video -> "video/mp4"
             AttachmentUiKind.File -> "application/pdf"
             AttachmentUiKind.Unavailable -> null
         },

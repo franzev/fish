@@ -106,7 +106,7 @@ data class ReactionUiModel(
     val byMe: Boolean,
 )
 
-enum class AttachmentUiKind { Photo, Voice, File, Unavailable }
+enum class AttachmentUiKind { Photo, Voice, Video, File, Unavailable }
 
 @Immutable
 data class VoiceRecordingUiState(
@@ -138,6 +138,8 @@ data class AttachmentUiModel(
                 ChatAttachmentKind.Image -> AttachmentUiKind.Photo
                 ChatAttachmentKind.File -> if (attachment.mimeType == "audio/mp4") {
                     AttachmentUiKind.Voice
+                } else if (attachment.mimeType == "video/mp4") {
+                    AttachmentUiKind.Video
                 } else {
                     AttachmentUiKind.File
                 }

@@ -1070,7 +1070,12 @@ internal fun MessageAttachmentDto.toDomain(
         ChatAttachmentKind.File -> storedMimeType in SupportedDocumentMimes
         ChatAttachmentKind.Unavailable -> false
     }
-    val sizeValid = storedByteSize != null && storedByteSize in 1..MaxStoredAttachmentBytes
+    val maxStoredBytes = if (storedMimeType == "video/mp4") {
+        MaxVideoStoredAttachmentBytes
+    } else {
+        MaxStoredAttachmentBytes
+    }
+    val sizeValid = storedByteSize != null && storedByteSize in 1..maxStoredBytes
     val dimensionsValid = when (safeKind) {
         ChatAttachmentKind.Image -> width != null && height != null &&
             width in 1..MaxImageEdge && height in 1..MaxImageEdge
@@ -1111,6 +1116,7 @@ private fun unavailableAttachment(id: String, position: Int): ChatAttachment = C
 
 private val SupportedDocumentMimes = setOf(
     "audio/mp4",
+    "video/mp4",
     "application/pdf",
     "text/plain",
     "text/csv",
@@ -1119,4 +1125,5 @@ private val SupportedDocumentMimes = setOf(
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
 private const val MaxStoredAttachmentBytes = 10L * 1024L * 1024L
+private const val MaxVideoStoredAttachmentBytes = 25L * 1024L * 1024L
 private const val MaxImageEdge = 4096

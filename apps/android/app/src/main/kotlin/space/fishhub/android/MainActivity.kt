@@ -945,6 +945,7 @@ class MainActivity : ComponentActivity() {
         const val CameraFileStateKey = "attachment-camera-file"
         const val CameraUriStateKey = "attachment-camera-uri"
         val SupportedDocumentMimeTypes = arrayOf(
+            "video/mp4",
             "application/pdf",
             "text/plain",
             "text/csv",

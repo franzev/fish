@@ -74,7 +74,11 @@ internal class AttachmentImporter(
         try {
             val maxSourceBytes = when (source.kind) {
                 AttachmentImportKind.Image -> MaxImageSourceBytes
-                AttachmentImportKind.File -> MaxDocumentBytes
+                AttachmentImportKind.File -> if (isVideoSource(metadata)) {
+                    MaxVideoSourceBytes
+                } else {
+                    MaxDocumentBytes
+                }
             }
             val byteSize = copyBounded(source.uri, staged, maxSourceBytes)
             if (byteSize == 0L) throw AttachmentImportException("That file is empty.")
@@ -249,6 +253,8 @@ internal class AttachmentImporter(
                         throw AttachmentImportException(
                             if (limit == MaxImageSourceBytes) {
                                 "That photo is larger than 25 MB. Choose a smaller copy."
+                            } else if (limit == MaxVideoSourceBytes) {
+                                "That video is larger than 25 MB. Choose a shorter copy."
                             } else {
                                 "That file is larger than 10 MB. Choose a smaller file."
                             },
@@ -418,6 +424,10 @@ internal class AttachmentImporter(
         return SourceMetadata(name, mime, declaredSize)
     }
 
+    private fun isVideoSource(metadata: SourceMetadata): Boolean =
+        metadata.mimeType == MimeVideoMp4 ||
+            metadata.displayName?.substringAfterLast('.', "")?.equals("mp4", ignoreCase = true) == true
+
     private fun validateImageHints(providerMime: String?, name: String?, detectedMime: String) {
         if (providerMime != null && providerMime !in GenericMimeTypes && providerMime != detectedMime &&
             !(detectedMime in HeifMimes && providerMime in HeifMimes)
@@ -458,12 +468,17 @@ internal class AttachmentImporter(
             }
             DocumentSignature.Text -> validateText(file)
             DocumentSignature.Zip -> validateOfficeZip(file, expected.officeRoot!!)
-            DocumentSignature.Audio -> validateAudioMp4(file)
+            DocumentSignature.Audio, DocumentSignature.Video -> validateMp4(file, expected.kind)
         }
         return expected.mime
     }
 
-    private fun validateAudioMp4(file: File) {
+    private fun validateMp4(file: File, kind: DocumentSignature) {
+        val message = if (kind == DocumentSignature.Video) {
+            "That video could not be read. Choose another copy."
+        } else {
+            "That recording could not be read. Try recording it again."
+        }
         val bytes = file.readBytes()
         var offset = 0
         var hasFileType = false
@@ -472,7 +487,7 @@ internal class AttachmentImporter(
         var boxCount = 0
         while (offset < bytes.size) {
             if (bytes.size - offset < 8 || boxCount++ > 256) {
-                throw AttachmentImportException("That recording could not be read. Try recording it again.")
+                throw AttachmentImportException(message)
             }
             val declaredSize = readBigEndianUInt32(bytes, offset)
             val type = bytes.copyOfRange(offset + 4, offset + 8).decodeToString()
@@ -480,7 +495,7 @@ internal class AttachmentImporter(
             var boxSize = declaredSize
             if (declaredSize == 1L) {
                 if (bytes.size - offset < 16 || readBigEndianUInt32(bytes, offset + 8) != 0L) {
-                    throw AttachmentImportException("That recording could not be read. Try recording it again.")
+                    throw AttachmentImportException(message)
                 }
                 boxSize = readBigEndianUInt32(bytes, offset + 12)
                 headerSize = 16
@@ -488,7 +503,7 @@ internal class AttachmentImporter(
                 boxSize = (bytes.size - offset).toLong()
             }
             if (boxSize < headerSize || boxSize > bytes.size - offset) {
-                throw AttachmentImportException("That recording could not be read. Try recording it again.")
+                throw AttachmentImportException(message)
             }
             when (type) {
                 "ftyp" -> {
@@ -503,7 +518,7 @@ internal class AttachmentImporter(
             offset += boxSize.toInt()
         }
         if (!hasFileType || !hasMovie || !hasMediaData) {
-            throw AttachmentImportException("That recording could not be read. Try recording it again.")
+            throw AttachmentImportException(message)
         }
     }
 
@@ -671,7 +686,7 @@ private fun startsWith(file: File, signature: ByteArray): Boolean {
     return read == signature.size && actual.contentEquals(signature)
 }
 
-private enum class DocumentSignature { Pdf, Text, Zip, Audio }
+private enum class DocumentSignature { Pdf, Text, Zip, Audio, Video }
 
 private data class DocumentType(
     val mime: String,
@@ -686,7 +701,9 @@ private const val MimeWebp = "image/webp"
 private const val MimeHeic = "image/heic"
 private const val MimeAvif = "image/avif"
 private const val MimeAudioMp4 = "audio/mp4"
+private const val MimeVideoMp4 = "video/mp4"
 private const val MaxImageSourceBytes = 25L * 1024L * 1024L
+private const val MaxVideoSourceBytes = 25L * 1024L * 1024L
 private const val MaxDocumentBytes = 10L * 1024L * 1024L
 private const val MaxNormalizedImageBytes = 5L * 1024L * 1024L
 private const val MaxDecodedPixels = 25_000_000L
@@ -719,6 +736,7 @@ private val ImageExtensions = mapOf(
 )
 private val DocumentTypes = mapOf(
     "m4a" to DocumentType(MimeAudioMp4, setOf(MimeAudioMp4), DocumentSignature.Audio),
+    "mp4" to DocumentType(MimeVideoMp4, setOf(MimeVideoMp4), DocumentSignature.Video),
     "pdf" to DocumentType("application/pdf", setOf("application/pdf"), DocumentSignature.Pdf),
     "txt" to DocumentType("text/plain", setOf("text/plain"), DocumentSignature.Text),
     "csv" to DocumentType("text/csv", setOf("text/csv", "text/plain", "application/csv"), DocumentSignature.Text),
