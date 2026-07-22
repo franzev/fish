@@ -1,5 +1,6 @@
 export const attachmentLimits = {
   imageSourceBytes: 25 * 1024 * 1024,
+  videoSourceBytes: 25 * 1024 * 1024,
   documentSourceBytes: 10 * 1024 * 1024,
   normalizedImageBytes: 5 * 1024 * 1024,
   maxImagePixels: 25_000_000,
@@ -42,6 +43,7 @@ export type ScanVerdict =
 
 const fileExtensions: Readonly<Record<string, string>> = {
   "audio/mp4": "m4a",
+  "video/mp4": "mp4",
   "application/pdf": "pdf",
   "text/plain": "txt",
   "text/csv": "csv",
@@ -70,6 +72,10 @@ export function kindForSourceMime(mime: string): AttachmentKind | null {
   if (mime in fileExtensions) return "file";
   if (mime in attachmentSourceExtensions && mime.startsWith("image/")) return "image";
   return null;
+}
+
+export function isVideoMime(mime: string): boolean {
+  return mime === "video/mp4";
 }
 
 function truncateName(name: string, maxCodePoints = 180): string {
@@ -532,7 +538,7 @@ async function inspectOoxml(bytes: Uint8Array, mime: string): Promise<FileInspec
 }
 
 export async function inspectDocument(bytes: Uint8Array, mime: string): Promise<FileInspection> {
-  if (mime === "audio/mp4") return inspectAudioMp4(bytes);
+  if (mime === "audio/mp4" || mime === "video/mp4") return inspectAudioMp4(bytes);
   if (mime === "application/pdf") {
     const header = new TextDecoder().decode(bytes.slice(0, 8));
     const tail = new TextDecoder().decode(bytes.slice(Math.max(0, bytes.length - 2048)));

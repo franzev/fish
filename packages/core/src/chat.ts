@@ -120,6 +120,8 @@ export type ChatAttachmentSourceMime =
   | "image/heic"
   | "image/heif"
   | "image/avif"
+  | "audio/mp4"
+  | "video/mp4"
   | "application/pdf"
   | "text/plain"
   | "text/csv"

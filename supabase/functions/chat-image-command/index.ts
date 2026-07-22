@@ -11,6 +11,7 @@ import {
   extensionForDocumentMime,
   inspectNormalizedImage,
   inspectDocument,
+  isVideoMime,
   isValidSha256,
   kindForSourceMime,
   sanitizeAttachmentName,
@@ -398,9 +399,11 @@ Deno.serve(async (request) => {
     }
     const maxSourceBytes = kind === "image"
       ? attachmentLimits.imageSourceBytes
+      : isVideoMime(sourceMimeType)
+      ? attachmentLimits.videoSourceBytes
       : attachmentLimits.documentSourceBytes;
     if (!Number.isSafeInteger(sourceByteSize) || sourceByteSize < 1 || sourceByteSize > maxSourceBytes) {
-      const limit = kind === "image" ? "25 MB" : "10 MB";
+      const limit = kind === "image" || isVideoMime(sourceMimeType) ? "25 MB" : "10 MB";
       return calmError("too_large", `This ${kind === "image" ? "photo" : "file"} is over ${limit}. Try a smaller one.`, 400);
     }
     if (uploadSha256 !== null && !isValidSha256(uploadSha256)) {
@@ -548,6 +551,8 @@ Deno.serve(async (request) => {
     const bytes = new Uint8Array(await downloaded.data.arrayBuffer());
     const maxBytes = attachment.kind === "image"
       ? attachmentLimits.normalizedImageBytes
+      : isVideoMime(attachment.source_mime_type)
+      ? attachmentLimits.videoSourceBytes
       : attachmentLimits.documentSourceBytes;
     if (bytes.length < 1 || bytes.length > maxBytes) {
       await admin.from("message_attachments").update({ status: "failed", failure_code: "invalid_file" })

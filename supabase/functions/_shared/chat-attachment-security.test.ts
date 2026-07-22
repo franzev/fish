@@ -5,6 +5,7 @@ import {
   inspectDocument,
   extensionForDocumentMime,
   kindForSourceMime,
+  isVideoMime,
   sourceNameMatchesMime,
   isSupportedNormalizedImage,
   isValidSha256,
@@ -179,6 +180,20 @@ test("voice attachments use the file contract and require an MP4 container", asy
     code: "invalid_file",
   });
   assert.deepEqual(await inspectDocument(Uint8Array.from([1, 2, 3]), "audio/mp4"), {
+    ok: false,
+    code: "invalid_file",
+  });
+});
+
+test("video attachments use the bounded MP4 file contract", async () => {
+  const valid = makeM4a();
+  assert.equal(isVideoMime("video/mp4"), true);
+  assert.equal(extensionForDocumentMime("video/mp4"), "mp4");
+  assert.equal(kindForSourceMime("video/mp4"), "file");
+  assert.equal(sourceNameMatchesMime("clip.mp4", "video/mp4"), true);
+  assert.equal(sourceNameMatchesMime("clip.mov", "video/mp4"), false);
+  assert.deepEqual(await inspectDocument(valid, "video/mp4"), { ok: true });
+  assert.deepEqual(await inspectDocument(valid.slice(0, -1), "video/mp4"), {
     ok: false,
     code: "invalid_file",
   });
