@@ -33,7 +33,8 @@ public struct ImagePreparation: AttachmentPreparing, Sendable {
         guard ByteSignature.matches(candidate.data, mimeType: candidate.sourceMimeType) else {
             throw Failure.invalidBytes
         }
-        let fileExtension = candidate.originalName.split(separator: ".").last.map(String.init) ?? "bin"
+        let fileExtension = candidate.originalName.split(separator: ".").last.map(String.init)
+            ?? (candidate.sourceMimeType == "video/mp4" ? "mp4" : candidate.sourceMimeType == "audio/mp4" ? "m4a" : "bin")
         let url = try await staging.write(candidate.data, fileExtension: fileExtension)
         return StagedAttachmentFile(
             url: url,

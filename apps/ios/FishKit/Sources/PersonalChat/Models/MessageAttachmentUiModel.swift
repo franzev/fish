@@ -44,4 +44,8 @@ public struct MessageAttachmentUiModel: Identifiable, Equatable, Sendable {
     public var isVoiceMessage: Bool {
         mimeType?.lowercased() == "audio/mp4"
     }
+
+    public var isVideoAttachment: Bool {
+        mimeType?.lowercased() == "video/mp4"
+    }
 }

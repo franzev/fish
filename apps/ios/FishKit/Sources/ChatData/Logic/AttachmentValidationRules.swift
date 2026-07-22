@@ -3,6 +3,7 @@ import Foundation
 public enum AttachmentRules {
     public static let maxCount = 5
     public static let imageSourceMaxBytes = 25 * 1024 * 1024
+    public static let videoSourceMaxBytes = 25 * 1024 * 1024
     public static let documentSourceMaxBytes = 10 * 1024 * 1024
     public static let imagePreparedMaxBytes = 5 * 1024 * 1024
     public static let imageMaxDimension = 2_560
@@ -22,7 +23,9 @@ public enum AttachmentRules {
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ]
 
-    public static let allowedSourceMimeTypes = imageMimeTypes.union(documentMimeTypes)
+    public static let videoMimeTypes: Set<String> = ["video/mp4"]
+
+    public static let allowedSourceMimeTypes = imageMimeTypes.union(documentMimeTypes).union(videoMimeTypes)
 
     public static let voiceMimeTypes: Set<String> = ["audio/mp4"]
 
@@ -35,9 +38,13 @@ public enum AttachmentRules {
             return .unsupportedType
         }
         guard !candidate.data.isEmpty else { return .preparationFailed }
-        let limit = imageMimeTypes.contains(candidate.sourceMimeType)
-            ? imageSourceMaxBytes
-            : documentSourceMaxBytes
+        let limit = if imageMimeTypes.contains(candidate.sourceMimeType) {
+            imageSourceMaxBytes
+        } else if videoMimeTypes.contains(candidate.sourceMimeType) {
+            videoSourceMaxBytes
+        } else {
+            documentSourceMaxBytes
+        }
         return candidate.data.count <= limit ? nil : .tooLarge
     }
 
@@ -61,6 +68,7 @@ public enum AttachmentRules {
         case "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         case "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         case "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        case "mp4": "video/mp4"
         default: nil
         }
     }

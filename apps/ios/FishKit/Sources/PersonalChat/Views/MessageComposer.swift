@@ -443,19 +443,25 @@ public struct MessageComposer: View {
         let accessed = url.startAccessingSecurityScopedResource()
         defer { if accessed { url.stopAccessingSecurityScopedResource() } }
         let values = try? url.resourceValues(forKeys: [.contentTypeKey, .nameKey])
+        let declaredMime = values?.contentType?.preferredMIMEType?.lowercased()
+        let isVideo = declaredMime == "video/mp4" ||
+            values?.name?.lowercased().hasSuffix(".mp4") == true
+        let sourceLimit = isVideo
+            ? AttachmentRules.videoSourceMaxBytes
+            : AttachmentRules.documentSourceMaxBytes
         if let byteSize = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-           byteSize > AttachmentRules.documentSourceMaxBytes {
+           byteSize > sourceLimit {
             return .failure(.tooLarge)
         }
         guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else {
             return .failure(.preparationFailed)
         }
-        guard data.count <= AttachmentRules.documentSourceMaxBytes else {
+        guard data.count <= sourceLimit else {
             return .failure(.tooLarge)
         }
         let name = values?.name ?? url.lastPathComponent
         guard let mimeType = AttachmentRules.sourceMimeType(
-            declared: values?.contentType?.preferredMIMEType,
+            declared: declaredMime,
             filename: name,
             data: data
         ) else { return .failure(.unsupportedType) }
@@ -470,6 +476,7 @@ public struct MessageComposer: View {
         .pdf,
         .plainText,
         .commaSeparatedText,
+        .mpeg4Movie,
     ] + ["docx", "xlsx", "pptx"].compactMap {
         UTType(filenameExtension: $0)
     }

@@ -67,6 +67,7 @@ struct AttachmentContractTests {
     @Test func validationConstantsMatchTheSharedContract() {
         #expect(AttachmentRules.maxCount == 5)
         #expect(AttachmentRules.imageSourceMaxBytes == 25 * 1024 * 1024)
+        #expect(AttachmentRules.videoSourceMaxBytes == 25 * 1024 * 1024)
         #expect(AttachmentRules.documentSourceMaxBytes == 10 * 1024 * 1024)
         #expect(AttachmentRules.imagePreparedMaxBytes == 5 * 1024 * 1024)
         #expect(AttachmentRules.imageMaxDimension == 2_560)
@@ -75,6 +76,7 @@ struct AttachmentContractTests {
         ])
         #expect(AttachmentRules.documentMimeTypes.count == 7)
         #expect(AttachmentRules.voiceMimeTypes == ["audio/mp4"])
+        #expect(AttachmentRules.videoMimeTypes == ["video/mp4"])
     }
 
     @Test func validationReportsTypeSizeCountAndEmptyDataIndependently() {
@@ -130,6 +132,7 @@ struct AttachmentContractTests {
             0, 0, 0, 12, 109, 100, 97, 116, 0, 0, 0, 0,
         ])
         #expect(ByteSignature.matches(m4a, mimeType: "audio/mp4"))
+        #expect(ByteSignature.matches(m4a, mimeType: "video/mp4"))
         #expect(!ByteSignature.matches(Data([0, 1, 2]), mimeType: "audio/mp4"))
 
         let safeOffice = Data("PK\u{3}\u{4} [Content_Types].xml word/document.xml".utf8)

@@ -22,6 +22,9 @@ public enum ByteSignature {
                 return brand.hasPrefix("hei") ? "image/heic" : "image/heif"
             }
             if ["avif", "avis"].contains(brand) { return "image/avif" }
+            if ["isom", "iso2", "mp41", "mp42", "avc1", "mp4v", "m4v ", "dash"].contains(brand) {
+                return "video/mp4"
+            }
         }
         return nil
     }
@@ -29,10 +32,10 @@ public enum ByteSignature {
     public static func matches(_ data: Data, mimeType: String) -> Bool {
         switch mimeType.lowercased() {
         case "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/avif",
-             "application/pdf", "audio/mp4":
+             "application/pdf", "audio/mp4", "video/mp4":
             let detected = detectedMimeType(data)
             if mimeType == "image/heif" { return detected == "image/heif" || detected == "image/heic" }
-            if mimeType == "audio/mp4" { return isValidAudioMp4(data) }
+            if mimeType == "audio/mp4" || mimeType == "video/mp4" { return isValidAudioMp4(data) }
             return detected == mimeType
         case "text/plain", "text/csv":
             return !data.isEmpty && !data.contains(0) && String(data: data, encoding: .utf8) != nil

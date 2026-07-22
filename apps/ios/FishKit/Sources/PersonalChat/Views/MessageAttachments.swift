@@ -29,7 +29,11 @@ public struct MessageAttachments: View {
     }
 
     private var files: [MessageAttachmentUiModel] {
-        attachments.filter { $0.kind == .file && !$0.isVoiceMessage }
+        attachments.filter { $0.kind == .file && !$0.isVoiceMessage && !$0.isVideoAttachment }
+    }
+
+    private var videos: [MessageAttachmentUiModel] {
+        attachments.filter(\.isVideoAttachment)
     }
 
     private var voiceMessages: [MessageAttachmentUiModel] {
@@ -40,6 +44,9 @@ public struct MessageAttachments: View {
         VStack(alignment: .leading, spacing: Spacing.twoXs) {
             ForEach(voiceMessages) { voice in
                 MessageVoicePlayer(attachment: voice, downloader: downloader)
+            }
+            ForEach(videos) { video in
+                MessageVideoPlayer(attachment: video, downloader: downloader)
             }
             if !images.isEmpty {
                 AttachmentFlowLayout {
