@@ -32,6 +32,7 @@ import android.net.Uri
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.media3.common.MediaItem
@@ -47,6 +48,8 @@ import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishIconButtonVariant
+import space.fishhub.android.core.designsystem.component.FishButton
+import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishProgress
 import java.io.File
 import kotlinx.coroutines.delay
@@ -370,6 +373,10 @@ fun VoiceMessageMedia(
     var positionMs by remember(source) { mutableLongStateOf(0L) }
     var endedNotified by remember(source) { mutableStateOf(false) }
     val context = LocalContext.current
+    var speed by remember(context) {
+        mutableStateOf(VoicePlaybackSpeed.persisted(context))
+    }
+    var menuExpanded by remember(source) { mutableStateOf(false) }
     val player = if (playing) {
         remember(source) {
             ExoPlayer.Builder(context).build().apply {
@@ -413,6 +420,9 @@ fun VoiceMessageMedia(
             player?.pause()
         }
     }
+    LaunchedEffect(player, speed) {
+        player?.setPlaybackSpeed(speed.multiplier)
+    }
     player?.let { activePlayer ->
         DisposableEffect(activePlayer) {
             onDispose { activePlayer.release() }
@@ -426,6 +436,7 @@ fun VoiceMessageMedia(
         durationLabel,
         timeLabel,
     )
+    val playbackSpeedDescription = stringResource(R.string.voice_playback_speed)
     Column(
         modifier = modifier
             .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
@@ -455,6 +466,37 @@ fun VoiceMessageMedia(
                 color = FishTheme.colors.foreground,
                 style = FishTheme.typography.label,
             )
+            Box {
+                FishButton(
+                    label = speed.label,
+                    onClick = { menuExpanded = true },
+                    variant = FishButtonVariant.Ghost,
+                    modifier = Modifier
+                        .heightIn(min = FishTheme.sizes.touchTarget)
+                        .semantics {
+                            contentDescription = playbackSpeedDescription
+                            stateDescription = speed.accessibilityLabel
+                        },
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    VoicePlaybackSpeed.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.label) },
+                            onClick = {
+                                speed = option
+                                VoicePlaybackSpeed.persist(context, option)
+                                menuExpanded = false
+                            },
+                            leadingIcon = if (option == speed) {
+                                { androidx.compose.material3.Icon(FishIcons.Check, contentDescription = null) }
+                            } else null,
+                        )
+                    }
+                }
+            }
         }
         if (durationMs > 0) {
             FishProgress(

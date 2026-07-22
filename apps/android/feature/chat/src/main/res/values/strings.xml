@@ -17,6 +17,7 @@
     <string name="pause_video">Pause video</string>
     <string name="video_attachment_accessibility">%1$s. Video: %2$s. %3$s</string>
     <string name="voice_message_accessibility">%1$s. Voice message, %2$s. %3$s</string>
+    <string name="voice_playback_speed">Playback speed</string>
     <string name="send_message">Send message</string>
     <string name="sending_message">Sending message</string>
     <string name="message_limit">This message is a little long. Try sending it in two parts.</string>
