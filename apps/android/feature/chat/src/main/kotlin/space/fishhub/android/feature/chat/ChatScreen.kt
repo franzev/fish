@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import space.fishhub.android.core.designsystem.FishTheme
@@ -47,6 +48,7 @@ import space.fishhub.android.core.designsystem.component.FishTopBar
 import space.fishhub.android.feature.presence.PresencePresentation
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import java.time.Instant
 
 @Composable
 fun ChatAdaptiveLayout(
@@ -77,10 +79,12 @@ fun ChatAdaptiveLayout(
     onBlockParticipant: () -> Unit = {},
     onPhotoAttachmentClick: (String) -> Unit = {},
     onFileAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentShare: (String) -> Unit = {},
     onAttachmentLoadError: (String) -> Unit = {},
     onRetryConversation: () -> Unit = {},
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    onCallBack: (String) -> Unit = {},
     onOpenMessageSearch: () -> Unit = {},
     voiceRecording: VoiceRecordingUiState = VoiceRecordingUiState(),
     voiceRecordingEnabled: Boolean = false,
@@ -141,9 +145,11 @@ fun ChatAdaptiveLayout(
                         onBlockParticipant = onBlockParticipant,
                         onPhotoAttachmentClick = onPhotoAttachmentClick,
                         onFileAttachmentClick = onFileAttachmentClick,
+                        onFileAttachmentShare = onFileAttachmentShare,
                         onAttachmentLoadError = onAttachmentLoadError,
                         onStartAudioCall = onStartAudioCall,
                         onStartVideoCall = onStartVideoCall,
+                        onCallBack = onCallBack,
                         onOpenMessageSearch = onOpenMessageSearch,
                         voiceRecording = voiceRecording,
                         voiceRecordingEnabled = voiceRecordingEnabled,
@@ -191,6 +197,7 @@ fun ChatAdaptiveLayout(
                     onBlockParticipant = onBlockParticipant,
                     onPhotoAttachmentClick = onPhotoAttachmentClick,
                     onFileAttachmentClick = onFileAttachmentClick,
+                    onFileAttachmentShare = onFileAttachmentShare,
                     onAttachmentLoadError = onAttachmentLoadError,
                     onStartAudioCall = onStartAudioCall,
                     onStartVideoCall = onStartVideoCall,
@@ -240,9 +247,11 @@ fun ChatScreen(
     onBlockParticipant: () -> Unit = {},
     onPhotoAttachmentClick: (String) -> Unit = {},
     onFileAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentShare: (String) -> Unit = {},
     onAttachmentLoadError: (String) -> Unit = {},
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
+    onCallBack: (String) -> Unit = {},
     onOpenMessageSearch: () -> Unit = {},
     voiceRecording: VoiceRecordingUiState = VoiceRecordingUiState(),
     voiceRecordingEnabled: Boolean = false,
@@ -318,6 +327,7 @@ fun ChatScreen(
                 }
                 ChatTranscript(
                     messages = model.messages,
+                    callActivities = model.callActivities,
                     pagination = model.pagination,
                     hasMoreOlder = model.hasMoreOlder,
                     typingParticipantName = model.typingParticipantName,
@@ -327,6 +337,7 @@ fun ChatScreen(
                     onReportGif = onReportGif,
                     onPhotoAttachmentClick = onPhotoAttachmentClick,
                     onFileAttachmentClick = onFileAttachmentClick,
+                    onFileAttachmentShare = onFileAttachmentShare,
                     onAttachmentLoadError = onAttachmentLoadError,
                     onOpenMessageActions = {
                         showReactionsInitially = false
@@ -338,6 +349,7 @@ fun ChatScreen(
                     },
                     onToggleReaction = onToggleReaction,
                     onFocusMessage = onFocusMessage,
+                    onCallBack = onCallBack,
                     modifier = Modifier.weight(1f),
                 )
                 FishDivider()
@@ -410,6 +422,7 @@ fun ChatScreen(
 @Composable
 fun ChatTranscript(
     messages: List<MessageUiModel>,
+    callActivities: List<CallActivityUiModel> = emptyList(),
     pagination: OlderMessagesUiState,
     hasMoreOlder: Boolean = false,
     typingParticipantName: String?,
@@ -419,14 +432,16 @@ fun ChatTranscript(
     onReportGif: (String) -> Unit = {},
     onPhotoAttachmentClick: (String) -> Unit = {},
     onFileAttachmentClick: (String) -> Unit = {},
+    onFileAttachmentShare: (String) -> Unit = {},
     onAttachmentLoadError: (String) -> Unit = {},
     onOpenMessageActions: (String) -> Unit = {},
     onOpenReactionPicker: (String) -> Unit = {},
     onToggleReaction: (String, String) -> Unit = { _, _ -> },
     onFocusMessage: (String) -> Unit = {},
+    onCallBack: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    if (messages.isEmpty() && pagination == OlderMessagesUiState.Idle) {
+    if (messages.isEmpty() && callActivities.isEmpty() && pagination == OlderMessagesUiState.Idle) {
         Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             FishEmptyState(
                 title = stringResource(R.string.no_messages_title),
@@ -437,6 +452,21 @@ fun ChatTranscript(
     }
 
     val listState = rememberLazyListState()
+    val timeline = remember(messages, callActivities) {
+        (messages.map { message ->
+            ChatTimelineUiItem(
+                id = message.id,
+                timestamp = message.occurredAt.toInstantOrMin(),
+                message = message,
+            )
+        } + callActivities.map { activity ->
+            ChatTimelineUiItem(
+                id = activity.id,
+                timestamp = activity.occurredAt.toInstantOrMin(),
+                callActivity = activity,
+            )
+        }).sortedWith(compareBy<ChatTimelineUiItem> { it.timestamp }.thenBy { it.id })
+    }
     var previousLastMessageId by remember { mutableStateOf<String?>(null) }
     var handledFocusMessageId by remember { mutableStateOf<String?>(null) }
     var transcriptPositioned by remember { mutableStateOf(false) }
@@ -447,7 +477,7 @@ fun ChatTranscript(
         playingGifId = null
         playingVoiceId = null
     }
-    val lastMessageId = messages.lastOrNull()?.id
+    val lastMessageId = timeline.lastOrNull()?.id
     LaunchedEffect(lastMessageId, focusedMessageId) {
         if (focusedMessageId != null && handledFocusMessageId != focusedMessageId) {
             handledFocusMessageId = focusedMessageId
@@ -458,10 +488,10 @@ fun ChatTranscript(
         val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
         val nearLatest = lastVisibleIndex >= listState.layoutInfo.totalItemsCount - 3
         val sentByCurrentUser = messages.lastOrNull()?.isOutgoing == true
-        if (messages.isNotEmpty() &&
+        if (timeline.isNotEmpty() &&
             (previousLastMessageId == null || nearLatest || sentByCurrentUser)
         ) {
-            listState.scrollToItem(messages.lastIndex + 1)
+            listState.scrollToItem(timeline.lastIndex + 1)
             showNewMessages = false
         } else if (previousLastMessageId != null && !nearLatest) {
             showNewMessages = true
@@ -477,7 +507,7 @@ fun ChatTranscript(
         }.distinctUntilChanged().filter { it }.collect { showNewMessages = false }
     }
     LaunchedEffect(listState, hasMoreOlder, pagination, messages.firstOrNull()?.id) {
-        if (!hasMoreOlder || pagination != OlderMessagesUiState.Idle || messages.isEmpty()) return@LaunchedEffect
+        if (!hasMoreOlder || pagination != OlderMessagesUiState.Idle || timeline.isEmpty()) return@LaunchedEffect
         snapshotFlow { transcriptPositioned && listState.firstVisibleItemIndex <= 1 }
             .distinctUntilChanged()
             .filter { it }
@@ -490,7 +520,7 @@ fun ChatTranscript(
         }
     }
     LaunchedEffect(focusedMessageId, messages.map(MessageUiModel::id)) {
-        val focusedIndex = messages.indexOfFirst { it.id == focusedMessageId }
+        val focusedIndex = timeline.indexOfFirst { it.id == focusedMessageId }
         if (focusedIndex >= 0) {
             listState.scrollToItem(focusedIndex + 1)
             transcriptPositioned = true
@@ -509,10 +539,20 @@ fun ChatTranscript(
                 OlderMessagesState(state = pagination, onRetry = onRetryEarlier)
             }
             items(
-                items = messages,
+                items = timeline,
                 key = { it.id },
-                contentType = { "message" },
-            ) { message ->
+                contentType = { if (it.callActivity != null) "call" else "message" },
+            ) { timelineItem ->
+                val message = timelineItem.message
+                val callActivity = timelineItem.callActivity
+                if (callActivity != null) {
+                    ChatCallActivityRow(
+                        activity = callActivity,
+                        onCallBack = onCallBack,
+                    )
+                    return@items
+                }
+                if (message == null) return@items
                 if (message.dateLabel != null) {
                     MessageDateSeparator(message.dateLabel)
                 }
@@ -527,6 +567,7 @@ fun ChatTranscript(
                     onReportGif = { onReportGif(message.id) },
                     onPhotoAttachmentClick = onPhotoAttachmentClick,
                     onFileAttachmentClick = onFileAttachmentClick,
+                    onFileAttachmentShare = onFileAttachmentShare,
                     playingVoiceId = playingVoiceId,
                     onToggleVoice = { attachmentId ->
                         playingVoiceId = if (playingVoiceId == attachmentId) null else attachmentId
@@ -573,14 +614,56 @@ fun ChatTranscript(
                 label = stringResource(R.string.new_messages),
                 onClick = {
                     showNewMessages = false
-                    if (messages.isNotEmpty()) {
-                        listState.requestScrollToItem(messages.lastIndex + 1)
+                    if (timeline.isNotEmpty()) {
+                        listState.requestScrollToItem(timeline.lastIndex + 1)
                     }
                 },
                 variant = FishButtonVariant.Secondary,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(FishTheme.spacing.sm),
+            )
+        }
+    }
+}
+
+private data class ChatTimelineUiItem(
+    val id: String,
+    val timestamp: Instant,
+    val message: MessageUiModel? = null,
+    val callActivity: CallActivityUiModel? = null,
+)
+
+private fun String.toInstantOrMin(): Instant = runCatching { Instant.parse(this) }.getOrDefault(Instant.MIN)
+
+@Composable
+private fun ChatCallActivityRow(
+    activity: CallActivityUiModel,
+    onCallBack: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = FishTheme.spacing.xs)
+            .semantics(mergeDescendants = true) {},
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = activity.label,
+            color = FishTheme.colors.muted,
+            style = FishTheme.typography.ui,
+        )
+        Text(
+            text = activity.timeLabel,
+            color = FishTheme.colors.muted,
+            style = FishTheme.typography.caption,
+        )
+        if (activity.canCallBack) {
+            FishButton(
+                label = "Call back",
+                onClick = { onCallBack(activity.kind) },
+                variant = FishButtonVariant.Secondary,
+                modifier = Modifier.padding(top = FishTheme.spacing.xs),
             )
         }
     }

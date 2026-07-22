@@ -260,6 +260,22 @@ class MainActivity : ComponentActivity() {
                 pendingShareContent.value = null
                 importSharedContent(chatViewModel, conversationId, content)
             }
+            LaunchedEffect(chatViewModel) {
+                fishApplication.callCoordinator.state.collectLatest { state ->
+                    val call = state.current
+                    if (call.status in setOf(
+                            CallLifecycleStatus.Ended,
+                            CallLifecycleStatus.Rejected,
+                            CallLifecycleStatus.Cancelled,
+                            CallLifecycleStatus.Missed,
+                            CallLifecycleStatus.Failed,
+                        ) && call.counterpartId != null &&
+                        chatViewModel.currentConversation?.participantId == call.counterpartId
+                    ) {
+                        chatViewModel.refreshCallActivity()
+                    }
+                }
+            }
             FishTheme(
                 darkTheme = appPreferences.theme.isDark(isSystemInDarkTheme()),
                 reducedMotion = reducedMotion,
@@ -273,6 +289,7 @@ class MainActivity : ComponentActivity() {
                         mediaCatalog = mediaCatalog,
                         onStartAudioCall = { requestOutgoing(it, CallKind.Audio) },
                         onStartVideoCall = { requestOutgoing(it, CallKind.Video) },
+                        onCallBack = { kind -> requestCallBack(chatViewModel, kind) },
                         attachmentImportState = attachmentImport,
                         cameraAvailable = packageManager.hasSystemFeature(
                             PackageManager.FEATURE_CAMERA_ANY,
@@ -446,6 +463,16 @@ class MainActivity : ComponentActivity() {
             )
         ) return
         requestPermissions(PendingPermissionAction.Outgoing(participant, kind))
+    }
+
+    private fun requestCallBack(viewModel: ChatViewModel, kind: String) {
+        val participant = (viewModel.uiState.value as?
+            space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+            ?.model?.participant ?: return
+        requestOutgoing(
+            participant,
+            if (kind == "video") CallKind.Video else CallKind.Audio,
+        )
     }
 
     private fun requestIncomingAnswer(callId: String) {
