@@ -10,6 +10,7 @@ FISH is a ChatHub that teaches English to neurodivergent professionals, many wit
 - v1.0 Monochrome Foundations (2026-07-04) — 3 phases, 16 plans, 28/28 requirements, verified closeout (audit passed).
 - v1.1 The Coaching Loop Foundation (2026-07-06) — Phases 4, 7, 8; profiles + real persistent chat. Closed informally during the 2026-07-06 re-scope (no separate archive; its requirements are archived inside `milestones/v1.2-REQUIREMENTS.md`).
 - v1.2 Cross-platform Chat State Foundation (2026-07-11) — Phases 9–10, 26 plans, 12/12 requirements, audit passed (`milestones/v1.2-MILESTONE-AUDIT.md`). Phase 9 security review verified, 0 open threats. `/channels/:id` is the canonical community chat surface (the 1-on-1 `/chat` route was removed 2026-07-10).
+- v1.3 Shared Conversation Content (2026-07-22) — Phase 11 complete, 12/12 plans; the authorized shared-content contract, privacy hardening, cross-platform parity corpus, and adversarial verification gate are shipped.
 
 What works today:
 - Monochrome design system: `light-dark()` oklch token ladder, WCAG-AA contrast-tested, five kit components (Button, Input, Card, Progress, Alert), `/kit` demo page as the visual contract in both themes.
@@ -19,6 +20,7 @@ What works today:
 - Client profiles: safe-edit `/profile` (Server Action), instant-apply accessibility prefs, consent fields, read-only coach detail at `/coach/clients/[id]`.
 - Community chat at `/channels/:id`: persisted idempotent sends with an optimistic lifecycle and draft-safe failure recovery, realtime in-place merges (no duplicates, no layout shift), presence/typing, bounded 40+1 newest window on open, cursor-based load-earlier with infinite scroll and preserved reading position, identity-safe store purge on sign-out/identity change.
 - Portable chat-state contract: platform-neutral reducer/selectors in `@fish/core/chat-state`, 17 JSON fixture vectors, protocol docs + Android/iOS native architecture notes.
+- Shared-content contract: one member-scoped, deterministic gallery projection for supported direct-conversation content, with safe-link proof, deletion fan-out, bounded context, and TypeScript/Android/iOS parity verification.
 
 Known tech debt (non-blocking): from the v1.0 audit — Input lacks `aria-describedby`/`aria-invalid`; two hardcoded `/home` redirects bypass `authRedirects`; icon-guard regex breadth; tailwind caret-range pinning; stale dev seed password for client1. From the v1.2 audit — vite@8 wants `@types/node` >= 22.12.0 (installed 22.10.7, warning only). Full lists: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`, `.planning/milestones/v1.2-MILESTONE-AUDIT.md`.
 
