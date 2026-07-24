@@ -39,6 +39,7 @@ public struct ActionButton: View {
     private let isLoading: Bool
     private let fullWidth: Bool
     private let action: () -> Void
+    @Environment(\.fishReduceMotion) private var reduceMotion
 
     public init(
         _ title: String,
@@ -74,7 +75,11 @@ public struct ActionButton: View {
             ZStack {
                 if isLoading {
                     buttonLabel.hidden()
-                    ProgressView()
+                    if reduceMotion {
+                        StaticProgressIndicator()
+                    } else {
+                        ProgressView()
+                    }
                 } else {
                     buttonLabel
                 }
@@ -111,6 +116,22 @@ public struct ActionButton: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct StaticProgressIndicator: View {
+    var body: some View {
+        Circle()
+            .trim(from: 0.12, to: 0.82)
+            .stroke(
+                style: StrokeStyle(
+                    lineWidth: 2,
+                    lineCap: .round
+                )
+            )
+            .rotationEffect(.degrees(-90))
+            .frame(width: 20, height: 20)
+            .accessibilityHidden(true)
     }
 }
 

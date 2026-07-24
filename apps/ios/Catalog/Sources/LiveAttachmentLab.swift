@@ -58,7 +58,15 @@ final class LiveChatLab {
 
     init(configuration: LiveChatLabConfiguration) {
         self.configuration = configuration
-        imageLoader = MessageImageLoader(allowedHost: configuration.supabaseUrl.host)
+        imageLoader = MessageImageLoader(
+            urlPolicy: SharedContentMediaURLPolicy(
+                supabaseURL: configuration.supabaseUrl,
+                allowsLocalDevelopment:
+                    SharedContentMediaURLPolicy.isLocalDevelopmentBackend(
+                        configuration.supabaseUrl
+                    )
+            )
+        )
         fileDownloader = AttachmentFileDownloader(allowedHost: configuration.supabaseUrl.host)
     }
 

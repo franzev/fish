@@ -19,6 +19,75 @@ public struct TranscriptContext: Sendable {
     }
 }
 
+public enum PersonalChatFocusTarget: Hashable, Sendable {
+    case participantDetails
+    case headerSharedContent
+    case detailsSharedContent
+}
+
+public enum SharedContentOrigin: Hashable, Sendable {
+    case conversationHeader
+    case conversationDetails
+}
+
+public enum SharedContentEntry: CaseIterable, Hashable, Sendable {
+    case conversationHeader
+    case conversationDetails
+
+    public var accessibilityLabel: String { "Shared content" }
+    public var minimumTarget: CGFloat { Metrics.targetTouch }
+
+    public var accessibilityIdentifier: String {
+        switch self {
+        case .conversationHeader:
+            "conversation-header-shared-content"
+        case .conversationDetails:
+            "conversation-details-shared-content"
+        }
+    }
+
+    public var origin: SharedContentOrigin {
+        switch self {
+        case .conversationHeader: .conversationHeader
+        case .conversationDetails: .conversationDetails
+        }
+    }
+
+    public var focusTarget: PersonalChatFocusTarget {
+        switch self {
+        case .conversationHeader: .headerSharedContent
+        case .conversationDetails: .detailsSharedContent
+        }
+    }
+}
+
+public struct SharedContentNavigationContext: Hashable, Sendable {
+    public let ownerIdentityId: String
+    public let conversationId: String
+
+    public init(ownerIdentityId: String, conversationId: String) {
+        precondition(!ownerIdentityId.isEmpty)
+        precondition(!conversationId.isEmpty)
+        self.ownerIdentityId = ownerIdentityId
+        self.conversationId = conversationId
+    }
+}
+
+public struct SharedContentNavigationIntent: Hashable, Sendable {
+    public let origin: SharedContentOrigin
+    public let context: SharedContentNavigationContext
+    public let focusTarget: PersonalChatFocusTarget
+
+    public init(
+        entry: SharedContentEntry,
+        context: SharedContentNavigationContext
+    ) {
+        self.origin = entry.origin
+        self.context = context
+        self.focusTarget = entry.focusTarget
+    }
+}
+
 /// Stateless one-to-one conversation: presentation model in, user intents out.
 /// The only local state is the media picker sheet's visibility — staged media
 /// travels through the `selection` binding the host owns, like the draft.
@@ -38,6 +107,9 @@ public struct PersonalChatScreen: View {
     private let onCancelComposerContext: () -> Void
     private let onComposerFocusChanged: (Bool) -> Void
     private let onBack: (() -> Void)?
+    private let sharedContentContext: SharedContentNavigationContext?
+    private let onOpenConversationDetails: (() -> Void)?
+    private let onOpenSharedContent: ((SharedContentNavigationIntent) -> Void)?
     private let trailingContent: AnyView?
     private let accountContent: AnyView?
     private let attachmentUploads: AttachmentUploadsModel?
@@ -47,6 +119,7 @@ public struct PersonalChatScreen: View {
 
     @State private var isMediaPickerPresented = false
     @State private var pendingVoiceUploadId: String?
+    @Binding private var requestedFocus: PersonalChatFocusTarget?
     @Environment(\.scenePhase) private var scenePhase
 
     public init(
@@ -69,8 +142,12 @@ public struct PersonalChatScreen: View {
         onCancelComposerContext: @escaping () -> Void = {},
         onComposerFocusChanged: @escaping (Bool) -> Void = { _ in },
         onBack: (() -> Void)? = nil,
+        sharedContentContext: SharedContentNavigationContext? = nil,
+        onOpenConversationDetails: (() -> Void)? = nil,
+        onOpenSharedContent: ((SharedContentNavigationIntent) -> Void)? = nil,
         trailingContent: AnyView? = nil,
-        accountContent: AnyView? = nil
+        accountContent: AnyView? = nil,
+        requestedFocus: Binding<PersonalChatFocusTarget?> = .constant(nil)
     ) {
         self.model = model
         self._draft = draft
@@ -91,8 +168,12 @@ public struct PersonalChatScreen: View {
         self.onCancelComposerContext = onCancelComposerContext
         self.onComposerFocusChanged = onComposerFocusChanged
         self.onBack = onBack
+        self.sharedContentContext = sharedContentContext
+        self.onOpenConversationDetails = onOpenConversationDetails
+        self.onOpenSharedContent = onOpenSharedContent
         self.trailingContent = trailingContent
         self.accountContent = accountContent
+        self._requestedFocus = requestedFocus
     }
 
     nonisolated static func composerState(
@@ -111,8 +192,20 @@ public struct PersonalChatScreen: View {
                 participantName: model.participantName,
                 presence: model.presence,
                 onBack: onBack,
+                onOpenConversationDetails: onOpenConversationDetails,
+                onOpenSharedContent: sharedContentContext.flatMap { context in
+                    onOpenSharedContent.map { onOpenSharedContent in
+                        {
+                            onOpenSharedContent(SharedContentNavigationIntent(
+                                entry: .conversationHeader,
+                                context: context
+                            ))
+                        }
+                    }
+                },
                 trailingContent: trailingContent,
-                accountContent: accountContent
+                accountContent: accountContent,
+                requestedFocus: $requestedFocus
             )
             switch model.phase {
             case .unavailable:

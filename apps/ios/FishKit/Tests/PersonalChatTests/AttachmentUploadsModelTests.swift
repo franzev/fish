@@ -379,7 +379,7 @@ private final class SequentialIds: @unchecked Sendable {
         // Snapshot suites render synchronously on the same MainActor in the
         // package-wide test process, so leave enough wall-clock headroom for
         // those captures without weakening the per-state assertions.
-        timeout: Duration = .seconds(10),
+        timeout: Duration = .seconds(30),
         _ predicate: @MainActor () async -> Bool
     ) async -> Bool {
         let clock = ContinuousClock()

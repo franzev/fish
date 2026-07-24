@@ -46,6 +46,7 @@ public enum Icon: String, CaseIterable, Sendable {
     case paperclip
     case photo
     case fileText = "file-text"
+    case link
     case download
     case share
     case chevronLeft = "chevron-left"

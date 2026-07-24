@@ -2,6 +2,7 @@ import AccountSettings
 import CallData
 import CallMediaLiveKit
 import Calls
+import ChatCore
 import ChatData
 import DesignSystem
 import Foundation
@@ -162,6 +163,11 @@ private struct PendingConversationDestination {
     let notificationId: String?
 }
 
+private enum ConversationDestination: Hashable {
+    case details(SharedContentNavigationContext)
+    case sharedContent(SharedContentNavigationIntent)
+}
+
 struct FishRoot: View {
     @Bindable var model: FishAppModel
     @Bindable var deviceSettings: DeviceSettingsStore
@@ -229,8 +235,11 @@ struct FishRoot: View {
             .presentationDragIndicator(.visible)
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            model.refreshNotificationSettingsIfNeeded()
+            model.sharedContentScenePhaseChanged(phase)
+            if phase == .active {
+                model.refreshNotificationSettingsIfNeeded()
+                Task { await model.sharedContentIdentityCoordinator.foreground() }
+            }
         }
         .task {
             model.refreshNotificationSettingsIfNeeded()
@@ -322,6 +331,8 @@ private struct InboxView: View {
 
 private struct ConversationView: View {
     @Bindable var model: FishAppModel
+    @State private var path: [ConversationDestination] = []
+    @State private var requestedFocus: PersonalChatFocusTarget?
 
     var body: some View {
         if let store = model.conversationStore,
@@ -340,63 +351,77 @@ private struct ConversationView: View {
                 get: { search.isPresented },
                 set: { if !$0 { search.close() } }
             )
-            PersonalChatScreen(
-                model: store.model,
-                draft: draft,
-                selection: selection,
-                gifProvider: model.gifProvider,
-                attachmentUploads: uploads,
-                attachmentCommands: session.attachmentCommands,
-                imageLoader: model.imageLoader,
-                fileDownloader: model.fileDownloader,
-                onSend: { payload in Task { await store.send(payload) } },
-                onRetryMessage: { id in Task { await store.retry(messageId: id) } },
-                onRetryOlder: { Task { await store.loadOlder() } },
-                onMessageAction: store.perform,
-                onFocusMessage: { id in Task { await store.focusMessage(id) } },
-                onVisibleMessage: store.visibleMessage,
-                onCallBack: { kind in
-                    guard let callModel = model.callModel,
-                          let callMedia = model.callMedia,
-                          let callKit = model.callKit else { return }
-                    callKit.startOutgoing(
-                        model: callModel,
-                        media: callMedia,
-                        recipientId: store.participantId,
-                        recipientName: store.participantName,
-                        kind: CallKind(rawValue: kind) ?? .audio
-                    )
-                },
-                onCancelComposerContext: store.cancelComposerContext,
-                onComposerFocusChanged: store.composerFocusChanged,
-                onBack: model.closeConversation,
-                trailingContent: AnyView(
-                    HStack(spacing: Spacing.xs) {
-                        if let callModel = model.callModel,
-                           let callMedia = model.callMedia,
-                           let callKit = model.callKit {
-                            CallEntryButtons(
-                                recipientName: store.participantName,
-                                busy: callModel.busy,
-                                onStartCall: { kind in
-                                    callKit.startOutgoing(
-                                        model: callModel,
-                                        media: callMedia,
-                                        recipientId: store.participantId,
-                                        recipientName: store.participantName,
-                                        kind: kind
-                                    )
-                                }
+            NavigationStack(path: $path) {
+                PersonalChatScreen(
+                    model: store.model,
+                    draft: draft,
+                    selection: selection,
+                    gifProvider: model.gifProvider,
+                    attachmentUploads: uploads,
+                    attachmentCommands: session.attachmentCommands,
+                    imageLoader: model.imageLoader,
+                    fileDownloader: model.fileDownloader,
+                    onSend: { payload in Task { await store.send(payload) } },
+                    onRetryMessage: { id in Task { await store.retry(messageId: id) } },
+                    onRetryOlder: { Task { await store.loadOlder() } },
+                    onMessageAction: store.perform,
+                    onFocusMessage: { id in Task { await store.focusMessage(id) } },
+                    onVisibleMessage: store.visibleMessage,
+                    onCallBack: { kind in
+                        guard let callModel = model.callModel,
+                              let callMedia = model.callMedia,
+                              let callKit = model.callKit else { return }
+                        callKit.startOutgoing(
+                            model: callModel,
+                            media: callMedia,
+                            recipientId: store.participantId,
+                            recipientName: store.participantName,
+                            kind: CallKind(rawValue: kind) ?? .audio
+                        )
+                    },
+                    onCancelComposerContext: store.cancelComposerContext,
+                    onComposerFocusChanged: store.composerFocusChanged,
+                    onBack: model.closeConversation,
+                    sharedContentContext: model.sharedContentNavigationContext,
+                    onOpenConversationDetails: {
+                        guard let context = model.sharedContentNavigationContext else { return }
+                        path.append(.details(context))
+                    },
+                    onOpenSharedContent: openSharedContent,
+                    trailingContent: AnyView(
+                        HStack(spacing: Spacing.xs) {
+                            if let callModel = model.callModel,
+                               let callMedia = model.callMedia,
+                               let callKit = model.callKit {
+                                CallEntryButtons(
+                                    recipientName: store.participantName,
+                                    busy: callModel.busy,
+                                    onStartCall: { kind in
+                                        callKit.startOutgoing(
+                                            model: callModel,
+                                            media: callMedia,
+                                            recipientId: store.participantId,
+                                            recipientName: store.participantName,
+                                            kind: kind
+                                        )
+                                    }
+                                )
+                            }
+                            IconButton(
+                                .search,
+                                accessibilityLabel: "Search messages",
+                                action: store.openMessageSearch
                             )
                         }
-                        IconButton(
-                            .search,
-                            accessibilityLabel: "Search messages",
-                            action: store.openMessageSearch
-                        )
-                    }
+                    ),
+                    requestedFocus: $requestedFocus
                 )
-            )
+                .navigationDestination(for: ConversationDestination.self) {
+                    destinationView($0, store: store)
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .onChange(of: path, handlePathChange)
             .sheet(isPresented: searchPresented, onDismiss: search.close) {
                 MessageSearchScreen(
                     model: search,
@@ -412,6 +437,74 @@ private struct ConversationView: View {
             LoadingView(message: "Opening conversation…")
         }
     }
+
+    @ViewBuilder
+    private func destinationView(
+        _ destination: ConversationDestination,
+        store: ConversationStore
+    ) -> some View {
+        switch destination {
+        case .details(let context):
+            if context == model.sharedContentNavigationContext {
+                ConversationDetailsSheet(
+                    participantName: store.participantName,
+                    presence: store.model.presence,
+                    onBack: popDestination,
+                    onOpenSharedContent: {
+                        openSharedContent(SharedContentNavigationIntent(
+                            entry: .conversationDetails,
+                            context: context
+                        ))
+                    },
+                    requestedFocus: $requestedFocus
+                )
+            } else {
+                LoadingView(message: "Opening conversation…")
+            }
+        case .sharedContent(let intent):
+            if intent == model.activeSharedContentIntent,
+               let galleryModel = model.sharedContentGalleryModel {
+                SharedContentGalleryScreen(
+                    model: galleryModel,
+                    onBack: popDestination
+                )
+            } else {
+                LoadingView(message: "Opening shared content…")
+            }
+        }
+    }
+
+    private func openSharedContent(_ intent: SharedContentNavigationIntent) {
+        guard path.last != .sharedContent(intent) else { return }
+        Task { @MainActor in
+            guard await model.prepareSharedContentRoute(intent),
+                  model.activeSharedContentIntent == intent
+            else { return }
+            path.append(.sharedContent(intent))
+        }
+    }
+
+    private func popDestination() {
+        guard let destination = path.last else { return }
+        if case .sharedContent = destination {
+            model.closeSharedContentRoute()
+        }
+        path.removeLast()
+    }
+
+    private func handlePathChange(
+        _ oldPath: [ConversationDestination],
+        _ newPath: [ConversationDestination]
+    ) {
+        guard let removed = oldPath.last, !newPath.contains(removed) else { return }
+        switch removed {
+        case .sharedContent(let intent):
+            model.closeSharedContentRoute()
+            requestedFocus = intent.focusTarget
+        case .details:
+            requestedFocus = .participantDetails
+        }
+    }
 }
 
 @MainActor @Observable
@@ -421,7 +514,11 @@ final class FishAppModel {
     let configuration: FishAppConfiguration
     let gifProvider: KlipyGifProvider
     let imageLoader: MessageImageLoader
+    let sharedContentIdentityCoordinator: SharedContentIdentityCoordinator
     private(set) var fileDownloader: AttachmentFileDownloader
+    private let sharedContentCache: CoreDataSharedContentCache?
+    private let sharedContentThumbnails: SharedContentThumbnailStore?
+    private let sharedContentNetworkMonitor: SharedContentNetworkPolicyMonitor
 
     var phase: Phase = .loading
     var email = ""
@@ -438,6 +535,8 @@ final class FishAppModel {
     private(set) var callModel: CallSessionModel?
     private(set) var callMedia: LiveKitCallMedia?
     private(set) var callKit: CallKitCoordinator?
+    private(set) var sharedContentGalleryModel: SharedContentGalleryModel?
+    private(set) var activeSharedContentIntent: SharedContentNavigationIntent?
     private var draftStore: (any ChatDraftProviding)?
     private let notificationReplyStore = FileChatNotificationReplyStore.shared
     private var isProcessingNotificationReplies = false
@@ -462,6 +561,13 @@ final class FishAppModel {
     private var isRequestingNotifications = false
     private var isLoadingBlockedPeople = false
     private var accountSettingsGeneration = UUID()
+    private var sharedContentStore: SharedContentStore?
+    private var sharedContentMediaRuntime: SharedContentMediaRuntime?
+    private var sharedContentCleanupTask: Task<Void, Never>?
+    private var sharedContentCleanupGeneration = UUID()
+    private var sharedContentRouteGeneration = UUID()
+    private var sharedContentNetworkTask: Task<Void, Never>?
+    private var sharedContentRealtimeTask: Task<Void, Never>?
 
     init(
         configuration: FishAppConfiguration,
@@ -475,7 +581,26 @@ final class FishAppModel {
             apiKey: configuration.klipyApiKey,
             clientKey: configuration.klipyClientKey
         )
-        imageLoader = MessageImageLoader(allowedHost: configuration.supabaseUrl?.host)
+        let imageLoader = MessageImageLoader(
+            urlPolicy: SharedContentMediaURLPolicy(
+                supabaseURL: configuration.supabaseUrl,
+                allowsLocalDevelopment: configuration.allowsLocalDevelopmentMedia
+            )
+        )
+        self.imageLoader = imageLoader
+        let sharedContentCache = try? Self.makeSharedContentCache()
+        let sharedContentThumbnails = try? SharedContentThumbnailStore()
+        self.sharedContentCache = sharedContentCache
+        self.sharedContentThumbnails = sharedContentThumbnails
+        sharedContentNetworkMonitor = SharedContentNetworkPolicyMonitor()
+        sharedContentIdentityCoordinator = SharedContentIdentityCoordinator(
+            purgePort: DefaultSharedContentPurgePort(
+                imageLoader: imageLoader,
+                cache: sharedContentCache,
+                thumbnailStore: sharedContentThumbnails,
+                storageAvailable: sharedContentCache != nil && sharedContentThumbnails != nil
+            )
+        )
         fileDownloader = AttachmentFileDownloader(allowedHost: configuration.supabaseUrl?.host)
         appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         if let stored = UserDefaults.standard.string(forKey: "fish.push.installation-id"),
@@ -500,6 +625,212 @@ final class FishAppModel {
 
     var canManageBlockedPeople: Bool {
         session?.account?.role == .client
+    }
+
+    var sharedContentNavigationContext: SharedContentNavigationContext? {
+        guard let session,
+              let conversationStore,
+              sharedContentCache != nil,
+              sharedContentThumbnails != nil,
+              sharedContentIdentityCoordinator.isGalleryEligible(for: session.userId)
+        else { return nil }
+        return SharedContentNavigationContext(
+            ownerIdentityId: session.userId,
+            conversationId: conversationStore.conversationId
+        )
+    }
+
+    func prepareSharedContentRoute(_ intent: SharedContentNavigationIntent) async -> Bool {
+        guard intent.context == sharedContentNavigationContext,
+              let session,
+              let cache = sharedContentCache,
+              let thumbnails = sharedContentThumbnails
+        else { return false }
+        if activeSharedContentIntent == intent, sharedContentGalleryModel != nil {
+            return true
+        }
+
+        await closeSharedContentRouteAndWait()
+        let routeGeneration = UUID()
+        sharedContentRouteGeneration = routeGeneration
+        let ownerIdentityId = session.userId
+        let conversationId = intent.context.conversationId
+        let repository = SupabaseSharedContentRepository(
+            configuration: session.backend,
+            cache: cache,
+            directory: session.directory,
+            verifiedOwner: { [weak self] in
+                await MainActor.run {
+                    guard let self,
+                          self.session?.userId == ownerIdentityId,
+                          self.sharedContentIdentityCoordinator.isGalleryEligible(
+                              for: ownerIdentityId
+                          )
+                    else { return nil }
+                    return ownerIdentityId
+                }
+            }
+        )
+        let galleryModelHolder = SharedContentGalleryModelHolder()
+        let store = SharedContentStore(
+            provider: repository,
+            thumbnailStore: thumbnails,
+            submitDeliveryBatch: { [weak self, galleryModelHolder] batch in
+                guard let galleryModel = galleryModelHolder.model else { return Task {} }
+                return Task { @MainActor [weak self, weak galleryModel] in
+                    guard let self,
+                          let galleryModel,
+                          !Task.isCancelled,
+                          sharedContentRouteGeneration == routeGeneration
+                    else { return }
+                    for itemId in batch.ids {
+                        guard !Task.isCancelled,
+                              sharedContentRouteGeneration == routeGeneration,
+                              let request = galleryModel.thumbnailRequest(itemId: itemId)
+                        else { return }
+                        _ = await galleryModel.thumbnailData(
+                            for: .init(
+                                itemId: request.itemId,
+                                contentVersion: request.contentVersion
+                            ),
+                            intent: batch.intent
+                        )
+                        guard !Task.isCancelled,
+                              sharedContentRouteGeneration == routeGeneration
+                        else { return }
+                    }
+                }
+            }
+        )
+        sharedContentIdentityCoordinator.attachStore(store)
+        await store.bind(
+            ownerIdentityId: ownerIdentityId,
+            conversationId: conversationId
+        )
+        store.connectivityChanged(await sharedContentNetworkMonitor.current())
+
+        guard sharedContentRouteGeneration == routeGeneration,
+              intent.context == sharedContentNavigationContext
+        else {
+            let cancelledTasks = store.close()
+            for task in cancelledTasks {
+                await task.value
+            }
+            if sharedContentRouteGeneration == routeGeneration {
+                sharedContentIdentityCoordinator.attachStore(nil)
+            }
+            return false
+        }
+
+        let deliveryStore = SharedContentDeliveryStore(
+            ownerIdentityId: ownerIdentityId,
+            conversationId: conversationId,
+            identityGeneration: store.identityGeneration,
+            commands: session.attachmentCommands
+        )
+        let mediaRuntime = SharedContentMediaRuntime(
+            messaging: session.messaging,
+            deliveryStore: deliveryStore,
+            thumbnailStore: thumbnails,
+            urlPolicy: SharedContentMediaURLPolicy(
+                supabaseURL: session.backend.supabaseUrl,
+                allowsLocalDevelopment: configuration.allowsLocalDevelopmentMedia
+            )
+        )
+        let model = SharedContentGalleryModel(
+            store: store,
+            thumbnailLoader: { request, intent in
+                await mediaRuntime.load(request, intent: intent)
+            }
+        )
+        galleryModelHolder.model = model
+        sharedContentStore = store
+        sharedContentMediaRuntime = mediaRuntime
+        sharedContentGalleryModel = model
+        activeSharedContentIntent = intent
+        sharedContentNetworkTask = Task { @MainActor [weak self, weak store] in
+            guard let self, let store else { return }
+            for await policy in sharedContentNetworkMonitor.updates {
+                guard !Task.isCancelled,
+                      sharedContentRouteGeneration == routeGeneration,
+                      sharedContentStore === store
+                else { return }
+                store.connectivityChanged(policy)
+            }
+        }
+        sharedContentRealtimeTask = Task { @MainActor [weak self, weak store] in
+            guard let self, let store else { return }
+            for await changedConversationId in session.directory.attentionEvents(
+                conversationIds: [conversationId]
+            ) {
+                guard !Task.isCancelled,
+                      sharedContentRouteGeneration == routeGeneration,
+                      sharedContentStore === store
+                else { return }
+                if changedConversationId == conversationId {
+                    store.realtime()
+                }
+            }
+        }
+        return true
+    }
+
+    func closeSharedContentRoute() {
+        guard sharedContentStore != nil ||
+                sharedContentGalleryModel != nil ||
+                sharedContentMediaRuntime != nil
+        else { return }
+        sharedContentRouteGeneration = UUID()
+        sharedContentNetworkTask?.cancel()
+        sharedContentRealtimeTask?.cancel()
+        sharedContentNetworkTask = nil
+        sharedContentRealtimeTask = nil
+        let generation = sharedContentStore?.identityGeneration
+        let cancelledTasks: [Task<Void, Never>]
+        if let sharedContentGalleryModel {
+            cancelledTasks = sharedContentGalleryModel.close()
+        } else {
+            cancelledTasks = sharedContentStore?.close() ?? []
+        }
+        let mediaRuntime = sharedContentMediaRuntime
+        let cleanupGeneration = UUID()
+        sharedContentCleanupGeneration = cleanupGeneration
+        sharedContentCleanupTask = Task {
+            if let generation {
+                await mediaRuntime?.close(generation: generation)
+            }
+            for task in cancelledTasks {
+                await task.value
+            }
+        }
+        sharedContentIdentityCoordinator.attachStore(nil)
+        sharedContentStore = nil
+        sharedContentMediaRuntime = nil
+        sharedContentGalleryModel = nil
+        activeSharedContentIntent = nil
+    }
+
+    private func closeSharedContentRouteAndWait() async {
+        closeSharedContentRoute()
+        let cleanupGeneration = sharedContentCleanupGeneration
+        guard let cleanupTask = sharedContentCleanupTask else { return }
+        await cleanupTask.value
+        if sharedContentCleanupGeneration == cleanupGeneration {
+            sharedContentCleanupTask = nil
+        }
+    }
+
+    func sharedContentScenePhaseChanged(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            sharedContentStore?.foreground()
+        case .background:
+            sharedContentStore?.didEnterBackground()
+        case .inactive:
+            break
+        @unknown default:
+            break
+        }
     }
 
     func showAccountSettings() {
@@ -715,9 +1046,11 @@ final class FishAppModel {
             ) {
                 await attach(session)
             } else {
+                await sharedContentIdentityCoordinator.start(verifiedOwnerIdentityId: nil)
                 phase = .signedOut
             }
         } catch {
+            await sharedContentIdentityCoordinator.start(verifiedOwnerIdentityId: nil)
             notice = "Your session could not be restored. Sign in again."
             phase = .signedOut
         }
@@ -756,6 +1089,8 @@ final class FishAppModel {
     }
 
     func signOut() async {
+        await closeSharedContentRouteAndWait()
+        await sharedContentIdentityCoordinator.transition(to: nil)
         isShowingAccountSettings = false
         accountSettingsGeneration = UUID()
         accountPresence = AccountSettingsPresence()
@@ -883,6 +1218,8 @@ final class FishAppModel {
     }
 
     private func attach(_ session: ChatLiveSession) async {
+        await closeSharedContentRouteAndWait()
+        await sharedContentIdentityCoordinator.transition(to: session.userId)
         self.session = session
         currentUserId = session.userId
         draftStore = FileChatDraftStore(accountId: session.userId)
@@ -939,6 +1276,7 @@ final class FishAppModel {
     }
 
     private func stopConversation() async {
+        await closeSharedContentRouteAndWait()
         uploads?.dismiss()
         if let conversationStore {
             await conversationStore.flushDraft()
@@ -946,6 +1284,22 @@ final class FishAppModel {
         }
         conversationStore = nil
         uploads = nil
+    }
+
+    private static func makeSharedContentCache() throws -> CoreDataSharedContentCache {
+        let applicationSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first!.appending(path: "FishSharedContent", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(
+            at: applicationSupport,
+            withIntermediateDirectories: true
+        )
+        return try CoreDataSharedContentCache(
+            configuration: SharedContentCacheConfiguration(
+                storeURL: applicationSupport.appendingPathComponent("SharedContentCache.sqlite")
+            )
+        )
     }
 
     private func updateApplicationBadge() async {
@@ -1167,6 +1521,11 @@ final class FishAppModel {
     }
 }
 
+@MainActor
+private final class SharedContentGalleryModelHolder {
+    weak var model: SharedContentGalleryModel?
+}
+
 struct FishAppConfiguration: Sendable {
     let supabaseUrl: URL?
     let anonKey: String?
@@ -1174,6 +1533,30 @@ struct FishAppConfiguration: Sendable {
     let klipyClientKey: String
     let webBaseURL: URL?
     let isRelease: Bool
+
+    init(
+        supabaseUrl: URL?,
+        anonKey: String?,
+        klipyApiKey: String?,
+        klipyClientKey: String,
+        webBaseURL: URL?,
+        isRelease: Bool
+    ) {
+        self.supabaseUrl = Self.validatedBackendURL(
+            supabaseUrl,
+            isRelease: isRelease
+        )
+        self.anonKey = anonKey
+        self.klipyApiKey = klipyApiKey
+        self.klipyClientKey = klipyClientKey
+        self.webBaseURL = webBaseURL
+        self.isRelease = isRelease
+    }
+
+    var allowsLocalDevelopmentMedia: Bool {
+        !isRelease &&
+            SharedContentMediaURLPolicy.isLocalDevelopmentBackend(supabaseUrl)
+    }
 
     static func fromBundle(
         _ bundle: Bundle = .main,
@@ -1208,6 +1591,20 @@ struct FishAppConfiguration: Sendable {
             path: path,
             isRelease: isRelease
         )
+    }
+
+    private static func validatedBackendURL(
+        _ url: URL?,
+        isRelease: Bool
+    ) -> URL? {
+        guard let url else { return nil }
+        if isRelease {
+            return url.scheme?.lowercased() == "https" ? url : nil
+        }
+        return url.scheme?.lowercased() == "https" ||
+            SharedContentMediaURLPolicy.isLocalDevelopmentBackend(url)
+            ? url
+            : nil
     }
 }
 

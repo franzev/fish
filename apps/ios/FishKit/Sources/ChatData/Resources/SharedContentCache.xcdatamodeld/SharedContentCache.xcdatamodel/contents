@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23515" systemVersion="25G86" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="SharedContentCacheOwnerRecord" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="ownerIdentityId" optional="NO" attributeType="String"/>
+        <attribute name="conversationId" optional="NO" attributeType="String"/>
+        <attribute name="schemaVersion" optional="NO" attributeType="Integer 64" defaultValueString="1"/>
+        <attribute name="savedAt" optional="NO" attributeType="Date"/>
+        <attribute name="lastAuthoritativeAt" optional="YES" attributeType="Date"/>
+        <attribute name="lastAccessedAt" optional="NO" attributeType="Date"/>
+        <attribute name="authoritativeEmptyConfirmed" optional="NO" attributeType="Boolean" defaultValueString="NO"/>
+        <attribute name="retainedOldestCursor" optional="YES" attributeType="String"/>
+        <attribute name="retainedHistoryComplete" optional="NO" attributeType="Boolean" defaultValueString="YES"/>
+        <attribute name="newestWindowProtected" optional="NO" attributeType="Boolean" defaultValueString="YES"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="ownerIdentityId"/>
+                <constraint value="conversationId"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="SharedContentCachePageRecord" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="ownerIdentityId" optional="NO" attributeType="String"/>
+        <attribute name="conversationId" optional="NO" attributeType="String"/>
+        <attribute name="pageId" optional="NO" attributeType="String"/>
+        <attribute name="pageOrdinal" optional="NO" attributeType="Integer 64"/>
+        <attribute name="retainedCursor" optional="YES" attributeType="String"/>
+        <attribute name="lastAccessedAt" optional="NO" attributeType="Date"/>
+        <attribute name="isNewestWindow" optional="NO" attributeType="Boolean" defaultValueString="NO"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="ownerIdentityId"/>
+                <constraint value="conversationId"/>
+                <constraint value="pageId"/>
+            </uniquenessConstraint>
+            <uniquenessConstraint>
+                <constraint value="ownerIdentityId"/>
+                <constraint value="conversationId"/>
+                <constraint value="pageOrdinal"/>
+                <constraint value="retainedCursor"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="SharedContentCacheItemRecord" representedClassName="NSManagedObject" syncable="YES">
+        <attribute name="ownerIdentityId" optional="NO" attributeType="String"/>
+        <attribute name="conversationId" optional="NO" attributeType="String"/>
+        <attribute name="itemId" optional="NO" attributeType="String"/>
+        <attribute name="sourceMessageId" optional="NO" attributeType="String"/>
+        <attribute name="senderId" optional="NO" attributeType="String"/>
+        <attribute name="sourceCreatedAt" optional="NO" attributeType="String"/>
+        <attribute name="sourceRank" optional="NO" attributeType="Integer 64"/>
+        <attribute name="category" optional="NO" attributeType="String"/>
+        <attribute name="kind" optional="NO" attributeType="String"/>
+        <attribute name="attachmentId" optional="YES" attributeType="String"/>
+        <attribute name="attachmentOriginalName" optional="YES" attributeType="String"/>
+        <attribute name="attachmentMimeType" optional="YES" attributeType="String"/>
+        <attribute name="attachmentByteSize" optional="YES" attributeType="Integer 64"/>
+        <attribute name="attachmentWidth" optional="YES" attributeType="Integer 64"/>
+        <attribute name="attachmentHeight" optional="YES" attributeType="Integer 64"/>
+        <attribute name="durationMs" optional="YES" attributeType="Integer 64"/>
+        <attribute name="gifProvider" optional="YES" attributeType="String"/>
+        <attribute name="gifProviderContentId" optional="YES" attributeType="String"/>
+        <attribute name="gifTitle" optional="YES" attributeType="String"/>
+        <attribute name="gifDescription" optional="YES" attributeType="String"/>
+        <attribute name="stickerId" optional="YES" attributeType="String"/>
+        <attribute name="linkMetadataJson" optional="YES" attributeType="String"/>
+        <attribute name="pageId" optional="NO" attributeType="String"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="ownerIdentityId"/>
+                <constraint value="conversationId"/>
+                <constraint value="itemId"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+</model>

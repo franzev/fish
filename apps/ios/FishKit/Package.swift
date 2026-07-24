@@ -47,7 +47,8 @@ let package = Package(
             dependencies: [
                 "ChatCore",
                 .product(name: "Supabase", package: "supabase-swift"),
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .target(
             name: "PersonalChat",
