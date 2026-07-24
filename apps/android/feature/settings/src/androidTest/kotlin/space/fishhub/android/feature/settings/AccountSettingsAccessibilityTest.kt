@@ -1,6 +1,7 @@
 package space.fishhub.android.feature.settings
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
@@ -20,8 +21,9 @@ class AccountSettingsAccessibilityTest {
 
     @Test
     fun accountRowsAndDismissControlsHaveAccessibleTargets() {
+        val page = mutableStateOf("account")
         composeRule.setContent {
-            FishTheme { AccountSettingsPreviewContent() }
+            FishTheme { AccountSettingsPreviewContent(page = page.value) }
         }
         composeRule.enableAccessibilityChecks()
 
@@ -31,17 +33,13 @@ class AccountSettingsAccessibilityTest {
         composeRule.onNodeWithText("Sign out")
             .assertHeightIsAtLeast(48.dp)
 
-        composeRule.setContent {
-            FishTheme { AccountSettingsPreviewContent(page = "presence") }
-        }
+        composeRule.runOnIdle { page.value = "presence" }
         composeRule.onNodeWithContentDescription("Back")
             .assertHeightIsAtLeast(48.dp)
         composeRule.onNodeWithContentDescription("Close")
             .assertHeightIsAtLeast(48.dp)
 
-        composeRule.setContent {
-            FishTheme { AccountSettingsPreviewContent(page = "blocked") }
-        }
+        composeRule.runOnIdle { page.value = "blocked" }
         composeRule.onNodeWithText("Sam")
             .assertHeightIsAtLeast(48.dp)
             .assertWidthIsAtLeast(48.dp)
