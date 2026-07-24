@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +74,10 @@ import space.fishhub.android.feature.settings.AccountSettingsMotion
 import space.fishhub.android.feature.settings.AccountSettingsTheme
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryPresenter
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryScreen
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeAction
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeActionResult
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewScreen
+import space.fishhub.android.feature.chat.sharedcontent.toPreviewItem
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentOrigin
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentStore
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentVisibilityPort
@@ -80,6 +85,7 @@ import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentDeliv
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentNetworkPolicy
 import space.fishhub.android.data.chat.ChatDataModule
 import space.fishhub.android.data.chat.ChatRealtimeEvent
+import space.fishhub.android.data.chat.AuthorizedConversation
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -95,6 +101,13 @@ fun ChatRoute(
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
     onCallBack: (String) -> Unit = {},
     onOpenAttachment: (AttachmentOpenRequest) -> Unit = {},
+    onSharedContentAction: suspend (
+        space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewItem,
+        SharedContentNativeAction,
+        ChatDataModule.SharedContentVerifiedContent?,
+    ) -> SharedContentNativeActionResult = { _, _, _ ->
+        SharedContentNativeActionResult.Started
+    },
     attachmentImportState: AttachmentImportUiState = AttachmentImportUiState(),
     cameraAvailable: Boolean = true,
     onChoosePhotos: (remainingSlots: Int) -> Unit = {},
@@ -142,6 +155,15 @@ fun ChatRoute(
     var sharedContentOrigin by remember(selectedConversationId) {
         mutableStateOf<SharedContentOrigin?>(null)
     }
+    var sharedContentReturnOrigin by remember(selectedConversationId) {
+        mutableStateOf<SharedContentOrigin?>(null)
+    }
+    var sharedContentSessionActive by remember(selectedConversationId) {
+        mutableStateOf(false)
+    }
+    var sharedContentPreviewId by remember(selectedConversationId) {
+        mutableStateOf<String?>(null)
+    }
     var sharedContentEntry by remember(selectedConversationId) { mutableIntStateOf(0) }
     var focusReturn by remember(selectedConversationId) {
         mutableStateOf(SharedContentFocusReturn.None)
@@ -182,6 +204,9 @@ fun ChatRoute(
         // Search is intentionally session-only and must not follow a different conversation.
         messageSearchViewModel.close()
         sharedContentOrigin = null
+        sharedContentReturnOrigin = null
+        sharedContentSessionActive = false
+        sharedContentPreviewId = null
         participantDetailsVisible = false
         focusReturn = SharedContentFocusReturn.None
     }
@@ -197,7 +222,8 @@ fun ChatRoute(
         focusReturn = SharedContentFocusReturn.None
     }
 
-    val galleryKey = sharedContentOrigin?.let {
+    val galleryKey = sharedContentSessionActive.let {
+        if (!it) return@let null
         val owner = sharedContentIdentity.ownerIdentityId
         val conversation = selectedConversationId
         if (sharedContentIdentity.isGalleryEligible && owner != null && conversation != null) {
@@ -243,10 +269,18 @@ fun ChatRoute(
             SharedContentSession(
                 key = key,
                 store = store,
-                presenter = SharedContentGalleryPresenter(store, galleryScope),
+                presenter = SharedContentGalleryPresenter(
+                    store = store,
+                    scope = galleryScope,
+                    onSelectItem = { sharedContentPreviewId = it },
+                ),
             )
         }
     }
+    val galleryItems = gallerySession?.store?.acceptedItems
+        ?.collectAsStateWithLifecycle()
+        ?.value
+        ?: emptyList()
     DisposableEffect(gallerySession) {
         gallerySession?.let { onSharedContentStoreChanged(it.store) }
         onDispose {
@@ -331,27 +365,99 @@ fun ChatRoute(
             )
             val galleryOrigin = sharedContentOrigin
             if (galleryOrigin != null && gallerySession != null) {
-                SharedContentGalleryScreen(
-                    presenter = gallerySession.presenter,
-                    onBack = {
-                        gallerySession.close()
-                        onSharedContentStoreChanged(null)
-                        sharedContentOrigin = null
-                        focusReturn = when (galleryOrigin) {
-                            SharedContentOrigin.ConversationHeader ->
-                                SharedContentFocusReturn.HeaderSharedContent
-                            SharedContentOrigin.ConversationDetails ->
-                                SharedContentFocusReturn.DetailsSharedContent
-                        }
-                    },
-                    modifier = modifier,
-                    thumbnailLoader = { handle ->
-                        val item = gallerySession.store.acceptedItems.value
-                            .firstOrNull { it.itemId == handle.itemId }
-                        val request = item?.thumbnailRequest(gallerySession.key, mediaCatalog)
-                        request?.let { sharedContentRuntime.loadThumbnail(it) }
-                    },
-                )
+                val session = gallerySession
+                val previewItem = sharedContentPreviewId?.let { id ->
+                    val acceptedItem = galleryItems
+                        .firstOrNull { it.itemId == id }
+                    acceptedItem?.toPreviewItem(
+                        senderName = sharedContentSenderName(
+                            acceptedItem,
+                            currentUserDisplayName,
+                            currentConversation,
+                        ),
+                    )
+                }
+                if (previewItem != null) {
+                    SharedContentPreviewScreen(
+                        item = previewItem,
+                        onBack = { sharedContentPreviewId = null },
+                        onOpenSource = { messageId ->
+                            sharedContentReturnOrigin = galleryOrigin
+                            sharedContentPreviewId = null
+                            sharedContentOrigin = null
+                            viewModel.focusCurrentMessage(messageId)
+                        },
+                        onNativeAction = { action ->
+                            val attachmentAction = action in setOf(
+                                SharedContentNativeAction.Share,
+                                SharedContentNativeAction.Save,
+                                SharedContentNativeAction.Download,
+                                SharedContentNativeAction.Open,
+                            )
+                            val opensAttachment = action == SharedContentNativeAction.Open &&
+                                previewItem.kind in setOf("video", "document", "voice")
+                            val needsVerifiedContent = previewItem.attachmentId != null &&
+                                attachmentAction &&
+                                (previewItem.canTransfer || opensAttachment)
+                            val verified = if (needsVerifiedContent) {
+                                previewItem.attachmentId.let { attachmentId ->
+                                    previewItem.byteSize?.let { byteSize ->
+                                        sharedContentRuntime.loadVerifiedContent(
+                                            ChatDataModule.SharedContentFullContentRequest(
+                                                ownerIdentityId = session.key.ownerIdentityId,
+                                                conversationId = session.key.conversationId,
+                                                identityGeneration = session.key.identityGeneration,
+                                                attachmentId = attachmentId,
+                                                name = previewItem.originalName ?: previewItem.title,
+                                                mimeType = previewItem.mimeType ?: "application/octet-stream",
+                                                expectedByteSize = byteSize,
+                                            ),
+                                        )
+                                    }
+                                }
+                            } else {
+                                null
+                            }
+                            if (needsVerifiedContent && verified == null) {
+                                SharedContentNativeActionResult.Unavailable
+                            } else {
+                                onSharedContentAction(previewItem, action, verified)
+                            }
+                        },
+                        onDelete = { messageId ->
+                            viewModel.deleteSharedContentSource(messageId) { session.store.realtime() }
+                        },
+                        modifier = modifier,
+                        thumbnailLoader = { handle ->
+                            val item = galleryItems.firstOrNull { it.itemId == handle.itemId }
+                            item?.thumbnailRequest(session.key, mediaCatalog)
+                                ?.let { sharedContentRuntime.loadThumbnail(it) }
+                        },
+                    )
+                } else {
+                    SharedContentGalleryScreen(
+                        presenter = gallerySession.presenter,
+                        onBack = {
+                            session.close()
+                            onSharedContentStoreChanged(null)
+                            sharedContentSessionActive = false
+                            sharedContentPreviewId = null
+                            sharedContentOrigin = null
+                            focusReturn = when (galleryOrigin) {
+                                SharedContentOrigin.ConversationHeader ->
+                                    SharedContentFocusReturn.HeaderSharedContent
+                                SharedContentOrigin.ConversationDetails ->
+                                    SharedContentFocusReturn.DetailsSharedContent
+                            }
+                        },
+                        modifier = modifier,
+                        thumbnailLoader = { handle ->
+                            val item = galleryItems.firstOrNull { it.itemId == handle.itemId }
+                            val request = item?.thumbnailRequest(session.key, mediaCatalog)
+                            request?.let { sharedContentRuntime.loadThumbnail(it) }
+                        },
+                    )
+                }
             } else if (messageSearchState.visible && currentConversation != null) {
                 MessageSearchScreen(
                     state = messageSearchState,
@@ -401,10 +507,12 @@ fun ChatRoute(
                     onOpenSharedContentFromHeader = {
                         participantDetailsVisible = false
                         sharedContentEntry += 1
+                        sharedContentSessionActive = true
                         sharedContentOrigin = SharedContentOrigin.ConversationHeader
                     },
                     onOpenSharedContentFromDetails = {
                         sharedContentEntry += 1
+                        sharedContentSessionActive = true
                         sharedContentOrigin = SharedContentOrigin.ConversationDetails
                     },
                     participantDetailsVisible = participantDetailsVisible,
@@ -480,6 +588,13 @@ fun ChatRoute(
             accountContent = accountContent,
             modifier = modifier,
         )
+    }
+
+    BackHandler(
+        enabled = sharedContentSessionActive && sharedContentOrigin == null,
+    ) {
+        sharedContentOrigin = sharedContentReturnOrigin ?: SharedContentOrigin.ConversationHeader
+        sharedContentReturnOrigin = null
     }
 
     if (mediaPickerVisible && routeState is ChatRouteUiState.Conversation) {
@@ -599,6 +714,19 @@ private data class SharedContentSessionKey(
     val identityGeneration: Long,
     val entry: Int,
 )
+
+private fun sharedContentSenderName(
+    item: space.fishhub.android.feature.chat.sharedcontent.SharedContentAcceptedItem,
+    currentUserDisplayName: String,
+    conversation: AuthorizedConversation?,
+): String = when {
+    item.senderId.isNotBlank() && item.senderId == conversation?.currentUserId ->
+        currentUserDisplayName
+    item.senderId.isNotBlank() && item.senderId == conversation?.participantId ->
+        conversation.participantDisplayName
+    item.senderId.isNotBlank() -> item.senderId
+    else -> "Sender unavailable"
+}
 
 private fun space.fishhub.android.feature.chat.sharedcontent.SharedContentAcceptedItem
     .thumbnailRequest(

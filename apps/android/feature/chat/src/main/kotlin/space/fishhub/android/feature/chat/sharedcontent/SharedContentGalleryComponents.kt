@@ -30,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.focusable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,9 +39,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -131,14 +136,22 @@ fun SharedContentMediaGrid(
     footer: (@Composable () -> Unit)? = null,
     anchor: SharedContentGalleryAnchor? = null,
     onVisibleItemsChanged: ((List<String>, List<String>) -> Unit)? = null,
-    onAnchorChanged: ((String, Int) -> Unit)? = null,
+    onAnchorChanged: ((String, Int, String?) -> Unit)? = null,
+    focusedItemId: String? = null,
+    onItemFocusChanged: ((String, Boolean) -> Unit)? = null,
     onItemDisplayed: ((String) -> Unit)? = null,
     thumbnailLoader: (suspend (SharedContentThumbnailHandle) -> ByteArray?)? = null,
     displayScopeKey: Any? = null,
 ) {
     val fontScale = LocalDensity.current.fontScale
     val gridState = rememberLazyGridState()
-    LaunchedEffect(gridState, items, onVisibleItemsChanged, onAnchorChanged) {
+    LaunchedEffect(
+        gridState,
+        items,
+        onVisibleItemsChanged,
+        onAnchorChanged,
+        focusedItemId,
+    ) {
         snapshotFlow {
             val visible = gridState.layoutInfo.visibleItemsInfo
                 .mapNotNull { info -> items.getOrNull(info.index)?.itemId }
@@ -157,10 +170,12 @@ fun SharedContentMediaGrid(
             )
         }.distinctUntilChanged().collect { visible ->
             onVisibleItemsChanged?.invoke(visible.visible, visible.lookahead)
-            visible.anchorId?.let { onAnchorChanged?.invoke(it, visible.anchorOffset) }
+            visible.anchorId?.let {
+                onAnchorChanged?.invoke(it, visible.anchorOffset, focusedItemId)
+            }
         }
     }
-    LaunchedEffect(anchor?.itemId, items) {
+    LaunchedEffect(anchor?.itemId, anchor?.scrollOffset, items) {
         val anchorIndex = anchor?.let { saved ->
             items.indexOfFirst { it.itemId == saved.itemId }.takeIf { it >= 0 }
         }
@@ -204,6 +219,8 @@ fun SharedContentMediaGrid(
                 SharedContentMediaTile(
                     item = item,
                     onSelectItem = onSelectItem,
+                    restoreFocus = item.itemId == anchor?.focusedItemId,
+                    onFocusChanged = onItemFocusChanged,
                     onItemDisplayed = onItemDisplayed,
                     displayScopeKey = displayScopeKey,
                     thumbnailLoader = thumbnailLoader,
@@ -237,10 +254,13 @@ internal fun calculateSharedContentMediaColumns(
 private fun SharedContentMediaTile(
     item: SharedContentGalleryItem.Media,
     onSelectItem: ((String) -> Unit)?,
+    restoreFocus: Boolean,
+    onFocusChanged: ((String, Boolean) -> Unit)?,
     onItemDisplayed: ((String) -> Unit)?,
     displayScopeKey: Any?,
     thumbnailLoader: (suspend (SharedContentThumbnailHandle) -> ByteArray?)?,
 ) {
+    val focusRequester = remember(item.itemId) { FocusRequester() }
     val bitmap by produceState<android.graphics.Bitmap?>(
         initialValue = null,
         key1 = displayScopeKey,
@@ -253,11 +273,17 @@ private fun SharedContentMediaTile(
     LaunchedEffect(displayScopeKey, item.itemId, bitmap, onItemDisplayed) {
         if (bitmap != null) onItemDisplayed?.invoke(item.itemId)
     }
+    LaunchedEffect(restoreFocus, item.itemId) {
+        if (restoreFocus) focusRequester.requestFocusWhenReady()
+    }
     val enabled = item.selectionEnabled && onSelectItem != null
     val shape = RoundedCornerShape(FishTheme.radii.chatInner)
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { onFocusChanged?.invoke(item.itemId, it.isFocused) }
+            .focusable()
             .clip(shape)
             .background(FishTheme.colors.surfaceAlt)
             .then(
@@ -343,10 +369,18 @@ fun SharedContentMetadataList(
     footer: (@Composable () -> Unit)? = null,
     anchor: SharedContentGalleryAnchor? = null,
     onVisibleItemsChanged: ((List<String>, List<String>) -> Unit)? = null,
-    onAnchorChanged: ((String, Int) -> Unit)? = null,
+    onAnchorChanged: ((String, Int, String?) -> Unit)? = null,
+    focusedItemId: String? = null,
+    onItemFocusChanged: ((String, Boolean) -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(listState, items, onVisibleItemsChanged, onAnchorChanged) {
+    LaunchedEffect(
+        listState,
+        items,
+        onVisibleItemsChanged,
+        onAnchorChanged,
+        focusedItemId,
+    ) {
         snapshotFlow {
             val visible = listState.layoutInfo.visibleItemsInfo
                 .mapNotNull { info -> items.getOrNull(info.index)?.itemId }
@@ -365,10 +399,12 @@ fun SharedContentMetadataList(
             )
         }.distinctUntilChanged().collect { visible ->
             onVisibleItemsChanged?.invoke(visible.visible, visible.lookahead)
-            visible.anchorId?.let { onAnchorChanged?.invoke(it, visible.anchorOffset) }
+            visible.anchorId?.let {
+                onAnchorChanged?.invoke(it, visible.anchorOffset, focusedItemId)
+            }
         }
     }
-    LaunchedEffect(anchor?.itemId, items) {
+    LaunchedEffect(anchor?.itemId, anchor?.scrollOffset, items) {
         val anchorIndex = anchor?.let { saved ->
             items.indexOfFirst { it.itemId == saved.itemId }.takeIf { it >= 0 }
         }
@@ -393,6 +429,8 @@ fun SharedContentMetadataList(
             SharedContentMetadataRow(
                 item = item,
                 onSelectItem = onSelectItem,
+                restoreFocus = item.itemId == anchor?.focusedItemId,
+                onFocusChanged = onItemFocusChanged,
             )
             if (index != items.lastIndex) FishDivider()
         }
@@ -408,9 +446,15 @@ fun SharedContentMetadataList(
 fun SharedContentMetadataRow(
     item: SharedContentGalleryItem,
     onSelectItem: ((String) -> Unit)?,
+    restoreFocus: Boolean = false,
+    onFocusChanged: ((String, Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     require(item !is SharedContentGalleryItem.Media)
+    val focusRequester = remember(item.itemId) { FocusRequester() }
+    LaunchedEffect(restoreFocus, item.itemId) {
+        if (restoreFocus) focusRequester.requestFocusWhenReady()
+    }
     val enabled = item.selectionEnabled && onSelectItem != null
     val accessibilityText = LocalDensity.current.fontScale >= AccessibilityFontScale
     val titleMaxLines = if (accessibilityText) Int.MAX_VALUE else 2
@@ -418,6 +462,9 @@ fun SharedContentMetadataRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { onFocusChanged?.invoke(item.itemId, it.isFocused) }
+            .focusable()
             .heightIn(min = FishTheme.sizes.sharedContentMetadataRow)
             .then(
                 if (enabled) {
@@ -712,6 +759,13 @@ private const val AccessibilityFontScale = 1.3f
 private const val MediaSkeletonRows = 3
 private const val ListSkeletonRows = 6
 private const val CompactSkeletonFraction = 0.64f
+
+private suspend fun FocusRequester.requestFocusWhenReady() {
+    repeat(3) {
+        withFrameNanos { }
+        if (requestFocus()) return
+    }
+}
 
 private data class VisibleGalleryItems(
     val visible: List<String>,

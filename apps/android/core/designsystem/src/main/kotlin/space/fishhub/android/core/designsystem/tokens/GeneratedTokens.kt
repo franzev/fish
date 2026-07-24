@@ -97,6 +97,8 @@ internal object GeneratedSizes {
     val SharedContentMediaCell = 88.dp
     val SharedContentAccessibleMediaCell = 120.dp
     val SharedContentMetadataRow = 64.dp
+    val SharedContentPreviewMin = 180.dp
+    val SharedContentPreviewMax = 520.dp
 }
 
 internal object GeneratedType {

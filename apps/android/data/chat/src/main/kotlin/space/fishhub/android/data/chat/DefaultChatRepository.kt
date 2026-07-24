@@ -629,6 +629,20 @@ internal class DefaultChatRepository(
         }
     }
 
+    override suspend fun deleteMessage(
+        conversationId: String,
+        messageId: String,
+    ): ChatResult<ChatMessage> {
+        val conversation = dao.conversation(conversationId)?.toDomain()
+            ?: return unavailableFailure()
+        return resultOf(
+            ChatOperation.DeleteMessage,
+            "That message was not deleted yet. Keep this open and try again.",
+        ) {
+            remote.deleteMessage(conversation, messageId).also { reconcileMessage(it) }
+        }
+    }
+
     override suspend fun setReaction(
         messageId: String,
         emoji: String,

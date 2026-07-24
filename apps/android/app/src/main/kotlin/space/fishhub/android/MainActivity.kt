@@ -1,6 +1,8 @@
 package space.fishhub.android
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.os.Bundle
 import android.os.SystemClock
 import android.animation.ValueAnimator
@@ -21,6 +23,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.util.Rational
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,11 +51,15 @@ import space.fishhub.android.data.call.CallKind
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.AttachmentImportKind
 import space.fishhub.android.data.chat.AttachmentImportSource
+import space.fishhub.android.data.chat.ChatDataModule
 import space.fishhub.android.feature.call.CallRoute
 import space.fishhub.android.feature.call.state.CallLifecycleStatus
 import space.fishhub.android.feature.chat.AndroidChatFormatter
 import space.fishhub.android.feature.chat.ChatRoute
 import space.fishhub.android.feature.chat.ChatViewModel
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeAction
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeActionResult
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewItem
 import space.fishhub.android.feature.chat.AttachmentImportUiState
 import space.fishhub.android.feature.chat.ChatMediaCatalog
 import space.fishhub.android.feature.chat.MediaPickerViewModel
@@ -72,14 +79,34 @@ import space.fishhub.android.messaging.ChatNotificationFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import space.fishhub.android.settings.AppMotionPreference
 import space.fishhub.android.settings.AppPreferences
 import space.fishhub.android.settings.AppThemePreference
 import space.fishhub.android.settings.effectiveReducedMotion
 import space.fishhub.android.settings.isDark
+
+private data class SharedContentSaveRequest(
+    val name: String,
+    val mimeType: String,
+)
+
+private class CreateSharedContentDocument :
+    ActivityResultContract<SharedContentSaveRequest, Uri?>() {
+    override fun createIntent(context: Context, input: SharedContentSaveRequest): Intent =
+        Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = input.mimeType
+            putExtra(Intent.EXTRA_TITLE, input.name)
+        }
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+        intent?.data?.takeIf { resultCode == Activity.RESULT_OK }
+}
 
 class MainActivity : ComponentActivity() {
     private lateinit var fishApplication: FishApplication
@@ -98,6 +125,8 @@ class MainActivity : ComponentActivity() {
     private var pendingCameraFile: File? = null
     private var pendingCameraUri: Uri? = null
     private lateinit var attachmentFileOpener: AttachmentFileOpener
+    private var pendingSharedContentSave: VerifiedAttachmentPreparation.Ready? = null
+    private var activeChatViewModel: ChatViewModel? = null
     private lateinit var voiceMessageRecorder: VoiceMessageRecorder
     private val voiceRecordingState = MutableStateFlow(VoiceRecordingUiState())
     private var voiceRecordingTicker: kotlinx.coroutines.Job? = null
@@ -112,6 +141,24 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris ->
         importAttachmentUris(uris, AttachmentImportKind.File, releasePersistableAccess = true)
+    }
+    private val sharedContentSaveLauncher = registerForActivityResult(
+        CreateSharedContentDocument(),
+    ) { uri ->
+        val prepared = pendingSharedContentSave ?: return@registerForActivityResult
+        pendingSharedContentSave = null
+        if (uri == null) {
+            attachmentFileOpener.discardPreparedFile(prepared)
+            return@registerForActivityResult
+        }
+        lifecycleScope.launch {
+            when (val result = attachmentFileOpener.savePreparedFile(prepared, uri)) {
+                OpenAttachmentResult.Opened -> Unit
+                is OpenAttachmentResult.Failed -> {
+                    activeChatViewModel?.attachmentOpenFailed(result.message)
+                }
+            }
+        }
     }
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture(),
@@ -159,6 +206,103 @@ class MainActivity : ComponentActivity() {
         pendingPermissionAction?.let(::completePermissionAction)
         pendingPermissionAction = null
     }
+
+    override fun onDestroy() {
+        pendingSharedContentSave?.let { prepared ->
+            if (::attachmentFileOpener.isInitialized) {
+                attachmentFileOpener.discardPreparedFile(prepared)
+            }
+        }
+        pendingSharedContentSave = null
+        super.onDestroy()
+    }
+
+    private suspend fun performSharedContentAction(
+        item: SharedContentPreviewItem,
+        action: SharedContentNativeAction,
+        verified: ChatDataModule.SharedContentVerifiedContent?,
+    ): SharedContentNativeActionResult = withContext(Dispatchers.Main.immediate) {
+        val safeLink = item.linkUrl?.let(::safeSharedContentUri)
+        if (verified != null) {
+            if (action == SharedContentNativeAction.Save ||
+                action == SharedContentNativeAction.Download
+            ) {
+                return@withContext when (
+                    val prepared = attachmentFileOpener.prepareVerifiedBytes(verified)
+                ) {
+                    is VerifiedAttachmentPreparation.Failed ->
+                        SharedContentNativeActionResult.Failed(prepared.message)
+                    is VerifiedAttachmentPreparation.Ready -> {
+                        pendingSharedContentSave?.let(attachmentFileOpener::discardPreparedFile)
+                        pendingSharedContentSave = prepared
+                        runCatching {
+                            sharedContentSaveLauncher.launch(
+                                SharedContentSaveRequest(
+                                    name = prepared.name,
+                                    mimeType = prepared.mimeType,
+                                ),
+                            )
+                        }.fold(
+                            onSuccess = { SharedContentNativeActionResult.Started },
+                            onFailure = {
+                                pendingSharedContentSave = null
+                                attachmentFileOpener.discardPreparedFile(prepared)
+                                SharedContentNativeActionResult.Failed(
+                                    "That file could not be saved yet. Try again.",
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+            val openAction = when (action) {
+                SharedContentNativeAction.Share ->
+                    space.fishhub.android.feature.chat.AttachmentOpenAction.Share
+                SharedContentNativeAction.Open ->
+                    space.fishhub.android.feature.chat.AttachmentOpenAction.Open
+                SharedContentNativeAction.Save,
+                SharedContentNativeAction.Download,
+                -> error("Handled by the document picker")
+            }
+            return@withContext when (
+                val result = attachmentFileOpener.openVerifiedBytes(verified, openAction)
+            ) {
+                OpenAttachmentResult.Opened -> SharedContentNativeActionResult.Started
+                is OpenAttachmentResult.Failed ->
+                    SharedContentNativeActionResult.Failed(result.message)
+            }
+        }
+        if (safeLink != null && action == SharedContentNativeAction.Share) {
+            val share = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, safeLink.toString())
+            }
+            return@withContext runCatching {
+                startActivity(Intent.createChooser(share, "Share link"))
+            }.fold(
+                onSuccess = { SharedContentNativeActionResult.Started },
+                onFailure = {
+                    SharedContentNativeActionResult.Failed(
+                        "No app on this device can share that link yet.",
+                    )
+                },
+            )
+        }
+        if (safeLink != null && action == SharedContentNativeAction.Open) {
+            return@withContext runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, safeLink))
+            }.fold(
+                onSuccess = { SharedContentNativeActionResult.Started },
+                onFailure = {
+                    SharedContentNativeActionResult.Failed(
+                        "That link could not be opened yet. Try again.",
+                    )
+                },
+            )
+        }
+        SharedContentNativeActionResult.Unavailable
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fishApplication = application as FishApplication
@@ -265,6 +409,7 @@ class MainActivity : ComponentActivity() {
                 importSharedContent(chatViewModel, conversationId, content)
             }
             LaunchedEffect(chatViewModel) {
+                activeChatViewModel = chatViewModel
                 fishApplication.callCoordinator.state.collectLatest { state ->
                     val call = state.current
                     if (call.status in setOf(
@@ -336,6 +481,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
+                        onSharedContentAction = ::performSharedContentAction,
                         appearance = appPreferences.theme.toAccountSettingsTheme(),
                         accessibility = appPreferences.motion.toAccountSettingsMotion(),
                         notificationStatus = currentNotificationStatus,
@@ -994,6 +1140,13 @@ class MainActivity : ComponentActivity() {
         )
     }
 }
+
+private fun safeSharedContentUri(value: String): Uri? = runCatching {
+    val parsed = java.net.URI(value)
+    require(parsed.host?.isNotBlank() == true)
+    require(parsed.scheme.lowercase() in setOf("http", "https"))
+    Uri.parse(value)
+}.getOrNull()
 
 private fun AppThemePreference.toAccountSettingsTheme() = when (this) {
     AppThemePreference.System -> AccountSettingsTheme.System

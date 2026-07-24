@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -35,10 +37,6 @@ fun SharedContentGalleryScreen(
     thumbnailLoader: (suspend (SharedContentThumbnailHandle) -> ByteArray?)? = null,
 ) {
     val state by presenter.state.collectAsStateWithLifecycle()
-
-    DisposableEffect(presenter) {
-        onDispose(presenter::close)
-    }
 
     SharedContentGalleryScreen(
         state = state,
@@ -70,6 +68,16 @@ fun SharedContentGalleryScreen(
     displayScopeKey: Any = state,
     thumbnailLoader: (suspend (SharedContentThumbnailHandle) -> ByteArray?)? = null,
 ) {
+    val selectedCategory = state.selectedCategory
+    val savedAnchor = selectedCategory?.let(state.anchors::get)
+    var focusedItemId by remember(selectedCategory, savedAnchor?.focusedItemId) {
+        mutableStateOf(savedAnchor?.focusedItemId)
+    }
+
+    fun recordFocus(itemId: String, focused: Boolean) {
+        if (focused) focusedItemId = itemId
+    }
+
     BackHandler(onBack = onBack)
     Column(
         modifier = modifier
@@ -99,6 +107,8 @@ fun SharedContentGalleryScreen(
             onItemDisplayed = onItemDisplayed,
             displayScopeKey = displayScopeKey,
             thumbnailLoader = thumbnailLoader,
+            focusedItemId = focusedItemId,
+            onItemFocusChanged = ::recordFocus,
             modifier = Modifier.weight(1f),
         )
     }
@@ -112,6 +122,8 @@ private fun SharedContentGalleryBody(
     onItemDisplayed: ((String) -> Unit)?,
     displayScopeKey: Any,
     thumbnailLoader: (suspend (SharedContentThumbnailHandle) -> ByteArray?)?,
+    focusedItemId: String?,
+    onItemFocusChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val presentation = state.presentation
@@ -154,6 +166,8 @@ private fun SharedContentGalleryBody(
                     onItemDisplayed = onItemDisplayed,
                     displayScopeKey = displayScopeKey,
                     thumbnailLoader = thumbnailLoader,
+                    focusedItemId = focusedItemId,
+                    onItemFocusChanged = onItemFocusChanged,
                     modifier = modifier,
                 )
             }
@@ -169,6 +183,8 @@ private fun SharedContentGalleryPopulated(
     onItemDisplayed: ((String) -> Unit)?,
     displayScopeKey: Any,
     thumbnailLoader: (suspend (SharedContentThumbnailHandle) -> ByteArray?)?,
+    focusedItemId: String?,
+    onItemFocusChanged: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val selectedCategory = state.selectedCategory ?: return
@@ -191,12 +207,13 @@ private fun SharedContentGalleryPopulated(
                 ),
             )
         }
-        val anchorChanged: (String, Int) -> Unit = { itemId, scrollOffset ->
+        val anchorChanged: (String, Int, String?) -> Unit = { itemId, scrollOffset, focusedId ->
             onIntent(
                 SharedContentGalleryIntent.RecordAnchor(
                     category = selectedCategory,
                     itemId = itemId,
                     scrollOffset = scrollOffset,
+                    focusedItemId = focusedId,
                 ),
             )
         }
@@ -211,6 +228,8 @@ private fun SharedContentGalleryPopulated(
                     anchor = state.anchors[selectedCategory],
                     onVisibleItemsChanged = visibleItemsChanged,
                     onAnchorChanged = anchorChanged,
+                    focusedItemId = focusedItemId,
+                    onItemFocusChanged = onItemFocusChanged,
                     displayScopeKey = displayScopeKey,
                     onItemDisplayed = { itemId ->
                         if (state.selectedCategory == selectedCategory &&
@@ -233,6 +252,8 @@ private fun SharedContentGalleryPopulated(
                 anchor = state.anchors[selectedCategory],
                 onVisibleItemsChanged = visibleItemsChanged,
                 onAnchorChanged = anchorChanged,
+                focusedItemId = focusedItemId,
+                onItemFocusChanged = onItemFocusChanged,
             )
         }
     }

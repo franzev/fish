@@ -57,6 +57,8 @@ class SizeTokens internal constructor(
     val sharedContentAccessibleMediaCell: Dp =
         GeneratedSizes.SharedContentAccessibleMediaCell,
     val sharedContentMetadataRow: Dp = GeneratedSizes.SharedContentMetadataRow,
+    val sharedContentPreviewMin: Dp = GeneratedSizes.SharedContentPreviewMin,
+    val sharedContentPreviewMax: Dp = GeneratedSizes.SharedContentPreviewMax,
 )
 
 @Immutable

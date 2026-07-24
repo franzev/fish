@@ -66,8 +66,9 @@ enum class SharedContentEarlierState {
 /**
  * Display-safe metadata accepted by the gallery boundary.
  *
- * Provider locators, delivery leases, raw URLs, cache entities, sender/date
- * preview context, and action authority are deliberately absent.
+ * Provider locators, delivery leases, raw URLs, and cache entities remain
+ * deliberately absent. Phase 14 adds only the server-authenticated context
+ * needed to render a preview and gate native actions.
  */
 data class SharedContentAcceptedItem(
     val itemId: String,
@@ -84,6 +85,11 @@ data class SharedContentAcceptedItem(
     val mediaDescription: String? = null,
     val linkTitle: String? = null,
     val linkHostname: String? = null,
+    val linkUrl: String? = null,
+    val senderId: String = "",
+    val sourceCreatedAt: String = "",
+    val canDelete: Boolean = false,
+    val canExport: Boolean = false,
     internal val sourceMessageId: String? = null,
     internal val attachmentId: String? = null,
     internal val stickerId: String? = null,
@@ -827,6 +833,11 @@ private fun SharedContentDataItem.toAcceptedItem(): SharedContentAcceptedItem? =
         mediaDescription = gifDescription,
         linkTitle = linkTitle,
         linkHostname = linkHostname,
+        linkUrl = linkUrl,
+        senderId = senderId,
+        sourceCreatedAt = sourceCreatedAt,
+        canDelete = canDelete,
+        canExport = canExport,
         sourceMessageId = sourceMessageId,
         attachmentId = attachmentId,
         stickerId = stickerId,
@@ -855,6 +866,9 @@ private fun StoredSharedContentItem.toAcceptedItem(): SharedContentAcceptedItem?
             mediaDescription = gifDescription,
             linkTitle = linkMetadata?.get("title")?.jsonPrimitive?.contentOrNull,
             linkHostname = linkMetadata?.get("hostname")?.jsonPrimitive?.contentOrNull,
+            linkUrl = linkMetadata?.get("url")?.jsonPrimitive?.contentOrNull,
+            senderId = senderId,
+            sourceCreatedAt = sourceCreatedAt,
             sourceMessageId = sourceMessageId,
             attachmentId = attachmentId,
             stickerId = stickerId,

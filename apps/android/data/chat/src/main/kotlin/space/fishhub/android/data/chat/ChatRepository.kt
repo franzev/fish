@@ -342,6 +342,10 @@ interface ChatRepository {
     suspend fun flushTextOutbox(conversationId: String): ChatResult<Unit> = ChatResult.Success(Unit)
     suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage>
     suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage>
+    suspend fun deleteMessage(
+        conversationId: String,
+        messageId: String,
+    ): ChatResult<ChatMessage> = deleteMessage(messageId)
     suspend fun setReaction(messageId: String, emoji: String, active: Boolean): ChatResult<ChatMessage>
     suspend fun sendTyping(conversationId: String, typing: Boolean)
     suspend fun removeFriend(userId: String): ChatResult<Unit>

@@ -321,7 +321,7 @@ class ChatViewModel(
         }
     }
 
-    fun deleteMessage(messageId: String) {
+    fun deleteMessage(messageId: String, onAccepted: () -> Unit = {}) {
         val conversation = activeConversation ?: return
         val message = chatState.conversations[conversation.conversationId]
             ?.messages
@@ -332,7 +332,30 @@ class ChatViewModel(
         ) return
         viewModelScope.launch {
             latestNotice = when (val result = repository.deleteMessage(messageId)) {
-                is ChatResult.Success -> null
+                is ChatResult.Success -> {
+                    onAccepted()
+                    null
+                }
+                is ChatResult.Failure -> result.message
+            }
+            publish()
+        }
+    }
+
+    /**
+     * Shared content can point at a source outside the loaded transcript.
+     * The server remains the sender/ownership authority; the gallery is only
+     * reconciled after the delete command is accepted.
+     */
+    fun deleteSharedContentSource(messageId: String, onAccepted: () -> Unit = {}) {
+        val conversationId = activeConversation?.conversationId ?: return
+        if (messageId.isBlank()) return
+        viewModelScope.launch {
+            latestNotice = when (val result = repository.deleteMessage(conversationId, messageId)) {
+                is ChatResult.Success -> {
+                    onAccepted()
+                    null
+                }
                 is ChatResult.Failure -> result.message
             }
             publish()

@@ -22,7 +22,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.isDialog
@@ -31,9 +33,11 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -45,6 +49,22 @@ import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishTopBar
 import space.fishhub.android.feature.presence.PresencePresentation
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryAnchor
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryCategory
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryIntent
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryItem
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryScreen
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryUiState
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeActionResult
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewItem
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewScreen
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentTextDirection
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentHistoryBoundary
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentManualRetryState
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationContract
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationNotice
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentUnavailableReason
 
 @RunWith(AndroidJUnit4::class)
 class SharedContentNavigationTest {
@@ -130,6 +150,73 @@ class SharedContentNavigationTest {
         assertFalse(lifecycle.isOpen)
         assertFalse(lifecycle.accept("conversation-a", generation = 7))
         assertEquals(1, lifecycle.openCount)
+    }
+
+    @Test
+    fun galleryRecordsAndRestoresTheFocusedItemAnchor() {
+        var focusedAnchor: String? = null
+        composeRule.setContent {
+            FishTheme(reducedMotion = true) {
+                SharedContentGalleryScreen(
+                    state = focusedFilesState(),
+                    onBack = {},
+                    onIntent = { intent ->
+                        if (intent is SharedContentGalleryIntent.RecordAnchor) {
+                            focusedAnchor = intent.focusedItemId
+                        }
+                    },
+                    onSelectItem = {},
+                )
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            focusedAnchor == "file-b"
+        }
+        composeRule.onNodeWithContentDescription(
+            "Practice notes.pdf, PDF, 1 MB",
+            useUnmergedTree = true,
+        ).assertIsFocused()
+    }
+
+    @Test
+    fun previewSerializesNativeActionsAndSurfacesRetryableFailures() {
+        val firstActionFinished = CompletableDeferred<Unit>()
+        var callCount = 0
+        var firstCall = true
+
+        composeRule.setContent {
+            FishTheme(reducedMotion = true) {
+                SharedContentPreviewScreen(
+                    item = previewTestItem(),
+                    onBack = {},
+                    onOpenSource = {},
+                    onNativeAction = {
+                        callCount += 1
+                        if (firstCall) {
+                            firstCall = false
+                            firstActionFinished.await()
+                        }
+                        SharedContentNativeActionResult.Unavailable
+                    },
+                    onDelete = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Share").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { callCount == 1 }
+        composeRule.onNodeWithText("Save").assertIsNotEnabled()
+        composeRule.onNodeWithText("Download").assertIsNotEnabled()
+
+        firstActionFinished.complete(Unit)
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Reconnect and try again.")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeRule.onNodeWithText("Share").assertIsEnabled().performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { callCount == 2 }
     }
 
     @Test
@@ -325,3 +412,71 @@ private const val HeaderSharedContentTag = "header-shared-content"
 private const val ParticipantDetailsTag = "participant-details"
 private const val DetailsSharedContentTag = "details-shared-content"
 private const val OpenCountTag = "shared-content-open-count"
+
+private fun focusedFilesState() = SharedContentGalleryUiState(
+    categories = listOf(SharedContentGalleryCategory.Files),
+    selectedCategory = SharedContentGalleryCategory.Files,
+    showCategoryControl = false,
+    items = listOf(
+        SharedContentGalleryItem.File(
+            itemId = "file-a",
+            kind = "document",
+            filename = "Conversation outline.pdf",
+            filenameDirection = SharedContentTextDirection.Natural,
+            friendlyType = "PDF",
+            sizeLabel = "1 MB",
+            accessibilityLabel = "Conversation outline.pdf, PDF, 1 MB",
+            selectionEnabled = true,
+        ),
+        SharedContentGalleryItem.File(
+            itemId = "file-b",
+            kind = "document",
+            filename = "Practice notes.pdf",
+            filenameDirection = SharedContentTextDirection.Natural,
+            friendlyType = "PDF",
+            sizeLabel = "1 MB",
+            accessibilityLabel = "Practice notes.pdf, PDF, 1 MB",
+            selectionEnabled = true,
+        ),
+    ),
+    anchors = mapOf(
+        SharedContentGalleryCategory.Files to SharedContentGalleryAnchor(
+            itemId = "file-b",
+            focusedItemId = "file-b",
+        ),
+    ),
+    presentation = SharedContentPresentationContract(
+        source = "authoritative",
+        stale = false,
+        retainedHistoryComplete = true,
+        notice = SharedContentPresentationNotice.None,
+        boundary = SharedContentHistoryBoundary.None,
+        unavailableReason = SharedContentUnavailableReason.None,
+        manualRetry = SharedContentManualRetryState.Hidden,
+    ),
+    earlierState = SharedContentEarlierState.Hidden,
+    itemSelectionEnabled = true,
+)
+
+private fun previewTestItem() = SharedContentPreviewItem(
+    itemId = "preview-document",
+    conversationId = "conversation-a",
+    sourceMessageId = "message-a",
+    kind = "document",
+    category = "files",
+    title = "Coaching notes.pdf",
+    description = null,
+    originalName = "Coaching notes.pdf",
+    mimeType = "application/pdf",
+    byteSize = 4,
+    width = null,
+    height = null,
+    durationMs = null,
+    linkUrl = null,
+    attachmentId = "attachment-a",
+    senderName = "Coach Jordan",
+    sourceDateLabel = "Jul 24, 2026 at 6:30 PM",
+    contentVersion = "version-a",
+    canDelete = false,
+    canExport = true,
+)

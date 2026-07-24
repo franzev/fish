@@ -54,6 +54,24 @@ import java.time.Instant
 import io.github.jan.supabase.SupabaseClient
 
 object ChatDataModule {
+    /** Bytes that passed the signed-URL, redirect, status, and size checks. */
+    data class SharedContentVerifiedContent(
+        val name: String,
+        val mimeType: String,
+        val expectedByteSize: Long,
+        val bytes: ByteArray,
+    )
+
+    data class SharedContentFullContentRequest(
+        val ownerIdentityId: String,
+        val conversationId: String,
+        val identityGeneration: Long,
+        val attachmentId: String,
+        val name: String,
+        val mimeType: String,
+        val expectedByteSize: Long,
+    )
+
     data class SharedContentThumbnailRequest(
         val ownerIdentityId: String,
         val conversationId: String,
@@ -137,6 +155,58 @@ object ChatDataModule {
             }
             if (!staged || isRevoked(request.identityGeneration)) return null
             return thumbnailStore?.readRenderable(key)?.bytes ?: bytes
+        }
+
+        /**
+         * Downloads a share/open candidate through the same in-memory lease
+         * namespace as thumbnails. No URL or bytes are persisted by this
+         * method; the caller owns the one-shot native handoff.
+         */
+        suspend fun loadVerifiedContent(
+            request: SharedContentFullContentRequest,
+        ): SharedContentVerifiedContent? {
+            if (request.identityGeneration <= 0 ||
+                request.ownerIdentityId.isBlank() ||
+                request.conversationId.isBlank() ||
+                request.attachmentId.isBlank() ||
+                request.name.isBlank() ||
+                request.mimeType.isBlank() ||
+                request.expectedByteSize !in 1..MAX_FULL_CONTENT_BYTES ||
+                isRevoked(request.identityGeneration)
+            ) return null
+            val registryKey = Triple(
+                request.ownerIdentityId,
+                request.conversationId,
+                request.identityGeneration,
+            )
+            val registry = synchronized(deliveryRegistries) {
+                if (request.identityGeneration < revokedBeforeGeneration) return null
+                deliveryRegistries.getOrPut(registryKey) {
+                    SharedContentDeliveryRegistry(
+                        ownerIdentityId = request.ownerIdentityId,
+                        conversationId = request.conversationId,
+                        identityGeneration = request.identityGeneration,
+                        refreshAttachmentUrls = refreshAttachmentUrls,
+                    )
+                }
+            }
+            val lease = registry.lease(request.attachmentId) ?: return null
+            val bytes = withContext(Dispatchers.IO) {
+                readEphemeral(
+                    lease.displayUrl,
+                    SharedContentMediaUrlKind.Storage,
+                    maxBytes = request.expectedByteSize.toInt(),
+                )
+            } ?: return null
+            if (isRevoked(request.identityGeneration) ||
+                bytes.size.toLong() != request.expectedByteSize
+            ) return null
+            return SharedContentVerifiedContent(
+                name = request.name,
+                mimeType = request.mimeType,
+                expectedByteSize = request.expectedByteSize,
+                bytes = bytes,
+            )
         }
 
         private suspend fun loadAttachmentThumbnail(
@@ -262,9 +332,24 @@ object ChatDataModule {
         private suspend fun readEphemeral(
             rawUrl: String?,
             kind: SharedContentMediaUrlKind,
-        ): ByteArray? = mediaTransport.read(rawUrl, kind)
+            maxBytes: Int = MAX_GALLERY_THUMBNAIL_BYTES,
+        ): ByteArray? {
+            val transport = if (maxBytes == MAX_GALLERY_THUMBNAIL_BYTES) {
+                mediaTransport
+            } else {
+                SharedContentMediaHttpTransport(
+                    policy = mediaUrlPolicy,
+                    maximumRedirects = MAX_MEDIA_REDIRECTS,
+                    maximumBytes = maxBytes,
+                )
+            }
+            return transport.read(rawUrl, kind)
+        }
 
-        private fun readBounded(input: java.io.InputStream): ByteArray {
+        private fun readBounded(
+            input: java.io.InputStream,
+            maxBytes: Int = MAX_GALLERY_THUMBNAIL_BYTES,
+        ): ByteArray {
             val output = ByteArrayOutputStream()
             val buffer = ByteArray(16 * 1024)
             var total = 0
@@ -272,7 +357,7 @@ object ChatDataModule {
                 val count = input.read(buffer)
                 if (count < 0) break
                 total += count
-                require(total <= MAX_GALLERY_THUMBNAIL_BYTES)
+                require(total <= maxBytes)
                 output.write(buffer, 0, count)
             }
             return output.toByteArray()
@@ -292,6 +377,7 @@ object ChatDataModule {
 
         private companion object {
             const val MAX_GALLERY_THUMBNAIL_BYTES = 8 * 1024 * 1024
+            const val MAX_FULL_CONTENT_BYTES = 25 * 1024 * 1024L
             const val MAX_DELIVERY_REGISTRIES = 4
             const val MAX_MEDIA_REDIRECTS = 3
         }

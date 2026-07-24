@@ -160,7 +160,7 @@ data class AttachmentUiModel(
 
 /** One-shot handoff to the app-owned private download/FileProvider boundary. */
 @Immutable
-enum class AttachmentOpenAction { Open, Share }
+enum class AttachmentOpenAction { Open, Share, Save, Download }
 
 @Immutable
 data class AttachmentOpenRequest(

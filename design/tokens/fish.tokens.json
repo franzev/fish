@@ -77,7 +77,9 @@
     "paginationSlot": 112,
     "sharedContentMediaCell": 88,
     "sharedContentAccessibleMediaCell": 120,
-    "sharedContentMetadataRow": 64
+    "sharedContentMetadataRow": 64,
+    "sharedContentPreviewMin": 180,
+    "sharedContentPreviewMax": 520
   },
   "sizePt": {
     "targetTouch": 44,

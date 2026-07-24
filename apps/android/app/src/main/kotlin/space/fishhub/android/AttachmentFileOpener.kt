@@ -70,55 +70,7 @@ internal class AttachmentFileOpener(
                 temporary.copyTo(destination, overwrite = false)
                 temporary.delete()
             }
-            destination.setReadable(false, false)
-            destination.setReadable(true, true)
-            val uri = FileProvider.getUriForFile(
-                activity,
-                "${activity.packageName}.fileprovider",
-                destination,
-            )
-            val handoff = when (request.action) {
-                AttachmentOpenAction.Open -> Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, expected.mimeType)
-                }
-                AttachmentOpenAction.Share -> Intent(Intent.ACTION_SEND).apply {
-                    type = expected.mimeType
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                }
-            }.apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = android.content.ClipData.newUri(activity.contentResolver, "Attachment", uri)
-            }
-            if (activity.packageManager.queryIntentActivities(handoff, 0).isEmpty()) {
-                destination.delete()
-                return@withContext OpenAttachmentResult.Failed(
-                    when (request.action) {
-                        AttachmentOpenAction.Open -> "No app on this device can open that file type yet."
-                        AttachmentOpenAction.Share -> "No app on this device can share that file type yet."
-                    },
-                )
-            }
-            withContext(Dispatchers.Main) {
-                try {
-                    val chooserTitle = when (request.action) {
-                        AttachmentOpenAction.Open -> "Open attachment"
-                        AttachmentOpenAction.Share -> "Share attachment"
-                    }
-                    activity.startActivity(Intent.createChooser(handoff, chooserTitle))
-                    OpenAttachmentResult.Opened
-                } catch (_: ActivityNotFoundException) {
-                    destination.delete()
-                    OpenAttachmentResult.Failed(
-                        when (request.action) {
-                            AttachmentOpenAction.Open -> "No app on this device can open that file type yet."
-                            AttachmentOpenAction.Share -> "No app on this device can share that file type yet."
-                        },
-                    )
-                } catch (_: SecurityException) {
-                    destination.delete()
-                    OpenAttachmentResult.Failed("That file could not be opened safely.")
-                }
-            }
+            handoffVerified(destination, expected, request.action)
         } catch (_: AttachmentOpenValidationException) {
             temporary.delete()
             destination.delete()
@@ -127,6 +79,174 @@ internal class AttachmentFileOpener(
             temporary.delete()
             destination.delete()
             OpenAttachmentResult.Failed("That file did not open yet. Check your connection and try again.")
+        }
+    }
+
+    suspend fun openVerifiedBytes(
+        content: space.fishhub.android.data.chat.ChatDataModule.SharedContentVerifiedContent,
+        action: AttachmentOpenAction,
+    ): OpenAttachmentResult = withContext(ioDispatcher) {
+        when (val prepared = prepareVerifiedBytes(content)) {
+            is VerifiedAttachmentPreparation.Failed -> OpenAttachmentResult.Failed(prepared.message)
+            is VerifiedAttachmentPreparation.Ready -> {
+                val expected = SupportedTypes[prepared.mimeType]
+                    ?: return@withContext OpenAttachmentResult.Failed(
+                        "That file type cannot be opened safely.",
+                    )
+                when (action) {
+                    AttachmentOpenAction.Open,
+                    AttachmentOpenAction.Share,
+                    -> handoffVerified(prepared.file, expected, action)
+                    AttachmentOpenAction.Save,
+                    AttachmentOpenAction.Download,
+                    -> {
+                        prepared.file.delete()
+                        OpenAttachmentResult.Failed("Choose a location to save this file.")
+                    }
+                }
+            }
+        }
+    }
+
+    /** Verifies bytes before handing them to the system document picker. */
+    suspend fun prepareVerifiedBytes(
+        content: space.fishhub.android.data.chat.ChatDataModule.SharedContentVerifiedContent,
+    ): VerifiedAttachmentPreparation = withContext(ioDispatcher) {
+        val expected = SupportedTypes[content.mimeType]
+            ?: return@withContext VerifiedAttachmentPreparation.Failed(
+                "That file type cannot be saved safely.",
+            )
+        if (content.bytes.size.toLong() != content.expectedByteSize ||
+            content.expectedByteSize !in 1..MaximumDownloadBytes
+        ) return@withContext VerifiedAttachmentPreparation.Failed(
+            "That file could not be verified. Try again.",
+        )
+        cleanupExpired()
+        directory.mkdirs()
+        val temporary = File(directory, ".${UUID.randomUUID()}.download")
+        val destination = File(directory, "${UUID.randomUUID()}.${expected.extension}")
+        try {
+            FileOutputStream(temporary).use { output ->
+                output.write(content.bytes)
+                output.fd.sync()
+            }
+            validateOpenedAttachment(temporary, expected)
+            if (!temporary.renameTo(destination)) {
+                temporary.copyTo(destination, overwrite = false)
+                temporary.delete()
+            }
+            VerifiedAttachmentPreparation.Ready(
+                file = destination,
+                name = content.name.ifBlank { "shared-content.${expected.extension}" },
+                mimeType = expected.mimeType,
+            )
+        } catch (_: AttachmentOpenValidationException) {
+            temporary.delete()
+            destination.delete()
+            VerifiedAttachmentPreparation.Failed(
+                "That file could not be verified. Try downloading it again.",
+            )
+        } catch (_: Throwable) {
+            temporary.delete()
+            destination.delete()
+            VerifiedAttachmentPreparation.Failed(
+                "That file did not open yet. Check your connection and try again.",
+            )
+        }
+    }
+
+    suspend fun savePreparedFile(
+        prepared: VerifiedAttachmentPreparation.Ready,
+        destination: android.net.Uri,
+    ): OpenAttachmentResult = withContext(ioDispatcher) {
+        try {
+            val expectedBytes = prepared.file.length()
+            val written = activity.contentResolver.openOutputStream(destination, "w")
+                ?.use { output ->
+                    FileInputStream(prepared.file).use { input -> input.copyTo(output) }
+                }
+            val result = if (written == null || written != expectedBytes) {
+                OpenAttachmentResult.Failed("That file could not be saved yet. Try again.")
+            } else {
+                OpenAttachmentResult.Opened
+            }
+            result
+        } catch (_: Throwable) {
+            OpenAttachmentResult.Failed("That file could not be saved yet. Try again.")
+        } finally {
+            prepared.file.delete()
+        }
+    }
+
+    fun discardPreparedFile(prepared: VerifiedAttachmentPreparation.Ready) {
+        prepared.file.delete()
+    }
+
+    private suspend fun handoffVerified(
+        destination: File,
+        expected: SafeFileType,
+        action: AttachmentOpenAction,
+    ): OpenAttachmentResult {
+        destination.setReadable(false, false)
+        destination.setReadable(true, true)
+        val uri = FileProvider.getUriForFile(
+            activity,
+            "${activity.packageName}.fileprovider",
+            destination,
+        )
+        val handoff = when (action) {
+            AttachmentOpenAction.Open -> Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, expected.mimeType)
+            }
+            AttachmentOpenAction.Share -> Intent(Intent.ACTION_SEND).apply {
+                type = expected.mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+            }
+            AttachmentOpenAction.Save,
+            AttachmentOpenAction.Download,
+            -> error("Save and download use the document picker")
+        }.apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            clipData = android.content.ClipData.newUri(activity.contentResolver, "Attachment", uri)
+        }
+        if (activity.packageManager.queryIntentActivities(handoff, 0).isEmpty()) {
+            destination.delete()
+            return OpenAttachmentResult.Failed(
+                when (action) {
+                    AttachmentOpenAction.Open -> "No app on this device can open that file type yet."
+                    AttachmentOpenAction.Share -> "No app on this device can share that file type yet."
+                    AttachmentOpenAction.Save,
+                    AttachmentOpenAction.Download,
+                    -> "Choose a location to save this file."
+                },
+            )
+        }
+        return withContext(Dispatchers.Main) {
+            try {
+                val chooserTitle = when (action) {
+                    AttachmentOpenAction.Open -> "Open attachment"
+                    AttachmentOpenAction.Share -> "Share attachment"
+                    AttachmentOpenAction.Save,
+                    AttachmentOpenAction.Download,
+                    -> "Save attachment"
+                }
+                activity.startActivity(Intent.createChooser(handoff, chooserTitle))
+                OpenAttachmentResult.Opened
+            } catch (_: ActivityNotFoundException) {
+                destination.delete()
+                OpenAttachmentResult.Failed(
+                    when (action) {
+                        AttachmentOpenAction.Open -> "No app on this device can open that file type yet."
+                        AttachmentOpenAction.Share -> "No app on this device can share that file type yet."
+                        AttachmentOpenAction.Save,
+                        AttachmentOpenAction.Download,
+                        -> "Choose a location to save this file."
+                    },
+                )
+            } catch (_: SecurityException) {
+                destination.delete()
+                OpenAttachmentResult.Failed("That file could not be opened safely.")
+            }
         }
     }
 
@@ -209,6 +329,23 @@ internal fun validateOpenedAttachment(file: File, mimeType: String): Boolean {
 
 private fun validateOpenedAttachment(file: File, type: SafeFileType) {
     when (type.signature) {
+        FileSignature.Jpeg -> if (!file.startsWith(byteArrayOf(
+                0xff.toByte(), 0xd8.toByte(), 0xff.toByte(),
+            ))) {
+            throw AttachmentOpenValidationException()
+        }
+        FileSignature.Png -> if (!file.startsWith(byteArrayOf(
+                0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+            ))) {
+            throw AttachmentOpenValidationException()
+        }
+        FileSignature.Webp -> {
+            val bytes = file.readBytes()
+            if (bytes.size < 12 ||
+                !bytes.copyOfRange(0, 4).contentEquals("RIFF".toByteArray()) ||
+                !bytes.copyOfRange(8, 12).contentEquals("WEBP".toByteArray())
+            ) throw AttachmentOpenValidationException()
+        }
         FileSignature.Pdf -> if (!file.startsWith("%PDF-".toByteArray())) {
             throw AttachmentOpenValidationException()
         }
@@ -314,6 +451,16 @@ private fun validateOpenedOffice(file: File, expectedRoot: String) {
     }
 }
 
+internal sealed interface VerifiedAttachmentPreparation {
+    data class Ready(
+        val file: File,
+        val name: String,
+        val mimeType: String,
+    ) : VerifiedAttachmentPreparation
+
+    data class Failed(val message: String) : VerifiedAttachmentPreparation
+}
+
 internal sealed interface OpenAttachmentResult {
     data object Opened : OpenAttachmentResult
     data class Failed(val message: String) : OpenAttachmentResult
@@ -334,6 +481,9 @@ private data class SafeFileType(
 )
 
 private sealed interface FileSignature {
+    data object Jpeg : FileSignature
+    data object Png : FileSignature
+    data object Webp : FileSignature
     data object Pdf : FileSignature
     data object Text : FileSignature
     data object Mp4 : FileSignature
@@ -351,6 +501,9 @@ private val CacheTtl = Duration.ofDays(1)
 private val SupportedTypes = listOf(
     SafeFileType("audio/mp4", "m4a", FileSignature.Mp4),
     SafeFileType("video/mp4", "mp4", FileSignature.Mp4),
+    SafeFileType("image/jpeg", "jpg", FileSignature.Jpeg),
+    SafeFileType("image/png", "png", FileSignature.Png),
+    SafeFileType("image/webp", "webp", FileSignature.Webp),
     SafeFileType("application/pdf", "pdf", FileSignature.Pdf),
     SafeFileType("text/plain", "txt", FileSignature.Text),
     SafeFileType("text/csv", "csv", FileSignature.Text),
