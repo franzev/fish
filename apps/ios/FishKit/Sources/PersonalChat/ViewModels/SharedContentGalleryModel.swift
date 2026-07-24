@@ -235,6 +235,7 @@ public final class SharedContentGalleryModel {
     }
 
     public var routeGeneration: Int { store.identityGeneration }
+    public var acceptedItems: [SharedContentAcceptedItem] { store.acceptedItems }
     public var presentation: SharedContentPresentationContract { store.presentation }
     public var earlierState: SharedContentEarlierState { store.earlierState }
     public var itemSelectionEnabled: Bool { onSelectItem != nil && !closed }

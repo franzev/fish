@@ -171,16 +171,18 @@ public actor SharedContentMediaRuntime {
         _ = await deliveryStore.clearGeneration(generation)
     }
 
-    /// Downloads an attachment through the current generation's live lease.
-    /// GIFs and stickers intentionally have no export path until their rights
-    /// are verified. The returned file is temporary and owned by this actor.
+    /// Downloads only attachment-backed items through the current lease and
+    /// returns a short-lived local file. GIFs and stickers intentionally have
+    /// no export path until their rights are verified.
     public func loadFullContent(_ request: FullContentRequest) async -> VerifiedFile? {
         guard isCurrent(request),
               request.kind != "gif",
               request.kind != "sticker",
               let attachmentId = request.attachmentId,
               request.expectedByteSize > 0,
-              request.expectedByteSize <= Int64(Self.maximumFullContentBytes)
+              request.expectedByteSize <= Int64(Self.maximumFullContentBytes),
+              !request.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !request.mimeType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else { return nil }
         let lease: SharedContentDeliveryLease?
         do {
@@ -210,13 +212,18 @@ public actor SharedContentMediaRuntime {
             }
         guard isCurrent(request),
               (response.1 as? HTTPURLResponse).map({ 200..<300 ~= $0.statusCode }) == true,
-              response.0.count > 0,
+              !response.0.isEmpty,
               Int64(response.0.count) == request.expectedByteSize,
               responseMime == nil || responseMime == request.mimeType.lowercased() ||
-                  responseMime == "application/octet-stream"
+                  responseMime == "application/octet-stream",
+              ByteSignature.matches(response.0, mimeType: request.mimeType)
         else { return nil }
-
-        let suffix = request.name.split(separator: ".").last.map(String.init) ?? "bin"
+        let suffix = request.name.split(separator: ".").last
+            .map(String.init)
+            .flatMap { value in
+                let safe = value.filter { $0.isLetter || $0.isNumber }
+                return safe.isEmpty || safe.count > 12 ? nil : safe
+            } ?? "bin"
         let destination = FileManager.default.temporaryDirectory
             .appending(path: UUID().uuidString.lowercased())
             .appendingPathExtension(suffix)

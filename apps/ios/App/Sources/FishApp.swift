@@ -8,6 +8,7 @@ import DesignSystem
 import Foundation
 import Observation
 import PersonalChat
+import QuickLook
 import SwiftUI
 import UIKit
 import UIComponents
@@ -161,6 +162,19 @@ private struct PendingConversationDestination {
     let conversationId: String
     let messageId: String?
     let notificationId: String?
+}
+
+private struct SharedContentDocumentExporter: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        UIDocumentPickerViewController(forExporting: [url], asCopy: true)
+    }
+
+    func updateUIViewController(
+        _ viewController: UIDocumentPickerViewController,
+        context: Context
+    ) {}
 }
 
 private enum ConversationDestination: Hashable {
@@ -333,6 +347,13 @@ private struct ConversationView: View {
     @Bindable var model: FishAppModel
     @State private var path: [ConversationDestination] = []
     @State private var requestedFocus: PersonalChatFocusTarget?
+    @State private var sharedContentShareFile: SharedContentMediaRuntime.VerifiedFile?
+    @State private var sharedContentShareURL: URL?
+    @State private var sharedContentDocumentFile: SharedContentMediaRuntime.VerifiedFile?
+    @State private var sharedContentQuickLookFile: SharedContentMediaRuntime.VerifiedFile?
+    @State private var sharedContentQuickLookURL: URL?
+    @State private var sharedContentReturnIntent: SharedContentNavigationIntent?
+    @State private var preservingSharedContentRouteForSource = false
 
     var body: some View {
         if let store = model.conversationStore,
@@ -420,8 +441,87 @@ private struct ConversationView: View {
                     destinationView($0, store: store)
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
-            .onChange(of: path, handlePathChange)
+        .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: path, handlePathChange)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if let intent = sharedContentReturnIntent, path.isEmpty {
+                ActionButton(
+                    "Back to shared content",
+                    variant: .secondary,
+                    fullWidth: true
+                ) {
+                    sharedContentReturnIntent = nil
+                    openSharedContent(intent)
+                }
+                .accessibilityHint("Returns to the shared content gallery")
+                .padding(.horizontal, Spacing.page)
+                .padding(.vertical, Spacing.xs)
+                .background(Palette.bg)
+            }
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { sharedContentShareFile != nil },
+                set: { presented in
+                    if !presented, let file = sharedContentShareFile {
+                        sharedContentShareFile = nil
+                        Task { await model.discardSharedContentFile(file) }
+                    }
+                }
+            ),
+            onDismiss: {
+                if let file = sharedContentShareFile {
+                    sharedContentShareFile = nil
+                    Task { await model.discardSharedContentFile(file) }
+                }
+            }
+        ) {
+            if let file = sharedContentShareFile {
+                AttachmentActivitySheet(item: file.url)
+            }
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { sharedContentShareURL != nil },
+                set: { if !$0 { sharedContentShareURL = nil } }
+            ),
+            onDismiss: { sharedContentShareURL = nil }
+        ) {
+            if let url = sharedContentShareURL {
+                AttachmentActivitySheet(item: url)
+            }
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { sharedContentDocumentFile != nil },
+                set: { presented in
+                    if !presented, let file = sharedContentDocumentFile {
+                        sharedContentDocumentFile = nil
+                        Task { await model.discardSharedContentFile(file) }
+                    }
+                }
+            ),
+            onDismiss: {
+                if let file = sharedContentDocumentFile {
+                    sharedContentDocumentFile = nil
+                    Task { await model.discardSharedContentFile(file) }
+                }
+            }
+        ) {
+            if let file = sharedContentDocumentFile {
+                SharedContentDocumentExporter(url: file.url)
+            }
+        }
+        .quickLookPreview($sharedContentQuickLookURL)
+        .onChange(of: sharedContentQuickLookURL) { previous, current in
+            guard current == nil, let previous else { return }
+            Task {
+                if let file = sharedContentQuickLookFile, file.url == previous {
+                    sharedContentQuickLookFile = nil
+                    await model.discardSharedContentFile(file)
+                }
+            }
+        }
             .sheet(isPresented: searchPresented, onDismiss: search.close) {
                 MessageSearchScreen(
                     model: search,
@@ -464,10 +564,56 @@ private struct ConversationView: View {
         case .sharedContent(let intent):
             if intent == model.activeSharedContentIntent,
                let galleryModel = model.sharedContentGalleryModel {
-                SharedContentGalleryScreen(
-                    model: galleryModel,
-                    onBack: popDestination
-                )
+                if let item = model.sharedContentPreviewItem {
+                    SharedContentPreviewScreen(
+                        item: item,
+                        senderName: model.sharedContentSenderName(for: item, store: store),
+                        onBack: model.closeSharedContentPreview,
+                        onOpenSource: { messageId in
+                            model.closeSharedContentPreview()
+                            preservingSharedContentRouteForSource = true
+                            sharedContentReturnIntent = intent
+                            path.removeAll()
+                            Task { await store.focusMessage(messageId) }
+                        },
+                        onNativeAction: { action in
+                            Task { @MainActor in
+                                if item.kind == "link",
+                                   let rawURL = item.linkUrl,
+                                   let url = URL(string: rawURL),
+                                   let scheme = url.scheme?.lowercased(),
+                                   ["http", "https"].contains(scheme),
+                                   url.host?.isEmpty == false {
+                                    if action == .open {
+                                        await UIApplication.shared.open(url)
+                                    } else if action == .share {
+                                        sharedContentShareURL = url
+                                    }
+                                    return
+                                }
+                                guard let file = await model.performSharedContentAction(action, item: item)
+                                else { return }
+                                if action == .open {
+                                    sharedContentQuickLookFile = file
+                                    sharedContentQuickLookURL = file.url
+                                } else if action == .share {
+                                    sharedContentShareFile = file
+                                } else {
+                                    sharedContentDocumentFile = file
+                                }
+                            }
+                        },
+                        onDelete: { messageId in
+                            Task { await model.deleteSharedContentSource(messageId) }
+                        },
+                        loadThumbnail: { await galleryModel.thumbnailData(for: $0) }
+                    )
+                } else {
+                    SharedContentGalleryScreen(
+                        model: galleryModel,
+                        onBack: popDestination
+                    )
+                }
             } else {
                 LoadingView(message: "Opening shared content…")
             }
@@ -487,8 +633,14 @@ private struct ConversationView: View {
     private func popDestination() {
         guard let destination = path.last else { return }
         if case .sharedContent = destination {
+            if preservingSharedContentRouteForSource {
+                preservingSharedContentRouteForSource = false
+                path.removeLast()
+                return
+            }
             model.closeSharedContentRoute()
         }
+        sharedContentReturnIntent = nil
         path.removeLast()
     }
 
@@ -499,6 +651,10 @@ private struct ConversationView: View {
         guard let removed = oldPath.last, !newPath.contains(removed) else { return }
         switch removed {
         case .sharedContent(let intent):
+            if preservingSharedContentRouteForSource {
+                preservingSharedContentRouteForSource = false
+                return
+            }
             model.closeSharedContentRoute()
             requestedFocus = intent.focusTarget
         case .details:
@@ -537,6 +693,7 @@ final class FishAppModel {
     private(set) var callKit: CallKitCoordinator?
     private(set) var sharedContentGalleryModel: SharedContentGalleryModel?
     private(set) var activeSharedContentIntent: SharedContentNavigationIntent?
+    private(set) var sharedContentPreviewItemId: String?
     private var draftStore: (any ChatDraftProviding)?
     private let notificationReplyStore = FileChatNotificationReplyStore.shared
     private var isProcessingNotificationReplies = false
@@ -739,6 +896,9 @@ final class FishAppModel {
         )
         let model = SharedContentGalleryModel(
             store: store,
+            onSelectItem: { [weak self] itemId in
+                self?.sharedContentPreviewItemId = itemId
+            },
             thumbnailLoader: { request, intent in
                 await mediaRuntime.load(request, intent: intent)
             }
@@ -807,7 +967,66 @@ final class FishAppModel {
         sharedContentStore = nil
         sharedContentMediaRuntime = nil
         sharedContentGalleryModel = nil
+        sharedContentPreviewItemId = nil
         activeSharedContentIntent = nil
+    }
+
+    func closeSharedContentPreview() {
+        sharedContentPreviewItemId = nil
+    }
+
+    var sharedContentPreviewItem: SharedContentAcceptedItem? {
+        guard let id = sharedContentPreviewItemId else { return nil }
+        return sharedContentGalleryModel?.acceptedItems.first { $0.itemId == id }
+    }
+
+    func sharedContentSenderName(
+        for item: SharedContentAcceptedItem,
+        store: ConversationStore
+    ) -> String {
+        if item.senderId == currentUserId { return accountDisplayName }
+        if item.senderId == store.participantId { return store.participantName }
+        return item.senderId.isEmpty ? "Sender unavailable" : item.senderId
+    }
+
+    func performSharedContentAction(
+        _ action: SharedContentNativeAction,
+        item: SharedContentAcceptedItem
+    ) async -> SharedContentMediaRuntime.VerifiedFile? {
+        guard let runtime = sharedContentMediaRuntime else { return nil }
+        if action == .share || action == .save || action == .download,
+           (!item.canExport || item.kind == "gif" || item.kind == "sticker") {
+            return nil
+        }
+        let name = item.originalName ?? item.mediaTitle ?? "shared-content"
+        guard let byteSize = item.byteSize,
+              let mimeType = item.mimeType,
+              byteSize > 0,
+              let context = sharedContentNavigationContext
+        else { return nil }
+        return await runtime.loadFullContent(.init(
+            ownerIdentityId: context.ownerIdentityId,
+            conversationId: context.conversationId,
+            identityGeneration: sharedContentGalleryModel?.routeGeneration ?? 0,
+            itemId: item.itemId,
+            contentVersion: item.contentVersion,
+            kind: item.kind,
+            attachmentId: item.attachmentId,
+            name: name,
+            mimeType: mimeType,
+            expectedByteSize: byteSize
+        ))
+    }
+
+    func discardSharedContentFile(_ file: SharedContentMediaRuntime.VerifiedFile) async {
+        await sharedContentMediaRuntime?.discard(file)
+    }
+
+    func deleteSharedContentSource(_ messageId: String) async -> Bool {
+        guard let conversationStore else { return false }
+        let accepted = await conversationStore.deleteSharedContentSource(messageId)
+        if accepted { sharedContentStore?.realtime() }
+        return accepted
     }
 
     private func closeSharedContentRouteAndWait() async {

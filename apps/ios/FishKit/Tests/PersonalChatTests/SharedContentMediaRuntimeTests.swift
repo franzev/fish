@@ -273,6 +273,69 @@ struct SharedContentMediaRuntimeTests {
         #expect(DelayedThumbnailURLProtocol.requestCount == 0)
     }
 
+    @Test func fullContentRequiresExactBytesAndSignatureThenCleansUpTemporaryFile() async throws {
+        let pdf = Data("%PDF-1.7\nverified".utf8)
+        FullContentURLProtocol.data = pdf
+        FullContentURLProtocol.mimeType = "application/pdf"
+        defer {
+            FullContentURLProtocol.data = nil
+            FullContentURLProtocol.mimeType = nil
+        }
+
+        let configuration = SharedContentEphemeralSession.configuration()
+        configuration.protocolClasses = [FullContentURLProtocol.self]
+        let deliveryStore = SharedContentDeliveryStore(
+            ownerIdentityId: "owner-a",
+            conversationId: "conversation-a",
+            identityGeneration: 1,
+            refreshAttachmentUrls: { ids in
+                ids.map {
+                    SignedAttachmentUrl(
+                        attachmentId: $0,
+                        thumbnailUrl: nil,
+                        displayUrl: URL(string: "https://media.fish.example.com/full")
+                    )
+                }
+            }
+        )
+        let thumbnailStore = try SharedContentThumbnailStore(
+            root: FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        )
+        let policy = SharedContentMediaURLPolicy(
+            supabaseURL: URL(string: "https://media.fish.example.com")
+        )
+        let runtime = SharedContentMediaRuntime(
+            messaging: UnusedSharedContentMessaging(),
+            deliveryStore: deliveryStore,
+            thumbnailStore: thumbnailStore,
+            urlPolicy: policy,
+            session: URLSession(configuration: configuration),
+            mediaTransport: testTransport(policy)
+        )
+        let request = SharedContentMediaRuntime.FullContentRequest(
+            ownerIdentityId: "owner-a",
+            conversationId: "conversation-a",
+            identityGeneration: 1,
+            itemId: "item-a",
+            contentVersion: "v1",
+            kind: "document",
+            attachmentId: "attachment-a",
+            name: "lesson.pdf",
+            mimeType: "application/pdf",
+            expectedByteSize: Int64(pdf.count)
+        )
+
+        let file = try #require(await runtime.loadFullContent(request))
+        #expect(FileManager.default.fileExists(atPath: file.url.path))
+        #expect(try Data(contentsOf: file.url) == pdf)
+
+        await runtime.discard(file)
+        #expect(!FileManager.default.fileExists(atPath: file.url.path))
+
+        FullContentURLProtocol.mimeType = "text/plain"
+        #expect(await runtime.loadFullContent(request) == nil)
+    }
+
     private func thumbnailRequest() -> SharedContentMediaThumbnailRequest {
         SharedContentMediaThumbnailRequest(
             ownerIdentityId: "owner-a",
@@ -407,6 +470,39 @@ private final class DelayedThumbnailURLProtocol: URLProtocol, @unchecked Sendabl
         Self.transport?.cancel()
         client?.urlProtocol(self, didFailWithError: URLError(.cancelled))
     }
+}
+
+private final class FullContentURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var data: Data?
+    nonisolated(unsafe) static var mimeType: String?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        request.url?.host == "media.fish.example.com"
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let url = request.url,
+              let data = Self.data,
+              let response = HTTPURLResponse(
+                  url: url,
+                  statusCode: 200,
+                  httpVersion: nil,
+                  headerFields: ["Content-Type": Self.mimeType ?? "application/octet-stream"]
+              )
+        else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
 }
 
 private actor UnusedSharedContentMessaging: ChatMessagingProviding {

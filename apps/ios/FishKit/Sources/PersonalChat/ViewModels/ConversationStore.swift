@@ -488,6 +488,29 @@ public final class ConversationStore {
         }
     }
 
+    /// Deletes a source message for the shared-content surface without an
+    /// optimistic tombstone. The gallery remains visible until the command is
+    /// accepted and its realtime/cache reconciliation arrives.
+    public func deleteSharedContentSource(_ id: String) async -> Bool {
+        let messageId = id.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !messageId.isEmpty else { return false }
+        do {
+            let confirmed = try await commands.execute(.delete(messageId: messageId))
+            reduce(.mergeRemoteMessage(
+                message: confirmed.coreState,
+                localRequestId: confirmed.clientRequestId
+            ))
+            notice = nil
+            return true
+        } catch let failure as ChatCommandFailure {
+            notice = failure.notice
+            return false
+        } catch {
+            notice = ChatCommandFailure.unavailable.notice
+            return false
+        }
+    }
+
     public func cancelComposerContext() {
         let wasEditing = currentConversation.composer.editTargetId != nil
         reduce(.setReplyTarget(conversationId: conversationId, messageId: nil))

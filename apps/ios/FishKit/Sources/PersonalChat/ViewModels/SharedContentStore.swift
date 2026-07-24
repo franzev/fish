@@ -47,8 +47,9 @@ public enum SharedContentEarlierState: String, Sendable, Equatable {
 
 /// Display-safe metadata accepted at the PersonalChat boundary.
 ///
-/// Provider locators, delivery leases, cache entities, raw URLs, sender/date
-/// preview context, and Phase 14 action authority are intentionally absent.
+/// Provider locators, delivery leases, cache entities, and raw URLs remain
+/// intentionally absent. Phase 14 carries only the server-authenticated
+/// context needed by the native preview and action surface.
 public struct SharedContentAcceptedItem: Codable, Identifiable, Sendable, Equatable {
     public let itemId: String
     public let conversationId: String
@@ -64,32 +65,42 @@ public struct SharedContentAcceptedItem: Codable, Identifiable, Sendable, Equata
     public let mediaDescription: String?
     public let linkTitle: String?
     public let linkHostname: String?
-    let sourceMessageId: String?
-    let attachmentId: String?
-    let stickerId: String?
-    let contentVersion: String
+    public let linkUrl: String?
+    public let senderId: String
+    public let sourceCreatedAt: String
+    public let canDelete: Bool
+    public let canExport: Bool
+    public let sourceMessageId: String?
+    public let attachmentId: String?
+    public let stickerId: String?
+    public let contentVersion: String
 
     public var id: String { itemId }
 
-    init(
+    public init(
         itemId: String,
         conversationId: String,
         category: String,
         kind: String,
-        originalName: String?,
-        mimeType: String?,
-        byteSize: Int64?,
-        width: Int?,
-        height: Int?,
-        durationMs: Int64?,
-        mediaTitle: String?,
-        mediaDescription: String?,
-        linkTitle: String?,
-        linkHostname: String?,
-        sourceMessageId: String?,
-        attachmentId: String?,
-        stickerId: String?,
-        contentVersion: String
+        originalName: String? = nil,
+        mimeType: String? = nil,
+        byteSize: Int64? = nil,
+        width: Int? = nil,
+        height: Int? = nil,
+        durationMs: Int64? = nil,
+        mediaTitle: String? = nil,
+        mediaDescription: String? = nil,
+        linkTitle: String? = nil,
+        linkHostname: String? = nil,
+        linkUrl: String? = nil,
+        sourceMessageId: String? = nil,
+        attachmentId: String? = nil,
+        stickerId: String? = nil,
+        contentVersion: String,
+        senderId: String = "",
+        sourceCreatedAt: String = "",
+        canDelete: Bool = false,
+        canExport: Bool = false
     ) {
         self.itemId = itemId
         self.conversationId = conversationId
@@ -105,6 +116,11 @@ public struct SharedContentAcceptedItem: Codable, Identifiable, Sendable, Equata
         self.mediaDescription = mediaDescription
         self.linkTitle = linkTitle
         self.linkHostname = linkHostname
+        self.linkUrl = linkUrl
+        self.senderId = senderId
+        self.sourceCreatedAt = sourceCreatedAt
+        self.canDelete = canDelete
+        self.canExport = canExport
         self.sourceMessageId = sourceMessageId
         self.attachmentId = attachmentId
         self.stickerId = stickerId
@@ -133,10 +149,15 @@ public struct SharedContentAcceptedItem: Codable, Identifiable, Sendable, Equata
         mediaDescription = try values.decodeIfPresent(String.self, forKey: .mediaDescription)
         linkTitle = try values.decodeIfPresent(String.self, forKey: .linkTitle)
         linkHostname = try values.decodeIfPresent(String.self, forKey: .linkHostname)
+        linkUrl = nil
         sourceMessageId = nil
         attachmentId = nil
         stickerId = nil
         contentVersion = itemId
+        senderId = ""
+        sourceCreatedAt = ""
+        canDelete = false
+        canExport = false
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -902,10 +923,15 @@ private extension SharedContentDataItem {
             mediaDescription: gifDescription,
             linkTitle: linkTitle,
             linkHostname: linkHostname,
+            linkUrl: linkUrl,
             sourceMessageId: sourceMessageId,
             attachmentId: attachmentId,
             stickerId: stickerId,
-            contentVersion: sourceCreatedAt
+            contentVersion: sourceCreatedAt,
+            senderId: senderId,
+            sourceCreatedAt: sourceCreatedAt,
+            canDelete: canDelete,
+            canExport: canExport
         )
     }
 
@@ -965,12 +991,14 @@ private extension StoredSharedContentItem {
     var acceptedItem: SharedContentAcceptedItem? {
         var linkTitle: String?
         var linkHostname: String?
+        var linkUrl: String?
         if let linkMetadataJson {
             guard let data = linkMetadataJson.data(using: .utf8),
                   let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             else { return nil }
             linkTitle = normalizedSafeText(object["title"] as? String)
             linkHostname = normalizedSafeText(object["hostname"] as? String)
+            linkUrl = normalizedSafeText(object["url"] as? String)
         }
         return makeAcceptedItem(
             itemId: itemId,
@@ -987,10 +1015,13 @@ private extension StoredSharedContentItem {
             mediaDescription: gifDescription,
             linkTitle: linkTitle,
             linkHostname: linkHostname,
+            linkUrl: linkUrl,
             sourceMessageId: sourceMessageId,
             attachmentId: attachmentId,
             stickerId: stickerId,
-            contentVersion: sourceCreatedAt
+            contentVersion: sourceCreatedAt,
+            senderId: senderId,
+            sourceCreatedAt: sourceCreatedAt
         )
     }
 
@@ -1059,10 +1090,15 @@ private func makeAcceptedItem(
     mediaDescription: String?,
     linkTitle: String?,
     linkHostname: String?,
+    linkUrl: String? = nil,
     sourceMessageId: String?,
     attachmentId: String?,
     stickerId: String?,
-    contentVersion: String
+    contentVersion: String,
+    senderId: String = "",
+    sourceCreatedAt: String = "",
+    canDelete: Bool = false,
+    canExport: Bool = false
 ) -> SharedContentAcceptedItem? {
     guard !itemId.isEmpty,
           !conversationId.isEmpty,
@@ -1088,10 +1124,15 @@ private func makeAcceptedItem(
         mediaDescription: normalizedSafeText(mediaDescription),
         linkTitle: normalizedSafeText(linkTitle),
         linkHostname: normalizedSafeText(linkHostname),
+        linkUrl: normalizedSafeText(linkUrl),
         sourceMessageId: normalizedSafeText(sourceMessageId),
         attachmentId: normalizedSafeText(attachmentId),
         stickerId: normalizedSafeText(stickerId),
-        contentVersion: contentVersion
+        contentVersion: contentVersion,
+        senderId: normalizedSafeText(senderId) ?? "",
+        sourceCreatedAt: normalizedSafeText(sourceCreatedAt) ?? "",
+        canDelete: canDelete,
+        canExport: canExport
     )
 }
 

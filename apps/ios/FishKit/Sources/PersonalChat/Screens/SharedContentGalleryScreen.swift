@@ -63,9 +63,6 @@ public struct SharedContentGalleryScreen: View {
         )) {
             model.open()
         }
-        .onDisappear {
-            model.dispatch(.close)
-        }
     }
 }
 
