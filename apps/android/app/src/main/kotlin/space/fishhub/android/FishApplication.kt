@@ -23,8 +23,12 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
+import java.util.concurrent.atomic.AtomicReference
+import space.fishhub.android.data.chat.sharedcontent.SharedContentEphemeralPurgeHook
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentStore
 
 class FishApplication : Application(), Configuration.Provider {
+    private val activeSharedContentStore = AtomicReference<SharedContentStore?>(null)
     private val supabaseClient by lazy {
         SupabaseClientFactory.create(
             url = BuildConfig.SUPABASE_URL,
@@ -36,6 +40,8 @@ class FishApplication : Application(), Configuration.Provider {
         ChatDataModule.create(
             context = this,
             supabaseClient = supabaseClient,
+            supabaseUrl = BuildConfig.SUPABASE_URL,
+            allowLocalDevelopmentMedia = BuildConfig.DEBUG,
             klipyApiKey = BuildConfig.KLIPY_API_KEY,
             klipyClientKey = BuildConfig.KLIPY_CLIENT_KEY,
             onBeforeSignOut = {
@@ -74,7 +80,14 @@ class FishApplication : Application(), Configuration.Provider {
 
     val chatRepository: ChatRepository get() = chatDependencies.chatRepository
     val gifRepository: GifRepository get() = chatDependencies.gifRepository
+    val sharedContentGalleryRuntime: ChatDataModule.SharedContentGalleryRuntime
+        get() = chatDependencies.sharedContentGalleryRuntime
     val presenceRepository: PresenceRepository get() = presenceDependencies.repository
+
+    fun replaceActiveSharedContentStore(next: SharedContentStore?) {
+        val previous = activeSharedContentStore.getAndSet(next)
+        if (previous !== next) previous?.close()
+    }
 
     suspend fun processPendingChatReplies() {
         val auth = chatRepository.authState.value
@@ -109,6 +122,12 @@ class FishApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        chatRepository.registerSharedContentEphemeralPurgeHook(
+            SharedContentEphemeralPurgeHook { _, _ ->
+                replaceActiveSharedContentStore(null)
+                true
+            },
+        )
         chatDependencies.startAttachmentMaintenanceAndRecovery()
         callCoordinator
         ProcessLifecycleOwner.get().lifecycle.addObserver(

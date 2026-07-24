@@ -26,6 +26,8 @@ import space.fishhub.android.data.chat.local.AttachmentDraftEntity
 import android.net.Uri
 import java.io.IOException
 import java.time.Instant
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,10 +125,14 @@ class DefaultChatRepositoryTest {
     fun manualRetryReconcilesFailedRequestWithoutDuplicate() = runTest {
         database.chatDao().upsertConversation(remote.conversation.toEntity())
         remote.failSend = true
+        val content = OutgoingMessageContent(
+            body = "Practice sentence",
+            stickerId = "practice-sticker",
+        )
 
         val failed = repository.sendMessage(
             "conversation-1",
-            OutgoingMessageContent("Practice sentence"),
+            content,
             "request-1",
         )
         assertTrue(failed is ChatResult.Failure)
@@ -134,7 +140,7 @@ class DefaultChatRepositoryTest {
         remote.failSend = false
         val sent = repository.sendMessage(
             "conversation-1",
-            OutgoingMessageContent("Practice sentence"),
+            content,
             "request-1",
         )
         assertTrue(sent is ChatResult.Success)
@@ -269,6 +275,50 @@ class DefaultChatRepositoryTest {
         val refreshed = repository.observeMessages("conversation-1").first().single()
         assertEquals("https://example.test/attachment-1/display", refreshed.attachments.single().displayUrl)
         assertEquals(1, remote.refreshCalls)
+    }
+
+    @Test
+    fun leasePurgeRejectsASuspendedRefreshAndEveryProviderBatchIsBounded() = runTest {
+        remote.pageMessages = listOf(
+            ChatMessage(
+                id = "attachment-message",
+                conversationId = "conversation-1",
+                senderId = "coach-1",
+                senderRole = UserRole.Coach,
+                body = "",
+                attachments = listOf(
+                    ChatAttachment(
+                        id = "attachment-1",
+                        position = 0,
+                        kind = ChatAttachmentKind.Image,
+                        originalName = "Photo",
+                        mimeType = "image/webp",
+                        byteSize = 1200,
+                        thumbnailPath = "thumb.webp",
+                        displayPath = "display.webp",
+                    ),
+                ),
+                clientRequestId = "attachment-request",
+                createdAt = "2026-07-16T00:00:00Z",
+            ),
+        )
+        assertTrue(repository.syncNewest("conversation-1") is ChatResult.Success)
+
+        remote.refreshStarted = CompletableDeferred()
+        remote.refreshRelease = CompletableDeferred()
+        val refresh = async {
+            repository.refreshAttachmentUrls((0..100).map { "attachment-$it" })
+        }
+        remote.refreshStarted?.await()
+        repository.clearSharedContentLeases()
+        remote.refreshRelease?.complete(Unit)
+
+        assertTrue(refresh.await() is ChatResult.Failure)
+        assertEquals(listOf(50, 50, 1), remote.refreshBatchSizes)
+        assertNull(
+            repository.observeMessages("conversation-1").first()
+                .single().attachments.single().displayUrl,
+        )
     }
 
     @Test
@@ -545,7 +595,7 @@ class DefaultChatRepositoryTest {
         sha256 = name.padEnd(64, '0').take(64),
         createdAt = "2026-07-17T00:00:00Z",
         updatedAt = "2026-07-17T00:00:00Z",
-        expiresAt = "2026-07-24T00:00:00Z",
+        expiresAt = "2099-07-24T00:00:00Z",
         clientUploadId = "upload-$name",
         serverAttachmentId = "server-$name",
         transferState = "ready",
@@ -587,7 +637,7 @@ private class FakeAttachmentImporter : LocalAttachmentImporter {
             sha256 = name.padEnd(64, '0').take(64),
             createdAt = "2026-07-17T00:00:00Z",
             updatedAt = "2026-07-17T00:00:00Z",
-            expiresAt = "2026-07-24T00:00:00Z",
+            expiresAt = "2099-07-24T00:00:00Z",
         )
     }
 
@@ -625,6 +675,9 @@ private class FakeRemote : ChatRemoteDataSource {
     var authorized = true
     var pageMessages: List<ChatMessage> = emptyList()
     var refreshCalls = 0
+    var refreshBatchSizes = mutableListOf<Int>()
+    var refreshStarted: CompletableDeferred<Unit>? = null
+    var refreshRelease: CompletableDeferred<Unit>? = null
     var sendCalls = 0
     var sendAttachmentsHydrated = true
     var lastSentContent: OutgoingMessageContent? = null
@@ -668,9 +721,14 @@ private class FakeRemote : ChatRemoteDataSource {
         return searchPage
     }
     override suspend fun loadReadStates(conversationId: String) = emptyList<ChatReadState>()
-    override suspend fun refreshAttachmentUrls(attachmentIds: List<String>) = attachmentIds.map {
-        refreshCalls += 1
-        AttachmentDelivery(it, "https://example.test/$it/thumb", "https://example.test/$it/display", null)
+    override suspend fun refreshAttachmentUrls(attachmentIds: List<String>): List<AttachmentDelivery> {
+        refreshBatchSizes += attachmentIds.size
+        refreshStarted?.complete(Unit)
+        refreshRelease?.await()
+        return attachmentIds.map {
+            refreshCalls += 1
+            AttachmentDelivery(it, "https://example.test/$it/thumb", "https://example.test/$it/display", null)
+        }
     }
     override suspend fun initializeAttachmentUpload(
         command: space.fishhub.android.data.chat.remote.InitializeAttachmentUpload,

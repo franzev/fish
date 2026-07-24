@@ -6,9 +6,23 @@ import space.fishhub.android.data.chat.model.ChatReadState
 import space.fishhub.android.data.chat.model.ChatGif
 import space.fishhub.android.data.chat.model.UserRole
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.net.Uri
 import space.fishhub.android.data.chat.model.LocalAttachmentDraft
+import space.fishhub.android.data.chat.sharedcontent.IdentityGeneration
+import space.fishhub.android.data.chat.sharedcontent.SharedContentEphemeralPurgeHook
+import space.fishhub.android.data.chat.sharedcontent.SharedContentIdentityState
+import space.fishhub.android.data.chat.sharedcontent.SharedContentIdentityStatus
+import space.fishhub.android.data.chat.sharedcontent.StoredSharedContentSnapshot
+
+private val DefaultSharedContentIdentity = MutableStateFlow(
+    SharedContentIdentityState(
+        status = SharedContentIdentityStatus.UNRESOLVED,
+        ownerIdentityId = null,
+        generation = IdentityGeneration(0),
+    ),
+)
 
 sealed interface ChatResult<out T> {
     data class Success<T>(val value: T) : ChatResult<T>
@@ -90,6 +104,78 @@ data class MessageSearchPage(
     val items: List<MessageSearchHit>,
     val nextCursor: MessageSearchCursor?,
 )
+
+/** The four-field cursor owned by the authorized shared-content RPC. */
+data class SharedContentDataCursor(
+    val sourceCreatedAt: String,
+    val sourceMessageId: String,
+    val sourceRank: Int,
+    val itemId: String,
+) {
+    init {
+        require(sourceCreatedAt.isNotBlank())
+        require(sourceMessageId.isNotBlank())
+        require(itemId.isNotBlank())
+    }
+}
+
+/** Safe shared-content metadata returned by the repository. Delivery leases are excluded. */
+data class SharedContentDataItem(
+    val itemId: String,
+    val conversationId: String,
+    val sourceMessageId: String,
+    val senderId: String,
+    val sourceCreatedAt: String,
+    val sourceRank: Int,
+    val category: String,
+    val kind: String,
+    val attachmentId: String? = null,
+    val attachmentOriginalName: String? = null,
+    val attachmentMimeType: String? = null,
+    val attachmentByteSize: Long? = null,
+    val attachmentWidth: Int? = null,
+    val attachmentHeight: Int? = null,
+    val attachmentDisplayPath: String? = null,
+    val attachmentThumbnailPath: String? = null,
+    val durationMs: Long? = null,
+    val gifProvider: String? = null,
+    val gifProviderContentId: String? = null,
+    val gifTitle: String? = null,
+    val gifDescription: String? = null,
+    val stickerId: String? = null,
+    val linkUrl: String? = null,
+    val linkHostname: String? = null,
+    val linkTitle: String? = null,
+    val linkDescription: String? = null,
+    val linkSiteName: String? = null,
+    val canDelete: Boolean,
+    val canExport: Boolean,
+)
+
+data class SharedContentDataPage(
+    val items: List<SharedContentDataItem>,
+    val hasMore: Boolean,
+    val nextCursor: SharedContentDataCursor?,
+)
+
+/** Identity and request sequencing carried across the asynchronous repository boundary. */
+data class SharedContentRequestToken(
+    val ownerIdentityId: String,
+    val conversationId: String,
+    val identityGeneration: Long,
+    val cycleId: String,
+    val requestId: String,
+    val requestedCursor: SharedContentDataCursor? = null,
+    val replace: Boolean,
+) {
+    init {
+        require(ownerIdentityId.isNotBlank())
+        require(conversationId.isNotBlank())
+        require(identityGeneration > 0)
+        require(cycleId.isNotBlank())
+        require(requestId.isNotBlank())
+    }
+}
 
 /** Completed call lifecycle rows rendered inline in the conversation timeline. */
 data class ChatCallActivity(
@@ -195,6 +281,20 @@ sealed interface ChatRealtimeEvent {
 interface ChatRepository {
     val authState: StateFlow<ChatAuthState>
 
+    /** Gallery consumers may expose cached content only while this is eligible. */
+    val sharedContentIdentity: StateFlow<SharedContentIdentityState>
+        get() = DefaultSharedContentIdentity
+
+    val sharedContentIdentityGeneration: Long
+        get() = sharedContentIdentity.value.generation.value
+
+    /** Retries disposable gallery cleanup without blocking unrelated auth surfaces. */
+    suspend fun retrySharedContentIdentityPurge(): Boolean = false
+
+    suspend fun sweepSharedContentIdentityOnForeground(): Boolean = false
+
+    fun registerSharedContentEphemeralPurgeHook(hook: SharedContentEphemeralPurgeHook) = Unit
+
     fun observeMessages(conversationId: String): Flow<List<ChatMessage>>
     fun observeReadStates(conversationId: String): Flow<List<ChatReadState>>
     fun observeDraft(conversationId: String): Flow<String>
@@ -224,6 +324,14 @@ interface ChatRepository {
         cursor: MessageSearchCursor? = null,
         limit: Int = 25,
     ): ChatResult<MessageSearchPage>
+    fun observeSharedContentSnapshot(conversationId: String): Flow<StoredSharedContentSnapshot?>
+    suspend fun refreshSharedContent(
+        token: SharedContentRequestToken,
+        category: String? = null,
+    ): ChatResult<SharedContentDataPage>
+    suspend fun refreshSharedContentCategories(
+        token: SharedContentRequestToken,
+    ): ChatResult<List<String>>
     suspend fun refreshAttachmentUrls(attachmentIds: List<String>): ChatResult<List<AttachmentDelivery>>
     suspend fun sendMessage(
         conversationId: String,

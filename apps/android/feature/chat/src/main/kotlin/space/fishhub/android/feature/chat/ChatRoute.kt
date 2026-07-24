@@ -20,17 +20,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.toClipEntry
@@ -43,6 +48,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishEmptyState
@@ -64,6 +71,15 @@ import space.fishhub.android.feature.settings.AccountSettingsBlockedPerson
 import space.fishhub.android.feature.settings.AccountSettingsSheet
 import space.fishhub.android.feature.settings.AccountSettingsMotion
 import space.fishhub.android.feature.settings.AccountSettingsTheme
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryPresenter
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryScreen
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentOrigin
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentStore
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentVisibilityPort
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentDeliveryBatch
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentNetworkPolicy
+import space.fishhub.android.data.chat.ChatDataModule
+import space.fishhub.android.data.chat.ChatRealtimeEvent
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -103,6 +119,8 @@ fun ChatRoute(
     onClearSettingsNotice: () -> Unit = {},
     onAppearanceSelected: (AccountSettingsTheme) -> Unit = {},
     onAccessibilitySelected: (AccountSettingsMotion) -> Unit = {},
+    sharedContentRuntime: ChatDataModule.SharedContentGalleryRuntime,
+    onSharedContentStoreChanged: (SharedContentStore?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val clipboard = LocalClipboard.current
@@ -113,19 +131,31 @@ fun ChatRoute(
     val presenceState by presenceViewModel.uiState.collectAsStateWithLifecycle()
     val blockedPeopleState by viewModel.blockedPeople.collectAsStateWithLifecycle()
     val composerState = rememberTextFieldState()
+    val selectedConversationId = (routeState as? ChatRouteUiState.Conversation)
+        ?.model
+        ?.selectedConversationId
     var mediaPickerVisible by remember { mutableStateOf(false) }
     var accountSheetVisible by remember { mutableStateOf(false) }
     var attachmentSourceVisible by remember { mutableStateOf(false) }
     var selectedPhotoId by remember { mutableStateOf<String?>(null) }
+    var participantDetailsVisible by remember(selectedConversationId) { mutableStateOf(false) }
+    var sharedContentOrigin by remember(selectedConversationId) {
+        mutableStateOf<SharedContentOrigin?>(null)
+    }
+    var sharedContentEntry by remember(selectedConversationId) { mutableIntStateOf(0) }
+    var focusReturn by remember(selectedConversationId) {
+        mutableStateOf(SharedContentFocusReturn.None)
+    }
+    val sharedContentHeaderFocus = remember(selectedConversationId) { FocusRequester() }
+    val participantDetailsFocus = remember(selectedConversationId) { FocusRequester() }
+    val sharedContentIdentity by sharedContentRuntime.repository.sharedContentIdentity
+        .collectAsStateWithLifecycle()
     val currentUserDisplayName = when (val state = routeState) {
         is ChatRouteUiState.Conversation -> state.model.currentUserDisplayName
         is ChatRouteUiState.ConversationList -> state.currentUserDisplayName
         else -> ""
     }
     val currentConversation = viewModel.currentConversation
-    val selectedConversationId = (routeState as? ChatRouteUiState.Conversation)
-        ?.model
-        ?.selectedConversationId
     val canManageBlockedPeople = viewModel.currentUserRole ==
         space.fishhub.android.data.chat.model.UserRole.Client
     val accountContent: (@Composable () -> Unit)? = currentUserDisplayName
@@ -151,6 +181,122 @@ fun ChatRoute(
     LaunchedEffect(selectedConversationId) {
         // Search is intentionally session-only and must not follow a different conversation.
         messageSearchViewModel.close()
+        sharedContentOrigin = null
+        participantDetailsVisible = false
+        focusReturn = SharedContentFocusReturn.None
+    }
+    LaunchedEffect(sharedContentOrigin, participantDetailsVisible, focusReturn) {
+        if (sharedContentOrigin != null || focusReturn == SharedContentFocusReturn.None) return@LaunchedEffect
+        withFrameNanos { }
+        when (focusReturn) {
+            SharedContentFocusReturn.HeaderSharedContent -> sharedContentHeaderFocus.requestFocus()
+            SharedContentFocusReturn.DetailsSharedContent -> Unit
+            SharedContentFocusReturn.ParticipantDetails -> participantDetailsFocus.requestFocus()
+            SharedContentFocusReturn.None -> Unit
+        }
+        focusReturn = SharedContentFocusReturn.None
+    }
+
+    val galleryKey = sharedContentOrigin?.let {
+        val owner = sharedContentIdentity.ownerIdentityId
+        val conversation = selectedConversationId
+        if (sharedContentIdentity.isGalleryEligible && owner != null && conversation != null) {
+            SharedContentSessionKey(
+                ownerIdentityId = owner,
+                conversationId = conversation,
+                identityGeneration = sharedContentIdentity.generation.value,
+                entry = sharedContentEntry,
+            )
+        } else {
+            null
+        }
+    }
+    val galleryScope = rememberCoroutineScope()
+    val gallerySession = remember(galleryKey, sharedContentRuntime) {
+        galleryKey?.let { key ->
+            lateinit var store: SharedContentStore
+            val visibilityPort = object : SharedContentVisibilityPort {
+                override suspend fun submit(batch: SharedContentDeliveryBatch) {
+                    val requests = store.acceptedItems.value
+                        .filter { it.itemId in batch.ids }
+                        .mapNotNull { item ->
+                            item.thumbnailRequest(key, mediaCatalog)
+                        }
+                    sharedContentRuntime.prefetchThumbnails(requests)
+                }
+
+                override fun confirmThumbnailDisplayed(
+                    itemId: String,
+                    contentVersion: String,
+                ): Boolean = sharedContentRuntime.confirmDisplayed(
+                    ownerIdentityId = key.ownerIdentityId,
+                    conversationId = key.conversationId,
+                    itemId = itemId,
+                    contentVersion = contentVersion,
+                )
+            }
+            store = SharedContentStore(
+                repository = sharedContentRuntime.repository,
+                scope = galleryScope,
+                visibilityPort = visibilityPort,
+            )
+            SharedContentSession(
+                key = key,
+                store = store,
+                presenter = SharedContentGalleryPresenter(store, galleryScope),
+            )
+        }
+    }
+    DisposableEffect(gallerySession) {
+        gallerySession?.let { onSharedContentStoreChanged(it.store) }
+        onDispose {
+            gallerySession?.close()
+            if (gallerySession != null) onSharedContentStoreChanged(null)
+        }
+    }
+    LaunchedEffect(gallerySession) {
+        gallerySession?.let { session ->
+            session.store.bind(
+                ownerIdentityId = session.key.ownerIdentityId,
+                conversationId = session.key.conversationId,
+                verifiedIdentityGeneration = session.key.identityGeneration,
+            )
+            session.store.open()
+        }
+    }
+    LaunchedEffect(gallerySession) {
+        val session = gallerySession ?: return@LaunchedEffect
+        sharedContentRuntime.repository.observeRealtime(session.key.conversationId).collect { event ->
+            if (event is ChatRealtimeEvent.MessageChanged) session.store.realtime()
+        }
+    }
+    LaunchedEffect(
+        gallerySession,
+        (routeState as? ChatRouteUiState.Conversation)?.model?.connection,
+    ) {
+        val session = gallerySession ?: return@LaunchedEffect
+        val online = (routeState as? ChatRouteUiState.Conversation)
+            ?.model
+            ?.connection != ChatConnectionUiState.Offline
+        session.store.connectivity(
+            SharedContentNetworkPolicy(
+                networkUsable = online,
+                lookaheadAllowed = online,
+            ),
+        )
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        gallerySession?.store?.background()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        gallerySession?.store?.foreground()
+    }
+    LaunchedEffect(sharedContentOrigin, gallerySession) {
+        if (sharedContentOrigin != null && gallerySession == null) {
+            sharedContentOrigin = null
+            participantDetailsVisible = false
+            focusReturn = SharedContentFocusReturn.None
+        }
     }
 
     when (val state = routeState) {
@@ -183,7 +329,30 @@ fun ChatRoute(
                 protocolDraft = state.draft,
                 onDraftChanged = viewModel::draftChanged,
             )
-            if (messageSearchState.visible && currentConversation != null) {
+            val galleryOrigin = sharedContentOrigin
+            if (galleryOrigin != null && gallerySession != null) {
+                SharedContentGalleryScreen(
+                    presenter = gallerySession.presenter,
+                    onBack = {
+                        gallerySession.close()
+                        onSharedContentStoreChanged(null)
+                        sharedContentOrigin = null
+                        focusReturn = when (galleryOrigin) {
+                            SharedContentOrigin.ConversationHeader ->
+                                SharedContentFocusReturn.HeaderSharedContent
+                            SharedContentOrigin.ConversationDetails ->
+                                SharedContentFocusReturn.DetailsSharedContent
+                        }
+                    },
+                    modifier = modifier,
+                    thumbnailLoader = { handle ->
+                        val item = gallerySession.store.acceptedItems.value
+                            .firstOrNull { it.itemId == handle.itemId }
+                        val request = item?.thumbnailRequest(gallerySession.key, mediaCatalog)
+                        request?.let { sharedContentRuntime.loadThumbnail(it) }
+                    },
+                )
+            } else if (messageSearchState.visible && currentConversation != null) {
                 MessageSearchScreen(
                     state = messageSearchState,
                     onQueryChanged = messageSearchViewModel::updateQuery,
@@ -229,6 +398,31 @@ fun ChatRoute(
                     onOpenMessageSearch = {
                         currentConversation?.let(messageSearchViewModel::open)
                     },
+                    onOpenSharedContentFromHeader = {
+                        participantDetailsVisible = false
+                        sharedContentEntry += 1
+                        sharedContentOrigin = SharedContentOrigin.ConversationHeader
+                    },
+                    onOpenSharedContentFromDetails = {
+                        sharedContentEntry += 1
+                        sharedContentOrigin = SharedContentOrigin.ConversationDetails
+                    },
+                    participantDetailsVisible = participantDetailsVisible,
+                    onOpenParticipantDetails = {
+                        participantDetailsVisible = true
+                    },
+                    onDismissParticipantDetails = {
+                        participantDetailsVisible = false
+                        focusReturn = SharedContentFocusReturn.ParticipantDetails
+                    },
+                    sharedContentHeaderModifier = Modifier.focusRequester(
+                        sharedContentHeaderFocus,
+                    ),
+                    sharedContentDetailsFocusRequested =
+                        focusReturn == SharedContentFocusReturn.DetailsSharedContent,
+                    participantDetailsModifier = Modifier.focusRequester(
+                        participantDetailsFocus,
+                    ),
                     onClearReplyTarget = viewModel::clearReplyTarget,
                     onRemoveFriend = viewModel::removeFriend,
                     onBlockParticipant = viewModel::blockParticipant,
@@ -389,6 +583,50 @@ fun ChatRoute(
             onDismiss = { selectedPhotoId = null },
             onLoadError = viewModel::refreshAttachment,
         )
+    }
+}
+
+private enum class SharedContentFocusReturn {
+    None,
+    HeaderSharedContent,
+    DetailsSharedContent,
+    ParticipantDetails,
+}
+
+private data class SharedContentSessionKey(
+    val ownerIdentityId: String,
+    val conversationId: String,
+    val identityGeneration: Long,
+    val entry: Int,
+)
+
+private fun space.fishhub.android.feature.chat.sharedcontent.SharedContentAcceptedItem
+    .thumbnailRequest(
+        key: SharedContentSessionKey,
+        mediaCatalog: ChatMediaCatalog,
+    ): ChatDataModule.SharedContentThumbnailRequest? {
+    if (category != "media") return null
+    return ChatDataModule.SharedContentThumbnailRequest(
+        ownerIdentityId = key.ownerIdentityId,
+        conversationId = key.conversationId,
+        identityGeneration = key.identityGeneration,
+        itemId = itemId,
+        contentVersion = contentVersion,
+        kind = kind,
+        attachmentId = attachmentId,
+        sourceMessageId = sourceMessageId,
+        stickerAssetPath = stickerId?.let(mediaCatalog::sticker)?.assetPath,
+    )
+}
+
+private data class SharedContentSession(
+    val key: SharedContentSessionKey,
+    val store: SharedContentStore,
+    val presenter: SharedContentGalleryPresenter,
+) {
+    fun close() {
+        presenter.close()
+        store.close()
     }
 }
 

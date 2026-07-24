@@ -14,6 +14,9 @@ import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
 import space.fishhub.android.data.chat.ChatCallActivity
+import space.fishhub.android.data.chat.SharedContentDataCursor
+import space.fishhub.android.data.chat.SharedContentDataPage
+import space.fishhub.android.data.chat.SharedContentDataItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -42,6 +45,14 @@ internal interface ChatRemoteDataSource {
         cursor: MessageSearchCursor? = null,
         limit: Int = 25,
     ): MessageSearchPage
+    suspend fun listConversationSharedContent(
+        conversation: AuthorizedConversation,
+        cursor: SharedContentDataCursor? = null,
+        category: String? = null,
+    ): SharedContentDataPage = error("Shared content listing is not configured.")
+    suspend fun listConversationSharedContentCategories(
+        conversation: AuthorizedConversation,
+    ): List<String> = emptyList()
     suspend fun loadReadStates(conversationId: String): List<ChatReadState>
     suspend fun refreshAttachmentUrls(attachmentIds: List<String>): List<AttachmentDelivery>
     suspend fun initializeAttachmentUpload(command: InitializeAttachmentUpload): AttachmentUploadAuthorization
@@ -82,6 +93,9 @@ internal interface ChatRemoteDataSource {
 }
 
 internal class RemoteCommandException(message: String) : IllegalStateException(message)
+
+/** A provider response crossed the shared-content contract boundary incorrectly. */
+internal class SharedContentValidationException : IllegalStateException()
 
 internal data class InitializeAttachmentUpload(
     val conversationId: String,

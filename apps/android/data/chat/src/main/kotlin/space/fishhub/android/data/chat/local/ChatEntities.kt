@@ -155,3 +155,93 @@ data class AttachmentDraftEntity(
     @ColumnInfo(name = "tus_upload_offset", defaultValue = "0") val tusUploadOffset: Long = 0,
     @ColumnInfo(name = "tus_expires_at") val tusExpiresAt: String? = null,
 )
+
+@Entity(
+    tableName = "shared_content_cache_owners",
+    primaryKeys = ["owner_identity_id", "conversation_id"],
+    indices = [
+        Index(value = ["owner_identity_id", "last_accessed_at"]),
+    ],
+)
+data class SharedContentCacheOwnerEntity(
+    @ColumnInfo(name = "owner_identity_id") val ownerIdentityId: String,
+    @ColumnInfo(name = "conversation_id") val conversationId: String,
+    @ColumnInfo(name = "schema_version") val schemaVersion: Int = 1,
+    @ColumnInfo(name = "saved_at") val savedAt: String,
+    @ColumnInfo(name = "last_authoritative_at") val lastAuthoritativeAt: String? = null,
+    @ColumnInfo(name = "last_accessed_at") val lastAccessedAt: String,
+    @ColumnInfo(name = "authoritative_empty_confirmed") val authoritativeEmptyConfirmed: Boolean = false,
+    @ColumnInfo(name = "retained_oldest_cursor") val retainedOldestCursor: String? = null,
+    @ColumnInfo(name = "retained_history_complete") val retainedHistoryComplete: Boolean = true,
+    @ColumnInfo(name = "newest_window_protected") val newestWindowProtected: Boolean = true,
+)
+
+@Entity(
+    tableName = "shared_content_cache_pages",
+    primaryKeys = ["owner_identity_id", "conversation_id", "page_id"],
+    indices = [
+        Index(value = ["owner_identity_id", "conversation_id", "last_accessed_at"]),
+        Index(value = ["owner_identity_id", "last_accessed_at"]),
+        Index(value = ["owner_identity_id", "conversation_id", "page_ordinal", "retained_cursor"], unique = true),
+    ],
+    foreignKeys = [
+        ForeignKey(
+            entity = SharedContentCacheOwnerEntity::class,
+            parentColumns = ["owner_identity_id", "conversation_id"],
+            childColumns = ["owner_identity_id", "conversation_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class SharedContentCachePageEntity(
+    @ColumnInfo(name = "owner_identity_id") val ownerIdentityId: String,
+    @ColumnInfo(name = "conversation_id") val conversationId: String,
+    @ColumnInfo(name = "page_id") val pageId: String,
+    @ColumnInfo(name = "page_ordinal") val pageOrdinal: Int,
+    @ColumnInfo(name = "retained_cursor") val retainedCursor: String?,
+    @ColumnInfo(name = "last_accessed_at") val lastAccessedAt: String,
+    @ColumnInfo(name = "is_newest_window") val isNewestWindow: Boolean,
+)
+
+@Entity(
+    tableName = "shared_content_cache_items",
+    primaryKeys = ["owner_identity_id", "conversation_id", "item_id"],
+    indices = [
+        Index(value = ["owner_identity_id", "conversation_id", "source_rank", "item_id"]),
+        Index(value = ["owner_identity_id", "conversation_id", "source_message_id"]),
+        Index(value = ["owner_identity_id", "conversation_id", "page_id"]),
+    ],
+    foreignKeys = [
+        ForeignKey(
+            entity = SharedContentCachePageEntity::class,
+            parentColumns = ["owner_identity_id", "conversation_id", "page_id"],
+            childColumns = ["owner_identity_id", "conversation_id", "page_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class SharedContentCacheItemEntity(
+    @ColumnInfo(name = "owner_identity_id") val ownerIdentityId: String,
+    @ColumnInfo(name = "conversation_id") val conversationId: String,
+    @ColumnInfo(name = "item_id") val itemId: String,
+    @ColumnInfo(name = "source_message_id") val sourceMessageId: String,
+    @ColumnInfo(name = "sender_id") val senderId: String,
+    @ColumnInfo(name = "source_created_at") val sourceCreatedAt: String,
+    @ColumnInfo(name = "source_rank") val sourceRank: Int,
+    val category: String,
+    val kind: String,
+    @ColumnInfo(name = "attachment_id") val attachmentId: String? = null,
+    @ColumnInfo(name = "attachment_original_name") val attachmentOriginalName: String? = null,
+    @ColumnInfo(name = "attachment_mime_type") val attachmentMimeType: String? = null,
+    @ColumnInfo(name = "attachment_byte_size") val attachmentByteSize: Long? = null,
+    @ColumnInfo(name = "attachment_width") val attachmentWidth: Int? = null,
+    @ColumnInfo(name = "attachment_height") val attachmentHeight: Int? = null,
+    @ColumnInfo(name = "duration_ms") val durationMs: Long? = null,
+    @ColumnInfo(name = "gif_provider") val gifProvider: String? = null,
+    @ColumnInfo(name = "gif_provider_content_id") val gifProviderContentId: String? = null,
+    @ColumnInfo(name = "gif_title") val gifTitle: String? = null,
+    @ColumnInfo(name = "gif_description") val gifDescription: String? = null,
+    @ColumnInfo(name = "sticker_id") val stickerId: String? = null,
+    @ColumnInfo(name = "link_metadata_json") val linkMetadataJson: String? = null,
+    @ColumnInfo(name = "page_id") val pageId: String,
+)

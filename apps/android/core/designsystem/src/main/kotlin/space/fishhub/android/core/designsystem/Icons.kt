@@ -189,6 +189,76 @@ object FishIcons {
         }
     }
 
+    val Gallery: ImageVector by lazy {
+        fishIcon("Gallery") {
+            moveTo(5f, 4f)
+            lineTo(19f, 4f)
+            curveTo(20.1f, 4f, 21f, 4.9f, 21f, 6f)
+            lineTo(21f, 18f)
+            curveTo(21f, 19.1f, 20.1f, 20f, 19f, 20f)
+            lineTo(5f, 20f)
+            curveTo(3.9f, 20f, 3f, 19.1f, 3f, 18f)
+            lineTo(3f, 6f)
+            curveTo(3f, 4.9f, 3.9f, 4f, 5f, 4f)
+            close()
+            moveTo(8.5f, 8f)
+            curveTo(9.33f, 8f, 10f, 8.67f, 10f, 9.5f)
+            curveTo(10f, 10.33f, 9.33f, 11f, 8.5f, 11f)
+            curveTo(7.67f, 11f, 7f, 10.33f, 7f, 9.5f)
+            curveTo(7f, 8.67f, 7.67f, 8f, 8.5f, 8f)
+            close()
+            moveTo(3f, 16f)
+            lineTo(8f, 12f)
+            lineTo(12f, 16f)
+            lineTo(15f, 13f)
+            lineTo(21f, 18f)
+        }
+    }
+
+    val FileText: ImageVector by lazy {
+        fishIcon("FileText") {
+            moveTo(6f, 2f)
+            lineTo(14f, 2f)
+            lineTo(20f, 8f)
+            lineTo(20f, 20f)
+            curveTo(20f, 21.1f, 19.1f, 22f, 18f, 22f)
+            lineTo(6f, 22f)
+            curveTo(4.9f, 22f, 4f, 21.1f, 4f, 20f)
+            lineTo(4f, 4f)
+            curveTo(4f, 2.9f, 4.9f, 2f, 6f, 2f)
+            close()
+            moveTo(14f, 2f)
+            lineTo(14f, 8f)
+            lineTo(20f, 8f)
+            moveTo(8f, 13f)
+            lineTo(16f, 13f)
+            moveTo(8f, 17f)
+            lineTo(14f, 17f)
+        }
+    }
+
+    val Link: ImageVector by lazy {
+        fishIcon("Link") {
+            moveTo(10f, 13f)
+            curveTo(10.8f, 14.1f, 12.4f, 14.6f, 13.8f, 14.2f)
+            curveTo(14.2f, 14.1f, 14.6f, 13.9f, 14.9f, 13.6f)
+            lineTo(18f, 10.5f)
+            curveTo(19.9f, 8.6f, 19.9f, 5.5f, 18f, 3.6f)
+            curveTo(16.1f, 1.7f, 13f, 1.7f, 11.1f, 3.6f)
+            lineTo(9.3f, 5.4f)
+            moveTo(14f, 11f)
+            curveTo(13.2f, 9.9f, 11.6f, 9.4f, 10.2f, 9.8f)
+            curveTo(9.8f, 9.9f, 9.4f, 10.1f, 9.1f, 10.4f)
+            lineTo(6f, 13.5f)
+            curveTo(4.1f, 15.4f, 4.1f, 18.5f, 6f, 20.4f)
+            curveTo(7.9f, 22.3f, 11f, 22.3f, 12.9f, 20.4f)
+            lineTo(14.7f, 18.6f)
+        }
+    }
+
+    val Voice: ImageVector
+        get() = Microphone
+
     val Attachment: ImageVector by lazy {
         fishIcon("Attachment") {
             moveTo(21.4f, 11.6f)

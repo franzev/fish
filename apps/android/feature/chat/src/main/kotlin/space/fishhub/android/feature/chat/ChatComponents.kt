@@ -36,12 +36,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -82,11 +84,15 @@ fun ChatTopBar(
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
     onOpenMessageSearch: () -> Unit = {},
+    onOpenSharedContent: () -> Unit = {},
     onOpenParticipantDetails: () -> Unit = {},
+    sharedContentModifier: Modifier = Modifier,
+    participantDetailsModifier: Modifier = Modifier,
     accountContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val avatarPainter = participant.avatarUrl?.let { rememberAsyncImagePainter(it) }
+    val participantDetailsDescription = stringResource(R.string.participant_details)
     FishTopBar(
         title = participant.displayName,
         subtitle = presence.label,
@@ -97,7 +103,15 @@ fun ChatTopBar(
             Box(
                 modifier = Modifier
                     .size(FishTheme.sizes.touchTarget)
-                    .clickable(onClick = onOpenParticipantDetails),
+                    .then(participantDetailsModifier)
+                    .semantics {
+                        contentDescription = participantDetailsDescription
+                        role = Role.Button
+                    }
+                    .clickable(
+                        role = Role.Button,
+                        onClick = onOpenParticipantDetails,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 PresenceAvatar(
@@ -128,6 +142,12 @@ fun ChatTopBar(
                 icon = FishIcons.Search,
                 contentDescription = stringResource(R.string.search_messages),
                 onClick = onOpenMessageSearch,
+            )
+            FishIconButton(
+                icon = FishIcons.Gallery,
+                contentDescription = stringResource(R.string.shared_content),
+                onClick = onOpenSharedContent,
+                modifier = sharedContentModifier,
             )
             accountContent?.invoke()
         },

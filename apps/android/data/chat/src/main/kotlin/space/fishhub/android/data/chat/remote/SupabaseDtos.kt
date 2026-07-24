@@ -65,6 +65,45 @@ internal data class ConversationPreviewDto(
     @SerialName("unread_count") val unreadCount: Int = 0,
 )
 
+/** All normalized columns returned by public.list_conversation_shared_content. */
+@Serializable
+internal data class SharedContentRowDto(
+    @SerialName("item_id") val itemId: String,
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("source_message_id") val sourceMessageId: String,
+    @SerialName("sender_id") val senderId: String,
+    @SerialName("source_created_at") val sourceCreatedAt: String,
+    @SerialName("source_rank") val sourceRank: Int,
+    val category: String,
+    val kind: String,
+    @SerialName("attachment_id") val attachmentId: String? = null,
+    @SerialName("attachment_original_name") val attachmentOriginalName: String? = null,
+    @SerialName("attachment_mime_type") val attachmentMimeType: String? = null,
+    @SerialName("attachment_byte_size") val attachmentByteSize: Long? = null,
+    @SerialName("attachment_width") val attachmentWidth: Int? = null,
+    @SerialName("attachment_height") val attachmentHeight: Int? = null,
+    @SerialName("attachment_display_path") val attachmentDisplayPath: String? = null,
+    @SerialName("attachment_thumbnail_path") val attachmentThumbnailPath: String? = null,
+    @SerialName("duration_ms") val durationMs: Long?,
+    @SerialName("gif_provider") val gifProvider: String? = null,
+    @SerialName("gif_provider_content_id") val gifProviderContentId: String? = null,
+    @SerialName("gif_title") val gifTitle: String? = null,
+    @SerialName("gif_description") val gifDescription: String? = null,
+    @SerialName("sticker_id") val stickerId: String? = null,
+    @SerialName("link_url") val linkUrl: String? = null,
+    @SerialName("link_hostname") val linkHostname: String? = null,
+    @SerialName("link_title") val linkTitle: String? = null,
+    @SerialName("link_description") val linkDescription: String? = null,
+    @SerialName("link_site_name") val linkSiteName: String? = null,
+    @SerialName("can_delete") val canDelete: Boolean,
+    @SerialName("can_export") val canExport: Boolean,
+)
+
+@Serializable
+internal data class SharedContentCategoryDto(
+    val category: String,
+)
+
 @Serializable
 internal data class MessageDto(
     val id: String,

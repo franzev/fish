@@ -21,6 +21,10 @@ import java.util.zip.ZipFile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import space.fishhub.android.data.chat.sharedcontent.IdentityGeneration
+import space.fishhub.android.data.chat.sharedcontent.SharedContentEphemeralPurgeHook
+import space.fishhub.android.data.chat.sharedcontent.SharedContentMediaUrlKind
+import space.fishhub.android.data.chat.sharedcontent.SharedContentMediaUrlPolicy
 import space.fishhub.android.data.chat.OpenedAttachmentCacheDirectory
 import space.fishhub.android.feature.chat.AttachmentOpenAction
 import space.fishhub.android.feature.chat.AttachmentOpenRequest
@@ -33,8 +37,15 @@ internal class AttachmentFileOpener(
 ) {
     private val configuredHost = runCatching { URI(supabaseUrl).host?.lowercase() }.getOrNull()
     private val directory = File(activity.cacheDir, OpenedAttachmentCacheDirectory)
+    @Volatile private var identityGeneration = 0L
+
+    val ephemeralPurgeHook: SharedContentEphemeralPurgeHook =
+        SharedContentEphemeralPurgeHook { _, generation ->
+            onIdentityGeneration(generation.value)
+        }
 
     suspend fun open(request: AttachmentOpenRequest): OpenAttachmentResult = withContext(ioDispatcher) {
+        val requestGeneration = identityGeneration
         cleanupExpired()
         val expected = SupportedTypes[request.mimeType]
             ?: return@withContext OpenAttachmentResult.Failed("That file type cannot be opened safely.")
@@ -48,6 +59,12 @@ internal class AttachmentFileOpener(
         val destination = File(directory, "${UUID.randomUUID()}.${expected.extension}")
         try {
             downloadBounded(source, request, expected.mimeType, temporary)
+            if (requestGeneration != identityGeneration) {
+                temporary.delete()
+                return@withContext OpenAttachmentResult.Failed(
+                    "That file changed while it was opening. Try again.",
+                )
+            }
             validateOpenedAttachment(temporary, expected)
             if (!temporary.renameTo(destination)) {
                 temporary.copyTo(destination, overwrite = false)
@@ -113,9 +130,16 @@ internal class AttachmentFileOpener(
         }
     }
 
-    fun cleanupAll() {
-        directory.listFiles()?.forEach(File::delete)
-        directory.delete()
+    fun onIdentityGeneration(generation: Long): Boolean {
+        if (generation <= identityGeneration) return !directory.exists()
+        identityGeneration = generation
+        return cleanupAll()
+    }
+
+    fun cleanupAll(): Boolean {
+        directory.listFiles()?.forEach(File::deleteRecursively)
+        directory.deleteRecursively()
+        return !directory.exists()
     }
 
     private fun cleanupExpired() {
@@ -171,18 +195,9 @@ internal class AttachmentFileOpener(
 }
 
 internal fun trustedAttachmentDownloadUrl(value: String, configuredHost: String?): URL? = runCatching {
-    val uri = URI(value)
-    val host = uri.host?.lowercase()
-    val configured = configuredHost?.lowercase()
-    val projectRef = configured?.takeIf { it.endsWith(".supabase.co") }
-        ?.removeSuffix(".supabase.co")
-    val allowed = configured != null && (
-        host == configured ||
-            (projectRef != null && host == "$projectRef.storage.supabase.co")
-        )
-    uri.takeIf {
-        it.scheme == "https" && it.userInfo == null && it.fragment == null && allowed
-    }?.toURL()
+    SharedContentMediaUrlPolicy(
+        configuredHost?.let { "https://$it" },
+    ).validatedUrl(value, SharedContentMediaUrlKind.Storage)
 }.getOrNull()
 
 internal fun isAllowedOpenedAttachmentSize(size: Long): Boolean = size in 1..MaximumDownloadBytes

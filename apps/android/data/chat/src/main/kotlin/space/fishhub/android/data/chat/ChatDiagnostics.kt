@@ -10,6 +10,8 @@ internal enum class ChatOperation {
     LoadOlder,
     RefreshMessages,
     SearchMessages,
+    RefreshSharedContent,
+    RefreshSharedContentCategories,
     RefreshAttachmentUrls,
     SendMessage,
     EditMessage,

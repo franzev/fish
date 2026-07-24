@@ -1,18 +1,45 @@
 package space.fishhub.android.feature.chat
 
 import android.content.res.Configuration
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
-import space.fishhub.android.data.chat.MessageSearchCursor
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentDecodedMedia
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryCategory
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryIntent
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryItem
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryScreen
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryUiState
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentTextDirection
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentHistoryBoundary
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentManualRetryState
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationContract
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationNotice
+import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentUnavailableReason
 
 @PreviewTest
 @Preview(name = "loaded phone light", widthDp = 412, heightDp = 915, showBackground = true)
@@ -465,6 +492,401 @@ fun AttachmentPhotoViewerScreenshot() {
         )
     }
 }
+
+@PreviewTest
+@Preview(name = "shared content one category light", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentOneCategoryLightScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = listOf(SharedContentGalleryCategory.Media),
+            selected = SharedContentGalleryCategory.Media,
+            items = sharedContentMediaItems,
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "shared content four categories dark",
+    widthDp = 412,
+    heightDp = 915,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+)
+@Composable
+fun SharedContentFourCategoriesDarkScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Files,
+            items = sharedContentFileItems,
+        ),
+        darkTheme = true,
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "shared content RTL",
+    widthDp = 412,
+    heightDp = 915,
+    locale = "ar",
+    showBackground = true,
+)
+@Composable
+fun SharedContentRtlScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Links,
+            items = sharedContentLinkItems,
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "shared content accessibility text",
+    widthDp = 412,
+    heightDp = 915,
+    fontScale = 2f,
+    showBackground = true,
+)
+@Composable
+fun SharedContentAccessibilityTextScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Media,
+            items = sharedContentMediaItems,
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(
+    name = "shared content sticker fit",
+    widthDp = 412,
+    heightDp = 915,
+    showBackground = true,
+)
+@Composable
+fun SharedContentStickerFitScreenshot() {
+    val thumbnail = remember { edgeReachingStickerBitmap() }
+    FishTheme(darkTheme = false, reducedMotion = true) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FishTheme.colors.background)
+                .padding(FishTheme.spacing.page),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(240.dp)
+                    .background(FishTheme.colors.surfaceAlt)
+                    .padding(FishTheme.spacing.sm),
+            ) {
+                SharedContentDecodedMedia(
+                    bitmap = thumbnail.asImageBitmap(),
+                    kind = "sticker",
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+@PreviewTest
+@Preview(name = "shared content loading", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentLoadingScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = emptyList(),
+            selected = null,
+            items = emptyList(),
+            presentation = sharedContentPresentation(
+                unavailable = SharedContentUnavailableReason.Loading,
+            ),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content cached", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentCachedScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Media,
+            items = sharedContentMediaItems,
+            presentation = sharedContentPresentation(
+                notice = SharedContentPresentationNotice.CheckingForUpdates,
+            ),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content stale", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentStaleScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Files,
+            items = sharedContentFileItems,
+            presentation = sharedContentPresentation(
+                notice = SharedContentPresentationNotice.Stale,
+                manualRetry = SharedContentManualRetryState.Enabled,
+            ),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content authoritative empty", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentAuthoritativeEmptyScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = emptyList(),
+            selected = null,
+            items = emptyList(),
+            presentation = sharedContentPresentation(
+                unavailable = SharedContentUnavailableReason.AuthoritativeEmpty,
+            ),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content offline unavailable", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentOfflineUnavailableScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = emptyList(),
+            selected = null,
+            items = emptyList(),
+            presentation = sharedContentPresentation(
+                unavailable = SharedContentUnavailableReason.OfflineNoCache,
+            ),
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content earlier busy", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentEarlierBusyScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Media,
+            items = sharedContentMediaItems,
+            earlier = SharedContentEarlierState.Loading,
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content earlier failure", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentEarlierFailureScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Links,
+            items = sharedContentLinkItems,
+            earlier = SharedContentEarlierState.Failed,
+        ),
+    )
+}
+
+@PreviewTest
+@Preview(name = "shared content all item kinds", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun SharedContentAllItemKindsScreenshot() {
+    SharedContentGalleryScreenshot(
+        state = sharedContentState(
+            categories = SharedContentGalleryCategory.entries,
+            selected = SharedContentGalleryCategory.Voice,
+            items = sharedContentVoiceItems,
+            earlier = SharedContentEarlierState.Ready,
+        ),
+    )
+}
+
+@Composable
+private fun SharedContentGalleryScreenshot(
+    state: SharedContentGalleryUiState,
+    darkTheme: Boolean = false,
+) {
+    FishTheme(darkTheme = darkTheme, reducedMotion = true) {
+        SharedContentGalleryScreen(
+            state = state,
+            onBack = {},
+            onIntent = { _: SharedContentGalleryIntent -> },
+            displayScopeKey = "screenshot",
+        )
+    }
+}
+
+private fun edgeReachingStickerBitmap(): Bitmap {
+    val width = 160
+    val height = 80
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    bitmap.eraseColor(Color.TRANSPARENT)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    val canvas = Canvas(bitmap)
+    paint.color = Color.rgb(76, 175, 255)
+    canvas.drawRect(0f, 0f, width.toFloat(), 10f, paint)
+    canvas.drawRect(0f, (height - 10).toFloat(), width.toFloat(), height.toFloat(), paint)
+    paint.color = Color.rgb(255, 184, 77)
+    canvas.drawRect(0f, 0f, 10f, height.toFloat(), paint)
+    canvas.drawRect((width - 10).toFloat(), 0f, width.toFloat(), height.toFloat(), paint)
+
+    return bitmap
+}
+
+private fun sharedContentState(
+    categories: List<SharedContentGalleryCategory>,
+    selected: SharedContentGalleryCategory?,
+    items: List<SharedContentGalleryItem>,
+    presentation: SharedContentPresentationContract = sharedContentPresentation(),
+    earlier: SharedContentEarlierState = SharedContentEarlierState.Hidden,
+) = SharedContentGalleryUiState(
+    categories = categories,
+    selectedCategory = selected,
+    showCategoryControl = categories.size > 1,
+    items = items,
+    anchors = emptyMap(),
+    presentation = presentation,
+    earlierState = earlier,
+    itemSelectionEnabled = false,
+)
+
+private fun sharedContentPresentation(
+    notice: SharedContentPresentationNotice = SharedContentPresentationNotice.None,
+    unavailable: SharedContentUnavailableReason = SharedContentUnavailableReason.None,
+    manualRetry: SharedContentManualRetryState = SharedContentManualRetryState.Hidden,
+) = SharedContentPresentationContract(
+    source = "authoritative",
+    stale = notice == SharedContentPresentationNotice.Stale,
+    retainedHistoryComplete = true,
+    notice = notice,
+    boundary = SharedContentHistoryBoundary.None,
+    unavailableReason = unavailable,
+    manualRetry = manualRetry,
+)
+
+private val sharedContentMediaItems = listOf(
+    SharedContentGalleryItem.Media(
+        itemId = "photo",
+        kind = "photo",
+        title = "Coaching notes",
+        description = null,
+        width = 1200,
+        height = 1200,
+        accessibilityLabel = "Photo, Coaching notes",
+        selectionEnabled = false,
+    ),
+    SharedContentGalleryItem.Media(
+        itemId = "video",
+        kind = "video",
+        title = "Practice clip",
+        description = null,
+        width = 1920,
+        height = 1080,
+        accessibilityLabel = "Video, Practice clip",
+        selectionEnabled = false,
+    ),
+    SharedContentGalleryItem.Media(
+        itemId = "gif",
+        kind = "gif",
+        title = "Nice work",
+        description = null,
+        width = 480,
+        height = 480,
+        accessibilityLabel = "GIF, Nice work",
+        selectionEnabled = false,
+    ),
+    SharedContentGalleryItem.Media(
+        itemId = "sticker",
+        kind = "sticker",
+        title = "Hello",
+        description = null,
+        width = 512,
+        height = 512,
+        accessibilityLabel = "Sticker, Hello",
+        selectionEnabled = false,
+    ),
+)
+
+private val sharedContentFileItems = listOf(
+    SharedContentGalleryItem.File(
+        itemId = "file-a",
+        kind = "document",
+        filename = "Coaching notes.pdf",
+        filenameDirection = SharedContentTextDirection.Natural,
+        friendlyType = "PDF",
+        sizeLabel = "1.2 MB",
+        accessibilityLabel = "Coaching notes.pdf, PDF, 1.2 MB",
+        selectionEnabled = false,
+    ),
+    SharedContentGalleryItem.File(
+        itemId = "file-b",
+        kind = "document",
+        filename = "Practice prompts.docx",
+        filenameDirection = SharedContentTextDirection.Natural,
+        friendlyType = "Document",
+        sizeLabel = "84 KB",
+        accessibilityLabel = "Practice prompts.docx, Document, 84 KB",
+        selectionEnabled = false,
+    ),
+)
+
+private val sharedContentLinkItems = listOf(
+    SharedContentGalleryItem.Link(
+        itemId = "link-a",
+        kind = "link",
+        title = "A calm way to phrase your request",
+        hostname = "example.com",
+        hostnameDirection = SharedContentTextDirection.Isolate,
+        accessibilityLabel = "A calm way to phrase your request, example.com",
+        selectionEnabled = false,
+    ),
+    SharedContentGalleryItem.Link(
+        itemId = "link-b",
+        kind = "link",
+        title = "Practice notes",
+        hostname = "fish.example",
+        hostnameDirection = SharedContentTextDirection.Isolate,
+        accessibilityLabel = "Practice notes, fish.example",
+        selectionEnabled = false,
+    ),
+)
+
+private val sharedContentVoiceItems = listOf(
+    SharedContentGalleryItem.Voice(
+        itemId = "voice-a",
+        kind = "voice",
+        durationLabel = "1:31",
+        accessibilityLabel = "Voice message, 1:31",
+        selectionEnabled = false,
+    ),
+    SharedContentGalleryItem.Voice(
+        itemId = "voice-b",
+        kind = "voice",
+        durationLabel = "Duration unavailable",
+        accessibilityLabel = "Voice message, duration unavailable",
+        selectionEnabled = false,
+    ),
+)
 
 @Composable
 private fun ScreenshotFrame(

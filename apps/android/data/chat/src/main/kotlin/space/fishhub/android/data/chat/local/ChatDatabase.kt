@@ -14,8 +14,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DraftEntity::class,
         PendingTextSendEntity::class,
         AttachmentDraftEntity::class,
+        SharedContentCacheOwnerEntity::class,
+        SharedContentCachePageEntity::class,
+        SharedContentCacheItemEntity::class,
     ],
-    version = 8,
+    version = 10,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -153,6 +156,109 @@ val MIGRATION_7_8: Migration = object : Migration(7, 8) {
         db.execSQL(
             "CREATE INDEX IF NOT EXISTS `index_pending_text_sends_conversation_id_user_id_created_at` " +
                 "ON `pending_text_sends` (`conversation_id`, `user_id`, `created_at`)",
+        )
+    }
+}
+
+val MIGRATION_8_9: Migration = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `shared_content_cache_owners` (
+                `owner_identity_id` TEXT NOT NULL,
+                `conversation_id` TEXT NOT NULL,
+                `schema_version` INTEGER NOT NULL,
+                `saved_at` TEXT NOT NULL,
+                `last_authoritative_at` TEXT,
+                `last_accessed_at` TEXT NOT NULL,
+                `authoritative_empty_confirmed` INTEGER NOT NULL,
+                `retained_oldest_cursor` TEXT,
+                `retained_history_complete` INTEGER NOT NULL,
+                `newest_window_protected` INTEGER NOT NULL,
+                PRIMARY KEY(`owner_identity_id`, `conversation_id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shared_content_cache_owners_owner_identity_id_last_accessed_at` " +
+                "ON `shared_content_cache_owners` (`owner_identity_id`, `last_accessed_at`)",
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `shared_content_cache_pages` (
+                `owner_identity_id` TEXT NOT NULL,
+                `conversation_id` TEXT NOT NULL,
+                `page_id` TEXT NOT NULL,
+                `page_ordinal` INTEGER NOT NULL,
+                `retained_cursor` TEXT,
+                `last_accessed_at` TEXT NOT NULL,
+                `is_newest_window` INTEGER NOT NULL,
+                PRIMARY KEY(`owner_identity_id`, `conversation_id`, `page_id`),
+                FOREIGN KEY(`owner_identity_id`, `conversation_id`) REFERENCES `shared_content_cache_owners`(`owner_identity_id`, `conversation_id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shared_content_cache_pages_owner_identity_id_conversation_id_last_accessed_at` " +
+                "ON `shared_content_cache_pages` (`owner_identity_id`, `conversation_id`, `last_accessed_at`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shared_content_cache_pages_owner_identity_id_last_accessed_at` " +
+                "ON `shared_content_cache_pages` (`owner_identity_id`, `last_accessed_at`)",
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_shared_content_cache_pages_owner_identity_id_conversation_id_page_ordinal_retained_cursor` " +
+                "ON `shared_content_cache_pages` (`owner_identity_id`, `conversation_id`, `page_ordinal`, `retained_cursor`)",
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `shared_content_cache_items` (
+                `owner_identity_id` TEXT NOT NULL,
+                `conversation_id` TEXT NOT NULL,
+                `item_id` TEXT NOT NULL,
+                `source_message_id` TEXT NOT NULL,
+                `sender_id` TEXT NOT NULL,
+                `source_created_at` TEXT NOT NULL,
+                `source_rank` INTEGER NOT NULL,
+                `category` TEXT NOT NULL,
+                `kind` TEXT NOT NULL,
+                `attachment_id` TEXT,
+                `attachment_original_name` TEXT,
+                `attachment_mime_type` TEXT,
+                `attachment_byte_size` INTEGER,
+                `attachment_width` INTEGER,
+                `attachment_height` INTEGER,
+                `gif_provider` TEXT,
+                `gif_provider_content_id` TEXT,
+                `gif_title` TEXT,
+                `gif_description` TEXT,
+                `sticker_id` TEXT,
+                `link_metadata_json` TEXT,
+                `page_id` TEXT NOT NULL,
+                PRIMARY KEY(`owner_identity_id`, `conversation_id`, `item_id`),
+                FOREIGN KEY(`owner_identity_id`, `conversation_id`, `page_id`) REFERENCES `shared_content_cache_pages`(`owner_identity_id`, `conversation_id`, `page_id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shared_content_cache_items_owner_identity_id_conversation_id_source_rank_item_id` " +
+                "ON `shared_content_cache_items` (`owner_identity_id`, `conversation_id`, `source_rank`, `item_id`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shared_content_cache_items_owner_identity_id_conversation_id_source_message_id` " +
+                "ON `shared_content_cache_items` (`owner_identity_id`, `conversation_id`, `source_message_id`)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_shared_content_cache_items_owner_identity_id_conversation_id_page_id` " +
+                "ON `shared_content_cache_items` (`owner_identity_id`, `conversation_id`, `page_id`)",
+        )
+    }
+}
+
+val MIGRATION_9_10: Migration = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE shared_content_cache_items ADD COLUMN duration_ms INTEGER",
         )
     }
 }

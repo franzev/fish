@@ -16,11 +16,22 @@ import space.fishhub.android.data.chat.FailureCategory
 import space.fishhub.android.data.chat.MessagePage
 import space.fishhub.android.data.chat.remote.ChatRemoteDataSource
 import space.fishhub.android.data.chat.remote.RemoteCommandException
+import space.fishhub.android.data.chat.remote.SharedContentValidationException
 import space.fishhub.android.data.chat.local.ChatDao
 import space.fishhub.android.data.chat.local.DraftEntity
 import space.fishhub.android.data.chat.local.PendingTextSendEntity
 import space.fishhub.android.data.chat.local.toDomain
 import space.fishhub.android.data.chat.local.toEntity
+import space.fishhub.android.data.chat.sharedcontent.RoomSharedContentCacheStore
+import space.fishhub.android.data.chat.sharedcontent.BoundedAttachmentDeliveryCache
+import space.fishhub.android.data.chat.sharedcontent.SharedContentCacheStore
+import space.fishhub.android.data.chat.sharedcontent.IdentityGeneration
+import space.fishhub.android.data.chat.sharedcontent.NoOpSharedContentPurgePort
+import space.fishhub.android.data.chat.sharedcontent.SharedContentEphemeralPurgeHook
+import space.fishhub.android.data.chat.sharedcontent.SharedContentIdentityCoordinator
+import space.fishhub.android.data.chat.sharedcontent.SharedContentIdentityState
+import space.fishhub.android.data.chat.sharedcontent.StoredSharedContentItem
+import space.fishhub.android.data.chat.sharedcontent.StoredSharedContentSnapshot
 import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -42,6 +53,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import space.fishhub.android.data.chat.local.AttachmentDraftEntity
 import space.fishhub.android.data.chat.local.toDomain
 import space.fishhub.android.data.chat.model.LocalAttachmentDraft
@@ -50,17 +63,26 @@ import space.fishhub.android.data.chat.model.LocalAttachmentDraft
 internal class DefaultChatRepository(
     private val remote: ChatRemoteDataSource,
     private val dao: ChatDao,
+    private val sharedContentCache: SharedContentCacheStore = RoomSharedContentCacheStore(dao),
     private val now: () -> String = { Instant.now().toString() },
     private val diagnostics: ChatDiagnostics = NoOpChatDiagnostics,
     private val realtimeRetryDelayMs: Long = DefaultRealtimeRetryDelayMs,
     private val networkMonitor: NetworkMonitor = AlwaysOnlineNetworkMonitor,
     private val attachmentImporter: LocalAttachmentImporter? = null,
     private val attachmentUploadScheduler: AttachmentUploadScheduler? = null,
+    private val identityCoordinator: SharedContentIdentityCoordinator =
+        SharedContentIdentityCoordinator(NoOpSharedContentPurgePort),
 ) : ChatRepository {
     override val authState = remote.authState
-    private val attachmentDeliveries = MutableStateFlow<Map<String, AttachmentDelivery>>(emptyMap())
+    override val sharedContentIdentity = identityCoordinator.state
+    override val sharedContentIdentityGeneration: Long
+        get() = identityCoordinator.currentState.generation.value
+    private val attachmentDeliveryCache = BoundedAttachmentDeliveryCache()
+    private val attachmentDeliveries = attachmentDeliveryCache.deliveries
     private val attachmentDraftMutex = Mutex()
     private val textOutboxMutex = Mutex()
+    private val sharedContentIdentityMutex = Mutex()
+    private var activeSharedContentRequest: SharedContentRequestToken? = null
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> =
         combine(
@@ -153,6 +175,8 @@ internal class DefaultChatRepository(
         }
 
     override suspend fun signOut() {
+        identityCoordinator.transitionTo(null)
+        sharedContentIdentityMutex.withLock { activeSharedContentRequest = null }
         val attachmentRows = dao.allAttachmentDrafts()
         val signedInUserId = (authState.value as? ChatAuthState.SignedIn)?.userId
         if (signedInUserId != null) attachmentUploadScheduler?.cancelUser(signedInUserId)
@@ -169,7 +193,7 @@ internal class DefaultChatRepository(
         }
         attachmentImporter?.deleteAll(attachmentRows)
         dao.clearAllUserData()
-        attachmentDeliveries.value = emptyMap()
+        attachmentDeliveryCache.clear()
     }
 
     override suspend fun listAuthorizedConversations(): ChatResult<AuthorizedChatDirectory> {
@@ -296,15 +320,119 @@ internal class DefaultChatRepository(
         }
     }
 
+    override fun observeSharedContentSnapshot(
+        conversationId: String,
+    ): Flow<StoredSharedContentSnapshot?> = combine(
+        authState,
+        identityCoordinator.state,
+    ) { auth, identity -> auth to identity }.flatMapLatest { (auth, identity) ->
+        val ownerId = (auth as? ChatAuthState.SignedIn)?.userId
+        if (ownerId.isNullOrBlank() || conversationId.isBlank() ||
+            !identity.isGalleryEligible || identity.ownerIdentityId != ownerId
+        ) {
+            flowOf(null)
+        } else {
+            val authorized = dao.conversation(conversationId)
+                ?.takeIf { it.currentUserId == ownerId }
+            if (authorized == null) {
+                sharedContentCache.purgeConversation(ownerId, conversationId)
+                flowOf(null)
+            } else {
+                sharedContentCache.observeVerifiedOwner(ownerId, conversationId)
+                    .map { sharedContentCache.hydrateVerifiedOwner(ownerId, conversationId) }
+            }
+        }
+    }
+
+    override suspend fun refreshSharedContent(
+        token: SharedContentRequestToken,
+        category: String?,
+    ): ChatResult<SharedContentDataPage> {
+        if (category != null && category !in SharedContentCategories) {
+            return ChatResult.Failure(
+                message = "Shared content isn't available right now.",
+                recoverable = false,
+                category = FailureCategory.Local,
+            )
+        }
+        return sharedContentResultOf(
+            operation = ChatOperation.RefreshSharedContent,
+            fallback = "Shared content isn't available right now.",
+        ) {
+            val conversation = verifiedSharedContentConversation(token)
+                ?: throw ConversationUnavailableException()
+            val page = remote.listConversationSharedContent(
+                conversation = conversation,
+                cursor = token.requestedCursor,
+                category = category,
+            )
+            if (!isCurrentSharedContentRequest(token)) {
+                throw SharedContentRequestSupersededException()
+            }
+            validateAcceptedSharedContentPage(page, token.conversationId)
+            val storedItems = page.items.map(SharedContentDataItem::toStoredSharedContentItem)
+            val accepted = sharedContentIdentityMutex.withLock {
+                if (!isCurrentSharedContentRequestLocked(token)) return@withLock false
+                if (token.replace) {
+                    sharedContentCache.replaceNewestWindow(
+                        ownerIdentityId = token.ownerIdentityId,
+                        conversationId = token.conversationId,
+                        items = storedItems,
+                        retainedOldestCursor = page.nextCursor?.encodeSharedContentCursor(),
+                        retainedHistoryComplete = !page.hasMore,
+                        authoritativeEmptyConfirmed = page.items.isEmpty(),
+                    )
+                } else {
+                    sharedContentCache.appendBrowsedPageAllocatingOrdinal(
+                        ownerIdentityId = token.ownerIdentityId,
+                        conversationId = token.conversationId,
+                        pageId = "cursor:${page.nextCursor?.itemId ?: token.requestId}",
+                        retainedCursor = page.nextCursor?.encodeSharedContentCursor(),
+                        items = storedItems,
+                        retainedHistoryComplete = !page.hasMore,
+                    )
+                }
+                isCurrentSharedContentRequestLocked(token)
+            }
+            if (!accepted) throw SharedContentRequestSupersededException()
+            page
+        }
+    }
+
+    override suspend fun refreshSharedContentCategories(
+        token: SharedContentRequestToken,
+    ): ChatResult<List<String>> = sharedContentResultOf(
+        operation = ChatOperation.RefreshSharedContentCategories,
+        fallback = "Shared content isn't available right now.",
+    ) {
+        val conversation = verifiedSharedContentConversation(token)
+            ?: throw ConversationUnavailableException()
+        val categories = remote.listConversationSharedContentCategories(conversation)
+        if (categories.any { it !in SharedContentCategories } ||
+            categories.distinct().size != categories.size ||
+            !isCurrentSharedContentRequest(token)
+        ) throw SharedContentRequestSupersededException()
+        categories
+    }
+
     override suspend fun refreshAttachmentUrls(
         attachmentIds: List<String>,
     ): ChatResult<List<AttachmentDelivery>> {
-        if (attachmentIds.isEmpty()) return ChatResult.Success(emptyList())
+        val requestedIds = attachmentIds.map(String::trim).filter(String::isNotBlank).distinct()
+        if (requestedIds.isEmpty()) return ChatResult.Success(emptyList())
         return resultOf(
             ChatOperation.SyncNewest,
             "That attachment did not load yet. Try again.",
         ) {
-            remote.refreshAttachmentUrls(attachmentIds).also(::cacheDeliveries)
+            val refreshEpoch = attachmentDeliveryCache.beginRefresh()
+            val requested = requestedIds.toSet()
+            val deliveries = requestedIds.chunked(MaxSharedContentDeliveryRefreshCount)
+                .flatMap { batch -> remote.refreshAttachmentUrls(batch) }
+                .filter { delivery -> delivery.attachmentId in requested }
+            if (!attachmentDeliveryCache.acceptRefresh(refreshEpoch, deliveries)) {
+                throw SharedContentRequestSupersededException()
+            }
+            deliveries
         }
     }
 
@@ -696,16 +824,156 @@ internal class DefaultChatRepository(
         }
 
     override suspend fun clearCachedUserData() {
+        identityCoordinator.transitionTo(null)
+        sharedContentIdentityMutex.withLock { activeSharedContentRequest = null }
         val rows = dao.allAttachmentDrafts()
         rows.forEach { attachmentUploadScheduler?.cancel(it.id) }
         attachmentImporter?.deleteAll(rows)
         dao.clearAllUserData()
-        attachmentDeliveries.value = emptyMap()
+        attachmentDeliveryCache.clear()
+    }
+
+    override suspend fun retrySharedContentIdentityPurge(): Boolean =
+        identityCoordinator.retryPurgeAndBind(
+            (authState.value as? ChatAuthState.SignedIn)?.userId,
+        )
+
+    override suspend fun sweepSharedContentIdentityOnForeground(): Boolean =
+        identityCoordinator.sweepOnVerifiedStart(
+            (authState.value as? ChatAuthState.SignedIn)?.userId,
+        )
+
+    override fun registerSharedContentEphemeralPurgeHook(hook: SharedContentEphemeralPurgeHook) {
+        identityCoordinator.registerEphemeralPurgeHook(hook)
+    }
+
+    internal suspend fun revokeSharedContentStoreWork() {
+        sharedContentIdentityMutex.withLock {
+            activeSharedContentRequest = null
+        }
+    }
+
+    internal fun clearSharedContentLeases() {
+        attachmentDeliveryCache.clear()
     }
 
     private suspend fun signedInUserForConversation(conversationId: String): String? {
         val userId = (authState.value as? ChatAuthState.SignedIn)?.userId ?: return null
         return userId.takeIf { dao.conversation(conversationId)?.currentUserId == it }
+    }
+
+    private suspend fun verifiedSharedContentConversation(
+        token: SharedContentRequestToken,
+    ): AuthorizedConversation? {
+        val signedIn = authState.value as? ChatAuthState.SignedIn ?: return null
+        if (signedIn.userId != token.ownerIdentityId) return null
+
+        if (!identityCoordinator.transitionTo(signedIn.userId) ||
+            token.identityGeneration != identityCoordinator.currentState.generation.value
+        ) return null
+        sharedContentIdentityMutex.withLock { activeSharedContentRequest = token }
+
+        // Hydrate only after the exact signed-in owner is known and before the
+        // authoritative membership/listing request begins. Cache data never
+        // supplies the membership decision.
+        sharedContentCache.hydrateVerifiedOwner(
+            verifiedOwnerId = signedIn.userId,
+            conversationId = token.conversationId,
+        )
+
+        val conversation = remote.listAuthorizedConversations().conversations
+            .firstOrNull { candidate ->
+                candidate.conversationId == token.conversationId &&
+                    candidate.currentUserId == signedIn.userId
+            }
+        if (conversation == null) {
+            sharedContentCache.purgeConversation(signedIn.userId, token.conversationId)
+            return null
+        }
+        return conversation.takeIf { isCurrentSharedContentRequest(token) }
+    }
+
+    private suspend fun isCurrentSharedContentRequest(token: SharedContentRequestToken): Boolean =
+        sharedContentIdentityMutex.withLock { isCurrentSharedContentRequestLocked(token) }
+
+    private fun isCurrentSharedContentRequestLocked(token: SharedContentRequestToken): Boolean =
+        activeSharedContentRequest == token && identityCoordinator.accepts(
+            token.ownerIdentityId,
+            IdentityGeneration(token.identityGeneration),
+        ) && (authState.value as? ChatAuthState.SignedIn)?.userId == token.ownerIdentityId
+
+    private suspend fun <T> sharedContentResultOf(
+        operation: ChatOperation,
+        fallback: String,
+        block: suspend () -> T,
+    ): ChatResult<T> {
+        val started = TimeSource.Monotonic.markNow()
+        return try {
+            ChatResult.Success(block()).also {
+                diagnostics.record(
+                    ChatDiagnosticEvent(operation, true, started.elapsedNow().inWholeMilliseconds),
+                )
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val category = when (error) {
+                is ConversationUnavailableException -> FailureCategory.Authorization
+                is SharedContentRequestSupersededException -> FailureCategory.Local
+                is SharedContentValidationException -> FailureCategory.Remote
+                is HttpRequestException,
+                is HttpRequestTimeoutException,
+                is java.io.IOException,
+                -> FailureCategory.Network
+                is RestException -> FailureCategory.Remote
+                else -> FailureCategory.Local
+            }
+            ChatResult.Failure(
+                message = fallback,
+                recoverable = category != FailureCategory.Authorization,
+                category = category,
+            ).also {
+                diagnostics.record(
+                    ChatDiagnosticEvent(
+                        operation = operation,
+                        succeeded = false,
+                        durationMs = started.elapsedNow().inWholeMilliseconds,
+                        failureCategory = category,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun validateAcceptedSharedContentPage(
+        page: SharedContentDataPage,
+        conversationId: String,
+    ) {
+        require(page.items.size <= SharedContentPageSize)
+        require(!page.hasMore || page.items.size == SharedContentPageSize)
+        require(page.items.all { item ->
+            item.itemId.isNotBlank() &&
+                item.conversationId == conversationId &&
+                item.sourceMessageId.isNotBlank() &&
+                item.senderId.isNotBlank() &&
+                item.sourceCreatedAt.isNotBlank() &&
+                item.category in SharedContentCategories &&
+                item.kind in SharedContentKinds &&
+                (item.durationMs == null || item.durationMs >= 0)
+        })
+        require(page.items.map(SharedContentDataItem::itemId).distinct().size == page.items.size)
+        require(page.items.zipWithNext().all { (left, right) ->
+            compareSharedContentItems(left, right) < 0
+        })
+        val expectedCursor = page.items.lastOrNull()?.let { item ->
+            SharedContentDataCursor(
+                item.sourceCreatedAt,
+                item.sourceMessageId,
+                item.sourceRank,
+                item.itemId,
+            )
+        }
+        require(page.nextCursor == expectedCursor)
     }
 
     private suspend fun conversationForMessage(messageId: String): AuthorizedConversation? {
@@ -867,10 +1135,7 @@ internal class DefaultChatRepository(
     }
 
     private fun cacheDeliveries(deliveries: List<AttachmentDelivery>) {
-        if (deliveries.isEmpty()) return
-        attachmentDeliveries.update { current ->
-            current + deliveries.associateBy(AttachmentDelivery::attachmentId)
-        }
+        attachmentDeliveryCache.cache(deliveries)
     }
 
     private fun unavailableFailure(): ChatResult.Failure = ChatResult.Failure(
@@ -885,8 +1150,66 @@ private class ConversationUnavailableException : IllegalStateException()
 private const val DefaultRealtimeRetryDelayMs = 5_000L
 private const val MaxMessageAttachments = 5
 private const val MaxRefreshMessageCount = 50
+private const val MaxSharedContentDeliveryRefreshCount = 50
 private const val MaxSearchPageSize = 99
 private const val AttachmentScopePreview = "preview"
 private const val AttachmentScopeComposer = "composer"
 private const val AttachmentStateWaiting = "waiting_for_network"
 private const val AttachmentStateReady = "ready"
+private const val SharedContentPageSize = 40
+private val SharedContentCategories = setOf("media", "files", "links", "voice")
+private val SharedContentKinds = setOf("photo", "video", "gif", "sticker", "document", "link", "voice")
+
+private class SharedContentRequestSupersededException : IllegalStateException()
+
+private fun SharedContentDataItem.toStoredSharedContentItem() = StoredSharedContentItem(
+    itemId = itemId,
+    conversationId = conversationId,
+    sourceMessageId = sourceMessageId,
+    senderId = senderId,
+    sourceCreatedAt = sourceCreatedAt,
+    sourceRank = sourceRank,
+    category = category,
+    kind = kind,
+    attachmentId = attachmentId,
+    attachmentOriginalName = attachmentOriginalName,
+    attachmentMimeType = attachmentMimeType,
+    attachmentByteSize = attachmentByteSize,
+    attachmentWidth = attachmentWidth,
+    attachmentHeight = attachmentHeight,
+    durationMs = durationMs,
+    gifProvider = gifProvider,
+    gifProviderContentId = gifProviderContentId,
+    gifTitle = gifTitle,
+    gifDescription = gifDescription,
+    stickerId = stickerId,
+    linkMetadataJson = if (linkUrl == null && linkHostname == null) {
+        null
+    } else {
+        buildJsonObject {
+            linkUrl?.let { put("url", it) }
+            linkHostname?.let { put("hostname", it) }
+            linkTitle?.let { put("title", it) }
+            linkDescription?.let { put("description", it) }
+            linkSiteName?.let { put("site_name", it) }
+        }.toString()
+    },
+)
+
+private fun SharedContentDataCursor.encodeSharedContentCursor(): String =
+    buildJsonObject {
+        put("source_created_at", sourceCreatedAt)
+        put("source_message_id", sourceMessageId)
+        put("source_rank", sourceRank)
+        put("item_id", itemId)
+    }.toString()
+
+private fun compareSharedContentItems(
+    left: SharedContentDataItem,
+    right: SharedContentDataItem,
+): Int {
+    left.sourceCreatedAt.compareTo(right.sourceCreatedAt).takeUnless { it == 0 }?.let { return -it }
+    left.sourceMessageId.compareTo(right.sourceMessageId).takeUnless { it == 0 }?.let { return -it }
+    left.sourceRank.compareTo(right.sourceRank).takeUnless { it == 0 }?.let { return -it }
+    return -left.itemId.compareTo(right.itemId)
+}

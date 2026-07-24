@@ -86,6 +86,15 @@ fun ChatAdaptiveLayout(
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
     onCallBack: (String) -> Unit = {},
     onOpenMessageSearch: () -> Unit = {},
+    onOpenSharedContentFromHeader: () -> Unit = {},
+    onOpenSharedContentFromDetails: () -> Unit = {},
+    participantDetailsVisible: Boolean? = null,
+    onOpenParticipantDetails: (() -> Unit)? = null,
+    onDismissParticipantDetails: (() -> Unit)? = null,
+    sharedContentHeaderModifier: Modifier = Modifier,
+    sharedContentDetailsModifier: Modifier = Modifier,
+    sharedContentDetailsFocusRequested: Boolean = false,
+    participantDetailsModifier: Modifier = Modifier,
     voiceRecording: VoiceRecordingUiState = VoiceRecordingUiState(),
     voiceRecordingEnabled: Boolean = false,
     onStartVoiceRecording: () -> Unit = {},
@@ -151,6 +160,15 @@ fun ChatAdaptiveLayout(
                         onStartVideoCall = onStartVideoCall,
                         onCallBack = onCallBack,
                         onOpenMessageSearch = onOpenMessageSearch,
+                        onOpenSharedContentFromHeader = onOpenSharedContentFromHeader,
+                        onOpenSharedContentFromDetails = onOpenSharedContentFromDetails,
+                        participantDetailsVisible = participantDetailsVisible,
+                        onOpenParticipantDetails = onOpenParticipantDetails,
+                        onDismissParticipantDetails = onDismissParticipantDetails,
+                        sharedContentHeaderModifier = sharedContentHeaderModifier,
+                        sharedContentDetailsModifier = sharedContentDetailsModifier,
+                        sharedContentDetailsFocusRequested = sharedContentDetailsFocusRequested,
+                        participantDetailsModifier = participantDetailsModifier,
                         voiceRecording = voiceRecording,
                         voiceRecordingEnabled = voiceRecordingEnabled,
                         onStartVoiceRecording = onStartVoiceRecording,
@@ -202,6 +220,15 @@ fun ChatAdaptiveLayout(
                     onStartAudioCall = onStartAudioCall,
                     onStartVideoCall = onStartVideoCall,
                     onOpenMessageSearch = onOpenMessageSearch,
+                    onOpenSharedContentFromHeader = onOpenSharedContentFromHeader,
+                    onOpenSharedContentFromDetails = onOpenSharedContentFromDetails,
+                    participantDetailsVisible = participantDetailsVisible,
+                    onOpenParticipantDetails = onOpenParticipantDetails,
+                    onDismissParticipantDetails = onDismissParticipantDetails,
+                    sharedContentHeaderModifier = sharedContentHeaderModifier,
+                    sharedContentDetailsModifier = sharedContentDetailsModifier,
+                    sharedContentDetailsFocusRequested = sharedContentDetailsFocusRequested,
+                    participantDetailsModifier = participantDetailsModifier,
                     voiceRecording = voiceRecording,
                     voiceRecordingEnabled = voiceRecordingEnabled,
                     onStartVoiceRecording = onStartVoiceRecording,
@@ -253,6 +280,15 @@ fun ChatScreen(
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
     onCallBack: (String) -> Unit = {},
     onOpenMessageSearch: () -> Unit = {},
+    onOpenSharedContentFromHeader: () -> Unit = {},
+    onOpenSharedContentFromDetails: () -> Unit = {},
+    participantDetailsVisible: Boolean? = null,
+    onOpenParticipantDetails: (() -> Unit)? = null,
+    onDismissParticipantDetails: (() -> Unit)? = null,
+    sharedContentHeaderModifier: Modifier = Modifier,
+    sharedContentDetailsModifier: Modifier = Modifier,
+    sharedContentDetailsFocusRequested: Boolean = false,
+    participantDetailsModifier: Modifier = Modifier,
     voiceRecording: VoiceRecordingUiState = VoiceRecordingUiState(),
     voiceRecordingEnabled: Boolean = false,
     onStartVoiceRecording: () -> Unit = {},
@@ -266,7 +302,16 @@ fun ChatScreen(
     var showReactionsInitially by remember(model.selectedConversationId) {
         mutableStateOf(false)
     }
-    var participantDetailsVisible by remember(model.selectedConversationId) { mutableStateOf(false) }
+    var localParticipantDetailsVisible by remember(model.selectedConversationId) {
+        mutableStateOf(false)
+    }
+    val detailsVisible = participantDetailsVisible ?: localParticipantDetailsVisible
+    val openParticipantDetails = onOpenParticipantDetails ?: {
+        localParticipantDetailsVisible = true
+    }
+    val dismissParticipantDetails = onDismissParticipantDetails ?: {
+        localParticipantDetailsVisible = false
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -303,7 +348,10 @@ fun ChatScreen(
                     onStartAudioCall = onStartAudioCall,
                     onStartVideoCall = onStartVideoCall,
                     onOpenMessageSearch = onOpenMessageSearch,
-                    onOpenParticipantDetails = { participantDetailsVisible = true },
+                    onOpenSharedContent = onOpenSharedContentFromHeader,
+                    onOpenParticipantDetails = openParticipantDetails,
+                    sharedContentModifier = sharedContentHeaderModifier,
+                    participantDetailsModifier = participantDetailsModifier,
                     accountContent = accountContent,
                     modifier = Modifier.statusBarsPadding(),
                 )
@@ -408,13 +456,16 @@ fun ChatScreen(
             showReactionsInitially = showReactionsInitially,
         )
     }
-    if (participantDetailsVisible && model.participant != null) {
+    if (detailsVisible && model.participant != null) {
         ParticipantDetailsSheet(
             participant = model.participant,
             presence = participantPresence,
-            onDismiss = { participantDetailsVisible = false },
+            onDismiss = dismissParticipantDetails,
+            onOpenSharedContent = onOpenSharedContentFromDetails,
             onRemoveFriend = onRemoveFriend,
             onBlock = onBlockParticipant,
+            sharedContentModifier = sharedContentDetailsModifier,
+            requestSharedContentFocus = sharedContentDetailsFocusRequested,
         )
     }
 }

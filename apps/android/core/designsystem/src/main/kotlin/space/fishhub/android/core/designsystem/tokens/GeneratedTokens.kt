@@ -94,6 +94,9 @@ internal object GeneratedSizes {
     val Badge = 20.dp
     val BadgeSlot = 40.dp
     val PaginationSlot = 112.dp
+    val SharedContentMediaCell = 88.dp
+    val SharedContentAccessibleMediaCell = 120.dp
+    val SharedContentMetadataRow = 64.dp
 }
 
 internal object GeneratedType {

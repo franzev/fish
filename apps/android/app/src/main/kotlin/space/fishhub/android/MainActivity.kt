@@ -164,6 +164,10 @@ class MainActivity : ComponentActivity() {
         fishApplication = application as FishApplication
         refreshNotificationState()
         attachmentFileOpener = AttachmentFileOpener(this, BuildConfig.SUPABASE_URL)
+        fishApplication.chatRepository.registerSharedContentEphemeralPurgeHook(
+            attachmentFileOpener.ephemeralPurgeHook,
+        )
+        attachmentFileOpener.cleanupAll()
         voiceMessageRecorder = VoiceMessageRecorder(this)
         attachmentConversationId = savedInstanceState?.getString(AttachmentConversationStateKey)
         pendingCameraFile = savedInstanceState?.getString(CameraFileStateKey)?.let(::File)
@@ -368,6 +372,9 @@ class MainActivity : ComponentActivity() {
                         onOpenPrivacyPolicy = {
                             openExternalWebPage("/privacy", R.string.privacy_policy_unavailable)
                         },
+                        sharedContentRuntime = fishApplication.sharedContentGalleryRuntime,
+                        onSharedContentStoreChanged =
+                            fishApplication::replaceActiveSharedContentStore,
                     )
                     CallRoute(
                         coordinator = fishApplication.callCoordinator,
@@ -409,6 +416,11 @@ class MainActivity : ComponentActivity() {
         systemDisabledAnimations.value = !ValueAnimator.areAnimatorsEnabled()
         refreshNotificationState()
         fishApplication.presenceRepository.markActive()
+        lifecycleScope.launch {
+            if (fishApplication.chatRepository.authState.value is ChatAuthState.SignedIn) {
+                fishApplication.chatRepository.sweepSharedContentIdentityOnForeground()
+            }
+        }
     }
 
     override fun onStop() {
@@ -854,8 +866,8 @@ class MainActivity : ComponentActivity() {
     private fun observeAttachmentPrivacyCleanup() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                fishApplication.chatRepository.authState.collectLatest { auth ->
-                    if (auth is ChatAuthState.SignedOut) attachmentFileOpener.cleanupAll()
+                fishApplication.chatRepository.sharedContentIdentity.collectLatest { identity ->
+                    attachmentFileOpener.onIdentityGeneration(identity.generation.value)
                 }
             }
         }

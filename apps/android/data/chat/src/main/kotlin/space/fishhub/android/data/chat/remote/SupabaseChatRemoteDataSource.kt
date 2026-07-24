@@ -23,6 +23,9 @@ import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
 import space.fishhub.android.data.chat.ChatCallActivity
 import space.fishhub.android.data.chat.BlockedPerson
+import space.fishhub.android.data.chat.SharedContentDataCursor
+import space.fishhub.android.data.chat.SharedContentDataItem
+import space.fishhub.android.data.chat.SharedContentDataPage
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -164,6 +167,54 @@ internal class SupabaseChatRemoteDataSource(
             ),
             conversations = conversations,
         )
+    }
+
+    override suspend fun listConversationSharedContent(
+        conversation: AuthorizedConversation,
+        cursor: SharedContentDataCursor?,
+        category: String?,
+    ): SharedContentDataPage {
+        require(category == null || category in SharedContentCategories)
+        val rows = client.postgrest.rpc(
+            function = "list_conversation_shared_content",
+            parameters = sharedContentRpcParameters(
+                conversationId = conversation.conversationId,
+                cursor = cursor,
+                category = category,
+            ),
+        ).decodeList<SharedContentRowDto>()
+        if (rows.size > SharedContentPageSize + 1) throw SharedContentValidationException()
+
+        val items = rows.map { it.toSharedContentItem() }
+        validateSharedContentRows(items, conversation.conversationId)
+        val retained = items.take(SharedContentPageSize)
+        return SharedContentDataPage(
+            items = retained,
+            hasMore = rows.size == SharedContentPageSize + 1,
+            nextCursor = retained.lastOrNull()?.let { item ->
+                SharedContentDataCursor(
+                    sourceCreatedAt = item.sourceCreatedAt,
+                    sourceMessageId = item.sourceMessageId,
+                    sourceRank = item.sourceRank,
+                    itemId = item.itemId,
+                )
+            },
+        )
+    }
+
+    override suspend fun listConversationSharedContentCategories(
+        conversation: AuthorizedConversation,
+    ): List<String> {
+        val categories = client.postgrest.rpc(
+            function = "list_conversation_shared_content_categories",
+            parameters = buildJsonObject {
+                put("p_conversation_id", JsonPrimitive(conversation.conversationId))
+            },
+        ).decodeList<SharedContentCategoryDto>().map(SharedContentCategoryDto::category)
+        if (categories.any { it !in SharedContentCategories } ||
+            categories.distinct().size != categories.size
+        ) throw SharedContentValidationException()
+        return categories
     }
 
     override suspend fun loadMessages(
@@ -1028,6 +1079,105 @@ internal fun searchMessagesRpcParameters(
     }
     put("p_limit", JsonPrimitive(limit + 1))
     put("p_sort_direction", JsonPrimitive("desc"))
+}
+
+private const val SharedContentPageSize = 40
+private val SharedContentCategories = listOf("media", "files", "links", "voice")
+private val SharedContentKinds = setOf("photo", "video", "gif", "sticker", "document", "link", "voice")
+
+private fun sharedContentRpcParameters(
+    conversationId: String,
+    cursor: SharedContentDataCursor?,
+    category: String?,
+) = buildJsonObject {
+    put("p_conversation_id", JsonPrimitive(conversationId))
+    if (category != null) put("p_category", JsonPrimitive(category))
+    if (cursor != null) {
+        put("p_before_created_at", JsonPrimitive(cursor.sourceCreatedAt))
+        put("p_before_message_id", JsonPrimitive(cursor.sourceMessageId))
+        put("p_before_source_rank", JsonPrimitive(cursor.sourceRank))
+        put("p_before_item_id", JsonPrimitive(cursor.itemId))
+    }
+    put("p_limit", JsonPrimitive(SharedContentPageSize))
+}
+
+private fun SharedContentRowDto.toSharedContentItem() = SharedContentDataItem(
+    itemId = itemId,
+    conversationId = conversationId,
+    sourceMessageId = sourceMessageId,
+    senderId = senderId,
+    sourceCreatedAt = sourceCreatedAt,
+    sourceRank = sourceRank,
+    category = category,
+    kind = kind,
+    attachmentId = attachmentId,
+    attachmentOriginalName = attachmentOriginalName,
+    attachmentMimeType = attachmentMimeType,
+    attachmentByteSize = attachmentByteSize,
+    attachmentWidth = attachmentWidth,
+    attachmentHeight = attachmentHeight,
+    attachmentDisplayPath = attachmentDisplayPath,
+    attachmentThumbnailPath = attachmentThumbnailPath,
+    durationMs = durationMs,
+    gifProvider = gifProvider,
+    gifProviderContentId = gifProviderContentId,
+    gifTitle = gifTitle,
+    gifDescription = gifDescription,
+    stickerId = stickerId,
+    linkUrl = linkUrl,
+    linkHostname = linkHostname,
+    linkTitle = linkTitle,
+    linkDescription = linkDescription,
+    linkSiteName = linkSiteName,
+    canDelete = canDelete,
+    canExport = canExport,
+)
+
+private fun validateSharedContentRows(
+    rows: List<SharedContentDataItem>,
+    expectedConversationId: String,
+) {
+    require(rows.size <= SharedContentPageSize + 1)
+    require(rows.all { row ->
+        row.itemId.isNotBlank() &&
+            row.conversationId == expectedConversationId &&
+            row.sourceMessageId.isNotBlank() &&
+            row.senderId.isNotBlank() &&
+            row.sourceCreatedAt.isNotBlank() &&
+            row.category in SharedContentCategories &&
+            row.kind in SharedContentKinds &&
+            (row.durationMs == null || row.durationMs >= 0) &&
+            validSharedContentShape(row)
+    })
+    require(rows.zipWithNext().all { (left, right) -> compareSharedContentOrder(left, right) < 0 })
+}
+
+private fun validSharedContentShape(row: SharedContentDataItem): Boolean {
+    val categoryKindValid = when (row.category) {
+        "media" -> row.kind in setOf("photo", "video", "gif", "sticker")
+        "files" -> row.kind == "document"
+        "links" -> row.kind == "link"
+        "voice" -> row.kind == "voice"
+        else -> false
+    }
+    if (!categoryKindValid) return false
+    return when (row.kind) {
+        "photo", "video", "document", "voice" -> !row.attachmentId.isNullOrBlank()
+        "gif" -> !row.gifProvider.isNullOrBlank() && !row.gifProviderContentId.isNullOrBlank()
+        "sticker" -> !row.stickerId.isNullOrBlank()
+        "link" -> !row.linkUrl.isNullOrBlank() && !row.linkHostname.isNullOrBlank()
+        else -> false
+    }
+}
+
+private fun compareSharedContentOrder(
+    left: SharedContentDataItem,
+    right: SharedContentDataItem,
+): Int {
+    left.sourceCreatedAt.compareTo(right.sourceCreatedAt).takeUnless { it == 0 }?.let { return -it }
+    left.sourceMessageId.compareTo(right.sourceMessageId).takeUnless { it == 0 }?.let { return -it }
+    left.sourceRank.compareTo(right.sourceRank).takeUnless { it == 0 }?.let { return -it }
+    return -left.itemId.compareTo(right.itemId)
 }
 
 internal fun parseRetryAfterSeconds(value: String?, now: Instant = Instant.now()): Long? {

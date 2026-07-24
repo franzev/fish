@@ -15,6 +15,9 @@ import space.fishhub.android.data.chat.MessagePage
 import space.fishhub.android.data.chat.MessageSearchCursor
 import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
+import space.fishhub.android.data.chat.SharedContentDataPage
+import space.fishhub.android.data.chat.SharedContentRequestToken
+import space.fishhub.android.data.chat.sharedcontent.StoredSharedContentSnapshot
 import space.fishhub.android.data.chat.GifRepository
 import space.fishhub.android.data.chat.GifPage
 import space.fishhub.android.data.chat.GifSearchItem
@@ -848,6 +851,16 @@ private class FakeChatRepository(
     )
     override suspend fun loadOlder(conversationId: String, cursor: ChatMessageCursor) =
         ChatResult.Success(MessagePage(emptyList(), false, null))
+    override fun observeSharedContentSnapshot(
+        conversationId: String,
+    ): Flow<StoredSharedContentSnapshot?> = flowOf(null)
+    override suspend fun refreshSharedContent(
+        token: SharedContentRequestToken,
+        category: String?,
+    ): ChatResult<SharedContentDataPage> = ChatResult.Success(SharedContentDataPage(emptyList(), false, null))
+    override suspend fun refreshSharedContentCategories(
+        token: SharedContentRequestToken,
+    ): ChatResult<List<String>> = ChatResult.Success(emptyList())
     override suspend fun refreshMessages(
         conversationId: String,
         messageIds: List<String>,

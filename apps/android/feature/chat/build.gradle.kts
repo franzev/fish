@@ -18,6 +18,9 @@ android {
         getByName("test").resources.directories.add(
             "../../../../packages/core/src/chat-state/fixtures",
         )
+        getByName("test").resources.directories.add(
+            "../../../../packages/core/src/shared-content/fixtures",
+        )
     }
 }
 

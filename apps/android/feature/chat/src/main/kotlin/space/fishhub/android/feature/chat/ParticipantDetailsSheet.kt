@@ -1,22 +1,37 @@
 package space.fishhub.android.feature.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import coil3.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.flow.first
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
@@ -34,12 +49,28 @@ fun ParticipantDetailsSheet(
     participant: ParticipantUiModel,
     presence: PresencePresentation,
     onDismiss: () -> Unit,
+    onOpenSharedContent: () -> Unit = {},
     onRemoveFriend: () -> Unit,
     onBlock: () -> Unit,
+    sharedContentModifier: Modifier = Modifier,
+    requestSharedContentFocus: Boolean = false,
 ) {
     var confirmation by remember(participant.id) { mutableStateOf<SafetyConfirmation?>(null) }
     val avatarPainter = participant.avatarUrl?.let { rememberAsyncImagePainter(it) }
-    FishModalBottomSheet(onDismissRequest = onDismiss) {
+    val sharedContentFocus = remember(participant.id) { FocusRequester() }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    LaunchedEffect(Unit) {
+        if (requestSharedContentFocus) {
+            snapshotFlow { sheetState.currentValue }
+                .first { it == SheetValue.Expanded }
+            withFrameNanos { }
+            sharedContentFocus.requestFocus()
+        }
+    }
+    FishModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -89,6 +120,47 @@ fun ParticipantDetailsSheet(
                 color = FishTheme.colors.muted,
                 style = FishTheme.typography.caption,
             )
+            Row(
+                modifier = Modifier
+                    .then(sharedContentModifier)
+                    .focusRequester(sharedContentFocus)
+                    .focusable()
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = FishTheme.sizes.touchTarget)
+                    .clickable(
+                        role = Role.Button,
+                        onClick = onOpenSharedContent,
+                    )
+                    .padding(horizontal = FishTheme.spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(FishTheme.spacing.sm),
+            ) {
+                Icon(
+                    imageVector = FishIcons.Gallery,
+                    contentDescription = null,
+                    modifier = Modifier.size(FishTheme.sizes.iconGlyph),
+                    tint = FishTheme.colors.foreground,
+                )
+                Text(
+                    text = stringResource(R.string.shared_content),
+                    modifier = Modifier.weight(1f),
+                    color = FishTheme.colors.foreground,
+                    style = FishTheme.typography.ui,
+                )
+                Spacer(modifier = Modifier.size(FishTheme.spacing.twoXs))
+                Text(
+                    text = if (
+                        androidx.compose.ui.platform.LocalLayoutDirection.current ==
+                        androidx.compose.ui.unit.LayoutDirection.Ltr
+                    ) {
+                        "›"
+                    } else {
+                        "‹"
+                    },
+                    color = FishTheme.colors.body,
+                    style = FishTheme.typography.heading,
+                )
+            }
             if (participant.friendSafetyAvailable) {
                 when (confirmation) {
                     null -> {

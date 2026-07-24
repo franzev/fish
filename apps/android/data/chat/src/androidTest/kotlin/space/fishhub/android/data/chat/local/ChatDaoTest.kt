@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -130,6 +131,75 @@ class ChatDaoTest {
 
         assertEquals(1, dao.conversations("client-1").size)
         assertEquals(0, dao.conversations("another-user").size)
+    }
+
+    @Test
+    fun sharedContentDaoContractNamesOwnerIsolationAndAtomicPurge() {
+        val requiredMethods = setOf(
+            "observeSharedContentCacheRows",
+            "readSharedContentCacheRows",
+            "readSharedContentCacheOwner",
+            "replaceSharedContentNewestWindowAndPrune",
+            "appendSharedContentBrowsedPageAndPrune",
+            "applySharedContentTombstonesAndPrune",
+            "purgeSharedContentConversation",
+            "purgeSharedContentOwner",
+            "verifyOwnerPurged",
+        )
+        val availableMethods = ChatDao::class.java.methods.map { it.name }.toSet()
+        assertTrue(
+            "RED: missing owner-scoped SharedContent DAO transaction methods, including wrongOwner, authoritativeEmpty, and verifyOwnerPurged behavior",
+            availableMethods.containsAll(requiredMethods),
+        )
+    }
+
+    @Test
+    fun sharedContentDaoReconcilesOneOwnerAndConversationWithoutCrossNamespaceRows() = runTest {
+        val now = "2026-07-23T00:00:00Z"
+        val owner = SharedContentCacheOwnerEntity(
+            ownerIdentityId = "owner-a",
+            conversationId = "conversation-1",
+            savedAt = now,
+            lastAccessedAt = now,
+        )
+        val page = SharedContentCachePageEntity(
+            ownerIdentityId = "owner-a",
+            conversationId = "conversation-1",
+            pageId = "newest",
+            pageOrdinal = 0,
+            retainedCursor = null,
+            lastAccessedAt = now,
+            isNewestWindow = true,
+        )
+        val item = SharedContentCacheItemEntity(
+            ownerIdentityId = "owner-a",
+            conversationId = "conversation-1",
+            itemId = "item-1",
+            sourceMessageId = "message-1",
+            senderId = "owner-a",
+            sourceCreatedAt = now,
+            sourceRank = 0,
+            category = "files",
+            kind = "file",
+            attachmentId = "attachment-1",
+            attachmentOriginalName = "notes.pdf",
+            attachmentMimeType = "application/pdf",
+            attachmentByteSize = 10,
+            pageId = "newest",
+        )
+
+        dao.replaceSharedContentNewestWindowAndPrune(
+            owner = owner,
+            page = page,
+            items = listOf(item),
+            now = now,
+            inactivityCutoff = "2026-06-23T00:00:00Z",
+        )
+
+        assertEquals(1, dao.readSharedContentCacheRows("owner-a", "conversation-1").size)
+        assertEquals(0, dao.readSharedContentCacheRows("wrong-owner", "conversation-1").size)
+        dao.purgeSharedContentConversation("owner-a", "conversation-1")
+        assertTrue(dao.verifyOwnerPurged("owner-a", "conversation-1"))
     }
 
     private fun message(id: String, body: String, status: String) = MessageEntity(

@@ -53,6 +53,10 @@ class SizeTokens internal constructor(
     val badge: Dp = GeneratedSizes.Badge,
     val badgeSlot: Dp = GeneratedSizes.BadgeSlot,
     val paginationSlot: Dp = GeneratedSizes.PaginationSlot,
+    val sharedContentMediaCell: Dp = GeneratedSizes.SharedContentMediaCell,
+    val sharedContentAccessibleMediaCell: Dp =
+        GeneratedSizes.SharedContentAccessibleMediaCell,
+    val sharedContentMetadataRow: Dp = GeneratedSizes.SharedContentMetadataRow,
 )
 
 @Immutable

@@ -3,6 +3,7 @@ package space.fishhub.android.feature.chat
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -79,7 +80,7 @@ class ChatAccessibilityTest {
         }
         composeRule.enableAccessibilityChecks()
 
-        composeRule.onNodeWithText("Search messages").assertExists()
+        composeRule.onNode(hasText("Search messages") and hasSetTextAction()).assertExists()
         composeRule.waitForIdle()
         composeRule.onAllNodes(hasSetTextAction())[0].assertIsFocused()
         composeRule.onNodeWithContentDescription("Back")
@@ -553,17 +554,22 @@ class ChatAccessibilityTest {
     @Test
     fun messageActionsCopyPreservesTheOriginalBodyAndClosesTheSheet() {
         var copied: String? = null
+        val visible = mutableStateOf(true)
         composeRule.setContent {
             FishTheme {
-                ChatMessageActionsSheet(
-                    message = actionableMessage().copy(body = "  Pause first — then speak. 😊  "),
-                    onDismiss = {},
-                    onCopy = { copied = it },
-                    onReply = {},
-                    onEdit = {},
-                    onDelete = {},
-                    onReact = {},
-                )
+                if (visible.value) {
+                    ChatMessageActionsSheet(
+                        message = actionableMessage().copy(
+                            body = "  Pause first — then speak. 😊  ",
+                        ),
+                        onDismiss = { visible.value = false },
+                        onCopy = { copied = it },
+                        onReply = {},
+                        onEdit = {},
+                        onDelete = {},
+                        onReact = {},
+                    )
+                }
             }
         }
 
@@ -575,25 +581,28 @@ class ChatAccessibilityTest {
 
     @Test
     fun messageActionsHideCopyForDeletedSendingAndBodylessMessages() {
-        listOf(
+        val messages = listOf(
             actionableMessage().copy(deleted = true),
             actionableMessage().copy(delivery = MessageDeliveryUiState.Sending),
             actionableMessage().copy(body = ""),
-        ).forEach { message ->
-            composeRule.setContent {
-                FishTheme {
-                    ChatMessageActionsSheet(
-                        message = message,
-                        onDismiss = {},
-                        onCopy = {},
-                        onReply = {},
-                        onEdit = {},
-                        onDelete = {},
-                        onReact = {},
-                    )
-                }
+        )
+        val renderedMessage = mutableStateOf(messages.first())
+        composeRule.setContent {
+            FishTheme {
+                ChatMessageActionsSheet(
+                    message = renderedMessage.value,
+                    onDismiss = {},
+                    onCopy = {},
+                    onReply = {},
+                    onEdit = {},
+                    onDelete = {},
+                    onReact = {},
+                )
             }
+        }
 
+        messages.forEach { message ->
+            composeRule.runOnIdle { renderedMessage.value = message }
             composeRule.onAllNodesWithText("Copy").assertCountEquals(0)
         }
     }
