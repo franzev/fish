@@ -245,6 +245,82 @@ function secureEquals(left: string, right: string): boolean {
   return difference === 0;
 }
 
+type CleanupPassResult = {
+  claimError: { code?: string } | null;
+  finishError: { code?: string } | null;
+  claimedCount: number;
+  deletedCount: number;
+  deletedBytes: number;
+  oldestCreatedAt: string | null;
+};
+
+function isMissingStorageObjectError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    code?: unknown;
+    message?: unknown;
+    status?: unknown;
+    statusCode?: unknown;
+  };
+  const status = Number(candidate.status ?? candidate.statusCode);
+  if (status === 404) return true;
+  const description = [candidate.code, candidate.message]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ").toLowerCase();
+  return /(?:not found|does not exist|no such object|object_not_found)/.test(description);
+}
+
+async function cleanupDeletedBoundAttachments(
+  admin: AdminClient,
+  claimToken: string,
+): Promise<CleanupPassResult> {
+  const claimedResult = await admin.rpc("claim_deleted_chat_attachment_cleanup", {
+    p_claim_token: claimToken,
+    p_limit: 100,
+  });
+  if (claimedResult.error) {
+    return {
+      claimError: claimedResult.error,
+      finishError: null,
+      claimedCount: 0,
+      deletedCount: 0,
+      deletedBytes: 0,
+      oldestCreatedAt: null,
+    };
+  }
+
+  const claimed = (claimedResult.data ?? []) as AttachmentRow[];
+  const deletedIds: string[] = [];
+  let deletedBytes = 0;
+  for (const attachment of claimed) {
+    const paths = [...new Set([
+      attachment.staging_path,
+      attachment.display_path,
+      attachment.thumbnail_path,
+    ].filter((path): path is string => Boolean(path)))];
+    const removed = paths.length > 0
+      ? await admin.storage.from(bucket).remove(paths)
+      : { error: null };
+    if (!removed.error || isMissingStorageObjectError(removed.error)) {
+      deletedIds.push(attachment.id);
+      deletedBytes += attachment.stored_byte_size ?? attachment.source_byte_size ?? 0;
+    }
+  }
+
+  const finished = await admin.rpc("finish_deleted_chat_attachment_cleanup", {
+    p_claim_token: claimToken,
+    p_deleted_ids: deletedIds,
+  });
+  return {
+    claimError: null,
+    finishError: finished.error,
+    claimedCount: claimed.length,
+    deletedCount: deletedIds.length,
+    deletedBytes,
+    oldestCreatedAt: claimed.map((item) => item.created_at).sort()[0] ?? null,
+  };
+}
+
 async function cleanupExpired(admin: AdminClient, request: Request): Promise<Response> {
   const expectedSecret = Deno.env.get("CHAT_ATTACHMENT_CLEANUP_SECRET")?.trim() ?? "";
   const providedSecret = request.headers.get("x-cleanup-secret")?.trim() ?? "";
@@ -255,6 +331,7 @@ async function cleanupExpired(admin: AdminClient, request: Request): Promise<Res
   const startedAt = new Date();
   const claimToken = crypto.randomUUID();
   const stagingClaimToken = crypto.randomUUID();
+  const deletedBoundClaimToken = crypto.randomUUID();
   // Claim whole-row expiry first so an expired unbound ready row is deleted
   // rather than being temporarily captured by the staging-only pass.
   const claimedResult = await admin.rpc("claim_chat_attachment_cleanup", {
@@ -283,6 +360,27 @@ async function cleanupExpired(admin: AdminClient, request: Request): Promise<Res
     console.error("chat attachment cleanup claim failed", {
       fullCode: claimedResult.error?.code,
       stagingCode: stagingClaimedResult.error?.code,
+    });
+    return calmError("cleanup_unavailable", "Attachment cleanup will try again later.", 503);
+  }
+  const deletedBound = await cleanupDeletedBoundAttachments(admin, deletedBoundClaimToken);
+  if (deletedBound.claimError) {
+    if (!claimedResult.error) {
+      await admin.rpc("finish_chat_attachment_cleanup", {
+        p_claim_token: claimToken,
+        p_deleted_ids: [],
+      });
+    }
+    if (!stagingClaimedResult.error) {
+      await admin.rpc("finish_chat_attachment_staging_cleanup", {
+        p_claim_token: stagingClaimToken,
+        p_deleted_ids: [],
+      });
+    }
+    console.error("chat attachment cleanup claim failed", {
+      fullCode: claimedResult.error?.code,
+      stagingCode: stagingClaimedResult.error?.code,
+      deletedBoundCode: deletedBound.claimError.code,
     });
     return calmError("cleanup_unavailable", "Attachment cleanup will try again later.", 503);
   }
@@ -329,17 +427,27 @@ async function cleanupExpired(admin: AdminClient, request: Request): Promise<Res
     });
     return calmError("cleanup_unavailable", "Attachment cleanup will try again later.", 503);
   }
-  const claimedCount = claimed.length + stagingClaimed.length;
-  const deletedCount = deletedIds.length + stagingDeletedIds.length;
+  if (deletedBound.finishError) {
+    console.error("chat attachment cleanup finish failed", {
+      deletedBoundCode: deletedBound.finishError.code,
+    });
+    return calmError("cleanup_unavailable", "Attachment cleanup will try again later.", 503);
+  }
+  const claimedCount = claimed.length + stagingClaimed.length + deletedBound.claimedCount;
+  const deletedCount = deletedIds.length + stagingDeletedIds.length + deletedBound.deletedCount;
+  const totalDeletedBytes = deletedBytes + deletedBound.deletedBytes;
   await admin.from("chat_attachment_cleanup_runs").insert({
     started_at: startedAt.toISOString(),
     completed_at: new Date().toISOString(),
     claimed_count: claimedCount,
     deleted_count: deletedCount,
     failed_count: claimedCount - deletedCount,
-    deleted_bytes: deletedBytes,
-    oldest_created_at: [...claimed, ...stagingClaimed]
-      .map((item) => item.created_at).sort()[0] ?? null,
+    deleted_bytes: totalDeletedBytes,
+    oldest_created_at: [
+      ...claimed,
+      ...stagingClaimed,
+      ...(deletedBound.oldestCreatedAt ? [{ created_at: deletedBound.oldestCreatedAt }] : []),
+    ].map((item) => item.created_at).sort()[0] ?? null,
   });
   return Response.json({
     claimed: claimedCount,
@@ -347,6 +455,8 @@ async function cleanupExpired(admin: AdminClient, request: Request): Promise<Res
     failed: claimedCount - deletedCount,
     stagingClaimed: stagingClaimed.length,
     stagingDeleted: stagingDeletedIds.length,
+    deletedBoundClaimed: deletedBound.claimedCount,
+    deletedBoundDeleted: deletedBound.deletedCount,
   }, { headers: jsonHeaders });
 }
 

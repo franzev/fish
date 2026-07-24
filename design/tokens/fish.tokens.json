@@ -74,7 +74,10 @@
     "avatarLarge": 72,
     "badge": 20,
     "badgeSlot": 40,
-    "paginationSlot": 112
+    "paginationSlot": 112,
+    "sharedContentMediaCell": 88,
+    "sharedContentAccessibleMediaCell": 120,
+    "sharedContentMetadataRow": 64
   },
   "sizePt": {
     "targetTouch": 44,

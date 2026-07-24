@@ -18,7 +18,9 @@
     "./notification-state/fixtures/notification-state-vectors.json": "./src/notification-state/fixtures/notification-state-vectors.json",
     "./presence": "./src/presence/index.ts",
     "./presence/state/fixtures/presence-state-vectors.json": "./src/presence/state/fixtures/presence-state-vectors.json",
-    "./roles": "./src/roles.ts"
+    "./roles": "./src/roles.ts",
+    "./shared-content": "./src/shared-content/index.ts",
+    "./shared-content/fixtures/shared-content-vectors.json": "./src/shared-content/fixtures/shared-content-vectors.json"
   },
   "scripts": {
     "build": "tsc --noEmit",

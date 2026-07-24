@@ -9,6 +9,7 @@ const destination = join(root, "apps/ios/FishKit/Sources/TestSupport/Resources")
 const entries = [
   ["packages/core/src/chat-state/fixtures/chat-state-vectors.json", "chat-state-vectors.json"],
   ["packages/core/src/chat-state/fixtures/chat-media-merge-vectors.json", "chat-media-merge-vectors.json"],
+  ["packages/core/src/shared-content/fixtures/shared-content-vectors.json", "shared-content-vectors.json"],
 ];
 
 if (process.argv.includes("--check")) {

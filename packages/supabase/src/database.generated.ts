@@ -404,6 +404,47 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_link_preview_jobs: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          last_error: string | null
+          message_id: string
+          next_attempt_at: string
+          state: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          last_error?: string | null
+          message_id: string
+          next_attempt_at?: string
+          state?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          last_error?: string | null
+          message_id?: string
+          next_attempt_at?: string
+          state?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_link_preview_jobs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           consent_version: string | null
@@ -708,7 +749,9 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at: string
+          delete_requested_at: string | null
           display_path: string | null
+          duration_ms: number | null
           expires_at: string
           failure_code: string | null
           height: number | null
@@ -743,7 +786,9 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at?: string
+          delete_requested_at?: string | null
           display_path?: string | null
+          duration_ms?: number | null
           expires_at?: string
           failure_code?: string | null
           height?: number | null
@@ -778,7 +823,9 @@ export type Database = {
           client_upload_id?: string
           conversation_id?: string
           created_at?: string
+          delete_requested_at?: string | null
           display_path?: string | null
+          duration_ms?: number | null
           expires_at?: string
           failure_code?: string | null
           height?: number | null
@@ -955,6 +1002,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "message_gifs_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_link_previews: {
+        Row: {
+          created_at: string
+          description: string | null
+          fetched_at: string
+          hostname: string
+          message_id: string
+          safe_link_validated_at: string | null
+          safe_link_validation_version: number | null
+          site_name: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fetched_at?: string
+          hostname: string
+          message_id: string
+          safe_link_validated_at?: string | null
+          safe_link_validation_version?: number | null
+          site_name?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fetched_at?: string
+          hostname?: string
+          message_id?: string
+          safe_link_validated_at?: string | null
+          safe_link_validation_version?: number | null
+          site_name?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_link_previews_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: true
             referencedRelation: "messages"
@@ -1593,8 +1687,8 @@ export type Database = {
           installation_id: string
           last_seen_at: string
           platform: string
-          push_kind: string
           provider_installation_id: string
+          push_kind: string
           revoked_at: string | null
           updated_at: string
           user_id: string
@@ -1606,8 +1700,8 @@ export type Database = {
           installation_id: string
           last_seen_at?: string
           platform: string
-          push_kind?: string
           provider_installation_id: string
+          push_kind?: string
           revoked_at?: string | null
           updated_at?: string
           user_id: string
@@ -1619,8 +1713,8 @@ export type Database = {
           installation_id?: string
           last_seen_at?: string
           platform?: string
-          push_kind?: string
           provider_installation_id?: string
+          push_kind?: string
           revoked_at?: string | null
           updated_at?: string
           user_id?: string
@@ -1885,7 +1979,9 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at: string
+          delete_requested_at: string | null
           display_path: string | null
+          duration_ms: number | null
           expires_at: string
           failure_code: string | null
           height: number | null
@@ -1929,7 +2025,55 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at: string
+          delete_requested_at: string | null
           display_path: string | null
+          duration_ms: number | null
+          expires_at: string
+          failure_code: string | null
+          height: number | null
+          id: string
+          integrity_status: string
+          kind: string
+          message_id: string | null
+          original_name: string
+          position: number | null
+          scan_provider: string | null
+          scan_reference: string | null
+          scan_status: string
+          scanned_at: string | null
+          source_byte_size: number
+          source_mime_type: string
+          staging_cleaned_at: string | null
+          staging_path: string
+          status: string
+          stored_byte_size: number | null
+          stored_mime_type: string | null
+          thumbnail_path: string | null
+          updated_at: string
+          upload_credentials_expires_at: string | null
+          upload_sha256: string | null
+          uploader_id: string
+          verified_sha256: string | null
+          width: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "message_attachments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_deleted_chat_attachment_cleanup: {
+        Args: { p_claim_token: string; p_limit?: number }
+        Returns: {
+          cleanup_claimed_at: string | null
+          cleanup_token: string | null
+          client_upload_id: string
+          conversation_id: string
+          created_at: string
+          delete_requested_at: string | null
+          display_path: string | null
+          duration_ms: number | null
           expires_at: string
           failure_code: string | null
           height: number | null
@@ -2100,7 +2244,9 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at: string
+          delete_requested_at: string | null
           display_path: string | null
+          duration_ms: number | null
           expires_at: string
           failure_code: string | null
           height: number | null
@@ -2144,6 +2290,10 @@ export type Database = {
         Args: { p_claim_token: string; p_deleted_ids: string[] }
         Returns: number
       }
+      finish_deleted_chat_attachment_cleanup: {
+        Args: { p_claim_token: string; p_deleted_ids: string[] }
+        Returns: number
+      }
       get_call_counterpart_name: {
         Args: { p_call_id: string }
         Returns: string
@@ -2156,6 +2306,23 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_conversation_call_activity: {
+        Args: {
+          p_before_ended_at?: string
+          p_conversation_id: string
+          p_limit?: number
+        }
+        Returns: {
+          connected_at: string
+          created_at: string
+          end_reason: Database["public"]["Enums"]["call_end_reason"]
+          ended_at: string
+          id: string
+          initiated_by: string
+          kind: Database["public"]["Enums"]["call_kind"]
+          status: Database["public"]["Enums"]["call_status"]
+        }[]
+      }
       get_incoming_friend_request: {
         Args: { p_request_id: string }
         Returns: {
@@ -2166,6 +2333,7 @@ export type Database = {
           username: string
         }[]
       }
+      get_mobile_unread_count: { Args: { p_user_id: string }; Returns: number }
       get_notification_summary: {
         Args: never
         Returns: {
@@ -2222,7 +2390,9 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at: string
+          delete_requested_at: string | null
           display_path: string | null
+          duration_ms: number | null
           expires_at: string
           failure_code: string | null
           height: number | null
@@ -2272,7 +2442,9 @@ export type Database = {
           client_upload_id: string
           conversation_id: string
           created_at: string
+          delete_requested_at: string | null
           display_path: string | null
+          duration_ms: number | null
           expires_at: string
           failure_code: string | null
           height: number | null
@@ -2459,6 +2631,76 @@ export type Database = {
           id: string
           role: string
           username: string
+        }[]
+      }
+      list_conversation_message_context: {
+        Args: {
+          p_after?: number
+          p_before?: number
+          p_conversation_id: string
+          p_message_id: string
+        }
+        Returns: {
+          body: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string
+          edited_at: string
+          has_newer_gap: boolean
+          has_older_gap: boolean
+          message_id: string
+          reply_to_message_id: string
+          sender_id: string
+          sender_role: string
+          sticker_id: string
+        }[]
+      }
+      list_conversation_shared_content: {
+        Args: {
+          p_before_created_at?: string
+          p_before_item_id?: string
+          p_before_message_id?: string
+          p_before_source_rank?: number
+          p_category?: string
+          p_conversation_id: string
+          p_limit?: number
+        }
+        Returns: {
+          attachment_byte_size: number
+          attachment_display_path: string
+          attachment_height: number
+          attachment_id: string
+          attachment_mime_type: string
+          attachment_original_name: string
+          attachment_thumbnail_path: string
+          attachment_width: number
+          can_delete: boolean
+          can_export: boolean
+          category: string
+          conversation_id: string
+          duration_ms: number
+          gif_description: string
+          gif_provider: string
+          gif_provider_content_id: string
+          gif_title: string
+          item_id: string
+          kind: string
+          link_description: string
+          link_hostname: string
+          link_site_name: string
+          link_title: string
+          link_url: string
+          sender_id: string
+          source_created_at: string
+          source_message_id: string
+          source_rank: number
+          sticker_id: string
+        }[]
+      }
+      list_conversation_shared_content_categories: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          category: string
         }[]
       }
       list_direct_conversation_previews: {
@@ -3200,3 +3442,4 @@ export const Constants = {
     },
   },
 } as const
+

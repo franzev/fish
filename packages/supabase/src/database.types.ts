@@ -19,6 +19,14 @@ export type MessageAttachmentRow =
 export type ChatAttachmentCleanupRunRow =
   Database["public"]["Tables"]["chat_attachment_cleanup_runs"]["Row"];
 export type MessageGifRow = Database["public"]["Tables"]["message_gifs"]["Row"];
+export type MessageLinkPreviewRow =
+  Database["public"]["Tables"]["message_link_previews"]["Row"];
+export type SharedContentRpcRow =
+  Database["public"]["Functions"]["list_conversation_shared_content"]["Returns"][number];
+export type SharedContentCategoryRpcRow =
+  Database["public"]["Functions"]["list_conversation_shared_content_categories"]["Returns"][number];
+export type MessageContextRpcRow =
+  Database["public"]["Functions"]["list_conversation_message_context"]["Returns"][number];
 export type MessageReadRow = Database["public"]["Tables"]["message_reads"]["Row"];
 export type MessageReactionRow =
   Database["public"]["Tables"]["message_reactions"]["Row"];

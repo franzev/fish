@@ -49,6 +49,8 @@
     "verify:rls": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-rls.ts",
     "verify:chat-realtime": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-realtime.ts",
     "verify:chat-attachments": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-chat-attachments.ts",
+    "verify:shared-content": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-shared-content.ts --target=local",
+    "verify:shared-content:linked": "node --experimental-strip-types scripts/verify-shared-content.ts --target=linked",
     "verify:calls": "node --experimental-strip-types --env-file=apps/web/.env.local --env-file=supabase/functions/.env.local scripts/verify-calls.ts",
     "verify:push-devices": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-push-devices.ts",
     "verify:voip-contract": "node scripts/verify-voip-push-contract.mjs",

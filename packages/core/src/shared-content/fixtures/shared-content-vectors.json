@@ -1,0 +1,479 @@
+{
+  "metadata": {
+    "version": 3,
+    "expectedCaseCount": 92,
+    "expectedTask1CaseCount": 48,
+    "expectedPhase13CaseCount": 16,
+    "expectedPortableCaseCount": 108,
+    "phase13Groups": [
+      "galleryProjection"
+    ],
+    "groups": [
+      "classification",
+      "ordering",
+      "pagination",
+      "permissions",
+      "galleryStates",
+      "identityPurge",
+      "deletionFanOut",
+      "requestSequencing",
+      "cacheHydration",
+      "cacheTruth",
+      "eviction",
+      "recovery",
+      "deliveryPlanning",
+      "dataSaving",
+      "urlNonPersistence",
+      "identityGeneration"
+    ]
+  },
+  "classification": {
+    "cases": [
+      { "name": "readyWebpPhoto", "source": { "itemId": "attachment:photo-1", "conversationId": "conversation-1", "sourceMessageId": "message-1", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "image/webp", "attachmentId": "photo-1", "displayPath": "display/photo-1.webp" }, "expected": { "category": "media", "kind": "photo" } },
+      { "name": "readyMp4Video", "source": { "itemId": "attachment:video-1", "conversationId": "conversation-1", "sourceMessageId": "message-2", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "video/mp4", "attachmentId": "video-1", "displayPath": "display/video-1.mp4" }, "expected": { "category": "media", "kind": "video" } },
+      { "name": "readyAudioMp4Voice", "source": { "itemId": "attachment:voice-1", "conversationId": "conversation-1", "sourceMessageId": "message-3", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "audio/mp4", "attachmentId": "voice-1", "displayPath": "display/voice-1.m4a" }, "expected": { "category": "voice", "kind": "voice" } },
+      { "name": "readyPdfDocument", "source": { "itemId": "attachment:pdf-1", "conversationId": "conversation-1", "sourceMessageId": "message-4", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "application/pdf", "attachmentId": "pdf-1", "displayPath": "display/pdf-1.pdf" }, "expected": { "category": "files", "kind": "document" } },
+      { "name": "readyPlainTextDocument", "source": { "itemId": "attachment:text-1", "conversationId": "conversation-1", "sourceMessageId": "message-5", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "text/plain", "attachmentId": "text-1", "displayPath": "display/text-1.txt" }, "expected": { "category": "files", "kind": "document" } },
+      { "name": "readyCsvDocument", "source": { "itemId": "attachment:csv-1", "conversationId": "conversation-1", "sourceMessageId": "message-6", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "text/csv", "attachmentId": "csv-1", "displayPath": "display/csv-1.csv" }, "expected": { "category": "files", "kind": "document" } },
+      { "name": "readyDocxDocument", "source": { "itemId": "attachment:docx-1", "conversationId": "conversation-1", "sourceMessageId": "message-7", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "attachmentId": "docx-1", "displayPath": "display/docx-1.docx" }, "expected": { "category": "files", "kind": "document" } },
+      { "name": "readyXlsxDocument", "source": { "itemId": "attachment:xlsx-1", "conversationId": "conversation-1", "sourceMessageId": "message-8", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "attachmentId": "xlsx-1", "displayPath": "display/xlsx-1.xlsx" }, "expected": { "category": "files", "kind": "document" } },
+      { "name": "readyPptxDocument", "source": { "itemId": "attachment:pptx-1", "conversationId": "conversation-1", "sourceMessageId": "message-9", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation", "attachmentId": "pptx-1", "displayPath": "display/pptx-1.pptx" }, "expected": { "category": "files", "kind": "document" } },
+      { "name": "gifBrowsing", "source": { "itemId": "gif:message-10", "conversationId": "conversation-1", "sourceMessageId": "message-10", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "gif", "sourceDeleted": false, "gifProvider": "giphy", "gifProviderContentId": "gif-10" }, "expected": { "category": "media", "kind": "gif" } },
+      { "name": "validSticker", "source": { "itemId": "sticker:message-11", "conversationId": "conversation-1", "sourceMessageId": "message-11", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "sticker", "sourceDeleted": false, "stickerId": "catalog/sticker-11" }, "expected": { "category": "media", "kind": "sticker" } },
+      { "name": "canonicalSafeLink", "source": { "itemId": "link:message-12", "conversationId": "conversation-1", "sourceMessageId": "message-12", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "link", "sourceDeleted": false, "linkUrl": "https://example.com/articles/12", "linkHostname": "example.com" }, "expected": { "category": "links", "kind": "link" } },
+      { "name": "pendingAttachment", "source": { "itemId": "attachment:pending", "conversationId": "conversation-1", "sourceMessageId": "message-pending", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "pending", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "image/webp", "attachmentId": "pending", "displayPath": "display/pending.webp" }, "expected": null },
+      { "name": "uploadedAttachment", "source": { "itemId": "attachment:uploaded", "conversationId": "conversation-1", "sourceMessageId": "message-uploaded", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "uploaded", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "image/webp", "attachmentId": "uploaded", "displayPath": "display/uploaded.webp" }, "expected": null },
+      { "name": "processingAttachment", "source": { "itemId": "attachment:processing", "conversationId": "conversation-1", "sourceMessageId": "message-processing", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "processing", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "image/webp", "attachmentId": "processing", "displayPath": "display/processing.webp" }, "expected": null },
+      { "name": "pendingScanAttachment", "source": { "itemId": "attachment:pending-scan", "conversationId": "conversation-1", "sourceMessageId": "message-pending-scan", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "pending_scan", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "application/pdf", "attachmentId": "pending-scan", "displayPath": "display/pending-scan.pdf" }, "expected": null },
+      { "name": "failedAttachment", "source": { "itemId": "attachment:failed", "conversationId": "conversation-1", "sourceMessageId": "message-failed", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "failed", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "image/webp", "attachmentId": "failed", "displayPath": "display/failed.webp" }, "expected": null },
+      { "name": "cancelledAttachment", "source": { "itemId": "attachment:cancelled", "conversationId": "conversation-1", "sourceMessageId": "message-cancelled", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "cancelled", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "image/webp", "attachmentId": "cancelled", "displayPath": "display/cancelled.webp" }, "expected": null },
+      { "name": "unboundReadyAttachment", "source": { "itemId": "attachment:unbound", "conversationId": "conversation-1", "sourceMessageId": "message-unbound", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "image", "boundToSource": false, "storedMimeType": "image/webp", "attachmentId": "unbound", "displayPath": "display/unbound.webp" }, "expected": null },
+      { "name": "deletedSource", "source": { "itemId": "gif:message-deleted", "conversationId": "conversation-1", "sourceMessageId": "message-deleted", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "gif", "sourceDeleted": true, "gifProvider": "giphy", "gifProviderContentId": "deleted" }, "expected": null },
+      { "name": "unsupportedReadyMime", "source": { "itemId": "attachment:zip", "conversationId": "conversation-1", "sourceMessageId": "message-zip", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "file", "boundToSource": true, "storedMimeType": "application/zip", "attachmentId": "zip", "displayPath": "display/zip" }, "expected": null },
+      { "name": "conversationMismatch", "conversationId": "conversation-other", "source": { "itemId": "gif:message-13", "conversationId": "conversation-1", "sourceMessageId": "message-13", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "gif", "sourceDeleted": false, "gifProvider": "giphy", "gifProviderContentId": "gif-13" }, "expected": null },
+      { "name": "wrongAttachmentKind", "source": { "itemId": "attachment:wrong-kind", "conversationId": "conversation-1", "sourceMessageId": "message-wrong-kind", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "attachment", "sourceDeleted": false, "attachmentStatus": "ready", "attachmentKind": "image", "boundToSource": true, "storedMimeType": "video/mp4", "attachmentId": "wrong-kind", "displayPath": "display/wrong-kind" }, "expected": null },
+      { "name": "missingStickerCatalogId", "source": { "itemId": "sticker:message-14", "conversationId": "conversation-1", "sourceMessageId": "message-14", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "sticker", "sourceDeleted": false }, "expected": null },
+      { "name": "unsafeLink", "source": { "itemId": "link:message-15", "conversationId": "conversation-1", "sourceMessageId": "message-15", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "senderId": "sender-1", "sourceKind": "link", "sourceDeleted": false, "linkUrl": "https://user:pass@example.com/private", "linkHostname": "example.com" }, "expected": null }
+    ]
+  },
+  "items": {
+    "row-01": { "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-02": { "itemId": "attachment:row-02", "conversationId": "conversation-1", "sourceMessageId": "message-row-02", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-03": { "itemId": "attachment:row-03", "conversationId": "conversation-1", "sourceMessageId": "message-row-03", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:39:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-04": { "itemId": "attachment:row-04", "conversationId": "conversation-1", "sourceMessageId": "message-row-04", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:38:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-05": { "itemId": "attachment:row-05", "conversationId": "conversation-1", "sourceMessageId": "message-row-05", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:37:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-06": { "itemId": "attachment:row-06", "conversationId": "conversation-1", "sourceMessageId": "message-row-06", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:36:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-07": { "itemId": "attachment:row-07", "conversationId": "conversation-1", "sourceMessageId": "message-row-07", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:35:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-08": { "itemId": "attachment:row-08", "conversationId": "conversation-1", "sourceMessageId": "message-row-08", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:34:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-09": { "itemId": "attachment:row-09", "conversationId": "conversation-1", "sourceMessageId": "message-row-09", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:33:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-10": { "itemId": "attachment:row-10", "conversationId": "conversation-1", "sourceMessageId": "message-row-10", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:32:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-11": { "itemId": "attachment:row-11", "conversationId": "conversation-1", "sourceMessageId": "message-row-11", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:31:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-12": { "itemId": "attachment:row-12", "conversationId": "conversation-1", "sourceMessageId": "message-row-12", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:30:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-13": { "itemId": "attachment:row-13", "conversationId": "conversation-1", "sourceMessageId": "message-row-13", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:29:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-14": { "itemId": "attachment:row-14", "conversationId": "conversation-1", "sourceMessageId": "message-row-14", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:28:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-15": { "itemId": "attachment:row-15", "conversationId": "conversation-1", "sourceMessageId": "message-row-15", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:27:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-16": { "itemId": "attachment:row-16", "conversationId": "conversation-1", "sourceMessageId": "message-row-16", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:26:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-17": { "itemId": "attachment:row-17", "conversationId": "conversation-1", "sourceMessageId": "message-row-17", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:25:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-18": { "itemId": "attachment:row-18", "conversationId": "conversation-1", "sourceMessageId": "message-row-18", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:24:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-19": { "itemId": "attachment:row-19", "conversationId": "conversation-1", "sourceMessageId": "message-row-19", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:23:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-20": { "itemId": "attachment:row-20", "conversationId": "conversation-1", "sourceMessageId": "message-row-20", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:22:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-21": { "itemId": "attachment:row-21", "conversationId": "conversation-1", "sourceMessageId": "message-row-21", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:21:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-22": { "itemId": "attachment:row-22", "conversationId": "conversation-1", "sourceMessageId": "message-row-22", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:20:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-23": { "itemId": "attachment:row-23", "conversationId": "conversation-1", "sourceMessageId": "message-row-23", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:19:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-24": { "itemId": "attachment:row-24", "conversationId": "conversation-1", "sourceMessageId": "message-row-24", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:18:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-25": { "itemId": "attachment:row-25", "conversationId": "conversation-1", "sourceMessageId": "message-row-25", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:17:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-26": { "itemId": "attachment:row-26", "conversationId": "conversation-1", "sourceMessageId": "message-row-26", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:16:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-27": { "itemId": "attachment:row-27", "conversationId": "conversation-1", "sourceMessageId": "message-row-27", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:15:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-28": { "itemId": "attachment:row-28", "conversationId": "conversation-1", "sourceMessageId": "message-row-28", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:14:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-29": { "itemId": "attachment:row-29", "conversationId": "conversation-1", "sourceMessageId": "message-row-29", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:13:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-30": { "itemId": "attachment:row-30", "conversationId": "conversation-1", "sourceMessageId": "message-row-30", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:12:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-31": { "itemId": "attachment:row-31", "conversationId": "conversation-1", "sourceMessageId": "message-row-31", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:11:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-32": { "itemId": "attachment:row-32", "conversationId": "conversation-1", "sourceMessageId": "message-row-32", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:10:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-33": { "itemId": "attachment:row-33", "conversationId": "conversation-1", "sourceMessageId": "message-row-33", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:09:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-34": { "itemId": "attachment:row-34", "conversationId": "conversation-1", "sourceMessageId": "message-row-34", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:08:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-35": { "itemId": "attachment:row-35", "conversationId": "conversation-1", "sourceMessageId": "message-row-35", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:07:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-36": { "itemId": "attachment:row-36", "conversationId": "conversation-1", "sourceMessageId": "message-row-36", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:06:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-37": { "itemId": "attachment:row-37", "conversationId": "conversation-1", "sourceMessageId": "message-row-37", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:05:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-38": { "itemId": "attachment:row-38", "conversationId": "conversation-1", "sourceMessageId": "message-row-38", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:04:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-39": { "itemId": "attachment:row-39", "conversationId": "conversation-1", "sourceMessageId": "message-row-39", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:03:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-40": { "itemId": "attachment:row-40", "conversationId": "conversation-1", "sourceMessageId": "message-row-40", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "row-41": { "itemId": "attachment:row-41", "conversationId": "conversation-1", "sourceMessageId": "message-row-41", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:01:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "ord-newer": { "itemId": "attachment:newer", "conversationId": "conversation-1", "sourceMessageId": "message-new", "senderId": "sender-1", "sourceCreatedAt": "2026-07-02T00:00:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } },
+    "ord-message-b": { "itemId": "attachment:z", "conversationId": "conversation-1", "sourceMessageId": "message-b", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "sourceRank": 90, "category": "media", "kind": "gif", "capabilities": { "canDelete": false, "canExport": false } },
+    "ord-message-b-tie": { "itemId": "attachment:A", "conversationId": "conversation-1", "sourceMessageId": "message-b", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:00:00.000Z", "sourceRank": 90, "category": "media", "kind": "gif", "capabilities": { "canDelete": false, "canExport": false } },
+    "ord-codepoint-lower": { "itemId": "item:a", "conversationId": "conversation-1", "sourceMessageId": "message-a", "senderId": "sender-1", "sourceCreatedAt": "2026-06-30T00:00:00.000Z", "sourceRank": 80, "category": "links", "kind": "link", "capabilities": { "canDelete": false, "canExport": true } },
+    "ord-codepoint-upper": { "itemId": "item:A", "conversationId": "conversation-1", "sourceMessageId": "message-a", "senderId": "sender-1", "sourceCreatedAt": "2026-06-30T00:00:00.000Z", "sourceRank": 80, "category": "links", "kind": "link", "capabilities": { "canDelete": false, "canExport": true } },
+    "other-row": { "itemId": "attachment:other-row", "conversationId": "conversation-other", "sourceMessageId": "message-other-row", "senderId": "sender-other", "sourceCreatedAt": "2026-06-01T00:00:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": false, "canExport": false } },
+    "gallery-file": { "itemId": "attachment:gallery-file", "conversationId": "conversation-1", "sourceMessageId": "message-gallery-file", "senderId": "sender-1", "sourceCreatedAt": "2026-06-29T00:00:00.000Z", "sourceRank": 100, "category": "files", "kind": "document", "capabilities": { "canDelete": false, "canExport": true } },
+    "gallery-voice-legacy": { "itemId": "attachment:gallery-voice-legacy", "conversationId": "conversation-1", "sourceMessageId": "message-gallery-voice-legacy", "senderId": "sender-1", "sourceCreatedAt": "2026-06-28T00:00:00.000Z", "sourceRank": 100, "category": "voice", "kind": "voice", "capabilities": { "canDelete": false, "canExport": true } },
+    "gallery-voice-zero": { "itemId": "attachment:gallery-voice-zero", "conversationId": "conversation-1", "sourceMessageId": "message-gallery-voice-zero", "senderId": "sender-1", "sourceCreatedAt": "2026-06-27T00:00:00.000Z", "sourceRank": 100, "category": "voice", "kind": "voice", "durationMs": 0, "capabilities": { "canDelete": false, "canExport": true } },
+    "gallery-voice-trusted": { "itemId": "attachment:gallery-voice-trusted", "conversationId": "conversation-1", "sourceMessageId": "message-gallery-voice-trusted", "senderId": "sender-1", "sourceCreatedAt": "2026-06-26T00:00:00.000Z", "sourceRank": 100, "category": "voice", "kind": "voice", "durationMs": 90500, "capabilities": { "canDelete": false, "canExport": true } },
+    "gallery-voice-negative": { "itemId": "attachment:gallery-voice-negative", "conversationId": "conversation-1", "sourceMessageId": "message-gallery-voice-negative", "senderId": "sender-1", "sourceCreatedAt": "2026-06-25T00:00:00.000Z", "sourceRank": 100, "category": "voice", "kind": "voice", "durationMs": -1, "capabilities": { "canDelete": false, "canExport": true } },
+    "gallery-voice-fractional": { "itemId": "attachment:gallery-voice-fractional", "conversationId": "conversation-1", "sourceMessageId": "message-gallery-voice-fractional", "senderId": "sender-1", "sourceCreatedAt": "2026-06-24T00:00:00.000Z", "sourceRank": 100, "category": "voice", "kind": "voice", "durationMs": 1.5, "capabilities": { "canDelete": false, "canExport": true } }
+  },
+  "ordering": {
+    "cases": [
+      { "name": "newerSourceTimeFirst", "itemIds": ["row-01", "ord-newer"], "expectedItemIds": ["attachment:newer", "attachment:row-01"] },
+      { "name": "messageIdBreaksEqualTime", "itemIds": ["ord-message-b", "row-01"], "expectedItemIds": ["attachment:row-01", "attachment:z"] },
+      { "name": "rankAndItemIdTie", "itemIds": ["ord-message-b-tie", "ord-message-b"], "expectedItemIds": ["attachment:z", "attachment:A"] },
+      { "name": "strictCodepointOrder", "itemIds": ["ord-codepoint-upper", "ord-codepoint-lower"], "expectedItemIds": ["item:a", "item:A"] }
+    ]
+  },
+  "pagination": {
+    "cases": [
+      { "p_limit": 40, "name": "empty", "rows": [], "pageSize": 40, "expected": { "itemIds": [], "hasMore": false, "cursor": null } },
+      { "p_limit": 40, "name": "lessThanPageSize", "rows": ["row-01", "row-02"], "pageSize": 40, "expected": { "itemIds": ["attachment:row-01", "attachment:row-02"], "hasMore": false, "cursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "message-row-02", "sourceRank": 100, "itemId": "attachment:row-02" } } },
+      { "p_limit": 40, "name": "exactlyForty", "rows": ["row-01", "row-02", "row-03", "row-04", "row-05", "row-06", "row-07", "row-08", "row-09", "row-10", "row-11", "row-12", "row-13", "row-14", "row-15", "row-16", "row-17", "row-18", "row-19", "row-20", "row-21", "row-22", "row-23", "row-24", "row-25", "row-26", "row-27", "row-28", "row-29", "row-30", "row-31", "row-32", "row-33", "row-34", "row-35", "row-36", "row-37", "row-38", "row-39", "row-40"], "pageSize": 40, "expected": { "itemIds": ["attachment:row-01", "attachment:row-02", "attachment:row-03", "attachment:row-04", "attachment:row-05", "attachment:row-06", "attachment:row-07", "attachment:row-08", "attachment:row-09", "attachment:row-10", "attachment:row-11", "attachment:row-12", "attachment:row-13", "attachment:row-14", "attachment:row-15", "attachment:row-16", "attachment:row-17", "attachment:row-18", "attachment:row-19", "attachment:row-20", "attachment:row-21", "attachment:row-22", "attachment:row-23", "attachment:row-24", "attachment:row-25", "attachment:row-26", "attachment:row-27", "attachment:row-28", "attachment:row-29", "attachment:row-30", "attachment:row-31", "attachment:row-32", "attachment:row-33", "attachment:row-34", "attachment:row-35", "attachment:row-36", "attachment:row-37", "attachment:row-38", "attachment:row-39", "attachment:row-40"], "hasMore": false, "cursor": { "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceMessageId": "message-row-40", "sourceRank": 100, "itemId": "attachment:row-40" } } },
+      { "p_limit": 40, "name": "fortyOneUsesOnlySentinel", "rows": ["row-01", "row-02", "row-03", "row-04", "row-05", "row-06", "row-07", "row-08", "row-09", "row-10", "row-11", "row-12", "row-13", "row-14", "row-15", "row-16", "row-17", "row-18", "row-19", "row-20", "row-21", "row-22", "row-23", "row-24", "row-25", "row-26", "row-27", "row-28", "row-29", "row-30", "row-31", "row-32", "row-33", "row-34", "row-35", "row-36", "row-37", "row-38", "row-39", "row-40", "row-41"], "pageSize": 40, "expected": { "itemIds": ["attachment:row-01", "attachment:row-02", "attachment:row-03", "attachment:row-04", "attachment:row-05", "attachment:row-06", "attachment:row-07", "attachment:row-08", "attachment:row-09", "attachment:row-10", "attachment:row-11", "attachment:row-12", "attachment:row-13", "attachment:row-14", "attachment:row-15", "attachment:row-16", "attachment:row-17", "attachment:row-18", "attachment:row-19", "attachment:row-20", "attachment:row-21", "attachment:row-22", "attachment:row-23", "attachment:row-24", "attachment:row-25", "attachment:row-26", "attachment:row-27", "attachment:row-28", "attachment:row-29", "attachment:row-30", "attachment:row-31", "attachment:row-32", "attachment:row-33", "attachment:row-34", "attachment:row-35", "attachment:row-36", "attachment:row-37", "attachment:row-38", "attachment:row-39", "attachment:row-40"], "hasMore": true, "cursor": { "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceMessageId": "message-row-40", "sourceRank": 100, "itemId": "attachment:row-40" } } },
+      { "p_limit": 40, "name": "eightyOneRows", "rows": ["row-01","row-02","row-03","row-04","row-05","row-06","row-07","row-08","row-09","row-10","row-11","row-12","row-13","row-14","row-15","row-16","row-17","row-18","row-19","row-20","row-21","row-22","row-23","row-24","row-25","row-26","row-27","row-28","row-29","row-30","row-31","row-32","row-33","row-34","row-35","row-36","row-37","row-38","row-39","row-40","row-41"], "pageSize": 40, "expected": { "itemIds": ["attachment:row-01", "attachment:row-02", "attachment:row-03", "attachment:row-04", "attachment:row-05", "attachment:row-06", "attachment:row-07", "attachment:row-08", "attachment:row-09", "attachment:row-10", "attachment:row-11", "attachment:row-12", "attachment:row-13", "attachment:row-14", "attachment:row-15", "attachment:row-16", "attachment:row-17", "attachment:row-18", "attachment:row-19", "attachment:row-20", "attachment:row-21", "attachment:row-22", "attachment:row-23", "attachment:row-24", "attachment:row-25", "attachment:row-26", "attachment:row-27", "attachment:row-28", "attachment:row-29", "attachment:row-30", "attachment:row-31", "attachment:row-32", "attachment:row-33", "attachment:row-34", "attachment:row-35", "attachment:row-36", "attachment:row-37", "attachment:row-38", "attachment:row-39", "attachment:row-40"], "hasMore": true, "cursor": { "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceMessageId": "message-row-40", "sourceRank": 100, "itemId": "attachment:row-40" } } },
+      { "p_limit": 40, "name": "overlappingRepeatedPage", "rows": ["row-39", "row-40", "row-41"], "pageSize": 2, "expected": { "itemIds": ["attachment:row-39", "attachment:row-40"], "hasMore": true, "cursor": { "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceMessageId": "message-row-40", "sourceRank": 100, "itemId": "attachment:row-40" } } },
+      { "p_limit": 40, "name": "staleDuplicate", "rows": ["row-40", "row-40", "row-41"], "pageSize": 2, "expected": { "itemIds": ["attachment:row-40"], "hasMore": true, "cursor": { "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceMessageId": "message-row-40", "sourceRank": 100, "itemId": "attachment:row-40" } } },
+      { "p_limit": 40, "name": "newerInsertionPreservesServerOrder", "rows": ["ord-newer", "row-40", "row-41"], "pageSize": 2, "expected": { "itemIds": ["attachment:newer", "attachment:row-40"], "hasMore": true, "cursor": { "sourceCreatedAt": "2026-07-01T00:02:00.000Z", "sourceMessageId": "message-row-40", "sourceRank": 100, "itemId": "attachment:row-40" } } },
+      { "p_limit": 40, "name": "deletedBetweenPagesRemainsServerSequence", "rows": ["row-39", "row-41"], "pageSize": 2, "expected": { "itemIds": ["attachment:row-39", "attachment:row-41"], "hasMore": false, "cursor": { "sourceCreatedAt": "2026-07-01T00:01:00.000Z", "sourceMessageId": "message-row-41", "sourceRank": 100, "itemId": "attachment:row-41" } } }
+    ]
+  },
+  "permissions": {
+    "cases": [
+      { "name": "signedOut", "viewer": "signed-out", "expected": { "canSee": false, "canDelete": false, "canExport": false } },
+      { "name": "member", "viewer": "member", "expected": { "canSee": true, "canDelete": false, "canExport": true } },
+      { "name": "sender", "viewer": "sender", "expected": { "canSee": true, "canDelete": true, "canExport": true } },
+      { "name": "gifStickerExportRightsGate", "viewer": "member", "items": [{ "kind": "gif", "canExport": false }, { "kind": "sticker", "canExport": false }], "expected": { "canExport": false } }
+    ]
+  },
+  "galleryStates": {
+    "cases": [
+      { "name": "loading", "status": "loading" },
+      { "name": "content", "status": "content" },
+      { "name": "empty", "status": "empty" },
+      { "name": "incomplete", "status": "incomplete" },
+      { "name": "staleCached", "status": "stale" },
+      { "name": "unavailable", "status": "unavailable" },
+      { "name": "terminalError", "status": "terminal-error" }
+    ],
+    "galleryProjection": {
+      "cases": [
+        { "name": "loadingWithoutAcceptedCategories", "kind": "projection", "input": { "itemIds": [], "selectedCategory": null, "authority": "loading" }, "expected": { "categories": [], "selectedCategory": null, "showCategoryControl": false, "itemIdsByCategory": {}, "authoritativeEmpty": false } },
+        { "name": "authoritativeEmptyHasNoCategories", "kind": "projection", "input": { "itemIds": [], "selectedCategory": null, "authority": "authoritative" }, "expected": { "categories": [], "selectedCategory": null, "showCategoryControl": false, "itemIdsByCategory": {}, "authoritativeEmpty": true } },
+        { "name": "oneCategoryRemovesCategoryControlSlot", "kind": "projection", "input": { "itemIds": ["row-01", "row-02"], "selectedCategory": null }, "expected": { "categories": ["media"], "selectedCategory": "media", "showCategoryControl": false, "itemIdsByCategory": { "media": ["attachment:row-01", "attachment:row-02"] } } },
+        { "name": "fourCategoriesUseCanonicalOrderAndPreserveItemOrder", "kind": "projection", "input": { "itemIds": ["gallery-voice-legacy", "ord-codepoint-lower", "row-02", "gallery-file", "row-01"], "selectedCategory": null }, "expected": { "categories": ["media", "files", "links", "voice"], "selectedCategory": "media", "showCategoryControl": true, "itemIdsByCategory": { "media": ["attachment:row-02", "attachment:row-01"], "files": ["attachment:gallery-file"], "links": ["item:a"], "voice": ["attachment:gallery-voice-legacy"] } } },
+        { "name": "firstCanonicalCategoryIsSelected", "kind": "projection", "input": { "itemIds": ["gallery-voice-legacy", "gallery-file"], "selectedCategory": null }, "expected": { "categories": ["files", "voice"], "selectedCategory": "files", "showCategoryControl": true, "itemIdsByCategory": { "files": ["attachment:gallery-file"], "voice": ["attachment:gallery-voice-legacy"] } } },
+        { "name": "selectedCategorySurvivesAcceptedCategoryAddition", "kind": "projection", "input": { "itemIds": ["row-01", "gallery-voice-legacy"], "selectedCategory": "voice" }, "expected": { "categories": ["media", "voice"], "selectedCategory": "voice", "showCategoryControl": true, "itemIdsByCategory": { "media": ["attachment:row-01"], "voice": ["attachment:gallery-voice-legacy"] } } },
+        { "name": "removedSelectedCategoryFallsBackCanonically", "kind": "projection", "input": { "itemIds": ["gallery-voice-legacy", "gallery-file"], "selectedCategory": "links" }, "expected": { "categories": ["files", "voice"], "selectedCategory": "files", "showCategoryControl": true, "itemIdsByCategory": { "files": ["attachment:gallery-file"], "voice": ["attachment:gallery-voice-legacy"] } } },
+        { "name": "globalEarlierPageAddsCategoryWithoutSwitching", "kind": "earlierAccepted", "input": { "beforeItemIds": ["row-01"], "appendedItemIds": ["gallery-file"], "selectedCategory": "media", "visibleAnchorItemId": "attachment:row-01" }, "expected": { "categories": ["media", "files"], "selectedCategory": "media", "showCategoryControl": true, "itemIdsByCategory": { "media": ["attachment:row-01"], "files": ["attachment:gallery-file"] }, "visibleAnchorItemId": "attachment:row-01", "requestState": "ready" } },
+        { "name": "duplicateEarlierIntentIsSuppressed", "kind": "earlierIntent", "input": { "itemIds": ["row-01"], "selectedCategory": "media", "visibleAnchorItemId": "attachment:row-01", "requestState": "loading", "intentCount": 2 }, "expected": { "acceptedIntentCount": 0, "requestCount": 1, "selectedCategory": "media", "visibleAnchorItemId": "attachment:row-01", "requestState": "loading" } },
+        { "name": "earlierFailureRetainsItemsSelectionAndAnchor", "kind": "earlierFailure", "input": { "itemIds": ["row-01", "row-02"], "selectedCategory": "media", "visibleAnchorItemId": "attachment:row-02", "requestState": "loading" }, "expected": { "itemIds": ["attachment:row-01", "attachment:row-02"], "selectedCategory": "media", "visibleAnchorItemId": "attachment:row-02", "requestState": "failed", "message": "Earlier content didn't load. Try again." } },
+        { "name": "legacyVoiceDurationUsesExactFallback", "kind": "duration", "input": { "itemId": "gallery-voice-legacy" }, "expected": { "durationMs": null, "label": "Duration unavailable", "accepted": true } },
+        { "name": "zeroVoiceDurationIsValidMetadata", "kind": "duration", "input": { "itemId": "gallery-voice-zero" }, "expected": { "durationMs": 0, "accepted": true } },
+        { "name": "trustedVoiceDurationRemainsExact", "kind": "duration", "input": { "itemId": "gallery-voice-trusted" }, "expected": { "durationMs": 90500, "accepted": true } },
+        { "name": "negativeVoiceDurationIsRejected", "kind": "duration", "input": { "itemId": "gallery-voice-negative" }, "expected": { "accepted": false, "error": "durationMs must be a non-negative integer" } },
+        { "name": "fractionalVoiceDurationIsRejected", "kind": "duration", "input": { "itemId": "gallery-voice-fractional" }, "expected": { "accepted": false, "error": "durationMs must be a non-negative integer" } },
+        { "name": "globalEarlierPageKeepsFortyAndUsesRowFortyOneOnlyAsSentinel", "kind": "paging", "input": { "rowIds": ["row-01", "row-02", "row-03", "row-04", "row-05", "row-06", "row-07", "row-08", "row-09", "row-10", "row-11", "row-12", "row-13", "row-14", "row-15", "row-16", "row-17", "row-18", "row-19", "row-20", "row-21", "row-22", "row-23", "row-24", "row-25", "row-26", "row-27", "row-28", "row-29", "row-30", "row-31", "row-32", "row-33", "row-34", "row-35", "row-36", "row-37", "row-38", "row-39", "row-40", "row-41"], "pageSize": 40 }, "expected": { "retainedCount": 40, "hasMore": true, "lastRetainedItemId": "attachment:row-40", "sentinelItemId": "attachment:row-41", "sentinelRendered": false, "cursorItemId": "attachment:row-40" } }
+      ]
+    }
+  },
+  "identityPurge": {
+    "cases": [
+      {
+        "name": "purgeBeforeExposeNextIdentity",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"], "categories": ["media"], "deliveryReferences": ["delivery-a"], "temporaryReferences": ["temp-a"], "error": "stale-error", "deletedSourceMessageIds": ["message-deleted-a"] },
+        "events": [{ "type": "identityChanged", "identityId": "user-b", "conversationId": "conversation-2" }],
+        "expected": { "identityId": "user-b", "conversationId": "conversation-2", "items": [], "pages": [], "nextCursor": null, "hasMore": false, "pendingPageRequest": null, "categories": [], "deliveryReferences": [], "temporaryReferences": [], "error": null, "deletedSourceMessageIds": [], "status": "loading" }
+      }
+    ]
+  },
+  "deletionFanOut": {
+    "cases": [
+      {
+        "name": "sourceTombstoneRemovesSiblings",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01", "row-02"], "sourceMessageIds": ["shared-source", "shared-source"] },
+        "events": [{ "type": "sourceDeleted", "identityId": "user-a", "conversationId": "conversation-1", "sourceMessageId": "shared-source" }],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [{ "items": [], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-02" } }], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-02" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": ["shared-source"] }
+      },
+      {
+        "name": "stalePageCannotResurrectTombstone",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01", "row-02"], "sourceMessageIds": ["shared-source", "shared-source"] },
+        "events": [{ "type": "sourceDeleted", "identityId": "user-a", "conversationId": "conversation-1", "sourceMessageId": "shared-source" }, { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "legacy-page", "requestedCursor": null, "replace": false }, { "type": "pageLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "legacy-page", "requestedCursor": null, "itemIds": ["row-01", "row-02"], "sourceMessageIds": ["shared-source", "shared-source"] }],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [{ "items": [], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-02" } }], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-02" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "empty", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": ["shared-source"] }
+      },
+      {
+        "name": "realtimeCannotResurrectTombstone",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"], "sourceMessageIds": ["shared-source"] },
+        "events": [{ "type": "sourceDeleted", "identityId": "user-a", "conversationId": "conversation-1", "sourceMessageId": "shared-source" }, { "type": "realtimeItemReceived", "identityId": "user-a", "conversationId": "conversation-1", "itemId": "row-01", "sourceMessageId": "shared-source" }],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [{ "items": [], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-01" } }], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-01" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": ["shared-source"] }
+      },
+      {
+        "name": "repeatedTombstoneIsIdempotent",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"], "sourceMessageIds": ["shared-source"] },
+        "events": [{ "type": "sourceDeleted", "identityId": "user-a", "conversationId": "conversation-1", "sourceMessageId": "shared-source" }, { "type": "sourceDeleted", "identityId": "user-a", "conversationId": "conversation-1", "sourceMessageId": "shared-source" }],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [{ "items": [], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-01" } }], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "shared-source", "sourceRank": 100, "itemId": "attachment:row-01" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": ["shared-source"] }
+      }
+    ]
+  },
+  "requestSequencing": {
+    "cases": [
+      {
+        "name": "mismatchedInitialPageIsWholeEventNoOp",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": [] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "initial-a", "requestedCursor": null, "replace": true },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "initial-a", "requestedCursor": null, "itemIds": ["row-01", "other-row"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [], "nextCursor": null, "hasMore": false, "pendingPageRequest": { "requestId": "initial-a", "requestedCursor": null, "replace": true }, "categories": [], "status": "empty", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "mismatchedAppendPageIsWholeEventNoOp",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "page-a", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "replace": false },
+          { "type": "pageLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "page-a", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "itemIds": ["other-row"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "pages": [{ "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }}], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "hasMore": false, "pendingPageRequest": { "requestId": "page-a", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "replace": false }, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "mismatchedRealtimeItemIsIgnored",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [{ "type": "realtimeItemReceived", "identityId": "user-a", "conversationId": "conversation-1", "itemId": "other-row" }],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "pages": [{ "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }}], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "latestRequestWinsAndConsumesOnce",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "request-a", "requestedCursor": null, "replace": true },
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "request-b", "requestedCursor": null, "replace": true },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "request-a", "requestedCursor": null, "itemIds": ["row-02"] },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "request-b", "requestedCursor": null, "itemIds": ["row-03"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [{ "itemId": "attachment:row-03", "conversationId": "conversation-1", "sourceMessageId": "message-row-03", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:39:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "pages": [{ "items": [{ "itemId": "attachment:row-03", "conversationId": "conversation-1", "sourceMessageId": "message-row-03", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:39:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:39:00.000Z", "sourceMessageId": "message-row-03", "sourceRank": 100, "itemId": "attachment:row-03" }}], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:39:00.000Z", "sourceMessageId": "message-row-03", "sourceRank": 100, "itemId": "attachment:row-03" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "duplicateCompletionCannotRegressTerminalPage",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "terminal", "requestedCursor": null, "replace": true },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "terminal", "requestedCursor": null, "itemIds": [] },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "terminal", "requestedCursor": null, "itemIds": ["row-02"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [{ "items": [], "hasMore": false, "nextCursor": null }], "nextCursor": null, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "empty", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "wrongCursorPreservesPendingRequest",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "cursor-check", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "replace": false },
+          { "type": "pageLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "cursor-check", "requestedCursor": null, "itemIds": ["row-02"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "pages": [{ "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" } }], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "hasMore": false, "pendingPageRequest": { "requestId": "cursor-check", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "replace": false }, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] } },
+      {
+        "name": "wrongReplaceModePreservesPendingRequest",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "mode-check", "requestedCursor": null, "replace": false },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "mode-check", "requestedCursor": null, "itemIds": ["row-02"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "pages": [{ "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }}], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "hasMore": false, "pendingPageRequest": { "requestId": "mode-check", "requestedCursor": null, "replace": false }, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "emptyAppendConsumesTerminalRequest",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "empty-page", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "replace": false },
+          { "type": "pageLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "empty-page", "requestedCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" }, "itemIds": [] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "pages": [{ "items": [{ "itemId": "attachment:row-01", "conversationId": "conversation-1", "sourceMessageId": "message-row-01", "senderId": "sender-1", "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceRank": 100, "category": "media", "kind": "photo", "capabilities": { "canDelete": true, "canExport": true } }], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:41:00.000Z", "sourceMessageId": "message-row-01", "sourceRank": 100, "itemId": "attachment:row-01" } }, { "items": [], "hasMore": false, "nextCursor": null }], "nextCursor": null, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "content", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      },
+      {
+        "name": "tombstoneBetweenRequestAndCompletionWins",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "tombstone-race", "requestedCursor": null, "replace": true },
+          { "type": "sourceDeleted", "identityId": "user-a", "conversationId": "conversation-1", "sourceMessageId": "message-row-02" },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "tombstone-race", "requestedCursor": null, "itemIds": ["row-02"] }
+        ],
+        "expected": { "identityId": "user-a", "conversationId": "conversation-1", "items": [], "pages": [{ "items": [], "hasMore": false, "nextCursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "message-row-02", "sourceRank": 100, "itemId": "attachment:row-02" } }], "nextCursor": { "sourceCreatedAt": "2026-07-01T00:40:00.000Z", "sourceMessageId": "message-row-02", "sourceRank": 100, "itemId": "attachment:row-02" }, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "empty", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": ["message-row-02"] }
+      },
+      {
+        "name": "identityChangePurgesPendingRequest",
+        "initial": { "identityId": "user-a", "conversationId": "conversation-1", "itemIds": ["row-01"] },
+        "events": [
+          { "type": "requestStarted", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "old-owner", "requestedCursor": null, "replace": true },
+          { "type": "identityChanged", "identityId": "user-b", "conversationId": "conversation-2" },
+          { "type": "initialLoaded", "identityId": "user-a", "conversationId": "conversation-1", "requestId": "old-owner", "requestedCursor": null, "itemIds": ["row-02"] }
+        ],
+        "expected": { "identityId": "user-b", "conversationId": "conversation-2", "items": [], "pages": [], "nextCursor": null, "hasMore": false, "pendingPageRequest": null, "categories": [], "status": "loading", "error": null, "deliveryReferences": [], "temporaryReferences": [], "deletedSourceMessageIds": [] }
+      }
+    ]
+  },
+  "cacheHydration": {
+    "cases": [
+      {
+        "name": "verifiedOwnerHydratesExactConversation",
+        "input": { "ownerIdentityId": "user-a", "verifiedIdentityId": "user-a", "conversationId": "conversation-1", "cachedItemIds": ["row-01"], "cacheIdentityGeneration": 7, "currentIdentityGeneration": 7 },
+        "expected": { "eligible": true, "itemIds": ["row-01"], "unavailableReason": "none", "identityIneligible": false }
+      },
+      {
+        "name": "wrongOwnerIsIneligible",
+        "input": { "ownerIdentityId": "user-a", "verifiedIdentityId": "user-b", "conversationId": "conversation-1", "cachedItemIds": ["row-01"], "cacheIdentityGeneration": 7, "currentIdentityGeneration": 7 },
+        "expected": { "eligible": false, "itemIds": [], "unavailableReason": "identity-ineligible", "identityIneligible": true }
+      },
+      {
+        "name": "unresolvedOwnerIsIneligible",
+        "input": { "ownerIdentityId": "user-a", "verifiedIdentityId": null, "conversationId": "conversation-1", "cachedItemIds": ["row-01"], "cacheIdentityGeneration": 7, "currentIdentityGeneration": 7 },
+        "expected": { "eligible": false, "itemIds": [], "unavailableReason": "identity-ineligible", "identityIneligible": true }
+      },
+      {
+        "name": "staleGenerationIsIneligible",
+        "input": { "ownerIdentityId": "user-a", "verifiedIdentityId": "user-a", "conversationId": "conversation-1", "cachedItemIds": ["row-01"], "cacheIdentityGeneration": 6, "currentIdentityGeneration": 7 },
+        "expected": { "eligible": false, "itemIds": [], "unavailableReason": "identity-ineligible", "identityIneligible": true }
+      }
+    ]
+  },
+  "cacheTruth": {
+    "cases": [
+      {
+        "name": "cachedStaleIncompleteIsOrthogonal",
+        "input": { "source": "verified-device-cache", "hasCache": true, "stale": true, "retainedHistoryComplete": false, "networkUsable": true, "authoritativeEmptyConfirmed": false },
+        "expected": { "source": "verified-device-cache", "stale": true, "retainedHistoryComplete": false, "notice": "stale", "boundary": "online-incomplete", "unavailableReason": "none", "manualRetry": "hidden" }
+      },
+      {
+        "name": "offlineCacheRemainsBrowsable",
+        "input": { "source": "verified-device-cache", "hasCache": true, "stale": false, "retainedHistoryComplete": true, "networkUsable": false, "authoritativeEmptyConfirmed": false },
+        "expected": { "source": "verified-device-cache", "stale": false, "retainedHistoryComplete": true, "notice": "offline-cached", "boundary": "none", "unavailableReason": "none", "manualRetry": "hidden" }
+      },
+      {
+        "name": "offlineWithoutCacheIsUnavailable",
+        "input": { "source": "none", "hasCache": false, "stale": false, "retainedHistoryComplete": true, "networkUsable": false, "authoritativeEmptyConfirmed": false },
+        "expected": { "source": "none", "stale": false, "retainedHistoryComplete": true, "notice": "none", "boundary": "none", "unavailableReason": "offline-no-cache", "manualRetry": "hidden" }
+      },
+      {
+        "name": "authoritativeEmptyIsNotUnavailable",
+        "input": { "source": "authoritative", "hasCache": false, "stale": false, "retainedHistoryComplete": true, "networkUsable": true, "authoritativeEmptyConfirmed": true },
+        "expected": { "source": "authoritative", "stale": false, "retainedHistoryComplete": true, "notice": "none", "boundary": "none", "unavailableReason": "authoritative-empty", "manualRetry": "hidden" }
+      }
+    ]
+  },
+  "eviction": {
+    "cases": [
+      {
+        "name": "newestWindowIsProtected",
+        "input": { "newestProtectedCount": 40, "perConversationItemCount": 401, "activeConversation": true },
+        "expected": { "newestProtectedCount": 40, "perConversationLimit": 400, "evictedItemIds": ["browsed-oldest"], "retainedNewestWindow": true }
+      },
+      {
+        "name": "oldBrowsedPageEvictsBeforeNewestMetadata",
+        "input": { "pages": [{ "pageId": "newest", "lastAccessedAt": "2026-07-23T00:00:00.000Z", "kind": "newest-window" }, { "pageId": "oldest", "lastAccessedAt": "2026-06-01T00:00:00.000Z", "kind": "browsed" }], "perConversationLimit": 400 },
+        "expected": { "evictPageIds": ["oldest"], "preservePageIds": ["newest"] }
+      },
+      {
+        "name": "thumbnailLruUsesByteAndInactivityLimits",
+        "input": { "thumbnailBytes": 67108865, "lastDisplayedAt": "2026-06-01T00:00:00.000Z", "now": "2026-07-23T00:00:00.000Z" },
+        "expected": { "perAccountByteLimit": 67108864, "inactivityWindowMs": 2592000000, "evictLeastRecentFirst": true }
+      }
+    ]
+  },
+  "recovery": {
+    "cases": [
+      {
+        "name": "triggerBurstJoinsOneCycle",
+        "input": { "cycleId": null, "triggers": ["gallery-open", "meaningful-foreground", "reconnect", "realtime"], "networkUsable": true },
+        "expected": { "cycleId": "cycle-1", "phase": "refreshing", "attempt": 0, "joinedTriggerCount": 4, "automaticAttempts": [0] }
+      },
+      {
+        "name": "attemptZeroFailureSchedulesAttemptOne",
+        "input": { "cycleId": "cycle-1", "phase": "refreshing", "attempt": 0, "networkUsable": true, "jitterMs": 0 },
+        "expected": { "cycleId": "cycle-1", "phase": "retry-backoff", "attempt": 1, "retryDelayMs": 1000, "manualRetry": "hidden" }
+      },
+      {
+        "name": "attemptOneFailureEnablesManualRetry",
+        "input": { "cycleId": "cycle-1", "phase": "retry-backoff", "attempt": 1, "networkUsable": true },
+        "expected": { "cycleId": "cycle-1", "phase": "manual-retry", "attempt": 1, "automaticAttempts": [0, 1], "manualRetry": "enabled", "automaticAttemptTwo": false }
+      },
+      {
+        "name": "connectivityLossCancelsDelayedRetry",
+        "input": { "cycleId": "cycle-1", "phase": "retry-backoff", "attempt": 1, "networkUsable": false },
+        "expected": { "cycleId": "cycle-1", "phase": "idle", "attempt": 1, "manualRetry": "hidden", "retryScheduled": false }
+      },
+      {
+        "name": "manualRetryStartsNewCycle",
+        "input": { "cycleId": "cycle-1", "phase": "manual-retry", "attempt": 1, "networkUsable": true, "trigger": "manual-retry" },
+        "expected": { "cycleId": "cycle-2", "phase": "refreshing", "attempt": 0, "manualRetry": "hidden", "automaticAttempts": [0] }
+      }
+    ]
+  },
+  "deliveryPlanning": {
+    "cases": [
+      {
+        "name": "oneVisibleIdUsesVisibleIntent",
+        "input": { "visibleIds": ["content-01"], "lookaheadIds": [], "selectedIds": [], "lookaheadAllowed": true },
+        "expected": { "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01"] }] }
+      },
+      {
+        "name": "fortyNineVisibleIdsStayInOneBatch",
+        "input": { "visibleIds": ["content-01", "content-02", "content-03", "content-04", "content-05", "content-06", "content-07", "content-08", "content-09", "content-10", "content-11", "content-12", "content-13", "content-14", "content-15", "content-16", "content-17", "content-18", "content-19", "content-20", "content-21", "content-22", "content-23", "content-24", "content-25", "content-26", "content-27", "content-28", "content-29", "content-30", "content-31", "content-32", "content-33", "content-34", "content-35", "content-36", "content-37", "content-38", "content-39", "content-40", "content-41", "content-42", "content-43", "content-44", "content-45", "content-46", "content-47", "content-48", "content-49"], "lookaheadIds": [], "selectedIds": [], "lookaheadAllowed": true },
+        "expected": { "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01", "content-02", "content-03", "content-04", "content-05", "content-06", "content-07", "content-08", "content-09", "content-10", "content-11", "content-12", "content-13", "content-14", "content-15", "content-16", "content-17", "content-18", "content-19", "content-20", "content-21", "content-22", "content-23", "content-24", "content-25", "content-26", "content-27", "content-28", "content-29", "content-30", "content-31", "content-32", "content-33", "content-34", "content-35", "content-36", "content-37", "content-38", "content-39", "content-40", "content-41", "content-42", "content-43", "content-44", "content-45", "content-46", "content-47", "content-48", "content-49"] }] }
+      },
+      {
+        "name": "fiftyVisibleIdsStayInOneBatch",
+        "input": { "visibleIds": ["content-01", "content-02", "content-03", "content-04", "content-05", "content-06", "content-07", "content-08", "content-09", "content-10", "content-11", "content-12", "content-13", "content-14", "content-15", "content-16", "content-17", "content-18", "content-19", "content-20", "content-21", "content-22", "content-23", "content-24", "content-25", "content-26", "content-27", "content-28", "content-29", "content-30", "content-31", "content-32", "content-33", "content-34", "content-35", "content-36", "content-37", "content-38", "content-39", "content-40", "content-41", "content-42", "content-43", "content-44", "content-45", "content-46", "content-47", "content-48", "content-49", "content-50"], "lookaheadIds": [], "selectedIds": [], "lookaheadAllowed": true },
+        "expected": { "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01", "content-02", "content-03", "content-04", "content-05", "content-06", "content-07", "content-08", "content-09", "content-10", "content-11", "content-12", "content-13", "content-14", "content-15", "content-16", "content-17", "content-18", "content-19", "content-20", "content-21", "content-22", "content-23", "content-24", "content-25", "content-26", "content-27", "content-28", "content-29", "content-30", "content-31", "content-32", "content-33", "content-34", "content-35", "content-36", "content-37", "content-38", "content-39", "content-40", "content-41", "content-42", "content-43", "content-44", "content-45", "content-46", "content-47", "content-48", "content-49", "content-50"] }] }
+      },
+      {
+        "name": "fiftyOneVisibleIdsChunkAtFifty",
+        "input": { "visibleIds": ["content-01", "content-02", "content-03", "content-04", "content-05", "content-06", "content-07", "content-08", "content-09", "content-10", "content-11", "content-12", "content-13", "content-14", "content-15", "content-16", "content-17", "content-18", "content-19", "content-20", "content-21", "content-22", "content-23", "content-24", "content-25", "content-26", "content-27", "content-28", "content-29", "content-30", "content-31", "content-32", "content-33", "content-34", "content-35", "content-36", "content-37", "content-38", "content-39", "content-40", "content-41", "content-42", "content-43", "content-44", "content-45", "content-46", "content-47", "content-48", "content-49", "content-50", "content-51"], "lookaheadIds": [], "selectedIds": [], "lookaheadAllowed": true },
+        "expected": { "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01", "content-02", "content-03", "content-04", "content-05", "content-06", "content-07", "content-08", "content-09", "content-10", "content-11", "content-12", "content-13", "content-14", "content-15", "content-16", "content-17", "content-18", "content-19", "content-20", "content-21", "content-22", "content-23", "content-24", "content-25", "content-26", "content-27", "content-28", "content-29", "content-30", "content-31", "content-32", "content-33", "content-34", "content-35", "content-36", "content-37", "content-38", "content-39", "content-40", "content-41", "content-42", "content-43", "content-44", "content-45", "content-46", "content-47", "content-48", "content-49", "content-50"] }, { "intent": "visible-thumbnail", "ids": ["content-51"] }] }
+      },
+      {
+        "name": "intentClassesDeduplicateWithinPriority",
+        "input": { "visibleIds": ["content-01", "content-02", "content-02"], "lookaheadIds": ["content-03", "content-03"], "selectedIds": ["content-04", "content-04"], "lookaheadAllowed": true },
+        "expected": { "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01", "content-02"] }, { "intent": "lookahead-thumbnail", "ids": ["content-03"] }, { "intent": "selected-full-content", "ids": ["content-04"] }] }
+      }
+    ]
+  },
+  "dataSaving": {
+    "cases": [
+      {
+        "name": "usableUnconstrainedLoadsVisibleAndLookahead",
+        "input": { "visibleIds": ["content-01"], "lookaheadIds": ["content-02"], "selectedIds": [], "lookaheadAllowed": true },
+        "expected": { "lookaheadAllowed": true, "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01"] }, { "intent": "lookahead-thumbnail", "ids": ["content-02"] }] }
+      },
+      {
+        "name": "dataSavingKeepsVisibleAndSuppressesLookahead",
+        "input": { "visibleIds": ["content-01"], "lookaheadIds": ["content-02"], "selectedIds": [], "lookaheadAllowed": false },
+        "expected": { "lookaheadAllowed": false, "batches": [{ "intent": "visible-thumbnail", "ids": ["content-01"] }] }
+      }
+    ]
+  },
+  "urlNonPersistence": {
+    "cases": [
+      {
+        "name": "signedSentinelExistsOnlyInLiveInput",
+        "input": { "deliveryUrl": "https://signed.example.test/item?token=FISH_TEST_SIGNED_TOKEN_ONLY_MEMORY", "deliveryToken": "FISH_TEST_SIGNED_TOKEN_ONLY_MEMORY", "itemId": "content-01" },
+        "expected": { "persistedSnapshot": { "itemId": "content-01" }, "diagnostics": { "operation": "delivery-refresh", "outcome": "success", "failureCategory": null }, "sentinelDurableCount": 0 }
+      },
+      {
+        "name": "refreshDisplayRetryPurgeRedactsSentinel",
+        "input": { "deliveryUrl": "https://signed.example.test/item?token=FISH_TEST_SIGNED_TOKEN_ONLY_MEMORY", "phases": ["refresh", "display", "retry", "purge"] },
+        "expected": { "persistedFields": [], "diagnosticFields": ["operation", "outcome", "durationMs", "failureCategory"], "sentinelDurableCount": 0 }
+      }
+    ]
+  },
+  "identityGeneration": {
+    "cases": [
+      {
+        "name": "staleGenerationCallbackIsRejected",
+        "input": { "currentOwner": "user-b", "currentConversation": "conversation-2", "currentGeneration": 2, "callbackOwner": "user-a", "callbackConversation": "conversation-1", "callbackGeneration": 1 },
+        "expected": { "accepted": false, "visibleItemIds": [], "oldOwnerEligible": false }
+      },
+      {
+        "name": "identityChangePurgesBeforeBindingNewOwner",
+        "input": { "fromOwner": "user-a", "toOwner": "user-b", "fromGeneration": 1, "toGeneration": 2, "purgeLayers": ["metadata", "thumbnails", "delivery-memory", "decoded-memory", "temporary-files"] },
+        "expected": { "order": ["revoke-generation", "hide-old-state", "cancel-work", "purge-layers", "verify-purge", "bind-new-owner"], "oldOwnerVisible": false, "newOwnerAccepted": true }
+      },
+      {
+        "name": "missingIdentityFailsClosed",
+        "input": { "currentOwner": null, "currentConversation": "conversation-1", "currentGeneration": 3, "cachedOwner": "user-a", "cachedGeneration": 2 },
+        "expected": { "accepted": false, "visibleItemIds": [], "unavailableReason": "identity-ineligible", "oldOwnerEligible": false }
+      }
+    ]
+  }
+}
