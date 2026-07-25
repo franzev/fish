@@ -15,30 +15,46 @@ export type ConversationMuteRow = {
   muted_until: string | null;
 };
 
+export type QuietPartition = {
+  /** Gets the full alerting push. */
+  notified: string[];
+  /** Gets a badge-only push, so the count stays right without a banner. */
+  quiet: string[];
+};
+
 /**
- * Drops recipients whose quiet period for this conversation is still in force.
- * A row with a null `muted_until` stays quiet until the member turns it back
- * on; any other row stops applying once its timestamp passes, which is why
- * expired rows never need sweeping.
+ * Splits recipients by whether their quiet period for this conversation is
+ * still in force. A row with a null `muted_until` stays quiet until the member
+ * turns it back on; any other row stops applying once its timestamp passes,
+ * which is why expired rows never need sweeping.
+ *
+ * One pass produces both halves, so the two lists can never disagree about a
+ * recipient or drop one between them.
  */
-export function unmutedRecipients(
+export function partitionByQuiet(
   recipientIds: string[],
   mutes: ConversationMuteRow[],
   now: Date,
-): string[] {
-  if (mutes.length === 0) return recipientIds;
-
-  const quiet = new Set(
+): QuietPartition {
+  const silenced = new Set(
     mutes
       .filter((mute) => {
         if (mute.muted_until === null) return true;
         const until = new Date(mute.muted_until);
+        // An unreadable timestamp notifies rather than silences: a stuck quiet
+        // period is worse than one extra alert.
         return !Number.isNaN(until.getTime()) && until > now;
       })
       .map((mute) => mute.user_id),
   );
 
-  return quiet.size === 0
-    ? recipientIds
-    : recipientIds.filter((recipientId) => !quiet.has(recipientId));
+  const partition: QuietPartition = { notified: [], quiet: [] };
+  for (const recipientId of recipientIds) {
+    if (silenced.has(recipientId)) {
+      partition.quiet.push(recipientId);
+    } else {
+      partition.notified.push(recipientId);
+    }
+  }
+  return partition;
 }

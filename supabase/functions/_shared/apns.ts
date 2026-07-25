@@ -17,6 +17,11 @@ export type DirectMessageApnsPush = {
   unreadCountByUser?: Record<string, number>;
 };
 
+export type QuietBadgeApnsPush = {
+  recipientIds: string[];
+  unreadCountByUser?: Record<string, number>;
+};
+
 export type VoipCallApnsPush = {
   callId: string;
   kind: "audio" | "video";
@@ -74,12 +79,19 @@ function shouldRevoke(status: number, payload: unknown): boolean {
   return reason === "BadDeviceToken" || reason === "Unregistered";
 }
 
-export async function dispatchDirectMessageApns(
+/**
+ * Sends one payload per standard (non-VoIP) iOS device, sharing the provider
+ * token, the staleness sweep, the retry and the revoke handling. A `body` that
+ * returns null skips that device.
+ */
+async function dispatchStandardIosApns(
   admin: SupabaseClient,
-  push: DirectMessageApnsPush,
+  recipientIds: string[],
+  priority: "5" | "10",
+  body: (userId: string | undefined) => Record<string, unknown> | null,
 ): Promise<void> {
   const config = credentials();
-  if (!config || push.recipientIds.length === 0) return;
+  if (!config || recipientIds.length === 0) return;
   const bearer = await providerToken(config);
   if (!bearer) return;
 
@@ -96,7 +108,7 @@ export async function dispatchDirectMessageApns(
     .lt("last_seen_at", staleBefore);
   const { data: devices, error } = await admin.from("push_devices")
     .select("id, user_id, provider_installation_id")
-    .in("user_id", push.recipientIds)
+    .in("user_id", recipientIds)
     .eq("platform", "ios")
     .eq("push_kind", "standard")
     .is("revoked_at", null);
@@ -105,33 +117,18 @@ export async function dispatchDirectMessageApns(
   await Promise.all(
     devices.map(
       async (device: { id: string; provider_installation_id: string; user_id?: string }) => {
-        const body = JSON.stringify({
-          aps: {
-            alert: {
-              title: push.senderName,
-              body: "New message",
-            },
-            sound: "default",
-            category: "fish.message",
-            ...(device.user_id && push.unreadCountByUser
-              ? { badge: Math.max(0, push.unreadCountByUser[device.user_id] ?? 0) }
-              : {}),
-            "thread-id": `fish-message-${push.conversationId}`,
-          },
-          type: "chat_message",
-          conversationId: push.conversationId,
-          messageId: push.messageId,
-        });
+        const payload = body(device.user_id);
+        if (!payload) return;
         const request = {
           method: "POST",
           headers: {
             authorization: `bearer ${bearer}`,
             "apns-topic": config.topic,
             "apns-push-type": "alert",
-            "apns-priority": "10",
+            "apns-priority": priority,
             "content-type": "application/json",
           },
-          body,
+          body: JSON.stringify(payload),
         };
         const url = `${
           config.endpoint.replace(/\/$/, "")
@@ -144,8 +141,8 @@ export async function dispatchDirectMessageApns(
           response = await fetch(url, request);
         }
         if (response.ok) return;
-        const payload = await response.json().catch(() => null);
-        if (shouldRevoke(response.status, payload)) {
+        const errorPayload = await response.json().catch(() => null);
+        if (shouldRevoke(response.status, errorPayload)) {
           await admin.from("push_devices")
             .update({
               revoked_at: new Date().toISOString(),
@@ -156,6 +153,55 @@ export async function dispatchDirectMessageApns(
       },
     ),
   );
+}
+
+export async function dispatchDirectMessageApns(
+  admin: SupabaseClient,
+  push: DirectMessageApnsPush,
+): Promise<void> {
+  await dispatchStandardIosApns(admin, push.recipientIds, "10", (userId) => ({
+    aps: {
+      alert: {
+        title: push.senderName,
+        body: "New message",
+      },
+      sound: "default",
+      category: "fish.message",
+      ...(userId && push.unreadCountByUser
+        ? { badge: Math.max(0, push.unreadCountByUser[userId] ?? 0) }
+        : {}),
+      "thread-id": `fish-message-${push.conversationId}`,
+    },
+    type: "chat_message",
+    conversationId: push.conversationId,
+    messageId: push.messageId,
+  }));
+}
+
+/**
+ * Keeps the home-screen badge honest for a conversation the member has
+ * silenced. Carrying only `badge` — no alert, no sound — means iOS updates the
+ * count without a banner, a lock-screen entry or a noise.
+ *
+ * This is deliberately not a `content-available` background push: the app does
+ * not declare the `remote-notification` background mode, and background pushes
+ * are throttled best-effort, so the count would drift anyway. A badge-only
+ * push needs no app-side handling and is delivered like any other alert.
+ *
+ * Priority 5 because a silenced conversation's count is never urgent; it lets
+ * iOS group the delivery with other traffic instead of waking the radio.
+ */
+export async function dispatchQuietBadgeApns(
+  admin: SupabaseClient,
+  push: QuietBadgeApnsPush,
+): Promise<void> {
+  await dispatchStandardIosApns(admin, push.recipientIds, "5", (userId) => {
+    const count = userId ? push.unreadCountByUser?.[userId] : undefined;
+    // With no count there is nothing to say. Sending 0 here would clear a
+    // badge that other conversations may still be contributing to.
+    if (typeof count !== "number") return null;
+    return { aps: { badge: Math.max(0, count) } };
+  });
 }
 
 function voipExpiration(expiresAt: string): string {

@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.0";
-import { dispatchDirectMessageApns, dispatchVoipCallApns } from "./apns.ts";
+import {
+  dispatchDirectMessageApns,
+  dispatchQuietBadgeApns,
+  dispatchVoipCallApns,
+} from "./apns.ts";
+import type { QuietPartition } from "./conversation-mute.ts";
 
 type ServiceAccount = {
   project_id: string;
@@ -22,7 +27,17 @@ export type DirectMessagePush = {
   messageId: string;
   senderId: string;
   senderName: string;
-  recipientIds: string[];
+  /**
+   * The two halves arrive as one partition rather than as two independent
+   * lists, so a silenced recipient cannot be handed to an alerting dispatch by
+   * a caller that builds the lists separately.
+   *
+   * `quiet` gets a badge-only push on iOS so the count stays right. Android
+   * needs nothing for it: its badge rides on the notification, so no
+   * notification means no badge, which is what a silenced conversation should
+   * already look like.
+   */
+  recipients: QuietPartition;
   unreadCountByUser?: Record<string, number>;
 };
 
@@ -152,8 +167,11 @@ export async function dispatchDirectMessagePush(
   admin: SupabaseClient,
   push: DirectMessagePush,
 ): Promise<void> {
+  const { notified, quiet } = push.recipients;
   await Promise.all([
-    ...push.recipientIds.map((recipientId) => dispatchAndroidDataPush(admin, {
+    // Everything that alerts reads `notified`; only the badge push reads
+    // `quiet`. Nothing else in this function touches either list.
+    ...notified.map((recipientId) => dispatchAndroidDataPush(admin, {
       recipientIds: [recipientId],
       data: {
         version: "1",
@@ -172,7 +190,11 @@ export async function dispatchDirectMessagePush(
       conversationId: push.conversationId,
       messageId: push.messageId,
       senderName: push.senderName,
-      recipientIds: push.recipientIds,
+      recipientIds: notified,
+      unreadCountByUser: push.unreadCountByUser,
+    }),
+    dispatchQuietBadgeApns(admin, {
+      recipientIds: quiet,
       unreadCountByUser: push.unreadCountByUser,
     }),
   ]);

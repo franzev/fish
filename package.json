@@ -58,6 +58,7 @@
     "verify:push-devices": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-push-devices.ts",
     "verify:voip-contract": "node scripts/verify-voip-push-contract.mjs",
     "verify:conversation-mute": "node --test supabase/functions/_shared/conversation-mute.test.ts",
+    "verify:quiet-push": "node scripts/verify-quiet-push-contract.mjs",
     "verify:bookings": "pnpm seed && node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-bookings.ts",
     "verify:friends": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-friends.ts",
     "verify:notifications": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/verify-notifications.ts",

@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.110.0";
 import {
   type ConversationMuteRow,
-  unmutedRecipients,
+  partitionByQuiet,
 } from "../_shared/conversation-mute.ts";
 import {
   dispatchDirectMessagePush,
@@ -156,18 +156,21 @@ async function dispatchMessagePush(input: {
     ]);
   if (!conversation || channel) return;
 
+  const members = [conversation.client_id, conversation.coach_id]
+    .filter((id): id is string => typeof id === "string" && id !== input.senderId);
+  if (members.length === 0) return;
+
   // Quiet is a push-only preference: the message still lands, still counts as
-  // unread, and still arrives over realtime. Only the alert is withheld.
-  const recipientIds = unmutedRecipients(
-    [conversation.client_id, conversation.coach_id]
-      .filter((id): id is string => typeof id === "string" && id !== input.senderId),
+  // unread, and still arrives over realtime. Only the alert is withheld -- a
+  // silenced recipient still gets a badge-only push so their count stays right.
+  const recipients = partitionByQuiet(
+    members,
     (mutes ?? []) as ConversationMuteRow[],
     new Date(),
   );
-  if (recipientIds.length === 0) return;
 
   const unreadCountEntries = await Promise.all(
-    recipientIds.map(async (recipientId) => {
+    members.map(async (recipientId) => {
       const { data } = await admin.rpc("get_mobile_unread_count", {
         p_user_id: recipientId,
       });
@@ -182,7 +185,7 @@ async function dispatchMessagePush(input: {
     senderName: typeof sender?.display_name === "string" && sender.display_name.trim()
       ? sender.display_name.trim()
       : "Someone in FISH",
-    recipientIds,
+    recipients,
     unreadCountByUser: Object.fromEntries(unreadCountEntries),
   };
   await dispatchDirectMessagePush(admin, push);
