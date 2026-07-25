@@ -1129,7 +1129,7 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
-      "propsBreak": "feature-gap",
+      "propsBreak": "platform-idiom",
       "namingBreak": "android-material-collision"
     },
     {
@@ -2775,7 +2775,7 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
-      "propsBreak": "feature-gap"
+      "propsBreak": "state-bundling"
     },
     {
       "name": "StickerPanel",
