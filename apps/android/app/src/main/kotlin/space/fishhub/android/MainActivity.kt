@@ -483,12 +483,12 @@ class MainActivity : ComponentActivity() {
                         },
                         onSharedContentAction = ::performSharedContentAction,
                         appearance = appPreferences.theme.toAccountSettingsTheme(),
-                        accessibility = appPreferences.motion.toAccountSettingsMotion(),
+                        motion = appPreferences.motion.toAccountSettingsMotion(),
                         notificationStatus = currentNotificationStatus,
                         canRequestNotifications = currentCanRequestNotifications,
                         settingsNotice = settingsNotice,
                         onClearSettingsNotice = { preferenceNotice.value = null },
-                        onAppearanceSelected = { selected ->
+                        onSetAppearance = { selected ->
                             lifecycleScope.launch {
                                 if (!fishApplication.appPreferenceStore.setTheme(
                                         selected.toAppThemePreference(),
@@ -499,7 +499,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
-                        onAccessibilitySelected = { selected ->
+                        onSetMotion = { selected ->
                             lifecycleScope.launch {
                                 if (!fishApplication.appPreferenceStore.setMotion(
                                         selected.toAppMotionPreference(),
@@ -511,7 +511,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onAllowNotifications = ::requestNotificationPermission,
-                        onOpenNotifications = ::openNotificationSettings,
+                        onOpenNotificationSettings = ::openNotificationSettings,
                         onOpenPasswordRecovery = {
                             openExternalWebPage("/forgot-password", R.string.password_help_unavailable)
                         },

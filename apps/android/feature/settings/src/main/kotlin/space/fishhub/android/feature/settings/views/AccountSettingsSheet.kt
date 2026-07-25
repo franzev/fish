@@ -53,20 +53,20 @@ fun AccountSettingsSheet(
     notificationStatus: AccountSettingsNotificationStatus = AccountSettingsNotificationStatus.Off,
     canRequestNotifications: Boolean = false,
     appearance: AccountSettingsTheme = AccountSettingsTheme.System,
-    accessibility: AccountSettingsMotion = AccountSettingsMotion.System,
+    motion: AccountSettingsMotion = AccountSettingsMotion.System,
     canManageBlockedPeople: Boolean = false,
     notice: String? = null,
     onDismiss: () -> Unit,
     onSetPresence: (AccountSettingsPresenceVisibility, AccountSettingsPresenceDuration) -> Unit,
     onClearPresenceNotice: () -> Unit,
-    onOpenNotifications: () -> Unit = {},
+    onOpenNotificationSettings: () -> Unit = {},
     onAllowNotifications: () -> Unit = {},
     blockedPeopleState: AccountSettingsBlockedPeopleState = AccountSettingsBlockedPeopleState.Hidden,
     onLoadBlockedPeople: () -> Unit = {},
-    onUnblockBlockedPerson: (String) -> Unit = {},
+    onUnblock: (String) -> Unit = {},
     onOpenPrivacyPolicy: () -> Unit = {},
-    onAppearanceSelected: (AccountSettingsTheme) -> Unit = {},
-    onAccessibilitySelected: (AccountSettingsMotion) -> Unit = {},
+    onSetAppearance: (AccountSettingsTheme) -> Unit = {},
+    onSetMotion: (AccountSettingsMotion) -> Unit = {},
     onResetPassword: () -> Unit = {},
     onClearNotice: () -> Unit = {},
     onSignOut: () -> Unit,
@@ -155,7 +155,7 @@ fun AccountSettingsSheet(
                     presence = presence,
                     notificationStatus = notificationStatus,
                     appearance = appearance,
-                    accessibility = accessibility,
+                    motion = motion,
                     onNotifications = { page = AccountSettingsPage.Notifications },
                     onPrivacy = { page = AccountSettingsPage.Privacy },
                     onAppearance = { page = AccountSettingsPage.Appearance },
@@ -167,7 +167,7 @@ fun AccountSettingsSheet(
                     status = notificationStatus,
                     canRequest = canRequestNotifications,
                     onAllow = onAllowNotifications,
-                    onOpenSettings = onOpenNotifications,
+                    onOpenSettings = onOpenNotificationSettings,
                 )
                 AccountSettingsPage.Privacy -> PrivacyPage(
                     canManageBlockedPeople = canManageBlockedPeople,
@@ -182,7 +182,7 @@ fun AccountSettingsSheet(
                 AccountSettingsPage.BlockedPeople -> BlockedPeoplePage(
                     state = blockedPeopleState,
                     onRetry = onLoadBlockedPeople,
-                    onUnblock = onUnblockBlockedPerson,
+                    onUnblock = onUnblock,
                 )
                 AccountSettingsPage.PresenceVisibility -> PresenceVisibilityPage(
                     selected = presence.visibility,
@@ -205,11 +205,11 @@ fun AccountSettingsSheet(
                 )
                 AccountSettingsPage.Appearance -> AppearancePage(
                     selected = appearance,
-                    onSelected = onAppearanceSelected,
+                    onSelected = onSetAppearance,
                 )
                 AccountSettingsPage.Accessibility -> AccessibilityPage(
-                    selected = accessibility,
-                    onSelected = onAccessibilitySelected,
+                    selected = motion,
+                    onSelected = onSetMotion,
                 )
             }
         }

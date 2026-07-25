@@ -33,7 +33,7 @@ internal fun AccountPage(
     presence: AccountSettingsPresence,
     notificationStatus: AccountSettingsNotificationStatus,
     appearance: AccountSettingsTheme,
-    accessibility: AccountSettingsMotion,
+    motion: AccountSettingsMotion,
     onNotifications: () -> Unit,
     onPrivacy: () -> Unit,
     onAppearance: () -> Unit,
@@ -82,7 +82,7 @@ internal fun AccountPage(
     )
     SettingsRow(
         label = stringResource(R.string.accessibility),
-        trailing = accessibility.label(),
+        trailing = motion.label(),
         onClick = onAccessibility,
     )
     SettingsRow(

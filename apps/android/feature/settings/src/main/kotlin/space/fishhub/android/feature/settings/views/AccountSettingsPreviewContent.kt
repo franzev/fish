@@ -66,7 +66,7 @@ internal fun AccountSettingsPreviewContent(
                 presence = presence,
                 notificationStatus = AccountSettingsNotificationStatus.Off,
                 appearance = AccountSettingsTheme.System,
-                accessibility = AccountSettingsMotion.System,
+                motion = AccountSettingsMotion.System,
                 onNotifications = {},
                 onPrivacy = {},
                 onAppearance = {},
