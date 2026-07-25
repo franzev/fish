@@ -92,6 +92,8 @@ private struct ConversationPreviewWire: Decodable {
     let latestMessageText: String?
     let latestMessageCreatedAt: String?
     let unreadCount: Int
+    let muted: Bool?
+    let mutedUntil: String?
 
     enum CodingKeys: String, CodingKey {
         case conversationId = "conversation_id"
@@ -102,6 +104,8 @@ private struct ConversationPreviewWire: Decodable {
         case latestMessageText = "latest_message_text"
         case latestMessageCreatedAt = "latest_message_created_at"
         case unreadCount = "unread_count"
+        case muted
+        case mutedUntil = "muted_until"
     }
 
     var domain: ChatConversationPreview {
@@ -113,7 +117,11 @@ private struct ConversationPreviewWire: Decodable {
             latestMessageSenderId: latestMessageSenderId,
             latestMessageText: latestMessageText ?? "",
             latestMessageCreatedAt: ChatTimestamp.date(latestMessageCreatedAt),
-            unreadCount: unreadCount
+            unreadCount: unreadCount,
+            mute: ConversationMute(
+                isMuted: muted ?? false,
+                mutedUntil: ChatTimestamp.date(mutedUntil)
+            )
         )
     }
 }

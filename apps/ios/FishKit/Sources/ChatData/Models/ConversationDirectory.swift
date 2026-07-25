@@ -11,6 +11,9 @@ public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
     public let latestMessageCreatedAt: Date?
     public let unreadCount: Int
     public let hasDraft: Bool
+    /// Quiet silences the alert, never the count: `unreadCount` stands whether
+    /// or not this conversation is quiet.
+    public let mute: ConversationMute
 
     public init(
         conversationId: String,
@@ -21,8 +24,10 @@ public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
         latestMessageText: String,
         latestMessageCreatedAt: Date?,
         unreadCount: Int,
-        hasDraft: Bool = false
+        hasDraft: Bool = false,
+        mute: ConversationMute = .on
     ) {
+        self.mute = mute
         self.conversationId = conversationId
         self.participantId = participantId
         self.participantRole = participantRole

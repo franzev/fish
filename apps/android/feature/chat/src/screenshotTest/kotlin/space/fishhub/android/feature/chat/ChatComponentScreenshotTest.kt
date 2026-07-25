@@ -14,6 +14,7 @@ import java.time.Instant
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.chat.ConversationMute
 import space.fishhub.android.feature.chat.views.ConversationQuietRow
+import space.fishhub.android.feature.chat.views.ConversationRow
 import space.fishhub.android.feature.chat.sharedcontent.ShowEarlierBoundary
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentUnavailableState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGallerySkeleton
@@ -443,4 +444,45 @@ fun ConversationQuietOptionsLightScreenshot() {
 @Composable
 fun ConversationQuietOptionsDarkScreenshot() {
     ComponentStrip(darkTheme = true) { ConversationQuietOptionStates() }
+}
+
+@Composable
+private fun ConversationRowStates() {
+    ConversationRow(
+        name = "Sam Rivera",
+        snippet = "You: I used the pause twice",
+        time = "4m",
+        unreadCount = 0,
+        selected = false,
+        onClick = {},
+    )
+    // Quiet and unread at once: the marker appears, the count stands.
+    ConversationRow(
+        name = "Alexandria Morgan-Santos",
+        snippet = "Would tomorrow morning feel manageable?",
+        time = "2h",
+        unreadCount = 128,
+        selected = false,
+        onClick = {},
+        isQuiet = true,
+    )
+}
+
+@PreviewTest
+@Preview(name = "conversation-row-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun ConversationRowStatesLightScreenshot() {
+    ComponentStrip(darkTheme = false) { ConversationRowStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation-row-states-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ConversationRowStatesDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { ConversationRowStates() }
 }

@@ -1107,7 +1107,9 @@
         "time",
         "unreadCount",
         "selected",
-        "onClick"
+        "onClick",
+        "modifier",
+        "isQuiet"
       ],
       "previews": [],
       "previewsAligned": false,

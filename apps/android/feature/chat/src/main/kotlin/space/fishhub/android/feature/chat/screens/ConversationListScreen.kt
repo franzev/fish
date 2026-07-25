@@ -87,6 +87,7 @@ fun ConversationListScreen(
                         unreadCount = conversation.unreadCount,
                         selected = conversation.conversationId == selectedConversationId,
                         onClick = { onSelectConversation(conversation.conversationId) },
+                        isQuiet = conversation.isQuiet,
                     )
                     Spacer(Modifier.height(FishTheme.spacing.xs))
                 }

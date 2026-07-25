@@ -53,6 +53,7 @@ data class ConversationPreviewUiModel(
     val timeLabel: String,
     val unreadCount: Int,
     val hasDraft: Boolean = false,
+    val isQuiet: Boolean = false,
 )
 
 @Immutable

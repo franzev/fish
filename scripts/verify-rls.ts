@@ -1377,6 +1377,18 @@ async function checkConversationMuteBoundary(): Promise<void> {
     directError?.message ?? `rows=${(directRows ?? []).length}`,
   );
 
+  // The list marker reads these two columns, and going quiet must not reorder
+  // the list -- a quiet conversation stays exactly where it was.
+  const { data: quietPreviews } = await member.rpc("list_direct_conversation_previews");
+  const quietRow = (quietPreviews ?? []).find(
+    (row: { conversation_id: string }) => row.conversation_id === conversation.id,
+  );
+  report(
+    `${label}: the conversation preview reports the quiet period`,
+    quietRow?.muted === true && quietRow?.muted_until === quietedUntil,
+    JSON.stringify(quietRow),
+  );
+
   const { data: restored, error: restoreError } = await member.rpc("set_conversation_mute", {
     p_conversation_id: conversation.id,
     p_muted: false,
@@ -1386,6 +1398,24 @@ async function checkConversationMuteBoundary(): Promise<void> {
     `${label}: turning notifications back on clears the quiet period`,
     !restoreError && restored?.[0]?.muted === false && restored?.[0]?.muted_until === null,
     restoreError?.message ?? JSON.stringify(restored),
+  );
+
+  const { data: restoredPreviews } = await member.rpc("list_direct_conversation_previews");
+  const restoredRow = (restoredPreviews ?? []).find(
+    (row: { conversation_id: string }) => row.conversation_id === conversation.id,
+  );
+  report(
+    `${label}: the preview drops the marker once notifications are back on`,
+    restoredRow?.muted === false && restoredRow?.muted_until === null,
+    JSON.stringify(restoredRow),
+  );
+  report(
+    `${label}: going quiet does not reorder the conversation list`,
+    (quietPreviews ?? []).map((row: { conversation_id: string }) => row.conversation_id)
+      .join(",")
+      === (restoredPreviews ?? []).map((row: { conversation_id: string }) => row.conversation_id)
+        .join(","),
+    "order changed",
   );
 }
 

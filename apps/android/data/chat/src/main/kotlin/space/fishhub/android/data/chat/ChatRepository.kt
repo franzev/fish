@@ -55,6 +55,11 @@ data class AuthorizedConversation(
     val unreadCount: Int,
     val participantUsername: String? = null,
     val participantAvatarUrl: String? = null,
+    /**
+     * Quiet silences the alert, never the count: [unreadCount] stands whether
+     * or not this conversation is quiet.
+     */
+    val mute: ConversationMute = ConversationMute.On,
 )
 
 data class AuthorizedChatIdentity(

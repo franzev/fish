@@ -9,16 +9,21 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.chat.R
 import space.fishhub.android.core.designsystem.component.FishAvatar
 import space.fishhub.android.core.designsystem.component.fishFocusBorder
 
@@ -31,6 +36,7 @@ fun ConversationRow(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isQuiet: Boolean = false,
 ) {
     val shape = RoundedCornerShape(FishTheme.radii.control)
     Row(
@@ -75,6 +81,18 @@ fun ConversationRow(
                     overflow = TextOverflow.Ellipsis,
                     style = FishTheme.typography.ui,
                 )
+                // Marks a quiet conversation so it cannot be mistaken for one
+                // nobody has written in. The unread badge is untouched: quiet
+                // withholds the alert, not the count.
+                if (isQuiet) {
+                    Spacer(Modifier.width(FishTheme.spacing.xs))
+                    Icon(
+                        imageVector = FishIcons.Moon,
+                        contentDescription = stringResource(R.string.quiet),
+                        modifier = Modifier.size(FishTheme.sizes.iconGlyph),
+                        tint = FishTheme.colors.muted,
+                    )
+                }
                 if (unreadCount > 0) {
                     Spacer(Modifier.width(FishTheme.spacing.xs))
                     UnreadBadge(unreadCount)

@@ -94,6 +94,7 @@ public struct ConversationListScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .trailing, spacing: Spacing.xs) {
                 relativeTime(preview)
+                quietMarker(preview)
                 unreadBadge(preview)
             }
         }
@@ -112,6 +113,7 @@ public struct ConversationListScreen: View {
             HStack(spacing: Spacing.sm) {
                 Spacer()
                 relativeTime(preview)
+                quietMarker(preview)
                 unreadBadge(preview)
             }
         }
@@ -143,6 +145,19 @@ public struct ConversationListScreen: View {
                 .textStyle(.caption)
                 .foregroundStyle(Palette.muted)
                 .accessibilityLabel(relative.accessibilityLabel)
+        }
+    }
+
+    /// Marks a quiet conversation so it cannot be mistaken for one nobody has
+    /// written in. The unread badge stays exactly as it is: quiet withholds the
+    /// alert, not the count.
+    @ViewBuilder private func quietMarker(_ preview: ChatConversationPreview) -> some View {
+        if preview.mute.isQuiet(at: now) {
+            Icon.moonFilled.image
+                .glyphFrame()
+                .foregroundStyle(Palette.muted)
+                .accessibilityHidden(false)
+                .accessibilityLabel("Quiet")
         }
     }
 

@@ -212,6 +212,43 @@ class ChatViewModelTest {
         }
 
     @Test
+    fun `the list marks the open conversation quiet as soon as it is silenced`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            val before = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.conversations.single()
+            viewModel.setQuiet(ConversationQuietPeriod.OneHour)
+            advanceUntilIdle()
+            val after = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.conversations.single()
+
+            assertEquals(false, before.isQuiet)
+            assertEquals(true, after.isQuiet)
+            // Quiet withholds the alert, not the count.
+            assertEquals(before.unreadCount, after.unreadCount)
+        }
+
+    @Test
+    fun `a lapsed quiet period stops marking the list row`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository().apply {
+                storedMute = ConversationMute(
+                    isMuted = true,
+                    mutedUntil = Instant.now().minusSeconds(1),
+                )
+            }
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            val row = (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                .model.conversations.single()
+            assertEquals(false, row.isQuiet)
+        }
+
+    @Test
     fun `blocked people load once and an unblock removes only after success`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository().apply {

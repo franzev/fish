@@ -63,6 +63,8 @@ internal data class ConversationPreviewDto(
     @SerialName("latest_message_text") val latestMessageText: String? = null,
     @SerialName("latest_message_created_at") val latestMessageCreatedAt: String? = null,
     @SerialName("unread_count") val unreadCount: Int = 0,
+    val muted: Boolean = false,
+    @SerialName("muted_until") val mutedUntil: String? = null,
 )
 
 /** All normalized columns returned by public.list_conversation_shared_content. */

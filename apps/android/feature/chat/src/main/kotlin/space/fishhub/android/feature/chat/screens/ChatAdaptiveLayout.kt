@@ -270,6 +270,7 @@ private fun ConversationRail(
                     unreadCount = conversation.unreadCount,
                     selected = conversation.conversationId == selectedConversationId,
                     onClick = { onSelect(conversation.conversationId) },
+                    isQuiet = conversation.isQuiet,
                 )
                 Spacer(Modifier.height(FishTheme.spacing.xs))
             }

@@ -210,6 +210,7 @@
     <string name="attached_photo_position">Attached photo %1$d</string>
     <string name="attachment_limit_reached">This message already has five attachments.</string>
     <string name="notifications">Notifications</string>
+    <string name="quiet">Quiet</string>
     <string name="notifications_on">On</string>
     <string name="quiet_until_turned_back_on">Quiet until you turn it back on</string>
     <string name="quiet_until">Quiet until %1$s</string>

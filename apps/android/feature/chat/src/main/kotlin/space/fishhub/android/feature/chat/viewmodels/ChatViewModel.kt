@@ -1351,24 +1351,34 @@ class ChatViewModel(
         viewModelScope.launch { repository.sendTyping(conversationId, false) }
     }
 
-    private fun conversationPreviews(): List<ConversationPreviewUiModel> = conversations.map { item ->
-        val local = chatState.conversations[item.conversationId]
-        val latest = local?.messages?.lastOrNull()
-        val currentRead = local?.readStates?.firstOrNull { it.userId == item.currentUserId }
-        ConversationPreviewUiModel(
-            conversationId = item.conversationId,
-            participantName = item.participantDisplayName,
-            snippet = latest?.let(::messageSnippet) ?: item.latestMessageText.orEmpty(),
-            timeLabel = (latest?.createdAt ?: item.latestMessageCreatedAt)
-                ?.let(formatter::timeLabel)
-                .orEmpty(),
-            unreadCount = if (local == null) {
-                item.unreadCount
-            } else {
-                unreadMessageSummary(local.messages, item.currentUserId, currentRead).count
-            },
-            hasDraft = draftConversationIds.contains(item.conversationId),
-        )
+    private fun conversationPreviews(): List<ConversationPreviewUiModel> {
+        // One instant for the whole list, so rows cannot disagree about
+        // whether a quiet period has just lapsed.
+        val now = Instant.now()
+        val openConversationId = activeConversation?.conversationId
+        return conversations.map { item ->
+            val local = chatState.conversations[item.conversationId]
+            val latest = local?.messages?.lastOrNull()
+            val currentRead = local?.readStates?.firstOrNull { it.userId == item.currentUserId }
+            ConversationPreviewUiModel(
+                conversationId = item.conversationId,
+                participantName = item.participantDisplayName,
+                snippet = latest?.let(::messageSnippet) ?: item.latestMessageText.orEmpty(),
+                timeLabel = (latest?.createdAt ?: item.latestMessageCreatedAt)
+                    ?.let(formatter::timeLabel)
+                    .orEmpty(),
+                unreadCount = if (local == null) {
+                    item.unreadCount
+                } else {
+                    unreadMessageSummary(local.messages, item.currentUserId, currentRead).count
+                },
+                hasDraft = draftConversationIds.contains(item.conversationId),
+                // The open conversation's own quiet state is the one the user
+                // just changed, so prefer it over the directory's snapshot.
+                isQuiet = (if (item.conversationId == openConversationId) mute else item.mute)
+                    .isQuietAt(now),
+            )
+        }
     }
 
     private fun observeConversationDrafts() {

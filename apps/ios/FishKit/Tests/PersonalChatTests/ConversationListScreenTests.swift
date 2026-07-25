@@ -76,6 +76,7 @@ struct ConversationListScreenTests {
                 latestMessageCreatedAt: now.addingTimeInterval(-240),
                 unreadCount: 0
             ),
+            // Quiet and unread at once: the marker appears, the count stands.
             ChatConversationPreview(
                 conversationId: "c2",
                 participantId: "coach-2",
@@ -84,8 +85,24 @@ struct ConversationListScreenTests {
                 latestMessageSenderId: "coach-2",
                 latestMessageText: "Would tomorrow morning feel manageable?",
                 latestMessageCreatedAt: now.addingTimeInterval(-7_200),
-                unreadCount: 128
+                unreadCount: 128,
+                mute: ConversationMute(isMuted: true, mutedUntil: nil)
             ),
         ]
+    }
+
+    @Test func aLapsedQuietPeriodStopsMarkingTheRow() {
+        let lapsed = ChatConversationPreview(
+            conversationId: "c3",
+            participantId: "coach-3",
+            participantRole: "coach",
+            participantDisplayName: "Robin Vale",
+            latestMessageSenderId: "coach-3",
+            latestMessageText: "Sounds good",
+            latestMessageCreatedAt: now,
+            unreadCount: 0,
+            mute: ConversationMute(isMuted: true, mutedUntil: now.addingTimeInterval(-1))
+        )
+        #expect(!lapsed.mute.isQuiet(at: now))
     }
 }

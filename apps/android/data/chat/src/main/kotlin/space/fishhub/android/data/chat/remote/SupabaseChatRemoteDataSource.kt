@@ -159,6 +159,12 @@ internal class SupabaseChatRemoteDataSource(
                 unreadCount = preview.unreadCount,
                 participantUsername = participantProfiles[preview.participantId]?.username,
                 participantAvatarUrl = avatarUrls[preview.participantId],
+                mute = ConversationMute(
+                    isMuted = preview.muted,
+                    mutedUntil = preview.mutedUntil?.let {
+                        runCatching { Instant.parse(it) }.getOrNull()
+                    },
+                ),
             )
         }
         return AuthorizedChatDirectory(
