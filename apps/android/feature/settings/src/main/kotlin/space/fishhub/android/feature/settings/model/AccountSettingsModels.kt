@@ -1,6 +1,7 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.model
 
 import androidx.compose.runtime.Immutable
+import space.fishhub.android.feature.settings.logic.label
 
 @Immutable
 enum class AccountSettingsPresenceStatus { Online, Idle, Away, Busy, Invisible, Offline }

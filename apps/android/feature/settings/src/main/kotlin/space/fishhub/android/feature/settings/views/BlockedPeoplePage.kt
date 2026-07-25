@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,9 @@ import androidx.compose.ui.semantics.semantics
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishNotice
+import space.fishhub.android.feature.settings.R
+import space.fishhub.android.feature.settings.logic.label
+import space.fishhub.android.feature.settings.model.AccountSettingsBlockedPeopleState
 
 @Composable
 internal fun BlockedPeoplePage(

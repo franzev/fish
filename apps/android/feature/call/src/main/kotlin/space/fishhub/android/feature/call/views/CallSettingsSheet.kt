@@ -1,12 +1,12 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.views
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -23,6 +23,8 @@ import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.data.call.CallKind
 import space.fishhub.android.data.call.VideoQualityPreference
+import space.fishhub.android.feature.call.CallAudioEndpoint
+import space.fishhub.android.feature.call.R
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable

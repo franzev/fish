@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.logic.label
 
 @Composable
 internal fun SettingsRow(

@@ -14,6 +14,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.views.AccountSettingsPreviewContent
 
 @RunWith(AndroidJUnit4::class)
 class AccountSettingsAccessibilityTest {

@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.logic
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -6,6 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import space.fishhub.android.core.designsystem.FishIcons
+import space.fishhub.android.feature.settings.R
+import space.fishhub.android.feature.settings.model.AccountSettingsMotion
+import space.fishhub.android.feature.settings.model.AccountSettingsNotificationStatus
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceVisibility
+import space.fishhub.android.feature.settings.model.AccountSettingsTheme
 
 @Composable
 internal fun AccountSettingsNotificationStatus.label(): String = when (this) {

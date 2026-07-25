@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +9,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.R
+import space.fishhub.android.feature.settings.logic.icon
+import space.fishhub.android.feature.settings.logic.label
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceVisibility
 
 @Composable
 internal fun PresenceVisibilityPage(

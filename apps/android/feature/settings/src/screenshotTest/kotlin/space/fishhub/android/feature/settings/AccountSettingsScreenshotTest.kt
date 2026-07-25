@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.views.AccountSettingsPreviewContent
 
 @PreviewTest
 @Preview(name = "account light", widthDp = 412, heightDp = 640, showBackground = true)

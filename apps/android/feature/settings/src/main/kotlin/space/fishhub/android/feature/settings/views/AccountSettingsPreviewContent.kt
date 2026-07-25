@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -10,6 +10,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.R
+import space.fishhub.android.feature.settings.logic.label
+import space.fishhub.android.feature.settings.model.AccountSettingsBlockedPeopleState
+import space.fishhub.android.feature.settings.model.AccountSettingsBlockedPerson
+import space.fishhub.android.feature.settings.model.AccountSettingsMotion
+import space.fishhub.android.feature.settings.model.AccountSettingsNotificationStatus
+import space.fishhub.android.feature.settings.model.AccountSettingsPresence
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceStatus
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceVisibility
+import space.fishhub.android.feature.settings.model.AccountSettingsTheme
 
 @Composable
 internal fun AccountSettingsPreviewContent(

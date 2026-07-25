@@ -9,17 +9,18 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.call.CallDirection
 import space.fishhub.android.data.call.CallKind
 import space.fishhub.android.data.call.CallMediaState
 import space.fishhub.android.data.call.VideoQualityPreference
+import space.fishhub.android.feature.call.screens.CallOverlay
 import space.fishhub.android.feature.call.state.CallLifecycleStatus
 import space.fishhub.android.feature.call.state.CallSessionState
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class CallAccessibilityTest {

@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.views
 
 import android.view.View
 import androidx.compose.runtime.Composable

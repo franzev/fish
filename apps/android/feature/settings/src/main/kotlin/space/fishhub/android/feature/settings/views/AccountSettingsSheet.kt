@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +24,15 @@ import androidx.compose.ui.semantics.semantics
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishModalBottomSheet
 import space.fishhub.android.core.designsystem.component.FishNotice
+import space.fishhub.android.feature.settings.R
+import space.fishhub.android.feature.settings.logic.label
+import space.fishhub.android.feature.settings.model.AccountSettingsBlockedPeopleState
+import space.fishhub.android.feature.settings.model.AccountSettingsMotion
+import space.fishhub.android.feature.settings.model.AccountSettingsNotificationStatus
+import space.fishhub.android.feature.settings.model.AccountSettingsPresence
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceDuration
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceVisibility
+import space.fishhub.android.feature.settings.model.AccountSettingsTheme
 
 private enum class AccountSettingsPage {
     Account,

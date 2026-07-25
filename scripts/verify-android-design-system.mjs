@@ -154,7 +154,8 @@ const importGuards = [
       /^import .*supabase/m,
       /^import androidx\.room/m,
       /^import space\.fishhub\.android\.data\./m,
-      /^import space\.fishhub\.android\.feature\./m,
+      // Cross-feature imports only. Settings may import its own sub-packages.
+      /^import space\.fishhub\.android\.feature\.(?!settings\.)/m,
     ],
     label: "provider-neutral settings feature",
   },

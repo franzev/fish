@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -16,8 +16,11 @@ import space.fishhub.android.data.call.CallKind
 import space.fishhub.android.data.call.CallMediaEngine
 import space.fishhub.android.data.call.CallMediaState
 import space.fishhub.android.data.call.VideoQualityPreference
+import space.fishhub.android.feature.call.CallAudioEndpoint
 import space.fishhub.android.feature.call.state.CallLifecycleStatus
 import space.fishhub.android.feature.call.state.CallSessionState
+import space.fishhub.android.feature.call.views.CallPanel
+import space.fishhub.android.feature.call.views.CallVideoStage
 
 @Composable
 fun CallOverlay(

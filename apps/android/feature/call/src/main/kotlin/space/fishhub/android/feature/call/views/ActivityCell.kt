@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

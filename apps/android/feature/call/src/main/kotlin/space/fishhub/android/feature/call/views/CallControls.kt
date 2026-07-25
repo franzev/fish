@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -14,6 +14,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishIconButtonVariant
 import space.fishhub.android.data.call.CallKind
+import space.fishhub.android.feature.call.R
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable

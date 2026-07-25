@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,6 +7,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.R
+import space.fishhub.android.feature.settings.logic.label
 
 @Composable
 internal fun PrivacyPage(

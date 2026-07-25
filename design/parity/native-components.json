@@ -4,7 +4,7 @@
     {
       "name": "AccessibilityPage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccessibilityPage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/AccessibilityPage.kt",
         "symbol": "AccessibilityPage",
         "visibility": "internal"
       },
@@ -19,7 +19,7 @@
     {
       "name": "AccountPage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountPage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/AccountPage.kt",
         "symbol": "AccountPage",
         "visibility": "internal"
       },
@@ -43,7 +43,7 @@
     {
       "name": "AccountSettingsHeader",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountSettingsHeader.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/AccountSettingsHeader.kt",
         "symbol": "AccountSettingsHeader",
         "visibility": "internal"
       },
@@ -60,7 +60,7 @@
     {
       "name": "AccountSettingsPreviewContent",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountSettingsPreviewContent.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/AccountSettingsPreviewContent.kt",
         "symbol": "AccountSettingsPreviewContent",
         "visibility": "internal"
       },
@@ -76,7 +76,7 @@
     {
       "name": "AccountSettingsSheet",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountSettingsSheet.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/AccountSettingsSheet.kt",
         "symbol": "AccountSettingsSheet",
         "visibility": "public"
       },
@@ -175,7 +175,7 @@
     {
       "name": "ActivityCell",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/ActivityCell.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/ActivityCell.kt",
         "symbol": "ActivityCell",
         "visibility": "internal"
       },
@@ -219,7 +219,7 @@
     {
       "name": "AppearancePage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AppearancePage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/AppearancePage.kt",
         "symbol": "AppearancePage",
         "visibility": "internal"
       },
@@ -416,7 +416,7 @@
     {
       "name": "BlockedPeoplePage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/BlockedPeoplePage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/BlockedPeoplePage.kt",
         "symbol": "BlockedPeoplePage",
         "visibility": "internal"
       },
@@ -432,7 +432,7 @@
     {
       "name": "CallActivityPanel",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallActivityPanel.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallActivityPanel.kt",
         "symbol": "CallActivityPanel",
         "visibility": "internal"
       },
@@ -488,7 +488,7 @@
     {
       "name": "CallControls",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallControls.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallControls.kt",
         "symbol": "CallControls",
         "visibility": "internal"
       },
@@ -541,7 +541,7 @@
     {
       "name": "CallOverlay",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallOverlay.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/screens/CallOverlay.kt",
         "symbol": "CallOverlay",
         "visibility": "public"
       },
@@ -587,7 +587,7 @@
     {
       "name": "CallPanel",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallPanel.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallPanel.kt",
         "symbol": "CallPanel",
         "visibility": "internal"
       },
@@ -672,7 +672,7 @@
     {
       "name": "CallSettingsSheet",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallSettingsSheet.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallSettingsSheet.kt",
         "symbol": "CallSettingsSheet",
         "visibility": "internal"
       },
@@ -735,7 +735,7 @@
     {
       "name": "CallVideoStage",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallVideoStage.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallVideoStage.kt",
         "symbol": "CallVideoStage",
         "visibility": "internal"
       },
@@ -764,7 +764,7 @@
     {
       "name": "CallVideoView",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallVideoView.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallVideoView.kt",
         "symbol": "CallVideoView",
         "visibility": "internal"
       },
@@ -955,7 +955,7 @@
     {
       "name": "CompactCallBar",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CompactCallBar.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CompactCallBar.kt",
         "symbol": "CompactCallBar",
         "visibility": "internal"
       },
@@ -1884,7 +1884,7 @@
     {
       "name": "NotificationsPage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/NotificationsPage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/NotificationsPage.kt",
         "symbol": "NotificationsPage",
         "visibility": "internal"
       },
@@ -2239,7 +2239,7 @@
     {
       "name": "PresenceVisibilityPage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/PresenceVisibilityPage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/PresenceVisibilityPage.kt",
         "symbol": "PresenceVisibilityPage",
         "visibility": "internal"
       },
@@ -2255,7 +2255,7 @@
     {
       "name": "PrivacyPage",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/PrivacyPage.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/PrivacyPage.kt",
         "symbol": "PrivacyPage",
         "visibility": "internal"
       },
@@ -2334,7 +2334,7 @@
     {
       "name": "SettingsRow",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/SettingsRow.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/views/SettingsRow.kt",
         "symbol": "SettingsRow",
         "visibility": "internal"
       },

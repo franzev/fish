@@ -68,9 +68,9 @@ import space.fishhub.android.feature.chat.model.ParticipantUiModel
 import space.fishhub.android.feature.chat.model.VoiceRecordingUiState
 import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
-import space.fishhub.android.feature.settings.AccountSettingsMotion
-import space.fishhub.android.feature.settings.AccountSettingsNotificationStatus
-import space.fishhub.android.feature.settings.AccountSettingsTheme
+import space.fishhub.android.feature.settings.model.AccountSettingsMotion
+import space.fishhub.android.feature.settings.model.AccountSettingsNotificationStatus
+import space.fishhub.android.feature.settings.model.AccountSettingsTheme
 import space.fishhub.android.messaging.ChatDestination
 import space.fishhub.android.messaging.ChatIntents
 import space.fishhub.android.messaging.ChatShareContent

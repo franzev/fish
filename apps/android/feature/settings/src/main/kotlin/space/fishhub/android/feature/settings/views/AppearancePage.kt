@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.settings
+package space.fishhub.android.feature.settings.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,6 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.settings.logic.label
+import space.fishhub.android.feature.settings.model.AccountSettingsTheme
 
 @Composable
 internal fun AppearancePage(

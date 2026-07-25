@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.views
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +25,8 @@ import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishIconButtonVariant
+import space.fishhub.android.feature.call.R
+import space.fishhub.android.feature.call.logic.callCopy
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable

@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.call
+package space.fishhub.android.feature.call.logic
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import space.fishhub.android.data.call.CallDirection
 import space.fishhub.android.data.call.CallKind
+import space.fishhub.android.feature.call.R
 import space.fishhub.android.feature.call.state.CallLifecycleStatus
 import space.fishhub.android.feature.call.state.CallSessionState
 

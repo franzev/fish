@@ -71,15 +71,15 @@ import space.fishhub.android.feature.chat.views.mediapicker.MediaPickerSheet
 import space.fishhub.android.feature.presence.PresenceAccountTrigger
 import space.fishhub.android.feature.presence.PresenceUiState
 import space.fishhub.android.feature.presence.PresenceViewModel
-import space.fishhub.android.feature.settings.AccountSettingsBlockedPeopleState
-import space.fishhub.android.feature.settings.AccountSettingsBlockedPerson
-import space.fishhub.android.feature.settings.AccountSettingsMotion
-import space.fishhub.android.feature.settings.AccountSettingsPresence
-import space.fishhub.android.feature.settings.AccountSettingsPresenceDuration
-import space.fishhub.android.feature.settings.AccountSettingsPresenceStatus
-import space.fishhub.android.feature.settings.AccountSettingsPresenceVisibility
-import space.fishhub.android.feature.settings.AccountSettingsSheet
-import space.fishhub.android.feature.settings.AccountSettingsTheme
+import space.fishhub.android.feature.settings.model.AccountSettingsBlockedPeopleState
+import space.fishhub.android.feature.settings.model.AccountSettingsBlockedPerson
+import space.fishhub.android.feature.settings.model.AccountSettingsMotion
+import space.fishhub.android.feature.settings.model.AccountSettingsPresence
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceDuration
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceStatus
+import space.fishhub.android.feature.settings.model.AccountSettingsPresenceVisibility
+import space.fishhub.android.feature.settings.views.AccountSettingsSheet
+import space.fishhub.android.feature.settings.model.AccountSettingsTheme
 
 @Composable
 fun ChatRoute(
@@ -112,8 +112,8 @@ fun ChatRoute(
     onAttachmentFlowFinished: () -> Unit = {},
     appearance: AccountSettingsTheme = AccountSettingsTheme.System,
     accessibility: AccountSettingsMotion = AccountSettingsMotion.System,
-    notificationStatus: space.fishhub.android.feature.settings.AccountSettingsNotificationStatus =
-        space.fishhub.android.feature.settings.AccountSettingsNotificationStatus.Off,
+    notificationStatus: space.fishhub.android.feature.settings.model.AccountSettingsNotificationStatus =
+        space.fishhub.android.feature.settings.model.AccountSettingsNotificationStatus.Off,
     canRequestNotifications: Boolean = false,
     onOpenNotifications: () -> Unit = {},
     onOpenPasswordRecovery: () -> Unit = {},
