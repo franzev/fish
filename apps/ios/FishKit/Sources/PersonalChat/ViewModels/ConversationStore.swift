@@ -28,6 +28,7 @@ public final class ConversationStore {
     }
     public var selection = ComposerSelection.none
     public var presence: PresenceUiModel?
+    public private(set) var mute = ConversationMute.on
 
     private let messaging: any ChatMessagingProviding
     private let commands: any ChatCommandProviding
@@ -148,6 +149,7 @@ public final class ConversationStore {
                 before: nil,
                 limit: 50
             )) ?? []
+            mute = (try? await commands.conversationMute(conversationId: conversationId)) ?? .on
             phase = .ready
             subscribe()
             if let incoming = latestIncomingMessageId() {
@@ -156,6 +158,32 @@ public final class ConversationStore {
         } catch {
             phase = .unavailable
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .disconnected))
+        }
+    }
+
+    /// Applies the new quiet state optimistically so the row never lags the
+    /// tap, and puts the previous one back if the command does not land. A
+    /// `nil` quiet period turns notifications back on.
+    public func setQuiet(_ quietPeriod: ConversationQuietPeriod?) async {
+        let previous = mute
+        mute = ConversationMute(
+            isMuted: quietPeriod != nil,
+            mutedUntil: quietPeriod?.durationSeconds.map {
+                now().addingTimeInterval(TimeInterval($0))
+            }
+        )
+        do {
+            mute = try await commands.setConversationMute(
+                conversationId: conversationId,
+                quietPeriod: quietPeriod
+            )
+            notice = nil
+        } catch let failure as ChatCommandFailure {
+            mute = previous
+            notice = failure.notice
+        } catch {
+            mute = previous
+            notice = ChatCommandFailure.unavailable.notice
         }
     }
 

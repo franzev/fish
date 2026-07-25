@@ -1,3 +1,4 @@
+import ChatData
 import DesignSystem
 import SwiftUI
 import UIComponents
@@ -8,24 +9,34 @@ import UIComponents
 public struct ConversationDetailsSheet: View {
     private let participantName: String
     private let presence: PresenceUiModel?
+    private let mute: ConversationMute
     private let onBack: () -> Void
     private let onOpenSharedContent: () -> Void
+    private let onSetQuiet: (ConversationQuietPeriod?) -> Void
+    private let now: Date
     private let safetyContent: AnyView?
     @Binding private var requestedFocus: PersonalChatFocusTarget?
     @AccessibilityFocusState private var sharedContentFocused: Bool
+    @State private var quietOptionsShown = false
 
     public init(
         participantName: String,
         presence: PresenceUiModel?,
+        mute: ConversationMute = .on,
         onBack: @escaping () -> Void,
         onOpenSharedContent: @escaping () -> Void,
+        onSetQuiet: @escaping (ConversationQuietPeriod?) -> Void = { _ in },
+        now: Date = Date(),
         safetyContent: AnyView? = nil,
         requestedFocus: Binding<PersonalChatFocusTarget?> = .constant(nil)
     ) {
         self.participantName = participantName
         self.presence = presence
+        self.mute = mute
         self.onBack = onBack
         self.onOpenSharedContent = onOpenSharedContent
+        self.onSetQuiet = onSetQuiet
+        self.now = now
         self.safetyContent = safetyContent
         self._requestedFocus = requestedFocus
     }
@@ -37,6 +48,7 @@ public struct ConversationDetailsSheet: View {
                 VStack(alignment: .leading, spacing: Spacing.md) {
                     participantIdentity
                     sharedContentRow
+                    quietControl
                     if let safetyContent {
                         safetyContent
                     }
@@ -113,5 +125,18 @@ public struct ConversationDetailsSheet: View {
             SharedContentEntry.conversationDetails.accessibilityIdentifier
         )
         .accessibilityFocused($sharedContentFocused)
+    }
+
+    private var quietControl: some View {
+        ConversationQuietRow(
+            mute: mute,
+            optionsShown: quietOptionsShown,
+            now: now,
+            onToggleOptions: { quietOptionsShown.toggle() },
+            onSelect: { period in
+                quietOptionsShown = false
+                onSetQuiet(period)
+            }
+        )
     }
 }

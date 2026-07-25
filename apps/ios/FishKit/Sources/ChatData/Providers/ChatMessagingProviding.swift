@@ -60,6 +60,12 @@ public protocol ChatCommandProviding: Sendable {
         lastReadMessageId: String?
     ) async throws -> ChatReadState
     func unreadSummary(conversationId: String) async throws -> ChatUnreadSummary
+    func conversationMute(conversationId: String) async throws -> ConversationMute
+    /// A `nil` quiet period turns notifications back on.
+    func setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?
+    ) async throws -> ConversationMute
 }
 
 public protocol ConversationDirectoryProviding: Sendable {

@@ -126,6 +126,10 @@ private actor StoreCommands: ChatCommandProviding {
     var reads: [ReadRequest] = []
     var reports: [String] = []
     var nextExecutionDelay: Duration?
+    var storedMute = ConversationMute.on
+    var quietRequests: [ConversationQuietPeriod?] = []
+    var muteReadsFail = false
+    var nextMuteWriteDelay: Duration?
 
     func execute(_ command: ChatMessageCommand) async throws -> ChatMessage {
         executed.append(command)
@@ -179,6 +183,42 @@ private actor StoreCommands: ChatCommandProviding {
     func unreadSummary(conversationId: String) async throws -> ChatUnreadSummary {
         ChatUnreadSummary(count: 0, oldestUnreadAt: nil, latestUnreadMessageId: nil)
     }
+
+    func conversationMute(conversationId: String) async throws -> ConversationMute {
+        if muteReadsFail { throw ChatCommandFailure.unavailable }
+        return storedMute
+    }
+
+    func setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?
+    ) async throws -> ConversationMute {
+        quietRequests.append(quietPeriod)
+        if let delay = nextMuteWriteDelay {
+            nextMuteWriteDelay = nil
+            try await Task.sleep(for: delay)
+        }
+        if let failure = nextFailure {
+            nextFailure = nil
+            throw failure
+        }
+        // Deliberately a different base from the store's pinned clock, so a
+        // test can tell the optimistic value from the confirmed one.
+        storedMute = ConversationMute(
+            isMuted: quietPeriod != nil,
+            mutedUntil: quietPeriod?.durationSeconds.map {
+                Self.confirmedBase.addingTimeInterval(TimeInterval($0))
+            }
+        )
+        return storedMute
+    }
+
+    static let confirmedBase = Date(timeIntervalSince1970: 1000)
+
+    func stubMute(_ mute: ConversationMute) { storedMute = mute }
+    func failMuteReads() { muteReadsFail = true }
+    func delayNextMuteWrite(_ duration: Duration) { nextMuteWriteDelay = duration }
+    func quietPeriodRequests() -> [ConversationQuietPeriod?] { quietRequests }
 
     func failNext(_ failure: ChatCommandFailure = .unavailable) { nextFailure = failure }
     func delayNextExecution(_ duration: Duration) { nextExecutionDelay = duration }
@@ -880,5 +920,71 @@ struct ConversationStoreTests {
         #expect(await eventually { store.conversations.first?.unreadCount == 1 })
         #expect(directory.calls == 2)
         store.stop()
+    }
+
+    @Test func opensWithTheStoredQuietState() async {
+        let (store, _, commands, _) = makeStore(window: storeWindow([]))
+        let until = Date(timeIntervalSince1970: 4000)
+        await commands.stubMute(ConversationMute(isMuted: true, mutedUntil: until))
+
+        await store.start()
+
+        #expect(store.mute == ConversationMute(isMuted: true, mutedUntil: until))
+        store.stop()
+    }
+
+    @Test func treatsAnUnreadableQuietStateAsNotificationsOn() async {
+        let (store, _, commands, _) = makeStore(window: storeWindow([]))
+        await commands.stubMute(ConversationMute(isMuted: true, mutedUntil: nil))
+        await commands.failMuteReads()
+
+        await store.start()
+
+        #expect(store.mute == .on)
+        store.stop()
+    }
+
+    @Test func showsAQuietPeriodBeforeTheServerConfirmsThenTakesTheServersWord() async {
+        let (store, _, commands, _) = makeStore(window: storeWindow([]))
+        await commands.delayNextMuteWrite(.milliseconds(50))
+
+        let write = Task { await store.setQuiet(.oneHour) }
+
+        // makeStore pins now() at 400, so the optimistic expiry is exact and
+        // distinguishable from the value the double confirms.
+        #expect(await eventually { store.mute.mutedUntil == Date(timeIntervalSince1970: 4000) })
+        await write.value
+        #expect(store.mute.mutedUntil == StoreCommands.confirmedBase.addingTimeInterval(3600))
+        #expect(await commands.quietPeriodRequests() == [.oneHour])
+    }
+
+    @Test func keepsTheOpenEndedQuietPeriodWithoutAnExpiry() async {
+        let (store, _, _, _) = makeStore(window: storeWindow([]))
+
+        await store.setQuiet(.untilTurnedBackOn)
+
+        #expect(store.mute == ConversationMute(isMuted: true, mutedUntil: nil))
+    }
+
+    @Test func turningNotificationsBackOnClearsTheQuietPeriod() async {
+        let (store, _, commands, _) = makeStore(window: storeWindow([]))
+        await store.setQuiet(.oneDay)
+
+        await store.setQuiet(nil)
+
+        #expect(store.mute == .on)
+        #expect(await commands.quietPeriodRequests() == [.oneDay, nil])
+    }
+
+    @Test func putsTheOldQuietStateBackWhenTheCommandFails() async {
+        let (store, _, commands, _) = makeStore(window: storeWindow([]))
+        await store.setQuiet(.oneHour)
+        let before = store.mute
+        await commands.failNext()
+
+        await store.setQuiet(nil)
+
+        #expect(store.mute == before)
+        #expect(store.model.notice == ChatCommandFailure.unavailable.notice)
     }
 }

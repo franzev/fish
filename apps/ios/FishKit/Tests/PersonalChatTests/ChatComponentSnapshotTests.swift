@@ -1,4 +1,6 @@
+import ChatData
 import DesignSystem
+import Foundation
 import SwiftUI
 import Testing
 @testable import PersonalChat
@@ -46,4 +48,58 @@ struct ChatComponentSnapshotTests {
         .padding(Spacing.page)
         assertThemedSnapshots(of: states, named: "sticker-states")
     }
+
+    @MainActor @Test func conversationQuietStates() {
+        let states = VStack(alignment: .leading, spacing: Spacing.md) {
+            ConversationQuietRow(
+                mute: .on,
+                optionsShown: false,
+                now: Self.quietNow,
+                onToggleOptions: {},
+                onSelect: { _ in }
+            )
+            ConversationQuietRow(
+                mute: ConversationMute(
+                    isMuted: true,
+                    mutedUntil: Self.quietNow.addingTimeInterval(3600)
+                ),
+                optionsShown: false,
+                now: Self.quietNow,
+                onToggleOptions: {},
+                onSelect: { _ in }
+            )
+            ConversationQuietRow(
+                mute: ConversationMute(isMuted: true, mutedUntil: nil),
+                optionsShown: false,
+                now: Self.quietNow,
+                onToggleOptions: {},
+                onSelect: { _ in }
+            )
+        }
+        .padding(Spacing.page)
+        assertThemedSnapshots(of: states, named: "conversation-quiet-states")
+    }
+
+    @MainActor @Test func conversationQuietOptions() {
+        let states = VStack(alignment: .leading, spacing: Spacing.md) {
+            ConversationQuietRow(
+                mute: .on,
+                optionsShown: true,
+                now: Self.quietNow,
+                onToggleOptions: {},
+                onSelect: { _ in }
+            )
+            ConversationQuietRow(
+                mute: ConversationMute(isMuted: true, mutedUntil: nil),
+                optionsShown: true,
+                now: Self.quietNow,
+                onToggleOptions: {},
+                onSelect: { _ in }
+            )
+        }
+        .padding(Spacing.page)
+        assertThemedSnapshots(of: states, named: "conversation-quiet-options")
+    }
+
+    private static let quietNow = Date(timeIntervalSince1970: 1_753_437_600)
 }

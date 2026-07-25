@@ -220,12 +220,16 @@ struct ConversationView: View {
                 ConversationDetailsSheet(
                     participantName: store.participantName,
                     presence: store.model.presence,
+                    mute: store.mute,
                     onBack: popDestination,
                     onOpenSharedContent: {
                         openSharedContent(SharedContentNavigationIntent(
                             entry: .conversationDetails,
                             context: context
                         ))
+                    },
+                    onSetQuiet: { period in
+                        Task { await store.setQuiet(period) }
                     },
                     requestedFocus: $requestedFocus
                 )

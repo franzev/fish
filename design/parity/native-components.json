@@ -1009,8 +1009,11 @@
         "ios": [
           "participantName",
           "presence",
+          "mute",
           "onBack",
           "onOpenSharedContent",
+          "onSetQuiet",
+          "now",
           "safetyContent"
         ]
       },
@@ -1054,6 +1057,24 @@
       "propsAligned": false,
       "previewsAligned": false,
       "propsBreak": "state-bundling"
+    },
+    {
+      "name": "ConversationQuietRow",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ConversationQuietRow.swift",
+        "symbol": "ConversationQuietRow",
+        "visibility": "public"
+      },
+      "props": [
+        "mute",
+        "optionsShown",
+        "now",
+        "onToggleOptions",
+        "onSelect"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
     },
     {
       "name": "ConversationRow",

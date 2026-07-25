@@ -70,19 +70,10 @@ public struct EdgeFunctionChatCommands: ChatCommandProviding {
     }
 
     public func unreadSummary(conversationId: String) async throws -> ChatUnreadSummary {
-        guard let token = await configuration.accessToken() else {
-            throw ChatCommandFailure.notAuthenticated
-        }
-        var request = URLRequest(
-            url: configuration.supabaseUrl.appending(path: "rest/v1/rpc/get_chat_unread_summary")
+        let data = try await rpc(
+            "get_chat_unread_summary",
+            body: ConversationQuery(conversationId: conversationId)
         )
-        request.httpMethod = "POST"
-        request.timeoutInterval = 15
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(configuration.anonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONEncoder().encode(UnreadCommand(conversationId: conversationId))
-        let data = try await responseData(for: request)
         let row = try JSONDecoder().decode([UnreadSummaryWire].self, from: data).first
         return ChatUnreadSummary(
             count: row?.unreadCount ?? 0,
@@ -91,13 +82,42 @@ public struct EdgeFunctionChatCommands: ChatCommandProviding {
         )
     }
 
+    public func conversationMute(conversationId: String) async throws -> ConversationMute {
+        let data = try await rpc(
+            "conversation_mute",
+            body: ConversationQuery(conversationId: conversationId)
+        )
+        guard let row = try JSONDecoder().decode([ConversationMuteWire].self, from: data).first
+        else { return .on }
+        return row.domain
+    }
+
+    public func setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?
+    ) async throws -> ConversationMute {
+        let body = MuteCommand(
+            conversationId: conversationId,
+            muted: quietPeriod != nil,
+            durationSeconds: quietPeriod?.durationSeconds
+        )
+        let data = try await post(AnyEncodable(body))
+        return try JSONDecoder().decode(MuteResponse.self, from: data).mute.domain
+    }
+
     private func post(_ body: AnyEncodable) async throws -> Data {
+        try await send(path: "functions/v1/chat-command", body: body)
+    }
+
+    private func rpc(_ name: String, body: some Encodable) async throws -> Data {
+        try await send(path: "rest/v1/rpc/\(name)", body: AnyEncodable(body))
+    }
+
+    private func send(path: String, body: AnyEncodable) async throws -> Data {
         guard let token = await configuration.accessToken() else {
             throw ChatCommandFailure.notAuthenticated
         }
-        var request = URLRequest(
-            url: configuration.supabaseUrl.appending(path: "functions/v1/chat-command")
-        )
+        var request = URLRequest(url: configuration.supabaseUrl.appending(path: path))
         request.httpMethod = "POST"
         request.timeoutInterval = 15
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -160,7 +180,15 @@ private struct ReadCommand: Encodable {
     let lastReadMessageId: String?
 }
 
-private struct UnreadCommand: Encodable {
+private struct MuteCommand: Encodable {
+    let action = "set-conversation-mute"
+    let conversationId: String
+    let muted: Bool
+    let durationSeconds: Int?
+}
+
+/// Shared by every RPC that takes only the conversation it acts on.
+private struct ConversationQuery: Encodable {
     let conversationId: String
     enum CodingKeys: String, CodingKey { case conversationId = "p_conversation_id" }
 }
@@ -168,6 +196,21 @@ private struct UnreadCommand: Encodable {
 private struct MessageResponse: Decodable { let message: ChatMessageWire }
 private struct ReportResponse: Decodable { let reported: Bool }
 private struct ReadResponse: Decodable { let readState: ChatReadStateWire }
+private struct MuteResponse: Decodable { let mute: ConversationMuteWire }
+
+private struct ConversationMuteWire: Decodable {
+    let muted: Bool
+    let mutedUntil: String?
+
+    enum CodingKeys: String, CodingKey {
+        case muted
+        case mutedUntil = "muted_until"
+    }
+
+    var domain: ConversationMute {
+        ConversationMute(isMuted: muted, mutedUntil: ChatTimestamp.date(mutedUntil))
+    }
+}
 
 private struct UnreadSummaryWire: Decodable {
     let unreadCount: Int
