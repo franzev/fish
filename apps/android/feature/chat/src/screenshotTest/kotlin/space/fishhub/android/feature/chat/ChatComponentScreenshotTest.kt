@@ -11,6 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.chat.sharedcontent.ShowEarlierBoundary
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentUnavailableState
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGallerySkeleton
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryNotice
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryCategory
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentCategoryBar
 import space.fishhub.android.feature.chat.views.StickerMedia
 import space.fishhub.android.feature.chat.views.ReactionPill
 import space.fishhub.android.feature.chat.views.OlderMessagesSlot
@@ -304,4 +311,53 @@ fun MessageFileStatesLightScreenshot() {
 @Composable
 fun StickerStatesLightScreenshot() {
     ComponentStrip(darkTheme = false) { StickerStates() }
+}
+
+/** Category bar, notices, skeleton, unavailable state and the earlier boundary. */
+@Composable
+private fun SharedContentChromeStates() {
+    SharedContentCategoryBar(
+        categories = SharedContentGalleryCategory.entries.toList(),
+        selectedCategory = SharedContentGalleryCategory.Media,
+        onSelect = {},
+    )
+    SharedContentGalleryNotice(message = "Checking for updates\u2026")
+    SharedContentGalleryNotice(
+        message = "We couldn't check for updates.",
+        actionLabel = "Try again",
+        onAction = {},
+    )
+    SharedContentGallerySkeleton(category = SharedContentGalleryCategory.Media)
+    SharedContentUnavailableState(
+        title = "Nothing shared yet",
+        description = "Photos and files you exchange will collect here.",
+    )
+    SharedContentUnavailableState(
+        title = "You're offline",
+        description = "This content is saved on this device and may be out of date.",
+        retryAllowed = true,
+        onRetry = {},
+    )
+    ShowEarlierBoundary(state = SharedContentEarlierState.Ready, onShowEarlier = {})
+    ShowEarlierBoundary(state = SharedContentEarlierState.Loading, onShowEarlier = {})
+    ShowEarlierBoundary(state = SharedContentEarlierState.Failed, onShowEarlier = {})
+}
+
+@PreviewTest
+@Preview(name = "shared-content-chrome-light", widthDp = 412, showBackground = true)
+@Composable
+fun SharedContentChromeLightScreenshot() {
+    ComponentStrip(darkTheme = false) { SharedContentChromeStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "shared-content-chrome-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun SharedContentChromeDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { SharedContentChromeStates() }
 }
