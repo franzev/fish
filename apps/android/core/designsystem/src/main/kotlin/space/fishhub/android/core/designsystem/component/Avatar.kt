@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,6 +25,7 @@ fun FishAvatar(
     modifier: Modifier = Modifier,
     image: Painter? = null,
     size: Dp = FishTheme.sizes.avatarMedium,
+    isDecorative: Boolean = false,
 ) {
     val initials = name
         .trim()
@@ -38,7 +40,16 @@ fun FishAvatar(
             .size(size)
             .clip(CircleShape)
             .background(FishTheme.colors.avatar)
-            .semantics { contentDescription = name },
+            .then(
+                // FishKit's Avatar hides itself by default and lets the row
+                // carry the name. This one announces the name unless the caller
+                // says otherwise; see the parity registry note.
+                if (isDecorative) {
+                    Modifier.clearAndSetSemantics {}
+                } else {
+                    Modifier.semantics { contentDescription = name }
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (image != null) {

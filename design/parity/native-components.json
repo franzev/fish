@@ -395,21 +395,14 @@
         "symbol": "Avatar",
         "visibility": "public"
       },
-      "props": {
-        "android": [
-          "name",
-          "image",
-          "size"
-        ],
-        "ios": [
-          "name",
-          "image",
-          "size",
-          "isDecorative"
-        ]
-      },
+      "props": [
+        "name",
+        "image",
+        "size",
+        "isDecorative"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false,
       "namingBreak": "android-material-collision"
     },

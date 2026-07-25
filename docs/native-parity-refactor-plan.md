@@ -1182,6 +1182,7 @@ Recorded rather than forced. The check script exempts each of these explicitly.
 | 8 | Presence UI module placement (Android `:feature:presence` vs iOS `UIComponents`) | Moving it changes the dependency graph | Out of scope — §9 |
 | 9 | `AnyView` erasure in iOS slot parameters vs typed `@Composable () -> Unit` | Swift generics vs Kotlin function types | Accepted; names still match |
 | 10 | Android design-system `Fish` prefix (`FishButton`, `FishSurface`, `FishTopBar`, …) | Material 3 already owns `Button`, `Surface`, `TextField`, `TopBar`, `Divider`, `IconButton`, `Theme` in the Compose namespace; iOS has no such collision | 8 explicit pairings carrying `namingBreak: "android-material-collision"` in the registry; excluded from rename and from name comparison |
+| 12 | `Avatar` accessibility default: Android announces the name, FishKit hides the avatar (`isDecorative` defaults `true`) and lets the row carry it | Pre-existing behavioural difference, not a naming one. The parameter now exists on both sides with Android defaulting to its current behaviour, so no rendering or announcement changed | **Open product question** — double-announcement is a real screen-reader concern for this audience; picking one default is an accessibility decision, not a refactor |
 | 11 | Screenshot coverage level: Android screen-level, iOS component-level | Different test strategies predating this refactor, not a naming problem | Measured by `pnpm parity:verify --previews`; closing it is stage 4 and needs a scope decision |
 
 ---
