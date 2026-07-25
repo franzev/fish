@@ -181,7 +181,7 @@
         "visibility": "internal"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ReactionPill.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/AddReactionPill.swift",
         "symbol": "AddReactionPill",
         "visibility": "internal"
       },
@@ -678,16 +678,27 @@
         "symbol": "CallSettings",
         "visibility": "internal"
       },
-      "props": [
-        "call",
-        "qualityPreference",
-        "audioEndpoints",
-        "onSelectAudioEndpoint",
-        "onQualityPreference"
-      ],
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/Calls/Views/CallSettingsSheet.swift",
+        "symbol": "CallSettingsSheet",
+        "visibility": "internal"
+      },
+      "props": {
+        "android": [
+          "call",
+          "qualityPreference",
+          "audioEndpoints",
+          "onSelectAudioEndpoint",
+          "onQualityPreference"
+        ],
+        "ios": [
+          "preference",
+          "onSetPreference"
+        ]
+      },
       "previews": [],
-      "previewsAligned": false,
-      "only": "android"
+      "propsAligned": false,
+      "previewsAligned": false
     },
     {
       "name": "CallStatusHeader",
@@ -1284,6 +1295,36 @@
       "only": "ios"
     },
     {
+      "name": "MarkdownBlockView",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MarkdownBlockView.swift",
+        "symbol": "MarkdownBlockView",
+        "visibility": "internal"
+      },
+      "props": [
+        "block",
+        "isOutgoing"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
+    },
+    {
+      "name": "MarkdownListView",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MarkdownListView.swift",
+        "symbol": "MarkdownListView",
+        "visibility": "internal"
+      },
+      "props": [
+        "list",
+        "isOutgoing"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
+    },
+    {
       "name": "MediaPickerSearchField",
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MediaPicker/MediaPickerSearchField.swift",
@@ -1632,7 +1673,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/message-video-player/message-video-player.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MessageVideoPlayer.swift",
         "symbol": "MessageVideoPlayer",
         "visibility": "public"
       },
@@ -1664,7 +1705,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/message-voice-player/message-voice-player.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MessageVoicePlayer.swift",
         "symbol": "MessageVoicePlayer",
         "visibility": "public"
       },
@@ -2218,19 +2259,35 @@
         "symbol": "SettingsRow",
         "visibility": "internal"
       },
-      "props": [
-        "label",
-        "explanation",
-        "trailing",
-        "selected",
-        "enabled",
-        "role",
-        "leadingIcon",
-        "onClick"
-      ],
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/AccountSettings/Views/SettingsRow.swift",
+        "symbol": "SettingsRow",
+        "visibility": "internal"
+      },
+      "props": {
+        "android": [
+          "label",
+          "explanation",
+          "trailing",
+          "selected",
+          "enabled",
+          "role",
+          "leadingIcon",
+          "onClick"
+        ],
+        "ios": [
+          "label",
+          "explanation",
+          "trailing",
+          "selected",
+          "enabled",
+          "showsChevron",
+          "action"
+        ]
+      },
       "previews": [],
-      "previewsAligned": false,
-      "only": "android"
+      "propsAligned": false,
+      "previewsAligned": false
     },
     {
       "name": "SharedContentCategoryBar",
@@ -2240,7 +2297,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentCategoryBar.swift",
         "symbol": "SharedContentCategoryBar",
         "visibility": "internal"
       },
@@ -2283,7 +2340,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryNotice.swift",
         "symbol": "SharedContentGalleryNotice",
         "visibility": "internal"
       },
@@ -2337,7 +2394,7 @@
     {
       "name": "SharedContentGalleryScreenContent",
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Screens/SharedContentGalleryScreen.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Screens/SharedContentGalleryScreenContent.swift",
         "symbol": "SharedContentGalleryScreenContent",
         "visibility": "internal"
       },
@@ -2371,7 +2428,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGallerySkeleton.swift",
         "symbol": "SharedContentGallerySkeleton",
         "visibility": "internal"
       },
@@ -2390,7 +2447,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentMediaGrid.swift",
         "symbol": "SharedContentMediaGrid",
         "visibility": "internal"
       },
@@ -2421,6 +2478,22 @@
       "previewsAligned": false
     },
     {
+      "name": "SharedContentMediaThumbnail",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentMediaThumbnail.swift",
+        "symbol": "SharedContentMediaThumbnail",
+        "visibility": "internal"
+      },
+      "props": [
+        "item",
+        "loadThumbnail",
+        "onDisplayed"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
+    },
+    {
       "name": "SharedContentMetadataList",
       "android": {
         "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentMetadataList.kt",
@@ -2449,7 +2522,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentMetadataRow.swift",
         "symbol": "SharedContentMetadataRow",
         "visibility": "internal"
       },
@@ -2513,7 +2586,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentUnavailableState.swift",
         "symbol": "SharedContentUnavailableState",
         "visibility": "internal"
       },
@@ -2542,7 +2615,7 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/SharedContentGalleryComponents.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ShowEarlierBoundary.swift",
         "symbol": "ShowEarlierBoundary",
         "visibility": "internal"
       },
@@ -2589,7 +2662,7 @@
     {
       "name": "SkeletonAvatar",
       "ios": {
-        "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/Skeleton.swift",
+        "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/SkeletonAvatar.swift",
         "symbol": "SkeletonAvatar",
         "visibility": "public"
       },
@@ -2603,7 +2676,7 @@
     {
       "name": "SkeletonBar",
       "ios": {
-        "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/Skeleton.swift",
+        "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/SkeletonBar.swift",
         "symbol": "SkeletonBar",
         "visibility": "public"
       },
@@ -2679,6 +2752,18 @@
       "previews": [],
       "previewsAligned": false,
       "only": "android"
+    },
+    {
+      "name": "StaticProgressIndicator",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/UIComponents/Buttons/StaticProgressIndicator.swift",
+        "symbol": "StaticProgressIndicator",
+        "visibility": "internal"
+      },
+      "props": [],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
     },
     {
       "name": "StickerMedia",
@@ -2817,6 +2902,18 @@
       "only": "android"
     },
     {
+      "name": "TranscriptSkeleton",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Screens/TranscriptSkeleton.swift",
+        "symbol": "TranscriptSkeleton",
+        "visibility": "internal"
+      },
+      "props": [],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
+    },
+    {
       "name": "TypingIndicator",
       "android": {
         "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/TypingIndicator.kt",
@@ -2869,13 +2966,29 @@
     {
       "name": "VoiceRecordingControl",
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/voice-recording-control/voice-recording-control.swift",
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/VoiceRecordingControl.swift",
         "symbol": "VoiceRecordingControl",
         "visibility": "public"
       },
       "props": [
         "recorder",
         "onRecord"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
+    },
+    {
+      "name": "ZoomableAttachmentImage",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ZoomableAttachmentImage.swift",
+        "symbol": "ZoomableAttachmentImage",
+        "visibility": "internal"
+      },
+      "props": [
+        "attachment",
+        "loader",
+        "commands"
       ],
       "previews": [],
       "previewsAligned": false,
