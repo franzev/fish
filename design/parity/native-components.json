@@ -2,9 +2,65 @@
   "version": 1,
   "components": [
     {
+      "name": "AccessibilityPage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccessibilityPage.kt",
+        "symbol": "AccessibilityPage",
+        "visibility": "internal"
+      },
+      "props": [
+        "selected",
+        "onSelected"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "AccountPage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountPage.kt",
+        "symbol": "AccountPage",
+        "visibility": "internal"
+      },
+      "props": [
+        "displayName",
+        "presence",
+        "notificationStatus",
+        "appearance",
+        "accessibility",
+        "onNotifications",
+        "onPrivacy",
+        "onAppearance",
+        "onAccessibility",
+        "onResetPassword",
+        "onSignOut"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "AccountSettingsHeader",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountSettingsHeader.kt",
+        "symbol": "AccountSettingsHeader",
+        "visibility": "internal"
+      },
+      "props": [
+        "title",
+        "showBack",
+        "onBack",
+        "onClose"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "AccountSettingsPreviewContent",
       "android": {
-        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountSettingsSheet.kt",
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AccountSettingsPreviewContent.kt",
         "symbol": "AccountSettingsPreviewContent",
         "visibility": "internal"
       },
@@ -101,9 +157,26 @@
       "only": "ios"
     },
     {
+      "name": "ActivityCell",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/ActivityCell.kt",
+        "symbol": "ActivityCell",
+        "visibility": "internal"
+      },
+      "props": [
+        "label",
+        "status",
+        "icon",
+        "speaking"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "AddReactionPill",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ReactionChip.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AddReactionChip.kt",
         "symbol": "AddReactionChip",
         "visibility": "internal"
       },
@@ -128,9 +201,72 @@
       "previewsAligned": false
     },
     {
+      "name": "AppearancePage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/AppearancePage.kt",
+        "symbol": "AppearancePage",
+        "visibility": "internal"
+      },
+      "props": [
+        "selected",
+        "onSelected"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "AttachmentDraftPhoto",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentDraftPhoto.kt",
+        "symbol": "AttachmentDraftPhoto",
+        "visibility": "internal"
+      },
+      "props": [
+        "model",
+        "contentDescription",
+        "contentScale"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "AttachmentFileSummary",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentFileSummary.kt",
+        "symbol": "AttachmentFileSummary",
+        "visibility": "internal"
+      },
+      "props": [
+        "attachment"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "AttachmentPhotoImage",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPhotoImage.kt",
+        "symbol": "AttachmentPhotoImage",
+        "visibility": "internal"
+      },
+      "props": [
+        "url",
+        "cacheKey",
+        "contentDescription",
+        "contentScale",
+        "onError"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "AttachmentPhotoViewerContent",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPhotoViewerContent.kt",
         "symbol": "AttachmentPhotoViewerContent",
         "visibility": "internal"
       },
@@ -146,7 +282,7 @@
     {
       "name": "AttachmentPreviewScreen",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentDraftComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPreviewScreen.kt",
         "symbol": "AttachmentPreviewScreen",
         "visibility": "public"
       },
@@ -165,7 +301,7 @@
     {
       "name": "AttachmentSourceContent",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentDraftComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentSourceContent.kt",
         "symbol": "AttachmentSourceContent",
         "visibility": "internal"
       },
@@ -184,7 +320,7 @@
     {
       "name": "AttachmentSourceSheet",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentDraftComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentSourceSheet.kt",
         "symbol": "AttachmentSourceSheet",
         "visibility": "public"
       },
@@ -203,7 +339,7 @@
     {
       "name": "AttachmentViewer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPhotoViewer.kt",
         "symbol": "AttachmentPhotoViewer",
         "visibility": "public"
       },
@@ -261,6 +397,22 @@
       "previewsAligned": false
     },
     {
+      "name": "BlockedPeoplePage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/BlockedPeoplePage.kt",
+        "symbol": "BlockedPeoplePage",
+        "visibility": "internal"
+      },
+      "props": [
+        "state",
+        "onRetry",
+        "onUnblock"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "Button",
       "android": {
         "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Button.kt",
@@ -281,18 +433,29 @@
     },
     {
       "name": "CallActivityPanel",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/AudioActivity.kt",
+        "symbol": "AudioActivity",
+        "visibility": "internal"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/Calls/Views/CallActivityPanel.swift",
         "symbol": "CallActivityPanel",
         "visibility": "internal"
       },
-      "props": [
-        "state",
-        "call"
-      ],
+      "props": {
+        "android": [
+          "call",
+          "media"
+        ],
+        "ios": [
+          "state",
+          "call"
+        ]
+      },
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": false,
+      "previewsAligned": false
     },
     {
       "name": "CallActivityRow",
@@ -326,22 +489,40 @@
     },
     {
       "name": "CallControls",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallControls.kt",
+        "symbol": "CallControls",
+        "visibility": "internal"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/Calls/Views/CallControls.swift",
         "symbol": "CallControls",
         "visibility": "internal"
       },
-      "props": [
-        "state",
-        "actions",
-        "chatAvailable",
-        "chatOpen",
-        "call",
-        "showsFullRow"
-      ],
+      "props": {
+        "android": [
+          "call",
+          "busy",
+          "settingsOpen",
+          "onToggleMute",
+          "onToggleCamera",
+          "onSwitchCamera",
+          "onOpenMessages",
+          "onToggleSettings",
+          "onEnd"
+        ],
+        "ios": [
+          "state",
+          "actions",
+          "chatAvailable",
+          "chatOpen",
+          "call",
+          "showsFullRow"
+        ]
+      },
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": false,
+      "previewsAligned": false
     },
     {
       "name": "CallEntryButtons",
@@ -407,23 +588,51 @@
     },
     {
       "name": "CallPanel",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallPanel.kt",
+        "symbol": "CallPanel",
+        "visibility": "internal"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/Calls/Views/CallPanel.swift",
         "symbol": "CallPanel",
         "visibility": "internal"
       },
-      "props": [
-        "state",
-        "actions",
-        "chatAvailable",
-        "chatOpen",
-        "headerHidden",
-        "call",
-        "isPrompt"
-      ],
+      "props": {
+        "android": [
+          "call",
+          "mediaState",
+          "notice",
+          "busy",
+          "qualityPreference",
+          "audioEndpoints",
+          "videoStage",
+          "onAnswer",
+          "onDecline",
+          "onCancel",
+          "onEnd",
+          "onToggleMute",
+          "onToggleCamera",
+          "onSwitchCamera",
+          "onSelectAudioEndpoint",
+          "onQualityPreference",
+          "onOpenMessages",
+          "onClear",
+          "onOpenAppSettings"
+        ],
+        "ios": [
+          "state",
+          "actions",
+          "chatAvailable",
+          "chatOpen",
+          "headerHidden",
+          "call",
+          "isPrompt"
+        ]
+      },
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": false,
+      "previewsAligned": false
     },
     {
       "name": "CallPromptActions",
@@ -457,6 +666,24 @@
         "onAnswer",
         "onOpenAppSettings",
         "pictureInPicture"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "CallSettingsSheet",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallSettings.kt",
+        "symbol": "CallSettings",
+        "visibility": "internal"
+      },
+      "props": [
+        "call",
+        "qualityPreference",
+        "audioEndpoints",
+        "onSelectAudioEndpoint",
+        "onQualityPreference"
       ],
       "previews": [],
       "previewsAligned": false,
@@ -498,25 +725,52 @@
     },
     {
       "name": "CallVideoStage",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/VideoStage.kt",
+        "symbol": "VideoStage",
+        "visibility": "internal"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/Calls/Views/CallVideoStage.swift",
         "symbol": "CallVideoStage",
         "visibility": "internal"
       },
+      "props": {
+        "android": [
+          "call",
+          "mediaState",
+          "mediaEngine"
+        ],
+        "ios": [
+          "state",
+          "remoteVideo",
+          "localVideo",
+          "call"
+        ]
+      },
+      "previews": [],
+      "propsAligned": false,
+      "previewsAligned": false
+    },
+    {
+      "name": "CallVideoView",
+      "android": {
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallVideoView.kt",
+        "symbol": "CallVideoView",
+        "visibility": "internal"
+      },
       "props": [
-        "state",
-        "remoteVideo",
-        "localVideo",
-        "call"
+        "mediaEngine",
+        "source"
       ],
       "previews": [],
       "previewsAligned": false,
-      "only": "ios"
+      "only": "android"
     },
     {
       "name": "ChatAdaptiveLayout",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatScreen.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAdaptiveLayout.kt",
         "symbol": "ChatAdaptiveLayout",
         "visibility": "public"
       },
@@ -579,7 +833,7 @@
     {
       "name": "ChatConnectionNotice",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatConnectionNotice.kt",
         "symbol": "ChatConnectionNotice",
         "visibility": "public"
       },
@@ -598,7 +852,7 @@
     {
       "name": "ChatMediaPickerContent",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaPickerSheet.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaPickerContent.kt",
         "symbol": "ChatMediaPickerContent",
         "visibility": "internal"
       },
@@ -692,7 +946,7 @@
     {
       "name": "CompactCallBar",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallScreen.kt",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CompactCallBar.kt",
         "symbol": "CompactCallBar",
         "visibility": "internal"
       },
@@ -709,7 +963,7 @@
     {
       "name": "ComposerMediaPreview",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ComposerMediaPreview.kt",
         "symbol": "ComposerMediaPreview",
         "visibility": "public"
       },
@@ -759,7 +1013,7 @@
     {
       "name": "ConversationListScreen",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatScreen.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ConversationListScreen.kt",
         "symbol": "ConversationListScreen",
         "visibility": "public"
       },
@@ -813,7 +1067,7 @@
     {
       "name": "Divider",
       "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Surface.kt",
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishDivider.kt",
         "symbol": "FishDivider",
         "visibility": "public"
       },
@@ -882,7 +1136,7 @@
     {
       "name": "GifMedia",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/GifMessageMedia.kt",
         "symbol": "GifMessageMedia",
         "visibility": "public"
       },
@@ -950,7 +1204,7 @@
     {
       "name": "GifUnavailableMedia",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/GifUnavailableMedia.kt",
         "symbol": "GifUnavailableMedia",
         "visibility": "public"
       },
@@ -1098,7 +1352,7 @@
     {
       "name": "MessageAttachments",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageAttachmentGroup.kt",
         "symbol": "MessageAttachmentGroup",
         "visibility": "public"
       },
@@ -1150,7 +1404,7 @@
     {
       "name": "MessageBubble",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageBubble.kt",
         "symbol": "MessageBubble",
         "visibility": "public"
       },
@@ -1194,7 +1448,7 @@
     {
       "name": "MessageComposer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageComposer.kt",
         "symbol": "MessageComposer",
         "visibility": "public"
       },
@@ -1248,7 +1502,7 @@
     {
       "name": "MessageDaySeparator",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageDateSeparator.kt",
         "symbol": "MessageDateSeparator",
         "visibility": "public"
       },
@@ -1267,7 +1521,7 @@
     {
       "name": "MessageDeliveryStatus",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageDeliveryStatus.kt",
         "symbol": "MessageDeliveryStatus",
         "visibility": "public"
       },
@@ -1281,7 +1535,7 @@
     {
       "name": "MessageFileCard",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/FileAttachmentCard.kt",
         "symbol": "FileAttachmentCard",
         "visibility": "internal"
       },
@@ -1373,7 +1627,7 @@
     {
       "name": "MessageVideoPlayer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/VideoMessageMedia.kt",
         "symbol": "VideoMessageMedia",
         "visibility": "public"
       },
@@ -1405,7 +1659,7 @@
     {
       "name": "MessageVoicePlayer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/VoiceMessageMedia.kt",
         "symbol": "VoiceMessageMedia",
         "visibility": "public"
       },
@@ -1466,7 +1720,7 @@
     {
       "name": "Notice",
       "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Feedback.kt",
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishNotice.kt",
         "symbol": "FishNotice",
         "visibility": "public"
       },
@@ -1493,9 +1747,26 @@
       "previewsAligned": false
     },
     {
+      "name": "NotificationsPage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/NotificationsPage.kt",
+        "symbol": "NotificationsPage",
+        "visibility": "internal"
+      },
+      "props": [
+        "status",
+        "canRequest",
+        "onAllow",
+        "onOpenSettings"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "OlderMessagesSlot",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/OlderMessagesState.kt",
         "symbol": "OlderMessagesState",
         "visibility": "public"
       },
@@ -1610,7 +1881,7 @@
     {
       "name": "PersonalChatTopBar",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatTopBar.kt",
         "symbol": "ChatTopBar",
         "visibility": "public"
       },
@@ -1651,7 +1922,7 @@
     {
       "name": "PersonalChatTranscript",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatScreen.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatTranscript.kt",
         "symbol": "ChatTranscript",
         "visibility": "public"
       },
@@ -1831,15 +2102,67 @@
       "previewsAligned": false
     },
     {
+      "name": "PresenceVisibilityPage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/PresenceVisibilityPage.kt",
+        "symbol": "PresenceVisibilityPage",
+        "visibility": "internal"
+      },
+      "props": [
+        "selected",
+        "enabled",
+        "onSelected"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "PrivacyPage",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/PrivacyPage.kt",
+        "symbol": "PrivacyPage",
+        "visibility": "internal"
+      },
+      "props": [
+        "canManageBlockedPeople",
+        "onPresence",
+        "onBlockedPeople",
+        "onPrivacyPolicy",
+        "onNotifications"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "Progress",
       "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Feedback.kt",
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishProgress.kt",
         "symbol": "FishProgress",
         "visibility": "public"
       },
       "props": [
         "progress",
         "contentDescription"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "ReactionChipTarget",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ReactionChipTarget.kt",
+        "symbol": "ReactionChipTarget",
+        "visibility": "internal"
+      },
+      "props": [
+        "description",
+        "selected",
+        "enabled",
+        "onClick",
+        "content"
       ],
       "previews": [],
       "previewsAligned": false,
@@ -1889,9 +2212,30 @@
       "previewsAligned": false
     },
     {
+      "name": "SettingsRow",
+      "android": {
+        "file": "apps/android/feature/settings/src/main/kotlin/space/fishhub/android/feature/settings/SettingsRow.kt",
+        "symbol": "SettingsRow",
+        "visibility": "internal"
+      },
+      "props": [
+        "label",
+        "explanation",
+        "trailing",
+        "selected",
+        "enabled",
+        "role",
+        "leadingIcon",
+        "onClick"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "SharedContentCategoryBar",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentCategoryTabs.kt",
         "symbol": "SharedContentCategoryTabs",
         "visibility": "public"
       },
@@ -1919,7 +2263,7 @@
     {
       "name": "SharedContentDecodedMedia",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentDecodedMedia.kt",
         "symbol": "SharedContentDecodedMedia",
         "visibility": "internal"
       },
@@ -1934,7 +2278,7 @@
     {
       "name": "SharedContentGalleryNotice",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryNotice.kt",
         "symbol": "SharedContentGalleryNotice",
         "visibility": "public"
       },
@@ -2022,7 +2366,7 @@
     {
       "name": "SharedContentGallerySkeleton",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGallerySkeleton.kt",
         "symbol": "SharedContentGallerySkeleton",
         "visibility": "public"
       },
@@ -2041,7 +2385,7 @@
     {
       "name": "SharedContentMediaGrid",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentMediaGrid.kt",
         "symbol": "SharedContentMediaGrid",
         "visibility": "public"
       },
@@ -2079,7 +2423,7 @@
     {
       "name": "SharedContentMetadataList",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentMetadataList.kt",
         "symbol": "SharedContentMetadataList",
         "visibility": "public"
       },
@@ -2100,7 +2444,7 @@
     {
       "name": "SharedContentMetadataRow",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentMetadataRow.kt",
         "symbol": "SharedContentMetadataRow",
         "visibility": "public"
       },
@@ -2164,7 +2508,7 @@
     {
       "name": "SharedContentUnavailableState",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryEmpty.kt",
         "symbol": "SharedContentGalleryEmpty",
         "visibility": "public"
       },
@@ -2193,7 +2537,7 @@
     {
       "name": "ShowEarlierBoundary",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/ShowEarlierBoundary.kt",
         "symbol": "ShowEarlierBoundary",
         "visibility": "public"
       },
@@ -2213,7 +2557,7 @@
     {
       "name": "SignInScreen",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatRoute.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/SignInScreen.kt",
         "symbol": "SignInScreen",
         "visibility": "internal"
       },
@@ -2231,7 +2575,7 @@
     {
       "name": "Skeleton",
       "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Feedback.kt",
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishSkeleton.kt",
         "symbol": "FishSkeleton",
         "visibility": "public"
       },
@@ -2273,7 +2617,7 @@
     {
       "name": "StagedAttachmentStrip",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatAttachmentDraftComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ComposerAttachmentQueue.kt",
         "symbol": "ComposerAttachmentQueue",
         "visibility": "public"
       },
@@ -2339,7 +2683,7 @@
     {
       "name": "StickerMedia",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/StickerMessageMedia.kt",
         "symbol": "StickerMessageMedia",
         "visibility": "public"
       },
@@ -2396,7 +2740,7 @@
     {
       "name": "Surface",
       "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Surface.kt",
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishSurface.kt",
         "symbol": "FishSurface",
         "visibility": "public"
       },
@@ -2475,7 +2819,7 @@
     {
       "name": "TypingIndicator",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/TypingIndicator.kt",
         "symbol": "TypingIndicator",
         "visibility": "public"
       },
@@ -2494,7 +2838,7 @@
     {
       "name": "UnreadBadge",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/component/ConversationRow.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/component/UnreadBadge.kt",
         "symbol": "UnreadBadge",
         "visibility": "public"
       },
@@ -2508,7 +2852,7 @@
     {
       "name": "UnreadMessagesDivider",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatComponents.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/UnreadMessageDivider.kt",
         "symbol": "UnreadMessageDivider",
         "visibility": "public"
       },
