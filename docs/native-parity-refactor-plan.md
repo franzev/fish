@@ -2,24 +2,29 @@
 
 ## Scope boundary
 
-This branch is a **refactor**: nothing behaves differently. Across every commit, **no recorded
-image was ever modified** — the manifest only grew as new coverage was added, and the additions
-are listed below.
+The parity work in this document is a **refactor**: nothing behaves differently. Across every
+refactor commit — `8423d903..2d081e4a` — **no recorded image was ever modified**. The manifest only
+grew as new coverage was added. That range is still independently verifiable:
 
-Work that surfaced during the refactor but changes behaviour lives on
-`feature/chat-viewer-and-gif-poster`, not here:
+```bash
+git log --numstat --format='' 8423d903^..2d081e4a -- '*.png' | awk '$1 ~ /^[0-9]+$/ && $1 != 0'
+```
 
-- **Attachment viewer paging** — the viewer took a single attachment and could not be swiped; the
-  branch makes it page across a message's photos.
+Expected: no output.
+
+Two behaviour changes surfaced during the refactor. They were developed on a separate branch so
+each could be reviewed on its own merits, then merged in `91a60255`, and they remain identifiable
+as a group under that merge:
+
+- **Attachment viewer paging** — the viewer took a single attachment and could not be swiped; it
+  now pages across a message's photos, with position rendered as text rather than dots so a screen
+  reader can convey it.
 - **Shared GIF poster** — the transcript fell back to an unavailable message when a poster failed
-  to load and the picker grid did not, leaving a blank tile; the branch gives both one path.
-
-Both are worth shipping and both need reviewing on their own merits, which is exactly why they are
-not mixed into a change whose value is the claim that nothing moved.
+  to load and the picker grid did not, leaving a blank tile. Both now load through one composable.
 
 The remaining items in this document — iOS avatar images, the accessibility-announcement default,
-FishKit's hardcoded English accessibility labels — are product work that the refactor *surfaced*
-by making the two codebases comparable. They belong in a backlog, not on this branch.
+FishKit's hardcoded English accessibility labels — are product work the refactor *surfaced* by
+making the two codebases comparable. They belong in a backlog, not here.
 
 ## Outcome (2026-07-25)
 
