@@ -14,7 +14,8 @@ Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**
 | iOS files declaring >1 public component | 4 | **0** |
 | Largest UI file | 1 841 (`FishApp.swift`) | **540** (`MessageComposer.swift`) |
 | Paired components sharing a name | 20 | **46 of 53** |
-| Paired components with aligned props | 8 | **14 of 53** |
+| Paired components with aligned props | 8 | **15 of 53** |
+| Paired components with an unexplained prop divergence | 45 | **0** |
 | Image baselines changed | — | **0 of 303** |
 | Android tests | green | green |
 | iOS tests | 412 / 75 suites | **412 / 75 suites** |
@@ -90,44 +91,44 @@ Android's `MessageRowUiModel` also omits FishKit's `showsMeta`: this bubble rend
 inside its media and attachment children rather than gating a header, so the field would be
 write-only. It carries `playingVoiceAttachmentId` instead, which FishKit holds in view state.
 
-Six more converged after it, chosen by lowest risk rather than by size:
+Ten more converged after it, chosen by lowest risk rather than by size:
 `StagedAttachmentStrip`, `SharedContentMetadataRow`, `PresenceIndicator`,
-`SharedContentCategoryBar`, and `Avatar` — pure renames, orderings and one added
-parameter, all with the 303 baselines unchanged.
+`SharedContentCategoryBar`, `Avatar` and `PresenceAccountTrigger` — renames, orderings and one
+added parameter, all with the 303 baselines unchanged.
 
-**14 of 53** paired components now have aligned props. The remainder are not more of the
-same: the cheap naming fixes are done, and what is left needs decisions.
+**Stage 5 is complete in the sense that matters: every paired component now has a resolution.**
+15 have aligned props. The other 38 each carry a `propsBreak` naming *why* they differ, and
+`pnpm parity:verify` fails on any paired component that has neither — so a new divergence cannot
+slip in unexamined. Verified with a negative test: removing one classification fails the build.
 
-`PersonalChatTopBar` is the clearest example and is **blocked on a product question**, not
-effort: Android renders a remote avatar image (`rememberAsyncImagePainter(participant.avatarUrl)`)
-while FishKit renders initials only (`Avatar(name:)`). Converging the parameter list means first
-deciding whether the iOS top bar should show avatar images. Its other divergence — Android's
-baked-in call and search buttons versus FishKit's `trailingContent` slot — is a real refactor that
-moves button construction to the caller.
+| Resolution | Count | Meaning |
+|---|---:|---|
+| `propsAligned` | 15 | Comparable parameter lists are identical |
+| `state-bundling` | 25 | FishKit hands the view a model/state object and keeps view-scoped state; Compose hoists every leaf to the ViewModel |
+| `feature-gap` | 7 | The two implementations genuinely do different things |
+| `platform-idiom` | 6 | Each side follows its own control, resource or text-input conventions |
+| unclassified | **0** | — |
 
-Similar decisions gate `Notice` (FishKit supports a title and an action; Android does not),
-`PresenceAvatar` (model versus `status` + `statusLabel`), and `EmojiPanel` (Android hoists query
-and results; FishKit seeds an `initialQuery` and holds them).
+**The 38 cannot be closed by refactoring.** Each needs a decision first:
 
----
+- **`state-bundling` (25)** — including `PersonalChatScreen` (48 Android params vs 21),
+  `MessageComposer`, `CallOverlay`, `CallPanel`, `PersonalChatTranscript`. Converging these *is*
+  the "full convergence including state handling" option that was considered and rejected: it
+  means rewriting one platform's state model. The decision stands; these are recorded, not
+  outstanding.
+- **`feature-gap` (7)** — real product questions, not refactors:
+  - `PersonalChatTopBar` — Android renders a remote avatar image, FishKit renders initials only.
+  - `Notice` — FishKit supports a title and an action; Android does not.
+  - `AttachmentViewer` — FishKit pages an image array; Android shows a single attachment.
+  - `EmptyState`, `GifMedia`, `StickerMedia`, `AccountSettingsSheet` — differing capability sets.
+- **`platform-idiom` (6)** — closing these would mean breaking a platform convention:
+  `InputField` (Compose exposes keyboard/visual-transformation plumbing SwiftUI has no analogue
+  for), `ReactionPill`/`AddReactionPill` (**Android localises accessibility labels through
+  `stringResource`; FishKit hardcodes English inline** — an i18n gap worth its own look),
+  `ActionButton`, `IconButton`, `SettingsRow`.
 
-> **For agentic workers:** this is a **behaviour-preserving structural refactor**. No feature
-> changes, no visual changes, no contract changes. Every step must leave both apps compiling
-> and every existing test and image baseline passing. Steps use checkbox (`- [ ]`) syntax.
-
-**Goal:** break the oversized native source files into one-component-per-file units, and bring
-the Android and iOS UI layers into a shared vocabulary so the two apps read as translations of
-each other — same components, same names, same props, same preview cases.
-
-**Architecture:** no new architecture. Both apps keep their current module graph
-(Android Gradle modules, iOS SwiftPM targets). The work is file decomposition, package/folder
-placement, and a shared naming registry that a check script enforces from then on.
-
-**Tech stack:** Kotlin + Jetpack Compose (Android), Swift + SwiftUI (iOS), Compose Screenshot
-Testing (`validateDebugScreenshotTest`), swift-snapshot-testing, Gradle, SwiftPM.
-
-**Scope:** `apps/android/**` and `apps/ios/**` only. `apps/web`, `packages/core`,
-`packages/supabase`, and `supabase/**` are untouched.
+`action` (SwiftUI) and `onClick` (Compose) are now compared as one name rather than counted as a
+difference, since the parameter exists on both and only the convention differs.
 
 ---
 
