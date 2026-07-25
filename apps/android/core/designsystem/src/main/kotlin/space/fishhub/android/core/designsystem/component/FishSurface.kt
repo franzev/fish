@@ -2,7 +2,6 @@ package space.fishhub.android.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
@@ -25,9 +24,4 @@ fun FishSurface(
         FishSurfaceRole.Selected -> FishTheme.colors.selected
     }
     Box(modifier = modifier.background(color, shape), content = { content() })
-}
-
-@Composable
-fun FishDivider(modifier: Modifier = Modifier) {
-    HorizontalDivider(modifier = modifier, color = FishTheme.colors.divider)
 }
