@@ -41,6 +41,7 @@ import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishTextField
 import space.fishhub.android.feature.chat.R
+import space.fishhub.android.feature.chat.views.GifPoster
 import space.fishhub.android.feature.chat.logic.StickerCatalogItem
 import space.fishhub.android.feature.chat.viewmodels.MediaPickerTab
 import space.fishhub.android.feature.chat.viewmodels.MediaPickerUiState
@@ -311,14 +312,13 @@ private fun GifGrid(
     ) {
         items(state.gifs, key = { item -> "${item.chatGif.provider}:${item.chatGif.providerId}" }) { item ->
             val description = stringResource(R.string.choose_gif, item.chatGif.description)
-            AsyncImage(
-                model = if (state.animateGifPreviews) {
+            GifPoster(
+                url = if (state.animateGifPreviews) {
                     item.animatedPreviewUrl
                 } else {
                     item.chatGif.posterUrl
                 },
                 contentDescription = description,
-                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(item.chatGif.width.toFloat() / item.chatGif.height.toFloat())
