@@ -2,6 +2,8 @@ package space.fishhub.android.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,9 +21,12 @@ import space.fishhub.android.core.designsystem.FishTheme
 
 @Composable
 fun FishNotice(
-    message: String,
+    title: String,
     modifier: Modifier = Modifier,
+    message: String? = null,
     tone: FishNoticeTone = FishNoticeTone.Neutral,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     val color = when (tone) {
         FishNoticeTone.Neutral -> FishTheme.colors.notice
@@ -50,12 +55,32 @@ fun FishNotice(
             modifier = Modifier.size(FishTheme.sizes.iconGlyph),
             tint = color,
         )
-        Text(
-            text = message,
-            modifier = Modifier.padding(start = FishTheme.spacing.sm),
-            color = FishTheme.colors.body,
-            style = FishTheme.typography.ui,
-        )
+        Column(
+            modifier = Modifier
+                .padding(start = FishTheme.spacing.sm)
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.threeXs),
+        ) {
+            Text(
+                text = title,
+                color = FishTheme.colors.body,
+                style = FishTheme.typography.ui,
+            )
+            if (message != null) {
+                Text(
+                    text = message,
+                    color = FishTheme.colors.muted,
+                    style = FishTheme.typography.caption,
+                )
+            }
+        }
+        if (actionLabel != null && onAction != null) {
+            FishButton(
+                label = actionLabel,
+                onClick = onAction,
+                variant = FishButtonVariant.Ghost,
+            )
+        }
     }
 }
 

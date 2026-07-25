@@ -263,7 +263,7 @@ struct LiveChatLabPage: View {
                 .background(Palette.bg)
         case .failed(let message):
             VStack(spacing: Spacing.md) {
-                Notice(tone: .notice, title: message)
+                Notice(title: message, tone: .notice)
                 ActionButton("Try again", variant: .primary) {
                     Task { await lab.retry() }
                 }

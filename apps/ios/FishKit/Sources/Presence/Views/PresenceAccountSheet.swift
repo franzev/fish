@@ -231,8 +231,8 @@ public struct PresenceAccountSheet: View {
            model.uiState.connection == .disconnected
            || model.uiState.connection == .connecting {
             Notice(
-                tone: .notice,
-                title: "Status is reconnecting. We'll keep trying."
+                title: "Status is reconnecting. We'll keep trying.",
+                tone: .notice
             )
         }
     }

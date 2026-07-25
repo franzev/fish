@@ -30,7 +30,7 @@ fun SharedContentGalleryNotice(
             .semantics { liveRegion = LiveRegionMode.Polite },
         verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.sm),
     ) {
-        FishNotice(message = message)
+        FishNotice(title = message)
         if (actionLabel != null && onAction != null) {
             FishButton(
                 label = actionLabel,

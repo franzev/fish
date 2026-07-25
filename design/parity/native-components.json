@@ -1842,23 +1842,16 @@
         "symbol": "Notice",
         "visibility": "public"
       },
-      "props": {
-        "android": [
-          "message",
-          "tone"
-        ],
-        "ios": [
-          "tone",
-          "title",
-          "message",
-          "actionLabel",
-          "onAction"
-        ]
-      },
+      "props": [
+        "title",
+        "message",
+        "tone",
+        "actionLabel",
+        "onAction"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false,
-      "propsBreak": "feature-gap",
       "namingBreak": "android-material-collision"
     },
     {

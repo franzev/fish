@@ -176,7 +176,7 @@ struct LiveCallLabPage: View {
                     .textStyle(.body)
                     .foregroundStyle(Palette.body)
             case .failed(let message):
-                Notice(tone: .notice, title: message)
+                Notice(title: message, tone: .notice)
             case .ready:
                 if let lab, let model = lab.model {
                     Text("Signed in as \(lab.accountLabel). Calls ring here while this page is open; answer from a web browser signed in as the other account.")

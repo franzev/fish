@@ -155,9 +155,9 @@ internal fun CallPanel(
             CallActivityPanel(call, mediaState)
         }
 
-        if (notice != null) FishNotice(message = notice)
+        if (notice != null) FishNotice(title = notice)
         if (call.failureReason == CallFailureReason.PermissionDenied) {
-            FishNotice(message = stringResource(R.string.call_permission_notice))
+            FishNotice(title = stringResource(R.string.call_permission_notice))
             FishButton(
                 label = stringResource(R.string.call_permission_settings),
                 onClick = onOpenAppSettings,

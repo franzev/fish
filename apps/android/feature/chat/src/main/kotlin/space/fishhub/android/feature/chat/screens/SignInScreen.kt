@@ -108,7 +108,7 @@ internal fun SignInScreen(
                     .padding(vertical = FishTheme.spacing.twoXs),
             )
             if (state.notice != null) {
-                FishNotice(message = state.notice)
+                FishNotice(title = state.notice)
             }
             FishButton(
                 label = stringResource(R.string.sign_in),

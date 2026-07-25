@@ -237,13 +237,13 @@ fun SharedContentPreviewScreen(
             }
             if (failedThumbnail) {
                 FishNotice(
-                    message = "This preview is unavailable right now. Try again.",
+                    title = "This preview is unavailable right now. Try again.",
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
             actionFailure?.let { message ->
                 FishNotice(
-                    message = message,
+                    title = message,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

@@ -35,15 +35,15 @@ public struct Notice: View {
     private let onAction: (() -> Void)?
 
     public init(
-        tone: Tone,
         title: String,
         message: String? = nil,
+        tone: Tone,
         actionLabel: String? = nil,
         onAction: (() -> Void)? = nil
     ) {
-        self.tone = tone
         self.title = title
         self.message = message
+        self.tone = tone
         self.actionLabel = actionLabel
         self.onAction = onAction
     }

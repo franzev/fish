@@ -86,8 +86,8 @@ public struct MessageSearchScreen: View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             if model.results.isEmpty, let notice = model.notice {
                 Notice(
-                    tone: .notice,
                     title: notice,
+                    tone: .notice,
                     actionLabel: "Try again",
                     onAction: model.retry
                 )
@@ -136,8 +136,8 @@ public struct MessageSearchScreen: View {
 
             if let notice = model.notice, !model.results.isEmpty {
                 Notice(
-                    tone: .notice,
                     title: notice,
+                    tone: .notice,
                     actionLabel: "Try again",
                     onAction: model.retry
                 )

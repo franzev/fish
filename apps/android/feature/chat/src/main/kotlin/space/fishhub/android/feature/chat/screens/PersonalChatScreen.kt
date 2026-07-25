@@ -166,7 +166,7 @@ fun PersonalChatScreen(
                 }
                 if (model.notice != null) {
                     FishNotice(
-                        message = model.notice,
+                        title = model.notice,
                         modifier = Modifier.padding(
                             horizontal = FishTheme.spacing.page,
                             vertical = FishTheme.spacing.xs,

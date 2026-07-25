@@ -73,10 +73,10 @@ private fun AvatarStates() {
 
 @Composable
 private fun NoticeStates() {
-    FishNotice(message = "Your draft is safe.")
-    FishNotice(message = "That did not send.", tone = FishNoticeTone.Error)
-    FishNotice(message = "You are offline.", tone = FishNoticeTone.Warning)
-    FishNotice(message = "Saved.", tone = FishNoticeTone.Success)
+    FishNotice(title = "Your draft is safe.")
+    FishNotice(title = "That did not send.", tone = FishNoticeTone.Error)
+    FishNotice(title = "You are offline.", tone = FishNoticeTone.Warning)
+    FishNotice(title = "Saved.", tone = FishNoticeTone.Success)
 }
 
 @Composable

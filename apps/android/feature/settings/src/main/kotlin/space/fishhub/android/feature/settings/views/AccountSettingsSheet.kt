@@ -129,13 +129,13 @@ fun AccountSettingsSheet(
             }
             if (presence.reconnecting) {
                 FishNotice(
-                    message = stringResource(R.string.presence_reconnecting),
+                    title = stringResource(R.string.presence_reconnecting),
                     modifier = Modifier.padding(bottom = FishTheme.spacing.md),
                 )
             }
             notice?.let { message ->
                 FishNotice(
-                    message = message,
+                    title = message,
                     modifier = Modifier
                         .padding(bottom = FishTheme.spacing.md)
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -143,7 +143,7 @@ fun AccountSettingsSheet(
             }
             presence.notice?.let { message ->
                 FishNotice(
-                    message = message,
+                    title = message,
                     modifier = Modifier
                         .padding(bottom = FishTheme.spacing.md)
                         .semantics { liveRegion = LiveRegionMode.Polite },

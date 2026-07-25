@@ -39,7 +39,7 @@ struct CallPanel: View {
             }
 
             if let notice = state.notice {
-                Notice(tone: .notice, title: notice)
+                Notice(title: notice, tone: .notice)
             }
 
             if isPrompt {

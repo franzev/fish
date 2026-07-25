@@ -14,15 +14,15 @@ fun ChatConnectionNotice(state: ChatConnectionUiState, modifier: Modifier = Modi
     when (state) {
         ChatConnectionUiState.Connected -> Unit
         ChatConnectionUiState.Connecting -> FishNotice(
-            message = stringResource(R.string.connecting),
+            title = stringResource(R.string.connecting),
             modifier = modifier,
         )
         ChatConnectionUiState.Reconnecting -> FishNotice(
-            message = stringResource(R.string.reconnecting),
+            title = stringResource(R.string.reconnecting),
             modifier = modifier,
         )
         ChatConnectionUiState.Offline -> FishNotice(
-            message = stringResource(R.string.offline),
+            title = stringResource(R.string.offline),
             modifier = modifier,
             tone = FishNoticeTone.Warning,
         )

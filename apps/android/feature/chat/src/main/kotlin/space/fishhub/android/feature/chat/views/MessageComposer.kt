@@ -128,7 +128,7 @@ fun MessageComposer(
         )
         voiceRecording.notice?.let { notice ->
             FishNotice(
-                message = notice,
+                title = notice,
                 modifier = Modifier.padding(bottom = FishTheme.spacing.sm),
             )
         }

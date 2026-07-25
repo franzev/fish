@@ -113,7 +113,7 @@ fun AttachmentPreviewScreen(
         }
         if (notice != null) {
             FishNotice(
-                message = notice,
+                title = notice,
                 modifier = Modifier.padding(bottom = FishTheme.spacing.sm),
             )
         }

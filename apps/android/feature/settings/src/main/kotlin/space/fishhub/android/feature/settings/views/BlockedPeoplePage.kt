@@ -40,7 +40,7 @@ internal fun BlockedPeoplePage(
         is AccountSettingsBlockedPeopleState.Failed -> Column(
             verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.md),
         ) {
-            FishNotice(message = state.message)
+            FishNotice(title = state.message)
             FishButton(
                 label = stringResource(R.string.try_again),
                 onClick = onRetry,
@@ -50,7 +50,7 @@ internal fun BlockedPeoplePage(
         is AccountSettingsBlockedPeopleState.Loaded -> {
             state.notice?.let { message ->
                 FishNotice(
-                    message = message,
+                    title = message,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = FishTheme.spacing.md)

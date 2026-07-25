@@ -300,7 +300,7 @@ struct LivePresenceLabPage: View {
                 .textStyle(.body)
                 .foregroundStyle(Palette.body)
         case .failed(let message):
-            Notice(tone: .notice, title: message)
+            Notice(title: message, tone: .notice)
         case .signedOut:
             Text("Signed out. Reopen this page to start a new session.")
                 .textStyle(.body)

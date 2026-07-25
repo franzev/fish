@@ -12,18 +12,18 @@ struct SharedContentGalleryNotice: View {
         case .none:
             EmptyView()
         case .checkingForUpdates:
-            Notice(tone: .notice, title: "Checking for updates…")
+            Notice(title: "Checking for updates…", tone: .notice)
         case .offlineCached:
             Notice(
-                tone: .notice,
                 title: "You're offline",
-                message: "This content is saved on this device and may be out of date."
+                message: "This content is saved on this device and may be out of date.",
+                tone: .notice
             )
         case .stale:
             Notice(
-                tone: .notice,
                 title: "Content may be out of date",
                 message: "We couldn't check for updates.",
+                tone: .notice,
                 actionLabel: presentation.manualRetry == .enabled ? "Try again" : nil,
                 onAction: presentation.manualRetry == .enabled ? onRetry : nil
             )

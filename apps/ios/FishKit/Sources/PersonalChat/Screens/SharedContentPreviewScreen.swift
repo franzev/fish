@@ -101,8 +101,8 @@ public struct SharedContentPreviewScreen: View {
                     }
                     if thumbnailFailed {
                         Notice(
-                            tone: .notice,
-                            title: "This preview is unavailable right now. Try again."
+                            title: "This preview is unavailable right now. Try again.",
+                            tone: .notice
                         )
                         ActionButton("Try again", variant: .link) {
                             retryCount += 1

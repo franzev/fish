@@ -15,23 +15,23 @@ struct NoticeTests {
         let states = ScrollView {
             VStack(spacing: Spacing.md) {
                 Notice(
-                    tone: .notice,
                     title: "Reconnecting",
-                    message: "Your draft is safe while we reconnect."
+                    message: "Your draft is safe while we reconnect.",
+                    tone: .notice
                 )
                 Notice(
-                    tone: .error,
                     title: "That didn't send",
                     message: "Check your connection, then try again.",
+                    tone: .error,
                     actionLabel: "Try sending again",
                     onAction: {}
                 )
                 Notice(
-                    tone: .warning,
                     title: "Almost at the message limit",
-                    message: "Messages can hold 4,000 characters."
+                    message: "Messages can hold 4,000 characters.",
+                    tone: .warning
                 )
-                Notice(tone: .success, title: "Message sent")
+                Notice(title: "Message sent", tone: .success)
             }
             .padding(Spacing.page)
         }

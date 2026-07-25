@@ -28,8 +28,8 @@ struct ShowEarlierBoundary: View {
             )
         case .failed:
             Notice(
-                tone: .notice,
                 title: "Earlier content didn't load. Try again.",
+                tone: .notice,
                 actionLabel: "Try again",
                 onAction: onShowEarlier
             )

@@ -37,7 +37,7 @@ struct SignInView: View {
                     model.openWebPage(.forgotPassword)
                 }
                 if let notice = model.notice {
-                    Notice(tone: .notice, title: notice)
+                    Notice(title: notice, tone: .notice)
                 }
                 ActionButton(
                     "Sign in",

@@ -68,7 +68,7 @@ fun ConversationListScreen(
             )
             if (notice != null) {
                 FishNotice(
-                    message = notice,
+                    title = notice,
                     modifier = Modifier.padding(top = FishTheme.spacing.md),
                 )
             }

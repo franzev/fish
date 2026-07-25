@@ -220,7 +220,7 @@ private fun MessageSearchFailure(
             .padding(top = FishTheme.spacing.md),
         verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.sm),
     ) {
-        FishNotice(message = notice)
+        FishNotice(title = notice)
         FishButton(
             label = stringResource(R.string.message_search_retry),
             onClick = onRetry,
@@ -248,7 +248,7 @@ private fun MessageSearchResults(
                         .padding(bottom = FishTheme.spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.sm),
                 ) {
-                    FishNotice(message = state.notice)
+                    FishNotice(title = state.notice)
                     FishButton(
                         label = stringResource(R.string.message_search_retry),
                         onClick = onRetry,

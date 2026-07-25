@@ -85,7 +85,7 @@ public struct AccountSettingsSheet: View {
             VStack(alignment: .leading, spacing: Spacing.md) {
                 header
                 if let notice {
-                    Notice(tone: .notice, title: notice)
+                    Notice(title: notice, tone: .notice)
                 }
                 pageContent
             }
@@ -271,7 +271,7 @@ public struct AccountSettingsSheet: View {
                 .padding(.horizontal, Spacing.xs)
         }
         if let notice = presence.notice {
-            Notice(tone: .notice, title: notice)
+            Notice(title: notice, tone: .notice)
         }
     }
 
@@ -289,13 +289,13 @@ public struct AccountSettingsSheet: View {
                     .padding(.vertical, Spacing.md)
             case .failed:
                 Notice(
-                    tone: .notice,
-                    title: "Blocked people aren’t available yet. Try again."
+                    title: "Blocked people aren’t available yet. Try again.",
+                    tone: .notice
                 )
                 ActionButton("Try again", variant: .secondary, fullWidth: true, action: onLoadBlockedPeople)
             case .loaded(let people, let busyIds, let notice):
                 if let notice {
-                    Notice(tone: .success, title: notice)
+                    Notice(title: notice, tone: .success)
                 }
                 if people.isEmpty {
                     Text("No one is blocked right now.")

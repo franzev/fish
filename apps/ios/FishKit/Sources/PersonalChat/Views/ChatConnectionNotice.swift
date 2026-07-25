@@ -30,9 +30,9 @@ public struct ChatConnectionNotice: View {
     public var body: some View {
         if let content = Self.content(for: state) {
             Notice(
-                tone: .notice,
                 title: content.title,
-                message: content.message
+                message: content.message,
+                tone: .notice
             )
             .padding(.horizontal, Spacing.page)
         }
