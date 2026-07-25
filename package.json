@@ -14,6 +14,8 @@
     "android:baseline-profile": "scripts/android-gradle.sh :app:generateBaselineProfile -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile",
     "android:benchmark": "scripts/android-gradle.sh :benchmarks:connectedBenchmarkReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=Macrobenchmark",
     "android:check": "pnpm android:verify-design && scripts/android-gradle.sh check assembleRelease :feature:chat:validateDebugScreenshotTest :feature:call:validateDebugScreenshotTest :feature:presence:validateDebugScreenshotTest :feature:settings:validateDebugScreenshotTest",
+    "parity:verify": "node scripts/verify-native-parity.mjs",
+    "parity:scan": "node scripts/verify-native-parity.mjs --scan",
     "android:tokens": "node scripts/generate-android-design-tokens.mjs",
     "android:verify-design": "node scripts/verify-android-design-system.mjs && node scripts/verify-android-notification-policy.mjs",
     "chat-media:verify": "node scripts/verify-chat-media-catalogs.mjs",
