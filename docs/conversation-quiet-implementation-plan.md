@@ -1,7 +1,30 @@
 # Per-conversation quiet (mute) implementation plan
 
-Status: Proposed
+Status: Implemented 2026-07-25; physical-device push sign-off remains external
 Written: 2026-07-25
+
+## What changed against this plan during execution
+
+- **A read RPC was added.** The plan had each client read `conversation_mutes`
+  directly under RLS. Doing that would have put the expiry predicate in Swift,
+  in Kotlin, and again in the step 4 preview column. `public.conversation_mute`
+  and the shared `private.conversation_mute_state` keep it in one place, and
+  the table is not reachable by `authenticated` at all.
+- **Both clients ignore an expired quiet period at render time.** Without this
+  a quiet period that ran out while the screen was open kept claiming to be
+  quiet until a reload, while the server had already resumed pushes.
+- **Snapshot baselines carry no clock time.** The "Quiet until 4:32 PM" wording
+  renders through the machine's timezone, which would have made the recorded
+  images depend on where they were recorded. That wording is asserted in the
+  copy tests against a fixed zone and locale instead; the baselines show the
+  states whose wording is timezone-independent.
+- **The row's glyph tracks the state** (speaker when on, moon when quiet).
+  The first recorded baseline showed a sound-is-on icon on a quiet row.
+- **`"type": "module"` was added to the root `package.json`** so the new
+  dependency-free Deno-shared module can be unit tested with `node --test`
+  without a `MODULE_TYPELESS_PACKAGE_JSON` warning. Deno is not installed in
+  this environment, so the two existing `_shared/*.test.ts` files cannot run
+  here; the new one is wired into `pnpm verify:conversation-mute`.
 
 ## Outcome
 
