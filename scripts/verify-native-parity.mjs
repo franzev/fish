@@ -215,9 +215,20 @@ function androidPreviewCases() {
       // Android previews render composite frames (`ScreenshotFrame(model=…)`)
       // rather than naming components directly, so inline the bodies of local
       // helpers one level deep to see which components a case actually covers.
-      const helpers = new Map(
-        [...text.matchAll(/^(?:private\s+)?fun\s+(\w+)\s*\([\s\S]*?\n\}/gm)].map((h) => [h[1], h[0]]),
-      );
+      // Brace-match each helper body: a non-greedy `\n}` stops at the first
+      // nested brace and then desynchronises, silently skipping later helpers.
+      const helpers = new Map();
+      for (const m of text.matchAll(/^(?:private\s+)?fun\s+(\w+)\s*\(/gm)) {
+        const open = text.indexOf("{", m.index);
+        if (open === -1) continue;
+        let depth = 0;
+        let end = open;
+        for (; end < text.length; end += 1) {
+          if (text[end] === "{") depth += 1;
+          else if (text[end] === "}" && --depth === 0) break;
+        }
+        helpers.set(m[1], text.slice(m.index, end + 1));
+      }
       const expand = (body) =>
         body +
         [...body.matchAll(/\b([A-Z]\w+)\s*\(/g)]
@@ -258,7 +269,9 @@ function previewCoverage(registry) {
     const hit = (cases, side) =>
       side
         ? [...cases]
-            .filter(([, v]) => new RegExp(`\\b${side.symbol}\\b`).test(v.body))
+            // A case rendering `XContent` covers `X`: this codebase splits a
+            // route wrapper from the content composable it hosts.
+            .filter(([, v]) => new RegExp(`\\b${side.symbol}(?:Content)?\\b`).test(v.body))
             .map(([name]) => name)
         : [];
     rows.push({
