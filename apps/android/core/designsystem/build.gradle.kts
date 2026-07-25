@@ -1,9 +1,11 @@
 plugins {
     id("fish.android.compose.library")
+    alias(libs.plugins.screenshot)
 }
 
 android {
     namespace = "space.fishhub.android.core.designsystem"
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 }
 
 dependencies {
@@ -15,4 +17,6 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit4)
+    screenshotTestImplementation(libs.screenshot.validation.api)
+    screenshotTestImplementation(libs.androidx.compose.ui.tooling)
 }
