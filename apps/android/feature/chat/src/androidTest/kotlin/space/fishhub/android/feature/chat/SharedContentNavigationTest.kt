@@ -19,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
@@ -30,10 +30,10 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -48,15 +48,16 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishTopBar
-import space.fishhub.android.feature.presence.PresencePresentation
+import space.fishhub.android.feature.chat.model.ParticipantUiModel
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryAnchor
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryCategory
-import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryIntent
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryItem
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryScreen
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryUiState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeActionResult
+import space.fishhub.android.feature.chat.sharedcontent.SharedContentOrigin
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewItem
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewScreen
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentTextDirection
@@ -65,6 +66,9 @@ import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentManua
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationContract
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationNotice
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentUnavailableReason
+import space.fishhub.android.feature.chat.views.ConversationDetailsSheet
+import space.fishhub.android.feature.chat.views.PersonalChatTopBar
+import space.fishhub.android.feature.presence.PresencePresentation
 
 @RunWith(AndroidJUnit4::class)
 class SharedContentNavigationTest {

@@ -4,6 +4,14 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.chat.model.ChatConnectionUiState
+import space.fishhub.android.feature.chat.model.ChatScreenState
+import space.fishhub.android.feature.chat.model.ChatUiModel
+import space.fishhub.android.feature.chat.model.ConversationPreviewUiModel
+import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
+import space.fishhub.android.feature.chat.model.MessageUiModel
+import space.fishhub.android.feature.chat.model.ParticipantUiModel
+import space.fishhub.android.feature.chat.screens.ChatAdaptiveLayout
 
 object ChatSamples {
     val loaded = ChatUiModel(

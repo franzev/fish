@@ -2,6 +2,7 @@ package space.fishhub.android.feature.chat
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import space.fishhub.android.feature.chat.model.VoicePlaybackSpeed
 
 class VoicePlaybackSpeedTest {
     @Test

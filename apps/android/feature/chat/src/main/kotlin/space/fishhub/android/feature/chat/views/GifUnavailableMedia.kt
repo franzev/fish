@@ -1,0 +1,39 @@
+package space.fishhub.android.feature.chat.views
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.chat.R
+
+@Composable
+fun GifUnavailableMedia(modifier: Modifier = Modifier) {
+    val unavailable = stringResource(R.string.gif_unavailable_media)
+    Box(
+        modifier = modifier
+            .fillMaxWidth(FishTheme.layout.messageMaxWidthFraction)
+            .heightIn(min = FishTheme.spacing.fourXl)
+            .clip(RoundedCornerShape(FishTheme.radii.control))
+            .background(FishTheme.colors.surfaceAlt)
+            .semantics { contentDescription = unavailable },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = unavailable,
+            color = FishTheme.colors.body,
+            style = FishTheme.typography.body,
+        )
+    }
+}

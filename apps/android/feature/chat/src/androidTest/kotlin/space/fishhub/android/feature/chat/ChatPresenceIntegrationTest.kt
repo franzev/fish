@@ -10,13 +10,15 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import space.fishhub.android.core.designsystem.FishTheme
-import space.fishhub.android.data.presence.PresenceDisplayStatus
-import space.fishhub.android.feature.presence.PresenceAccountTrigger
-import space.fishhub.android.feature.presence.PresencePresentation
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.data.presence.PresenceDisplayStatus
+import space.fishhub.android.feature.chat.model.ParticipantUiModel
+import space.fishhub.android.feature.chat.views.PersonalChatTopBar
+import space.fishhub.android.feature.presence.PresenceAccountTrigger
+import space.fishhub.android.feature.presence.PresencePresentation
 
 @RunWith(AndroidJUnit4::class)
 class ChatPresenceIntegrationTest {

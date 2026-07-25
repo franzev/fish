@@ -26,8 +26,8 @@ import space.fishhub.android.data.chat.sharedcontent.SharedContentEphemeralPurge
 import space.fishhub.android.data.chat.sharedcontent.SharedContentMediaUrlKind
 import space.fishhub.android.data.chat.sharedcontent.SharedContentMediaUrlPolicy
 import space.fishhub.android.data.chat.OpenedAttachmentCacheDirectory
-import space.fishhub.android.feature.chat.AttachmentOpenAction
-import space.fishhub.android.feature.chat.AttachmentOpenRequest
+import space.fishhub.android.feature.chat.model.AttachmentOpenAction
+import space.fishhub.android.feature.chat.model.AttachmentOpenRequest
 
 internal class AttachmentFileOpener(
     private val activity: Activity,

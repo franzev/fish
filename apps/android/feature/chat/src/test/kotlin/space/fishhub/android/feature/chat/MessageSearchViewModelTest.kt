@@ -1,5 +1,18 @@
 package space.fishhub.android.feature.chat
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 import space.fishhub.android.data.chat.AttachmentDelivery
 import space.fishhub.android.data.chat.AttachmentImportResult
 import space.fishhub.android.data.chat.AttachmentImportSource
@@ -19,25 +32,15 @@ import space.fishhub.android.data.chat.MessageSearchPage
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.SharedContentDataPage
 import space.fishhub.android.data.chat.SharedContentRequestToken
-import space.fishhub.android.data.chat.sharedcontent.StoredSharedContentSnapshot
 import space.fishhub.android.data.chat.model.ChatMessage
 import space.fishhub.android.data.chat.model.ChatMessageCursor
 import space.fishhub.android.data.chat.model.ChatReadState
 import space.fishhub.android.data.chat.model.LocalAttachmentDraft
 import space.fishhub.android.data.chat.model.UserRole
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import space.fishhub.android.data.chat.sharedcontent.StoredSharedContentSnapshot
+import space.fishhub.android.feature.chat.logic.ChatTextFormatter
+import space.fishhub.android.feature.chat.viewmodels.MessageSearchUiState
+import space.fishhub.android.feature.chat.viewmodels.MessageSearchViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MessageSearchViewModelTest {

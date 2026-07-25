@@ -54,18 +54,18 @@ import space.fishhub.android.data.chat.AttachmentImportSource
 import space.fishhub.android.data.chat.ChatDataModule
 import space.fishhub.android.feature.call.CallRoute
 import space.fishhub.android.feature.call.state.CallLifecycleStatus
-import space.fishhub.android.feature.chat.AndroidChatFormatter
+import space.fishhub.android.feature.chat.logic.AndroidChatFormatter
 import space.fishhub.android.feature.chat.ChatRoute
-import space.fishhub.android.feature.chat.ChatViewModel
+import space.fishhub.android.feature.chat.viewmodels.ChatViewModel
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeAction
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentNativeActionResult
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentPreviewItem
-import space.fishhub.android.feature.chat.AttachmentImportUiState
-import space.fishhub.android.feature.chat.ChatMediaCatalog
-import space.fishhub.android.feature.chat.MediaPickerViewModel
-import space.fishhub.android.feature.chat.MessageSearchViewModel
-import space.fishhub.android.feature.chat.ParticipantUiModel
-import space.fishhub.android.feature.chat.VoiceRecordingUiState
+import space.fishhub.android.feature.chat.model.AttachmentImportUiState
+import space.fishhub.android.feature.chat.logic.ChatMediaCatalog
+import space.fishhub.android.feature.chat.viewmodels.MediaPickerViewModel
+import space.fishhub.android.feature.chat.viewmodels.MessageSearchViewModel
+import space.fishhub.android.feature.chat.model.ParticipantUiModel
+import space.fishhub.android.feature.chat.model.VoiceRecordingUiState
 import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
 import space.fishhub.android.feature.settings.AccountSettingsMotion
@@ -257,9 +257,9 @@ class MainActivity : ComponentActivity() {
             }
             val openAction = when (action) {
                 SharedContentNativeAction.Share ->
-                    space.fishhub.android.feature.chat.AttachmentOpenAction.Share
+                    space.fishhub.android.feature.chat.model.AttachmentOpenAction.Share
                 SharedContentNativeAction.Open ->
-                    space.fishhub.android.feature.chat.AttachmentOpenAction.Open
+                    space.fishhub.android.feature.chat.model.AttachmentOpenAction.Open
                 SharedContentNativeAction.Save,
                 SharedContentNativeAction.Download,
                 -> error("Handled by the document picker")
@@ -391,7 +391,7 @@ class MainActivity : ComponentActivity() {
             val chatDestination by pendingChatDestination.collectAsStateWithLifecycle()
             val shareContent by pendingShareContent.collectAsStateWithLifecycle()
             val shareConversationId = (chatRouteState as?
-                space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+                space.fishhub.android.feature.chat.model.ChatRouteUiState.Conversation)
                 ?.model
                 ?.selectedConversationId
             LaunchedEffect(chatDestination, chatViewModel) {
@@ -625,7 +625,7 @@ class MainActivity : ComponentActivity() {
 
     private fun requestCallBack(viewModel: ChatViewModel, kind: String) {
         val participant = (viewModel.uiState.value as?
-            space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+            space.fishhub.android.feature.chat.model.ChatRouteUiState.Conversation)
             ?.model?.participant ?: return
         requestOutgoing(
             participant,
@@ -730,7 +730,7 @@ class MainActivity : ComponentActivity() {
     ) {
         content.text?.let { sharedText ->
             val currentDraft = (viewModel.uiState.value as?
-                space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+                space.fishhub.android.feature.chat.model.ChatRouteUiState.Conversation)
                 ?.draft
                 .orEmpty()
             viewModel.draftChanged(
@@ -798,7 +798,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun selectedConversationId(viewModel: ChatViewModel): String? =
-        (viewModel.uiState.value as? space.fishhub.android.feature.chat.ChatRouteUiState.Conversation)
+        (viewModel.uiState.value as? space.fishhub.android.feature.chat.model.ChatRouteUiState.Conversation)
             ?.model
             ?.selectedConversationId
 

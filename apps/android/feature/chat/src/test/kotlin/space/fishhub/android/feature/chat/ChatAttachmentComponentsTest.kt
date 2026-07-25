@@ -3,12 +3,18 @@ package space.fishhub.android.feature.chat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import space.fishhub.android.data.chat.model.ChatAttachment
+import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.model.LocalAttachmentDraft
 import space.fishhub.android.data.chat.model.LocalAttachmentKind
 import space.fishhub.android.data.chat.model.LocalAttachmentScope
 import space.fishhub.android.data.chat.model.LocalAttachmentTransferState
-import space.fishhub.android.data.chat.model.ChatAttachment
-import space.fishhub.android.data.chat.model.ChatAttachmentKind
+import space.fishhub.android.feature.chat.model.AttachmentFailureUiReason
+import space.fishhub.android.feature.chat.model.AttachmentUiKind
+import space.fishhub.android.feature.chat.model.AttachmentUiModel
+import space.fishhub.android.feature.chat.model.LocalAttachmentUiModel
+import space.fishhub.android.feature.chat.views.AttachmentRun
+import space.fishhub.android.feature.chat.views.attachmentRuns
 
 class ChatAttachmentComponentsTest {
     @Test

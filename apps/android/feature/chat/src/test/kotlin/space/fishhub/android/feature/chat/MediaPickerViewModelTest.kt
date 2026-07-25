@@ -1,9 +1,5 @@
 package space.fishhub.android.feature.chat
 
-import space.fishhub.android.data.chat.GifPage
-import space.fishhub.android.data.chat.GifRepository
-import space.fishhub.android.data.chat.GifSearchItem
-import space.fishhub.android.data.chat.model.ChatGif
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -13,6 +9,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
+import space.fishhub.android.data.chat.GifPage
+import space.fishhub.android.data.chat.GifRepository
+import space.fishhub.android.data.chat.GifSearchItem
+import space.fishhub.android.data.chat.model.ChatGif
+import space.fishhub.android.feature.chat.logic.ChatMediaCatalog
+import space.fishhub.android.feature.chat.logic.EmojiCatalogEntry
+import space.fishhub.android.feature.chat.logic.EmojiCatalogGroup
+import space.fishhub.android.feature.chat.logic.StickerCatalogItem
+import space.fishhub.android.feature.chat.logic.searchEmoji
+import space.fishhub.android.feature.chat.logic.searchStickers
+import space.fishhub.android.feature.chat.viewmodels.MediaPickerTab
+import space.fishhub.android.feature.chat.viewmodels.MediaPickerViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MediaPickerViewModelTest {

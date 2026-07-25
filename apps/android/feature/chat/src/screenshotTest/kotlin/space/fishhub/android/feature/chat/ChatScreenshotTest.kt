@@ -27,6 +27,20 @@ import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.chat.MessageSearchCursor
+import space.fishhub.android.feature.chat.logic.EmojiCatalogEntry
+import space.fishhub.android.feature.chat.logic.StickerCatalogItem
+import space.fishhub.android.feature.chat.model.AttachmentFailureUiReason
+import space.fishhub.android.feature.chat.model.AttachmentTransferUiState
+import space.fishhub.android.feature.chat.model.AttachmentUiKind
+import space.fishhub.android.feature.chat.model.AttachmentUiModel
+import space.fishhub.android.feature.chat.model.ChatUiModel
+import space.fishhub.android.feature.chat.model.ComposerMediaUiModel
+import space.fishhub.android.feature.chat.model.LocalAttachmentUiModel
+import space.fishhub.android.feature.chat.model.MessageUiModel
+import space.fishhub.android.feature.chat.model.StickerUiModel
+import space.fishhub.android.feature.chat.screens.AttachmentPreviewScreen
+import space.fishhub.android.feature.chat.screens.ChatAdaptiveLayout
+import space.fishhub.android.feature.chat.screens.MessageSearchScreen
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentDecodedMedia
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGalleryCategory
@@ -40,6 +54,15 @@ import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentManua
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationContract
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationNotice
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentUnavailableReason
+import space.fishhub.android.feature.chat.viewmodels.MediaPickerTab
+import space.fishhub.android.feature.chat.viewmodels.MediaPickerUiState
+import space.fishhub.android.feature.chat.viewmodels.MessageSearchResultUiModel
+import space.fishhub.android.feature.chat.viewmodels.MessageSearchUiState
+import space.fishhub.android.feature.chat.views.AttachmentSourceContent
+import space.fishhub.android.feature.chat.views.AttachmentViewerContent
+import space.fishhub.android.feature.chat.views.MessageAttachments
+import space.fishhub.android.feature.chat.views.StagedAttachmentStrip
+import space.fishhub.android.feature.chat.views.mediapicker.ChatMediaPickerContent
 
 @PreviewTest
 @Preview(name = "loaded phone light", widthDp = 412, heightDp = 915, showBackground = true)
