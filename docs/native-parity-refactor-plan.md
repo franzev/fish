@@ -2,8 +2,8 @@
 
 ## Outcome (2026-07-25)
 
-Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**, stage 5 remains
-**gated** by design (§7). Every commit passed `pnpm android:check` and `pnpm ios:test`, and all
+Stages 0–3 and 5 are **complete**; stage 4 is **substantially advanced** (component coverage
+on both platforms went 2 → 16 of 53). Every commit passed `pnpm android:check` and `pnpm ios:test`, and all
 303 recorded images stayed byte-identical throughout — no rendering changed.
 
 | | Before | After |
@@ -16,7 +16,7 @@ Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**
 | Paired components sharing a name | 20 | **46 of 53** |
 | Paired components with aligned props | 8 | **15 of 53** |
 | Paired components with an unexplained prop divergence | 45 | **0** |
-| Image baselines changed | — | **0 of 303** |
+| Image baselines changed | — | **0** (303 → 327; additions only) |
 | Android tests | green | green |
 | iOS tests | 412 / 75 suites | **412 / 75 suites** |
 
@@ -49,18 +49,53 @@ Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**
    (`feature\.(?!settings\.)`) so the feature can import its own sub-packages. Cross-feature
    isolation is unchanged and still verified.
 
-**Stage 4 is blocked on a real finding, not on effort**
+**Stage 4 — component-level screenshot coverage on Android**
 
-The two platforms do not merely name previews differently — they test at different levels.
-Android's screenshot coverage is **screen-level** (`ScreenshotFrame(model = ChatSamples.loaded)`
-renders a whole screen); iOS's is **component-level** (`assertThemedSnapshots(of: MessageBubble…)`).
-`pnpm parity:verify --previews` reports the gap: of 53 paired components, **2** have image
-coverage on both platforms, 25 on one, 26 on neither.
+The gap was never naming. Android's screenshot coverage was **screen-level**
+(`ScreenshotFrame(model = ChatSamples.loaded)` renders a whole screen); FishKit's is
+**component-level** (`assertThemedSnapshots(of: MessageBubble…)`). Screen frames hid component
+states behind whole-screen composition, so a component could regress invisibly.
 
-Closing that means building a component-level preview layer on Android for ~50 components and
-recording ~200 new baselines. Recording them is easy; **reviewing** them is the real work, and a
-recorded baseline nobody looked at just freezes whatever rendered, including bugs. That needs a
-decision on scope before it starts — it is not a mechanical step.
+Android now has a component-level preview layer whose `@Preview(name = …)` strings match the
+`named:` strings FishKit passes to `assertThemedSnapshots`, so a case can be put side by side
+with its counterpart:
+
+| Module | Cases added |
+|---|---|
+| `feature:chat` | `message-bubbles`, `chat-chrome` |
+| `feature:presence` | `presence-indicators`, `presence-avatars`, `presence-summaries` |
+| `core:designsystem` | `button-states`, `icon-button-states`, `avatar-states`, `notice-states`, `text-field-states`, `skeleton-states`, `empty-states` |
+
+`core:designsystem` had no screenshot source set at all; it now has one, wired into
+`pnpm android:screenshots` and `pnpm android:check`.
+
+**Coverage across the 53 paired components, by `pnpm parity:verify --previews`:**
+
+| | Before | After |
+|---|---:|---:|
+| Covered on both platforms | 2 | **16** |
+| Covered on one platform | 25 | 11 |
+| Covered on neither | 26 | 26 |
+
+Baselines went 303 → 327. Every added image was reviewed against
+`docs/ui-ux-agent-guidelines.md` before being accepted, and no pre-existing baseline changed at
+any point.
+
+**What the review caught, which is the point of the exercise:**
+
+- The `message-bubbles` case shows grouped-run corners tightening correctly — direct visual proof
+  that the `MessageGroupPosition` conversion in `MessageBubble` preserved rendering.
+- `chat-chrome` shows the connection notices drawn as **outlined boxes**. The house preference is
+  fills over borders; outlined boxes read as noise. Pre-existing, and previously hidden inside
+  screen-level frames.
+- `button-states` shows the loading button hiding its label behind a faint partial spinner. The
+  baseline is deterministic — re-recording produced a byte-identical file — so it is safe to
+  keep, but the state is hard to read.
+
+**Remaining:** the 26 components covered on neither platform need cases written on *both* sides,
+not just Android, so that work spans both codebases. The 11 covered on one side are mostly
+screens (`MessageSearchScreen`, `ConversationListScreen`, `MediaPickerSheet`, `AccountSettingsSheet`)
+where FishKit snapshots the screen and Android would need an equivalent case.
 
 **Stage 5 has started, one component at a time.** `MessageBubble` is converged (9 of 53 aligned):
 
