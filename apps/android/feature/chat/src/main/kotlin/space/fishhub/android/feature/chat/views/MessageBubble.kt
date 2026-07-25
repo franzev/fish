@@ -31,29 +31,23 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.feature.chat.R
+import space.fishhub.android.feature.chat.model.MessageAction
 import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
+import space.fishhub.android.feature.chat.model.MessageRowUiModel
 import space.fishhub.android.feature.chat.model.MessageUiModel
 import space.fishhub.android.feature.chat.model.ReplyPreviewUiModel
 import space.fishhub.android.feature.chat.state.replyPreview
 
 @Composable
 fun MessageBubble(
-    message: MessageUiModel,
-    onToggleGif: () -> Unit = {},
-    onReportGif: () -> Unit = {},
-    onRetry: () -> Unit = {},
-    onPhotoAttachmentClick: (String) -> Unit = {},
-    onFileAttachmentClick: (String) -> Unit = {},
-    onFileAttachmentShare: (String) -> Unit = {},
-    playingVoiceId: String? = null,
-    onToggleVoice: (String) -> Unit = {},
-    onAttachmentLoadError: (String) -> Unit = {},
-    onOpenActions: () -> Unit = {},
-    onAddReaction: () -> Unit = {},
-    onToggleReaction: (String) -> Unit = {},
-    onReplyPreviewClick: (String) -> Unit = {},
+    row: MessageRowUiModel,
+    onAction: (MessageAction) -> Unit = {},
+    onRetry: (String) -> Unit = {},
+    reactionsEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val message = row.message
+    val playingVoiceId = row.playingVoiceAttachmentId
     val colors = FishTheme.colors
     val container = if (message.isOutgoing) colors.primary else colors.surfaceAlt
     val content = if (message.isOutgoing) colors.onPrimary else colors.foreground
@@ -66,7 +60,7 @@ fun MessageBubble(
         message.timeLabel,
     )
     val messageActionsLabel = stringResource(R.string.more_message_actions)
-    val shape = messageShape(message)
+    val shape = messageShape(row)
 
     Column(
         modifier = modifier
@@ -74,7 +68,7 @@ fun MessageBubble(
             .then(
                 if (message.actionsEnabled) {
                     Modifier.pointerInput(message.id) {
-                        detectTapGestures(onLongPress = { onOpenActions() })
+                        detectTapGestures(onLongPress = { onAction(MessageAction.OpenActions(message.id)) })
                     }
                 } else {
                     Modifier
@@ -84,7 +78,7 @@ fun MessageBubble(
                 if (message.actionsEnabled) {
                     customActions = listOf(
                         CustomAccessibilityAction(messageActionsLabel) {
-                            onOpenActions()
+                            onAction(MessageAction.OpenActions(message.id))
                             true
                         },
                     )
@@ -95,7 +89,7 @@ fun MessageBubble(
         message.replyPreview?.let { reply ->
             ReplyPreviewSurface(
                 preview = reply,
-                onClick = { onReplyPreviewClick(reply.messageId) },
+                onClick = { onAction(MessageAction.OpenReplyPreview(reply.messageId)) },
                 modifier = Modifier.padding(bottom = FishTheme.spacing.twoXs),
             )
         }
@@ -112,8 +106,8 @@ fun MessageBubble(
                 author = author,
                 timeLabel = message.timeLabel,
                 playing = message.gifPlaying,
-                onTogglePlayback = onToggleGif,
-                onReport = onReportGif,
+                onTogglePlayback = { onAction(MessageAction.ToggleGif(message.id)) },
+                onReport = { onAction(MessageAction.ReportGif(message.id)) },
             )
         }
         if (message.gifUnavailable && message.gif == null) {
@@ -124,13 +118,13 @@ fun MessageBubble(
                 attachments = message.attachments,
                 author = author,
                 timeLabel = message.timeLabel,
-                onPhotoClick = onPhotoAttachmentClick,
-                onFileClick = onFileAttachmentClick,
-                onFileShare = onFileAttachmentShare,
+                onPhotoClick = { onAction(MessageAction.OpenPhotoAttachment(message.id, it)) },
+                onFileClick = { onAction(MessageAction.OpenFileAttachment(message.id, it)) },
+                onFileShare = { onAction(MessageAction.ShareFileAttachment(message.id, it)) },
                 playingVoiceId = playingVoiceId,
-                onToggleVoice = onToggleVoice,
-                onAttachmentLoadError = onAttachmentLoadError,
-                onPhotoLoadError = onAttachmentLoadError,
+                onToggleVoice = { onAction(MessageAction.ToggleVoice(message.id, it)) },
+                onAttachmentLoadError = { onAction(MessageAction.AttachmentLoadFailed(message.id, it)) },
+                onPhotoLoadError = { onAction(MessageAction.AttachmentLoadFailed(message.id, it)) },
             )
         }
         if (message.deleted || message.body.isNotBlank()) {
@@ -159,7 +153,7 @@ fun MessageBubble(
         message.linkPreview?.let { preview ->
             LinkPreviewSurface(preview)
         }
-        if (message.delivery != null) {
+        if (row.showsDeliveryStatus && message.delivery != null) {
             MessageDeliveryStatus(
                 status = message.delivery,
                 modifier = Modifier.padding(
@@ -198,21 +192,21 @@ fun MessageBubble(
                     ReactionPill(
                         reaction = reaction,
                         description = reactionDescription,
-                        enabled = message.reactionsEnabled,
-                        onClick = { onToggleReaction(reaction.emoji) },
+                        enabled = reactionsEnabled && message.reactionsEnabled,
+                        onClick = { onAction(MessageAction.ToggleReaction(message.id, reaction.emoji)) },
                     )
                 }
                 AddReactionPill(
                     description = stringResource(R.string.add_reaction),
-                    enabled = message.reactionsEnabled,
-                    onClick = onAddReaction,
+                    enabled = reactionsEnabled && message.reactionsEnabled,
+                    onClick = { onAction(MessageAction.AddReaction(message.id)) },
                 )
             }
         }
         if (message.delivery == MessageDeliveryUiState.Failed) {
             FishButton(
                 label = stringResource(R.string.retry_failed_message),
-                onClick = onRetry,
+                onClick = { onRetry(message.id) },
                 variant = FishButtonVariant.Secondary,
                 modifier = Modifier.padding(
                     top = FishTheme.spacing.twoXs,
@@ -293,21 +287,21 @@ private fun ReplyPreviewSurface(
 }
 
 @Composable
-private fun messageShape(message: MessageUiModel): Shape {
+private fun messageShape(row: MessageRowUiModel): Shape {
     val outer = FishTheme.radii.chat
     val inner = FishTheme.radii.chatInner
-    return if (message.isOutgoing) {
+    return if (row.message.isOutgoing) {
         RoundedCornerShape(
             topStart = outer,
-            topEnd = if (message.groupedWithPrevious) inner else outer,
+            topEnd = if (row.continuesPrevious) inner else outer,
             bottomStart = outer,
-            bottomEnd = if (message.groupedWithNext) inner else outer,
+            bottomEnd = if (row.continuesNext) inner else outer,
         )
     } else {
         RoundedCornerShape(
-            topStart = if (message.groupedWithPrevious) inner else outer,
+            topStart = if (row.continuesPrevious) inner else outer,
             topEnd = outer,
-            bottomStart = if (message.groupedWithNext) inner else outer,
+            bottomStart = if (row.continuesNext) inner else outer,
             bottomEnd = outer,
         )
     }

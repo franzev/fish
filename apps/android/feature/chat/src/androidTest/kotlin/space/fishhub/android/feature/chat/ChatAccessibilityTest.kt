@@ -45,7 +45,9 @@ import space.fishhub.android.feature.chat.model.ChatRouteUiState
 import space.fishhub.android.feature.chat.model.ComposerMediaUiModel
 import space.fishhub.android.feature.chat.model.LocalAttachmentUiModel
 import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
+import space.fishhub.android.feature.chat.model.MessageAction
 import space.fishhub.android.feature.chat.model.MessageUiModel
+import space.fishhub.android.feature.chat.model.toRow
 import space.fishhub.android.feature.chat.model.OlderMessagesUiState
 import space.fishhub.android.feature.chat.model.ParticipantUiModel
 import space.fishhub.android.feature.chat.model.ReactionUiModel
@@ -243,7 +245,7 @@ class ChatAccessibilityTest {
                         onOpenMediaPicker = { opened = true },
                     )
                     MessageBubble(
-                        message = MessageUiModel(
+                        row = MessageUiModel(
                             id = "unknown-sticker",
                             senderName = "Coach Jordan",
                             body = "",
@@ -255,7 +257,7 @@ class ChatAccessibilityTest {
                                 description = "Sticker unavailable",
                                 assetPath = null,
                             ),
-                        ),
+                        ).toRow(),
                     )
                 }
             }
@@ -360,7 +362,7 @@ class ChatAccessibilityTest {
         composeRule.setContent {
             FishTheme {
                 MessageBubble(
-                    message = MessageUiModel(
+                    row = MessageUiModel(
                         id = "attachments",
                         senderName = "Coach Jordan",
                         body = "",
@@ -371,8 +373,10 @@ class ChatAccessibilityTest {
                             attachment("file-1", 1, AttachmentUiKind.File, "practice notes.pdf"),
                             attachment("missing", 2, AttachmentUiKind.Unavailable, "Attachment", false),
                         ),
-                    ),
-                    onFileAttachmentClick = { openedFile = it },
+                    ).toRow(),
+                    onAction = {
+                        if (it is MessageAction.OpenFileAttachment) openedFile = it.attachmentId
+                    },
                 )
             }
         }
@@ -645,8 +649,8 @@ class ChatAccessibilityTest {
         composeRule.setContent {
             FishTheme {
                 MessageBubble(
-                    message = actionableMessage(),
-                    onOpenActions = { opened = true },
+                    row = actionableMessage().toRow(),
+                    onAction = { if (it is MessageAction.OpenActions) opened = true },
                 )
             }
         }

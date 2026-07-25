@@ -485,6 +485,9 @@ public final class ConversationStore {
         case .toggleReaction(let id, let emoji):
             Task { await setReaction(messageId: id, emoji: emoji) }
         case .reportGif(let id): Task { await reportGif(id) }
+        // Transcript navigation: the view scrolls to the quoted message
+        // and the store holds no state for it.
+        case .openReplyPreview: break
         }
     }
 

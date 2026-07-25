@@ -35,8 +35,10 @@ import space.fishhub.android.core.designsystem.component.FishEmptyState
 import space.fishhub.android.feature.chat.R
 import space.fishhub.android.feature.chat.model.AttachmentUiModel
 import space.fishhub.android.feature.chat.model.CallActivityUiModel
+import space.fishhub.android.feature.chat.model.MessageAction
 import space.fishhub.android.feature.chat.model.MessageUiModel
 import space.fishhub.android.feature.chat.model.OlderMessagesUiState
+import space.fishhub.android.feature.chat.model.toRow
 
 @Composable
 fun PersonalChatTranscript(
@@ -179,25 +181,46 @@ fun PersonalChatTranscript(
                     UnreadMessagesDivider()
                 }
                 MessageBubble(
-                    message = message.copy(gifPlaying = message.id == playingGifId),
-                    onToggleGif = {
-                        playingGifId = if (playingGifId == message.id) null else message.id
+                    row = message
+                        .copy(gifPlaying = message.id == playingGifId)
+                        .toRow(playingVoiceAttachmentId = playingVoiceId),
+                    onAction = { action ->
+                        when (action) {
+                            is MessageAction.ToggleGif ->
+                                playingGifId =
+                                    if (playingGifId == action.messageId) null else action.messageId
+
+                            is MessageAction.ToggleVoice -> {
+                                playingVoiceId = if (playingVoiceId == action.attachmentId) {
+                                    null
+                                } else {
+                                    action.attachmentId
+                                }
+                                if (playingVoiceId == action.attachmentId) playingGifId = null
+                            }
+
+                            is MessageAction.ReportGif -> onReportGif(action.messageId)
+                            is MessageAction.OpenPhotoAttachment ->
+                                onPhotoAttachmentClick(action.attachmentId)
+
+                            is MessageAction.OpenFileAttachment ->
+                                onFileAttachmentClick(action.attachmentId)
+
+                            is MessageAction.ShareFileAttachment ->
+                                onFileAttachmentShare(action.attachmentId)
+
+                            is MessageAction.AttachmentLoadFailed ->
+                                onAttachmentLoadError(action.attachmentId)
+
+                            is MessageAction.OpenActions -> onOpenMessageActions(action.messageId)
+                            is MessageAction.AddReaction -> onOpenReactionPicker(action.messageId)
+                            is MessageAction.ToggleReaction ->
+                                onToggleReaction(action.messageId, action.emoji)
+
+                            is MessageAction.OpenReplyPreview -> onFocusMessage(action.messageId)
+                        }
                     },
-                    onReportGif = { onReportGif(message.id) },
-                    onPhotoAttachmentClick = onPhotoAttachmentClick,
-                    onFileAttachmentClick = onFileAttachmentClick,
-                    onFileAttachmentShare = onFileAttachmentShare,
-                    playingVoiceId = playingVoiceId,
-                    onToggleVoice = { attachmentId ->
-                        playingVoiceId = if (playingVoiceId == attachmentId) null else attachmentId
-                        if (playingVoiceId == attachmentId) playingGifId = null
-                    },
-                    onAttachmentLoadError = onAttachmentLoadError,
-                    onRetry = { onRetryMessage(message.id) },
-                    onOpenActions = { onOpenMessageActions(message.id) },
-                    onAddReaction = { onOpenReactionPicker(message.id) },
-                    onToggleReaction = { emoji -> onToggleReaction(message.id, emoji) },
-                    onReplyPreviewClick = onFocusMessage,
+                    onRetry = onRetryMessage,
                     modifier = Modifier
                         .then(
                             if (message.id == focusedMessageId) {

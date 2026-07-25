@@ -22,10 +22,20 @@ const ANDROID_ROOTS = [
 ];
 const IOS_ROOTS = ["apps/ios/FishKit/Sources"];
 
-// Compose mandates `modifier` as the first optional parameter; SwiftUI has no
-// counterpart. SwiftUI state plumbing has no Compose counterpart. Neither side
-// participates in prop comparison. See docs/native-parity-refactor-plan.md §8.
-const EXEMPT_PROPS = new Set(["modifier", "requestedFocus"]);
+// Parameters that exist for platform reasons and so never participate in prop
+// comparison. See docs/native-parity-refactor-plan.md §8.
+//
+//   modifier                    Compose mandates it as the first optional param
+//   requestedFocus              SwiftUI @Binding accessibility focus
+//   attachmentCommands,         SwiftUI view-scoped services; Compose hoists the
+//   imageLoader, fileDownloader equivalents to the ViewModel instead
+const EXEMPT_PROPS = new Set([
+  "modifier",
+  "requestedFocus",
+  "attachmentCommands",
+  "imageLoader",
+  "fileDownloader",
+]);
 
 function walk(dir, ext, out = []) {
   if (!existsSync(dir)) return out;

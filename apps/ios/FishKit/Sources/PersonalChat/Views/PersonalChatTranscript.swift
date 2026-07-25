@@ -68,9 +68,16 @@ public struct PersonalChatTranscript: View {
                         focusTreatment(
                             MessageBubble(
                                 row: row,
+                                onAction: { action in
+                                    // Jumping to a quoted message is transcript
+                                    // navigation, not a store command.
+                                    if case .openReplyPreview(let id) = action {
+                                        onFocusMessage(id)
+                                    } else {
+                                        onMessageAction(action)
+                                    }
+                                },
                                 onRetry: onRetryMessage,
-                                onAction: onMessageAction,
-                                onReplyTap: onFocusMessage,
                                 reactionsEnabled: reactionsEnabled,
                                 attachmentCommands: attachmentCommands,
                                 imageLoader: imageLoader,

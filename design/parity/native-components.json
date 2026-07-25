@@ -1563,36 +1563,14 @@
         "symbol": "MessageBubble",
         "visibility": "public"
       },
-      "props": {
-        "android": [
-          "message",
-          "onToggleGif",
-          "onReportGif",
-          "onRetry",
-          "onPhotoAttachmentClick",
-          "onFileAttachmentClick",
-          "onFileAttachmentShare",
-          "playingVoiceId",
-          "onToggleVoice",
-          "onAttachmentLoadError",
-          "onOpenActions",
-          "onAddReaction",
-          "onToggleReaction",
-          "onReplyPreviewClick"
-        ],
-        "ios": [
-          "row",
-          "onRetry",
-          "onAction",
-          "onReplyTap",
-          "reactionsEnabled",
-          "attachmentCommands",
-          "imageLoader",
-          "fileDownloader"
-        ]
-      },
+      "props": [
+        "row",
+        "onAction",
+        "onRetry",
+        "reactionsEnabled"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false
     },
     {
@@ -1988,9 +1966,6 @@
           "selection",
           "gifProvider",
           "attachmentUploads",
-          "attachmentCommands",
-          "imageLoader",
-          "fileDownloader",
           "context",
           "onSend",
           "onRetryMessage",
@@ -2097,10 +2072,7 @@
           "onFocusMessage",
           "onVisibleMessage",
           "onCallBack",
-          "reactionsEnabled",
-          "attachmentCommands",
-          "imageLoader",
-          "fileDownloader"
+          "reactionsEnabled"
         ]
       },
       "previews": [],

@@ -10,7 +10,6 @@ public struct MessageBubble: View {
     private let row: MessageRowUiModel
     private let onRetry: ((String) -> Void)?
     private let onAction: (MessageAction) -> Void
-    private let onReplyTap: (String) -> Void
     private let reactionsEnabled: Bool
     private let attachmentCommands: (any AttachmentCommandProviding)?
     private let imageLoader: MessageImageLoader
@@ -23,9 +22,8 @@ public struct MessageBubble: View {
 
     public init(
         row: MessageRowUiModel,
-        onRetry: ((String) -> Void)? = nil,
         onAction: @escaping (MessageAction) -> Void = { _ in },
-        onReplyTap: @escaping (String) -> Void = { _ in },
+        onRetry: ((String) -> Void)? = nil,
         reactionsEnabled: Bool = true,
         attachmentCommands: (any AttachmentCommandProviding)? = nil,
         imageLoader: MessageImageLoader = .shared,
@@ -34,7 +32,6 @@ public struct MessageBubble: View {
         self.row = row
         self.onRetry = onRetry
         self.onAction = onAction
-        self.onReplyTap = onReplyTap
         self.reactionsEnabled = reactionsEnabled
         self.attachmentCommands = attachmentCommands
         self.imageLoader = imageLoader
@@ -210,7 +207,7 @@ public struct MessageBubble: View {
 
     private func replyPreview(_ preview: MessageReplyPreviewUiModel) -> some View {
         Button {
-            onReplyTap(preview.messageId)
+            onAction(.openReplyPreview(preview.messageId))
         } label: {
             VStack(alignment: .leading, spacing: Spacing.threeXs) {
                 Text(preview.authorName)

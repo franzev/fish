@@ -23,18 +23,32 @@ data class MessageRowUiModel(
     val message: MessageUiModel,
     val groupPosition: MessageGroupPosition,
     val showsDeliveryStatus: Boolean,
+    /** Which voice attachment the transcript is currently playing, if any. */
+    val playingVoiceAttachmentId: String? = null,
 ) {
     val id: String get() = message.id
+
+    /** True when the bubble joins the message above it, so its top corner tightens. */
+    val continuesPrevious: Boolean
+        get() = groupPosition == MessageGroupPosition.Middle ||
+            groupPosition == MessageGroupPosition.Last
+
+    /** True when the bubble joins the message below it, so its bottom corner tightens. */
+    val continuesNext: Boolean
+        get() = groupPosition == MessageGroupPosition.First ||
+            groupPosition == MessageGroupPosition.Middle
 }
 
 /** Derives the run context already computed onto each [MessageUiModel]. */
-fun MessageUiModel.toRow(): MessageRowUiModel = MessageRowUiModel(
-    message = this,
-    groupPosition = when {
-        !groupedWithPrevious && !groupedWithNext -> MessageGroupPosition.Solo
-        !groupedWithPrevious -> MessageGroupPosition.First
-        groupedWithNext -> MessageGroupPosition.Middle
-        else -> MessageGroupPosition.Last
-    },
-    showsDeliveryStatus = delivery != null,
-)
+fun MessageUiModel.toRow(playingVoiceAttachmentId: String? = null): MessageRowUiModel =
+    MessageRowUiModel(
+        message = this,
+        groupPosition = when {
+            !groupedWithPrevious && !groupedWithNext -> MessageGroupPosition.Solo
+            !groupedWithPrevious -> MessageGroupPosition.First
+            groupedWithNext -> MessageGroupPosition.Middle
+            else -> MessageGroupPosition.Last
+        },
+        showsDeliveryStatus = delivery != null,
+        playingVoiceAttachmentId = playingVoiceAttachmentId,
+    )
