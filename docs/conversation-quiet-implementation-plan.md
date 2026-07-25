@@ -375,11 +375,15 @@ it off.
 
 ## Deferred until there is a concrete need
 
-- **Badge accuracy while quiet.** Suppressing the push also skips the APNs badge
-  update, so a muted conversation's unread count reaches the iOS home screen
-  late — at the next non-muted push, or on next launch. Fixing it properly means
-  a silent `content-available` push (the payload shape already exists in
-  `_shared/apns.ts:209`). Defer until someone actually reports a stale badge.
+- ~~**Badge accuracy while quiet.**~~ Done. A silenced recipient now gets a
+  badge-only APNs push (`aps: { badge }`, priority 5, nothing else), so the
+  count stays right without a banner. Note the original deferral pointed at
+  `_shared/apns.ts:209` for a `content-available` payload — that line is the
+  **VoIP/PushKit** push, a different channel. A real background push was the
+  wrong mechanism here anyway: the app declares only the `audio` and `voip`
+  background modes, so iOS would not deliver one for processing, and background
+  pushes are throttled best-effort regardless. `verify:quiet-push` guards the
+  invariant that a silenced recipient can never reach an alerting dispatch.
 - **Muting from the conversation list.** A swipe action is the obvious follow-up,
   but the details surface is the discoverable home for it and one entry point is
   enough to learn whether the feature is used at all.
