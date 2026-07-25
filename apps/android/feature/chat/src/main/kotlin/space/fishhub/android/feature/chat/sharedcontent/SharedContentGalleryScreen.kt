@@ -22,11 +22,6 @@ import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentManua
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentPresentationNotice
 import space.fishhub.android.feature.chat.sharedcontent.state.SharedContentUnavailableReason
 
-enum class SharedContentOrigin {
-    ConversationHeader,
-    ConversationDetails,
-}
-
 @Composable
 fun SharedContentGalleryScreen(
     presenter: SharedContentGalleryPresenter,
