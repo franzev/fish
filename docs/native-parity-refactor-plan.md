@@ -173,9 +173,41 @@ the shared component", after which the parameters follow naturally.
 
 | Component | Gap |
 |---|---|
-| `AttachmentViewer` | FishKit pages an image array (`images`, `initialIndex`); Android shows a single attachment with **no swiping between photos** |
 | `PersonalChatTopBar` | Android renders a remote avatar image; FishKit renders initials only |
-| `GifMedia` | Shared primitive on iOS, duplicated rendering on Android (above) |
+
+`AttachmentViewer` and `GifMedia` are now closed — see below.
+
+**`AttachmentViewer` paging shipped.** Android's viewer took a single attachment and could not be
+swiped. It now opens on the tapped photo and pages across that message's photos, scoped the way
+FishKit scopes it. Position is rendered as text ("Photo 2 of 3") rather than as dots, because a
+screen reader cannot convey dots. Single-photo rendering is byte-identical — the indicator is
+suppressed below two photos — so no existing baseline moved.
+
+**`GifMedia` resolved, but not the way the triage first suggested.** The picker tile is a
+*selector* and the transcript is a *player*; merging them the way FishKit does would force two
+interaction models into one component. The real defect was narrower: the transcript fell back to
+an unavailable message when a poster failed to load and **the picker grid had no failure state at
+all**, leaving a blank tile. Both now load posters through one `GifPoster`, which removes the
+duplication and fixes the gap without merging the components.
+
+**`PersonalChatTopBar` avatar images: scope corrected.** An earlier note claimed the data already
+existed on iOS. **It does not.** `ConversationSummary` has no avatar field and FishKit's entire
+ChatData layer has no reference to avatars. Android resolves them through the `avatar-command`
+Supabase Edge Function (`{profileIds}` → `{items: [{profileId, url}]}`) in
+`SupabaseChatRemoteDataSource.resolveAvatarUrls`. Bringing this to iOS means: a matching Edge
+Function client and wire DTOs in ChatData, a new field on `ConversationSummary`, threading through
+`ConversationStore` and `PersonalChatScreen`, async image loading in the top bar, and new
+baselines. It is well defined — the backend contract exists — but it is a data-layer feature, and
+a wrong wire contract is not caught by the compiler, the snapshot baselines, or the parity check.
+It wants a session with the backend running.
+
+**Avatar accessibility default: analysis, still open.** Android's `FishAvatar` always sets
+`contentDescription = name`; FishKit's `Avatar` defaults to `isDecorative: true` and lets the row
+carry the name. In the Android top bar the avatar sits inside a `clickable` Box that sets its own
+`contentDescription`, which merges descendants and takes precedence — so the name is probably not
+announced twice *there*. "Probably" is not a basis for changing announcement semantics for this
+audience. The parameter now exists on both platforms with Android keeping its current behaviour;
+picking the default wants a TalkBack and VoiceOver pass.
 
 **The 38 cannot be closed by refactoring.** Each needs a decision first:
 
