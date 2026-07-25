@@ -1,4 +1,4 @@
-package space.fishhub.android.feature.chat.component
+package space.fishhub.android.feature.chat.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

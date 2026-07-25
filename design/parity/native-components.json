@@ -1057,7 +1057,7 @@
     {
       "name": "ConversationRow",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/component/ConversationRow.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/ConversationRow.kt",
         "symbol": "ConversationRow",
         "visibility": "public"
       },
@@ -2926,7 +2926,7 @@
     {
       "name": "UnreadBadge",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/component/UnreadBadge.kt",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/UnreadBadge.kt",
         "symbol": "UnreadBadge",
         "visibility": "public"
       },

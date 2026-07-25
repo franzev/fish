@@ -26,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishDivider
 import space.fishhub.android.feature.chat.R
-import space.fishhub.android.feature.chat.component.ConversationRow
+import space.fishhub.android.feature.chat.views.ConversationRow
 import space.fishhub.android.feature.chat.logic.ChatMediaCatalog
 import space.fishhub.android.feature.chat.model.ChatUiModel
 import space.fishhub.android.feature.chat.model.ComposerMediaUiModel
