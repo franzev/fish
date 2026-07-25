@@ -1292,6 +1292,103 @@ async function checkChatStickerBoundaries(): Promise<void> {
   );
 }
 
+// CHAT-11: per-conversation quiet. The mute table carries no policies and no
+// `authenticated` grants on purpose — every read and write goes through the
+// two security-definer functions, so this checks both the happy path and that
+// the table itself stays out of reach.
+async function checkConversationMuteBoundary(): Promise<void> {
+  const label = "CHAT-11 quiet";
+  const conversation = await getClientOneConversationFixture(label);
+  if (!conversation) return;
+
+  const member = await signInAs(client1.email, client1.password);
+  const outsider = await signInAs(client2.email, client2.password);
+
+  const { data: initial, error: initialError } = await member.rpc("conversation_mute", {
+    p_conversation_id: conversation.id,
+  });
+  checkNoRecursion(`${label}: initial read`, initialError);
+  report(
+    `${label}: a conversation starts with notifications on`,
+    !initialError && initial?.[0]?.muted === false && initial?.[0]?.muted_until === null,
+    initialError?.message ?? JSON.stringify(initial),
+  );
+
+  const { data: quieted, error: quietError } = await member.rpc("set_conversation_mute", {
+    p_conversation_id: conversation.id,
+    p_muted: true,
+    p_duration_seconds: 3600,
+  });
+  checkNoRecursion(`${label}: set`, quietError);
+  const quietedUntil = quieted?.[0]?.muted_until;
+  report(
+    `${label}: a member can go quiet for a fixed period`,
+    !quietError && quieted?.[0]?.muted === true && typeof quietedUntil === "string"
+      && new Date(quietedUntil).getTime() > Date.now(),
+    quietError?.message ?? JSON.stringify(quieted),
+  );
+
+  const { data: readBack } = await member.rpc("conversation_mute", {
+    p_conversation_id: conversation.id,
+  });
+  report(
+    `${label}: the quiet period reads back`,
+    readBack?.[0]?.muted === true && readBack?.[0]?.muted_until === quietedUntil,
+    JSON.stringify(readBack),
+  );
+
+  const { error: badDurationError } = await member.rpc("set_conversation_mute", {
+    p_conversation_id: conversation.id,
+    p_muted: true,
+    p_duration_seconds: 999,
+  });
+  report(
+    `${label}: an arbitrary quiet period is rejected`,
+    !!badDurationError,
+    badDurationError?.message ?? "accepted",
+  );
+
+  const { error: outsiderWriteError } = await outsider.rpc("set_conversation_mute", {
+    p_conversation_id: conversation.id,
+    p_muted: true,
+    p_duration_seconds: 3600,
+  });
+  report(
+    `${label}: a non-member cannot silence someone else's conversation`,
+    !!outsiderWriteError,
+    outsiderWriteError?.message ?? "accepted",
+  );
+
+  const { error: outsiderReadError } = await outsider.rpc("conversation_mute", {
+    p_conversation_id: conversation.id,
+  });
+  report(
+    `${label}: a non-member cannot read someone else's quiet state`,
+    !!outsiderReadError,
+    outsiderReadError?.message ?? "read succeeded",
+  );
+
+  const { data: directRows, error: directError } = await member
+    .from("conversation_mutes")
+    .select("conversation_id, muted_until");
+  report(
+    `${label}: the mute table is not readable outside its functions`,
+    !!directError || (directRows ?? []).length === 0,
+    directError?.message ?? `rows=${(directRows ?? []).length}`,
+  );
+
+  const { data: restored, error: restoreError } = await member.rpc("set_conversation_mute", {
+    p_conversation_id: conversation.id,
+    p_muted: false,
+    p_duration_seconds: null,
+  });
+  report(
+    `${label}: turning notifications back on clears the quiet period`,
+    !restoreError && restored?.[0]?.muted === false && restored?.[0]?.muted_until === null,
+    restoreError?.message ?? JSON.stringify(restored),
+  );
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
@@ -1319,6 +1416,7 @@ async function main(): Promise<void> {
   await checkChatReactionsSoftDeleteAndIntegrity();
   await checkChatGifBoundaries();
   await checkChatStickerBoundaries();
+  await checkConversationMuteBoundary();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);

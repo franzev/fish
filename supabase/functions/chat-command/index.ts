@@ -1,3 +1,5 @@
+import { QUIET_DURATIONS_SECONDS } from "../_shared/conversation-mute.ts";
+
 type ChatCommand =
   | {
       action: "edit-message";
@@ -28,6 +30,12 @@ type ChatCommand =
       conversationId: string;
       lastDeliveredMessageId: string | null;
       lastReadMessageId: string | null;
+    }
+  | {
+      action: "set-conversation-mute";
+      conversationId: string;
+      muted: boolean;
+      durationSeconds: number | null;
     }
   | {
       action: "refresh-messages";
@@ -289,6 +297,21 @@ Deno.serve(async (request) => {
       p_last_delivered_message_id: command.lastDeliveredMessageId ?? null,
       p_last_read_message_id: command.lastReadMessageId ?? null,
     });
+  } else if (command.action === "set-conversation-mute") {
+    if (!command.conversationId || typeof command.muted !== "boolean") {
+      return calmError("That conversation is not available.", 400);
+    }
+
+    const durationSeconds = command.durationSeconds ?? null;
+    if (durationSeconds !== null && !QUIET_DURATIONS_SECONDS.includes(durationSeconds)) {
+      return calmError("That quiet period is not available.", 400);
+    }
+
+    response = await rpc(supabaseUrl, apiKey, authHeader, "set_conversation_mute", {
+      p_conversation_id: command.conversationId,
+      p_muted: command.muted,
+      p_duration_seconds: durationSeconds,
+    });
   } else if (command.action === "refresh-messages") {
     const messageIds = Array.isArray(command.messageIds)
       ? [...new Set(command.messageIds.filter((id) => typeof id === "string" && id))]
@@ -387,6 +410,10 @@ Deno.serve(async (request) => {
 
   if (command.action === "mark-read-state") {
     return Response.json({ readState: getPayloadMessage(payload) }, { headers: jsonHeaders });
+  }
+
+  if (command.action === "set-conversation-mute") {
+    return Response.json({ mute: getPayloadMessage(payload) }, { headers: jsonHeaders });
   }
 
   const message = getPayloadMessage(payload);

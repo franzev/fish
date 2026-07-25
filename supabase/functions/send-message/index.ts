@@ -1,5 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2.110.0";
 import {
+  type ConversationMuteRow,
+  unmutedRecipients,
+} from "../_shared/conversation-mute.ts";
+import {
   dispatchDirectMessagePush,
   type DirectMessagePush,
 } from "../_shared/fcm.ts";
@@ -130,24 +134,38 @@ async function dispatchMessagePush(input: {
   const admin = createClient(input.supabaseUrl, input.serviceRoleKey, {
     auth: { persistSession: false },
   });
-  const [{ data: conversation }, { data: channel }, { data: sender }] = await Promise.all([
-    admin.from("conversations")
-      .select("client_id, coach_id")
-      .eq("id", input.conversationId)
-      .maybeSingle(),
-    admin.from("channels")
-      .select("id")
-      .eq("conversation_id", input.conversationId)
-      .maybeSingle(),
-    admin.from("profiles")
-      .select("display_name")
-      .eq("id", input.senderId)
-      .maybeSingle(),
-  ]);
+  const [{ data: conversation }, { data: channel }, { data: sender }, { data: mutes }] =
+    await Promise.all([
+      admin.from("conversations")
+        .select("client_id, coach_id")
+        .eq("id", input.conversationId)
+        .maybeSingle(),
+      admin.from("channels")
+        .select("id")
+        .eq("conversation_id", input.conversationId)
+        .maybeSingle(),
+      admin.from("profiles")
+        .select("display_name")
+        .eq("id", input.senderId)
+        .maybeSingle(),
+      // At most one row per member of a direct conversation, so this is read
+      // alongside the rest rather than after the members are known.
+      admin.from("conversation_mutes")
+        .select("user_id, muted_until")
+        .eq("conversation_id", input.conversationId),
+    ]);
   if (!conversation || channel) return;
-  const recipientIds = [conversation.client_id, conversation.coach_id]
-    .filter((id): id is string => typeof id === "string" && id !== input.senderId);
+
+  // Quiet is a push-only preference: the message still lands, still counts as
+  // unread, and still arrives over realtime. Only the alert is withheld.
+  const recipientIds = unmutedRecipients(
+    [conversation.client_id, conversation.coach_id]
+      .filter((id): id is string => typeof id === "string" && id !== input.senderId),
+    (mutes ?? []) as ConversationMuteRow[],
+    new Date(),
+  );
   if (recipientIds.length === 0) return;
+
   const unreadCountEntries = await Promise.all(
     recipientIds.map(async (recipientId) => {
       const { data } = await admin.rpc("get_mobile_unread_count", {
