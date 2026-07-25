@@ -31,6 +31,10 @@ const IOS_ROOTS = ["apps/ios/FishKit/Sources"];
 //   imageLoader, fileDownloader equivalents to the ViewModel instead
 //   restoreFocus,               Compose focus plumbing; SwiftUI uses the
 //   onFocusChanged              @AccessibilityFocusState property wrapper
+//   loader, commands,           Injected dependencies, not data. FishKit hands
+//   downloader, loadThumbnail,  them to the view; Compose resolves the same
+//   thumbnailLoader,            collaborators in the ViewModel and passes the
+//   gifProvider, mediaEngine    resulting data or callbacks down.
 const EXEMPT_PROPS = new Set([
   "modifier",
   "requestedFocus",
@@ -39,7 +43,20 @@ const EXEMPT_PROPS = new Set([
   "fileDownloader",
   "restoreFocus",
   "onFocusChanged",
+  "loader",
+  "commands",
+  "downloader",
+  "loadThumbnail",
+  "thumbnailLoader",
+  "gifProvider",
+  "mediaEngine",
 ]);
+
+// Names that mean the same thing but follow each platform's control
+// conventions: SwiftUI buttons take `action:`, Compose takes `onClick`.
+// Compared as equal rather than exempted, because the parameter exists on both.
+const PROP_ALIASES = new Map([["action", "onClick"]]);
+const canonicalProp = (p) => PROP_ALIASES.get(p) ?? p;
 
 function walk(dir, ext, out = []) {
   if (!existsSync(dir)) return out;
@@ -312,7 +329,7 @@ function verify() {
       const a = (android.get(entry.android.file) ?? []).find((c) => c.symbol === entry.android.symbol);
       const i = (ios.get(entry.ios.file) ?? []).find((c) => c.symbol === entry.ios.symbol);
       if (a && i) {
-        const clean = (props) => props.filter((p) => !EXEMPT_PROPS.has(p));
+        const clean = (props) => props.filter((p) => !EXEMPT_PROPS.has(p)).map(canonicalProp);
         const av = clean(a.props);
         const iv = clean(i.props);
         if (av.join(",") !== iv.join(",")) {
@@ -330,6 +347,25 @@ function verify() {
     for (const name of entry.previews ?? []) {
       if (!androidCases.has(name)) errors.push(`${entry.name}: preview case "${name}" missing on android`);
       if (!iosCases.has(name)) errors.push(`${entry.name}: preview case "${name}" missing on ios`);
+    }
+  }
+
+  // 8 — a paired component must either have aligned props or say why not.
+  // Without this an unconverged component is indistinguishable from one nobody
+  // has looked at yet.
+  const BREAKS = new Set(["state-bundling", "platform-idiom", "feature-gap"]);
+  for (const entry of registry.components) {
+    if (!entry.android || !entry.ios) continue;
+    if (entry.propsAligned) {
+      if (entry.propsBreak) {
+        errors.push(`${entry.name}: propsAligned yet still carries propsBreak "${entry.propsBreak}"`);
+      }
+      continue;
+    }
+    if (!entry.propsBreak) {
+      errors.push(`${entry.name}: props differ with no propsBreak recorded — classify it`);
+    } else if (!BREAKS.has(entry.propsBreak)) {
+      errors.push(`${entry.name}: unknown propsBreak "${entry.propsBreak}"`);
     }
   }
 

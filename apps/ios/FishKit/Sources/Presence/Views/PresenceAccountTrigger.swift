@@ -6,16 +6,16 @@ import UIComponents
 /// accessibility element with a full 44-point target.
 public struct PresenceAccountTrigger: View {
     private let displayName: String
-    private let presentation: PresencePresentation
+    private let presence: PresencePresentation
     private let action: () -> Void
 
     public init(
         displayName: String,
-        presentation: PresencePresentation,
+        presence: PresencePresentation,
         action: @escaping () -> Void
     ) {
         self.displayName = displayName
-        self.presentation = presentation
+        self.presence = presence
         self.action = action
     }
 
@@ -24,8 +24,8 @@ public struct PresenceAccountTrigger: View {
             PresenceAvatar(
                 name: displayName,
                 size: .sm,
-                status: presentation.status,
-                statusLabel: presentation.label
+                status: presence.status,
+                statusLabel: presence.label
             )
             .frame(
                 minWidth: Metrics.targetTouch,
@@ -34,6 +34,6 @@ public struct PresenceAccountTrigger: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(displayName), \(presentation.label), account and status")
+        .accessibilityLabel("\(displayName), \(presence.label), account and status")
     }
 }

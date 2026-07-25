@@ -134,7 +134,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "feature-gap"
     },
     {
       "name": "ActionButton",
@@ -164,12 +165,13 @@
           "icon",
           "isLoading",
           "fullWidth",
-          "action"
+          "onClick"
         ]
       },
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
+      "propsBreak": "platform-idiom",
       "namingBreak": "android-material-collision"
     },
     {
@@ -209,12 +211,13 @@
         ],
         "ios": [
           "disabled",
-          "action"
+          "onClick"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "platform-idiom"
     },
     {
       "name": "AppearancePage",
@@ -357,15 +360,13 @@
         "ios": [
           "images",
           "initialIndex",
-          "author",
-          "loader",
-          "commands",
-          "downloader"
+          "author"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "feature-gap"
     },
     {
       "name": "AttachmentViewerContent",
@@ -446,7 +447,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "CallActivityRow",
@@ -513,7 +515,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "CallEntryButtons",
@@ -551,7 +554,6 @@
           "busy",
           "qualityPreference",
           "audioEndpoints",
-          "mediaEngine",
           "onAnswer",
           "onDecline",
           "onCancel",
@@ -575,7 +577,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "CallPanel",
@@ -623,7 +626,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "CallPromptActions",
@@ -689,7 +693,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "CallStatusHeader",
@@ -740,8 +745,7 @@
       "props": {
         "android": [
           "call",
-          "mediaState",
-          "mediaEngine"
+          "mediaState"
         ],
         "ios": [
           "state",
@@ -752,7 +756,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "CallVideoView",
@@ -762,7 +767,6 @@
         "visibility": "internal"
       },
       "props": [
-        "mediaEngine",
         "source"
       ],
       "previews": [],
@@ -1010,7 +1014,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "ConversationListScreen",
@@ -1045,7 +1050,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "ConversationRow",
@@ -1091,7 +1097,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "EmptyState",
@@ -1109,7 +1116,7 @@
         "android": [
           "title",
           "description",
-          "action"
+          "onClick"
         ],
         "ios": [
           "title",
@@ -1122,6 +1129,7 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
+      "propsBreak": "feature-gap",
       "namingBreak": "android-material-collision"
     },
     {
@@ -1253,7 +1261,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "feature-gap"
     },
     {
       "name": "GifPanel",
@@ -1329,12 +1338,13 @@
           "isActive",
           "accessibilityLabel",
           "isBusy",
-          "action"
+          "onClick"
         ]
       },
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
+      "propsBreak": "platform-idiom",
       "namingBreak": "android-material-collision"
     },
     {
@@ -1379,6 +1389,7 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
+      "propsBreak": "platform-idiom",
       "namingBreak": "android-material-collision"
     },
     {
@@ -1467,7 +1478,6 @@
           "onToggleGifAnimations"
         ],
         "ios": [
-          "gifProvider",
           "defaultTab",
           "gifDisabled",
           "stickerDisabled",
@@ -1478,7 +1488,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MediaPickerTabs",
@@ -1519,15 +1530,13 @@
         ],
         "ios": [
           "attachments",
-          "author",
-          "loader",
-          "commands",
-          "downloader"
+          "author"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MessageBody",
@@ -1617,7 +1626,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MessageDaySeparator",
@@ -1673,13 +1683,13 @@
           "onShare"
         ],
         "ios": [
-          "attachment",
-          "downloader"
+          "attachment"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MessageGif",
@@ -1705,8 +1715,6 @@
       "props": [
         "attachment",
         "author",
-        "loader",
-        "commands",
         "onOpen"
       ],
       "previews": [],
@@ -1742,7 +1750,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MessageVideoPlayer",
@@ -1768,13 +1777,13 @@
           "onFileShare"
         ],
         "ios": [
-          "attachment",
-          "downloader"
+          "attachment"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MessageVoicePlayer",
@@ -1798,13 +1807,13 @@
           "onPlaybackError"
         ],
         "ios": [
-          "attachment",
-          "downloader"
+          "attachment"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "MicrophoneLevelMeter",
@@ -1849,6 +1858,7 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
+      "propsBreak": "feature-gap",
       "namingBreak": "android-material-collision"
     },
     {
@@ -1956,7 +1966,6 @@
           "model",
           "draft",
           "selection",
-          "gifProvider",
           "attachmentUploads",
           "context",
           "onSend",
@@ -1978,7 +1987,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "PersonalChatTopBar",
@@ -2019,7 +2029,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "feature-gap"
     },
     {
       "name": "PersonalChatTranscript",
@@ -2069,7 +2080,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "PresenceAccountSheet",
@@ -2099,20 +2111,13 @@
         "symbol": "PresenceAccountTrigger",
         "visibility": "public"
       },
-      "props": {
-        "android": [
-          "displayName",
-          "presence",
-          "onClick"
-        ],
-        "ios": [
-          "displayName",
-          "presentation",
-          "action"
-        ]
-      },
+      "props": [
+        "displayName",
+        "presence",
+        "onClick"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false
     },
     {
@@ -2144,7 +2149,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "PresenceIndicator",
@@ -2191,7 +2197,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "PresenceVisibilityPage",
@@ -2263,12 +2270,13 @@
         "ios": [
           "reaction",
           "disabled",
-          "action"
+          "onClick"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "platform-idiom"
     },
     {
       "name": "ReactionPillTarget",
@@ -2318,12 +2326,13 @@
           "selected",
           "enabled",
           "showsChevron",
-          "action"
+          "onClick"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "platform-idiom"
     },
     {
       "name": "SharedContentCategoryBar",
@@ -2387,7 +2396,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "SharedContentGalleryScreen",
@@ -2408,8 +2418,7 @@
           "onIntent",
           "onSelectItem",
           "onItemDisplayed",
-          "displayScopeKey",
-          "thumbnailLoader"
+          "displayScopeKey"
         ],
         "ios": [
           "model",
@@ -2418,7 +2427,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "SharedContentGalleryScreenContent",
@@ -2442,7 +2452,6 @@
         "onSelectItem",
         "onRecordAnchor",
         "onReportVisibility",
-        "loadThumbnail",
         "onThumbnailDisplayed"
       ],
       "previews": [],
@@ -2491,20 +2500,19 @@
           "focusedItemId",
           "onItemFocusChanged",
           "onItemDisplayed",
-          "thumbnailLoader",
           "displayScopeKey"
         ],
         "ios": [
           "items",
           "onSelectItem",
           "accessibilityFocus",
-          "loadThumbnail",
           "onThumbnailDisplayed"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "SharedContentMediaThumbnail",
@@ -2515,7 +2523,6 @@
       },
       "props": [
         "item",
-        "loadThumbnail",
         "onDisplayed"
       ],
       "previews": [],
@@ -2581,8 +2588,7 @@
           "onBack",
           "onOpenSource",
           "onNativeAction",
-          "onDelete",
-          "thumbnailLoader"
+          "onDelete"
         ],
         "ios": [
           "item",
@@ -2591,13 +2597,13 @@
           "onBack",
           "onOpenSource",
           "onNativeAction",
-          "onDelete",
-          "loadThumbnail"
+          "onDelete"
         ]
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "SharedContentUnavailableState",
@@ -2626,7 +2632,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "state-bundling"
     },
     {
       "name": "ShowEarlierBoundary",
@@ -2774,7 +2781,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "propsBreak": "feature-gap"
     },
     {
       "name": "StickerPanel",
@@ -2912,9 +2920,7 @@
         "visibility": "internal"
       },
       "props": [
-        "attachment",
-        "loader",
-        "commands"
+        "attachment"
       ],
       "previews": [],
       "previewsAligned": false,

@@ -80,11 +80,11 @@ struct PresencePage: View {
 
                 section("Last seen") {
                     ForEach(lastSeenSamples, id: \.0) { _, snapshot in
-                        let presentation = Self.formatter.format(snapshot, now: Self.now)
+                        let presence = Self.formatter.format(snapshot, now: Self.now)
                         PresenceSummary(
-                            status: presentation.status,
-                            label: presentation.label,
-                            detail: presentation.detail
+                            status: presence.status,
+                            label: presence.label,
+                            detail: presence.detail
                         )
                     }
                 }
@@ -97,7 +97,7 @@ struct PresencePage: View {
                         accountContent: AnyView(
                             PresenceAccountTrigger(
                                 displayName: "Maya Chen",
-                                presentation: model.uiState.own,
+                                presence: model.uiState.own,
                                 action: { isSheetPresented = true }
                             )
                         )
@@ -107,7 +107,7 @@ struct PresencePage: View {
                 section("Account and status") {
                     PresenceAccountTrigger(
                         displayName: "Maya Chen",
-                        presentation: model.uiState.own,
+                        presence: model.uiState.own,
                         action: { isSheetPresented = true }
                     )
                     Text("Tap the avatar to change status — the sheet runs the full drill-down against fixtures.")
@@ -132,8 +132,8 @@ struct PresencePage: View {
     }
 
     private var topBarPresence: PresenceUiModel {
-        let presentation = model.uiState.presentationFor(PresenceFixtures.coachId)
-        return PresenceUiModel(label: presentation.label, tone: presentation.status)
+        let presence = model.uiState.presentationFor(PresenceFixtures.coachId)
+        return PresenceUiModel(label: presence.label, tone: presence.status)
     }
 
     private var lastSeenSamples: [(String, PresenceSnapshot)] {
@@ -317,7 +317,7 @@ struct LivePresenceLabPage: View {
                     accountContent: AnyView(
                         PresenceAccountTrigger(
                             displayName: lab.accountLabel,
-                            presentation: model.uiState.own,
+                            presence: model.uiState.own,
                             action: { isSheetPresented = true }
                         )
                     )
@@ -329,8 +329,8 @@ struct LivePresenceLabPage: View {
     }
 
     private func participantPresence(_ model: PresenceModel) -> PresenceUiModel {
-        let presentation = model.uiState.presentationFor(lab?.recipientId)
-        return PresenceUiModel(label: presentation.label, tone: presentation.status)
+        let presence = model.uiState.presentationFor(lab?.recipientId)
+        return PresenceUiModel(label: presence.label, tone: presence.status)
     }
 
     @ViewBuilder private func visibleSubjects(_ model: PresenceModel) -> some View {
@@ -342,16 +342,16 @@ struct LivePresenceLabPage: View {
                 model.uiState.subjects.keys.sorted(),
                 id: \.self
             ) { subjectId in
-                let presentation = model.uiState.presentationFor(subjectId)
+                let presence = model.uiState.presentationFor(subjectId)
                 HStack(spacing: Spacing.sm) {
                     Text(subjectName(subjectId))
                         .textStyle(.ui)
                         .foregroundStyle(Palette.foreground)
                     Spacer(minLength: Spacing.sm)
                     PresenceSummary(
-                        status: presentation.status,
-                        label: presentation.label,
-                        detail: presentation.detail
+                        status: presence.status,
+                        label: presence.label,
+                        detail: presence.detail
                     )
                 }
                 .padding(Spacing.xs)
