@@ -5,6 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.call.views.CallControls
+import space.fishhub.android.feature.call.views.CallActivityPanel
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import space.fishhub.android.data.call.CallDirection
 import space.fishhub.android.data.call.CallKind
 import space.fishhub.android.data.call.CallMediaState
@@ -123,3 +131,85 @@ private fun sampleCall(
         )
     ) "2026-07-17T10:00:04Z" else null,
 )
+
+// Component-level cases. Each `name` matches the `named:` string FishKit passes
+// to assertThemedSnapshots so the pair can be compared side by side.
+
+@Composable
+private fun CallComponentStrip(darkTheme: Boolean, content: @Composable () -> Unit) {
+    FishTheme(darkTheme = darkTheme, reducedMotion = true) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(FishTheme.colors.background)
+                .padding(FishTheme.spacing.page),
+            verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.md),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun CallControlStates() {
+    CallControls(
+        call = sampleCall(CallLifecycleStatus.Active, CallDirection.Outgoing),
+        busy = false,
+        settingsOpen = false,
+        onToggleMute = {},
+        onToggleCamera = {},
+        onSwitchCamera = {},
+        onOpenMessages = {},
+        onToggleSettings = {},
+        onEnd = {},
+    )
+    CallControls(
+        call = sampleCall(CallLifecycleStatus.Active, CallDirection.Outgoing, CallKind.Video, true),
+        busy = true,
+        settingsOpen = false,
+        onToggleMute = {},
+        onToggleCamera = {},
+        onSwitchCamera = {},
+        onOpenMessages = {},
+        onToggleSettings = {},
+        onEnd = {},
+    )
+}
+
+@Composable
+private fun CallActivityStates() {
+    CallActivityPanel(
+        call = sampleCall(CallLifecycleStatus.Active, CallDirection.Incoming),
+        media = CallMediaState(),
+    )
+    CallActivityPanel(
+        call = sampleCall(CallLifecycleStatus.Active, CallDirection.Incoming).copy(muted = true),
+        media = CallMediaState(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "call-control-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun CallControlStatesLightScreenshot() {
+    CallComponentStrip(darkTheme = false) { CallControlStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "call-control-states-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun CallControlStatesDarkScreenshot() {
+    CallComponentStrip(darkTheme = true) { CallControlStates() }
+}
+
+@PreviewTest
+@Preview(name = "call-activity-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun CallActivityStatesLightScreenshot() {
+    CallComponentStrip(darkTheme = false) { CallActivityStates() }
+}
