@@ -776,6 +776,11 @@ private class FakeRemote : ChatRemoteDataSource {
         lastDeliveredMessageId: String?,
         lastReadMessageId: String?,
     ) = ChatReadState("client-1", lastDeliveredMessageId, null, lastReadMessageId, null)
+    override suspend fun conversationMute(conversationId: String) = ConversationMute.On
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ) = ConversationMute(isMuted = quietPeriod != null)
     override fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent> = flow {
         realtimeAttempts += 1
         if (realtimeFailuresRemaining > 0) {

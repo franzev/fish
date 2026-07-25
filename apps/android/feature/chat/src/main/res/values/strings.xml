@@ -209,4 +209,13 @@
     <string name="preview_photo_position">Photo %1$d in attachment preview</string>
     <string name="attached_photo_position">Attached photo %1$d</string>
     <string name="attachment_limit_reached">This message already has five attachments.</string>
+    <string name="notifications">Notifications</string>
+    <string name="notifications_on">On</string>
+    <string name="quiet_until_turned_back_on">Quiet until you turn it back on</string>
+    <string name="quiet_until">Quiet until %1$s</string>
+    <string name="turn_on_notifications">Turn on notifications</string>
+    <string name="quiet_for_one_hour">Quiet for 1 hour</string>
+    <string name="quiet_for_eight_hours">Quiet for 8 hours</string>
+    <string name="quiet_for_one_day">Quiet for 24 hours</string>
+    <string name="quiet_until_i_turn_it_back_on">Quiet until I turn it back on</string>
 </resources>

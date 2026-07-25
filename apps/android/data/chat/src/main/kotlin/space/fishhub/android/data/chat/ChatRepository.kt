@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.net.Uri
+import java.time.Instant
 import space.fishhub.android.data.chat.model.LocalAttachmentDraft
 import space.fishhub.android.data.chat.sharedcontent.IdentityGeneration
 import space.fishhub.android.data.chat.sharedcontent.SharedContentEphemeralPurgeHook
@@ -67,6 +68,46 @@ data class BlockedPerson(
     val displayName: String,
     val username: String?,
 )
+
+/**
+ * How long a member wants one conversation to stay quiet. Everywhere this
+ * appears as a nullable, `null` means notifications are on, so a quiet period
+ * and its absence are the only two states anything has to handle.
+ */
+enum class ConversationQuietPeriod(val durationSeconds: Int?) {
+    /** The fixed values mirror the allowlist in `set_conversation_mute`. */
+    OneHour(3_600),
+    EightHours(28_800),
+    OneDay(86_400),
+
+    /** Stays quiet until the member turns it back on. */
+    UntilTurnedBackOn(null),
+}
+
+/**
+ * Whether one conversation's notifications are currently silenced, as the
+ * server sees it. [mutedUntil] is only ever set while [isMuted] is true, so an
+ * expired quiet period can never be presented as if it were still running.
+ */
+data class ConversationMute(
+    val isMuted: Boolean = false,
+    val mutedUntil: Instant? = null,
+) {
+    /**
+     * Mirrors the predicate the server applies, so a quiet period that runs
+     * out while the screen is open stops reading as quiet on the next frame
+     * instead of waiting for a reload.
+     */
+    fun isQuietAt(moment: Instant): Boolean = when {
+        !isMuted -> false
+        mutedUntil == null -> true
+        else -> mutedUntil > moment
+    }
+
+    companion object {
+        val On = ConversationMute()
+    }
+}
 
 data class AuthorizedChatDirectory(
     val currentUser: AuthorizedChatIdentity,
@@ -358,6 +399,12 @@ interface ChatRepository {
         lastDeliveredMessageId: String?,
         lastReadMessageId: String?,
     ): ChatResult<ChatReadState>
+    suspend fun conversationMute(conversationId: String): ChatResult<ConversationMute>
+    /** A null [quietPeriod] turns notifications back on. */
+    suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ChatResult<ConversationMute>
     suspend fun saveDraft(conversationId: String, draft: String)
     suspend fun importAttachments(
         conversationId: String,

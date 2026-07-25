@@ -8,6 +8,8 @@ import space.fishhub.android.data.chat.AuthorizedChatDirectory
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.BlockedPerson
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.MessagePage
 import space.fishhub.android.data.chat.MessageSearchCursor
 import space.fishhub.android.data.chat.MessageSearchPage
@@ -89,6 +91,11 @@ internal interface ChatRemoteDataSource {
         lastDeliveredMessageId: String?,
         lastReadMessageId: String?,
     ): ChatReadState
+    suspend fun conversationMute(conversationId: String): ConversationMute
+    suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ConversationMute
     fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent>
 }
 

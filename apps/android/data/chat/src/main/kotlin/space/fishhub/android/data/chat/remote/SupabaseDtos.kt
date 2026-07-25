@@ -340,3 +340,17 @@ internal data class ReportGifRequest(
     val action: String = "report-gif",
     val messageId: String,
 )
+
+@Serializable
+internal data class SetConversationMuteRequest(
+    val action: String = "set-conversation-mute",
+    val conversationId: String,
+    val muted: Boolean,
+    val durationSeconds: Int?,
+)
+
+@Serializable
+internal data class ConversationMuteDto(
+    val muted: Boolean = false,
+    @SerialName("muted_until") val mutedUntil: String? = null,
+)

@@ -23,6 +23,8 @@ import space.fishhub.android.data.chat.BlockedPerson
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationSnapshot
 import space.fishhub.android.data.chat.MessagePage
@@ -304,6 +306,12 @@ private class RecordingSearchRepository : ChatRepository {
         lastDeliveredMessageId: String?,
         lastReadMessageId: String?,
     ): ChatResult<ChatReadState> = ChatResult.Success(ChatReadState("client-1"))
+    override suspend fun conversationMute(conversationId: String) =
+        ChatResult.Success(ConversationMute.On)
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ) = ChatResult.Success(ConversationMute(isMuted = quietPeriod != null))
     override suspend fun saveDraft(conversationId: String, draft: String) = Unit
     override suspend fun importAttachments(
         conversationId: String,

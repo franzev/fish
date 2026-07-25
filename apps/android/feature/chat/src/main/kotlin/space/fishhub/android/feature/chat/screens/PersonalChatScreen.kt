@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishDivider
@@ -72,6 +73,7 @@ fun PersonalChatScreen(
     onClearReplyTarget: () -> Unit = {},
     onRemoveFriend: () -> Unit = {},
     onBlockParticipant: () -> Unit = {},
+    onSetQuiet: (ConversationQuietPeriod?) -> Unit = {},
     onPhotoAttachmentClick: (String) -> Unit = {},
     onFileAttachmentClick: (String) -> Unit = {},
     onFileAttachmentShare: (String) -> Unit = {},
@@ -264,6 +266,8 @@ fun PersonalChatScreen(
             onOpenSharedContent = onOpenSharedContentFromDetails,
             onRemoveFriend = onRemoveFriend,
             onBlock = onBlockParticipant,
+            mute = model.mute,
+            onSetQuiet = onSetQuiet,
             sharedContentModifier = sharedContentDetailsModifier,
             requestSharedContentFocus = sharedContentDetailsFocusRequested,
         )

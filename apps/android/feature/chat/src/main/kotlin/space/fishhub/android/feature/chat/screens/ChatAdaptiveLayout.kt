@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishDivider
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.feature.chat.R
 import space.fishhub.android.feature.chat.views.ConversationRow
 import space.fishhub.android.feature.chat.logic.ChatMediaCatalog
@@ -63,6 +64,7 @@ fun ChatAdaptiveLayout(
     onClearReplyTarget: () -> Unit = {},
     onRemoveFriend: () -> Unit = {},
     onBlockParticipant: () -> Unit = {},
+    onSetQuiet: (ConversationQuietPeriod?) -> Unit = {},
     onPhotoAttachmentClick: (String) -> Unit = {},
     onFileAttachmentClick: (String) -> Unit = {},
     onFileAttachmentShare: (String) -> Unit = {},
@@ -138,6 +140,7 @@ fun ChatAdaptiveLayout(
                         onClearReplyTarget = onClearReplyTarget,
                         onRemoveFriend = onRemoveFriend,
                         onBlockParticipant = onBlockParticipant,
+                        onSetQuiet = onSetQuiet,
                         onPhotoAttachmentClick = onPhotoAttachmentClick,
                         onFileAttachmentClick = onFileAttachmentClick,
                         onFileAttachmentShare = onFileAttachmentShare,
@@ -199,6 +202,7 @@ fun ChatAdaptiveLayout(
                     onClearReplyTarget = onClearReplyTarget,
                     onRemoveFriend = onRemoveFriend,
                     onBlockParticipant = onBlockParticipant,
+                    onSetQuiet = onSetQuiet,
                     onPhotoAttachmentClick = onPhotoAttachmentClick,
                     onFileAttachmentClick = onFileAttachmentClick,
                     onFileAttachmentShare = onFileAttachmentShare,

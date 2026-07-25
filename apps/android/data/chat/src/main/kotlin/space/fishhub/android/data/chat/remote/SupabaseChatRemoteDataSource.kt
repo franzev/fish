@@ -23,6 +23,8 @@ import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.AttachmentDelivery
 import space.fishhub.android.data.chat.ChatCallActivity
 import space.fishhub.android.data.chat.BlockedPerson
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.SharedContentDataCursor
 import space.fishhub.android.data.chat.SharedContentDataItem
 import space.fishhub.android.data.chat.SharedContentDataPage
@@ -514,6 +516,13 @@ internal class SupabaseChatRemoteDataSource(
         }
     }
 
+    // An unreadable expiry degrades to "quiet with no end shown" rather than
+    // failing the read: the server is still the authority on suppression.
+    private fun ConversationMuteDto.toDomain(): ConversationMute = ConversationMute(
+        isMuted = muted,
+        mutedUntil = mutedUntil?.let { runCatching { Instant.parse(it) }.getOrNull() },
+    )
+
     private fun BlockedPersonDto.toDomain(): BlockedPerson {
         val safeId = userId?.trim()?.takeIf(String::isNotBlank)
             ?.takeIf { runCatching { UUID.fromString(it) }.isSuccess }
@@ -592,6 +601,38 @@ internal class SupabaseChatRemoteDataSource(
         val element = json.parseToJsonElement(payload).jsonObject["readState"]
             ?: throw RemoteCommandException(DefaultReadError)
         return json.decodeFromJsonElement(ReadStateDto.serializer(), element).toDomain()
+    }
+
+    override suspend fun conversationMute(conversationId: String): ConversationMute =
+        client.postgrest.rpc(
+            function = "conversation_mute",
+            parameters = buildJsonObject {
+                put("p_conversation_id", JsonPrimitive(conversationId))
+            },
+        ).decodeList<ConversationMuteDto>().firstOrNull()?.toDomain() ?: ConversationMute.On
+
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ConversationMute {
+        val response = client.functions.invoke(
+            function = "chat-command",
+            body = SetConversationMuteRequest(
+                conversationId = conversationId,
+                muted = quietPeriod != null,
+                durationSeconds = quietPeriod?.durationSeconds,
+            ),
+            headers = headers {
+                append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            },
+        )
+        val payload = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw RemoteCommandException(readError(payload, DefaultMuteError))
+        }
+        val element = json.parseToJsonElement(payload).jsonObject["mute"]
+            ?: throw RemoteCommandException(DefaultMuteError)
+        return json.decodeFromJsonElement(ConversationMuteDto.serializer(), element).toDomain()
     }
 
     override fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent> = callbackFlow {
@@ -1059,6 +1100,7 @@ internal class SupabaseChatRemoteDataSource(
         const val DefaultSendError = "That did not send yet. Keep this open and try again."
         const val DefaultReadError = "Your read position did not update yet. Your messages are still here."
         const val DefaultReportError = "That GIF report did not send yet. Try again."
+        const val DefaultMuteError = "That did not save yet. Keep this open and try again."
         const val DefaultCommandError = "That did not save yet. Keep this open and try again."
         const val DefaultFriendError = "Friends is taking a break. Chat still works."
         const val DefaultAttachmentError = "That attachment did not load yet. Try again."

@@ -647,6 +647,12 @@ internal object UnconfiguredChatRepository : ChatRepository {
         lastDeliveredMessageId: String?,
         lastReadMessageId: String?,
     ): ChatResult<ChatReadState> = failure
+    override suspend fun conversationMute(conversationId: String): ChatResult<ConversationMute> =
+        failure
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ChatResult<ConversationMute> = failure
     override suspend fun saveDraft(conversationId: String, draft: String) = Unit
     override suspend fun importAttachments(
         conversationId: String,

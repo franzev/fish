@@ -525,6 +525,7 @@ fun ChatRoute(
                     onClearReplyTarget = viewModel::clearReplyTarget,
                     onRemoveFriend = viewModel::removeFriend,
                     onBlockParticipant = viewModel::blockParticipant,
+                    onSetQuiet = viewModel::setQuiet,
                     onPhotoAttachmentClick = { attachmentId ->
                         selectedPhotoId = attachmentId
                         viewModel.refreshAttachment(attachmentId)

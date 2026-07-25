@@ -14,14 +14,22 @@ public enum ConversationQuietCopy {
     public static func value(
         for mute: ConversationMute,
         now: Date,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        locale: Locale = .autoupdatingCurrent
     ) -> String {
         guard mute.isQuiet(at: now) else { return notificationsOn }
         guard let until = mute.mutedUntil else { return quietUntilTurnedBackOn }
 
-        let time = calendar.isDate(until, inSameDayAs: now)
-            ? until.formatted(date: .omitted, time: .shortened)
-            : until.formatted(date: .abbreviated, time: .shortened)
-        return "Quiet until \(time)"
+        // A bare clock time stops being clear once the quiet period runs past
+        // midnight, which the 24-hour option always does. The same calendar
+        // decides that and renders it, so the two can never disagree.
+        let style = Date.FormatStyle(
+            date: calendar.isDate(until, inSameDayAs: now) ? .omitted : .abbreviated,
+            time: .shortened,
+            locale: locale,
+            calendar: calendar,
+            timeZone: calendar.timeZone
+        )
+        return "Quiet until \(until.formatted(style))"
     }
 }

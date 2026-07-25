@@ -10,7 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
+import java.time.Instant
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.feature.chat.views.ConversationQuietRow
 import space.fishhub.android.feature.chat.sharedcontent.ShowEarlierBoundary
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentUnavailableState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGallerySkeleton
@@ -360,4 +363,84 @@ fun SharedContentChromeLightScreenshot() {
 @Composable
 fun SharedContentChromeDarkScreenshot() {
     ComponentStrip(darkTheme = true) { SharedContentChromeStates() }
+}
+
+// Only the two states whose wording carries no clock time, so these baselines
+// stay identical on any machine. The "Quiet until <time>" wording is pinned to
+// a fixed zone and locale in ConversationQuietCopyTest instead, and it is
+// always shorter than the open-ended wording rendered here.
+private val QuietNow: Instant = Instant.ofEpochSecond(1_753_437_600)
+
+@Composable
+private fun ConversationQuietStates() {
+    ConversationQuietRow(
+        mute = ConversationMute.On,
+        optionsShown = false,
+        onToggleOptions = {},
+        onSelect = {},
+        now = QuietNow,
+    )
+    ConversationQuietRow(
+        mute = ConversationMute(isMuted = true, mutedUntil = null),
+        optionsShown = false,
+        onToggleOptions = {},
+        onSelect = {},
+        now = QuietNow,
+    )
+}
+
+@Composable
+private fun ConversationQuietOptionStates() {
+    ConversationQuietRow(
+        mute = ConversationMute.On,
+        optionsShown = true,
+        onToggleOptions = {},
+        onSelect = {},
+        now = QuietNow,
+    )
+    ConversationQuietRow(
+        mute = ConversationMute(isMuted = true, mutedUntil = null),
+        optionsShown = true,
+        onToggleOptions = {},
+        onSelect = {},
+        now = QuietNow,
+    )
+}
+
+@PreviewTest
+@Preview(name = "conversation-quiet-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun ConversationQuietStatesLightScreenshot() {
+    ComponentStrip(darkTheme = false) { ConversationQuietStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation-quiet-states-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ConversationQuietStatesDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { ConversationQuietStates() }
+}
+
+@PreviewTest
+@Preview(name = "conversation-quiet-options-light", widthDp = 412, showBackground = true)
+@Composable
+fun ConversationQuietOptionsLightScreenshot() {
+    ComponentStrip(darkTheme = false) { ConversationQuietOptionStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation-quiet-options-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ConversationQuietOptionsDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { ConversationQuietOptionStates() }
 }

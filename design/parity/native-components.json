@@ -1003,6 +1003,8 @@
           "onOpenSharedContent",
           "onRemoveFriend",
           "onBlock",
+          "mute",
+          "onSetQuiet",
           "sharedContentModifier",
           "requestSharedContentFocus"
         ],
@@ -1060,21 +1062,37 @@
     },
     {
       "name": "ConversationQuietRow",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/ConversationQuietRow.kt",
+        "symbol": "ConversationQuietRow",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ConversationQuietRow.swift",
         "symbol": "ConversationQuietRow",
         "visibility": "public"
       },
-      "props": [
-        "mute",
-        "optionsShown",
-        "now",
-        "onToggleOptions",
-        "onSelect"
-      ],
+      "props": {
+        "android": [
+          "mute",
+          "optionsShown",
+          "onToggleOptions",
+          "onSelect",
+          "modifier",
+          "now"
+        ],
+        "ios": [
+          "mute",
+          "optionsShown",
+          "now",
+          "onToggleOptions",
+          "onSelect"
+        ]
+      },
       "previews": [],
+      "propsAligned": false,
       "previewsAligned": false,
-      "only": "ios"
+      "propsBreak": "platform-idiom"
     },
     {
       "name": "ConversationRow",

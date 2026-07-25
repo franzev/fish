@@ -49,20 +49,14 @@ struct ChatComponentSnapshotTests {
         assertThemedSnapshots(of: states, named: "sticker-states")
     }
 
+    // Only the two states whose wording carries no clock time, so these
+    // baselines stay identical on any machine. The "Quiet until <time>"
+    // wording is pinned to a fixed calendar in ConversationQuietCopyTests
+    // instead, and it is always shorter than the open-ended wording here.
     @MainActor @Test func conversationQuietStates() {
         let states = VStack(alignment: .leading, spacing: Spacing.md) {
             ConversationQuietRow(
                 mute: .on,
-                optionsShown: false,
-                now: Self.quietNow,
-                onToggleOptions: {},
-                onSelect: { _ in }
-            )
-            ConversationQuietRow(
-                mute: ConversationMute(
-                    isMuted: true,
-                    mutedUntil: Self.quietNow.addingTimeInterval(3600)
-                ),
                 optionsShown: false,
                 now: Self.quietNow,
                 onToggleOptions: {},

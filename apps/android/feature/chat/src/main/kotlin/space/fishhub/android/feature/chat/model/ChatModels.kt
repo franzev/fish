@@ -1,6 +1,7 @@
 package space.fishhub.android.feature.chat.model
 
 import androidx.compose.runtime.Immutable
+import space.fishhub.android.data.chat.ConversationMute
 import space.fishhub.android.data.chat.model.ChatAttachment
 import space.fishhub.android.data.chat.model.ChatAttachmentKind
 import space.fishhub.android.data.chat.model.ChatGif
@@ -28,6 +29,7 @@ data class ChatUiModel(
     val focusedMessageId: String? = null,
     val hasPreviousDestination: Boolean = false,
     val isSending: Boolean = false,
+    val mute: ConversationMute = ConversationMute.On,
     val notice: String? = null,
 )
 

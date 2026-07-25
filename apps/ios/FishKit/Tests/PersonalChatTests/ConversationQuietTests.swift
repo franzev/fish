@@ -16,7 +16,12 @@ struct ConversationQuietCopyTests {
     private let now = Date(timeIntervalSince1970: 1_753_437_600) // 2026-07-25 10:00 UTC
 
     private func value(_ mute: ConversationMute) -> String {
-        ConversationQuietCopy.value(for: mute, now: now, calendar: calendar)
+        ConversationQuietCopy.value(
+            for: mute,
+            now: now,
+            calendar: calendar,
+            locale: Locale(identifier: "en_US")
+        )
     }
 
     @Test func readsAsOnWhenNothingIsSilenced() {

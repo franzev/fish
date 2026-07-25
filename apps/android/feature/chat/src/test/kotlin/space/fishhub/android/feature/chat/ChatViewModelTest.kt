@@ -1,6 +1,7 @@
 package space.fishhub.android.feature.chat
 
 import androidx.lifecycle.SavedStateHandle
+import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +31,8 @@ import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationSnapshot
 import space.fishhub.android.data.chat.GifPage
@@ -98,6 +101,114 @@ class ChatViewModelTest {
             assertEquals(listOf("server-first", "server-second"), repository.lastSentContent?.attachmentIds)
             assertEquals("", repository.lastSentContent?.body)
             assertEquals(1, repository.sendCalls)
+        }
+
+    @Test
+    fun `a conversation opens with the stored quiet state`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val until = Instant.parse("2026-07-25T11:00:00Z")
+            val repository = FakeChatRepository().apply {
+                storedMute = ConversationMute(isMuted = true, mutedUntil = until)
+            }
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            assertEquals(
+                ConversationMute(isMuted = true, mutedUntil = until),
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute,
+            )
+        }
+
+    @Test
+    fun `an unreadable quiet state reads as notifications on`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository().apply {
+                storedMute = ConversationMute(isMuted = true, mutedUntil = null)
+                muteReadFails = true
+            }
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            assertEquals(ConversationMute.On, (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute)
+            assertEquals(null, (viewModel.uiState.value as ChatRouteUiState.Conversation).model.notice)
+        }
+
+    @Test
+    fun `a quiet period shows before the server confirms then takes the server's word`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            repository.muteGate = CompletableDeferred()
+            viewModel.setQuiet(ConversationQuietPeriod.OneHour)
+            val optimistic = (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute
+            assertTrue(optimistic.isMuted)
+            assertTrue(optimistic.mutedUntil!! < FakeChatRepository.ConfirmedMuteBase)
+
+            repository.muteGate?.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(
+                FakeChatRepository.ConfirmedMuteBase.plusSeconds(3_600),
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute.mutedUntil,
+            )
+            assertEquals(listOf(ConversationQuietPeriod.OneHour), repository.quietRequests)
+        }
+
+    @Test
+    fun `the open ended quiet period carries no expiry`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.setQuiet(ConversationQuietPeriod.UntilTurnedBackOn)
+            advanceUntilIdle()
+
+            assertEquals(
+                ConversationMute(isMuted = true, mutedUntil = null),
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute,
+            )
+        }
+
+    @Test
+    fun `turning notifications back on clears the quiet period`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.setQuiet(ConversationQuietPeriod.OneDay)
+            advanceUntilIdle()
+            viewModel.setQuiet(null)
+            advanceUntilIdle()
+
+            assertEquals(ConversationMute.On, (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute)
+            assertEquals(
+                listOf(ConversationQuietPeriod.OneDay, null),
+                repository.quietRequests,
+            )
+        }
+
+    @Test
+    fun `a failed quiet command puts the old state back and explains`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            viewModel.setQuiet(ConversationQuietPeriod.OneHour)
+            advanceUntilIdle()
+            val before = (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute
+
+            repository.muteWriteFails = true
+            viewModel.setQuiet(null)
+            advanceUntilIdle()
+
+            assertEquals(before, (viewModel.uiState.value as ChatRouteUiState.Conversation).model.mute)
+            assertEquals(
+                "That did not save yet. Keep this open and try again.",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.notice,
+            )
         }
 
     @Test
@@ -817,6 +928,19 @@ private class FakeChatRepository(
     var sendCalls: Int = 0
     var readFails: Boolean = false
     var markReadCalls: Int = 0
+    var storedMute: ConversationMute = ConversationMute.On
+    var muteReadFails: Boolean = false
+    var muteWriteFails: Boolean = false
+    var muteGate: CompletableDeferred<Unit>? = null
+    val quietRequests = mutableListOf<ConversationQuietPeriod?>()
+
+    companion object {
+        /**
+         * Deliberately far from "now", so a test can tell the optimistic quiet
+         * expiry from the one the server confirms.
+         */
+        val ConfirmedMuteBase: Instant = Instant.parse("2030-01-01T00:00:00Z")
+    }
     var lastSentContent: OutgoingMessageContent? = null
     var reportCalls: Int = 0
     var sendGate: CompletableDeferred<Unit>? = null
@@ -999,6 +1123,41 @@ private class FakeChatRepository(
             )
         }
     }
+    override suspend fun conversationMute(conversationId: String): ChatResult<ConversationMute> =
+        if (muteReadFails) {
+            ChatResult.Failure(
+                "That did not save yet. Keep this open and try again.",
+                true,
+                space.fishhub.android.data.chat.FailureCategory.Network,
+            )
+        } else {
+            ChatResult.Success(storedMute)
+        }
+
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ChatResult<ConversationMute> {
+        quietRequests += quietPeriod
+        muteGate?.await()
+        if (muteWriteFails) {
+            return ChatResult.Failure(
+                "That did not save yet. Keep this open and try again.",
+                true,
+                space.fishhub.android.data.chat.FailureCategory.Network,
+            )
+        }
+        // A different base from the view model's pinned clock, so a test can
+        // tell the optimistic value from the confirmed one.
+        storedMute = ConversationMute(
+            isMuted = quietPeriod != null,
+            mutedUntil = quietPeriod?.durationSeconds?.let {
+                ConfirmedMuteBase.plusSeconds(it.toLong())
+            },
+        )
+        return ChatResult.Success(storedMute)
+    }
+
     override suspend fun saveDraft(conversationId: String, draft: String) {
         savedDraft = draft
         drafts.value = draft

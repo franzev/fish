@@ -29,6 +29,8 @@ import space.fishhub.android.data.chat.ChatCallActivity
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatResult
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.GifPage
 import space.fishhub.android.data.chat.GifRepository
 import space.fishhub.android.data.chat.GifSearchItem
@@ -115,6 +117,7 @@ class ChatViewModel(
     private var pendingGifQuery: String = ""
     private var attachmentDrafts: List<LocalAttachmentUiModel> = emptyList()
     private var callActivities: List<ChatCallActivity> = emptyList()
+    private var mute: ConversationMute = ConversationMute.On
     private var pendingVoiceDraftId: String? = null
     private var pendingVoiceConversationId: String? = null
     private var selectionRevision = 0L
@@ -846,6 +849,7 @@ class ChatViewModel(
         showingConversationList = false
         activeConversation = conversation
         callActivities = emptyList()
+        mute = ConversationMute.On
         lastMarkedReadMessageId = null
         markingReadMessageId = null
         mutableUiState.value = ChatRouteUiState.Conversation(
@@ -963,8 +967,48 @@ class ChatViewModel(
                 publish()
             }
             launch { loadCallActivity(conversation.conversationId) }
+            launch { loadConversationMute(conversation.conversationId) }
         }
         requestFocusedMessage(conversation)
+    }
+
+    private suspend fun loadConversationMute(conversationId: String) {
+        // An unreadable quiet state degrades to "notifications on" rather than
+        // taking over the notice slot: the server still honours it either way.
+        val result = repository.conversationMute(conversationId)
+        if (activeConversation?.conversationId != conversationId) return
+        mute = (result as? ChatResult.Success)?.value ?: ConversationMute.On
+        publish()
+    }
+
+    /**
+     * Applies the new quiet state optimistically so the row never lags the tap,
+     * and puts the previous one back if the command does not land. A null
+     * [quietPeriod] turns notifications back on.
+     */
+    fun setQuiet(quietPeriod: ConversationQuietPeriod?) {
+        val conversationId = activeConversation?.conversationId ?: return
+        val previous = mute
+        mute = ConversationMute(
+            isMuted = quietPeriod != null,
+            mutedUntil = quietPeriod?.durationSeconds?.let {
+                Instant.now().plusSeconds(it.toLong())
+            },
+        )
+        publish()
+        viewModelScope.launch {
+            when (val result = repository.setConversationMute(conversationId, quietPeriod)) {
+                is ChatResult.Success -> {
+                    mute = result.value
+                    latestNotice = null
+                }
+                is ChatResult.Failure -> {
+                    mute = previous
+                    latestNotice = result.message
+                }
+            }
+            publish()
+        }
     }
 
     private fun requestFocusedMessage(conversation: AuthorizedConversation) {
@@ -1088,6 +1132,7 @@ class ChatViewModel(
             },
             focusedMessageId = focusedMessageId,
             isSending = sending,
+            mute = mute,
             notice = latestNotice,
         )
         mutableUiState.value = ChatRouteUiState.Conversation(

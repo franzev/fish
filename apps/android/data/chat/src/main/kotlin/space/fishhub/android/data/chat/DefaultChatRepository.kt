@@ -702,6 +702,25 @@ internal class DefaultChatRepository(
         }
     }
 
+    override suspend fun conversationMute(
+        conversationId: String,
+    ): ChatResult<ConversationMute> = resultOf(
+        ChatOperation.ConversationMute,
+        DefaultQuietError,
+    ) {
+        remote.conversationMute(conversationId)
+    }
+
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ChatResult<ConversationMute> = resultOf(
+        ChatOperation.SetConversationMute,
+        DefaultQuietError,
+    ) {
+        remote.setConversationMute(conversationId, quietPeriod)
+    }
+
     override suspend fun saveDraft(conversationId: String, draft: String) {
         val userId = (authState.value as? ChatAuthState.SignedIn)?.userId ?: return
         if (dao.conversation(conversationId)?.currentUserId != userId) return
@@ -1161,6 +1180,7 @@ internal class DefaultChatRepository(
 
 private class ConversationUnavailableException : IllegalStateException()
 
+private const val DefaultQuietError = "That did not save yet. Keep this open and try again."
 private const val DefaultRealtimeRetryDelayMs = 5_000L
 private const val MaxMessageAttachments = 5
 private const val MaxRefreshMessageCount = 50

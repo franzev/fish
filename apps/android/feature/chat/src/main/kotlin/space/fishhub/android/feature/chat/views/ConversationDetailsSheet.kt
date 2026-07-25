@@ -38,6 +38,8 @@ import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishModalBottomSheet
+import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.feature.chat.R
 import space.fishhub.android.feature.chat.model.ParticipantUiModel
 import space.fishhub.android.feature.presence.PresenceAvatar
@@ -54,10 +56,13 @@ fun ConversationDetailsSheet(
     onOpenSharedContent: () -> Unit = {},
     onRemoveFriend: () -> Unit,
     onBlock: () -> Unit,
+    mute: ConversationMute = ConversationMute.On,
+    onSetQuiet: (ConversationQuietPeriod?) -> Unit = {},
     sharedContentModifier: Modifier = Modifier,
     requestSharedContentFocus: Boolean = false,
 ) {
     var confirmation by remember(participant.id) { mutableStateOf<SafetyConfirmation?>(null) }
+    var quietOptionsShown by remember(participant.id) { mutableStateOf(false) }
     val avatarPainter = participant.avatarUrl?.let { rememberAsyncImagePainter(it) }
     val sharedContentFocus = remember(participant.id) { FocusRequester() }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -163,6 +168,15 @@ fun ConversationDetailsSheet(
                     style = FishTheme.typography.heading,
                 )
             }
+            ConversationQuietRow(
+                mute = mute,
+                optionsShown = quietOptionsShown,
+                onToggleOptions = { quietOptionsShown = !quietOptionsShown },
+                onSelect = { period ->
+                    quietOptionsShown = false
+                    onSetQuiet(period)
+                },
+            )
             if (participant.friendSafetyAvailable) {
                 when (confirmation) {
                     null -> {

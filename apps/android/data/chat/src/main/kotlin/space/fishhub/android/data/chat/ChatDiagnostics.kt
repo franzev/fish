@@ -23,6 +23,8 @@ internal enum class ChatOperation {
     UnblockUser,
     ReportGif,
     MarkRead,
+    ConversationMute,
+    SetConversationMute,
     ReconnectBackfill,
     Realtime,
 }
