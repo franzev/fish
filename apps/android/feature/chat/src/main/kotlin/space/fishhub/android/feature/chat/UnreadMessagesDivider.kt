@@ -16,7 +16,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishDivider
 
 @Composable
-fun UnreadMessageDivider(modifier: Modifier = Modifier) {
+fun UnreadMessagesDivider(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()

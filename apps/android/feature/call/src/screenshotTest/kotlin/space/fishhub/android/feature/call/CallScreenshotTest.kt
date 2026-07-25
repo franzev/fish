@@ -78,7 +78,7 @@ private fun ScreenshotCall(
     media: CallMediaState = CallMediaState(),
 ) {
     FishTheme(darkTheme = darkTheme, reducedMotion = true) {
-        CallScreen(
+        CallOverlay(
             call = call,
             mediaState = media,
             notice = null,

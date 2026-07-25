@@ -14,7 +14,7 @@ import space.fishhub.android.data.call.CallMediaState
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable
-internal fun AudioActivity(call: CallSessionState, media: CallMediaState) {
+internal fun CallActivityPanel(call: CallSessionState, media: CallMediaState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(FishTheme.spacing.threeXs),

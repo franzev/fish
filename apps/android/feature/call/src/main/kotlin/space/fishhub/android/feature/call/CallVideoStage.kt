@@ -30,7 +30,7 @@ import space.fishhub.android.data.call.CallVideoSource
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable
-internal fun VideoStage(
+internal fun CallVideoStage(
     call: CallSessionState,
     mediaState: CallMediaState,
     mediaEngine: CallMediaEngine?,

@@ -81,8 +81,8 @@
         "visibility": "public"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/AccountSettings/Views/AccountSettingsView.swift",
-        "symbol": "AccountSettingsView",
+        "file": "apps/ios/FishKit/Sources/AccountSettings/Views/AccountSettingsSheet.swift",
+        "symbol": "AccountSettingsSheet",
         "visibility": "public"
       },
       "props": {
@@ -138,23 +138,39 @@
     },
     {
       "name": "ActionButton",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Button.kt",
+        "symbol": "FishButton",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/UIComponents/Buttons/ActionButton.swift",
         "symbol": "ActionButton",
         "visibility": "public"
       },
-      "props": [
-        "variant",
-        "tone",
-        "prominence",
-        "icon",
-        "isLoading",
-        "fullWidth",
-        "action"
-      ],
+      "props": {
+        "android": [
+          "label",
+          "onClick",
+          "variant",
+          "enabled",
+          "loading",
+          "loadingDescription"
+        ],
+        "ios": [
+          "variant",
+          "tone",
+          "prominence",
+          "icon",
+          "isLoading",
+          "fullWidth",
+          "action"
+        ]
+      },
       "previews": [],
+      "propsAligned": false,
       "previewsAligned": false,
-      "only": "ios"
+      "namingBreak": "android-material-collision"
     },
     {
       "name": "ActivityCell",
@@ -176,8 +192,8 @@
     {
       "name": "AddReactionPill",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AddReactionChip.kt",
-        "symbol": "AddReactionChip",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AddReactionPill.kt",
+        "symbol": "AddReactionPill",
         "visibility": "internal"
       },
       "ios": {
@@ -264,22 +280,6 @@
       "only": "android"
     },
     {
-      "name": "AttachmentPhotoViewerContent",
-      "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPhotoViewerContent.kt",
-        "symbol": "AttachmentPhotoViewerContent",
-        "visibility": "internal"
-      },
-      "props": [
-        "attachment",
-        "onDismiss",
-        "onLoadError"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "AttachmentPreviewScreen",
       "android": {
         "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPreviewScreen.kt",
@@ -339,8 +339,8 @@
     {
       "name": "AttachmentViewer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentPhotoViewer.kt",
-        "symbol": "AttachmentPhotoViewer",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentViewer.kt",
+        "symbol": "AttachmentViewer",
         "visibility": "public"
       },
       "ios": {
@@ -366,6 +366,22 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false
+    },
+    {
+      "name": "AttachmentViewerContent",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/AttachmentViewerContent.kt",
+        "symbol": "AttachmentViewerContent",
+        "visibility": "internal"
+      },
+      "props": [
+        "attachment",
+        "onDismiss",
+        "onLoadError"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
     },
     {
       "name": "Avatar",
@@ -394,7 +410,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "namingBreak": "android-material-collision"
     },
     {
       "name": "BlockedPeoplePage",
@@ -413,29 +430,10 @@
       "only": "android"
     },
     {
-      "name": "Button",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/Button.kt",
-        "symbol": "FishButton",
-        "visibility": "public"
-      },
-      "props": [
-        "label",
-        "onClick",
-        "variant",
-        "enabled",
-        "loading",
-        "loadingDescription"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "CallActivityPanel",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/AudioActivity.kt",
-        "symbol": "AudioActivity",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallActivityPanel.kt",
+        "symbol": "CallActivityPanel",
         "visibility": "internal"
       },
       "ios": {
@@ -543,8 +541,8 @@
     {
       "name": "CallOverlay",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallScreen.kt",
-        "symbol": "CallScreen",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallOverlay.kt",
+        "symbol": "CallOverlay",
         "visibility": "public"
       },
       "ios": {
@@ -674,8 +672,8 @@
     {
       "name": "CallSettingsSheet",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallSettings.kt",
-        "symbol": "CallSettings",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallSettingsSheet.kt",
+        "symbol": "CallSettingsSheet",
         "visibility": "internal"
       },
       "ios": {
@@ -737,8 +735,8 @@
     {
       "name": "CallVideoStage",
       "android": {
-        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/VideoStage.kt",
-        "symbol": "VideoStage",
+        "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/CallVideoStage.kt",
+        "symbol": "CallVideoStage",
         "visibility": "internal"
       },
       "ios": {
@@ -989,8 +987,8 @@
     {
       "name": "ConversationDetailsSheet",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ParticipantDetailsSheet.kt",
-        "symbol": "ParticipantDetailsSheet",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ConversationDetailsSheet.kt",
+        "symbol": "ConversationDetailsSheet",
         "visibility": "public"
       },
       "ios": {
@@ -1076,22 +1074,10 @@
       "only": "android"
     },
     {
-      "name": "Divider",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishDivider.kt",
-        "symbol": "FishDivider",
-        "visibility": "public"
-      },
-      "props": [],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "EmojiPanel",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/EmojiPickerContent.kt",
-        "symbol": "EmojiPickerContent",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/EmojiPanel.kt",
+        "symbol": "EmojiPanel",
         "visibility": "internal"
       },
       "ios": {
@@ -1142,13 +1128,111 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "namingBreak": "android-material-collision"
+    },
+    {
+      "name": "FishDivider",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishDivider.kt",
+        "symbol": "FishDivider",
+        "visibility": "public"
+      },
+      "props": [],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FishModalBottomSheet",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/ModalBottomSheet.kt",
+        "symbol": "FishModalBottomSheet",
+        "visibility": "public"
+      },
+      "props": [
+        "onDismissRequest",
+        "sheetState",
+        "content"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FishProgress",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishProgress.kt",
+        "symbol": "FishProgress",
+        "visibility": "public"
+      },
+      "props": [
+        "progress",
+        "contentDescription"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FishStateTextField",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/StateTextField.kt",
+        "symbol": "FishStateTextField",
+        "visibility": "public"
+      },
+      "props": [
+        "state",
+        "placeholder",
+        "enabled",
+        "label",
+        "leadingIcon",
+        "inputTransformation",
+        "keyboardOptions",
+        "onKeyboardAction",
+        "lineLimits"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FishSurface",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishSurface.kt",
+        "symbol": "FishSurface",
+        "visibility": "public"
+      },
+      "props": [
+        "role",
+        "shape",
+        "content"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FishTheme",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/Theme.kt",
+        "symbol": "FishTheme",
+        "visibility": "public"
+      },
+      "props": [
+        "darkTheme",
+        "reducedMotion",
+        "content"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
     },
     {
       "name": "GifMedia",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/GifMessageMedia.kt",
-        "symbol": "GifMessageMedia",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/GifMedia.kt",
+        "symbol": "GifMedia",
         "visibility": "public"
       },
       "ios": {
@@ -1257,27 +1341,52 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "namingBreak": "android-material-collision"
     },
     {
       "name": "InputField",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/TextField.kt",
+        "symbol": "FishTextField",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/UIComponents/Fields/InputField.swift",
         "symbol": "InputField",
         "visibility": "public"
       },
-      "props": [
-        "label",
-        "text",
-        "support",
-        "isSecure",
-        "submitLabel",
-        "onSubmit",
-        "autoFocus"
-      ],
+      "props": {
+        "android": [
+          "value",
+          "onValueChange",
+          "label",
+          "placeholder",
+          "supportingText",
+          "errorMessage",
+          "enabled",
+          "singleLine",
+          "minLines",
+          "maxLines",
+          "keyboardOptions",
+          "keyboardActions",
+          "visualTransformation",
+          "shape"
+        ],
+        "ios": [
+          "label",
+          "text",
+          "support",
+          "isSecure",
+          "submitLabel",
+          "onSubmit",
+          "autoFocus"
+        ]
+      },
       "previews": [],
+      "propsAligned": false,
       "previewsAligned": false,
-      "only": "ios"
+      "namingBreak": "android-material-collision"
     },
     {
       "name": "LocalVideoPreview",
@@ -1342,8 +1451,8 @@
     {
       "name": "MediaPickerSheet",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatMediaPickerSheet.kt",
-        "symbol": "ChatMediaPickerSheet",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MediaPickerSheet.kt",
+        "symbol": "MediaPickerSheet",
         "visibility": "public"
       },
       "ios": {
@@ -1393,8 +1502,8 @@
     {
       "name": "MessageAttachments",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageAttachmentGroup.kt",
-        "symbol": "MessageAttachmentGroup",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageAttachments.kt",
+        "symbol": "MessageAttachments",
         "visibility": "public"
       },
       "ios": {
@@ -1543,8 +1652,8 @@
     {
       "name": "MessageDaySeparator",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageDateSeparator.kt",
-        "symbol": "MessageDateSeparator",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageDaySeparator.kt",
+        "symbol": "MessageDaySeparator",
         "visibility": "public"
       },
       "ios": {
@@ -1576,8 +1685,8 @@
     {
       "name": "MessageFileCard",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/FileAttachmentCard.kt",
-        "symbol": "FileAttachmentCard",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageFileCard.kt",
+        "symbol": "MessageFileCard",
         "visibility": "internal"
       },
       "ios": {
@@ -1668,8 +1777,8 @@
     {
       "name": "MessageVideoPlayer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/VideoMessageMedia.kt",
-        "symbol": "VideoMessageMedia",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageVideoPlayer.kt",
+        "symbol": "MessageVideoPlayer",
         "visibility": "public"
       },
       "ios": {
@@ -1700,8 +1809,8 @@
     {
       "name": "MessageVoicePlayer",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/VoiceMessageMedia.kt",
-        "symbol": "VoiceMessageMedia",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/MessageVoicePlayer.kt",
+        "symbol": "MessageVoicePlayer",
         "visibility": "public"
       },
       "ios": {
@@ -1743,22 +1852,6 @@
       "only": "ios"
     },
     {
-      "name": "ModalBottomSheet",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/ModalBottomSheet.kt",
-        "symbol": "FishModalBottomSheet",
-        "visibility": "public"
-      },
-      "props": [
-        "onDismissRequest",
-        "sheetState",
-        "content"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "Notice",
       "android": {
         "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishNotice.kt",
@@ -1785,7 +1878,8 @@
       },
       "previews": [],
       "propsAligned": false,
-      "previewsAligned": false
+      "previewsAligned": false,
+      "namingBreak": "android-material-collision"
     },
     {
       "name": "NotificationsPage",
@@ -1807,8 +1901,8 @@
     {
       "name": "OlderMessagesSlot",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/OlderMessagesState.kt",
-        "symbol": "OlderMessagesState",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/OlderMessagesSlot.kt",
+        "symbol": "OlderMessagesSlot",
         "visibility": "public"
       },
       "ios": {
@@ -1827,8 +1921,8 @@
     {
       "name": "PersonalChatScreen",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatScreen.kt",
-        "symbol": "ChatScreen",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/PersonalChatScreen.kt",
+        "symbol": "PersonalChatScreen",
         "visibility": "public"
       },
       "ios": {
@@ -1922,8 +2016,8 @@
     {
       "name": "PersonalChatTopBar",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatTopBar.kt",
-        "symbol": "ChatTopBar",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/PersonalChatTopBar.kt",
+        "symbol": "PersonalChatTopBar",
         "visibility": "public"
       },
       "ios": {
@@ -1963,8 +2057,8 @@
     {
       "name": "PersonalChatTranscript",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ChatTranscript.kt",
-        "symbol": "ChatTranscript",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/PersonalChatTranscript.kt",
+        "symbol": "PersonalChatTranscript",
         "visibility": "public"
       },
       "ios": {
@@ -2177,39 +2271,6 @@
       "only": "android"
     },
     {
-      "name": "Progress",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishProgress.kt",
-        "symbol": "FishProgress",
-        "visibility": "public"
-      },
-      "props": [
-        "progress",
-        "contentDescription"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
-      "name": "ReactionChipTarget",
-      "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ReactionChipTarget.kt",
-        "symbol": "ReactionChipTarget",
-        "visibility": "internal"
-      },
-      "props": [
-        "description",
-        "selected",
-        "enabled",
-        "onClick",
-        "content"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "ReactionPicker",
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ReactionPicker.swift",
@@ -2226,8 +2287,8 @@
     {
       "name": "ReactionPill",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ReactionChip.kt",
-        "symbol": "ReactionChip",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ReactionPill.kt",
+        "symbol": "ReactionPill",
         "visibility": "internal"
       },
       "ios": {
@@ -2251,6 +2312,24 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false
+    },
+    {
+      "name": "ReactionPillTarget",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ReactionPillTarget.kt",
+        "symbol": "ReactionPillTarget",
+        "visibility": "internal"
+      },
+      "props": [
+        "description",
+        "selected",
+        "enabled",
+        "onClick",
+        "content"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
     },
     {
       "name": "SettingsRow",
@@ -2292,8 +2371,8 @@
     {
       "name": "SharedContentCategoryBar",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentCategoryTabs.kt",
-        "symbol": "SharedContentCategoryTabs",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentCategoryBar.kt",
+        "symbol": "SharedContentCategoryBar",
         "visibility": "public"
       },
       "ios": {
@@ -2581,8 +2660,8 @@
     {
       "name": "SharedContentUnavailableState",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentGalleryEmpty.kt",
-        "symbol": "SharedContentGalleryEmpty",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/sharedcontent/SharedContentUnavailableState.kt",
+        "symbol": "SharedContentUnavailableState",
         "visibility": "public"
       },
       "ios": {
@@ -2646,20 +2725,6 @@
       "only": "android"
     },
     {
-      "name": "Skeleton",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishSkeleton.kt",
-        "symbol": "FishSkeleton",
-        "visibility": "public"
-      },
-      "props": [
-        "width"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "SkeletonAvatar",
       "ios": {
         "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/SkeletonAvatar.swift",
@@ -2675,6 +2740,11 @@
     },
     {
       "name": "SkeletonBar",
+      "android": {
+        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishSkeleton.kt",
+        "symbol": "FishSkeleton",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/SkeletonBar.swift",
         "symbol": "SkeletonBar",
@@ -2684,14 +2754,15 @@
         "width"
       ],
       "previews": [],
+      "propsAligned": true,
       "previewsAligned": false,
-      "only": "ios"
+      "namingBreak": "android-material-collision"
     },
     {
       "name": "StagedAttachmentStrip",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/ComposerAttachmentQueue.kt",
-        "symbol": "ComposerAttachmentQueue",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/StagedAttachmentStrip.kt",
+        "symbol": "StagedAttachmentStrip",
         "visibility": "public"
       },
       "ios": {
@@ -2732,28 +2803,6 @@
       "only": "ios"
     },
     {
-      "name": "StateTextField",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/StateTextField.kt",
-        "symbol": "FishStateTextField",
-        "visibility": "public"
-      },
-      "props": [
-        "state",
-        "placeholder",
-        "enabled",
-        "label",
-        "leadingIcon",
-        "inputTransformation",
-        "keyboardOptions",
-        "onKeyboardAction",
-        "lineLimits"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "StaticProgressIndicator",
       "ios": {
         "file": "apps/ios/FishKit/Sources/UIComponents/Buttons/StaticProgressIndicator.swift",
@@ -2768,8 +2817,8 @@
     {
       "name": "StickerMedia",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/StickerMessageMedia.kt",
-        "symbol": "StickerMessageMedia",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/StickerMedia.kt",
+        "symbol": "StickerMedia",
         "visibility": "public"
       },
       "ios": {
@@ -2823,65 +2872,6 @@
       "only": "ios"
     },
     {
-      "name": "Surface",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/FishSurface.kt",
-        "symbol": "FishSurface",
-        "visibility": "public"
-      },
-      "props": [
-        "role",
-        "shape",
-        "content"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
-      "name": "TextField",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/TextField.kt",
-        "symbol": "FishTextField",
-        "visibility": "public"
-      },
-      "props": [
-        "value",
-        "onValueChange",
-        "label",
-        "placeholder",
-        "supportingText",
-        "errorMessage",
-        "enabled",
-        "singleLine",
-        "minLines",
-        "maxLines",
-        "keyboardOptions",
-        "keyboardActions",
-        "visualTransformation",
-        "shape"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
-      "name": "Theme",
-      "android": {
-        "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/Theme.kt",
-        "symbol": "FishTheme",
-        "visibility": "public"
-      },
-      "props": [
-        "darkTheme",
-        "reducedMotion",
-        "content"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "android"
-    },
-    {
       "name": "TopBar",
       "android": {
         "file": "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component/TopBar.kt",
@@ -2899,6 +2889,7 @@
       ],
       "previews": [],
       "previewsAligned": false,
+      "namingBreak": "android-material-collision",
       "only": "android"
     },
     {
@@ -2949,8 +2940,8 @@
     {
       "name": "UnreadMessagesDivider",
       "android": {
-        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/UnreadMessageDivider.kt",
-        "symbol": "UnreadMessageDivider",
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/UnreadMessagesDivider.kt",
+        "symbol": "UnreadMessagesDivider",
         "visibility": "public"
       },
       "ios": {

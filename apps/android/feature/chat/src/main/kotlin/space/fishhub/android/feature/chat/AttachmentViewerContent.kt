@@ -25,7 +25,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishIconButton
 
 @Composable
-internal fun AttachmentPhotoViewerContent(
+internal fun AttachmentViewerContent(
     attachment: AttachmentUiModel,
     onDismiss: () -> Unit,
     onLoadError: (String) -> Unit,

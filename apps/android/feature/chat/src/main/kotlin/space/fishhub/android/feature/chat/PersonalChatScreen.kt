@@ -31,7 +31,7 @@ import space.fishhub.android.core.designsystem.component.FishTopBar
 import space.fishhub.android.feature.presence.PresencePresentation
 
 @Composable
-fun ChatScreen(
+fun PersonalChatScreen(
     model: ChatUiModel,
     composerState: TextFieldState,
     onSend: () -> Unit,
@@ -125,7 +125,7 @@ fun ChatScreen(
             }
             ChatScreenState.Available -> {
                 val participant = checkNotNull(model.participant)
-                ChatTopBar(
+                PersonalChatTopBar(
                     participant = participant,
                     presence = participantPresence,
                     showBack = model.hasPreviousDestination,
@@ -158,7 +158,7 @@ fun ChatScreen(
                         ),
                     )
                 }
-                ChatTranscript(
+                PersonalChatTranscript(
                     messages = model.messages,
                     callActivities = model.callActivities,
                     pagination = model.pagination,
@@ -242,7 +242,7 @@ fun ChatScreen(
         )
     }
     if (detailsVisible && model.participant != null) {
-        ParticipantDetailsSheet(
+        ConversationDetailsSheet(
             participant = model.participant,
             presence = participantPresence,
             onDismiss = dismissParticipantDetails,

@@ -32,7 +32,7 @@ class ChatPresenceIntegrationTest {
         )
         composeRule.setContent {
             FishTheme {
-                ChatTopBar(
+                PersonalChatTopBar(
                     participant = participant,
                     presence = presence,
                     showBack = false,

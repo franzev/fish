@@ -29,7 +29,7 @@ import space.fishhub.android.core.designsystem.component.fishFocusBorder
 
 /** Shared browse/search surface used by both message reactions and the composer. */
 @Composable
-internal fun EmojiPickerContent(
+internal fun EmojiPanel(
     query: String,
     results: List<EmojiCatalogEntry>,
     onSelect: (String) -> Unit,

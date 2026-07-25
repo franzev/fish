@@ -45,7 +45,7 @@ private enum class SafetyConfirmation { Remove, Block }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParticipantDetailsSheet(
+fun ConversationDetailsSheet(
     participant: ParticipantUiModel,
     presence: PresencePresentation,
     onDismiss: () -> Unit,

@@ -95,14 +95,14 @@ fun MessageBubble(
             )
         }
         message.sticker?.let { sticker ->
-            StickerMessageMedia(
+            StickerMedia(
                 sticker = sticker,
                 author = author,
                 timeLabel = message.timeLabel,
             )
         }
         message.gif?.let { gif ->
-            GifMessageMedia(
+            GifMedia(
                 gif = gif,
                 author = author,
                 timeLabel = message.timeLabel,
@@ -115,7 +115,7 @@ fun MessageBubble(
             GifUnavailableMedia()
         }
         if (!message.deleted && message.attachments.isNotEmpty()) {
-            MessageAttachmentGroup(
+            MessageAttachments(
                 attachments = message.attachments,
                 author = author,
                 timeLabel = message.timeLabel,
@@ -190,14 +190,14 @@ fun MessageBubble(
                     } else {
                         ""
                     }
-                    ReactionChip(
+                    ReactionPill(
                         reaction = reaction,
                         description = reactionDescription,
                         enabled = message.reactionsEnabled,
                         onClick = { onToggleReaction(reaction.emoji) },
                     )
                 }
-                AddReactionChip(
+                AddReactionPill(
                     description = stringResource(R.string.add_reaction),
                     enabled = message.reactionsEnabled,
                     onClick = onAddReaction,

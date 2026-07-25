@@ -44,7 +44,7 @@ import space.fishhub.android.core.designsystem.component.FishIconButton
 
 @OptIn(UnstableApi::class)
 @Composable
-fun GifMessageMedia(
+fun GifMedia(
     gif: GifUiModel,
     author: String,
     timeLabel: String,

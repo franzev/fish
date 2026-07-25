@@ -318,7 +318,7 @@ private fun SharedContentNavigationContract() {
                     .fillMaxSize()
                     .background(FishTheme.colors.background),
             ) {
-                ChatTopBar(
+                PersonalChatTopBar(
                     participant = participant,
                     presence = PresencePresentation(label = "Online"),
                     showBack = false,
@@ -337,7 +337,7 @@ private fun SharedContentNavigationContract() {
             }
         }
         NavigationContractRoute.Details -> {
-            ParticipantDetailsSheet(
+            ConversationDetailsSheet(
                 participant = participant,
                 presence = PresencePresentation(label = "Online"),
                 onDismiss = ::navigateBack,

@@ -29,7 +29,7 @@ import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 
 @Composable
-fun ComposerAttachmentQueue(
+fun StagedAttachmentStrip(
     attachments: List<LocalAttachmentUiModel>,
     onRemove: (String) -> Unit,
     onRetry: (String) -> Unit = {},

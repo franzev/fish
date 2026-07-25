@@ -29,7 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import space.fishhub.android.core.designsystem.FishTheme
 
 @Composable
-fun MessageAttachmentGroup(
+fun MessageAttachments(
     attachments: List<AttachmentUiModel>,
     author: String,
     timeLabel: String,
@@ -56,7 +56,7 @@ fun MessageAttachmentGroup(
                     onLoadError = onPhotoLoadError,
                 )
                 is AttachmentRun.Item -> when (run.item.kind) {
-                    AttachmentUiKind.Voice -> VoiceMessageMedia(
+                    AttachmentUiKind.Voice -> MessageVoicePlayer(
                         attachment = run.item,
                         author = author,
                         timeLabel = timeLabel,
@@ -64,7 +64,7 @@ fun MessageAttachmentGroup(
                         onTogglePlayback = { onToggleVoice(run.item.id) },
                         onPlaybackError = { onAttachmentLoadError(run.item.id) },
                     )
-                    AttachmentUiKind.Video -> VideoMessageMedia(
+                    AttachmentUiKind.Video -> MessageVideoPlayer(
                         attachment = run.item,
                         author = author,
                         timeLabel = timeLabel,
@@ -74,7 +74,7 @@ fun MessageAttachmentGroup(
                         onFileClick = { onFileClick(run.item.id) },
                         onFileShare = { onFileShare(run.item.id) },
                     )
-                    AttachmentUiKind.File -> FileAttachmentCard(
+                    AttachmentUiKind.File -> MessageFileCard(
                         attachment = run.item,
                         author = author,
                         timeLabel = timeLabel,

@@ -567,7 +567,7 @@ fun ChatRoute(
     }
 
     if (mediaPickerVisible && routeState is ChatRouteUiState.Conversation) {
-        ChatMediaPickerSheet(
+        MediaPickerSheet(
             state = mediaPickerState,
             onDismiss = { mediaPickerVisible = false },
             onTabSelected = mediaPickerViewModel::selectTab,
@@ -662,7 +662,7 @@ fun ChatRoute(
         ?.flatMap { it.attachments.asSequence() }
         ?.firstOrNull { it.id == selectedPhotoId && it.kind == AttachmentUiKind.Photo }
     if (selectedPhoto != null) {
-        AttachmentPhotoViewer(
+        AttachmentViewer(
             attachment = selectedPhoto,
             onDismiss = { selectedPhotoId = null },
             onLoadError = viewModel::refreshAttachment,

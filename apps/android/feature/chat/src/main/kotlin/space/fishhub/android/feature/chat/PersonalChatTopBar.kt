@@ -21,7 +21,7 @@ import space.fishhub.android.feature.presence.PresenceAvatar
 import space.fishhub.android.feature.presence.PresencePresentation
 
 @Composable
-fun ChatTopBar(
+fun PersonalChatTopBar(
     participant: ParticipantUiModel,
     presence: PresencePresentation,
     showBack: Boolean,

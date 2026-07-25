@@ -2,7 +2,7 @@ import DesignSystem
 import SwiftUI
 import UIComponents
 
-public struct AccountSettingsView: View {
+public struct AccountSettingsSheet: View {
     fileprivate enum Page: Hashable {
         case account
         case notifications
@@ -379,7 +379,7 @@ public struct AccountSettingsView: View {
     }
 }
 
-fileprivate extension AccountSettingsView.Page {
+fileprivate extension AccountSettingsSheet.Page {
     var title: String {
         switch self {
         case .account: "Account settings"

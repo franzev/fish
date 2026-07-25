@@ -12,7 +12,7 @@ import androidx.compose.ui.text.style.TextAlign
 import space.fishhub.android.core.designsystem.FishTheme
 
 @Composable
-fun MessageDateSeparator(label: String, modifier: Modifier = Modifier) {
+fun MessageDaySeparator(label: String, modifier: Modifier = Modifier) {
     Text(
         text = label,
         modifier = modifier

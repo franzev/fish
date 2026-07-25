@@ -14,14 +14,14 @@ import androidx.compose.ui.semantics.selected
 import space.fishhub.android.core.designsystem.FishTheme
 
 @Composable
-internal fun ReactionChip(
+internal fun ReactionPill(
     reaction: ReactionUiModel,
     description: String,
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ReactionChipTarget(
+    ReactionPillTarget(
         description = description,
         selected = reaction.byMe,
         enabled = enabled,

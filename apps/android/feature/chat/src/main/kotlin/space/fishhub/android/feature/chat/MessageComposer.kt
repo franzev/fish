@@ -133,7 +133,7 @@ fun MessageComposer(
                 modifier = Modifier.padding(bottom = FishTheme.spacing.sm),
             )
         }
-        ComposerAttachmentQueue(
+        StagedAttachmentStrip(
             attachments = pendingAttachments,
             onRemove = onRemovePendingAttachment,
             onRetry = onRetryPendingAttachment,

@@ -468,7 +468,7 @@ fun SentMixedAttachmentsScreenshot() {
                 .padding(FishTheme.spacing.page),
             contentAlignment = Alignment.TopStart,
         ) {
-            MessageAttachmentGroup(
+            MessageAttachments(
                 attachments = sentAttachmentScreenshotItems(),
                 author = "Coach Jordan",
                 timeLabel = "10:42 AM",
@@ -485,7 +485,7 @@ fun SentMixedAttachmentsScreenshot() {
 @Composable
 fun AttachmentPhotoViewerScreenshot() {
     FishTheme(reducedMotion = true) {
-        AttachmentPhotoViewerContent(
+        AttachmentViewerContent(
             attachment = sentPhotoScreenshotItem(position = 0),
             onDismiss = {},
             onLoadError = {},
@@ -988,7 +988,7 @@ private fun AttachmentQueueScreenshot(
                 .padding(FishTheme.spacing.page),
             contentAlignment = Alignment.TopCenter,
         ) {
-            ComposerAttachmentQueue(attachments = attachments, onRemove = {}, onRetry = {})
+            StagedAttachmentStrip(attachments = attachments, onRemove = {}, onRetry = {})
         }
     }
 }

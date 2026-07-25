@@ -13,7 +13,7 @@ import space.fishhub.android.core.designsystem.component.FishEmptyState
 import space.fishhub.android.feature.chat.R
 
 @Composable
-fun SharedContentGalleryEmpty(
+fun SharedContentUnavailableState(
     title: String,
     description: String,
     modifier: Modifier = Modifier,

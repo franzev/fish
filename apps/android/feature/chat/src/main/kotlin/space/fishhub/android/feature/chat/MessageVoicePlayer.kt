@@ -47,7 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableLongStateOf
 
 @Composable
-fun VoiceMessageMedia(
+fun MessageVoicePlayer(
     attachment: AttachmentUiModel,
     author: String,
     timeLabel: String,

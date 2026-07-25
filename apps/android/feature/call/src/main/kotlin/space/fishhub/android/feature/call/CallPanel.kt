@@ -149,7 +149,7 @@ internal fun CallPanel(
                 CallLifecycleStatus.Reconnecting,
             )
         ) {
-            AudioActivity(call, mediaState)
+            CallActivityPanel(call, mediaState)
         }
 
         if (notice != null) FishNotice(message = notice)
@@ -211,7 +211,7 @@ internal fun CallPanel(
                 onEnd = onEnd,
             )
             if (settingsOpen) {
-                CallSettings(
+                CallSettingsSheet(
                     call = call,
                     qualityPreference = qualityPreference,
                     audioEndpoints = audioEndpoints,

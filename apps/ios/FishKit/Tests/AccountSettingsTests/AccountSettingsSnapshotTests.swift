@@ -9,7 +9,7 @@ import UIKit
 struct AccountSettingsSnapshotTests {
     @Test
     func accountSettingsRoot() {
-        let view = AccountSettingsView(
+        let view = AccountSettingsSheet(
             displayName: "Alex Rivera",
             presence: AccountSettingsPresence(visibility: .automatic),
             notificationStatus: .authorized,

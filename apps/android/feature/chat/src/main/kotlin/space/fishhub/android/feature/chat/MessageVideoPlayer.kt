@@ -37,7 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 
 @OptIn(UnstableApi::class)
 @Composable
-fun VideoMessageMedia(
+fun MessageVideoPlayer(
     attachment: AttachmentUiModel,
     author: String,
     timeLabel: String,
@@ -77,7 +77,7 @@ fun VideoMessageMedia(
         LifecycleEventEffect(Lifecycle.Event.ON_STOP) { activePlayer.pause() }
     }
     if (failed) {
-        FileAttachmentCard(
+        MessageFileCard(
             attachment = attachment,
             author = author,
             timeLabel = timeLabel,

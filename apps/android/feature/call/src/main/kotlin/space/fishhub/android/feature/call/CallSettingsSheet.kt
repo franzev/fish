@@ -26,7 +26,7 @@ import space.fishhub.android.data.call.VideoQualityPreference
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable
-internal fun CallSettings(
+internal fun CallSettingsSheet(
     call: CallSessionState,
     qualityPreference: VideoQualityPreference,
     audioEndpoints: List<CallAudioEndpoint>,

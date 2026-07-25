@@ -27,7 +27,7 @@ import space.fishhub.android.core.designsystem.component.FishIconButton
 import java.text.DecimalFormat
 
 @Composable
-internal fun FileAttachmentCard(
+internal fun MessageFileCard(
     attachment: AttachmentUiModel,
     author: String,
     timeLabel: String,

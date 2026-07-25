@@ -87,7 +87,7 @@ fun SharedContentGalleryScreen(
             onBack = onBack,
         )
         state.selectedCategory?.takeIf { state.showCategoryControl }?.let { selected ->
-            SharedContentCategoryTabs(
+            SharedContentCategoryBar(
                 categories = state.categories,
                 selectedCategory = selected,
                 onCategorySelected = {
@@ -129,17 +129,17 @@ private fun SharedContentGalleryBody(
             category = state.selectedCategory,
             modifier = modifier,
         )
-        SharedContentUnavailableReason.AuthoritativeEmpty -> SharedContentGalleryEmpty(
+        SharedContentUnavailableReason.AuthoritativeEmpty -> SharedContentUnavailableState(
             title = stringResource(R.string.shared_content_empty_title),
             description = stringResource(R.string.shared_content_empty_description),
             modifier = modifier,
         )
-        SharedContentUnavailableReason.OfflineNoCache -> SharedContentGalleryEmpty(
+        SharedContentUnavailableReason.OfflineNoCache -> SharedContentUnavailableState(
             title = stringResource(R.string.shared_content_offline_unavailable_title),
             description = stringResource(R.string.shared_content_offline_unavailable_description),
             modifier = modifier,
         )
-        SharedContentUnavailableReason.AuthorityUnavailable -> SharedContentGalleryEmpty(
+        SharedContentUnavailableReason.AuthorityUnavailable -> SharedContentUnavailableState(
             title = stringResource(R.string.shared_content_unavailable_title),
             description = stringResource(R.string.shared_content_unavailable_description),
             modifier = modifier,

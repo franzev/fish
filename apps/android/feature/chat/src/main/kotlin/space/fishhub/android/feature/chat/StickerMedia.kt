@@ -21,7 +21,7 @@ import coil3.compose.AsyncImage
 import space.fishhub.android.core.designsystem.FishTheme
 
 @Composable
-fun StickerMessageMedia(
+fun StickerMedia(
     sticker: StickerUiModel,
     author: String,
     timeLabel: String,

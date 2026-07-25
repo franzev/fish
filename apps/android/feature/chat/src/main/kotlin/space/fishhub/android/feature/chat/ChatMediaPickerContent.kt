@@ -111,7 +111,7 @@ internal fun ChatMediaPickerContent(
             ),
         )
         when (state.activeTab) {
-            MediaPickerTab.Emoji -> EmojiPickerContent(
+            MediaPickerTab.Emoji -> EmojiPanel(
                 query = state.emojiQuery,
                 results = state.emojiResults,
                 onSelect = onEmojiSelected,

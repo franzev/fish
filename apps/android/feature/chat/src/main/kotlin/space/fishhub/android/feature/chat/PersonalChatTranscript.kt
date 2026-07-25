@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.filter
 import java.time.Instant
 
 @Composable
-fun ChatTranscript(
+fun PersonalChatTranscript(
     messages: List<MessageUiModel>,
     callActivities: List<CallActivityUiModel> = emptyList(),
     pagination: OlderMessagesUiState,
@@ -150,7 +150,7 @@ fun ChatTranscript(
             ),
         ) {
             item(key = "older-state", contentType = "older-state") {
-                OlderMessagesState(state = pagination, onRetry = onRetryEarlier)
+                OlderMessagesSlot(state = pagination, onRetry = onRetryEarlier)
             }
             items(
                 items = timeline,
@@ -168,10 +168,10 @@ fun ChatTranscript(
                 }
                 if (message == null) return@items
                 if (message.dateLabel != null) {
-                    MessageDateSeparator(message.dateLabel)
+                    MessageDaySeparator(message.dateLabel)
                 }
                 if (message.startsUnread) {
-                    UnreadMessageDivider()
+                    UnreadMessagesDivider()
                 }
                 MessageBubble(
                     message = message.copy(gifPlaying = message.id == playingGifId),

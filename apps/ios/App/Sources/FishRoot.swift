@@ -51,7 +51,7 @@ struct FishRoot: View {
             deviceSettings.effectiveReduceMotion(systemReduceMotion: systemReduceMotion)
         )
         .sheet(isPresented: $model.isShowingAccountSettings) {
-            AccountSettingsView(
+            AccountSettingsSheet(
                 displayName: model.accountDisplayName,
                 presence: model.accountPresence,
                 notificationStatus: model.notificationStatus,

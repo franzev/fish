@@ -138,7 +138,7 @@ fun ChatMessageActionsSheet(
                         label = stringResource(R.string.search_emoji),
                         placeholder = stringResource(R.string.search_emoji),
                     )
-                    EmojiPickerContent(
+                    EmojiPanel(
                         query = emojiQuery,
                         results = remember(emojiCatalog, emojiQuery) {
                             emojiCatalog.searchEmoji(emojiQuery)

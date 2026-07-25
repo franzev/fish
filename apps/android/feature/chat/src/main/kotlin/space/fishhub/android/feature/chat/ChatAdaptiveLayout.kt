@@ -104,7 +104,7 @@ fun ChatAdaptiveLayout(
                         .fillMaxHeight(),
                     contentAlignment = Alignment.TopCenter,
                 ) {
-                    ChatScreen(
+                    PersonalChatScreen(
                         model = model.copy(hasPreviousDestination = false),
                         composerState = composerState,
                         emojiCatalog = emojiCatalog,
@@ -165,7 +165,7 @@ fun ChatAdaptiveLayout(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.TopCenter,
             ) {
-                ChatScreen(
+                PersonalChatScreen(
                     model = model,
                     composerState = composerState,
                     emojiCatalog = emojiCatalog,

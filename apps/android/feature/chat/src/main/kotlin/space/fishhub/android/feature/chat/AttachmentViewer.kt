@@ -7,7 +7,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 @Composable
-fun AttachmentPhotoViewer(
+fun AttachmentViewer(
     attachment: AttachmentUiModel,
     onDismiss: () -> Unit,
     onLoadError: (String) -> Unit,
@@ -19,7 +19,7 @@ fun AttachmentPhotoViewer(
             decorFitsSystemWindows = false,
         ),
     ) {
-        AttachmentPhotoViewerContent(
+        AttachmentViewerContent(
             attachment = attachment,
             onDismiss = onDismiss,
             onLoadError = onLoadError,

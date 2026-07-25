@@ -16,7 +16,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.fishFocusBorder
 
 @Composable
-internal fun ReactionChipTarget(
+internal fun ReactionPillTarget(
     description: String,
     selected: Boolean,
     enabled: Boolean,

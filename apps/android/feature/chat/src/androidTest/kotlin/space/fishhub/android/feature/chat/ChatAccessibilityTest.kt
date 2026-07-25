@@ -244,7 +244,7 @@ class ChatAccessibilityTest {
         var selectedTab: MediaPickerTab? = null
         composeRule.setContent {
             FishTheme {
-                ChatMediaPickerSheet(
+                MediaPickerSheet(
                     state = MediaPickerUiState(emojiQuery = "face"),
                     onDismiss = { closed = true },
                     onTabSelected = { selectedTab = it },
@@ -431,7 +431,7 @@ class ChatAccessibilityTest {
         )
         composeRule.setContent {
             FishTheme {
-                ComposerAttachmentQueue(
+                StagedAttachmentStrip(
                     attachments = listOf(failed),
                     onRetry = { retried = it },
                     onRemove = { removed = it },
@@ -461,7 +461,7 @@ class ChatAccessibilityTest {
         var dismissed = false
         composeRule.setContent {
             FishTheme {
-                AttachmentPhotoViewer(
+                AttachmentViewer(
                     attachment = attachment(
                         id = "photo",
                         position = 0,
@@ -633,7 +633,7 @@ class ChatAccessibilityTest {
         var reaction: String? = null
         composeRule.setContent {
             FishTheme(reducedMotion = true) {
-                ChatTranscript(
+                PersonalChatTranscript(
                     messages = listOf(
                         actionableMessage().copy(
                             reactions = listOf(ReactionUiModel("👍", 2, true)),
@@ -662,7 +662,7 @@ class ChatAccessibilityTest {
         var dismissed = false
         composeRule.setContent {
             FishTheme {
-                ParticipantDetailsSheet(
+                ConversationDetailsSheet(
                     participant = ParticipantUiModel(
                         id = "friend-1",
                         displayName = "Sam",

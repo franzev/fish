@@ -86,7 +86,7 @@ private fun TestCallScreen(
     onAnswer: () -> Unit = {},
     onDecline: () -> Unit = {},
 ) {
-    CallScreen(
+    CallOverlay(
         call = call,
         mediaState = CallMediaState(),
         notice = null,

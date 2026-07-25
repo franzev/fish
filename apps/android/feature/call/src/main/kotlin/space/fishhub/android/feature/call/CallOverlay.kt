@@ -20,7 +20,7 @@ import space.fishhub.android.feature.call.state.CallLifecycleStatus
 import space.fishhub.android.feature.call.state.CallSessionState
 
 @Composable
-fun CallScreen(
+fun CallOverlay(
     call: CallSessionState,
     mediaState: CallMediaState,
     notice: String?,
@@ -50,7 +50,7 @@ fun CallScreen(
     )
     val videoStage = call.kind == CallKind.Video && inProgress
     if (pictureInPicture && videoStage) {
-        VideoStage(
+        CallVideoStage(
             call = call,
             mediaState = mediaState,
             mediaEngine = mediaEngine,
@@ -67,7 +67,7 @@ fun CallScreen(
             .imePadding(),
     ) {
         if (videoStage) {
-            VideoStage(
+            CallVideoStage(
                 call = call,
                 mediaState = mediaState,
                 mediaEngine = mediaEngine,

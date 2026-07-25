@@ -19,7 +19,7 @@ import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishSkeleton
 
 @Composable
-fun OlderMessagesState(
+fun OlderMessagesSlot(
     state: OlderMessagesUiState,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,

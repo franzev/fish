@@ -48,7 +48,7 @@ fun CallRoute(
             onReturn = { onMinimizedChange(false) },
             onEnd = { call.callId?.let(coordinator::end) },
         )
-        else -> CallScreen(
+        else -> CallOverlay(
             call = call,
             mediaState = mediaState,
             notice = notice,

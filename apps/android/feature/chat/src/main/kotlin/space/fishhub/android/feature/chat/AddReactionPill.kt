@@ -15,13 +15,13 @@ import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 
 @Composable
-internal fun AddReactionChip(
+internal fun AddReactionPill(
     description: String,
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ReactionChipTarget(
+    ReactionPillTarget(
         description = description,
         selected = false,
         enabled = enabled,

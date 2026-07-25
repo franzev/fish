@@ -31,7 +31,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.feature.chat.R
 
 @Composable
-fun SharedContentCategoryTabs(
+fun SharedContentCategoryBar(
     categories: List<SharedContentGalleryCategory>,
     selectedCategory: SharedContentGalleryCategory,
     onCategorySelected: (SharedContentGalleryCategory) -> Unit,

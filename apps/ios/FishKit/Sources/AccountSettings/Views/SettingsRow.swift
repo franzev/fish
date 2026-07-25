@@ -91,7 +91,7 @@ struct SettingsRow: View {
 }
 
 #Preview("Account settings") {
-    AccountSettingsView(
+    AccountSettingsSheet(
         displayName: "Alex Rivera",
         presence: AccountSettingsPresence(visibility: .automatic),
         notificationStatus: .authorized,

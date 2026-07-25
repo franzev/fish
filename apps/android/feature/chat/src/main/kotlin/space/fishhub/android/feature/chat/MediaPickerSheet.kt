@@ -6,7 +6,7 @@ import space.fishhub.android.core.designsystem.component.FishModalBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatMediaPickerSheet(
+fun MediaPickerSheet(
     state: MediaPickerUiState,
     onDismiss: () -> Unit,
     onTabSelected: (MediaPickerTab) -> Unit,
