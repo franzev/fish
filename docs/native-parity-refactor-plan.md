@@ -14,7 +14,7 @@ Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**
 | iOS files declaring >1 public component | 4 | **0** |
 | Largest UI file | 1 841 (`FishApp.swift`) | **540** (`MessageComposer.swift`) |
 | Paired components sharing a name | 20 | **46 of 53** |
-| Paired components with aligned props | 8 | **9 of 53** |
+| Paired components with aligned props | 8 | **14 of 53** |
 | Image baselines changed | — | **0 of 303** |
 | Android tests | green | green |
 | iOS tests | 412 / 75 suites | **412 / 75 suites** |
@@ -90,7 +90,24 @@ Android's `MessageRowUiModel` also omits FishKit's `showsMeta`: this bubble rend
 inside its media and attachment children rather than gating a header, so the field would be
 write-only. It carries `playingVoiceAttachmentId` instead, which FishKit holds in view state.
 
-44 of 53 paired components still have divergent props.
+Six more converged after it, chosen by lowest risk rather than by size:
+`StagedAttachmentStrip`, `SharedContentMetadataRow`, `PresenceIndicator`,
+`SharedContentCategoryBar`, and `Avatar` — pure renames, orderings and one added
+parameter, all with the 303 baselines unchanged.
+
+**14 of 53** paired components now have aligned props. The remainder are not more of the
+same: the cheap naming fixes are done, and what is left needs decisions.
+
+`PersonalChatTopBar` is the clearest example and is **blocked on a product question**, not
+effort: Android renders a remote avatar image (`rememberAsyncImagePainter(participant.avatarUrl)`)
+while FishKit renders initials only (`Avatar(name:)`). Converging the parameter list means first
+deciding whether the iOS top bar should show avatar images. Its other divergence — Android's
+baked-in call and search buttons versus FishKit's `trailingContent` slot — is a real refactor that
+moves button construction to the caller.
+
+Similar decisions gate `Notice` (FishKit supports a title and an action; Android does not),
+`PresenceAvatar` (model versus `status` + `statusLabel`), and `EmojiPanel` (Android hoists query
+and results; FishKit seeds an `initialQuery` and holds them).
 
 ---
 
