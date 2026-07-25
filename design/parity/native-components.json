@@ -353,7 +353,8 @@
       },
       "props": {
         "android": [
-          "attachment",
+          "images",
+          "initialIndex",
           "onDismiss",
           "onLoadError"
         ],
@@ -366,7 +367,7 @@
       "previews": [],
       "propsAligned": false,
       "previewsAligned": false,
-      "propsBreak": "feature-gap"
+      "propsBreak": "state-bundling"
     },
     {
       "name": "AttachmentViewerContent",
@@ -376,7 +377,8 @@
         "visibility": "internal"
       },
       "props": [
-        "attachment",
+        "images",
+        "initialIndex",
         "onDismiss",
         "onLoadError"
       ],

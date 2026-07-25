@@ -4,8 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,8 +31,60 @@ import space.fishhub.android.feature.chat.model.AttachmentUiModel
 
 @Composable
 internal fun AttachmentViewerContent(
-    attachment: AttachmentUiModel,
+    images: List<AttachmentUiModel>,
+    initialIndex: Int,
     onDismiss: () -> Unit,
+    onLoadError: (String) -> Unit,
+) {
+    if (images.isEmpty()) return
+    val pagerState = rememberPagerState(
+        initialPage = initialIndex.coerceIn(0, images.lastIndex),
+        pageCount = { images.size },
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(FishTheme.colors.background),
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            key = { images[it].id },
+        ) { page ->
+            AttachmentViewerPage(attachment = images[page], onLoadError = onLoadError)
+        }
+        FishIconButton(
+            icon = FishIcons.Close,
+            contentDescription = stringResource(R.string.close_photo_viewer),
+            onClick = onDismiss,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(FishTheme.spacing.sm),
+            size = FishTheme.sizes.touchTarget,
+        )
+        // Position is spoken, not implied by dots, so it survives a screen reader.
+        if (images.size > 1) {
+            Text(
+                text = stringResource(
+                    R.string.photo_viewer_position,
+                    pagerState.currentPage + 1,
+                    images.size,
+                ),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(FishTheme.spacing.md),
+                color = FishTheme.colors.body,
+                style = FishTheme.typography.caption,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AttachmentViewerPage(
+    attachment: AttachmentUiModel,
     onLoadError: (String) -> Unit,
 ) {
     var scale by remember(attachment.id) { mutableFloatStateOf(1f) }
@@ -38,12 +93,7 @@ internal fun AttachmentViewerContent(
         R.string.photo_viewer_unavailable_accessibility,
         attachment.name,
     )
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(FishTheme.colors.background),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (attachment.displayUrl == null) {
             Text(
                 text = stringResource(R.string.photo_unavailable),
@@ -71,16 +121,6 @@ internal fun AttachmentViewerContent(
                     .graphicsLayer(scaleX = scale, scaleY = scale),
             )
         }
-        FishIconButton(
-            icon = FishIcons.Close,
-            contentDescription = stringResource(R.string.close_photo_viewer),
-            onClick = onDismiss,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(FishTheme.spacing.sm),
-            size = FishTheme.sizes.touchTarget,
-        )
     }
 }
 

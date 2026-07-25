@@ -164,6 +164,7 @@
     <string name="open_file">Open file</string>
     <string name="share_file">Share or save file</string>
     <string name="close_photo_viewer">Close photo viewer</string>
+    <string name="photo_viewer_position">Photo %1$d of %2$d</string>
     <string name="photo_unavailable">Photo unavailable</string>
     <string name="attachment_unavailable">Attachment unavailable</string>
     <string name="attachment_unavailable_accessibility">%1$s. %2$s. %3$s. %4$s</string>

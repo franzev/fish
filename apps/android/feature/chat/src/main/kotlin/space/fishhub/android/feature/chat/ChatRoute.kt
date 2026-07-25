@@ -677,15 +677,19 @@ fun ChatRoute(
         )
     }
 
-    val selectedPhoto = (routeState as? ChatRouteUiState.Conversation)
+    // The viewer pages across the photos of the message that was tapped, so the
+    // gallery is scoped the same way FishKit scopes it.
+    val selectedPhotoGroup = (routeState as? ChatRouteUiState.Conversation)
         ?.model
         ?.messages
         ?.asSequence()
-        ?.flatMap { it.attachments.asSequence() }
-        ?.firstOrNull { it.id == selectedPhotoId && it.kind == AttachmentUiKind.Photo }
-    if (selectedPhoto != null) {
+        ?.map { message -> message.attachments.filter { it.kind == AttachmentUiKind.Photo } }
+        ?.firstOrNull { photos -> photos.any { it.id == selectedPhotoId } }
+        .orEmpty()
+    if (selectedPhotoGroup.isNotEmpty()) {
         AttachmentViewer(
-            attachment = selectedPhoto,
+            images = selectedPhotoGroup,
+            initialIndex = selectedPhotoGroup.indexOfFirst { it.id == selectedPhotoId },
             onDismiss = { selectedPhotoId = null },
             onLoadError = viewModel::refreshAttachment,
         )

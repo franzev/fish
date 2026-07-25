@@ -504,12 +504,32 @@ fun SentMixedAttachmentsScreenshot() {
 }
 
 @PreviewTest
+@Preview(
+    name = "attachment photo viewer paged",
+    widthDp = 412,
+    heightDp = 915,
+    showBackground = true,
+)
+@Composable
+fun AttachmentPhotoViewerPagedScreenshot() {
+    FishTheme(reducedMotion = true) {
+        AttachmentViewerContent(
+            images = List(3) { sentPhotoScreenshotItem(position = it) },
+            initialIndex = 1,
+            onDismiss = {},
+            onLoadError = {},
+        )
+    }
+}
+
+@PreviewTest
 @Preview(name = "attachment photo viewer", widthDp = 412, heightDp = 915, showBackground = true)
 @Composable
 fun AttachmentPhotoViewerScreenshot() {
     FishTheme(reducedMotion = true) {
         AttachmentViewerContent(
-            attachment = sentPhotoScreenshotItem(position = 0),
+            images = listOf(sentPhotoScreenshotItem(position = 0)),
+            initialIndex = 0,
             onDismiss = {},
             onLoadError = {},
         )
