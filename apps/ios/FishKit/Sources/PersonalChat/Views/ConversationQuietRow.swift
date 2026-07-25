@@ -27,6 +27,10 @@ public struct ConversationQuietRow: View {
         self.onSelect = onSelect
     }
 
+    private var isQuiet: Bool {
+        mute.isQuiet(at: now)
+    }
+
     private var value: String {
         ConversationQuietCopy.value(for: mute, now: now)
     }
@@ -34,7 +38,7 @@ public struct ConversationQuietRow: View {
     /// The glyph tracks the state so a quiet conversation never carries a
     /// sound-is-on icon.
     private var glyph: Icon {
-        mute.isQuiet(at: now) ? .moonFilled : .speaker
+        isQuiet ? .moonFilled : .speaker
     }
 
     public var body: some View {
@@ -73,7 +77,7 @@ public struct ConversationQuietRow: View {
             if optionsShown {
                 // Only offered while something is silenced, so the way back is
                 // never a no-op sitting above the quiet periods.
-                if mute.isQuiet(at: now) {
+                if isQuiet {
                     option(ConversationQuietCopy.turnBackOn, period: nil)
                 }
                 ForEach(ConversationQuietPeriod.allCases, id: \.self) { period in
