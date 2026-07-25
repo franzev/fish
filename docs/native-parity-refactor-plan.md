@@ -1,5 +1,71 @@
 # Native Android / iOS Parity Refactor Plan
 
+## Outcome (2026-07-25)
+
+Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**, stage 5 remains
+**gated** by design (§7). Every commit passed `pnpm android:check` and `pnpm ios:test`, and all
+303 recorded images stayed byte-identical throughout — no rendering changed.
+
+| | Before | After |
+|---|---:|---:|
+| Android UI files | 35 | **94** |
+| Android files declaring >1 public component | 15 | **0** |
+| iOS UI files (FishKit) | 65 | **82** |
+| iOS files declaring >1 public component | 4 | **0** |
+| Largest UI file | 1 841 (`FishApp.swift`) | **540** (`MessageComposer.swift`) |
+| Paired components sharing a name | 20 | **46 of 53** |
+| Image baselines changed | — | **0 of 303** |
+| Android tests | green | green |
+| iOS tests | 412 / 75 suites | **412 / 75 suites** |
+
+**What landed**
+
+- One public component per file on both platforms, enforced by `pnpm parity:verify`
+  (`scripts/verify-native-parity.mjs`) and wired into `pnpm android:check`.
+- A component registry (`design/parity/native-components.json`) — 122 components, 53 paired.
+- Shared vocabulary: 26 renames, e.g. `ChatTopBar`→`PersonalChatTopBar`,
+  `MessageDateSeparator`→`MessageDaySeparator`, `AudioActivity`→`CallActivityPanel`.
+- Android features grouped into `screens/`, `views/`, `views/mediapicker/`, `viewmodels/`,
+  `logic/`, `model/`, mirroring iOS's `Screens/`, `Views/`, `ViewModels/`, `Logic/`, `Models/`.
+- iOS kebab-case folders (web-convention leakage) renamed to Swift conventions.
+
+**Corrections made to this plan while executing it**
+
+1. **The `Fish` prefix must not be renamed away.** §4.8 implied `FishButton`→`ActionButton` etc.
+   Compose's `Button`, `Surface`, `TextField`, `TopBar`, `Divider`, `IconButton` and `Theme` are
+   already taken by Material 3, so the prefix is *required*, not incidental. These are now 8
+   explicit `namingBreak` pairings, added as accepted break #10 in §8.
+2. **Renames must be platform-scoped.** iOS has its own `OlderMessagesState` enum, unrelated to
+   the Android view of that name; a global rename collided with iOS's `OlderMessagesSlot`.
+3. **Private sub-components split too where the other platform has them standalone.** §6.1 said
+   private helpers co-locate; that would have left Android's `CallScreen.kt` as one file against
+   iOS's ten `Calls/Views/` files. Parity wins there.
+4. **`parity:verify` was wired into `android:check` at the end of stage 2**, not in task 0.3 —
+   wiring a deliberately-failing check into the repo's main gate would have left it red for the
+   whole refactor.
+5. **The settings module-boundary guard was narrowed** to cross-feature imports
+   (`feature\.(?!settings\.)`) so the feature can import its own sub-packages. Cross-feature
+   isolation is unchanged and still verified.
+
+**Stage 4 is blocked on a real finding, not on effort**
+
+The two platforms do not merely name previews differently — they test at different levels.
+Android's screenshot coverage is **screen-level** (`ScreenshotFrame(model = ChatSamples.loaded)`
+renders a whole screen); iOS's is **component-level** (`assertThemedSnapshots(of: MessageBubble…)`).
+`pnpm parity:verify --previews` reports the gap: of 53 paired components, **2** have image
+coverage on both platforms, 25 on one, 26 on neither.
+
+Closing that means building a component-level preview layer on Android for ~50 components and
+recording ~200 new baselines. Recording them is easy; **reviewing** them is the real work, and a
+recorded baseline nobody looked at just freezes whatever rendered, including bugs. That needs a
+decision on scope before it starts — it is not a mechanical step.
+
+**Stage 5 remains gated**, as §7 specifies: 45 of 53 paired components still have divergent
+props, and converging them changes public APIs and call sites. `pnpm parity:verify` reports
+`propsAligned` per component; 8 of 53 are aligned today.
+
+---
+
 > **For agentic workers:** this is a **behaviour-preserving structural refactor**. No feature
 > changes, no visual changes, no contract changes. Every step must leave both apps compiling
 > and every existing test and image baseline passing. Steps use checkbox (`- [ ]`) syntax.
@@ -1087,6 +1153,8 @@ Recorded rather than forced. The check script exempts each of these explicitly.
 | 7 | Android tablet-only components (`ChatAdaptiveLayout`, `ConversationRail`) | The iOS app has no tablet layout today | `android-only` in the registry; **not** a bug to fix here |
 | 8 | Presence UI module placement (Android `:feature:presence` vs iOS `UIComponents`) | Moving it changes the dependency graph | Out of scope — §9 |
 | 9 | `AnyView` erasure in iOS slot parameters vs typed `@Composable () -> Unit` | Swift generics vs Kotlin function types | Accepted; names still match |
+| 10 | Android design-system `Fish` prefix (`FishButton`, `FishSurface`, `FishTopBar`, …) | Material 3 already owns `Button`, `Surface`, `TextField`, `TopBar`, `Divider`, `IconButton`, `Theme` in the Compose namespace; iOS has no such collision | 8 explicit pairings carrying `namingBreak: "android-material-collision"` in the registry; excluded from rename and from name comparison |
+| 11 | Screenshot coverage level: Android screen-level, iOS component-level | Different test strategies predating this refactor, not a naming problem | Measured by `pnpm parity:verify --previews`; closing it is stage 4 and needs a scope decision |
 
 ---
 
