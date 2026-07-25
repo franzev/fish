@@ -34,7 +34,7 @@ import space.fishhub.android.feature.chat.R
 fun SharedContentCategoryBar(
     categories: List<SharedContentGalleryCategory>,
     selectedCategory: SharedContentGalleryCategory,
-    onCategorySelected: (SharedContentGalleryCategory) -> Unit,
+    onSelect: (SharedContentGalleryCategory) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (categories.size < 2) return
@@ -55,7 +55,7 @@ fun SharedContentCategoryBar(
                     .selectable(
                         selected = selected,
                         role = Role.Tab,
-                        onClick = { onCategorySelected(category) },
+                        onClick = { onSelect(category) },
                     )
                     .semantics {
                         this.selected = selected

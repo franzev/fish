@@ -9,19 +9,19 @@ import TestSupport
     @Test func stagedStripCoversEveryStateAndFiveItemGeometry() {
         let view = VStack(alignment: .leading, spacing: Spacing.lg) {
             StagedAttachmentStrip(
-                items: Array(AttachmentFixtures.stagedStates.prefix(4)),
-                onRetry: { _ in },
-                onRemove: { _ in }
+                attachments: Array(AttachmentFixtures.stagedStates.prefix(4)),
+                onRemove: { _ in },
+                onRetry: { _ in }
             )
             StagedAttachmentStrip(
-                items: Array(AttachmentFixtures.stagedStates.suffix(2)),
-                onRetry: { _ in },
-                onRemove: { _ in }
+                attachments: Array(AttachmentFixtures.stagedStates.suffix(2)),
+                onRemove: { _ in },
+                onRetry: { _ in }
             )
             StagedAttachmentStrip(
-                items: Array(AttachmentFixtures.stagedStates.prefix(5)),
-                onRetry: { _ in },
-                onRemove: { _ in }
+                attachments: Array(AttachmentFixtures.stagedStates.prefix(5)),
+                onRemove: { _ in },
+                onRetry: { _ in }
             )
         }
         .padding(Spacing.page)

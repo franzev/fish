@@ -29,12 +29,16 @@ const IOS_ROOTS = ["apps/ios/FishKit/Sources"];
 //   requestedFocus              SwiftUI @Binding accessibility focus
 //   attachmentCommands,         SwiftUI view-scoped services; Compose hoists the
 //   imageLoader, fileDownloader equivalents to the ViewModel instead
+//   restoreFocus,               Compose focus plumbing; SwiftUI uses the
+//   onFocusChanged              @AccessibilityFocusState property wrapper
 const EXEMPT_PROPS = new Set([
   "modifier",
   "requestedFocus",
   "attachmentCommands",
   "imageLoader",
   "fileDownloader",
+  "restoreFocus",
+  "onFocusChanged",
 ]);
 
 function walk(dir, ext, out = []) {

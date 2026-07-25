@@ -90,7 +90,7 @@ fun SharedContentGalleryScreen(
             SharedContentCategoryBar(
                 categories = state.categories,
                 selectedCategory = selected,
-                onCategorySelected = {
+                onSelect = {
                     onIntent(SharedContentGalleryIntent.SelectCategory(it))
                 },
             )

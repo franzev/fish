@@ -38,7 +38,7 @@ fun PresenceAvatar(
             PresenceIndicator(
                 status = presence.status,
                 label = presence.label,
-                decorative = true,
+                isDecorative = true,
                 modifier = Modifier.size(FishTheme.sizes.presenceIndicatorSmall),
             )
         }

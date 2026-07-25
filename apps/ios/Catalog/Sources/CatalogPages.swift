@@ -322,9 +322,9 @@ struct AttachmentsPage: View {
                 .textStyle(.heading)
                 .foregroundStyle(Palette.foreground)
             StagedAttachmentStrip(
-                items: AttachmentFixtures.stagedStates,
-                onRetry: { _ in },
-                onRemove: { _ in }
+                attachments: AttachmentFixtures.stagedStates,
+                onRemove: { _ in },
+                onRetry: { _ in }
             )
             if let uploads {
                 MessageComposer(

@@ -1617,7 +1617,6 @@
           "attachmentsDisabled",
           "context",
           "onCancelContext",
-          "onFocusChanged",
           "onVoiceRecorded",
           "onSend",
           "onOpenMediaPicker"
@@ -2166,20 +2165,13 @@
         "symbol": "PresenceIndicator",
         "visibility": "public"
       },
-      "props": {
-        "android": [
-          "status",
-          "label",
-          "decorative"
-        ],
-        "ios": [
-          "status",
-          "label",
-          "isDecorative"
-        ]
-      },
+      "props": [
+        "status",
+        "label",
+        "isDecorative"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false
     },
     {
@@ -2352,20 +2344,13 @@
         "symbol": "SharedContentCategoryBar",
         "visibility": "internal"
       },
-      "props": {
-        "android": [
-          "categories",
-          "selectedCategory",
-          "onCategorySelected"
-        ],
-        "ios": [
-          "categories",
-          "selectedCategory",
-          "onSelect"
-        ]
-      },
+      "props": [
+        "categories",
+        "selectedCategory",
+        "onSelect"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false
     },
     {
@@ -2577,20 +2562,12 @@
         "symbol": "SharedContentMetadataRow",
         "visibility": "internal"
       },
-      "props": {
-        "android": [
-          "item",
-          "onSelectItem",
-          "restoreFocus",
-          "onFocusChanged"
-        ],
-        "ios": [
-          "item",
-          "onSelectItem"
-        ]
-      },
+      "props": [
+        "item",
+        "onSelectItem"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false
     },
     {
@@ -2742,20 +2719,13 @@
         "symbol": "StagedAttachmentStrip",
         "visibility": "public"
       },
-      "props": {
-        "android": [
-          "attachments",
-          "onRemove",
-          "onRetry"
-        ],
-        "ios": [
-          "items",
-          "onRetry",
-          "onRemove"
-        ]
-      },
+      "props": [
+        "attachments",
+        "onRemove",
+        "onRetry"
+      ],
       "previews": [],
-      "propsAligned": false,
+      "propsAligned": true,
       "previewsAligned": false
     },
     {

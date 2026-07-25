@@ -18,10 +18,10 @@ fun PresenceIndicator(
     status: PresenceDisplayStatus,
     label: String,
     modifier: Modifier = Modifier,
-    decorative: Boolean = false,
+    isDecorative: Boolean = false,
 ) {
     val (icon, color) = status.visuals()
-    val semantics = if (decorative) {
+    val semantics = if (isDecorative) {
         Modifier.clearAndSetSemantics { }
     } else {
         Modifier.semantics { contentDescription = label }

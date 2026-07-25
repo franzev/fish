@@ -98,9 +98,9 @@ public struct MessageComposer: View {
             }
             if let attachmentUploads, !attachmentUploads.items.isEmpty {
                 StagedAttachmentStrip(
-                    items: attachmentUploads.items,
-                    onRetry: { attachmentUploads.retry($0) },
-                    onRemove: attachmentUploads.remove
+                    attachments: attachmentUploads.items,
+                    onRemove: attachmentUploads.remove,
+                    onRetry: { attachmentUploads.retry($0) }
                 )
             }
             HStack(alignment: .bottom, spacing: Spacing.xs) {
