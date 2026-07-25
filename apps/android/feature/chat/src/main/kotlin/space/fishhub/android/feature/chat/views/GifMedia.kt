@@ -56,7 +56,6 @@ fun GifMedia(
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    var posterFailed by remember(gif.posterUrl) { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
     val spoken = "$author. ${gif.description}. $timeLabel"
     val aspectRatio = (gif.width.toFloat() / gif.height.toFloat()).coerceIn(0.6f, 1.8f)
@@ -74,22 +73,11 @@ fun GifMedia(
             if (playing) {
                 TranscriptGifPlayer(gif = gif, modifier = Modifier.fillMaxSize())
             } else {
-                if (posterFailed) {
-                    Text(
-                        text = stringResource(R.string.gif_unavailable_media),
-                        modifier = Modifier.align(Alignment.Center),
-                        color = FishTheme.colors.body,
-                        style = FishTheme.typography.body,
-                    )
-                } else {
-                    AsyncImage(
-                        model = gif.posterUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        onError = { posterFailed = true },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                GifPoster(
+                    url = gif.posterUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
             FishIconButton(
                 icon = if (playing) FishIcons.Pause else FishIcons.Play,

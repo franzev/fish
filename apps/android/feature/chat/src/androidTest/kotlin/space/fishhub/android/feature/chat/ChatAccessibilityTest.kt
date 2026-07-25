@@ -498,12 +498,15 @@ class ChatAccessibilityTest {
         composeRule.setContent {
             FishTheme {
                 AttachmentViewer(
-                    attachment = attachment(
-                        id = "photo",
-                        position = 0,
-                        kind = AttachmentUiKind.Photo,
-                        name = "Practice photo",
-                    ).copy(displayUrl = "https://example.invalid/practice-photo.jpg"),
+                    images = listOf(
+                        attachment(
+                            id = "photo",
+                            position = 0,
+                            kind = AttachmentUiKind.Photo,
+                            name = "Practice photo",
+                        ).copy(displayUrl = "https://example.invalid/practice-photo.jpg"),
+                    ),
+                    initialIndex = 0,
                     onDismiss = { dismissed = true },
                     onLoadError = {},
                 )
