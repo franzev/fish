@@ -14,7 +14,7 @@ on both platforms went 2 → 16 of 53). Every commit passed `pnpm android:check`
 | iOS files declaring >1 public component | 4 | **0** |
 | Largest UI file | 1 841 (`FishApp.swift`) | **540** (`MessageComposer.swift`) |
 | Paired components sharing a name | 20 | **46 of 53** |
-| Paired components with aligned props | 8 | **15 of 53** |
+| Paired components with aligned props | 8 | **16 of 53** |
 | Paired components with an unexplained prop divergence | 45 | **0** |
 | Image baselines changed | — | **0** (303 → 327; additions only) |
 | Android tests | green | green |
@@ -143,6 +143,39 @@ slip in unexamined. Verified with a negative test: removing one classification f
 | `feature-gap` | 7 | The two implementations genuinely do different things |
 | `platform-idiom` | 6 | Each side follows its own control, resource or text-input conventions |
 | unclassified | **0** | — |
+
+**Acting on the decisions (2026-07-25).** `Notice` converged: Android's single string was
+FishKit's required `title`, so it was renamed and gained the optional detail and action;
+FishKit's initialiser was reordered to match. `AccountSettingsSheet` took five parameter renames
+(`accessibility`→`motion` — already an `AccountSettingsMotion` — plus the appearance, unblock and
+notification-settings callbacks).
+
+**Three of the seven "feature gaps" were misclassified, and reading the implementations proved
+it.** They had been sorted by comparing prop lists, which is not enough:
+
+- **`EmptyState` is platform-idiom, not a gap.** Android's `action` slot is used with different
+  button variants (`Secondary`, `Ghost`) *and* a busy state (`loading = retryBusy`). FishKit's
+  `actionLabel` + `isPrimaryAction` can express neither. Adopting FishKit's shape would delete
+  working capability, and Compose's slot API is endorsed by the Compose API guidelines just as
+  value parameters are idiomatic in SwiftUI. Both shapes are right for their platform.
+- **`StickerMedia` and `AccountSettingsSheet` are state-bundling.** FishKit resolves the sticker
+  from a catalog *inside* the view and handles sheet dismissal through `@Environment(\.dismiss)`;
+  Compose resolves in the caller and hoists dismissal. Same break as everywhere else.
+
+**`GifMedia` triage produced a different answer than expected.** FishKit's `GifMedia` is a shared
+primitive used by three surfaces — the transcript bubble, the picker grid and the selection
+preview — which is why it carries `preview`, `fixedAspect` and `externallyPaused`. Android's is
+used by one, and **`ChatMediaPickerContent.kt` renders GIFs itself with `AsyncImage`**, duplicating
+it. The work is not "add five parameters to Android"; it is "extract the duplicated rendering into
+the shared component", after which the parameters follow naturally.
+
+**Three genuine capability gaps remain**, each a product decision:
+
+| Component | Gap |
+|---|---|
+| `AttachmentViewer` | FishKit pages an image array (`images`, `initialIndex`); Android shows a single attachment with **no swiping between photos** |
+| `PersonalChatTopBar` | Android renders a remote avatar image; FishKit renders initials only |
+| `GifMedia` | Shared primitive on iOS, duplicated rendering on Android (above) |
 
 **The 38 cannot be closed by refactoring.** Each needs a decision first:
 
