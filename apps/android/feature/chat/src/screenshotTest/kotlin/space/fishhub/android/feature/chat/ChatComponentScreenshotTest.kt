@@ -11,6 +11,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.feature.chat.views.StickerMedia
+import space.fishhub.android.feature.chat.views.ReactionPill
+import space.fishhub.android.feature.chat.views.OlderMessagesSlot
+import space.fishhub.android.feature.chat.views.MessageFileCard
+import space.fishhub.android.feature.chat.views.AddReactionPill
+import space.fishhub.android.feature.chat.model.StickerUiModel
+import space.fishhub.android.feature.chat.model.OlderMessagesUiState
+import space.fishhub.android.feature.chat.model.AttachmentUiModel
+import space.fishhub.android.feature.chat.model.AttachmentUiKind
+import androidx.compose.foundation.layout.Row
 import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
 import space.fishhub.android.feature.chat.model.MessageUiModel
 import space.fishhub.android.feature.chat.model.ReactionUiModel
@@ -175,4 +185,123 @@ fun ChatChromeLightScreenshot() {
 @Composable
 fun ChatChromeDarkScreenshot() {
     ComponentStrip(darkTheme = true) { ChatChromeStates() }
+}
+
+private fun fileAttachment(kind: AttachmentUiKind, name: String) = AttachmentUiModel(
+    id = "att-$name",
+    position = 0,
+    kind = kind,
+    available = true,
+    name = name,
+    mimeType = "application/pdf",
+    byteSize = 248_000,
+    width = null,
+    height = null,
+    thumbnailUrl = null,
+    displayUrl = null,
+    contentVersion = "screenshot",
+)
+
+/** Reaction pills: counted, mine, and the add affordance, enabled and not. */
+@Composable
+private fun ReactionStates() {
+    Row(horizontalArrangement = Arrangement.spacedBy(FishTheme.spacing.twoXs)) {
+        ReactionPill(
+            reaction = ReactionUiModel(emoji = "\uD83D\uDC4D", count = 1, byMe = false),
+            description = "Thumbs up, 1 person",
+            enabled = true,
+            onClick = {},
+        )
+        ReactionPill(
+            reaction = ReactionUiModel(emoji = "\uD83C\uDF89", count = 4, byMe = true),
+            description = "Party popper, 4 people, including you",
+            enabled = true,
+            onClick = {},
+        )
+        AddReactionPill(description = "Add a reaction", enabled = true, onClick = {})
+        AddReactionPill(description = "Add a reaction", enabled = false, onClick = {})
+    }
+}
+
+/** Transcript slot states for loading older history. */
+@Composable
+private fun OlderMessagesStates() {
+    OlderMessagesSlot(state = OlderMessagesUiState.Idle, onRetry = {})
+    OlderMessagesSlot(state = OlderMessagesUiState.Loading, onRetry = {})
+    OlderMessagesSlot(state = OlderMessagesUiState.Failed, onRetry = {})
+}
+
+/** File attachment card, available and unavailable. */
+@Composable
+private fun MessageFileStates() {
+    MessageFileCard(
+        attachment = fileAttachment(AttachmentUiKind.File, "Practice notes.pdf"),
+        author = "Coach Jordan",
+        timeLabel = "10:36",
+        onClick = {},
+        onShare = {},
+    )
+    MessageFileCard(
+        attachment = fileAttachment(AttachmentUiKind.File, "Coaching outline.pdf")
+            .copy(available = false),
+        author = "Coach Jordan",
+        timeLabel = "10:37",
+        onClick = {},
+        onShare = {},
+    )
+}
+
+/** Sticker bubble, available and missing from the catalog. */
+@Composable
+private fun StickerStates() {
+    StickerMedia(
+        sticker = StickerUiModel(
+            id = "aquatic-great-job-sea-star",
+            phrase = "Great job",
+            description = "Great job sticker",
+            assetPath = null,
+        ),
+        author = "Coach Jordan",
+        timeLabel = "10:36",
+    )
+}
+
+@PreviewTest
+@Preview(name = "reaction-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun ReactionStatesLightScreenshot() {
+    ComponentStrip(darkTheme = false) { ReactionStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "reaction-states-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ReactionStatesDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { ReactionStates() }
+}
+
+@PreviewTest
+@Preview(name = "older-messages-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun OlderMessagesStatesLightScreenshot() {
+    ComponentStrip(darkTheme = false) { OlderMessagesStates() }
+}
+
+@PreviewTest
+@Preview(name = "message-file-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun MessageFileStatesLightScreenshot() {
+    ComponentStrip(darkTheme = false) { MessageFileStates() }
+}
+
+@PreviewTest
+@Preview(name = "sticker-states-light", widthDp = 412, showBackground = true)
+@Composable
+fun StickerStatesLightScreenshot() {
+    ComponentStrip(darkTheme = false) { StickerStates() }
 }
