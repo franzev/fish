@@ -1,5 +1,26 @@
 # Native Android / iOS Parity Refactor Plan
 
+## Scope boundary
+
+This branch is a **refactor**: nothing behaves differently. Across every commit, **no recorded
+image was ever modified** — the manifest only grew as new coverage was added, and the additions
+are listed below.
+
+Work that surfaced during the refactor but changes behaviour lives on
+`feature/chat-viewer-and-gif-poster`, not here:
+
+- **Attachment viewer paging** — the viewer took a single attachment and could not be swiped; the
+  branch makes it page across a message's photos.
+- **Shared GIF poster** — the transcript fell back to an unavailable message when a poster failed
+  to load and the picker grid did not, leaving a blank tile; the branch gives both one path.
+
+Both are worth shipping and both need reviewing on their own merits, which is exactly why they are
+not mixed into a change whose value is the claim that nothing moved.
+
+The remaining items in this document — iOS avatar images, the accessibility-announcement default,
+FishKit's hardcoded English accessibility labels — are product work that the refactor *surfaced*
+by making the two codebases comparable. They belong in a backlog, not on this branch.
+
 ## Outcome (2026-07-25)
 
 Stages 0–3 and 5 are **complete**; stage 4 is **substantially advanced** (component coverage
