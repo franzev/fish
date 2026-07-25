@@ -170,30 +170,74 @@ function scan() {
   return { android, ios };
 }
 
+/**
+ * Preview cases declared in Compose screenshot tests, with the components each
+ * one renders. A case is attributed to every registry component whose symbol
+ * appears in the preview function body.
+ */
 function androidPreviewCases() {
   const cases = new Map();
   for (const root of ANDROID_ROOTS) {
     for (const file of walk(join(ROOT, root), ".kt")) {
       if (!file.includes("/src/screenshotTest/")) continue;
       const text = readFileSync(file, "utf8");
-      for (const m of text.matchAll(/@Preview\s*\(([^)]*)\)/g)) {
+      // Android previews render composite frames (`ScreenshotFrame(model=…)`)
+      // rather than naming components directly, so inline the bodies of local
+      // helpers one level deep to see which components a case actually covers.
+      const helpers = new Map(
+        [...text.matchAll(/^(?:private\s+)?fun\s+(\w+)\s*\([\s\S]*?\n\}/gm)].map((h) => [h[1], h[0]]),
+      );
+      const expand = (body) =>
+        body +
+        [...body.matchAll(/\b([A-Z]\w+)\s*\(/g)]
+          .map((c) => helpers.get(c[1]) ?? "")
+          .join("\n");
+      for (const m of text.matchAll(/@Preview\s*\(([\s\S]*?)\)\s*\n@Composable\s*\n(?:\w+\s+)*fun\s+(\w+)\s*\(\s*\)\s*\{([\s\S]*?)\n\}/g)) {
         const name = m[1].match(/name\s*=\s*"([^"]+)"/);
-        if (name) cases.set(name[1], relative(ROOT, file));
+        cases.set(name ? name[1] : m[2], { file: relative(ROOT, file), body: expand(m[3]) });
       }
     }
   }
   return cases;
 }
 
+/**
+ * Snapshot cases declared in the Swift test targets, with the enclosing test
+ * function body so cases can be attributed to the components they render.
+ */
 function iosPreviewCases() {
   const cases = new Map();
   for (const file of walk(join(ROOT, "apps/ios/FishKit/Tests"), ".swift")) {
     const text = readFileSync(file, "utf8");
-    for (const m of text.matchAll(/named:\s*"([^"]+)"/g)) {
-      cases.set(m[1], relative(ROOT, file));
+    for (const m of text.matchAll(/func\s+(\w+)\s*\([^)]*\)[^{]*\{([\s\S]*?)\n {4}\}/g)) {
+      for (const n of m[2].matchAll(/named:\s*"([^"\\]+)"/g)) {
+        cases.set(n[1], { file: relative(ROOT, file), body: m[2] });
+      }
     }
   }
   return cases;
+}
+
+/** Per-component preview coverage on each platform. */
+function previewCoverage(registry) {
+  const android = androidPreviewCases();
+  const ios = iosPreviewCases();
+  const rows = [];
+  for (const entry of registry.components) {
+    const hit = (cases, side) =>
+      side
+        ? [...cases]
+            .filter(([, v]) => new RegExp(`\\b${side.symbol}\\b`).test(v.body))
+            .map(([name]) => name)
+        : [];
+    rows.push({
+      name: entry.name,
+      android: hit(android, entry.android),
+      ios: hit(ios, entry.ios),
+      paired: Boolean(entry.android && entry.ios),
+    });
+  }
+  return rows;
 }
 
 function verify() {
@@ -295,6 +339,29 @@ function verify() {
   }
   console.log(`Native parity: OK (${registry.components.length} components)`);
   return 0;
+}
+
+if (process.argv.includes("--previews")) {
+  const registry = JSON.parse(readFileSync(REGISTRY, "utf8"));
+  const rows = previewCoverage(registry);
+  const both = rows.filter((r) => r.paired);
+  const covered = both.filter((r) => r.android.length && r.ios.length);
+  const neither = both.filter((r) => !r.android.length && !r.ios.length);
+  const oneSided = both.filter((r) => Boolean(r.android.length) !== Boolean(r.ios.length));
+  console.log(`Preview coverage across ${both.length} paired components\n`);
+  console.log(`  both platforms: ${covered.length}`);
+  console.log(`  one platform:   ${oneSided.length}`);
+  console.log(`  neither:        ${neither.length}\n`);
+  if (oneSided.length) {
+    console.log("Covered on one platform only:");
+    for (const r of oneSided) {
+      console.log(`  ${r.name.padEnd(34)} android:${r.android.length} ios:${r.ios.length}`);
+    }
+  }
+  if (neither.length) {
+    console.log(`\nNo image coverage on either platform:\n  ${neither.map((r) => r.name).join(", ")}`);
+  }
+  process.exit(0);
 }
 
 if (process.argv.includes("--scan")) {
