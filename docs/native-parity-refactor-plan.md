@@ -14,6 +14,7 @@ Stages 0–3 are **complete and verified**. Stage 4 is **blocked on a decision**
 | iOS files declaring >1 public component | 4 | **0** |
 | Largest UI file | 1 841 (`FishApp.swift`) | **540** (`MessageComposer.swift`) |
 | Paired components sharing a name | 20 | **46 of 53** |
+| Paired components with aligned props | 8 | **9 of 53** |
 | Image baselines changed | — | **0 of 303** |
 | Android tests | green | green |
 | iOS tests | 412 / 75 suites | **412 / 75 suites** |
@@ -60,9 +61,36 @@ recording ~200 new baselines. Recording them is easy; **reviewing** them is the 
 recorded baseline nobody looked at just freezes whatever rendered, including bugs. That needs a
 decision on scope before it starts — it is not a mechanical step.
 
-**Stage 5 remains gated**, as §7 specifies: 45 of 53 paired components still have divergent
-props, and converging them changes public APIs and call sites. `pnpm parity:verify` reports
-`propsAligned` per component; 8 of 53 are aligned today.
+**Stage 5 has started, one component at a time.** `MessageBubble` is converged (9 of 53 aligned):
+
+```
+row, onAction, onRetry, reactionsEnabled        ← identical on both platforms
+```
+
+Android replaced ten interaction callbacks with a single `MessageAction` channel and now takes a
+`MessageRowUiModel`; FishKit folded its `onReplyTap` into the same channel. All 303 baselines
+stayed byte-identical, so the conversion preserved rendering.
+
+Three things were settled while doing it, and they set the pattern for the remaining components:
+
+- **The divergence was three layers, not one.** Row model (`MessageRowUiModel` vs grouping flags
+  on `MessageUiModel`), action vocabulary (5 iOS cases vs 10 Android callbacks), and state
+  handling (FishKit owns view-scoped state and services; Compose hoists everything). Only the
+  first two were converged.
+- **State handling stays per-platform**, by decision. `attachmentCommands`, `imageLoader` and
+  `fileDownloader` are SwiftUI view-scoped services with no Compose counterpart; they join
+  `modifier` and `requestedFocus` as exempt parameters. Forcing either platform to the other's
+  model would fight its idiom and change behaviour.
+- **The action case sets are deliberately not identical.** FishKit settles attachment opening and
+  the reply/edit/delete menu internally and escalates only what the store must decide; the
+  Compose bubble holds no state so everything escalates. The parameter list matches; the case set
+  reflects the state-handling break above.
+
+Android's `MessageRowUiModel` also omits FishKit's `showsMeta`: this bubble renders the timestamp
+inside its media and attachment children rather than gating a header, so the field would be
+write-only. It carries `playingVoiceAttachmentId` instead, which FishKit holds in view state.
+
+44 of 53 paired components still have divergent props.
 
 ---
 
