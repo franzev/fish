@@ -46,6 +46,7 @@ final class FishAppModel {
     private(set) var activeSharedContentIntent: SharedContentNavigationIntent?
     private(set) var sharedContentPreviewItemId: String?
     private var draftStore: (any ChatDraftProviding)?
+    private var cacheStore: (any ChatDirectoryCaching)?
     private let notificationReplyStore = FileChatNotificationReplyStore.shared
     private var isProcessingNotificationReplies = false
     private(set) var accountPresence = AccountSettingsPresence()
@@ -670,6 +671,7 @@ final class FishAppModel {
         if let draftStore {
             try? await draftStore.removeAllDrafts()
         }
+        try? await cacheStore?.removeAll()
         try? await notificationReplyStore.removeAll()
         if let callModel, callModel.state.hasLiveCall {
             if callModel.state.current.status == .ringing,
@@ -694,6 +696,7 @@ final class FishAppModel {
         session = nil
         directory = nil
         draftStore = nil
+        cacheStore = nil
         currentUserId = ""
         try? await notificationCenter.setBadgeCount(0)
         notice = nil
@@ -793,6 +796,7 @@ final class FishAppModel {
         self.session = session
         currentUserId = session.userId
         draftStore = FileChatDraftStore(accountId: session.userId)
+        cacheStore = FileChatCacheStore(accountId: session.userId)
         let callBackend = CallBackendConfiguration(
             supabaseUrl: session.backend.supabaseUrl,
             anonKey: session.backend.anonKey,
@@ -828,7 +832,8 @@ final class FishAppModel {
         await recoverPendingVoipCallIfReady()
         let directory = ConversationDirectoryStore(
             directory: session.directory,
-            drafts: draftStore
+            drafts: draftStore,
+            cache: cacheStore
         )
         self.directory = directory
         await directory.start()

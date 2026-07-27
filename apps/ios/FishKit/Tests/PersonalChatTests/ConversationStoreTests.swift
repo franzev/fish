@@ -278,13 +278,21 @@ private final class StoreDirectory: ConversationDirectoryProviding, @unchecked S
     private let lock = NSLock()
     private var values: [[ChatConversationPreview]]
     private var callCount = 0
+    private var nextFailure: Error?
+    private var nextDelay: Duration?
 
     init(values: [[ChatConversationPreview]]) {
         self.values = values
     }
 
     func conversations() async throws -> [ChatConversationPreview] {
-        lock.withLock {
+        if let delay = lock.withLock({ defer { nextDelay = nil }; return nextDelay }) {
+            try await Task.sleep(for: delay)
+        }
+        if let failure = lock.withLock({ defer { nextFailure = nil }; return nextFailure }) {
+            throw failure
+        }
+        return lock.withLock {
             defer { callCount += 1 }
             return values[min(callCount, values.count - 1)]
         }
@@ -300,7 +308,63 @@ private final class StoreDirectory: ConversationDirectoryProviding, @unchecked S
         stream.continuation.yield(conversationId)
     }
 
+    func failNextConversations(_ error: Error = StoreTestFailure()) {
+        lock.withLock { nextFailure = error }
+    }
+
+    func delayNextConversations(_ duration: Duration) {
+        lock.withLock { nextDelay = duration }
+    }
+
     var calls: Int { lock.withLock { callCount } }
+}
+
+private final class StoreCache: ChatDirectoryCaching, @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: [ChatConversationPreview]
+    private var saves = 0
+
+    init(seed: [ChatConversationPreview] = []) {
+        self.stored = seed
+    }
+
+    func conversations() async throws -> [ChatConversationPreview] {
+        lock.withLock { stored }
+    }
+
+    func save(_ conversations: [ChatConversationPreview]) async throws {
+        lock.withLock {
+            stored = conversations
+            saves += 1
+        }
+    }
+
+    func removeAll() async throws {
+        lock.withLock { stored = [] }
+    }
+
+    var savedConversations: [ChatConversationPreview] { lock.withLock { stored } }
+    var saveCount: Int { lock.withLock { saves } }
+}
+
+private func directoryPreview(
+    id: String,
+    hasDraft: Bool = false,
+    unreadCount: Int = 0,
+    mute: ConversationMute = .on
+) -> ChatConversationPreview {
+    ChatConversationPreview(
+        conversationId: id,
+        participantId: "them-\(id)",
+        participantRole: "coach",
+        participantDisplayName: "Coach Mina",
+        latestMessageSenderId: nil,
+        latestMessageText: "",
+        latestMessageCreatedAt: nil,
+        unreadCount: unreadCount,
+        hasDraft: hasDraft,
+        mute: mute
+    )
 }
 
 private actor StoreSleeper {
@@ -920,6 +984,80 @@ struct ConversationStoreTests {
         #expect(await eventually { store.conversations.first?.unreadCount == 1 })
         #expect(directory.calls == 2)
         store.stop()
+    }
+
+    @Test func cacheSeedsConversationsBeforeNetworkRefreshCompletes() async {
+        let cache = StoreCache(seed: [directoryPreview(id: "c-cached")])
+        let directory = StoreDirectory(values: [[directoryPreview(id: "c-live")]])
+        directory.delayNextConversations(.milliseconds(200))
+        let store = ConversationDirectoryStore(directory: directory, cache: cache)
+
+        let task = Task { await store.start() }
+        #expect(await eventually {
+            store.conversations.map(\.conversationId) == ["c-cached"] && store.phase == .ready
+        })
+
+        await task.value
+        #expect(store.conversations.map(\.conversationId) == ["c-live"])
+    }
+
+    @Test func successfulRefreshWritesTheCache() async {
+        let cache = StoreCache()
+        let directory = StoreDirectory(values: [[directoryPreview(id: "c-live")]])
+        let store = ConversationDirectoryStore(directory: directory, cache: cache)
+
+        await store.start()
+
+        #expect(cache.savedConversations.map(\.conversationId) == ["c-live"])
+        #expect(cache.saveCount == 1)
+    }
+
+    @Test func failedRefreshWithCacheStaysReadyWithSavedNotice() async {
+        let cache = StoreCache(seed: [directoryPreview(id: "c-cached")])
+        let directory = StoreDirectory(values: [[]])
+        directory.failNextConversations()
+        let store = ConversationDirectoryStore(directory: directory, cache: cache)
+
+        await store.start()
+
+        #expect(store.phase == .ready)
+        #expect(store.conversations.map(\.conversationId) == ["c-cached"])
+        #expect(store.notice == "Showing your saved conversations. They’ll update when you’re back online.")
+    }
+
+    @Test func failedRefreshWithoutCacheStaysFailedWithOriginalNotice() async {
+        let directory = StoreDirectory(values: [[]])
+        directory.failNextConversations()
+        let store = ConversationDirectoryStore(directory: directory)
+
+        await store.start()
+
+        #expect(store.phase == .failed)
+        #expect(store.conversations.isEmpty)
+        #expect(store.notice == "Conversations aren’t available yet. Try again.")
+    }
+
+    @Test func hasDraftIsRecomputedNotRestoredFromCache() async {
+        let cache = StoreCache(seed: [directoryPreview(id: "c1", hasDraft: true)])
+        let directory = StoreDirectory(values: [[]])
+        directory.failNextConversations()
+        let store = ConversationDirectoryStore(directory: directory, cache: cache)
+
+        await store.start()
+
+        #expect(store.conversations.first?.hasDraft == false)
+    }
+
+    @Test func refreshForwardsMuteStateInsteadOfResettingIt() async {
+        let mutedUntil = Date(timeIntervalSince1970: 5000)
+        let directory = StoreDirectory(values: [[
+            directoryPreview(id: "c1", mute: ConversationMute(isMuted: true, mutedUntil: mutedUntil)),
+        ]])
+        let store = ConversationDirectoryStore(directory: directory)
+
+        await store.start()
+
+        #expect(store.conversations.first?.mute == ConversationMute(isMuted: true, mutedUntil: mutedUntil))
     }
 
     @Test func opensWithTheStoredQuietState() async {
