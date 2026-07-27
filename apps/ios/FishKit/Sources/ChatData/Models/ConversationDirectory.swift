@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
+public struct ChatConversationPreview: Codable, Identifiable, Equatable, Sendable {
     public var id: String { conversationId }
     public let conversationId: String
     public let participantId: String
@@ -35,6 +35,9 @@ public struct ChatConversationPreview: Identifiable, Equatable, Sendable {
         self.latestMessageSenderId = latestMessageSenderId
         self.latestMessageText = latestMessageText
         self.latestMessageCreatedAt = latestMessageCreatedAt
+        // Only this init clamps; the synthesized `init(from:)` used to reload
+        // a cached preview does not re-apply it. Safe because a preview is
+        // always constructed here before it is ever cached.
         self.unreadCount = max(0, unreadCount)
         self.hasDraft = hasDraft
     }

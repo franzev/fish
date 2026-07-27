@@ -33,7 +33,7 @@ public enum ConversationQuietPeriod: String, CaseIterable, Sendable, Equatable {
 /// Whether one conversation's notifications are currently silenced, as the
 /// server sees it. `mutedUntil` is only ever set while `isMuted` is true, so
 /// an expired quiet period can never be presented as if it were still running.
-public struct ConversationMute: Equatable, Sendable {
+public struct ConversationMute: Codable, Equatable, Sendable {
     public static let on = Self(isMuted: false, mutedUntil: nil)
 
     public let isMuted: Bool
