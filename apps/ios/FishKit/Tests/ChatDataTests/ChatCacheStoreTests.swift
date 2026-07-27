@@ -1,3 +1,4 @@
+import ChatCore
 import Foundation
 import Testing
 @testable import ChatData
@@ -66,6 +67,95 @@ struct ChatCacheStoreTests {
 
         let reloaded = FileChatCacheStore(accountId: "account-a", rootURL: root)
         #expect(try await reloaded.conversations().isEmpty)
+    }
+
+    @Test func roundTripsATranscriptWindow() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatCacheStore(accountId: "account-a", rootURL: root)
+        let window = transcriptWindow()
+
+        try await store.saveWindow(window, conversationId: "c1")
+
+        #expect(try await store.window(conversationId: "c1") == window)
+    }
+
+    @Test func missingWindowReturnsNil() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatCacheStore(accountId: "account-a", rootURL: root)
+
+        #expect(try await store.window(conversationId: "c1") == nil)
+    }
+
+    @Test func windowsAreScopedPerConversation() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatCacheStore(accountId: "account-a", rootURL: root)
+
+        try await store.saveWindow(transcriptWindow(), conversationId: "c1")
+
+        #expect(try await store.window(conversationId: "c2") == nil)
+    }
+
+    @Test func removeAllClearsWindowsToo() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatCacheStore(accountId: "account-a", rootURL: root)
+        try await store.saveWindow(transcriptWindow(), conversationId: "c1")
+
+        try await store.removeAll()
+
+        #expect(try await store.window(conversationId: "c1") == nil)
+    }
+
+    @Test func corruptWindowPayloadFailsSoftly() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatCacheStore(accountId: "account-a", rootURL: root)
+        try await store.saveWindow(transcriptWindow(), conversationId: "c1")
+
+        let accountDirectory = try #require(
+            FileManager.default.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: nil
+            ).first
+        )
+        let transcriptFile = try #require(
+            FileManager.default.contentsOfDirectory(
+                at: accountDirectory,
+                includingPropertiesForKeys: nil
+            ).first
+        )
+        try Data("not json".utf8).write(to: transcriptFile)
+
+        let reloaded = FileChatCacheStore(accountId: "account-a", rootURL: root)
+        #expect(try await reloaded.window(conversationId: "c1") == nil)
+    }
+
+    private func transcriptWindow() -> ChatCachedWindow {
+        ChatCachedWindow(
+            messages: [
+                ChatMessageState(
+                    id: "m1",
+                    conversationId: "c1",
+                    senderId: "them",
+                    senderRole: .coach,
+                    body: "Hello",
+                    clientRequestId: "r-m1",
+                    createdAt: ChatTimestamp.string(Date(timeIntervalSince1970: 100))
+                ),
+            ],
+            readStates: [
+                ChatReadState(
+                    userId: "me",
+                    lastDeliveredMessageId: "m1",
+                    deliveredAt: ChatTimestamp.string(Date(timeIntervalSince1970: 100)),
+                    lastReadMessageId: nil,
+                    readAt: nil
+                ),
+            ],
+            hasMoreOlder: true,
+            oldestCursor: ChatMessageCursor(
+                createdAt: ChatTimestamp.string(Date(timeIntervalSince1970: 100)),
+                id: "m1"
+            )
+        )
     }
 
     private func preview(

@@ -322,10 +322,13 @@ private final class StoreDirectory: ConversationDirectoryProviding, @unchecked S
 private final class StoreCache: ChatDirectoryCaching, @unchecked Sendable {
     private let lock = NSLock()
     private var stored: [ChatConversationPreview]
+    private var windows: [String: ChatCachedWindow]
     private var saves = 0
+    private var windowSaves = 0
 
-    init(seed: [ChatConversationPreview] = []) {
+    init(seed: [ChatConversationPreview] = [], seedWindows: [String: ChatCachedWindow] = [:]) {
         self.stored = seed
+        self.windows = seedWindows
     }
 
     func conversations() async throws -> [ChatConversationPreview] {
@@ -339,12 +342,30 @@ private final class StoreCache: ChatDirectoryCaching, @unchecked Sendable {
         }
     }
 
+    func window(conversationId: String) async throws -> ChatCachedWindow? {
+        lock.withLock { windows[conversationId] }
+    }
+
+    func saveWindow(_ window: ChatCachedWindow, conversationId: String) async throws {
+        lock.withLock {
+            windows[conversationId] = window
+            windowSaves += 1
+        }
+    }
+
     func removeAll() async throws {
-        lock.withLock { stored = [] }
+        lock.withLock {
+            stored = []
+            windows = [:]
+        }
     }
 
     var savedConversations: [ChatConversationPreview] { lock.withLock { stored } }
     var saveCount: Int { lock.withLock { saves } }
+    func savedWindow(conversationId: String) -> ChatCachedWindow? {
+        lock.withLock { windows[conversationId] }
+    }
+    var windowSaveCount: Int { lock.withLock { windowSaves } }
 }
 
 private func directoryPreview(

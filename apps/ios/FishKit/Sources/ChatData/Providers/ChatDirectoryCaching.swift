@@ -7,5 +7,7 @@ import Foundation
 public protocol ChatDirectoryCaching: Sendable {
     func conversations() async throws -> [ChatConversationPreview]
     func save(_ conversations: [ChatConversationPreview]) async throws
+    func window(conversationId: String) async throws -> ChatCachedWindow?
+    func saveWindow(_ window: ChatCachedWindow, conversationId: String) async throws
     func removeAll() async throws
 }
