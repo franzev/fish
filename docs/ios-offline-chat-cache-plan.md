@@ -1,6 +1,7 @@
 # iOS offline chat cache plan
 
-Status: Planned
+Status: Steps 1-2 implemented and merged; Step 3 (physical-device pass)
+remains external
 Written: 2026-07-27
 
 ## Outcome
@@ -274,6 +275,34 @@ transition behavior are not honestly reproducible in unit tests.
 
 - Every row passes or is recorded as a named blocker.
 - `pnpm build`, `pnpm ios:test`, and `pnpm ios:app:build` pass at the commit.
+
+---
+
+## Notes from implementation
+
+Two things surfaced while building Steps 1-2 that were not anticipated when
+this plan was written:
+
+- **`ConversationDirectoryStore.refresh()` was silently resetting every
+  conversation's quiet state.** It reconstructed each `ChatConversationPreview`
+  without forwarding the `mute` field the server sent, so
+  `ConversationListScreen`'s quiet marker could never show as quiet after the
+  first refresh. Found while extracting the decoration logic into a shared
+  helper for the cache-seed path; fixed in the same change with a dedicated
+  regression test, since the helper being touched was the exact site of the
+  bug.
+- **The transcript cache was built and fully tested but not reachable from the
+  running app.** `ConversationStore` gained the `cache` parameter and its
+  `start()` behavior, but `FishAppModel.openConversation` — the one place a
+  real conversation gets opened — was never updated to pass it in. Every
+  `ConversationStore`-level test stayed green because the test harness
+  supplies its own fake cache directly; none of them could catch a wiring gap
+  one layer up. Caught by checking every production call site of
+  `ConversationStore` after implementation, not just the one the plan named.
+  A pre-existing Catalog host (`LiveAttachmentLab`) constructs its own
+  `ConversationStore` against a live dev backend and deliberately omits both
+  `drafts` and `cache`, since it has no local-continuity story to begin with;
+  that one was left unchanged.
 
 ---
 
