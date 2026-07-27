@@ -730,7 +730,8 @@ final class FishAppModel {
                 commands: session.commands,
                 realtime: session.realtime,
                 gifProvider: gifProvider,
-                drafts: draftStore
+                drafts: draftStore,
+                cache: cacheStore
             )
             let staging = try AttachmentStaging()
             let uploads = AttachmentUploadsModel(
