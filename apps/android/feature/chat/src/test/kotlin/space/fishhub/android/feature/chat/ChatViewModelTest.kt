@@ -330,6 +330,139 @@ class ChatViewModelTest {
         }
 
     @Test
+    fun `offline attachment send queues instead of refusing`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.realtime.value = ChatRealtimeEvent.Disconnected
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("photo", 0, LocalAttachmentScope.Composer).copy(
+                        transferState = LocalAttachmentTransferState.Uploading,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            assertEquals(1, repository.sendCalls)
+            assertEquals(listOf("draft-photo"), repository.lastSentContent?.attachmentIds)
+        }
+
+    @Test
+    fun `voice recorded offline sends into the queue without waiting for the upload`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.realtime.value = ChatRealtimeEvent.Disconnected
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("voice", 0, LocalAttachmentScope.Composer).copy(
+                        kind = LocalAttachmentKind.File,
+                        displayName = "Voice message.m4a",
+                        sourceMimeType = "audio/mp4",
+                        storedMimeType = "audio/mp4",
+                        transferState = LocalAttachmentTransferState.WaitingForNetwork,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.armVoiceAutoSend("voice")
+            advanceUntilIdle()
+
+            assertEquals(1, repository.sendCalls)
+            assertEquals(listOf("draft-voice"), repository.lastSentContent?.attachmentIds)
+        }
+
+    @Test
+    fun `queued upload turning ready triggers an outbox flush`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            val before = repository.flushCalls
+
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("queued", 0, LocalAttachmentScope.Queued).copy(
+                        serverAttachmentId = "server-queued",
+                        transferState = LocalAttachmentTransferState.Ready,
+                        progressBytes = 100,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            assertTrue(repository.flushCalls > before)
+        }
+
+    @Test
+    fun `queued drafts stay out of the composer strip and the next send`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitAttachmentDrafts(
+                listOf(
+                    localDraft("parked", 0, LocalAttachmentScope.Queued).copy(
+                        transferState = LocalAttachmentTransferState.Uploading,
+                    ),
+                    localDraft("current", 0, LocalAttachmentScope.Composer).copy(
+                        serverAttachmentId = "server-current",
+                        transferState = LocalAttachmentTransferState.Ready,
+                        progressBytes = 100,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            assertEquals(listOf("server-current"), repository.lastSentContent?.attachmentIds)
+        }
+
+    @Test
+    fun `retry with unrecoverable attachments explains instead of sending text only`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            repository.emitMessages(
+                listOf(
+                    incomingMessage("failed-1").copy(
+                        senderId = "client-1",
+                        body = "Here it is",
+                        clientRequestId = "request-dead",
+                        localStatus = LocalMessageStatus.Failed,
+                        failureReason = "That file did not send. Pick it again to retry.",
+                        attachments = listOf(
+                            ChatAttachment(
+                                id = "draft-gone",
+                                position = 0,
+                                kind = ChatAttachmentKind.Image,
+                                originalName = "Photo",
+                                mimeType = "image/webp",
+                                byteSize = 100,
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            viewModel.retryMessage("failed-1")
+            advanceUntilIdle()
+
+            assertEquals(0, repository.sendCalls)
+        }
+
+    @Test
     fun `one failed attachment blocks subset send and keeps every row`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository()
@@ -963,6 +1096,7 @@ private class FakeChatRepository(
     )
     var savedDraft: String = ""
     var sendCalls: Int = 0
+    var flushCalls: Int = 0
     var readFails: Boolean = false
     var markReadCalls: Int = 0
     var storedMute: ConversationMute = ConversationMute.On
@@ -1097,6 +1231,11 @@ private class FakeChatRepository(
         )
         }
     }
+    override suspend fun flushTextOutbox(conversationId: String): ChatResult<Unit> {
+        flushCalls += 1
+        return ChatResult.Success(Unit)
+    }
+
     override suspend fun reportGif(messageId: String): ChatResult<Unit> {
         reportCalls += 1
         return ChatResult.Success(Unit)

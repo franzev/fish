@@ -501,12 +501,17 @@ class ChatViewModel(
         val selectedAttachments = attachmentDrafts
             .filter { it.inComposer }
             .sortedWith(compareBy({ it.position }, { it.id }))
-        val durableText = body.isNotEmpty() && selectedMedia == null && selectedAttachments.isEmpty()
+        // Text and attachment sends are durable: offline they park in the outbox.
+        // GIF and sticker sends stay live-only.
+        val durableSend = selectedMedia == null &&
+            (body.isNotEmpty() || selectedAttachments.isNotEmpty())
+        val disconnected = state.realtime.status == RealtimeConnectionStatus.Disconnected
         if ((body.isEmpty() && selectedMedia == null && selectedAttachments.isEmpty()) || sending ||
-            (state.realtime.status == RealtimeConnectionStatus.Disconnected && !durableText)
+            (disconnected && !durableSend)
         ) return
-        if (selectedAttachments.any { !it.ready } ||
-            selectedAttachments.any { it.serverAttachmentId == null }
+        if (!disconnected &&
+            (selectedAttachments.any { !it.ready } ||
+                selectedAttachments.any { it.serverAttachmentId == null })
         ) {
             latestNotice = formatter.attachmentsNotReady
             publish()
@@ -514,7 +519,9 @@ class ChatViewModel(
         }
         val selectedGif = (selectedMedia as? ComposerMediaUiModel.Gif)?.value?.toChatGif()
         val selectedStickerId = (selectedMedia as? ComposerMediaUiModel.Sticker)?.value?.id
-        val selectedAttachmentIds = selectedAttachments.mapNotNull { it.serverAttachmentId }
+        val selectedAttachmentIds = selectedAttachments.map {
+            it.serverAttachmentId ?: "draft-${it.id}"
+        }
         val replyTargetId = state.composer.replyTargetId
         val failedRetry = state.messages.lastOrNull {
             it.localStatus == LocalMessageStatus.Failed &&
@@ -538,7 +545,7 @@ class ChatViewModel(
             stickerId = selectedStickerId,
             attachments = selectedAttachments.map { attachment ->
                 ChatAttachment(
-                    id = checkNotNull(attachment.serverAttachmentId),
+                    id = attachment.serverAttachmentId ?: "draft-${attachment.id}",
                     position = attachment.position,
                     kind = if (attachment.isPhoto) ChatAttachmentKind.Image else ChatAttachmentKind.File,
                     originalName = attachment.name,
@@ -636,7 +643,16 @@ class ChatViewModel(
         val failed = state.messages.firstOrNull {
             it.id == messageId && it.localStatus == LocalMessageStatus.Failed
         } ?: return
-        if (sending || state.realtime.status == RealtimeConnectionStatus.Disconnected) return
+        if (failed.attachments.any { it.id.startsWith("draft-") }) {
+            // The private copies behind this send are gone; only re-picking can revive it.
+            latestNotice = failed.failureReason ?: formatter.attachmentsNotReady
+            publish()
+            return
+        }
+        val durableRetry = failed.gif == null && failed.stickerId == null
+        if (sending ||
+            (state.realtime.status == RealtimeConnectionStatus.Disconnected && !durableRetry)
+        ) return
         sending = true
         chatState = reduceChatState(chatState, ChatEvent.SendOptimisticMessage(failed))
         publish()
@@ -656,7 +672,11 @@ class ChatViewModel(
                 is ChatResult.Success -> {
                     chatState = reduceChatState(
                         chatState,
-                        ChatEvent.ConfirmSentMessage(result.value, failed.clientRequestId),
+                        if (result.value.localStatus == LocalMessageStatus.Pending) {
+                            ChatEvent.QueueMessage(result.value)
+                        } else {
+                            ChatEvent.ConfirmSentMessage(result.value, failed.clientRequestId)
+                        },
                     )
                     latestNotice = null
                     failed.gif?.let { gif ->
@@ -902,6 +922,13 @@ class ChatViewModel(
                     attachmentDrafts = drafts.map(LocalAttachmentUiModel::from)
                     publish()
                     maybeSendVoiceMessage()
+                    // A queued send becomes flushable the moment its upload lands,
+                    // which can happen while the realtime status never changes.
+                    if (attachmentDrafts.any { it.queued && it.ready }) {
+                        viewModelScope.launch {
+                            repository.flushTextOutbox(conversation.conversationId)
+                        }
+                    }
                 }
             }
             launch {
@@ -1427,9 +1454,12 @@ class ChatViewModel(
         val conversation = activeConversation ?: return
         if (pendingVoiceConversationId != conversation.conversationId || sending) return
         val state = chatState.conversations[conversation.conversationId] ?: return
-        if (state.realtime.status == RealtimeConnectionStatus.Disconnected) return
         val voice = attachmentDrafts.firstOrNull { it.id == voiceId } ?: return
-        if (!voice.inComposer || !voice.ready || voice.serverAttachmentId == null) return
+        if (!voice.inComposer) return
+        // Connected, the send waits for the upload so it goes out immediately.
+        // Disconnected, it queues in the outbox and the upload catches up.
+        val disconnected = state.realtime.status == RealtimeConnectionStatus.Disconnected
+        if (!disconnected && (!voice.ready || voice.serverAttachmentId == null)) return
         val selectedAttachments = attachmentDrafts.filter { it.inComposer }
         if (state.composer.draft.isNotBlank() || pendingMedia != null ||
             selectedAttachments.size != 1 || selectedAttachments.single().id != voiceId
