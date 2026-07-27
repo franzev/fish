@@ -37,6 +37,7 @@ public final class ConversationStore {
     private let now: @Sendable () -> Date
     private let sleep: @Sendable (Duration) async throws -> Void
     private let drafts: (any ChatDraftProviding)?
+    private let cache: (any ChatDirectoryCaching)?
     private var draftSaveTask: Task<Void, Never>?
 
     private var state = ChatState()
@@ -80,7 +81,8 @@ public final class ConversationStore {
         sleep: @escaping @Sendable (Duration) async throws -> Void = {
             try await Task.sleep(for: $0)
         },
-        drafts: (any ChatDraftProviding)? = nil
+        drafts: (any ChatDraftProviding)? = nil,
+        cache: (any ChatDirectoryCaching)? = nil
     ) {
         self.conversationId = conversationId
         self.currentUserId = currentUserId
@@ -96,6 +98,7 @@ public final class ConversationStore {
         self.now = now
         self.sleep = sleep
         self.drafts = drafts
+        self.cache = cache
         self.messageSearch = MessageSearchModel(
             conversationId: conversationId,
             currentUserId: currentUserId,
@@ -130,20 +133,41 @@ public final class ConversationStore {
         if let drafts, let restored = try? await drafts.draft(for: conversationId) {
             draft = restored.body
         }
+        if let cache, let cached = try? await cache.window(conversationId: conversationId) {
+            reduce(.hydrateWindow(
+                conversationId: conversationId,
+                messages: cached.messages,
+                readStates: cached.readStates,
+                hasMoreOlder: cached.hasMoreOlder,
+                oldestCursor: cached.oldestCursor
+            ))
+            await reconcilePendingTextSends(with: cached.messages.map(\.clientRequestId))
+            phase = .ready
+        }
         reduce(.setRealtimeStatus(conversationId: conversationId, status: .connecting))
         do {
             let window = try await messaging.newestWindow(
                 conversationId: conversationId,
                 limit: Self.pageSize
             )
+            let hydratedMessages = window.messages.map(\.coreState)
             reduce(.hydrateWindow(
                 conversationId: conversationId,
-                messages: window.messages.map(\.coreState),
+                messages: hydratedMessages,
                 readStates: window.readStates,
                 hasMoreOlder: window.hasMoreOlder,
                 oldestCursor: window.oldestCursor
             ))
-            await reconcilePendingTextSends(with: window.messages)
+            await reconcilePendingTextSends(with: hydratedMessages.map(\.clientRequestId))
+            try? await cache?.saveWindow(
+                ChatCachedWindow(
+                    messages: hydratedMessages,
+                    readStates: window.readStates,
+                    hasMoreOlder: window.hasMoreOlder,
+                    oldestCursor: window.oldestCursor
+                ),
+                conversationId: conversationId
+            )
             callActivities = (try? await messaging.callActivity(
                 conversationId: conversationId,
                 before: nil,
@@ -156,8 +180,12 @@ public final class ConversationStore {
                 await acknowledge(deliveredMessageId: incoming, readMessageId: nil)
             }
         } catch {
-            phase = .unavailable
             reduce(.setRealtimeStatus(conversationId: conversationId, status: .disconnected))
+            if phase == .ready {
+                subscribe()
+            } else {
+                phase = .unavailable
+            }
         }
     }
 
@@ -427,16 +455,16 @@ public final class ConversationStore {
         }
     }
 
-    private func reconcilePendingTextSends(with messages: [ChatMessage]) async {
+    private func reconcilePendingTextSends(with confirmedRequestIds: [String]) async {
         guard let drafts else { return }
         let pending = (try? await drafts.pendingTextSends())?.filter {
             $0.conversationId == conversationId
         } ?? []
         guard !pending.isEmpty else { return }
 
-        let confirmedRequestIds = Set(messages.map(\.clientRequestId))
+        let confirmed = Set(confirmedRequestIds)
         for item in pending.sorted(by: { $0.createdAt < $1.createdAt }) {
-            if confirmedRequestIds.contains(item.clientRequestId) {
+            if confirmed.contains(item.clientRequestId) {
                 try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
                 // Do not erase a newer composer value that was typed after
                 // this send was accepted by the server.
@@ -457,20 +485,18 @@ public final class ConversationStore {
                 pendingSends[item.clientRequestId] = request
                 enqueuePendingSend(item.clientRequestId)
                 recoveredRequestIds.insert(item.clientRequestId)
-                if !messages.contains(where: { $0.clientRequestId == item.clientRequestId }) {
-                    reduce(.queueMessage(message: ChatMessageState(
-                        id: "pending-\(item.clientRequestId)",
-                        conversationId: conversationId,
-                        senderId: currentUserId,
-                        senderRole: currentUserRole,
-                        senderDisplayName: currentUserName,
-                        body: item.body,
-                        clientRequestId: item.clientRequestId,
-                        createdAt: ChatTimestamp.string(item.createdAt),
-                        replyToMessageId: item.replyToMessageId,
-                        localStatus: .pending
-                    )))
-                }
+                reduce(.queueMessage(message: ChatMessageState(
+                    id: "pending-\(item.clientRequestId)",
+                    conversationId: conversationId,
+                    senderId: currentUserId,
+                    senderRole: currentUserRole,
+                    senderDisplayName: currentUserName,
+                    body: item.body,
+                    clientRequestId: item.clientRequestId,
+                    createdAt: ChatTimestamp.string(item.createdAt),
+                    replyToMessageId: item.replyToMessageId,
+                    localStatus: .pending
+                )))
                 if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     draft = item.body
                 }

@@ -18,6 +18,7 @@ private actor StoreMessaging: ChatMessagingProviding {
     var nextFailure: ChatCommandFailure?
     var nextSendDelay: Duration?
     var nextMessageIDDelay: Duration?
+    var nextWindowFailure: Error?
     var sent: [SendChatMessageRequest] = []
     var messageIDRequests: [[String]] = []
 
@@ -69,7 +70,11 @@ private actor StoreMessaging: ChatMessagingProviding {
     }
 
     func newestWindow(conversationId: String, limit: Int) async throws -> ChatNewestWindow {
-        window
+        if let failure = nextWindowFailure {
+            nextWindowFailure = nil
+            throw failure
+        }
+        return window
     }
 
     func messages(
@@ -100,6 +105,7 @@ private actor StoreMessaging: ChatMessagingProviding {
         ChatMessageSearchPage(hits: [], nextCursor: nil)
     }
 
+    func failNextWindow(_ failure: Error = StoreTestFailure()) { nextWindowFailure = failure }
     func failNextSends(_ count: Int) { sendFailures = count }
     func failNextSend(with failure: ChatCommandFailure) { nextFailure = failure }
     func delayNextSend(_ duration: Duration) { nextSendDelay = duration }
@@ -442,7 +448,8 @@ private func storeWindow(
 private func makeStore(
     window: ChatNewestWindow,
     sleeper: StoreSleeper? = nil,
-    drafts: (any ChatDraftProviding)? = nil
+    drafts: (any ChatDraftProviding)? = nil,
+    cache: (any ChatDirectoryCaching)? = nil
 ) -> (ConversationStore, StoreMessaging, StoreCommands, StoreRealtime) {
     let messaging = StoreMessaging(window: window)
     let commands = StoreCommands()
@@ -459,7 +466,8 @@ private func makeStore(
         sleep: { duration in
             if let sleeper { try await sleeper.sleep(duration) }
         },
-        drafts: drafts
+        drafts: drafts,
+        cache: cache
     )
     return (store, messaging, commands, realtime)
 }
@@ -800,6 +808,143 @@ struct ConversationStoreTests {
         #expect(store.model.messages.first?.delivery == .failed)
         #expect(store.model.notice == ChatCommandFailure.invalidRequest.notice)
         #expect(try await drafts.pendingTextSends().isEmpty)
+        store.stop()
+    }
+
+    @Test func cacheHydrateThenNetworkSuccessNetworkWins() async {
+        let cachedMessage = storeMessage("m-cached", sender: "them", body: "From cache", at: 50)
+        let cache = StoreCache(seedWindows: [
+            "c1": ChatCachedWindow(
+                messages: [cachedMessage.coreState],
+                readStates: [],
+                hasMoreOlder: false,
+                oldestCursor: nil
+            ),
+        ])
+        let liveMessage = storeMessage("m-live", sender: "them", body: "From network", at: 100)
+        let (store, _, _, _) = makeStore(window: storeWindow([liveMessage]), cache: cache)
+
+        await store.start()
+
+        #expect(store.model.phase == .ready)
+        #expect(store.model.messages.map(\.id) == ["m-live"])
+        store.stop()
+    }
+
+    @Test func cacheHydrateThenNetworkFailureStaysReadyDisconnected() async {
+        let cachedMessage = storeMessage("m-cached", sender: "them", body: "From cache", at: 50)
+        let cache = StoreCache(seedWindows: [
+            "c1": ChatCachedWindow(
+                messages: [cachedMessage.coreState],
+                readStates: [],
+                hasMoreOlder: false,
+                oldestCursor: nil
+            ),
+        ])
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), cache: cache)
+        await messaging.failNextWindow()
+
+        await store.start()
+
+        #expect(store.model.phase == .ready)
+        #expect(store.model.messages.map(\.id) == ["m-cached"])
+        #expect(store.model.connection == .offline)
+        store.stop()
+    }
+
+    @Test func noCacheAndNetworkFailureStaysUnavailable() async {
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]))
+        await messaging.failNextWindow()
+
+        await store.start()
+
+        #expect(store.model.phase == .unavailable)
+        store.stop()
+    }
+
+    @Test func pendingSendsVisibleFromCacheOnlyStart() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fish-cache-pending-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let drafts = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let pending = ChatPendingTextSend(
+            conversationId: "c1",
+            clientRequestId: "cached-pending-request",
+            body: "Sent while the cache was last written"
+        )
+        try await drafts.savePendingTextSend(pending)
+        let cache = StoreCache(seedWindows: [
+            "c1": ChatCachedWindow(messages: [], readStates: [], hasMoreOlder: false, oldestCursor: nil),
+        ])
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts, cache: cache)
+        await messaging.failNextWindow()
+
+        await store.start()
+
+        #expect(store.model.messages.map(\.id) == ["pending-cached-pending-request"])
+        #expect(store.model.messages.first?.delivery == .sending)
+        store.stop()
+    }
+
+    @Test func successfulStartWritesTheWindowToCache() async {
+        let cache = StoreCache()
+        let liveMessage = storeMessage("m-live", sender: "them", body: "From network", at: 100)
+        let (store, _, _, _) = makeStore(window: storeWindow([liveMessage]), cache: cache)
+
+        await store.start()
+
+        #expect(cache.savedWindow(conversationId: "c1")?.messages.map(\.id) == ["m-live"])
+        store.stop()
+    }
+
+    @Test func duplicateSendSuppressionAfterCachedReconcile() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fish-dup-cached-pending-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let drafts = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let pending = ChatPendingTextSend(
+            conversationId: "c1",
+            clientRequestId: "still-pending-request",
+            body: "Not confirmed by either source yet"
+        )
+        try await drafts.savePendingTextSend(pending)
+        let cache = StoreCache(seedWindows: [
+            "c1": ChatCachedWindow(messages: [], readStates: [], hasMoreOlder: false, oldestCursor: nil),
+        ])
+        let (store, _, _, _) = makeStore(window: storeWindow([]), drafts: drafts, cache: cache)
+
+        await store.start()
+
+        #expect(store.model.messages.map(\.id) == ["pending-still-pending-request"])
+        #expect(store.model.messages.count == 1)
+        store.stop()
+    }
+
+    @Test func cacheOnlyStartStillSubscribesAndFlushesOnReconnect() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fish-cache-reconnect-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let drafts = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let pending = ChatPendingTextSend(
+            conversationId: "c1",
+            clientRequestId: "reconnect-request",
+            body: "Send me once we're back"
+        )
+        try await drafts.savePendingTextSend(pending)
+        let cache = StoreCache(seedWindows: [
+            "c1": ChatCachedWindow(messages: [], readStates: [], hasMoreOlder: false, oldestCursor: nil),
+        ])
+        let (store, messaging, _, realtime) = makeStore(window: storeWindow([]), drafts: drafts, cache: cache)
+        await messaging.failNextWindow()
+
+        await store.start()
+        #expect(store.model.connection == .offline)
+
+        realtime.connection(.connected)
+
+        #expect(await eventually { store.model.messages.first?.delivery == .sent })
+        let requests = await messaging.requests()
+        #expect(requests.first?.clientRequestId == pending.clientRequestId)
         store.stop()
     }
 
