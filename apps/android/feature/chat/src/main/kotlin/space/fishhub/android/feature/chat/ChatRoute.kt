@@ -344,7 +344,7 @@ fun ChatRoute(
         )
         is ChatRouteUiState.Conversation -> {
             val composerAttachments = state.attachmentDrafts
-                .filterNot { it.inPreview }
+                .filter { it.inComposer }
                 .sortedWith(compareBy({ it.position }, { it.id }))
             val previewAttachments = state.attachmentDrafts
                 .filter { it.inPreview }
@@ -620,7 +620,7 @@ fun ChatRoute(
 
     val attachmentConversationState = routeState as? ChatRouteUiState.Conversation
     if (attachmentSourceVisible && attachmentConversationState != null) {
-        val composerCount = attachmentConversationState.attachmentDrafts.count { !it.inPreview }
+        val composerCount = attachmentConversationState.attachmentDrafts.count { it.inComposer }
         AttachmentSourceSheet(
             remainingSlots = (5 - composerCount).coerceAtLeast(0),
             cameraAvailable = cameraAvailable,

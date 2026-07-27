@@ -499,7 +499,7 @@ class ChatViewModel(
         val body = state.composer.draft.trim()
         val selectedMedia = pendingMedia
         val selectedAttachments = attachmentDrafts
-            .filterNot { it.inPreview }
+            .filter { it.inComposer }
             .sortedWith(compareBy({ it.position }, { it.id }))
         val durableText = body.isNotEmpty() && selectedMedia == null && selectedAttachments.isEmpty()
         if ((body.isEmpty() && selectedMedia == null && selectedAttachments.isEmpty()) || sending ||
@@ -1417,7 +1417,7 @@ class ChatViewModel(
 
     private fun canSelectMedia(): Boolean {
         val conversation = activeConversation ?: return false
-        return attachmentDrafts.none { !it.inPreview } &&
+        return attachmentDrafts.none { it.inComposer } &&
             chatState.conversations[conversation.conversationId]?.realtime?.status !=
                 RealtimeConnectionStatus.Disconnected
     }
@@ -1429,8 +1429,8 @@ class ChatViewModel(
         val state = chatState.conversations[conversation.conversationId] ?: return
         if (state.realtime.status == RealtimeConnectionStatus.Disconnected) return
         val voice = attachmentDrafts.firstOrNull { it.id == voiceId } ?: return
-        if (voice.inPreview || !voice.ready || voice.serverAttachmentId == null) return
-        val selectedAttachments = attachmentDrafts.filterNot { it.inPreview }
+        if (!voice.inComposer || !voice.ready || voice.serverAttachmentId == null) return
+        val selectedAttachments = attachmentDrafts.filter { it.inComposer }
         if (state.composer.draft.isNotBlank() || pendingMedia != null ||
             selectedAttachments.size != 1 || selectedAttachments.single().id != voiceId
         ) {

@@ -551,29 +551,206 @@ class DefaultChatRepositoryTest {
     }
 
     @Test
-    fun sendFailureRetainsReadyAttachmentDraftsForSameRequestRetry() = runTest {
+    fun sendFailureQueuesReadyAttachmentSendForSameRequestFlush() = runTest {
+        val importer = FakeAttachmentImporter()
+        repository = DefaultChatRepository(
+            remote,
+            database.chatDao(),
+            attachmentImporter = importer,
+        )
         database.chatDao().upsertConversation(remote.conversation.toEntity())
         database.chatDao().upsertAttachmentDrafts(listOf(readyDraft("one", 0)))
         remote.failSend = true
 
-        val failed = repository.sendMessage(
+        val queued = repository.sendMessage(
             "conversation-1",
             OutgoingMessageContent("Practice", attachmentIds = listOf("server-one")),
             "stable-request",
         )
 
-        assertTrue(failed is ChatResult.Failure)
-        assertEquals("server-one", database.chatDao()
-            .composerAttachmentDrafts("conversation-1", "client-1").single().serverAttachmentId)
-        remote.failSend = false
-        assertTrue(
-            repository.sendMessage(
-                "conversation-1",
-                OutgoingMessageContent("Practice", attachmentIds = listOf("server-one")),
-                "stable-request",
-            ) is ChatResult.Success,
+        assertTrue(queued is ChatResult.Success)
+        assertEquals(
+            LocalMessageStatus.Pending,
+            (queued as ChatResult.Success).value.localStatus,
         )
+        assertEquals("queued", database.chatDao().attachmentDraft("draft-one")?.scope)
+
+        remote.failSend = false
+        repository.flushTextOutbox("conversation-1")
+
         assertEquals(2, remote.sendCalls)
+        assertEquals(listOf("server-one"), remote.lastSentContent?.attachmentIds)
+        assertTrue(database.chatDao().pendingTextSends("conversation-1", "client-1").isEmpty())
+        assertNull(database.chatDao().attachmentDraft("draft-one"))
+    }
+
+    @Test
+    fun offlineAttachmentSendQueuesDurablyAndFlushesOnceUploadFinishes() = runTest {
+        val monitor = ToggleNetworkMonitor(online = false)
+        val importer = FakeAttachmentImporter()
+        val scheduler = FakeUploadScheduler()
+        repository = DefaultChatRepository(
+            remote,
+            database.chatDao(),
+            networkMonitor = monitor,
+            attachmentImporter = importer,
+            attachmentUploadScheduler = scheduler,
+        )
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        database.chatDao().insertAttachmentDraft(
+            readyDraft("photo", position = 0).copy(
+                transferState = "uploading",
+                serverAttachmentId = null,
+            ),
+        )
+
+        val queued = repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "On my way"),
+            "request-queued",
+        )
+
+        assertTrue(queued is ChatResult.Success)
+        assertEquals(
+            LocalMessageStatus.Pending,
+            (queued as ChatResult.Success).value.localStatus,
+        )
+        assertEquals(0, remote.sendCalls)
+        val pending = database.chatDao()
+            .pendingTextSends("conversation-1", "client-1")
+            .single()
+        assertEquals("draft-photo", pending.attachmentDraftIds)
+        assertEquals("queued", database.chatDao().attachmentDraft("draft-photo")?.scope)
+
+        // Online but the upload has not finished: the queued send waits.
+        monitor.online.value = true
+        repository.flushTextOutbox("conversation-1")
+        assertEquals(0, remote.sendCalls)
+
+        database.chatDao().markAttachmentReady(
+            id = "draft-photo",
+            userId = "client-1",
+            conversationId = "conversation-1",
+            serverAttachmentId = "server-photo",
+            state = "ready",
+            updatedAt = "2026-07-28T00:00:00Z",
+        )
+        repository.flushTextOutbox("conversation-1")
+
+        assertEquals(1, remote.sendCalls)
+        assertEquals(listOf("server-photo"), remote.lastSentContent?.attachmentIds)
+        assertTrue(database.chatDao().pendingTextSends("conversation-1", "client-1").isEmpty())
+        assertNull(database.chatDao().attachmentDraft("draft-photo"))
+        assertTrue(importer.deleted.contains("draft-photo"))
+    }
+
+    @Test
+    fun flushFailsQueuedSendCalmlyWhenItsDraftIsGone() = runTest {
+        val monitor = ToggleNetworkMonitor(online = false)
+        repository = DefaultChatRepository(
+            remote,
+            database.chatDao(),
+            networkMonitor = monitor,
+        )
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        database.chatDao().insertAttachmentDraft(
+            readyDraft("photo", position = 0).copy(
+                transferState = "uploading",
+                serverAttachmentId = null,
+            ),
+        )
+        repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "", attachmentIds = listOf("draft-photo")),
+            "request-doomed",
+        )
+        database.chatDao().deleteAttachmentDraft("draft-photo")
+
+        monitor.online.value = true
+        repository.flushTextOutbox("conversation-1")
+
+        assertEquals(0, remote.sendCalls)
+        assertTrue(database.chatDao().pendingTextSends("conversation-1", "client-1").isEmpty())
+        val failed = repository.observeMessages("conversation-1").first()
+            .single { it.clientRequestId == "request-doomed" }
+        assertEquals(LocalMessageStatus.Failed, failed.localStatus)
+        assertEquals("That file did not send. Pick it again to retry.", failed.failureReason)
+    }
+
+    @Test
+    fun flushReenqueuesStuckUploadAndHoldsLaterSendsInOrder() = runTest {
+        val monitor = ToggleNetworkMonitor(online = false)
+        val scheduler = FakeUploadScheduler()
+        repository = DefaultChatRepository(
+            remote,
+            database.chatDao(),
+            networkMonitor = monitor,
+            attachmentUploadScheduler = scheduler,
+        )
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        database.chatDao().insertAttachmentDraft(
+            readyDraft("stuck", position = 0).copy(
+                transferState = "failed_recoverable",
+                serverAttachmentId = null,
+            ),
+        )
+        repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "first"),
+            "request-stuck",
+        )
+        repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "second"),
+            "request-text",
+        )
+
+        monitor.online.value = true
+        repository.flushTextOutbox("conversation-1")
+
+        // The stuck upload is re-enqueued and the drain stops so order is preserved.
+        assertEquals(listOf("draft-stuck"), scheduler.enqueued)
+        assertEquals(0, remote.sendCalls)
+        assertEquals(
+            2,
+            database.chatDao().pendingTextSends("conversation-1", "client-1").size,
+        )
+    }
+
+    @Test
+    fun reimportingAQueuedFileReadsAsAlreadyAttached() = runTest {
+        val monitor = ToggleNetworkMonitor(online = false)
+        val importer = FakeAttachmentImporter()
+        repository = DefaultChatRepository(
+            remote,
+            database.chatDao(),
+            networkMonitor = monitor,
+            attachmentImporter = importer,
+        )
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        database.chatDao().insertAttachmentDraft(
+            readyDraft("photo", position = 0).copy(
+                transferState = "uploading",
+                serverAttachmentId = null,
+                sha256 = "photo".padEnd(64, '0').take(64),
+            ),
+        )
+        repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "", attachmentIds = listOf("draft-photo")),
+            "request-queued",
+        )
+
+        val result = repository.importAttachments(
+            "conversation-1",
+            listOf(source("photo")),
+        )
+
+        assertEquals(0, result.importedCount)
+        assertEquals(
+            "That item is already attached.",
+            result.issues.single().message,
+        )
     }
 
     private fun readyDraft(name: String, position: Int) = AttachmentDraftEntity(
@@ -606,6 +783,32 @@ class DefaultChatRepositoryTest {
         Uri.parse("content://test/$name"),
         AttachmentImportKind.Image,
     )
+}
+
+private class ToggleNetworkMonitor(online: Boolean) : NetworkMonitor {
+    val online = MutableStateFlow(online)
+    private val policy = MutableStateFlow(
+        ChatNetworkPolicy(usable = online, metered = false, dataSaverEnabled = false),
+    )
+
+    override fun isOnline(): kotlinx.coroutines.flow.StateFlow<Boolean> = online
+    override fun networkPolicy(): kotlinx.coroutines.flow.StateFlow<ChatNetworkPolicy> = policy
+}
+
+private class FakeUploadScheduler : AttachmentUploadScheduler {
+    val enqueued = mutableListOf<String>()
+
+    override fun enqueue(
+        attachmentId: String,
+        userId: String,
+        replace: Boolean,
+        initialDelaySeconds: Long,
+    ) {
+        enqueued += attachmentId
+    }
+
+    override fun cancel(attachmentId: String) = Unit
+    override fun cancelUser(userId: String) = Unit
 }
 
 private class FakeAttachmentImporter : LocalAttachmentImporter {

@@ -399,15 +399,15 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun phaseThirteenDatabaseAdvancesToVersionTen() = runTest {
+    fun chatDatabaseIsAtTheCurrentSchemaVersion() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val database = Room.inMemoryDatabaseBuilder(context, ChatDatabase::class.java).build()
         try {
             database.openHelper.readableDatabase.query("PRAGMA user_version").use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals(
-                    "RED: Phase 13 ChatDatabase must advance from version 9 to version 10",
-                    10,
+                    "ChatDatabase schema version drifted from the migration chain",
+                    11,
                     cursor.getInt(0),
                 )
             }
@@ -489,6 +489,34 @@ class ChatDatabaseMigrationTest {
                     "9→10 must not add delivery URLs, paths, tokens, or action authority",
                     columns.none { FORBIDDEN_CACHE_COLUMN.containsMatchIn(it) },
                 )
+            }
+        }
+    }
+
+    @Test
+    fun migrationTenToElevenPreservesQueuedTextSendsAndAddsAttachmentColumn() {
+        helper.createDatabase(DatabaseName, 10).apply {
+            execSQL(
+                """
+                INSERT INTO pending_text_sends (
+                    conversation_id, user_id, client_request_id, body,
+                    reply_to_message_id, created_at
+                ) VALUES (
+                    'conversation-a', 'user-a', 'request-a', 'Hello',
+                    NULL, '2026-07-28T00:00:00Z'
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 11, true, MIGRATION_10_11).use { database ->
+            database.query(
+                "SELECT body, attachment_draft_ids FROM pending_text_sends",
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("Hello", cursor.getString(0))
+                assertTrue(cursor.isNull(1))
             }
         }
     }

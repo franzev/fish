@@ -18,7 +18,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SharedContentCachePageEntity::class,
         SharedContentCacheItemEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -259,6 +259,14 @@ val MIGRATION_9_10: Migration = object : Migration(9, 10) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             "ALTER TABLE shared_content_cache_items ADD COLUMN duration_ms INTEGER",
+        )
+    }
+}
+
+val MIGRATION_10_11: Migration = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE pending_text_sends ADD COLUMN attachment_draft_ids TEXT",
         )
     }
 }

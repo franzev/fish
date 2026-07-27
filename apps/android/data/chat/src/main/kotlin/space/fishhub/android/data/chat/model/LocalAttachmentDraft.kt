@@ -32,7 +32,7 @@ data class LocalAttachmentDraft(
 
 enum class LocalAttachmentKind { Image, File }
 
-enum class LocalAttachmentScope { Preview, Composer }
+enum class LocalAttachmentScope { Preview, Composer, Queued }
 
 enum class LocalAttachmentTransferState {
     Selected,

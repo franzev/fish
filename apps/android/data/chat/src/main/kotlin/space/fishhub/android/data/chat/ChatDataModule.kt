@@ -27,6 +27,7 @@ import space.fishhub.android.data.chat.local.MIGRATION_6_7
 import space.fishhub.android.data.chat.local.MIGRATION_7_8
 import space.fishhub.android.data.chat.local.MIGRATION_8_9
 import space.fishhub.android.data.chat.local.MIGRATION_9_10
+import space.fishhub.android.data.chat.local.MIGRATION_10_11
 import space.fishhub.android.data.chat.sharedcontent.RoomSharedContentCacheStore
 import space.fishhub.android.data.chat.sharedcontent.IdentityGeneration
 import space.fishhub.android.data.chat.sharedcontent.SharedContentIdentityCoordinator
@@ -435,6 +436,7 @@ object ChatDataModule {
             MIGRATION_7_8,
             MIGRATION_8_9,
             MIGRATION_9_10,
+            MIGRATION_10_11,
         ).build()
         val remote = SupabaseChatRemoteDataSource(supabaseClient, scope, onBeforeSignOut)
         val attachmentImporter = AttachmentImporter(context.applicationContext)
@@ -552,7 +554,7 @@ object ChatDataModule {
                     val recoveryNow = Instant.now()
                     database.chatDao().allAttachmentDrafts()
                         .filter { row ->
-                            row.scope == "composer" && shouldRecoverAttachmentTransfer(
+                            row.scope in setOf("composer", "queued") && shouldRecoverAttachmentTransfer(
                                 row.transferState,
                                 row.attemptCount,
                             )

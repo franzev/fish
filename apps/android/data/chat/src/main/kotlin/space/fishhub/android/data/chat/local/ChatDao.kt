@@ -12,6 +12,35 @@ interface ChatDao {
     @Query("SELECT * FROM attachment_drafts WHERE id = :id LIMIT 1")
     suspend fun attachmentDraft(id: String): AttachmentDraftEntity?
 
+    @Query("SELECT * FROM attachment_drafts WHERE id IN (:ids)")
+    suspend fun attachmentDraftsByIds(ids: List<String>): List<AttachmentDraftEntity>
+
+    @Query(
+        """
+        UPDATE attachment_drafts
+        SET scope = :scope, position = :position, updated_at = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateAttachmentDraftPlacement(
+        id: String,
+        scope: String,
+        position: Int,
+        updatedAt: String,
+    )
+
+    @Query(
+        """
+        SELECT COALESCE(MAX(position), -1) FROM attachment_drafts
+        WHERE conversation_id = :conversationId AND user_id = :userId AND scope = :scope
+        """,
+    )
+    suspend fun maxAttachmentDraftPosition(
+        conversationId: String,
+        userId: String,
+        scope: String,
+    ): Int
+
     @Query(
         """
         SELECT * FROM attachment_drafts

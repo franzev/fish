@@ -243,6 +243,8 @@ data class LocalAttachmentUiModel(
     val position: Int,
     val isPhoto: Boolean,
     val inPreview: Boolean,
+    /** True while the draft belongs to a queued offline send; hidden from the composer. */
+    val queued: Boolean = false,
     val name: String,
     val mimeType: String,
     val byteSize: Long,
@@ -258,6 +260,7 @@ data class LocalAttachmentUiModel(
 ) {
     val ready: Boolean get() = transferState == AttachmentTransferUiState.Ready
     val isVoice: Boolean get() = mimeType == "audio/mp4"
+    val inComposer: Boolean get() = !inPreview && !queued
 
     companion object {
         fun from(draft: LocalAttachmentDraft) = LocalAttachmentUiModel(
@@ -265,6 +268,7 @@ data class LocalAttachmentUiModel(
             position = draft.position,
             isPhoto = draft.kind == LocalAttachmentKind.Image,
             inPreview = draft.scope == LocalAttachmentScope.Preview,
+            queued = draft.scope == LocalAttachmentScope.Queued,
             name = draft.displayName,
             mimeType = draft.storedMimeType,
             byteSize = draft.byteSize,

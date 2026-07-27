@@ -187,7 +187,7 @@ internal class AttachmentUploadWorker(
     override suspend fun doWork(): Result = TransferSlots.withPermit {
         val localId = inputData.getString(AttachmentIdKey) ?: return@withPermit Result.failure()
         val initial = dao.attachmentDraft(localId) ?: return@withPermit Result.success()
-        if (initial.scope != ComposerScope || initial.transferState in TerminalWithoutWork) {
+        if (initial.scope !in UploadableScopes || initial.transferState in TerminalWithoutWork) {
             return@withPermit Result.success()
         }
         val deferredSeconds = attachmentRetryDelaySeconds(initial.retryAfter, now())
@@ -470,6 +470,8 @@ private fun stableId(value: String): String = MessageDigest.getInstance("SHA-256
 private const val AttachmentIdKey = "attachment-id"
 private const val AttachmentDraftDirectory = "chat-attachment-drafts"
 private const val ComposerScope = "composer"
+private const val QueuedScope = "queued"
+private val UploadableScopes = setOf(ComposerScope, QueuedScope)
 private const val WaitingState = "waiting_for_network"
 private const val InitializingState = "initializing"
 private const val UploadingState = "uploading"

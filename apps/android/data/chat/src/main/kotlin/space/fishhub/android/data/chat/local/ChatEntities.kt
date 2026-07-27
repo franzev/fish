@@ -114,6 +114,8 @@ data class PendingTextSendEntity(
     val body: String,
     @ColumnInfo(name = "reply_to_message_id") val replyToMessageId: String?,
     @ColumnInfo(name = "created_at") val createdAt: String,
+    /** Ordered, comma-joined attachment_drafts ids; null for a text-only send. */
+    @ColumnInfo(name = "attachment_draft_ids") val attachmentDraftIds: String? = null,
 )
 
 @Entity(

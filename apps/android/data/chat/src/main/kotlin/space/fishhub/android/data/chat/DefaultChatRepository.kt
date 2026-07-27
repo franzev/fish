@@ -447,6 +447,18 @@ internal class DefaultChatRepository(
             conversationId,
             conversation.currentUserId,
         )
+        val queueable = content.gif == null && content.stickerId == null &&
+            (content.normalizedBody.isNotBlank() || attachmentDrafts.isNotEmpty())
+        if (queueable && !networkMonitor.isOnline().first()) {
+            val optimistic = optimisticMessage(
+                conversation,
+                content,
+                clientRequestId,
+                attachmentDrafts.map { it.toOptimisticAttachment() },
+            )
+            reconcileMessage(optimistic)
+            return queuePendingSend(conversation, content, clientRequestId, optimistic, attachmentDrafts)
+        }
         val orderedReadyIds = attachmentDrafts
             .filter { it.transferState == AttachmentStateReady }
             .mapNotNull { it.serverAttachmentId }
@@ -475,27 +487,8 @@ internal class DefaultChatRepository(
                 displayUrl = row.localPath,
             )
         }
-        val optimistic = ChatMessage(
-            id = "local-$clientRequestId",
-            conversationId = conversationId,
-            senderId = conversation.currentUserId,
-            senderRole = conversation.currentUserRole,
-            senderDisplayName = conversation.currentUserDisplayName,
-            body = content.normalizedBody,
-            gif = content.gif,
-            stickerId = content.stickerId,
-            attachments = optimisticAttachments,
-            clientRequestId = clientRequestId,
-            createdAt = now(),
-            replyToMessageId = content.replyToMessageId,
-            localStatus = LocalMessageStatus.Sending,
-        )
+        val optimistic = optimisticMessage(conversation, content, clientRequestId, optimisticAttachments)
         reconcileMessage(optimistic)
-        val plainText = content.normalizedBody.isNotBlank() &&
-            content.gif == null && content.stickerId == null && content.attachmentIds.isEmpty()
-        if (plainText && !networkMonitor.isOnline().first()) {
-            return queueTextSend(conversation, content, clientRequestId, optimistic)
-        }
         return when (val result = resultOf(
             ChatOperation.SendMessage,
             "That did not send yet. Keep this open and try again.",
@@ -513,7 +506,7 @@ internal class DefaultChatRepository(
                     },
                 )
                 reconcileMessage(enriched)
-                if (plainText) {
+                if (queueable) {
                     dao.deletePendingTextSend(
                         conversationId,
                         conversation.currentUserId,
@@ -523,8 +516,15 @@ internal class DefaultChatRepository(
                 ChatResult.Success(enriched)
             }
             is ChatResult.Failure -> {
-                if (plainText && result.category == FailureCategory.Network) {
-                    queueTextSend(conversation, content, clientRequestId, optimistic, result.message)
+                if (queueable && result.category == FailureCategory.Network) {
+                    queuePendingSend(
+                        conversation,
+                        content,
+                        clientRequestId,
+                        optimistic,
+                        attachmentDrafts,
+                        result.message,
+                    )
                 } else {
                     dao.markMessageFailed(conversationId, clientRequestId, result.message)
                     result
@@ -533,15 +533,62 @@ internal class DefaultChatRepository(
         }
     }
 
+    private fun optimisticMessage(
+        conversation: AuthorizedConversation,
+        content: OutgoingMessageContent,
+        clientRequestId: String,
+        attachments: List<ChatAttachment>,
+    ): ChatMessage = ChatMessage(
+        id = "local-$clientRequestId",
+        conversationId = conversation.conversationId,
+        senderId = conversation.currentUserId,
+        senderRole = conversation.currentUserRole,
+        senderDisplayName = conversation.currentUserDisplayName,
+        body = content.normalizedBody,
+        gif = content.gif,
+        stickerId = content.stickerId,
+        attachments = attachments,
+        clientRequestId = clientRequestId,
+        createdAt = now(),
+        replyToMessageId = content.replyToMessageId,
+        localStatus = LocalMessageStatus.Sending,
+    )
+
     override suspend fun flushTextOutbox(conversationId: String): ChatResult<Unit> =
         textOutboxMutex.withLock {
             val conversation = dao.conversation(conversationId)?.toDomain()
                 ?: return@withLock ChatResult.Success(Unit)
             if (!networkMonitor.isOnline().first()) return@withLock ChatResult.Success(Unit)
             dao.pendingTextSends(conversationId, conversation.currentUserId).forEach { pending ->
+                val draftIds = pending.attachmentDraftIds
+                    ?.split(',')
+                    ?.filter { it.isNotEmpty() }
+                    .orEmpty()
+                val draftsById = if (draftIds.isEmpty()) {
+                    emptyMap()
+                } else {
+                    dao.attachmentDraftsByIds(draftIds).associateBy { it.id }
+                }
+                val resolved = draftIds.map { draftsById[it] }
+                val present = resolved.filterNotNull()
+                if (present.size != resolved.size ||
+                    present.any { it.transferState in TerminalDraftStates }
+                ) {
+                    failQueuedSend(conversation, pending, present)
+                    return@forEach
+                }
+                val stuck = present.filter { it.transferState in RetryableStuckDraftStates }
+                if (stuck.isNotEmpty()) {
+                    stuck.forEach { attachmentUploadScheduler?.enqueue(it.id, it.userId) }
+                    return@withLock ChatResult.Success(Unit)
+                }
+                if (present.any { it.transferState != AttachmentStateReady || it.serverAttachmentId == null }) {
+                    return@withLock ChatResult.Success(Unit)
+                }
                 val content = OutgoingMessageContent(
                     body = pending.body,
                     replyToMessageId = pending.replyToMessageId,
+                    attachmentIds = present.mapNotNull { it.serverAttachmentId },
                 )
                 when (val result = resultOf(
                     ChatOperation.SendMessage,
@@ -550,25 +597,23 @@ internal class DefaultChatRepository(
                     remote.sendMessage(conversation, content, pending.clientRequestId)
                 }) {
                     is ChatResult.Success -> {
-                        reconcileMessage(result.value)
+                        val enriched = if (result.value.attachmentsHydrated || present.isEmpty()) {
+                            result.value
+                        } else {
+                            result.value.copy(attachments = present.map { it.toOptimisticAttachment() })
+                        }
+                        reconcileMessage(enriched)
                         dao.deletePendingTextSend(
                             conversationId,
                             conversation.currentUserId,
                             pending.clientRequestId,
                         )
+                        present.forEach { dao.deleteAttachmentDraft(it.id) }
+                        attachmentImporter?.deleteAll(present)
                     }
                     is ChatResult.Failure -> {
                         if (result.category != FailureCategory.Network) {
-                            dao.markMessageFailed(
-                                conversationId,
-                                pending.clientRequestId,
-                                result.message,
-                            )
-                            dao.deletePendingTextSend(
-                                conversationId,
-                                conversation.currentUserId,
-                                pending.clientRequestId,
-                            )
+                            failQueuedSend(conversation, pending, present, result.message)
                         } else {
                             return@withLock ChatResult.Success(Unit)
                         }
@@ -578,13 +623,50 @@ internal class DefaultChatRepository(
             ChatResult.Success(Unit)
         }
 
-    private suspend fun queueTextSend(
+    /** A queued send that can no longer complete: fail the bubble calmly and release its drafts. */
+    private suspend fun failQueuedSend(
+        conversation: AuthorizedConversation,
+        pending: PendingTextSendEntity,
+        drafts: List<AttachmentDraftEntity>,
+        reason: String = "That file did not send. Pick it again to retry.",
+    ) {
+        dao.markMessageFailed(conversation.conversationId, pending.clientRequestId, reason)
+        dao.deletePendingTextSend(
+            conversation.conversationId,
+            conversation.currentUserId,
+            pending.clientRequestId,
+        )
+        if (drafts.isNotEmpty()) {
+            drafts.forEach { dao.deleteAttachmentDraft(it.id) }
+            attachmentImporter?.deleteAll(drafts)
+        }
+    }
+
+    private suspend fun queuePendingSend(
         conversation: AuthorizedConversation,
         content: OutgoingMessageContent,
         clientRequestId: String,
         optimistic: ChatMessage,
+        attachmentDrafts: List<AttachmentDraftEntity> = emptyList(),
         failureReason: String? = null,
     ): ChatResult<ChatMessage> {
+        val ordered = attachmentDrafts.sortedWith(compareBy({ it.position }, { it.id }))
+        if (ordered.isNotEmpty()) {
+            var nextPosition = dao.maxAttachmentDraftPosition(
+                conversation.conversationId,
+                conversation.currentUserId,
+                AttachmentScopeQueued,
+            ) + 1
+            val movedAt = now()
+            ordered.forEach { draft ->
+                dao.updateAttachmentDraftPlacement(
+                    draft.id,
+                    AttachmentScopeQueued,
+                    nextPosition++,
+                    movedAt,
+                )
+            }
+        }
         dao.upsertPendingTextSend(
             PendingTextSendEntity(
                 conversationId = conversation.conversationId,
@@ -593,6 +675,9 @@ internal class DefaultChatRepository(
                 body = content.normalizedBody,
                 replyToMessageId = content.replyToMessageId,
                 createdAt = optimistic.createdAt,
+                attachmentDraftIds = ordered
+                    .takeIf { it.isNotEmpty() }
+                    ?.joinToString(",") { it.id },
             ),
         )
         reconcileMessage(
@@ -754,7 +839,11 @@ internal class DefaultChatRepository(
         importer.deleteAll(previousPreview)
         val composer = existing.filter { it.scope == AttachmentScopeComposer }
         val remaining = (MaxMessageAttachments - composer.size).coerceAtLeast(0)
-        val knownHashes = composer.mapTo(mutableSetOf()) { it.sha256 }
+        // Queued hashes count too: the sha256 unique index spans scopes, and a file
+        // that is already on its way out reads as "already attached" to the member.
+        val knownHashes = existing
+            .filter { it.scope != AttachmentScopePreview }
+            .mapTo(mutableSetOf()) { it.sha256 }
         val issues = mutableListOf<AttachmentImportIssue>()
         val importedIds = mutableListOf<String>()
         var imported = 0
@@ -1188,8 +1277,28 @@ private const val MaxSharedContentDeliveryRefreshCount = 50
 private const val MaxSearchPageSize = 99
 private const val AttachmentScopePreview = "preview"
 private const val AttachmentScopeComposer = "composer"
+private const val AttachmentScopeQueued = "queued"
 private const val AttachmentStateWaiting = "waiting_for_network"
 private const val AttachmentStateReady = "ready"
+
+/** States the upload pipeline will never leave on its own; a queued send referencing one is dead. */
+private val TerminalDraftStates = setOf("failed_permanent", "cancelled", "cancelling")
+
+/** States that stop after automatic retries are spent; a flush re-enqueues the upload instead. */
+private val RetryableStuckDraftStates = setOf("failed_recoverable", "sign_in_required")
+
+private fun AttachmentDraftEntity.toOptimisticAttachment(): ChatAttachment = ChatAttachment(
+    id = serverAttachmentId ?: "draft-$id",
+    position = position,
+    kind = if (kind == "image") ChatAttachmentKind.Image else ChatAttachmentKind.File,
+    originalName = displayName,
+    mimeType = storedMimeType,
+    byteSize = byteSize,
+    width = width,
+    height = height,
+    thumbnailUrl = thumbnailPath,
+    displayUrl = localPath,
+)
 private const val SharedContentPageSize = 40
 private val SharedContentCategories = setOf("media", "files", "links", "voice")
 private val SharedContentKinds = setOf("photo", "video", "gif", "sticker", "document", "link", "voice")

@@ -243,6 +243,12 @@ private class RecoveryRemote : ChatRemoteDataSource {
         lastDeliveredMessageId: String?,
         lastReadMessageId: String?,
     ) = error("Unused")
+    override suspend fun conversationMute(conversationId: String): ConversationMute =
+        error("Unused")
+    override suspend fun setConversationMute(
+        conversationId: String,
+        quietPeriod: ConversationQuietPeriod?,
+    ): ConversationMute = error("Unused")
     override fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent> = emptyFlow()
 }
 

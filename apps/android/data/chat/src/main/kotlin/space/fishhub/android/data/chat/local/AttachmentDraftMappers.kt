@@ -11,7 +11,11 @@ internal fun AttachmentDraftEntity.toDomain() = LocalAttachmentDraft(
     userId = userId,
     position = position,
     kind = if (kind == "image") LocalAttachmentKind.Image else LocalAttachmentKind.File,
-    scope = if (scope == "preview") LocalAttachmentScope.Preview else LocalAttachmentScope.Composer,
+    scope = when (scope) {
+        "preview" -> LocalAttachmentScope.Preview
+        "queued" -> LocalAttachmentScope.Queued
+        else -> LocalAttachmentScope.Composer
+    },
     displayName = displayName,
     sourceMimeType = sourceMimeType,
     storedMimeType = storedMimeType,
