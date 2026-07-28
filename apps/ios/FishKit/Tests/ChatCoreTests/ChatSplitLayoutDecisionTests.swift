@@ -1,9 +1,9 @@
 import ChatCore
 import Testing
 
-/// `shouldShowChatSplitLayout` decides whether `ChatSplitLayout` renders the
-/// two-pane list+detail split. Pinned directly as a pure function — no
-/// SwiftUI harness needed — mirroring Android's `ChatAdaptiveLayout` gate
+/// `shouldShowChatSplitLayout` decides whether `ChatSplitLayout` shows its
+/// conversation rail. Pinned directly as a pure function — no SwiftUI
+/// harness needed — mirroring Android's `ChatAdaptiveLayout` gate
 /// (`maxWidth >= twoPaneBreakpoint && model.conversations.size > 1`).
 struct ChatSplitLayoutDecisionTests {
     @Test func splitsOnRegularWidthWithMultipleConversations() {
