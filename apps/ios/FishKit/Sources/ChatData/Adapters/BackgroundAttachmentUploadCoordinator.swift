@@ -91,6 +91,13 @@ public final class BackgroundAttachmentUploadCoordinator: NSObject, @unchecked S
     ///    upload the OS kept transferring — this attaches to it instead of
     ///    starting a duplicate PUT.
     /// 3. Otherwise, starts a new task.
+    ///
+    /// Precondition: must not be called concurrently for the same
+    /// `attachmentId` — a second call would overwrite the first's
+    /// registered observer with no guard. `AttachmentUploadsModel` already
+    /// serializes uploads per item via its own task/generation tracking, so
+    /// this can't currently happen; it's called out here rather than
+    /// enforced because there's no real scenario to defend against yet.
     public func upload(
         request: URLRequest,
         fileUrl: URL,

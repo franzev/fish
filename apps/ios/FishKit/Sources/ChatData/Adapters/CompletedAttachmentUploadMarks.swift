@@ -89,5 +89,15 @@ public final class CompletedAttachmentUploadMarks: @unchecked Sendable {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         guard let data = try? JSONEncoder().encode(payload) else { return }
         try? data.write(to: fileURL, options: [.atomic])
+        #if os(iOS)
+        try? FileManager.default.setAttributes(
+            // A background transfer can complete (and need to record a
+            // mark here) while the device is locked; matches
+            // FileChatNotificationReplyStore's precedent for the same
+            // must-stay-writable-regardless-of-lock-state concern.
+            [.protectionKey: FileProtectionType.none],
+            ofItemAtPath: fileURL.path
+        )
+        #endif
     }
 }
