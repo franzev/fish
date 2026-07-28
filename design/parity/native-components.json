@@ -468,21 +468,6 @@
       "only": "ios"
     },
     {
-      "name": "CallChatPane",
-      "ios": {
-        "file": "apps/ios/FishKit/Sources/Calls/Views/CallChatPane.swift",
-        "symbol": "CallChatPane",
-        "visibility": "internal"
-      },
-      "props": [
-        "call",
-        "content"
-      ],
-      "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
-    },
-    {
       "name": "CallControls",
       "android": {
         "file": "apps/android/feature/call/src/main/kotlin/space/fishhub/android/feature/call/views/CallControls.kt",
@@ -958,6 +943,11 @@
         "symbol": "CompactCallBar",
         "visibility": "internal"
       },
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/Calls/Views/CompactCallBar.swift",
+        "symbol": "CompactCallBar",
+        "visibility": "public"
+      },
       "props": [
         "call",
         "busy",
@@ -965,8 +955,8 @@
         "onEnd"
       ],
       "previews": [],
-      "previewsAligned": false,
-      "only": "android"
+      "propsAligned": true,
+      "previewsAligned": false
     },
     {
       "name": "ComposerMediaPreview",
