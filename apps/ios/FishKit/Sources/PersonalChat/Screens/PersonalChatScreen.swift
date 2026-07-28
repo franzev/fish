@@ -270,7 +270,6 @@ public struct PersonalChatScreen: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .background:
-                attachmentUploads?.applicationDidEnterBackground()
                 onComposerFocusChanged(false)
             case .active: attachmentUploads?.applicationWillEnterForeground()
             default: break

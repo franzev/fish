@@ -36,7 +36,6 @@ public final class AttachmentUploadsModel {
     private var serverAttachmentIds: [String: Set<String>] = [:]
     private var tasks: [String: Task<Void, Never>] = [:]
     private var pipelineGenerations: [String: Int] = [:]
-    private var backgroundTask = UIBackgroundTaskIdentifier.invalid
 
     public init(
         conversationId: String,
@@ -342,7 +341,6 @@ public final class AttachmentUploadsModel {
                 await staging.remove(url)
             }
         }
-        endBackgroundGraceIfSettled()
     }
 
     public func consumeAfterSend(previewGraceSeconds: TimeInterval = 30) {
@@ -375,7 +373,6 @@ public final class AttachmentUploadsModel {
             }
             for url in sentUrls { await staging.remove(url) }
         }
-        endBackgroundGraceIfSettled()
     }
 
     /// Discards the composer's unsent items. Items owned by a queued send
@@ -404,22 +401,14 @@ public final class AttachmentUploadsModel {
                 if let localUrl = item.localUrl { await staging.remove(localUrl) }
             }
         }
-        endBackgroundGraceIfSettled()
     }
 
-    public func applicationDidEnterBackground() {
-        guard hasInFlight, backgroundTask == .invalid else { return }
-        backgroundTask = UIApplication.shared.beginBackgroundTask(
-            withName: "Finish chat attachment"
-        ) { [weak self] in
-            Task { @MainActor in
-                self?.pauseForBackgroundExpiry()
-            }
-        }
-    }
-
+    /// Uploads run on a background `URLSession`, so the OS keeps them going
+    /// independent of the app's own lifecycle; there is nothing left for
+    /// attachments to do when entering the background. Returning to the
+    /// foreground still re-syncs connectivity, since a foreground session's
+    /// reachability updates can be missed while suspended.
     public func applicationWillEnterForeground() {
-        endBackgroundGrace()
         Task { [weak self] in
             guard let self else { return }
             await self.connectivityChanged(await self.connectivity.current())
@@ -534,7 +523,6 @@ public final class AttachmentUploadsModel {
         guard pipelineGenerations[id] == generation else { return }
         tasks[id] = nil
         if shouldRetryAutomatically { scheduleAutomaticRetry(id) }
-        endBackgroundGraceIfSettled()
     }
 
     private func scheduleAutomaticRetry(_ id: String) {
@@ -561,28 +549,6 @@ public final class AttachmentUploadsModel {
             // keep reviving it; the attempt cap only guards composer items.
             retry(item.id, automatic: !item.isQueued)
         }
-    }
-
-    private func pauseForBackgroundExpiry() {
-        isConnected = false
-        for item in items where item.isInFlight {
-            tasks[item.id]?.cancel()
-            update(item.id) {
-                $0.status = .failed(.offline)
-                $0.notice = "That attachment paused. It will try again when you return."
-            }
-        }
-        endBackgroundGrace()
-    }
-
-    private func endBackgroundGraceIfSettled() {
-        if !hasInFlight { endBackgroundGrace() }
-    }
-
-    private func endBackgroundGrace() {
-        guard backgroundTask != .invalid else { return }
-        UIApplication.shared.endBackgroundTask(backgroundTask)
-        backgroundTask = .invalid
     }
 
     private func update(_ id: String, mutation: (inout StagedAttachment) -> Void) {
@@ -711,7 +677,6 @@ extension AttachmentUploadsModel: QueuedAttachmentResolving {
             for url in urls { await staging.remove(url) }
             for url in orphaned { await staging.remove(url) }
         }
-        endBackgroundGraceIfSettled()
     }
 }
 
