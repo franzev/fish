@@ -53,7 +53,7 @@
     <string name="retry_earlier">Try loading earlier messages again</string>
     <string name="connecting">Connecting…</string>
     <string name="reconnecting">Reconnecting. Your draft is safe.</string>
-    <string name="offline">You\'re offline. Keep writing—sending will be available when you reconnect.</string>
+    <string name="offline">You\'re offline. Keep writing and sending—it all goes out when you reconnect.</string>
     <string name="typing">%1$s is typing…</string>
     <string name="you">You</string>
     <string name="message_deleted">Message deleted</string>
