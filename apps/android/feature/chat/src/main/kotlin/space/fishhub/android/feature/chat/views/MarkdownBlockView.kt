@@ -28,7 +28,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.feature.chat.logic.MessageMarkdownBlock
 import space.fishhub.android.feature.chat.logic.MessageMarkdownInline
@@ -62,7 +61,7 @@ fun MarkdownBlockView(
             text = linesText(block.lines),
             modifier = modifier
                 .border(
-                    width = 1.dp,
+                    width = FishTheme.spacing.threeXs,
                     color = (if (isOutgoing) FishTheme.colors.onPrimary else FishTheme.colors.foreground)
                         .copy(alpha = 0.3f),
                     shape = RoundedCornerShape(FishTheme.radii.control),
