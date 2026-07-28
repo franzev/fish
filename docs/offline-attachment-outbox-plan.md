@@ -1,6 +1,7 @@
 # Offline attachment outbox plan
 
-Status: proposed
+Status: Steps 1–5 implemented, tested, and merged (2026-07-28); Step 6
+(physical-device pass) remains external
 Written: 2026-07-28
 
 ## Outcome
@@ -363,6 +364,76 @@ it stays a release gate, not a development gate.
   standing device sign-off backlog that also covers push and calling.
 
 ---
+
+## As built (2026-07-28)
+
+Steps 1–5 landed as six commits (`b7841522`, `bca5de51`, `98a88aee`,
+`39898e82`, `effed4b1`, `25117de8`) plus one review-hardening commit
+(`a437c206`), each green on `pnpm build`, the Android JVM and
+instrumented suites (emulator), and the full FishKit simulator suite.
+Deviations and findings worth recording:
+
+- **Android grew a third draft scope, `queued`.** The plan's "drafts move
+  out of the composer" needed a concrete mechanism: `attachment_drafts`
+  rows referenced by a queued send flip `scope` from `composer` to
+  `queued` with a fresh non-colliding position (the
+  `(conversation, user, scope, position)` unique index made in-place
+  moves unsafe). The upload worker, the cold-start recovery sweep, and
+  the import dedupe all accept the new scope; re-picking a file whose
+  copy is already queued reads as "already attached" instead of tripping
+  the sha256 unique index.
+- **Step 1 absorbed the composer-visibility guard** (a `queued` flag on
+  the feature-layer UI model plus `inComposer` filters). Without it the
+  post-flight network-failure queue path — reachable online — would have
+  left orphaned tiles in the strip, so Step 1 alone would not have been
+  releasable as planned.
+- **iOS resolves queued uploads through a small protocol**
+  (`QueuedAttachmentResolving`, implemented by `AttachmentUploadsModel`,
+  held weakly by `ConversationStore`) instead of the store reading
+  manifest records directly: the pipeline keeps running for queued items,
+  so live item state — not the persisted record — is the truth about
+  readiness.
+- **A restore/flush race surfaced in review and is guarded:** a
+  reconnect flush can run before the async manifest replay finishes, so
+  a resolution asked for before restore completes reads as still-pending
+  rather than gone. Without the guard the flush would have failed queued
+  sends spuriously and deleted their durable records.
+- **`dismiss()` and `consumeAfterSend()` had to learn ownership.** Both
+  previously cleared every item; either would have destroyed a queued
+  send's bytes (on leaving the conversation, or on the next text send).
+  They now operate on composer items only.
+- **Voice sends queue immediately on both platforms** instead of waiting
+  for their upload when the connection is up — the bubble appears at
+  record time and the flush delivers when the upload lands. This also
+  retired iOS's in-memory voice latch fragility and Android's
+  latch-dropped-on-conversation-switch gap.
+- **The offline banner copy changed on both platforms** ("Keep writing
+  and sending — it all goes out when you reconnect"): the old copy
+  promised sending would be *available later*, which stopped being true
+  the moment the outbox shipped. Snapshot baselines were re-recorded and
+  visually reviewed on both platforms.
+- **Pre-existing breakage fixed in passing:** the conversation-quiet
+  feature had added two members to `ChatRemoteDataSource` without
+  updating `RecoveryRemote` in `AttachmentUploadRecoveryInstrumentedTest`,
+  so `data:chat` androidTest had not compiled since 2026-07-25.
+- **An adversarial review pass caught one critical defect before it
+  shipped:** iOS retries remint `clientUploadId`, so queued sends that
+  referenced uploads by that id would have resolved to "gone" after the
+  reconnect retry — failing the exact subway delivery this feature
+  exists for. Queued references are now keyed by the stable composer
+  item id everywhere (payload, store, persisted record, resolver). The
+  same pass hardened restoration past the composer's five-item cap,
+  release cleanup for never-materialized items, reconnect retries for
+  invisible queued items, dead retry taps, flush reentrancy, and
+  Android's gone-drafts retry path (which could have silently delivered
+  a body without its media).
+
+## Step 6 — remaining
+
+The physical-device airplane-mode pass (stage + send a photo and a voice
+message offline, kill the app, relaunch offline, reconnect, verify
+exactly-once delivery) still needs real hardware and joins the standing
+device sign-off backlog alongside push and calling.
 
 ## Deferred until there is a concrete need
 
