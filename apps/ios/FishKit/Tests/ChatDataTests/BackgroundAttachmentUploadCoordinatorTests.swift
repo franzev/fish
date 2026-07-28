@@ -45,7 +45,10 @@ private final class CoordinatorURLProtocol: URLProtocol {
 @Suite(.serialized) struct BackgroundAttachmentUploadCoordinatorTests {
     @Test func startsANewTaskWhenNoTaskExistsForTheAttachmentId() async throws {
         CoordinatorURLProtocol.reset()
-        let coordinator = BackgroundAttachmentUploadCoordinator(sessionConfiguration: testConfiguration())
+        let coordinator = BackgroundAttachmentUploadCoordinator(
+            sessionConfiguration: testConfiguration(),
+            completedMarks: testMarks()
+        )
         let fileUrl = try makeFile()
         defer { try? FileManager.default.removeItem(at: fileUrl) }
 
@@ -66,7 +69,10 @@ private final class CoordinatorURLProtocol: URLProtocol {
         // returned by `getAllTasks`) for the moment it takes `upload` to
         // look it up, without making the test racy.
         CoordinatorURLProtocol.reset(delay: 0.2)
-        let coordinator = BackgroundAttachmentUploadCoordinator(sessionConfiguration: testConfiguration())
+        let coordinator = BackgroundAttachmentUploadCoordinator(
+            sessionConfiguration: testConfiguration(),
+            completedMarks: testMarks()
+        )
         let fileUrl = try makeFile()
         defer { try? FileManager.default.removeItem(at: fileUrl) }
 
@@ -92,7 +98,10 @@ private final class CoordinatorURLProtocol: URLProtocol {
 
     @Test func nonSuccessStatusSurfacesAsATypedFailure() async throws {
         CoordinatorURLProtocol.reset { _ in (403, Data()) }
-        let coordinator = BackgroundAttachmentUploadCoordinator(sessionConfiguration: testConfiguration())
+        let coordinator = BackgroundAttachmentUploadCoordinator(
+            sessionConfiguration: testConfiguration(),
+            completedMarks: testMarks()
+        )
         let fileUrl = try makeFile()
         defer { try? FileManager.default.removeItem(at: fileUrl) }
 
@@ -111,6 +120,48 @@ private final class CoordinatorURLProtocol: URLProtocol {
         }
     }
 
+    /// Reproduces the exact gap a background session opens up: a PUT that
+    /// completes while nothing is listening (e.g. the OS relaunched the
+    /// process only to report finished session events, and it terminated
+    /// again before any pipeline resubscribed to this attachmentId). The
+    /// next `upload()` call for that same attachmentId must resolve
+    /// immediately from the durable mark instead of reissuing a PUT — which
+    /// the signed URL's `x-upsert: false` would otherwise reject as a
+    /// conflict against the object this transfer already created.
+    @Test func resolvesImmediatelyWhenAPutSucceededWithNoObserverRegistered() async throws {
+        CoordinatorURLProtocol.reset()
+        let marks = testMarks()
+        let coordinator = BackgroundAttachmentUploadCoordinator(
+            sessionConfiguration: testConfiguration(),
+            completedMarks: marks
+        )
+        let fileUrl = try makeFile()
+        defer { try? FileManager.default.removeItem(at: fileUrl) }
+
+        // Created directly on the session (not through `upload(...)`), so
+        // there is no registered observer at all when it completes.
+        let orphaned = coordinator.session.uploadTask(with: putRequest(), fromFile: fileUrl)
+        orphaned.taskDescription = "orphaned-attachment"
+        orphaned.resume()
+
+        #expect(await eventually { marks.hasMark(for: "orphaned-attachment") })
+        #expect(CoordinatorURLProtocol.requestCount == 1)
+
+        var progress: [Double] = []
+        for try await value in coordinator.upload(
+            request: putRequest(),
+            fileUrl: fileUrl,
+            attachmentId: "orphaned-attachment"
+        ) {
+            progress.append(value)
+        }
+        #expect(progress == [1])
+        // No second PUT was issued: the coordinator resolved from the mark,
+        // and consuming it left nothing behind for a third call to find.
+        #expect(CoordinatorURLProtocol.requestCount == 1)
+        #expect(!marks.hasMark(for: "orphaned-attachment"))
+    }
+
     private func putRequest() -> URLRequest {
         var request = URLRequest(url: URL(string: "https://fish.test/upload")!)
         request.httpMethod = "PUT"
@@ -127,5 +178,25 @@ private final class CoordinatorURLProtocol: URLProtocol {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CoordinatorURLProtocol.self]
         return configuration
+    }
+
+    private func testMarks() -> CompletedAttachmentUploadMarks {
+        CompletedAttachmentUploadMarks(
+            rootURL: FileManager.default.temporaryDirectory
+                .appending(path: "fish-completed-uploads-\(UUID().uuidString)", directoryHint: .isDirectory)
+        )
+    }
+
+    private func eventually(
+        timeout: Duration = .seconds(5),
+        _ predicate: () -> Bool
+    ) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            if predicate() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return predicate()
     }
 }
