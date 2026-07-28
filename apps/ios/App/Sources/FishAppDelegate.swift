@@ -18,11 +18,20 @@ import UserNotifications
 final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificationCenterDelegate {
     private let voipPushCoordinator = VoipPushCoordinator()
     private let notificationReplyStore = FileChatNotificationReplyStore.shared
+    private let backgroundUploadCoordinator = BackgroundAttachmentUploadCoordinator.shared
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Touching `backgroundUploadCoordinator` (via the stored property
+        // above) already forces its background `URLSession` and delegate to
+        // exist before this method returns. That must happen this early: the
+        // OS can relaunch the app straight into
+        // `application(_:handleEventsForBackgroundURLSession:completionHandler:)`
+        // to report an upload that finished while the app was suspended or
+        // terminated, and the delegate has to be registered in time to
+        // receive that callback.
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.setNotificationCategories([
@@ -58,6 +67,23 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
     ) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
         NotificationCenter.default.post(name: .fishPushToken, object: token)
+    }
+
+    /// The OS calls this to relaunch (or wake) the app after a background
+    /// attachment upload finishes while it was suspended or terminated. The
+    /// completion handler must be called once the session has redelivered
+    /// every queued event to its delegate, which
+    /// `BackgroundAttachmentUploadCoordinator` does from
+    /// `urlSessionDidFinishEvents(forBackgroundURLSession:)`.
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        backgroundUploadCoordinator.storeLaunchCompletionHandler(
+            completionHandler,
+            forSessionIdentifier: identifier
+        )
     }
 
     func application(
