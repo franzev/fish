@@ -3,6 +3,8 @@ package space.fishhub.android.feature.chat
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import space.fishhub.android.feature.chat.logic.MessageMarkdownInline
+import space.fishhub.android.feature.chat.views.MaxLinkAccessibilityActions
+import space.fishhub.android.feature.chat.views.capLinkAccessibilityActions
 import space.fishhub.android.feature.chat.views.disambiguateLinkLabels
 
 /**
@@ -67,5 +69,25 @@ class MessageBubbleLinkLabelsTest {
     @Test
     fun `leaves an empty link list unchanged`() {
         assertEquals(emptyList<String>(), disambiguateLinkLabels(emptyList()))
+    }
+
+    @Test
+    fun `a duplicate trimmed off by the cap leaves its survivor unsuffixed`() {
+        // The MaxLinkAccessibilityActions'th link ("here") duplicates the very
+        // next one, which the cap removes -- disambiguation must run on the
+        // already-capped list, or the survivor would wrongly render "here (1)"
+        // with no "(2)" anywhere in the message.
+        val fillerBeforeCap = (0 until MaxLinkAccessibilityActions - 1).map {
+            MessageMarkdownInline.Link("link $it", "https://example.com/$it")
+        }
+        val links = fillerBeforeCap +
+            MessageMarkdownInline.Link("here", "https://example.com/survivor") +
+            MessageMarkdownInline.Link("here", "https://example.com/trimmed") +
+            MessageMarkdownInline.Link("link overflow", "https://example.com/overflow")
+
+        val labels = disambiguateLinkLabels(capLinkAccessibilityActions(links))
+
+        assertEquals(MaxLinkAccessibilityActions, labels.size)
+        assertEquals("here", labels.last())
     }
 }
