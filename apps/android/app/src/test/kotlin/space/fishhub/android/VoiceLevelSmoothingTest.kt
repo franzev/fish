@@ -1,6 +1,7 @@
 package space.fishhub.android
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VoiceLevelSmoothingTest {
@@ -16,6 +17,7 @@ class VoiceLevelSmoothingTest {
         var smoothed = 0f
         repeat(20) {
             smoothed = smoothLevel(previous = smoothed, sample = 1f)
+            assertTrue("smoothed value overshot 1f: $smoothed", smoothed <= 1f)
         }
         assertEquals(1f, smoothed, 0.001f)
     }

@@ -26,7 +26,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 fun MicrophoneLevelMeter(
     level: Float,
     modifier: Modifier = Modifier,
-    active: Boolean = level >= 0.15f,
+    active: Boolean = level.coerceIn(0f, 1f) >= 0.15f,
 ) {
     val safeLevel = level.coerceIn(0f, 1f)
     val barMaxHeights = listOf(FishTheme.spacing.xs, FishTheme.spacing.sm, FishTheme.spacing.md)
