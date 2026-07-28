@@ -225,6 +225,48 @@ fun MessageBubblesMarkdownDarkScreenshot() {
     ComponentStrip(darkTheme = true) { MarkdownBubbleStates() }
 }
 
+/**
+ * A one-level nested list, its own strip so a regression in
+ * [space.fishhub.android.feature.chat.views.MarkdownListView]'s indentation
+ * step is caught by this suite rather than only by manually inspecting its
+ * (non-screenshot-tested) `@Preview`.
+ */
+@Composable
+private fun NestedListBubbleState() {
+    MessageBubble(
+        row = message(
+            "m12",
+            """
+                Before next session:
+                1. Warm up with slow breathing
+                   - Four counts in
+                   - Four counts out
+                2. Read the opening line aloud
+            """.trimIndent(),
+            false,
+        ).toRow(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "message-bubble-nested-list-light", widthDp = 412, showBackground = true)
+@Composable
+fun MessageBubbleNestedListLightScreenshot() {
+    ComponentStrip(darkTheme = false) { NestedListBubbleState() }
+}
+
+@PreviewTest
+@Preview(
+    name = "message-bubble-nested-list-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun MessageBubbleNestedListDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { NestedListBubbleState() }
+}
+
 /** The quiet transcript chrome: separators, typing, connection notices. */
 @Composable
 private fun ChatChromeStates() {

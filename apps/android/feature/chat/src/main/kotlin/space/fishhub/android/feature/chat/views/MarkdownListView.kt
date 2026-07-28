@@ -60,11 +60,7 @@ fun MarkdownListView(
                         isOutgoing = isOutgoing,
                     )
                     item.children?.let { children ->
-                        MarkdownListView(
-                            list = children,
-                            isOutgoing = isOutgoing,
-                            modifier = Modifier.padding(start = FishTheme.spacing.md),
-                        )
+                        MarkdownListView(list = children, isOutgoing = isOutgoing)
                     }
                 }
             }
