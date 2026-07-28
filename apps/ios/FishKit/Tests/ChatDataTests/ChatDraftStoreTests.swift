@@ -56,6 +56,59 @@ struct ChatDraftStoreTests {
         #expect(try await reloaded.drafts(for: ["conversation-a"]).isEmpty)
     }
 
+    @Test func pendingAttachmentsRoundTripReplaceAndRemoveByItemId() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let record = ChatPendingAttachment(
+            conversationId: "conversation-a",
+            itemId: "item-1",
+            clientUploadId: "upload-1",
+            stagedFileName: "abc.jpg",
+            originalName: "Photo.jpg",
+            sourceMimeType: "image/jpeg",
+            uploadMimeType: "image/jpeg",
+            sourceByteSize: 120,
+            uploadByteSize: 90,
+            width: 10,
+            height: 8,
+            sha256: String(repeating: "a", count: 64)
+        )
+
+        try await store.savePendingAttachment(record)
+        var updated = record
+        updated.serverAttachmentId = "server-1"
+        try await store.savePendingAttachment(updated)
+
+        let reloaded = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        let restored = try await reloaded.pendingAttachments()
+        #expect(restored.count == 1)
+        #expect(restored.first?.serverAttachmentId == "server-1")
+        #expect(restored.first?.stagedFileName == "abc.jpg")
+
+        try await reloaded.removePendingAttachment(itemId: "item-1")
+        #expect(try await reloaded.pendingAttachments().isEmpty)
+    }
+
+    @Test func payloadsWrittenBeforePendingAttachmentsStillDecode() async throws {
+        let root = try temporaryRoot()
+        let store = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        try await store.saveDraft("draft", conversationId: "conversation-a")
+        let file = try #require(
+            FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+                .first
+        )
+        // Rewrite the payload in the shape older builds produced.
+        let legacy = try JSONSerialization.jsonObject(
+            with: Data(contentsOf: file)
+        ) as! [String: Any]
+        let trimmed = legacy.filter { $0.key != "pendingAttachments" }
+        try JSONSerialization.data(withJSONObject: trimmed).write(to: file)
+
+        let reloaded = FileChatDraftStore(accountId: "account-a", rootURL: root)
+        #expect(try await reloaded.draft(for: "conversation-a")?.body == "draft")
+        #expect(try await reloaded.pendingAttachments().isEmpty)
+    }
+
     private func temporaryRoot() throws -> URL {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("fish-chat-drafts-\(UUID().uuidString)", isDirectory: true)

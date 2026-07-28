@@ -16,6 +16,7 @@ public final class AttachmentUploadsModel {
     private let preparer: any AttachmentPreparing
     private let staging: AttachmentStaging
     private let connectivity: any AttachmentConnectivityProviding
+    private let outbox: (any ChatDraftProviding)?
     private let makeClientUploadId: @Sendable () -> String
     private let automaticRetryDelay: @Sendable (Int) async -> Void
     private let uploadGate = AttachmentAsyncGate(limit: 2)
@@ -35,6 +36,7 @@ public final class AttachmentUploadsModel {
         preparer: any AttachmentPreparing = ImagePreparation(),
         staging: AttachmentStaging,
         connectivity: any AttachmentConnectivityProviding = NetworkAttachmentConnectivity(),
+        outbox: (any ChatDraftProviding)? = nil,
         makeClientUploadId: @escaping @Sendable () -> String = { UUID().uuidString },
         automaticRetryDelay: @escaping @Sendable (Int) async -> Void = { attempt in
             let base = min(8, pow(2, Double(max(0, attempt - 1))))
@@ -48,6 +50,7 @@ public final class AttachmentUploadsModel {
         self.preparer = preparer
         self.staging = staging
         self.connectivity = connectivity
+        self.outbox = outbox
         self.makeClientUploadId = makeClientUploadId
         self.automaticRetryDelay = automaticRetryDelay
         Task { [weak self, connectivity] in
@@ -57,10 +60,94 @@ public final class AttachmentUploadsModel {
             }
         }
         let launchCutoff = Date()
-        Task { [staging] in
-            guard await attachmentLaunchSweepGate.claim(staging.root) else { return }
-            _ = await staging.sweep(olderThan: launchCutoff)
+        Task { [staging, outbox] in
+            let stagingRoot = await staging.root
+            guard await attachmentLaunchSweepGate.claim(stagingRoot) else { return }
+            // Bytes referenced by the durable outbox survive the launch sweep;
+            // everything else in the staging root is an orphan.
+            let keep = Set(
+                ((try? await outbox?.pendingAttachments()) ?? [])
+                    .map { $0.stagedFileUrl(in: stagingRoot) }
+            )
+            _ = await staging.sweep(keeping: keep, olderThan: launchCutoff)
         }
+        Task { [weak self] in
+            await self?.restoreFromOutbox()
+        }
+    }
+
+    /// Rebuilds unfinished uploads from the durable outbox after a relaunch
+    /// and re-enters the pipeline for anything not yet complete. The server
+    /// deduplicates initialization by `clientUploadId`, so replay is safe.
+    private func restoreFromOutbox() async {
+        guard let outbox else { return }
+        let records = ((try? await outbox.pendingAttachments()) ?? [])
+            .filter { $0.conversationId == conversationId }
+            .sorted { $0.createdAt < $1.createdAt }
+        guard !records.isEmpty else { return }
+        let stagingRoot = await staging.root
+        for record in records {
+            guard items.count < AttachmentRules.maxCount else { return }
+            guard !items.contains(where: { $0.id == record.itemId }) else { continue }
+            let url = record.stagedFileUrl(in: stagingRoot)
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                try? await outbox.removePendingAttachment(itemId: record.itemId)
+                continue
+            }
+            preparedFiles[record.itemId] = StagedAttachmentFile(
+                url: url,
+                originalName: record.originalName,
+                sourceMimeType: record.sourceMimeType,
+                uploadMimeType: record.uploadMimeType,
+                sourceByteSize: record.sourceByteSize,
+                uploadByteSize: record.uploadByteSize,
+                width: record.width,
+                height: record.height,
+                sha256: record.sha256
+            )
+            items.append(StagedAttachment(
+                id: record.itemId,
+                clientUploadId: record.clientUploadId,
+                originalName: record.originalName,
+                kind: AttachmentRules.imageMimeTypes.contains(record.sourceMimeType)
+                    ? .image
+                    : .file,
+                sourceMimeType: record.sourceMimeType,
+                localUrl: url,
+                progress: record.readyAttachment != nil ? 1 : 0.25,
+                status: record.readyAttachment != nil ? .ready : .uploading,
+                attachmentId: record.serverAttachmentId,
+                readyAttachment: record.readyAttachment
+            ))
+            if let attachmentId = record.serverAttachmentId {
+                serverAttachmentIds[record.itemId, default: []].insert(attachmentId)
+            }
+            if record.readyAttachment == nil {
+                startPipeline(id: record.itemId)
+            }
+        }
+    }
+
+    private func persistRecord(_ id: String) async {
+        guard let outbox,
+              let item = items.first(where: { $0.id == id }),
+              let prepared = preparedFiles[id] else { return }
+        try? await outbox.savePendingAttachment(ChatPendingAttachment(
+            conversationId: conversationId,
+            itemId: id,
+            clientUploadId: item.clientUploadId,
+            stagedFileName: prepared.url.lastPathComponent,
+            originalName: prepared.originalName,
+            sourceMimeType: prepared.sourceMimeType,
+            uploadMimeType: prepared.uploadMimeType,
+            sourceByteSize: prepared.sourceByteSize,
+            uploadByteSize: prepared.uploadByteSize,
+            width: prepared.width,
+            height: prepared.height,
+            sha256: prepared.sha256,
+            serverAttachmentId: item.attachmentId,
+            readyAttachment: item.readyAttachment
+        ))
     }
 
     public var readyAttachmentIds: [String] {
@@ -168,7 +255,8 @@ public final class AttachmentUploadsModel {
     }
 
     public func retry(_ id: String, automatic: Bool = false) {
-        guard let index = index(of: id), items[index].isFailed, candidates[id] != nil else { return }
+        guard let index = index(of: id), items[index].isFailed,
+              candidates[id] != nil || preparedFiles[id] != nil else { return }
         if automatic {
             guard items[index].automaticAttempts < 3 else { return }
             items[index].automaticAttempts += 1
@@ -195,7 +283,8 @@ public final class AttachmentUploadsModel {
         candidates[id] = nil
         let prepared = preparedFiles.removeValue(forKey: id)
         let serverIds = serverAttachmentIds.removeValue(forKey: id) ?? []
-        Task { [commands, staging] in
+        Task { [commands, staging, outbox] in
+            try? await outbox?.removePendingAttachment(itemId: id)
             for attachmentId in serverIds { await commands.cancelUpload(attachmentId: attachmentId) }
             if let url = prepared?.url ?? item.localUrl {
                 await staging.remove(url)
@@ -205,7 +294,11 @@ public final class AttachmentUploadsModel {
     }
 
     public func consumeAfterSend(previewGraceSeconds: TimeInterval = 30) {
-        let urls = items.compactMap(\.localUrl)
+        // Only items the server already holds may lose their local bytes.
+        // Anything still unconfirmed keeps its outbox record and staged file,
+        // so a relaunch restores it instead of losing it.
+        let sent = items.filter { $0.attachmentId != nil }
+        let sentUrls = sent.compactMap(\.localUrl)
         tasks.values.forEach { $0.cancel() }
         tasks.removeAll()
         items.removeAll()
@@ -213,11 +306,14 @@ public final class AttachmentUploadsModel {
         preparedFiles.removeAll()
         serverAttachmentIds.removeAll()
         pipelineGenerations.removeAll()
-        Task { [staging] in
+        Task { [staging, outbox] in
+            for item in sent {
+                try? await outbox?.removePendingAttachment(itemId: item.id)
+            }
             if previewGraceSeconds > 0 {
                 try? await Task.sleep(for: .seconds(previewGraceSeconds))
             }
-            for url in urls { await staging.remove(url) }
+            for url in sentUrls { await staging.remove(url) }
         }
         endBackgroundGraceIfSettled()
     }
@@ -232,8 +328,9 @@ public final class AttachmentUploadsModel {
         preparedFiles.removeAll()
         serverAttachmentIds.removeAll()
         pipelineGenerations.removeAll()
-        Task { [commands, staging] in
+        Task { [commands, staging, outbox] in
             for item in current {
+                try? await outbox?.removePendingAttachment(itemId: item.id)
                 for attachmentId in currentServerIds[item.id] ?? [] {
                     await commands.cancelUpload(attachmentId: attachmentId)
                 }
@@ -281,7 +378,7 @@ public final class AttachmentUploadsModel {
     }
 
     private func runPipeline(id: String, generation: Int) async {
-        guard let candidate = candidates[id] else { return }
+        guard candidates[id] != nil || preparedFiles[id] != nil else { return }
         await uploadGate.acquire()
         var holdsUploadGate = true
         var shouldRetryAutomatically = false
@@ -290,13 +387,17 @@ public final class AttachmentUploadsModel {
             let prepared: StagedAttachmentFile
             if let existing = preparedFiles[id] {
                 prepared = existing
-            } else {
+            } else if let candidate = candidates[id] {
                 prepared = try await preparer.prepare(candidate, staging: staging)
                 preparedFiles[id] = prepared
                 update(id) {
                     $0.localUrl = prepared.url
                     $0.progress = 0.25
                 }
+                await persistRecord(id)
+            } else {
+                await uploadGate.release()
+                return
             }
             try Task.checkCancellation()
             guard let item = items.first(where: { $0.id == id }) else {
@@ -318,6 +419,7 @@ public final class AttachmentUploadsModel {
             )
             serverAttachmentIds[id, default: []].insert(authorization.attachmentId)
             update(id) { $0.attachmentId = authorization.attachmentId }
+            await persistRecord(id)
             for try await progress in uploader.upload(fileUrl: prepared.url, to: authorization) {
                 try Task.checkCancellation()
                 update(id) {
@@ -345,6 +447,7 @@ public final class AttachmentUploadsModel {
                 $0.readyAttachment = attachment
                 $0.notice = nil
             }
+            await persistRecord(id)
             announceReadyCount()
         } catch is CancellationError {
             if holdsUploadGate { await uploadGate.release() }

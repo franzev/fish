@@ -10,6 +10,23 @@ public actor FileChatDraftStore: ChatDraftProviding {
     private struct Payload: Codable {
         var drafts: [String: ChatDraft] = [:]
         var pendingTextSends: [String: ChatPendingTextSend] = [:]
+        var pendingAttachments: [ChatPendingAttachment] = []
+
+        init() {}
+
+        // Older payload files predate `pendingAttachments`; decode it as absent.
+        init(from decoder: Decoder) throws {
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            drafts = try values.decodeIfPresent(
+                [String: ChatDraft].self, forKey: .drafts
+            ) ?? [:]
+            pendingTextSends = try values.decodeIfPresent(
+                [String: ChatPendingTextSend].self, forKey: .pendingTextSends
+            ) ?? [:]
+            pendingAttachments = try values.decodeIfPresent(
+                [ChatPendingAttachment].self, forKey: .pendingAttachments
+            ) ?? []
+        }
     }
 
     private let fileURL: URL
@@ -71,6 +88,28 @@ public actor FileChatDraftStore: ChatDraftProviding {
     public func removePendingTextSend(clientRequestId: String) async throws {
         var value = try loaded()
         value.pendingTextSends[clientRequestId] = nil
+        try persist(value)
+    }
+
+    public func pendingAttachments() async throws -> [ChatPendingAttachment] {
+        try loaded().pendingAttachments
+    }
+
+    public func savePendingAttachment(_ attachment: ChatPendingAttachment) async throws {
+        var value = try loaded()
+        if let index = value.pendingAttachments.firstIndex(
+            where: { $0.itemId == attachment.itemId }
+        ) {
+            value.pendingAttachments[index] = attachment
+        } else {
+            value.pendingAttachments.append(attachment)
+        }
+        try persist(value)
+    }
+
+    public func removePendingAttachment(itemId: String) async throws {
+        var value = try loaded()
+        value.pendingAttachments.removeAll { $0.itemId == itemId }
         try persist(value)
     }
 

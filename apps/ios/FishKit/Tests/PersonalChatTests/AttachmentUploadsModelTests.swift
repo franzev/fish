@@ -342,12 +342,147 @@ private final class SequentialIds: @unchecked Sendable {
         try? FileManager.default.removeItem(at: root)
     }
 
+    @Test func relaunchRestoresUnfinishedUploadAndReusesItsClientUploadId() async throws {
+        let stagingRoot = temporaryDirectory()
+        let staging = try AttachmentStaging(root: stagingRoot)
+        let outbox = FileChatDraftStore(accountId: "account-a", rootURL: temporaryDirectory())
+        let stagedUrl = try await staging.write(Data("bytes".utf8), fileExtension: "txt")
+        try await outbox.savePendingAttachment(ChatPendingAttachment(
+            conversationId: "conversation-1",
+            itemId: "restored-item",
+            clientUploadId: "sticky-upload-id",
+            stagedFileName: stagedUrl.lastPathComponent,
+            originalName: "notes.txt",
+            sourceMimeType: "text/plain",
+            uploadMimeType: "text/plain",
+            sourceByteSize: 5,
+            uploadByteSize: 5,
+            sha256: String(repeating: "b", count: 64)
+        ))
+
+        let commands = ScriptedAttachmentCommands()
+        let model = try makeModel(
+            commands: commands,
+            uploader: ImmediateAttachmentUploader(),
+            root: stagingRoot,
+            outbox: outbox
+        )
+
+        #expect(await eventually { model.items.first?.isReady == true })
+        #expect(model.items.first?.id == "restored-item")
+        let requests = await commands.initializeRequests
+        #expect(requests.map(\.clientUploadId) == ["sticky-upload-id"])
+        let records = try await outbox.pendingAttachments()
+        #expect(records.first?.readyAttachment != nil)
+    }
+
+    @Test func restoredReadyItemDoesNotRerunThePipeline() async throws {
+        let stagingRoot = temporaryDirectory()
+        let staging = try AttachmentStaging(root: stagingRoot)
+        let outbox = FileChatDraftStore(accountId: "account-a", rootURL: temporaryDirectory())
+        let stagedUrl = try await staging.write(Data("bytes".utf8), fileExtension: "txt")
+        try await outbox.savePendingAttachment(ChatPendingAttachment(
+            conversationId: "conversation-1",
+            itemId: "ready-item",
+            clientUploadId: "done-upload-id",
+            stagedFileName: stagedUrl.lastPathComponent,
+            originalName: "notes.txt",
+            sourceMimeType: "text/plain",
+            uploadMimeType: "text/plain",
+            sourceByteSize: 5,
+            uploadByteSize: 5,
+            sha256: String(repeating: "c", count: 64),
+            serverAttachmentId: "server-done",
+            readyAttachment: ChatAttachment(
+                id: "server-done",
+                kind: .file,
+                originalName: "notes.txt",
+                mimeType: "text/plain",
+                byteSize: 5,
+                displayPath: "c/server-done/file.txt"
+            )
+        ))
+
+        let commands = ScriptedAttachmentCommands()
+        let model = try makeModel(
+            commands: commands,
+            uploader: ImmediateAttachmentUploader(),
+            root: stagingRoot,
+            outbox: outbox
+        )
+
+        #expect(await eventually { model.items.first?.isReady == true })
+        #expect(model.readyAttachmentIds == ["server-done"])
+        #expect(await commands.initializeRequests.isEmpty)
+    }
+
+    @Test func pipelinePersistsRecordsAndConsumeAfterSendReleasesThem() async throws {
+        let stagingRoot = temporaryDirectory()
+        let outbox = FileChatDraftStore(accountId: "account-a", rootURL: temporaryDirectory())
+        let commands = ScriptedAttachmentCommands()
+        let model = try makeModel(
+            commands: commands,
+            uploader: ImmediateAttachmentUploader(),
+            root: stagingRoot,
+            outbox: outbox
+        )
+
+        model.add([candidate("durable")])
+        #expect(await eventually { model.items.first?.isReady == true })
+        #expect(await eventually {
+            (try? await outbox.pendingAttachments())?.first?.readyAttachment != nil
+        })
+        let stagedUrl = try #require(model.items.first?.localUrl)
+
+        model.consumeAfterSend(previewGraceSeconds: 0)
+
+        #expect(await eventually {
+            ((try? await outbox.pendingAttachments()) ?? []).isEmpty
+        })
+        #expect(await eventually {
+            !FileManager.default.fileExists(atPath: stagedUrl.path)
+        })
+    }
+
+    @Test func launchSweepKeepsOutboxReferencedBytesAndDropsOrphans() async throws {
+        let stagingRoot = temporaryDirectory()
+        let staging = try AttachmentStaging(root: stagingRoot)
+        let outbox = FileChatDraftStore(accountId: "account-a", rootURL: temporaryDirectory())
+        let referenced = try await staging.write(Data("keep".utf8), fileExtension: "txt")
+        let orphan = try await staging.write(Data("drop".utf8), fileExtension: "txt")
+        try await outbox.savePendingAttachment(ChatPendingAttachment(
+            conversationId: "conversation-other",
+            itemId: "other-conversation-item",
+            clientUploadId: "keep-id",
+            stagedFileName: referenced.lastPathComponent,
+            originalName: "notes.txt",
+            sourceMimeType: "text/plain",
+            uploadMimeType: "text/plain",
+            sourceByteSize: 4,
+            uploadByteSize: 4,
+            sha256: String(repeating: "d", count: 64)
+        ))
+
+        _ = try makeModel(
+            commands: ScriptedAttachmentCommands(),
+            uploader: ImmediateAttachmentUploader(),
+            root: stagingRoot,
+            outbox: outbox
+        )
+
+        #expect(await eventually {
+            !FileManager.default.fileExists(atPath: orphan.path)
+        })
+        #expect(FileManager.default.fileExists(atPath: referenced.path))
+    }
+
     private func makeModel(
         commands: ScriptedAttachmentCommands,
         uploader: any AttachmentByteUploading,
         preparer: any AttachmentPreparing = ImagePreparation(),
         ids: SequentialIds = SequentialIds(),
         root: URL? = nil,
+        outbox: (any ChatDraftProviding)? = nil,
         automaticRetryDelay: @escaping @Sendable (Int) async -> Void = { _ in }
     ) throws -> AttachmentUploadsModel {
         AttachmentUploadsModel(
@@ -357,6 +492,7 @@ private final class SequentialIds: @unchecked Sendable {
             preparer: preparer,
             staging: try AttachmentStaging(root: root ?? temporaryDirectory()),
             connectivity: AlwaysConnectedAttachmentConnectivity(),
+            outbox: outbox,
             makeClientUploadId: ids.make,
             automaticRetryDelay: automaticRetryDelay
         )

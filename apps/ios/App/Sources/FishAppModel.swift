@@ -669,6 +669,15 @@ final class FishAppModel {
         isLoadingBlockedPeople = false
         await stopConversation()
         if let draftStore {
+            // Delete the account's staged outbox bytes before the records
+            // that reference them disappear with the drafts payload.
+            if let staging = try? AttachmentStaging() {
+                let stagingRoot = await staging.root
+                let pending = (try? await draftStore.pendingAttachments()) ?? []
+                for record in pending {
+                    await staging.remove(record.stagedFileUrl(in: stagingRoot))
+                }
+            }
             try? await draftStore.removeAllDrafts()
         }
         try? await cacheStore?.removeAll()
@@ -738,7 +747,8 @@ final class FishAppModel {
                 conversationId: preview.conversationId,
                 commands: session.attachmentCommands,
                 uploader: SignedUrlByteUploader(configuration: session.backend),
-                staging: staging
+                staging: staging,
+                outbox: draftStore
             )
             conversationStore = store
             self.uploads = uploads

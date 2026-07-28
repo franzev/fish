@@ -60,10 +60,16 @@ public protocol ChatDraftProviding: Sendable {
     func pendingTextSends() async throws -> [ChatPendingTextSend]
     func savePendingTextSend(_ send: ChatPendingTextSend) async throws
     func removePendingTextSend(clientRequestId: String) async throws
+    func pendingAttachments() async throws -> [ChatPendingAttachment]
+    func savePendingAttachment(_ attachment: ChatPendingAttachment) async throws
+    func removePendingAttachment(itemId: String) async throws
 }
 
 public extension ChatDraftProviding {
     func pendingTextSends() async throws -> [ChatPendingTextSend] { [] }
     func savePendingTextSend(_ send: ChatPendingTextSend) async throws {}
     func removePendingTextSend(clientRequestId: String) async throws {}
+    func pendingAttachments() async throws -> [ChatPendingAttachment] { [] }
+    func savePendingAttachment(_ attachment: ChatPendingAttachment) async throws {}
+    func removePendingAttachment(itemId: String) async throws {}
 }
