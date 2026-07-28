@@ -311,7 +311,6 @@ public struct PersonalChatScreen: View {
                     selection: $selection,
                     sendState: Self.composerState(for: model),
                     attachmentUploads: attachmentUploads,
-                    attachmentsDisabled: model.connection == .offline,
                     context: model.composerContext,
                     onCancelContext: onCancelComposerContext,
                     onFocusChanged: onComposerFocusChanged,

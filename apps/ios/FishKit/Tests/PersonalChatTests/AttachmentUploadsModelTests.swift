@@ -112,6 +112,68 @@ private struct FailingAttachmentPreparer: AttachmentPreparing {
     }
 }
 
+private actor OfflineFirstAttachmentCommands: AttachmentCommandProviding {
+    var initializeRequests: [InitializeAttachmentRequest] = []
+    private var offlineFailuresRemaining = 1
+
+    func initializeUpload(
+        _ request: InitializeAttachmentRequest
+    ) async throws -> AttachmentUploadAuthorization {
+        initializeRequests.append(request)
+        if offlineFailuresRemaining > 0 {
+            offlineFailuresRemaining -= 1
+            throw URLError(.notConnectedToInternet)
+        }
+        return AttachmentUploadAuthorization(
+            attachmentId: "server-\(request.clientUploadId)",
+            bucket: "chat-images",
+            objectPath: "c/server-\(request.clientUploadId)/staging",
+            uploadToken: "token",
+            uploadMimeType: request.uploadMimeType,
+            signedUploadUrl: URL(string: "https://fish.test/upload")!,
+            expiresAt: Date().addingTimeInterval(7_200)
+        )
+    }
+
+    func completeUpload(attachmentId: String) async throws -> ChatAttachment {
+        ChatAttachment(
+            id: attachmentId,
+            kind: .file,
+            originalName: "notes.txt",
+            mimeType: "text/plain",
+            byteSize: 5,
+            displayPath: "c/\(attachmentId)/file.txt"
+        )
+    }
+
+    func cancelUpload(attachmentId: String) async {}
+    func refreshUrls(attachmentIds: [String]) async throws -> [SignedAttachmentUrl] { [] }
+}
+
+private final class ScriptedConnectivity: AttachmentConnectivityProviding, @unchecked Sendable {
+    private let continuation: AsyncStream<Bool>.Continuation
+    let updates: AsyncStream<Bool>
+    private let lock = NSLock()
+    private var connected: Bool
+
+    init(connected: Bool) {
+        self.connected = connected
+        var continuation: AsyncStream<Bool>.Continuation!
+        updates = AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation = $0 }
+        self.continuation = continuation
+        self.continuation.yield(connected)
+    }
+
+    func current() async -> Bool {
+        lock.withLock { connected }
+    }
+
+    func set(_ value: Bool) {
+        lock.withLock { connected = value }
+        continuation.yield(value)
+    }
+}
+
 private final class SequentialIds: @unchecked Sendable {
     private let lock = NSLock()
     private var next = 0
@@ -442,6 +504,32 @@ private final class SequentialIds: @unchecked Sendable {
         #expect(await eventually {
             !FileManager.default.fileExists(atPath: stagedUrl.path)
         })
+    }
+
+    @Test func stagingOfflineQueuesTheUploadAndReconnectDeliversIt() async throws {
+        let connectivity = ScriptedConnectivity(connected: false)
+        let commands = OfflineFirstAttachmentCommands()
+        let model = AttachmentUploadsModel(
+            conversationId: "conversation-1",
+            commands: commands,
+            uploader: ImmediateAttachmentUploader(),
+            staging: try AttachmentStaging(root: temporaryDirectory()),
+            connectivity: connectivity,
+            automaticRetryDelay: { _ in }
+        )
+        #expect(await eventually { model.isConnected == false })
+        #expect(model.canAdd)
+
+        model.add([candidate("subway")])
+
+        #expect(await eventually { model.items.first?.status == .failed(.offline) })
+        #expect(model.items.first?.notice?.contains("reconnect") == true)
+
+        connectivity.set(true)
+
+        #expect(await eventually { model.items.first?.isReady == true })
+        let requests = await commands.initializeRequests
+        #expect(requests.count == 2)
     }
 
     @Test func launchSweepKeepsOutboxReferencedBytesAndDropsOrphans() async throws {

@@ -25,7 +25,6 @@ public struct MessageComposer: View {
     private let onSend: () -> Void
     private let onOpenMediaPicker: () -> Void
     private let attachmentUploads: AttachmentUploadsModel?
-    private let attachmentsDisabled: Bool
     private let context: ComposerContextUiModel?
     private let onCancelContext: () -> Void
     private let onFocusChanged: (Bool) -> Void
@@ -46,7 +45,6 @@ public struct MessageComposer: View {
         selection: Binding<ComposerSelection>,
         sendState: ComposerSendState,
         attachmentUploads: AttachmentUploadsModel? = nil,
-        attachmentsDisabled: Bool = false,
         context: ComposerContextUiModel? = nil,
         onCancelContext: @escaping () -> Void = {},
         onFocusChanged: @escaping (Bool) -> Void = { _ in },
@@ -58,7 +56,6 @@ public struct MessageComposer: View {
         self._selection = selection
         self.sendState = sendState
         self.attachmentUploads = attachmentUploads
-        self.attachmentsDisabled = attachmentsDisabled
         self.context = context
         self.onCancelContext = onCancelContext
         self.onFocusChanged = onFocusChanged
@@ -111,11 +108,7 @@ public struct MessageComposer: View {
                     ) {
                         showsAttachmentMenu = true
                     }
-                    .disabled(
-                        attachmentsDisabled
-                            || !attachmentUploads.canAdd
-                            || selection != .none
-                    )
+                    .disabled(!attachmentUploads.canAdd || selection != .none)
                 }
                 if let sticker = selection.stagedSticker {
                     StickerSelectionThumbnail(sticker: sticker) {
@@ -327,7 +320,7 @@ public struct MessageComposer: View {
 
     private var canRecordVoice: Bool {
         guard attachmentUploads != nil,
-              sendState == .ready,
+              sendState != .sending,
               draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               selection == .none,
               attachmentUploads?.items.isEmpty == true

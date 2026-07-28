@@ -171,7 +171,8 @@ public final class AttachmentUploadsModel {
 
     public var hasFailure: Bool { items.contains(where: \.isFailed) }
     public var hasInFlight: Bool { items.contains(where: \.isInFlight) }
-    public var canAdd: Bool { isConnected && items.count < AttachmentRules.maxCount }
+    // Staging is local work; offline it queues against connectivity retry.
+    public var canAdd: Bool { items.count < AttachmentRules.maxCount }
 
     public var sendGuidance: String? {
         if hasFailure { return "Retry or remove the upload that didn't finish" }
