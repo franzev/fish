@@ -35,9 +35,9 @@ Deferred items and the reasoning are at the end.
 
 **Steps:**
 
-- [ ] **1.1 Locate the recording ticker.** Grep `elapsedMillis` in `apps/android/feature/chat/.../ChatRoute.kt` and `apps/android/app/src/main/kotlin/space/fishhub/android/MainActivity.kt` and find the coroutine that increments it while recording.
+- [x] **1.1 Locate the recording ticker.** Grep `elapsedMillis` in `apps/android/feature/chat/.../ChatRoute.kt` and `apps/android/app/src/main/kotlin/space/fishhub/android/MainActivity.kt` and find the coroutine that increments it while recording.
 
-- [ ] **1.2 Expose a normalized level from the recorder.** In `VoiceMessageRecorder.kt` add:
+- [x] **1.2 Expose a normalized level from the recorder.** In `VoiceMessageRecorder.kt` add:
 
 ```kotlin
 /** 0f..1f snapshot of input loudness since the last poll. */
@@ -47,13 +47,13 @@ fun currentLevel(): Float {
 }
 ```
 
-- [ ] **1.3 Carry the level in UI state.** Add `val level: Float = 0f` to `VoiceRecordingUiState` (`apps/android/feature/chat/.../model/ChatModels.kt:116-120`). In the ticker from 1.1, poll `currentLevel()` each tick and smooth with an exponential moving average so bars don't flicker: `smoothed = 0.6f * smoothed + 0.4f * sample`. Write a small unit test for the smoothing function (pure function, extract it as `internal fun smoothLevel(previous: Float, sample: Float): Float`).
+- [x] **1.3 Carry the level in UI state.** Add `val level: Float = 0f` to `VoiceRecordingUiState` (`apps/android/feature/chat/.../model/ChatModels.kt:116-120`). In the ticker from 1.1, poll `currentLevel()` each tick and smooth with an exponential moving average so bars don't flicker: `smoothed = 0.6f * smoothed + 0.4f * sample`. Write a small unit test for the smoothing function (pure function, extract it as `internal fun smoothLevel(previous: Float, sample: Float): Float`).
 
-- [ ] **1.4 Add the meter composable.** New file `apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/MicrophoneLevelMeter.kt`: three rounded bars whose height scales mirror iOS (`0.2 + level * 0.8`, `0.15 + level * 0.85`, `0.1 + level * 0.9` — see `MicrophoneLevelMeter.swift:20-22`), using existing design tokens for color (active tint while recording, muted otherwise). Include a `@Preview`. If composer animations already gate on the reduce-motion preference, apply the same gate; otherwise plain size changes are acceptable (no springs).
+- [x] **1.4 Add the meter composable.** New file `apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/MicrophoneLevelMeter.kt`: three rounded bars whose height scales mirror iOS (`0.2 + level * 0.8`, `0.15 + level * 0.85`, `0.1 + level * 0.9` — see `MicrophoneLevelMeter.swift:20-22`), using existing design tokens for color (active tint while recording, muted otherwise). Include a `@Preview`. If composer animations already gate on the reduce-motion preference, apply the same gate; otherwise plain size changes are acceptable (no springs).
 
-- [ ] **1.5 Render it in the composer recording row** (`apps/android/feature/chat/.../views/MessageComposer.kt`, recording UI around lines 72-236), next to the elapsed-time label.
+- [x] **1.5 Render it in the composer recording row** (`apps/android/feature/chat/.../views/MessageComposer.kt`, recording UI around lines 72-236), next to the elapsed-time label.
 
-- [ ] **1.6 Verify and commit.** Run the feature-chat unit tests and the module build. If the existing `screenshotTest` source set covers the composer, record and visually review the new baseline. Commit: `feat(android): show mic level meter while recording voice messages`.
+- [x] **1.6 Verify and commit.** Run the feature-chat unit tests and the module build. If the existing `screenshotTest` source set covers the composer, record and visually review the new baseline. Commit: `feat(android): show mic level meter while recording voice messages`.
 
 ---
 
@@ -72,15 +72,15 @@ fun currentLevel(): Float {
 
 **Steps:**
 
-- [ ] **2.1 Delete the dormant pane (pure removal, working state).** Delete `FishKit/Sources/Calls/Views/CallChatPane.swift`. Remove the `chatContent` parameter and the `chatOpen`/`chatAvailable` plumbing from `CallSurface.swift` (lines 15, 23, 30, 73-74, 87) and `CallOverlay.swift` (lines 18, 26, 31, 41). Update `Catalog/Sources/LiveAttachmentLab.swift:241` to construct `CallOverlay` without `chatContent`. Build FishKit + Catalog, run FishKit tests. Commit: `refactor(ios): remove unwired in-call chat pane`.
+- [x] **2.1 Delete the dormant pane (pure removal, working state).** Delete `FishKit/Sources/Calls/Views/CallChatPane.swift`. Remove the `chatContent` parameter and the `chatOpen`/`chatAvailable` plumbing from `CallSurface.swift` (lines 15, 23, 30, 73-74, 87) and `CallOverlay.swift` (lines 18, 26, 31, 41). Update `Catalog/Sources/LiveAttachmentLab.swift:241` to construct `CallOverlay` without `chatContent`. Build FishKit + Catalog, run FishKit tests. Commit: `refactor(ios): remove unwired in-call chat pane`.
 
-- [ ] **2.2 Add minimized state.** In the call presentation state (follow where `CallOverlay`'s model lives — `FishKit/Sources/Calls/`), add a `minimized: Bool` flag with `minimize()` / `restore()` intents. Unit-test the transitions (minimize allowed only while a call is active; ending the call clears it).
+- [x] **2.2 Add minimized state.** In the call presentation state (follow where `CallOverlay`'s model lives — `FishKit/Sources/Calls/`), add a `minimized: Bool` flag with `minimize()` / `restore()` intents. Unit-test the transitions (minimize allowed only while a call is active; ending the call clears it).
 
-- [ ] **2.3 Build `CompactCallBar`.** New file `FishKit/Sources/Calls/Views/CompactCallBar.swift`, mirroring Android's `feature/call/.../views/CompactCallBar.kt`: one-line bar with counterpart name, live duration, a hang-up control, tap anywhere else to restore. Use existing `DesignSystem` tokens; keep touch targets ≥ 44pt.
+- [x] **2.3 Build `CompactCallBar`.** New file `FishKit/Sources/Calls/Views/CompactCallBar.swift`, mirroring Android's `feature/call/.../views/CompactCallBar.kt`: one-line bar with counterpart name, live duration, a hang-up control, tap anywhere else to restore. Use existing `DesignSystem` tokens; keep touch targets ≥ 44pt.
 
-- [ ] **2.4 Wire it in `FishRoot.swift`.** When the call model is active and minimized, render `CompactCallBar` (safe-area-pinned, above the app content) instead of the full `CallOverlay`. Add a minimize affordance to the overlay's header/controls (`CallStatusHeader.swift` or `CallControls.swift` — match where Android places it).
+- [x] **2.4 Wire it in `FishRoot.swift`.** When the call model is active and minimized, render `CompactCallBar` (safe-area-pinned, above the app content) instead of the full `CallOverlay`. Add a minimize affordance to the overlay's header/controls (`CallStatusHeader.swift` or `CallControls.swift` — match where Android places it).
 
-- [ ] **2.5 Verify and commit.** FishKit test suite + app build. Exercise minimize/restore/hang-up in the Catalog `LiveCallLab` if convenient. Commit: `feat(ios): minimize active calls to a compact bar so chat stays reachable`.
+- [x] **2.5 Verify and commit.** FishKit test suite + app build. Exercise minimize/restore/hang-up in the Catalog `LiveCallLab` if convenient. Commit: `feat(ios): minimize active calls to a compact bar so chat stays reachable`.
 
 ---
 
@@ -101,13 +101,13 @@ fun currentLevel(): Float {
 
 **Steps:**
 
-- [ ] **3.1 Introduce a shared session + delegate registry (still foreground, working state).** Rework `SignedUrlByteUploader` to hold one lazily-created `URLSession` and one delegate object keeping a `[taskIdentifier: continuation]` map (progress via `urlSession(_:task:didSendBodyData:...)`, completion via `didCompleteWithError`). Set `task.taskDescription = clientUploadId` for later reconciliation. Behavior is identical to today; unit-test the registry (register, progress routing, completion cleanup) with plain delegate-method calls — no network needed.
+- [x] **3.1 Introduce a shared session + delegate registry (still foreground, working state).** Rework `SignedUrlByteUploader` to hold one lazily-created `URLSession` and one delegate object keeping a `[taskIdentifier: continuation]` map (progress via `urlSession(_:task:didSendBodyData:...)`, completion via `didCompleteWithError`). Set `task.taskDescription = clientUploadId` for later reconciliation. Behavior is identical to today; unit-test the registry (register, progress routing, completion cleanup) with plain delegate-method calls — no network needed.
 
-- [ ] **3.2 Switch to a background configuration.** `URLSessionConfiguration.background(withIdentifier: "space.fishhub.attachment-uploads")`, `isDiscretionary = false`, `sessionSendsLaunchEvents = true`. In the app target, implement `application(_:handleEventsForBackgroundURLSession:completionHandler:)` in `App/Sources/FishAppDelegate.swift`, storing the completion handler and calling it from `urlSessionDidFinishEvents(forBackgroundURLSession:)`. Commit: uploads now survive backgrounding.
+- [x] **3.2 Switch to a background configuration.** `URLSessionConfiguration.background(withIdentifier: "space.fishhub.attachment-uploads")`, `isDiscretionary = false`, `sessionSendsLaunchEvents = true`. In the app target, implement `application(_:handleEventsForBackgroundURLSession:completionHandler:)` in `App/Sources/FishAppDelegate.swift`, storing the completion handler and calling it from `urlSessionDidFinishEvents(forBackgroundURLSession:)`. Commit: uploads now survive backgrounding.
 
-- [ ] **3.3 Reconcile on relaunch.** In the existing outbox restore (`AttachmentUploadsModel.swift:88-115` / the uploader), call `session.getAllTasks` first: for each running task whose `taskDescription` matches an outbox record, reattach a continuation instead of restarting; restart (with fresh authorization per the expiry note above) only records with no live task. Test the reconciliation decision as a pure function (inputs: outbox records + task descriptions; output: reattach/restart/ignore).
+- [x] **3.3 Reconcile on relaunch.** In the existing outbox restore (`AttachmentUploadsModel.swift:88-115` / the uploader), call `session.getAllTasks` first: for each running task whose `taskDescription` matches an outbox record, reattach a continuation instead of restarting; restart (with fresh authorization per the expiry note above) only records with no live task. Test the reconciliation decision as a pure function (inputs: outbox records + task descriptions; output: reattach/restart/ignore).
 
-- [ ] **3.4 Delete the now-redundant `beginBackgroundTask` grace-window code** in `AttachmentUploadsModel.swift:410-422`. Run the full FishKit test suite. Commit: `feat(ios): move attachment uploads to a background URLSession`.
+- [x] **3.4 Delete the now-redundant `beginBackgroundTask` grace-window code** in `AttachmentUploadsModel.swift:410-422`. Run the full FishKit test suite. Commit: `feat(ios): move attachment uploads to a background URLSession`.
 
 ---
 
@@ -128,13 +128,13 @@ fun currentLevel(): Float {
 
 **Steps:**
 
-- [ ] **4.1 Read `FishAppModel` + `InboxView` and confirm list-state lifetime across phases.** If the list is torn down when opening a conversation, refactor so the inbox model lives on `FishAppModel` for the app session (smallest change that lets both panes share it). Commit any refactor separately: `refactor(ios): keep inbox state resident across phases`.
+- [x] **4.1 Read `FishAppModel` + `InboxView` and confirm list-state lifetime across phases.** If the list is torn down when opening a conversation, refactor so the inbox model lives on `FishAppModel` for the app session (smallest change that lets both panes share it). Commit any refactor separately: `refactor(ios): keep inbox state resident across phases`.
 
-- [ ] **4.2 Add the two-pane container.** New file `App/Sources/ChatSplitLayout.swift`: reads `@Environment(\.horizontalSizeClass)`; compact → current single-pane `FishRoot` content unchanged; regular → `HStack(spacing: 0)` of `InboxView` at a fixed sidebar width (mirror Android's pane width from `ChatAdaptiveLayout.kt`, using an existing `Metrics` token or adding one) + a divider + detail pane showing the `.opening`/`.conversation` phase content, or a quiet empty-state ("No conversation selected") when the phase is `.inbox`.
+- [x] **4.2 Add the two-pane container.** New file `App/Sources/ChatSplitLayout.swift`: a single, always-mounted `HStack(spacing: 0)` with an optional *leading* rail (`InboxView` at a fixed sidebar width — mirror Android's pane width from `ChatAdaptiveLayout.kt`, using an existing `Metrics` token or adding one — plus a divider) shown only when `@Environment(\.horizontalSizeClass) == .regular` and there's more than one conversation, followed by an unconditional trailing `mainContent` that switches on phase (`.opening`/`.conversation` content, or a quiet empty-state — "No conversation selected" — when `.inbox`). Keep the rail as a *sibling*, not a branch of an outer `if/else` between two different view trees — a top-level structural conditional would rebuild `ConversationView` (and lose its local nav/sheet state) every time the rail's visibility flips, including on rotation or a conversation-count change mid-conversation.
 
-- [ ] **4.3 Wire selection.** In regular width, tapping a conversation drives the same `FishAppModel` open-conversation intent it does today — no parallel selection state. Verify back/close semantics: closing a conversation returns the detail pane to the empty state without touching the list.
+- [x] **4.3 Wire selection.** In regular width, tapping a conversation drives the same `FishAppModel` open-conversation intent it does today — no parallel selection state. Verify back/close semantics: closing a conversation returns the detail pane to the empty state without touching the list.
 
-- [ ] **4.4 Verify and commit.** FishKit + app build, full test suite. Layout is best judged visually: build the Catalog or run the app once on an iPad simulator and eyeball list+detail, rotation, and split-screen compact fallback. Commit: `feat(ios): side-by-side list and conversation on regular-width iPad`.
+- [x] **4.4 Verify and commit.** FishKit + app build, full test suite. Layout is best judged visually: build the Catalog or run the app once on an iPad simulator and eyeball list+detail, rotation, and split-screen compact fallback. Commit: `feat(ios): side-by-side list and conversation on regular-width iPad`.
 
 ---
 
