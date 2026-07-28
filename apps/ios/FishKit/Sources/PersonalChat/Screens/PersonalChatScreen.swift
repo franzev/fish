@@ -319,22 +319,21 @@ public struct PersonalChatScreen: View {
                         pendingVoiceUploadId = attachmentUploads.add([candidate]).first
                     },
                     onSend: {
-                        let clientUploadIds = attachmentUploads?.composerItems
-                            .map(\.clientUploadId) ?? []
+                        let itemIds = attachmentUploads?.composerItems.map(\.id) ?? []
                         let payload = ChatSendPayload(
                             body: draft,
                             selection: selection,
                             attachmentIds: attachmentUploads?.readyAttachmentIds ?? [],
                             optimisticAttachments: attachmentUploads?.optimisticAttachments ?? [],
-                            attachmentClientUploadIds: clientUploadIds
+                            attachmentItemIds: itemIds
                         )
                         onSend(payload)
-                        if clientUploadIds.isEmpty {
+                        if itemIds.isEmpty {
                             attachmentUploads?.consumeAfterSend()
                         } else {
                             // The queued send owns these uploads now; the
                             // store releases them once the server confirms.
-                            attachmentUploads?.markQueuedForSend(clientUploadIds: clientUploadIds)
+                            attachmentUploads?.markQueuedForSend(itemIds: itemIds)
                         }
                     },
                     onOpenMediaPicker: { isMediaPickerPresented = true }
@@ -362,8 +361,8 @@ public struct PersonalChatScreen: View {
             selection: .none,
             attachmentIds: attachmentUploads.readyAttachmentIds,
             optimisticAttachments: attachmentUploads.optimisticAttachments,
-            attachmentClientUploadIds: [item.clientUploadId]
+            attachmentItemIds: [item.id]
         ))
-        attachmentUploads.markQueuedForSend(clientUploadIds: [item.clientUploadId])
+        attachmentUploads.markQueuedForSend(itemIds: [item.id])
     }
 }

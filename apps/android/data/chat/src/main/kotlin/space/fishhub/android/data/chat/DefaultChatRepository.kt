@@ -450,6 +450,20 @@ internal class DefaultChatRepository(
         val queueable = content.gif == null && content.stickerId == null &&
             (content.normalizedBody.isNotBlank() || attachmentDrafts.isNotEmpty())
         if (queueable && !networkMonitor.isOnline().first()) {
+            if (content.attachmentIds.isNotEmpty() && attachmentDrafts.isEmpty()) {
+                // A retry of a failed send whose private copies are gone:
+                // queueing would deliver the body without its media.
+                dao.markMessageFailed(
+                    conversationId,
+                    clientRequestId,
+                    "That file did not send. Pick it again to retry.",
+                )
+                return ChatResult.Failure(
+                    "That file did not send. Pick it again to retry.",
+                    recoverable = false,
+                    category = FailureCategory.Local,
+                )
+            }
             val optimistic = optimisticMessage(
                 conversation,
                 content,
@@ -608,8 +622,13 @@ internal class DefaultChatRepository(
                             conversation.currentUserId,
                             pending.clientRequestId,
                         )
-                        present.forEach { dao.deleteAttachmentDraft(it.id) }
-                        attachmentImporter?.deleteAll(present)
+                        if (result.value.attachmentsHydrated) {
+                            present.forEach { dao.deleteAttachmentDraft(it.id) }
+                            attachmentImporter?.deleteAll(present)
+                        }
+                        // Otherwise the reconciled row still points at the
+                        // local copies; cleanupHydratedAttachmentDrafts
+                        // releases them once the hydrated message arrives.
                     }
                     is ChatResult.Failure -> {
                         if (result.category != FailureCategory.Network) {
@@ -649,7 +668,7 @@ internal class DefaultChatRepository(
         optimistic: ChatMessage,
         attachmentDrafts: List<AttachmentDraftEntity> = emptyList(),
         failureReason: String? = null,
-    ): ChatResult<ChatMessage> {
+    ): ChatResult<ChatMessage> = textOutboxMutex.withLock {
         val ordered = attachmentDrafts.sortedWith(compareBy({ it.position }, { it.id }))
         if (ordered.isNotEmpty()) {
             var nextPosition = dao.maxAttachmentDraftPosition(
@@ -686,7 +705,7 @@ internal class DefaultChatRepository(
                 failureReason = failureReason,
             ),
         )
-        return ChatResult.Success(
+        return@withLock ChatResult.Success(
             optimistic.copy(
                 localStatus = LocalMessageStatus.Pending,
                 failureReason = failureReason,
@@ -1249,8 +1268,8 @@ internal class DefaultChatRepository(
             !message.attachmentsHydrated || message.attachments.isEmpty()
         ) return
         val sentIds = message.attachments.mapTo(mutableSetOf(), ChatAttachment::id)
-        val drafts = dao.composerAttachmentDrafts(message.conversationId, message.senderId)
-            .filter { it.serverAttachmentId in sentIds }
+        val drafts = dao.attachmentDrafts(message.conversationId, message.senderId)
+            .filter { it.scope != AttachmentScopePreview && it.serverAttachmentId in sentIds }
         if (drafts.isEmpty()) return
         drafts.forEach { dao.deleteAttachmentDraft(it.id) }
         attachmentImporter?.deleteAll(drafts)

@@ -477,12 +477,12 @@ private final class StoreResolver: QueuedAttachmentResolving {
     var resolutions: [String: QueuedAttachmentResolution] = [:]
     var released: [[String]] = []
 
-    func resolution(clientUploadId: String) -> QueuedAttachmentResolution {
-        resolutions[clientUploadId] ?? .gone
+    func resolution(itemId: String) -> QueuedAttachmentResolution {
+        resolutions[itemId] ?? .gone
     }
 
-    func releaseQueued(clientUploadIds: [String]) {
-        released.append(clientUploadIds)
+    func releaseQueued(itemIds: [String]) {
+        released.append(itemIds)
     }
 }
 
@@ -1343,13 +1343,13 @@ struct ConversationStoreTests {
             selection: .none,
             attachmentIds: [],
             optimisticAttachments: [],
-            attachmentClientUploadIds: ["u1"]
+            attachmentItemIds: ["u1"]
         ))
 
         #expect(await messaging.sent.isEmpty)
         #expect(store.model.messages.last?.delivery == .sending)
         let record = try #require(await drafts.pendingTextSends().first)
-        #expect(record.attachmentClientUploadIds == ["u1"])
+        #expect(record.attachmentItemIds == ["u1"])
 
         resolver.resolutions["u1"] = .ready(storeReadyAttachment("server-1"))
         await store.flushQueuedSends()
@@ -1373,7 +1373,7 @@ struct ConversationStoreTests {
             selection: .none,
             attachmentIds: [],
             optimisticAttachments: [],
-            attachmentClientUploadIds: ["u1"]
+            attachmentItemIds: ["u1"]
         ))
 
         resolver.resolutions["u1"] = nil
@@ -1393,7 +1393,7 @@ struct ConversationStoreTests {
             conversationId: "c1",
             clientRequestId: "r-replay",
             body: "Here it is",
-            attachmentClientUploadIds: ["u1"]
+            attachmentItemIds: ["u1"]
         ))
         let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
         let resolver = StoreResolver()
@@ -1428,14 +1428,14 @@ struct ConversationStoreTests {
             selection: .none,
             attachmentIds: [],
             optimisticAttachments: [],
-            attachmentClientUploadIds: ["u1"]
+            attachmentItemIds: ["u1"]
         ))
         await store.send(ChatSendPayload(
             body: "second",
             selection: .none,
             attachmentIds: [],
             optimisticAttachments: [],
-            attachmentClientUploadIds: ["u2"]
+            attachmentItemIds: ["u2"]
         ))
 
         // Only the second upload resolves: the head of the queue holds it.

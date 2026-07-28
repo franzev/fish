@@ -532,6 +532,83 @@ private final class SequentialIds: @unchecked Sendable {
         #expect(requests.count == 2)
     }
 
+    @Test func queuedUploadSurvivesAReconnectRetryThatRemintsItsUploadId() async throws {
+        let connectivity = ScriptedConnectivity(connected: false)
+        let commands = OfflineFirstAttachmentCommands()
+        let model = AttachmentUploadsModel(
+            conversationId: "conversation-1",
+            commands: commands,
+            uploader: ImmediateAttachmentUploader(),
+            staging: try AttachmentStaging(root: temporaryDirectory()),
+            connectivity: connectivity,
+            automaticRetryDelay: { _ in }
+        )
+        #expect(await eventually { model.isConnected == false })
+        let itemId = try #require(model.add([candidate("queued-photo")]).first)
+        #expect(await eventually { model.items.first?.status == .failed(.offline) })
+
+        // The send queue takes ownership, then the network comes back. The
+        // retry mints a fresh clientUploadId — the stable itemId must keep
+        // resolving or the queued send would be failed spuriously.
+        model.markQueuedForSend(itemIds: [itemId])
+        connectivity.set(true)
+
+        #expect(await eventually {
+            if case .ready = model.resolution(itemId: itemId) { return true }
+            return false
+        })
+        #expect(await commands.initializeRequests.count == 2)
+    }
+
+    @Test func everyQueuedSendRestoresEvenPastTheComposerCap() async throws {
+        let stagingRoot = temporaryDirectory()
+        let staging = try AttachmentStaging(root: stagingRoot)
+        let outbox = FileChatDraftStore(accountId: "account-a", rootURL: temporaryDirectory())
+        var itemIds: [String] = []
+        for index in 0..<6 {
+            let url = try await staging.write(Data("bytes-\(index)".utf8), fileExtension: "txt")
+            let itemId = "queued-item-\(index)"
+            itemIds.append(itemId)
+            try await outbox.savePendingAttachment(ChatPendingAttachment(
+                conversationId: "conversation-1",
+                itemId: itemId,
+                clientUploadId: "upload-\(index)",
+                stagedFileName: url.lastPathComponent,
+                originalName: "notes-\(index).txt",
+                sourceMimeType: "text/plain",
+                uploadMimeType: "text/plain",
+                sourceByteSize: 7,
+                uploadByteSize: 7,
+                sha256: String(repeating: "e", count: 64)
+            ))
+        }
+        // Two queued sends of three attachments each: more than the
+        // five-item composer cap, all of it must come back.
+        try await outbox.savePendingTextSend(ChatPendingTextSend(
+            conversationId: "conversation-1",
+            clientRequestId: "r-1",
+            body: "",
+            attachmentItemIds: Array(itemIds[0..<3])
+        ))
+        try await outbox.savePendingTextSend(ChatPendingTextSend(
+            conversationId: "conversation-1",
+            clientRequestId: "r-2",
+            body: "",
+            attachmentItemIds: Array(itemIds[3..<6])
+        ))
+
+        let model = try makeModel(
+            commands: ScriptedAttachmentCommands(),
+            uploader: ImmediateAttachmentUploader(),
+            root: stagingRoot,
+            outbox: outbox
+        )
+
+        #expect(await eventually { model.items.count == 6 })
+        #expect(model.items.allSatisfy { $0.isQueued })
+        #expect(model.composerItems.isEmpty)
+    }
+
     @Test func resolutionBeforeRestoreHoldsInsteadOfDroppingTheSend() async throws {
         let model = try makeModel(
             commands: ScriptedAttachmentCommands(),
@@ -542,13 +619,13 @@ private final class SequentialIds: @unchecked Sendable {
         // Synchronously after init the restore task has not run yet: an
         // unknown upload must read as pending so a racing flush holds
         // instead of failing the queued send and deleting its record.
-        if case .gone = model.resolution(clientUploadId: "unknown") {
+        if case .gone = model.resolution(itemId: "unknown") {
             Issue.record("A pre-restore resolution must never be gone")
         }
 
         // Once the restore has replayed the records, unknown means gone.
         #expect(await eventually {
-            model.resolution(clientUploadId: "unknown") == .gone
+            model.resolution(itemId: "unknown") == .gone
         })
     }
 

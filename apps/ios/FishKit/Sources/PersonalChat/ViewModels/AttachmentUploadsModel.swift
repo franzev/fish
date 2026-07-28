@@ -95,9 +95,20 @@ public final class AttachmentUploadsModel {
             .filter { $0.conversationId == conversationId }
             .sorted { $0.createdAt < $1.createdAt }
         guard !records.isEmpty else { return }
+        // Items referenced by a queued send belong to that send, not the
+        // composer; the send queue is the durable source of that ownership.
+        // Queued items restore unconditionally — the five-item cap is a
+        // composer rule and pending sends may own more than five between
+        // them — while composer leftovers respect it.
+        let queuedItemIds = Set(
+            ((try? await outbox.pendingTextSends()) ?? [])
+                .filter { $0.conversationId == conversationId }
+                .flatMap(\.attachmentItemIds)
+        )
         let stagingRoot = await staging.root
         for record in records {
-            guard items.count < AttachmentRules.maxCount else { return }
+            let isQueued = queuedItemIds.contains(record.itemId)
+            if !isQueued && composerItems.count >= AttachmentRules.maxCount { continue }
             guard !items.contains(where: { $0.id == record.itemId }) else { continue }
             let url = record.stagedFileUrl(in: stagingRoot)
             guard FileManager.default.fileExists(atPath: url.path) else {
@@ -127,7 +138,8 @@ public final class AttachmentUploadsModel {
                 progress: record.readyAttachment != nil ? 1 : 0.25,
                 status: record.readyAttachment != nil ? .ready : .uploading,
                 attachmentId: record.serverAttachmentId,
-                readyAttachment: record.readyAttachment
+                readyAttachment: record.readyAttachment,
+                isQueued: isQueued
             ))
             if let attachmentId = record.serverAttachmentId {
                 serverAttachmentIds[record.itemId, default: []].insert(attachmentId)
@@ -136,23 +148,13 @@ public final class AttachmentUploadsModel {
                 startPipeline(id: record.itemId)
             }
         }
-        // Items referenced by a queued send belong to that send, not the
-        // composer; the send queue is the durable source of that ownership.
-        let queuedUploadIds = Set(
-            ((try? await outbox.pendingTextSends()) ?? [])
-                .filter { $0.conversationId == conversationId }
-                .flatMap(\.attachmentClientUploadIds)
-        )
-        if !queuedUploadIds.isEmpty {
-            markQueuedForSend(clientUploadIds: Array(queuedUploadIds))
-        }
     }
 
     /// Hands the listed uploads over to a queued send: they leave the
     /// composer but keep uploading and stay durable.
-    public func markQueuedForSend(clientUploadIds: [String]) {
-        let ids = Set(clientUploadIds)
-        for index in items.indices where ids.contains(items[index].clientUploadId) {
+    public func markQueuedForSend(itemIds: [String]) {
+        let ids = Set(itemIds)
+        for index in items.indices where ids.contains(items[index].id) {
             items[index].isQueued = true
         }
     }
@@ -555,7 +557,9 @@ public final class AttachmentUploadsModel {
         guard connected, !wasConnected else { return }
         for item in items {
             guard case .failed(let reason) = item.status, reason.isTransient else { continue }
-            retry(item.id, automatic: true)
+            // A queued item has no visible retry chip, so reconnects must
+            // keep reviving it; the attempt cap only guards composer items.
+            retry(item.id, automatic: !item.isQueued)
         }
     }
 
@@ -657,11 +661,11 @@ public final class AttachmentUploadsModel {
 }
 
 extension AttachmentUploadsModel: QueuedAttachmentResolving {
-    public func resolution(clientUploadId: String) -> QueuedAttachmentResolution {
-        guard let item = items.first(where: { $0.clientUploadId == clientUploadId }) else {
+    public func resolution(itemId: String) -> QueuedAttachmentResolution {
+        guard let item = items.first(where: { $0.id == itemId }) else {
             guard hasRestored else {
                 return .pending(ChatAttachment(
-                    id: "upload-\(clientUploadId)",
+                    id: "upload-\(itemId)",
                     status: "uploading",
                     kind: .file,
                     originalName: "Attachment",
@@ -675,10 +679,9 @@ extension AttachmentUploadsModel: QueuedAttachmentResolving {
         return .pending(placeholderAttachment(item))
     }
 
-    public func releaseQueued(clientUploadIds: [String]) {
-        let ids = Set(clientUploadIds)
-        let released = items.filter { ids.contains($0.clientUploadId) }
-        guard !released.isEmpty else { return }
+    public func releaseQueued(itemIds: [String]) {
+        let ids = Set(itemIds)
+        let released = items.filter { ids.contains($0.id) }
         for item in released {
             tasks[item.id]?.cancel()
             tasks[item.id] = nil
@@ -687,16 +690,26 @@ extension AttachmentUploadsModel: QueuedAttachmentResolving {
             preparedFiles[item.id] = nil
             serverAttachmentIds[item.id] = nil
         }
-        items.removeAll { ids.contains($0.clientUploadId) }
+        items.removeAll { ids.contains($0.id) }
         let urls = released.compactMap(\.localUrl)
         Task { [staging, outbox] in
-            for item in released {
-                try? await outbox?.removePendingAttachment(itemId: item.id)
+            // Records may reference bytes that never materialized as items
+            // this session (a release racing the restore); clean those too.
+            let stagingRoot = await staging.root
+            let orphaned = ((try? await outbox?.pendingAttachments()) ?? [])
+                .filter { record in
+                    ids.contains(record.itemId) &&
+                        !released.contains { $0.id == record.itemId }
+                }
+                .map { $0.stagedFileUrl(in: stagingRoot) }
+            for id in ids {
+                try? await outbox?.removePendingAttachment(itemId: id)
             }
             // Grace period: optimistic bubbles read local previews until the
             // confirmed message's signed URLs take over.
             try? await Task.sleep(for: .seconds(30))
             for url in urls { await staging.remove(url) }
+            for url in orphaned { await staging.remove(url) }
         }
         endBackgroundGraceIfSettled()
     }

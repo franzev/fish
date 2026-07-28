@@ -718,6 +718,33 @@ class DefaultChatRepositoryTest {
     }
 
     @Test
+    fun offlineRetryWhoseDraftsAreGoneFailsInsteadOfSendingTextOnly() = runTest {
+        val monitor = ToggleNetworkMonitor(online = false)
+        repository = DefaultChatRepository(
+            remote,
+            database.chatDao(),
+            networkMonitor = monitor,
+        )
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+
+        // The failed send references server attachments, but their private
+        // copies are gone: queueing would deliver the body without media.
+        val result = repository.sendMessage(
+            "conversation-1",
+            OutgoingMessageContent(body = "Here it is", attachmentIds = listOf("server-gone")),
+            "request-media-gone",
+        )
+
+        assertTrue(result is ChatResult.Failure)
+        assertEquals(
+            "That file did not send. Pick it again to retry.",
+            (result as ChatResult.Failure).message,
+        )
+        assertEquals(0, remote.sendCalls)
+        assertTrue(database.chatDao().pendingTextSends("conversation-1", "client-1").isEmpty())
+    }
+
+    @Test
     fun reimportingAQueuedFileReadsAsAlreadyAttached() = runTest {
         val monitor = ToggleNetworkMonitor(online = false)
         val importer = FakeAttachmentImporter()

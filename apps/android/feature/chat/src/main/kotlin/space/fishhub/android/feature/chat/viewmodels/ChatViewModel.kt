@@ -643,7 +643,11 @@ class ChatViewModel(
         val failed = state.messages.firstOrNull {
             it.id == messageId && it.localStatus == LocalMessageStatus.Failed
         } ?: return
-        if (failed.attachments.any { it.id.startsWith("draft-") }) {
+        val placeholderDraftIds = failed.attachments
+            .map { it.id }
+            .filter { it.startsWith("draft-") }
+            .map { it.removePrefix("draft-") }
+        if (placeholderDraftIds.any { id -> attachmentDrafts.none { it.id == id } }) {
             // The private copies behind this send are gone; only re-picking can revive it.
             latestNotice = failed.failureReason ?: formatter.attachmentsNotReady
             publish()
@@ -661,7 +665,18 @@ class ChatViewModel(
                 body = failed.body,
                 gif = failed.gif,
                 stickerId = failed.stickerId,
-                attachmentIds = failed.attachments.sortedBy { it.position }.map { it.id },
+                // A placeholder id resolves through its still-present draft so
+                // a retry ships real server ids once the upload finished.
+                attachmentIds = failed.attachments.sortedBy { it.position }.map { attachment ->
+                    if (attachment.id.startsWith("draft-")) {
+                        attachmentDrafts
+                            .firstOrNull { it.id == attachment.id.removePrefix("draft-") }
+                            ?.serverAttachmentId
+                            ?: attachment.id
+                    } else {
+                        attachment.id
+                    }
+                },
                 replyToMessageId = failed.replyToMessageId,
             )
             when (val result = repository.sendMessage(

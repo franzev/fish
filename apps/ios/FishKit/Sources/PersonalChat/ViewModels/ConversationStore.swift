@@ -54,7 +54,7 @@ public final class ConversationStore {
     private var pendingSends: [String: SendChatMessageRequest] = [:]
     private var pendingSendOrder: [String] = []
     private var recoveredRequestIds: Set<String> = []
-    /// clientRequestId → ordered clientUploadIds a queued send waits on.
+    /// clientRequestId → ordered composer item ids a queued send waits on.
     private var pendingAttachmentRefs: [String: [String]] = [:]
     /// The upload pipeline that answers for queued attachment refs. Weak:
     /// the app model owns both and wires them together.
@@ -361,7 +361,7 @@ public final class ConversationStore {
             notice = "Send the expression or the attachments in a separate message."
             return
         }
-        let hasStagedAttachments = !payload.attachmentClientUploadIds.isEmpty
+        let hasStagedAttachments = !payload.attachmentItemIds.isEmpty
         let durableTextSend = payload.selection == .none
             && !hasStagedAttachments
             && payload.attachmentIds.isEmpty
@@ -384,7 +384,7 @@ public final class ConversationStore {
             )
         }
         if hasStagedAttachments {
-            pendingAttachmentRefs[requestId] = payload.attachmentClientUploadIds
+            pendingAttachmentRefs[requestId] = payload.attachmentItemIds
             if let drafts {
                 try? await drafts.savePendingTextSend(
                     ChatPendingTextSend(
@@ -392,7 +392,7 @@ public final class ConversationStore {
                         clientRequestId: requestId,
                         body: request.body,
                         replyToMessageId: request.replyToMessageId,
-                        attachmentClientUploadIds: payload.attachmentClientUploadIds
+                        attachmentItemIds: payload.attachmentItemIds
                     )
                 )
             }
@@ -417,9 +417,17 @@ public final class ConversationStore {
 
     public func retry(messageId: String) async {
         guard
-            let message = currentConversation.messages.first(where: { $0.id == messageId }),
-            pendingSends[message.clientRequestId] != nil
+            let message = currentConversation.messages.first(where: { $0.id == messageId })
         else { return }
+        guard pendingSends[message.clientRequestId] != nil else {
+            // Nothing left to resend — the staged copies are gone. Explain
+            // instead of swallowing the tap.
+            if message.localStatus == .failed {
+                notice = message.failureReason
+                    ?? "That message can't be resent. Write it again to send it."
+            }
+            return
+        }
         if pendingAttachmentRefs[message.clientRequestId] != nil {
             // Attachment sends re-resolve through the queue so a retry can
             // never ship stale server ids.
@@ -458,7 +466,7 @@ public final class ConversationStore {
               let attachmentResolver else { return nil }
         var resolved: [String] = []
         for ref in refs {
-            guard case .ready(let attachment) = attachmentResolver.resolution(clientUploadId: ref)
+            guard case .ready(let attachment) = attachmentResolver.resolution(itemId: ref)
             else { return nil }
             resolved.append(attachment.id)
         }
@@ -536,9 +544,9 @@ public final class ConversationStore {
                 try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
                 // The server already holds this send; any uploads it owned
                 // are finished business and their local copies can go.
-                if !item.attachmentClientUploadIds.isEmpty {
+                if !item.attachmentItemIds.isEmpty {
                     attachmentResolver?.releaseQueued(
-                        clientUploadIds: item.attachmentClientUploadIds
+                        itemIds: item.attachmentItemIds
                     )
                 }
                 // Do not erase a newer composer value that was typed after
@@ -560,10 +568,10 @@ public final class ConversationStore {
                 pendingSends[item.clientRequestId] = request
                 enqueuePendingSend(item.clientRequestId)
                 recoveredRequestIds.insert(item.clientRequestId)
-                if !item.attachmentClientUploadIds.isEmpty {
-                    pendingAttachmentRefs[item.clientRequestId] = item.attachmentClientUploadIds
+                if !item.attachmentItemIds.isEmpty {
+                    pendingAttachmentRefs[item.clientRequestId] = item.attachmentItemIds
                 }
-                let attachments = queuedAttachmentStates(item.attachmentClientUploadIds)
+                let attachments = queuedAttachmentStates(item.attachmentItemIds)
                 reduce(.queueMessage(message: ChatMessageState(
                     id: "pending-\(item.clientRequestId)",
                     conversationId: conversationId,
@@ -578,7 +586,7 @@ public final class ConversationStore {
                     replyToMessageId: item.replyToMessageId,
                     localStatus: .pending
                 )))
-                if item.attachmentClientUploadIds.isEmpty,
+                if item.attachmentItemIds.isEmpty,
                    draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     draft = item.body
                 }
@@ -589,11 +597,11 @@ public final class ConversationStore {
     /// Bubble attachments for a replayed queued send, resolved through the
     /// upload pipeline: real server attachments when ready, local-preview
     /// placeholders while uploading.
-    private func queuedAttachmentStates(_ clientUploadIds: [String]) -> [ChatStateAttachment]? {
-        guard !clientUploadIds.isEmpty, let attachmentResolver else { return nil }
-        let states = clientUploadIds.compactMap { ref -> ChatStateAttachment? in
+    private func queuedAttachmentStates(_ itemIds: [String]) -> [ChatStateAttachment]? {
+        guard !itemIds.isEmpty, let attachmentResolver else { return nil }
+        let states = itemIds.compactMap { ref -> ChatStateAttachment? in
             let attachment: ChatAttachment
-            switch attachmentResolver.resolution(clientUploadId: ref) {
+            switch attachmentResolver.resolution(itemId: ref) {
             case .ready(let value), .pending(let value): attachment = value
             case .gone: return nil
             }
@@ -798,7 +806,7 @@ public final class ConversationStore {
             pendingSends[request.clientRequestId] = nil
             dequeuePendingSend(request.clientRequestId)
             if let refs = pendingAttachmentRefs.removeValue(forKey: request.clientRequestId) {
-                attachmentResolver?.releaseQueued(clientUploadIds: refs)
+                attachmentResolver?.releaseQueued(itemIds: refs)
             }
             if let drafts {
                 try? await drafts.removePendingTextSend(clientRequestId: request.clientRequestId)
@@ -832,7 +840,7 @@ public final class ConversationStore {
                 pendingSends[request.clientRequestId] = nil
                 dequeuePendingSend(request.clientRequestId)
                 if let refs = pendingAttachmentRefs.removeValue(forKey: request.clientRequestId) {
-                    attachmentResolver?.releaseQueued(clientUploadIds: refs)
+                    attachmentResolver?.releaseQueued(itemIds: refs)
                 }
                 return true
             }
@@ -873,13 +881,29 @@ public final class ConversationStore {
         return false
     }
 
+    private var isFlushingPendingSends = false
+    private var needsAnotherFlush = false
+
     private func flushPendingTextSends() async {
+        if isFlushingPendingSends {
+            needsAnotherFlush = true
+            return
+        }
+        isFlushingPendingSends = true
+        defer { isFlushingPendingSends = false }
+        repeat {
+            needsAnotherFlush = false
+            await drainPendingSendsOnce()
+        } while needsAnotherFlush
+    }
+
+    private func drainPendingSendsOnce() async {
         for requestId in pendingSendOrder {
             guard pendingSends[requestId] != nil else { continue }
             if let refs = pendingAttachmentRefs[requestId] {
                 guard let attachmentResolver else { break }
                 let dead = refs.contains {
-                    attachmentResolver.resolution(clientUploadId: $0) == .gone
+                    attachmentResolver.resolution(itemId: $0) == .gone
                 }
                 if dead {
                     await failQueuedAttachmentSend(requestId, refs: refs)
@@ -912,7 +936,7 @@ public final class ConversationStore {
         if let drafts {
             try? await drafts.removePendingTextSend(clientRequestId: requestId)
         }
-        attachmentResolver?.releaseQueued(clientUploadIds: refs)
+        attachmentResolver?.releaseQueued(itemIds: refs)
     }
 
     private func enqueuePendingSend(_ requestId: String) {
@@ -1513,7 +1537,7 @@ public final class ConversationStore {
 
 private extension ChatSendPayload {
     var selectionIsCompatibleWithAttachments: Bool {
-        (attachmentIds.isEmpty && attachmentClientUploadIds.isEmpty) || selection == .none
+        (attachmentIds.isEmpty && attachmentItemIds.isEmpty) || selection == .none
     }
 }
 

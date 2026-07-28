@@ -40,7 +40,8 @@ public struct StagedAttachment: Identifiable, Equatable, Sendable {
         attachmentId: String? = nil,
         readyAttachment: ChatAttachment? = nil,
         notice: String? = nil,
-        automaticAttempts: Int = 0
+        automaticAttempts: Int = 0,
+        isQueued: Bool = false
     ) {
         self.id = id
         self.clientUploadId = clientUploadId
@@ -54,6 +55,7 @@ public struct StagedAttachment: Identifiable, Equatable, Sendable {
         self.readyAttachment = readyAttachment
         self.notice = notice
         self.automaticAttempts = automaticAttempts
+        self.isQueued = isQueued
     }
 
     public var isReady: Bool { status == .ready && readyAttachment != nil }

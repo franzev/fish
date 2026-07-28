@@ -13,13 +13,15 @@ public enum QueuedAttachmentResolution: Equatable, Sendable {
     case gone
 }
 
-/// The upload pipeline's answers to the send queue. Implemented by
-/// `AttachmentUploadsModel`; the conversation store holds it weakly.
+/// The upload pipeline's answers to the send queue, keyed by the stable
+/// composer item id — upload ids are reminted on retry and must never be
+/// used as a reference. Implemented by `AttachmentUploadsModel`; the
+/// conversation store holds it weakly.
 @MainActor
 public protocol QueuedAttachmentResolving: AnyObject {
-    func resolution(clientUploadId: String) -> QueuedAttachmentResolution
+    func resolution(itemId: String) -> QueuedAttachmentResolution
     /// The send referencing these uploads finished (or died): drop the
     /// items, their durable records, and — after a short grace so optimistic
     /// bubbles can finish reading local previews — their staged bytes.
-    func releaseQueued(clientUploadIds: [String])
+    func releaseQueued(itemIds: [String])
 }
