@@ -33,11 +33,17 @@ public final class BackgroundAttachmentUploadCoordinator: NSObject, @unchecked S
     // without a real background-session relaunch.
     private(set) var session: URLSession!
 
-    /// Production callers use the default background configuration. Tests
-    /// inject a non-background configuration (e.g. `.ephemeral` with a
-    /// stubbed `URLProtocol`) so they exercise the same reconciliation code
-    /// without touching the network or the one app-wide background session.
-    public init(sessionConfiguration: URLSessionConfiguration? = nil) {
+    private let completedMarks: CompletedAttachmentUploadMarks
+
+    /// Production callers use the default background configuration and the
+    /// shared marks store. Tests inject a non-background configuration
+    /// (e.g. `.ephemeral` with a stubbed `URLProtocol`) and a scoped marks
+    /// store so they exercise the same code without touching the network,
+    /// the one app-wide background session, or shared disk state.
+    public init(
+        sessionConfiguration: URLSessionConfiguration? = nil,
+        completedMarks: CompletedAttachmentUploadMarks? = nil
+    ) {
         let configuration = sessionConfiguration
             ?? .background(withIdentifier: Self.backgroundSessionIdentifier)
         configuration.timeoutIntervalForRequest = 60
@@ -57,6 +63,7 @@ public final class BackgroundAttachmentUploadCoordinator: NSObject, @unchecked S
             configuration.isDiscretionary = false
             configuration.sessionSendsLaunchEvents = true
         }
+        self.completedMarks = completedMarks ?? .shared
         super.init()
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }
@@ -72,30 +79,57 @@ public final class BackgroundAttachmentUploadCoordinator: NSObject, @unchecked S
         lock.withLock { launchCompletionHandlers[identifier] = handler }
     }
 
-    /// Starts (or reattaches to) the upload identified by `attachmentId`. If
-    /// a task with a matching `taskDescription` is already running in this
-    /// session — e.g. the app relaunched into a conversation whose upload
-    /// the OS kept transferring in the background — this attaches to it
-    /// instead of starting a duplicate PUT.
+    /// Starts (or reattaches to) the upload identified by `attachmentId`.
+    ///
+    /// Three cases, in order:
+    /// 1. `attachmentId`'s PUT already succeeded while nobody was listening
+    ///    (recorded in `completedMarks`, e.g. it finished in the background
+    ///    after this process had terminated) — resolves immediately without
+    ///    touching the network.
+    /// 2. A task with a matching `taskDescription` is already running in
+    ///    this session — e.g. the app relaunched into a conversation whose
+    ///    upload the OS kept transferring — this attaches to it instead of
+    ///    starting a duplicate PUT.
+    /// 3. Otherwise, starts a new task.
     public func upload(
         request: URLRequest,
         fileUrl: URL,
         attachmentId: String
     ) -> AsyncThrowingStream<Double, Error> {
-        AsyncThrowingStream { continuation in
+        if completedMarks.consumeIfSucceeded(attachmentId: attachmentId) {
+            return AsyncThrowingStream { continuation in
+                continuation.yield(1)
+                continuation.finish()
+            }
+        }
+        return AsyncThrowingStream { continuation in
             Task { [weak self] in
                 guard let self else {
                     continuation.finish(throwing: AttachmentCommandFailure.unavailable)
                     return
                 }
+                // Registered before the `existingTask` lookup (which awaits
+                // a callback and so isn't instantaneous): a task that
+                // completes in that gap must find this continuation as its
+                // observer, instead of the delegate seeing no observer and
+                // only recording a completed-mark this caller never learns
+                // about.
+                self.register(continuation, attachmentId: attachmentId)
+                let existing = await self.existingTask(withAttachmentId: attachmentId)
+                guard self.observer(for: attachmentId) != nil else {
+                    // Already resolved (success, failure, or a completed
+                    // mark recorded) by the delegate while we were looking
+                    // the task up — don't start a redundant PUT on top of
+                    // whatever already answered this continuation.
+                    return
+                }
                 let task: URLSessionUploadTask
-                if let existing = await self.existingTask(withAttachmentId: attachmentId) {
+                if let existing {
                     task = existing
                 } else {
                     task = self.session.uploadTask(with: request, fromFile: fileUrl)
                     task.taskDescription = attachmentId
                 }
-                self.register(continuation, attachmentId: attachmentId)
                 // Safe to assign after the fact: if the stream already
                 // terminated while we were awaiting `existingTask`, Swift
                 // calls `onTermination` immediately, so the task still gets
@@ -153,7 +187,22 @@ extension BackgroundAttachmentUploadCoordinator: URLSessionTaskDelegate {
     ) {
         guard let attachmentId = task.taskDescription else { return }
         defer { removeObserver(for: attachmentId) }
-        guard let continuation = observer(for: attachmentId) else { return }
+        guard let continuation = observer(for: attachmentId) else {
+            // Nobody was listening — most likely this process was relaunched
+            // solely to process background session events and terminated
+            // (or simply hasn't reached this upload in its pipeline yet)
+            // before anyone resubscribed. If the PUT actually succeeded,
+            // remember that durably: the next `upload()` call for this
+            // attachmentId must not reissue a PUT the signed URL's
+            // `x-upsert: false` would now reject as a conflict against the
+            // object this transfer already created.
+            if error == nil,
+               let response = task.response as? HTTPURLResponse,
+               (200..<300).contains(response.statusCode) {
+                completedMarks.markSucceeded(attachmentId: attachmentId)
+            }
+            return
+        }
         if let error {
             if (error as? URLError)?.code == .cancelled {
                 continuation.finish(throwing: CancellationError())
