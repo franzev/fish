@@ -1,7 +1,7 @@
 # Android message markdown implementation plan
 
-Status: Proposed. Written 2026-07-28 from a three-way audit of direct chat
-across web, iOS, and Android.
+Status: Implemented (2026-07-28). Written from a three-way audit of direct
+chat across web, iOS, and Android.
 
 ---
 
