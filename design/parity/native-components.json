@@ -1891,6 +1891,11 @@
     },
     {
       "name": "MicrophoneLevelMeter",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/MicrophoneLevelMeter.kt",
+        "symbol": "MicrophoneLevelMeter",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/UIComponents/Feedback/MicrophoneLevelMeter.swift",
         "symbol": "MicrophoneLevelMeter",
@@ -1901,8 +1906,8 @@
         "active"
       ],
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": true,
+      "previewsAligned": false
     },
     {
       "name": "Notice",

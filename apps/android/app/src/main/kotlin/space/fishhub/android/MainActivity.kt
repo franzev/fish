@@ -882,10 +882,13 @@ class MainActivity : ComponentActivity() {
         voiceRecordingState.value = VoiceRecordingUiState(recording = true)
         voiceRecordingTicker?.cancel()
         voiceRecordingTicker = lifecycleScope.launch {
+            var smoothedLevel = 0f
             while (isActive) {
+                smoothedLevel = smoothLevel(smoothedLevel, voiceMessageRecorder.currentLevel())
                 voiceRecordingState.value = VoiceRecordingUiState(
                     recording = true,
                     elapsedMillis = SystemClock.elapsedRealtime() - voiceRecordingStartedAt,
+                    level = smoothedLevel,
                 )
                 delay(250)
             }

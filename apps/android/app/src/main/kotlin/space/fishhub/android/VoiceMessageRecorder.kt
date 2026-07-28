@@ -91,6 +91,12 @@ internal class VoiceMessageRecorder(
         completedOutput = null
     }
 
+    /** 0f..1f snapshot of input loudness since the last poll. */
+    fun currentLevel(): Float {
+        val raw = try { recorder?.maxAmplitude ?: 0 } catch (_: IllegalStateException) { 0 }
+        return (raw / 32767f).coerceIn(0f, 1f)
+    }
+
     private companion object {
         const val MaxVoiceBytes = 9_500_000L
     }

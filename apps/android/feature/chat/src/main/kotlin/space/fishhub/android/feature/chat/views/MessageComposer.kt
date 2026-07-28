@@ -163,6 +163,12 @@ fun MessageComposer(
                     onClick = onCancelVoiceRecording,
                     size = FishTheme.sizes.touchTarget,
                 )
+                Spacer(Modifier.width(FishTheme.spacing.xs))
+                MicrophoneLevelMeter(
+                    level = voiceRecording.level,
+                    modifier = Modifier.padding(bottom = FishTheme.spacing.nudge),
+                )
+                Spacer(Modifier.width(FishTheme.spacing.xs))
                 Text(
                     text = stringResource(
                         R.string.recording_voice_message,

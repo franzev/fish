@@ -116,6 +116,7 @@ enum class AttachmentUiKind { Photo, Voice, Video, File, Unavailable }
 data class VoiceRecordingUiState(
     val recording: Boolean = false,
     val elapsedMillis: Long = 0L,
+    val level: Float = 0f,
     val notice: String? = null,
 )
 
