@@ -168,6 +168,63 @@ fun MessageBubblesDarkScreenshot() {
     ComponentStrip(darkTheme = true) { MessageBubbleStates() }
 }
 
+/**
+ * Markdown-formatted bubbles: bold, inline code, a link, a two-item list, and
+ * a fenced block, one incoming and one outgoing. Kept as its own strip rather
+ * than folded into [MessageBubbleStates] because the screenshot renderer caps
+ * a preview's captured height at a fixed pixel ceiling for this width — the
+ * base strip is already close to it, and appending this content there
+ * silently clipped everything after the first new line out of the PNG.
+ */
+@Composable
+private fun MarkdownBubbleStates() {
+    MessageBubble(
+        row = message(
+            "m10",
+            """
+                Good momentum this week. **Keep leaning into that.** Try finishing this sentence a few times before we meet again:
+
+                ```
+                I feel confident when I ___.
+                ```
+
+                There are more like it here: [more sentence starters](https://example.com/resources/sentence-starters)
+            """.trimIndent(),
+            false,
+        ).toRow(),
+    )
+    MessageBubble(
+        row = message(
+            "m11",
+            """
+                Filled it in twice today:
+                - Said `I feel confident when I speak slowly` out loud
+                - Recorded the second try and listened back
+            """.trimIndent(),
+            true,
+        ).toRow(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "message-bubbles-markdown-light", widthDp = 412, showBackground = true)
+@Composable
+fun MessageBubblesMarkdownLightScreenshot() {
+    ComponentStrip(darkTheme = false) { MarkdownBubbleStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "message-bubbles-markdown-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun MessageBubblesMarkdownDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { MarkdownBubbleStates() }
+}
+
 /** The quiet transcript chrome: separators, typing, connection notices. */
 @Composable
 private fun ChatChromeStates() {
