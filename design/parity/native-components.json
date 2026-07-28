@@ -1468,6 +1468,11 @@
     },
     {
       "name": "MarkdownBlockView",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/MarkdownBlockView.kt",
+        "symbol": "MarkdownBlockView",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MarkdownBlockView.swift",
         "symbol": "MarkdownBlockView",
@@ -1478,11 +1483,16 @@
         "isOutgoing"
       ],
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": true,
+      "previewsAligned": false
     },
     {
       "name": "MarkdownListView",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/MarkdownListView.kt",
+        "symbol": "MarkdownListView",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MarkdownListView.swift",
         "symbol": "MarkdownListView",
@@ -1493,8 +1503,8 @@
         "isOutgoing"
       ],
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": true,
+      "previewsAligned": false
     },
     {
       "name": "MediaPickerSearchField",
@@ -1599,6 +1609,11 @@
     },
     {
       "name": "MessageBody",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/MessageBody.kt",
+        "symbol": "MessageBody",
+        "visibility": "public"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/MessageBody.swift",
         "symbol": "MessageBody",
@@ -1609,8 +1624,8 @@
         "isOutgoing"
       ],
       "previews": [],
-      "previewsAligned": false,
-      "only": "ios"
+      "propsAligned": true,
+      "previewsAligned": false
     },
     {
       "name": "MessageBubble",
