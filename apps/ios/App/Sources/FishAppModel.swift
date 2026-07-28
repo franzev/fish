@@ -750,6 +750,10 @@ final class FishAppModel {
                 staging: staging,
                 outbox: draftStore
             )
+            store.attachmentResolver = uploads
+            uploads.onQueuedItemReady = { [weak store] in
+                Task { await store?.flushQueuedSends() }
+            }
             conversationStore = store
             self.uploads = uploads
             fileDownloader = AttachmentFileDownloader(

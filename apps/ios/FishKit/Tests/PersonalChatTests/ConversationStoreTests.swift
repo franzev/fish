@@ -473,6 +473,44 @@ private func makeStore(
 }
 
 @MainActor
+private final class StoreResolver: QueuedAttachmentResolving {
+    var resolutions: [String: QueuedAttachmentResolution] = [:]
+    var released: [[String]] = []
+
+    func resolution(clientUploadId: String) -> QueuedAttachmentResolution {
+        resolutions[clientUploadId] ?? .gone
+    }
+
+    func releaseQueued(clientUploadIds: [String]) {
+        released.append(clientUploadIds)
+    }
+}
+
+private func storePlaceholder(_ uploadId: String) -> ChatAttachment {
+    ChatAttachment(
+        id: "upload-\(uploadId)",
+        status: "uploading",
+        kind: .image,
+        originalName: "Photo.jpg",
+        displayPath: ""
+    )
+}
+
+private func storeReadyAttachment(_ id: String) -> ChatAttachment {
+    ChatAttachment(
+        id: id,
+        kind: .image,
+        originalName: "Photo.jpg",
+        displayPath: "c/\(id)/display.jpg"
+    )
+}
+
+private func temporaryDraftRoot() -> URL {
+    FileManager.default.temporaryDirectory
+        .appendingPathComponent("fish-store-drafts-\(UUID().uuidString)", isDirectory: true)
+}
+
+@MainActor
 private func eventually(
     _ condition: @escaping @MainActor () -> Bool
 ) async -> Bool {
@@ -1290,5 +1328,124 @@ struct ConversationStoreTests {
 
         #expect(store.mute == before)
         #expect(store.model.notice == ChatCommandFailure.unavailable.notice)
+    }
+
+    @Test func attachmentSendQueuesUntilItsUploadResolvesThenFlushes() async throws {
+        let drafts = FileChatDraftStore(accountId: "acc", rootURL: temporaryDraftRoot())
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
+        let resolver = StoreResolver()
+        store.attachmentResolver = resolver
+        await store.start()
+        resolver.resolutions["u1"] = .pending(storePlaceholder("u1"))
+
+        await store.send(ChatSendPayload(
+            body: "On my way",
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: [],
+            attachmentClientUploadIds: ["u1"]
+        ))
+
+        #expect(await messaging.sent.isEmpty)
+        #expect(store.model.messages.last?.delivery == .sending)
+        let record = try #require(await drafts.pendingTextSends().first)
+        #expect(record.attachmentClientUploadIds == ["u1"])
+
+        resolver.resolutions["u1"] = .ready(storeReadyAttachment("server-1"))
+        await store.flushQueuedSends()
+
+        #expect(await messaging.sent.map(\.attachmentIds) == [["server-1"]])
+        #expect(resolver.released == [["u1"]])
+        #expect(try await drafts.pendingTextSends().isEmpty)
+        #expect(await eventually { store.model.messages.last?.delivery == .sent })
+        store.stop()
+    }
+
+    @Test func queuedSendWhoseUploadIsGoneFailsCalmlyAndReleasesIt() async throws {
+        let drafts = FileChatDraftStore(accountId: "acc", rootURL: temporaryDraftRoot())
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
+        let resolver = StoreResolver()
+        store.attachmentResolver = resolver
+        await store.start()
+        resolver.resolutions["u1"] = .pending(storePlaceholder("u1"))
+        await store.send(ChatSendPayload(
+            body: "",
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: [],
+            attachmentClientUploadIds: ["u1"]
+        ))
+
+        resolver.resolutions["u1"] = nil
+        await store.flushQueuedSends()
+
+        #expect(await messaging.sent.isEmpty)
+        let failed = try #require(store.model.messages.last)
+        #expect(failed.delivery == .failed)
+        #expect(resolver.released == [["u1"]])
+        #expect(try await drafts.pendingTextSends().isEmpty)
+        store.stop()
+    }
+
+    @Test func relaunchReplaysAQueuedAttachmentSendAndFlushDeliversIt() async throws {
+        let drafts = FileChatDraftStore(accountId: "acc", rootURL: temporaryDraftRoot())
+        try await drafts.savePendingTextSend(ChatPendingTextSend(
+            conversationId: "c1",
+            clientRequestId: "r-replay",
+            body: "Here it is",
+            attachmentClientUploadIds: ["u1"]
+        ))
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
+        let resolver = StoreResolver()
+        resolver.resolutions["u1"] = .pending(storePlaceholder("u1"))
+        store.attachmentResolver = resolver
+
+        await store.start()
+
+        let replayed = try #require(store.model.messages.last)
+        #expect(replayed.delivery == .sending)
+        #expect(await messaging.sent.isEmpty)
+
+        resolver.resolutions["u1"] = .ready(storeReadyAttachment("server-replay"))
+        await store.flushQueuedSends()
+
+        #expect(await messaging.sent.map(\.clientRequestId) == ["r-replay"])
+        #expect(await messaging.sent.map(\.attachmentIds) == [["server-replay"]])
+        #expect(try await drafts.pendingTextSends().isEmpty)
+        store.stop()
+    }
+
+    @Test func queuedSendsFlushInOrderAndAnUnresolvedHeadHoldsTheRest() async throws {
+        let drafts = FileChatDraftStore(accountId: "acc", rootURL: temporaryDraftRoot())
+        let (store, messaging, _, _) = makeStore(window: storeWindow([]), drafts: drafts)
+        let resolver = StoreResolver()
+        store.attachmentResolver = resolver
+        await store.start()
+        resolver.resolutions["u1"] = .pending(storePlaceholder("u1"))
+        resolver.resolutions["u2"] = .pending(storePlaceholder("u2"))
+        await store.send(ChatSendPayload(
+            body: "first",
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: [],
+            attachmentClientUploadIds: ["u1"]
+        ))
+        await store.send(ChatSendPayload(
+            body: "second",
+            selection: .none,
+            attachmentIds: [],
+            optimisticAttachments: [],
+            attachmentClientUploadIds: ["u2"]
+        ))
+
+        // Only the second upload resolves: the head of the queue holds it.
+        resolver.resolutions["u2"] = .ready(storeReadyAttachment("server-2"))
+        await store.flushQueuedSends()
+        #expect(await messaging.sent.isEmpty)
+
+        resolver.resolutions["u1"] = .ready(storeReadyAttachment("server-1"))
+        await store.flushQueuedSends()
+        #expect(await messaging.sent.map(\.body) == ["first", "second"])
+        store.stop()
     }
 }

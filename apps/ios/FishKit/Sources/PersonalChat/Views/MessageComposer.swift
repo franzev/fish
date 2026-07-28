@@ -71,12 +71,11 @@ public struct MessageComposer: View {
         stagedAttachments: [StagedAttachment] = []
     ) -> Bool {
         if sendState == .sending { return true }
-        if sendState == .offline { return false }
         return MediaSelectionRules.isSendable(
             draft: draft,
             selection: selection,
             stagedAttachments: stagedAttachments,
-            connectionReady: true
+            connectionReady: sendState != .offline
         )
     }
 
@@ -93,9 +92,9 @@ public struct MessageComposer: View {
                     selection = .none
                 }
             }
-            if let attachmentUploads, !attachmentUploads.items.isEmpty {
+            if let attachmentUploads, !attachmentUploads.composerItems.isEmpty {
                 StagedAttachmentStrip(
-                    attachments: attachmentUploads.items,
+                    attachments: attachmentUploads.composerItems,
                     onRemove: attachmentUploads.remove,
                     onRetry: { attachmentUploads.retry($0) }
                 )
@@ -148,7 +147,7 @@ public struct MessageComposer: View {
                     draft: draft,
                     selection: selection,
                     sendState: sendState,
-                    stagedAttachments: attachmentUploads?.items ?? []
+                    stagedAttachments: attachmentUploads?.composerItems ?? []
                 ) {
                     IconButton(
                         .send,
@@ -159,7 +158,7 @@ public struct MessageComposer: View {
                         guard MediaSelectionRules.isSendable(
                             draft: draft,
                             selection: selection,
-                            stagedAttachments: attachmentUploads?.items ?? [],
+                            stagedAttachments: attachmentUploads?.composerItems ?? [],
                             connectionReady: sendState != .offline
                         ) else { return }
                         onSend()
@@ -207,7 +206,7 @@ public struct MessageComposer: View {
             }
             if sendState == .offline {
                 Text(
-                    "You're offline. Your draft is saved and will be ready to send when you reconnect."
+                    "You're offline. Anything you send now will go out when you reconnect."
                 )
                 .textStyle(.caption)
                 .foregroundStyle(Palette.notice)
@@ -315,7 +314,7 @@ public struct MessageComposer: View {
     }
 
     private var availableAttachmentSlots: Int {
-        max(1, AttachmentRules.maxCount - (attachmentUploads?.items.count ?? 0))
+        max(1, AttachmentRules.maxCount - (attachmentUploads?.composerItems.count ?? 0))
     }
 
     private var canRecordVoice: Bool {
@@ -323,7 +322,7 @@ public struct MessageComposer: View {
               sendState != .sending,
               draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               selection == .none,
-              attachmentUploads?.items.isEmpty == true
+              attachmentUploads?.composerItems.isEmpty == true
         else { return false }
         if case .edit = context { return false }
         return true
@@ -409,7 +408,7 @@ public struct MessageComposer: View {
 
     private func importDocuments(_ result: Result<[URL], any Error>) {
         guard let attachmentUploads, case .success(let urls) = result else { return }
-        let available = max(0, AttachmentRules.maxCount - attachmentUploads.items.count)
+        let available = max(0, AttachmentRules.maxCount - attachmentUploads.composerItems.count)
         let selected = Array(urls.prefix(available))
         let excess = max(0, urls.count - selected.count)
         Task {

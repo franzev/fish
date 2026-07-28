@@ -9,6 +9,15 @@ public final class AttachmentUploadsModel {
     public private(set) var notice: String?
     public private(set) var isConnected = true
 
+    /// Fired when an upload owned by a queued send becomes ready, so the
+    /// send queue can flush without waiting for a socket transition.
+    public var onQueuedItemReady: (() -> Void)?
+
+    /// False until the durable records have been replayed. Resolutions asked
+    /// for before that must read as still-pending, never as gone — a flush
+    /// racing the restore would otherwise fail queued sends spuriously.
+    private var hasRestored = false
+
     public let conversationId: String
 
     private let commands: any AttachmentCommandProviding
@@ -80,6 +89,7 @@ public final class AttachmentUploadsModel {
     /// and re-enters the pipeline for anything not yet complete. The server
     /// deduplicates initialization by `clientUploadId`, so replay is safe.
     private func restoreFromOutbox() async {
+        defer { hasRestored = true }
         guard let outbox else { return }
         let records = ((try? await outbox.pendingAttachments()) ?? [])
             .filter { $0.conversationId == conversationId }
@@ -126,6 +136,42 @@ public final class AttachmentUploadsModel {
                 startPipeline(id: record.itemId)
             }
         }
+        // Items referenced by a queued send belong to that send, not the
+        // composer; the send queue is the durable source of that ownership.
+        let queuedUploadIds = Set(
+            ((try? await outbox.pendingTextSends()) ?? [])
+                .filter { $0.conversationId == conversationId }
+                .flatMap(\.attachmentClientUploadIds)
+        )
+        if !queuedUploadIds.isEmpty {
+            markQueuedForSend(clientUploadIds: Array(queuedUploadIds))
+        }
+    }
+
+    /// Hands the listed uploads over to a queued send: they leave the
+    /// composer but keep uploading and stay durable.
+    public func markQueuedForSend(clientUploadIds: [String]) {
+        let ids = Set(clientUploadIds)
+        for index in items.indices where ids.contains(items[index].clientUploadId) {
+            items[index].isQueued = true
+        }
+    }
+
+    private func placeholderAttachment(_ item: StagedAttachment) -> ChatAttachment {
+        let prepared = preparedFiles[item.id]
+        return ChatAttachment(
+            id: "upload-\(item.clientUploadId)",
+            status: "uploading",
+            kind: item.kind,
+            originalName: item.originalName,
+            mimeType: prepared?.uploadMimeType ?? item.sourceMimeType,
+            byteSize: prepared?.uploadByteSize,
+            width: prepared?.width,
+            height: prepared?.height,
+            displayPath: "",
+            thumbnailUrl: item.localUrl,
+            displayUrl: item.localUrl
+        )
     }
 
     private func persistRecord(_ id: String) async {
@@ -150,15 +196,18 @@ public final class AttachmentUploadsModel {
         ))
     }
 
+    /// The composer's view of the world: items a queued send owns are still
+    /// uploading here but no longer belong to the strip or the next send.
+    public var composerItems: [StagedAttachment] { items.filter { !$0.isQueued } }
+
     public var readyAttachmentIds: [String] {
-        items.compactMap { $0.isReady ? $0.attachmentId : nil }
+        composerItems.compactMap { $0.isReady ? $0.attachmentId : nil }
     }
 
     public var optimisticAttachments: [MessageAttachmentUiModel] {
-        items.compactMap { item in
-            guard let attachment = item.readyAttachment else { return nil }
-            return MessageAttachmentUiModel(
-                attachment: attachment,
+        composerItems.map { item in
+            MessageAttachmentUiModel(
+                attachment: item.readyAttachment ?? placeholderAttachment(item),
                 localPreviewUrl: item.localUrl,
                 isOptimistic: true
             )
@@ -166,13 +215,13 @@ public final class AttachmentUploadsModel {
     }
 
     public var allSettled: Bool {
-        !items.isEmpty && items.allSatisfy(\.isReady)
+        !composerItems.isEmpty && composerItems.allSatisfy(\.isReady)
     }
 
-    public var hasFailure: Bool { items.contains(where: \.isFailed) }
-    public var hasInFlight: Bool { items.contains(where: \.isInFlight) }
+    public var hasFailure: Bool { composerItems.contains(where: \.isFailed) }
+    public var hasInFlight: Bool { composerItems.contains(where: \.isInFlight) }
     // Staging is local work; offline it queues against connectivity retry.
-    public var canAdd: Bool { items.count < AttachmentRules.maxCount }
+    public var canAdd: Bool { composerItems.count < AttachmentRules.maxCount }
 
     public var sendGuidance: String? {
         if hasFailure { return "Retry or remove the upload that didn't finish" }
@@ -295,18 +344,26 @@ public final class AttachmentUploadsModel {
     }
 
     public func consumeAfterSend(previewGraceSeconds: TimeInterval = 30) {
-        // Only items the server already holds may lose their local bytes.
-        // Anything still unconfirmed keeps its outbox record and staged file,
-        // so a relaunch restores it instead of losing it.
-        let sent = items.filter { $0.attachmentId != nil }
+        // Only composer items the server already holds may lose their local
+        // bytes. Queued sends own their items separately, and anything still
+        // unconfirmed keeps its outbox record and staged file so a relaunch
+        // restores it instead of losing it.
+        let consumed = composerItems
+        guard !consumed.isEmpty else { return }
+        let consumedIds = Set(consumed.map(\.id))
+        for id in consumedIds {
+            tasks[id]?.cancel()
+            tasks[id] = nil
+            candidates[id] = nil
+            pipelineGenerations[id] = nil
+        }
+        let sent = consumed.filter { $0.attachmentId != nil }
         let sentUrls = sent.compactMap(\.localUrl)
-        tasks.values.forEach { $0.cancel() }
-        tasks.removeAll()
-        items.removeAll()
-        candidates.removeAll()
-        preparedFiles.removeAll()
-        serverAttachmentIds.removeAll()
-        pipelineGenerations.removeAll()
+        for item in sent {
+            preparedFiles[item.id] = nil
+            serverAttachmentIds[item.id] = nil
+        }
+        items.removeAll { consumedIds.contains($0.id) }
         Task { [staging, outbox] in
             for item in sent {
                 try? await outbox?.removePendingAttachment(itemId: item.id)
@@ -319,20 +376,27 @@ public final class AttachmentUploadsModel {
         endBackgroundGraceIfSettled()
     }
 
+    /// Discards the composer's unsent items. Items owned by a queued send
+    /// are deliberately untouched: their records and bytes must survive
+    /// leaving the conversation so the send can still complete.
     public func dismiss() {
-        let current = items
-        let currentServerIds = serverAttachmentIds
-        tasks.values.forEach { $0.cancel() }
-        tasks.removeAll()
-        items.removeAll()
-        candidates.removeAll()
-        preparedFiles.removeAll()
-        serverAttachmentIds.removeAll()
-        pipelineGenerations.removeAll()
+        let discarded = composerItems
+        guard !discarded.isEmpty else { return }
+        let discardedIds = Set(discarded.map(\.id))
+        let discardedServerIds = serverAttachmentIds.filter { discardedIds.contains($0.key) }
+        for id in discardedIds {
+            tasks[id]?.cancel()
+            tasks[id] = nil
+            candidates[id] = nil
+            preparedFiles[id] = nil
+            serverAttachmentIds[id] = nil
+            pipelineGenerations[id] = nil
+        }
+        items.removeAll { discardedIds.contains($0.id) }
         Task { [commands, staging, outbox] in
-            for item in current {
+            for item in discarded {
                 try? await outbox?.removePendingAttachment(itemId: item.id)
-                for attachmentId in currentServerIds[item.id] ?? [] {
+                for attachmentId in discardedServerIds[item.id] ?? [] {
                     await commands.cancelUpload(attachmentId: attachmentId)
                 }
                 if let localUrl = item.localUrl { await staging.remove(localUrl) }
@@ -449,6 +513,9 @@ public final class AttachmentUploadsModel {
                 $0.notice = nil
             }
             await persistRecord(id)
+            if items.first(where: { $0.id == id })?.isQueued == true {
+                onQueuedItemReady?()
+            }
             announceReadyCount()
         } catch is CancellationError {
             if holdsUploadGate { await uploadGate.release() }
@@ -586,6 +653,52 @@ public final class AttachmentUploadsModel {
 
     private func announce(_ value: String) {
         UIAccessibility.post(notification: .announcement, argument: value)
+    }
+}
+
+extension AttachmentUploadsModel: QueuedAttachmentResolving {
+    public func resolution(clientUploadId: String) -> QueuedAttachmentResolution {
+        guard let item = items.first(where: { $0.clientUploadId == clientUploadId }) else {
+            guard hasRestored else {
+                return .pending(ChatAttachment(
+                    id: "upload-\(clientUploadId)",
+                    status: "uploading",
+                    kind: .file,
+                    originalName: "Attachment",
+                    displayPath: ""
+                ))
+            }
+            return .gone
+        }
+        if let attachment = item.readyAttachment { return .ready(attachment) }
+        if case .failed(let reason) = item.status, !reason.isTransient { return .gone }
+        return .pending(placeholderAttachment(item))
+    }
+
+    public func releaseQueued(clientUploadIds: [String]) {
+        let ids = Set(clientUploadIds)
+        let released = items.filter { ids.contains($0.clientUploadId) }
+        guard !released.isEmpty else { return }
+        for item in released {
+            tasks[item.id]?.cancel()
+            tasks[item.id] = nil
+            pipelineGenerations[item.id] = nil
+            candidates[item.id] = nil
+            preparedFiles[item.id] = nil
+            serverAttachmentIds[item.id] = nil
+        }
+        items.removeAll { ids.contains($0.clientUploadId) }
+        let urls = released.compactMap(\.localUrl)
+        Task { [staging, outbox] in
+            for item in released {
+                try? await outbox?.removePendingAttachment(itemId: item.id)
+            }
+            // Grace period: optimistic bubbles read local previews until the
+            // confirmed message's signed URLs take over.
+            try? await Task.sleep(for: .seconds(30))
+            for url in urls { await staging.remove(url) }
+        }
+        endBackgroundGraceIfSettled()
     }
 }
 

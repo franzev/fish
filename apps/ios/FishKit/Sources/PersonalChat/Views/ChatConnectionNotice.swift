@@ -22,7 +22,7 @@ public struct ChatConnectionNotice: View {
         case .offline:
             (
                 "You're offline",
-                "You can keep writing. Sending will be ready when you reconnect."
+                "You can keep writing and sending. It all goes out when you reconnect."
             )
         }
     }

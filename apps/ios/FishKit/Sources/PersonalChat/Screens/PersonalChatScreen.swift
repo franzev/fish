@@ -259,9 +259,9 @@ public struct PersonalChatScreen: View {
             MediaPickerSheet(
                 gifProvider: gifProvider,
                 gifDisabled: model.connection == .offline
-                    || !(attachmentUploads?.items.isEmpty ?? true),
+                    || !(attachmentUploads?.composerItems.isEmpty ?? true),
                 stickerDisabled: model.connection == .offline
-                    || !(attachmentUploads?.items.isEmpty ?? true),
+                    || !(attachmentUploads?.composerItems.isEmpty ?? true),
                 onSelectEmoji: { draft += $0 },
                 onSelectGif: { selection = .gif($0, searchQuery: $1) },
                 onSelectSticker: { selection = .sticker($0) }
@@ -276,11 +276,11 @@ public struct PersonalChatScreen: View {
             default: break
             }
         }
-        .onChange(of: attachmentUploads?.items ?? []) { _, items in
-            sendPendingVoiceIfReady(items)
+        .onChange(of: attachmentUploads?.items ?? []) { _, _ in
+            sendPendingVoice()
         }
         .onChange(of: model.connection) { _, _ in
-            sendPendingVoiceIfReady(attachmentUploads?.items ?? [])
+            sendPendingVoice()
         }
         .onDisappear {
             attachmentUploads?.dismiss()
@@ -319,14 +319,23 @@ public struct PersonalChatScreen: View {
                         pendingVoiceUploadId = attachmentUploads.add([candidate]).first
                     },
                     onSend: {
+                        let clientUploadIds = attachmentUploads?.composerItems
+                            .map(\.clientUploadId) ?? []
                         let payload = ChatSendPayload(
                             body: draft,
                             selection: selection,
                             attachmentIds: attachmentUploads?.readyAttachmentIds ?? [],
-                            optimisticAttachments: attachmentUploads?.optimisticAttachments ?? []
+                            optimisticAttachments: attachmentUploads?.optimisticAttachments ?? [],
+                            attachmentClientUploadIds: clientUploadIds
                         )
                         onSend(payload)
-                        attachmentUploads?.consumeAfterSend()
+                        if clientUploadIds.isEmpty {
+                            attachmentUploads?.consumeAfterSend()
+                        } else {
+                            // The queued send owns these uploads now; the
+                            // store releases them once the server confirms.
+                            attachmentUploads?.markQueuedForSend(clientUploadIds: clientUploadIds)
+                        }
                     },
                     onOpenMediaPicker: { isMediaPickerPresented = true }
                 )
@@ -335,21 +344,26 @@ public struct PersonalChatScreen: View {
         }
     }
 
-    private func sendPendingVoiceIfReady(_ items: [StagedAttachment]) {
+    private func sendPendingVoice() {
         guard let pendingVoiceUploadId,
-              Self.composerState(for: model) == .ready,
-              let item = items.first(where: { $0.id == pendingVoiceUploadId }),
-              item.isReady,
-              let attachmentUploads
+              Self.composerState(for: model) != .sending,
+              let attachmentUploads,
+              let item = attachmentUploads.composerItems.first(where: {
+                  $0.id == pendingVoiceUploadId
+              }),
+              !item.isFailed
         else { return }
 
+        // The send queues durably right away — the upload catches up and the
+        // flush delivers it, so a recording made offline still goes out.
         self.pendingVoiceUploadId = nil
         onSend(ChatSendPayload(
             body: "",
             selection: .none,
             attachmentIds: attachmentUploads.readyAttachmentIds,
-            optimisticAttachments: attachmentUploads.optimisticAttachments
+            optimisticAttachments: attachmentUploads.optimisticAttachments,
+            attachmentClientUploadIds: [item.clientUploadId]
         ))
-        attachmentUploads.consumeAfterSend()
+        attachmentUploads.markQueuedForSend(clientUploadIds: [item.clientUploadId])
     }
 }

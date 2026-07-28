@@ -23,6 +23,10 @@ public struct StagedAttachment: Identifiable, Equatable, Sendable {
     public var readyAttachment: ChatAttachment?
     public var notice: String?
     public var automaticAttempts: Int
+    /// True once a queued send owns this item: it keeps uploading but no
+    /// longer belongs to the composer. Derived from the send queue on
+    /// restore, so it is deliberately not persisted.
+    public var isQueued: Bool = false
 
     public init(
         id: String = UUID().uuidString,

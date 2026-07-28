@@ -10,7 +10,7 @@ struct ChatChromeTests {
         #expect(ChatConnectionNotice.content(for: .reconnecting)?.message == "Your draft is safe.")
         let offline = ChatConnectionNotice.content(for: .offline)
         #expect(offline?.title == "You're offline")
-        #expect(offline?.message == "You can keep writing. Sending will be ready when you reconnect.")
+        #expect(offline?.message == "You can keep writing and sending. It all goes out when you reconnect.")
     }
 
     @MainActor @Test func snapshots() {

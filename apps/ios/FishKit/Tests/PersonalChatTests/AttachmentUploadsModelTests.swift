@@ -532,6 +532,26 @@ private final class SequentialIds: @unchecked Sendable {
         #expect(requests.count == 2)
     }
 
+    @Test func resolutionBeforeRestoreHoldsInsteadOfDroppingTheSend() async throws {
+        let model = try makeModel(
+            commands: ScriptedAttachmentCommands(),
+            uploader: ImmediateAttachmentUploader(),
+            outbox: FileChatDraftStore(accountId: "account-a", rootURL: temporaryDirectory())
+        )
+
+        // Synchronously after init the restore task has not run yet: an
+        // unknown upload must read as pending so a racing flush holds
+        // instead of failing the queued send and deleting its record.
+        if case .gone = model.resolution(clientUploadId: "unknown") {
+            Issue.record("A pre-restore resolution must never be gone")
+        }
+
+        // Once the restore has replayed the records, unknown means gone.
+        #expect(await eventually {
+            model.resolution(clientUploadId: "unknown") == .gone
+        })
+    }
+
     @Test func launchSweepKeepsOutboxReferencedBytesAndDropsOrphans() async throws {
         let stagingRoot = temporaryDirectory()
         let staging = try AttachmentStaging(root: stagingRoot)

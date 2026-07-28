@@ -210,6 +210,18 @@ public struct SendChatMessageRequest: Equatable, Sendable, Codable {
         self.gif = gif
         self.stickerId = stickerId
     }
+
+    public func replacingAttachmentIds(_ ids: [String]) -> Self {
+        Self(
+            conversationId: conversationId,
+            body: body,
+            clientRequestId: clientRequestId,
+            replyToMessageId: replyToMessageId,
+            attachmentIds: ids,
+            gif: gif,
+            stickerId: stickerId
+        )
+    }
 }
 
 public enum ChatTimestamp {

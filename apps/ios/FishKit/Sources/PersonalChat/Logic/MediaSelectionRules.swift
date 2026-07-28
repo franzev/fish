@@ -18,12 +18,16 @@ public enum MediaSelectionRules {
         stagedAttachments: [StagedAttachment],
         connectionReady: Bool
     ) -> Bool {
-        guard connectionReady, draft.count <= ChatRules.maxMessageLength else { return false }
+        guard draft.count <= ChatRules.maxMessageLength else { return false }
         if !stagedAttachments.isEmpty {
-            guard selection == .none,
-                  stagedAttachments.allSatisfy(\.isReady) else { return false }
-            return !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                || !stagedAttachments.isEmpty
+            // Attachment sends queue durably, so uploads still in flight do
+            // not block the send — only an item that needs attention does.
+            return selection == .none && stagedAttachments.allSatisfy { !$0.isFailed }
+        }
+        guard connectionReady else {
+            // Offline, only durable payloads may send; text queues, media
+            // expressions wait for the connection.
+            return selection == .none && ChatRules.isSendable(draft)
         }
         return isSendable(draft: draft, selection: selection)
     }

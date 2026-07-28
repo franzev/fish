@@ -33,7 +33,22 @@ struct MessageComposerTests {
         #expect(!MessageComposer.showsSend(draft: "   ", selection: .none, sendState: .ready))
         #expect(MessageComposer.showsSend(draft: "Hello", selection: .none, sendState: .ready))
         #expect(MessageComposer.showsSend(draft: "", selection: .none, sendState: .sending))
-        #expect(!MessageComposer.showsSend(draft: "Hello", selection: .none, sendState: .offline))
+        // Text is durable: offline it queues instead of hiding the action.
+        #expect(MessageComposer.showsSend(draft: "Hello", selection: .none, sendState: .offline))
+        #expect(!MessageComposer.showsSend(draft: "", selection: .none, sendState: .offline))
+        // Attachments queue too, even while their uploads are in flight.
+        #expect(MessageComposer.showsSend(
+            draft: "",
+            selection: .none,
+            sendState: .offline,
+            stagedAttachments: [StagedAttachment(status: .uploading)]
+        ))
+        #expect(!MessageComposer.showsSend(
+            draft: "",
+            selection: .none,
+            sendState: .ready,
+            stagedAttachments: [StagedAttachment(status: .failed(.tooLarge))]
+        ))
     }
 
     @Test func stagedMediaIsSendableAloneButNotOffline() {

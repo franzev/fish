@@ -49,7 +49,9 @@ struct AttachmentLogicTests {
         #expect(MediaSelectionRules.isSendable(
             draft: "Caption", selection: .none, stagedAttachments: [ready], connectionReady: true
         ))
-        #expect(!MediaSelectionRules.isSendable(
+        // An upload still in flight queues durably, so it no longer blocks
+        // the send; an item that needs attention still does.
+        #expect(MediaSelectionRules.isSendable(
             draft: "Caption", selection: .none, stagedAttachments: [uploading], connectionReady: true
         ))
         #expect(!MediaSelectionRules.isSendable(
@@ -59,7 +61,8 @@ struct AttachmentLogicTests {
             draft: "", selection: PersonalChatFixtures.stagedSticker,
             stagedAttachments: [ready], connectionReady: true
         ))
-        #expect(!MediaSelectionRules.isSendable(
+        // Offline, an attachment send parks in the durable outbox.
+        #expect(MediaSelectionRules.isSendable(
             draft: "", selection: .none, stagedAttachments: [ready], connectionReady: false
         ))
     }

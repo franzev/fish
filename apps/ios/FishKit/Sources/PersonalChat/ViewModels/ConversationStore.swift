@@ -54,6 +54,11 @@ public final class ConversationStore {
     private var pendingSends: [String: SendChatMessageRequest] = [:]
     private var pendingSendOrder: [String] = []
     private var recoveredRequestIds: Set<String> = []
+    /// clientRequestId → ordered clientUploadIds a queued send waits on.
+    private var pendingAttachmentRefs: [String: [String]] = [:]
+    /// The upload pipeline that answers for queued attachment refs. Weak:
+    /// the app model owns both and wires them together.
+    public weak var attachmentResolver: (any QueuedAttachmentResolving)?
     private var draftBeforeEdit: String?
     private var readCommandInFlight = false
     private var queuedDeliveredMessageId: String?
@@ -356,7 +361,9 @@ public final class ConversationStore {
             notice = "Send the expression or the attachments in a separate message."
             return
         }
+        let hasStagedAttachments = !payload.attachmentClientUploadIds.isEmpty
         let durableTextSend = payload.selection == .none
+            && !hasStagedAttachments
             && payload.attachmentIds.isEmpty
             && payload.optimisticAttachments.isEmpty
             && !payload.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -376,6 +383,20 @@ public final class ConversationStore {
                 )
             )
         }
+        if hasStagedAttachments {
+            pendingAttachmentRefs[requestId] = payload.attachmentClientUploadIds
+            if let drafts {
+                try? await drafts.savePendingTextSend(
+                    ChatPendingTextSend(
+                        conversationId: conversationId,
+                        clientRequestId: requestId,
+                        body: request.body,
+                        replyToMessageId: request.replyToMessageId,
+                        attachmentClientUploadIds: payload.attachmentClientUploadIds
+                    )
+                )
+            }
+        }
         let optimistic = optimisticMessage(
             payload,
             requestId: requestId,
@@ -385,16 +406,63 @@ public final class ConversationStore {
         enqueuePendingSend(requestId)
         reduce(.sendOptimisticMessage(message: optimistic))
         clearComposerAfterSend()
-        await send(request)
+        if hasStagedAttachments, resolvedAttachmentIds(for: requestId) == nil {
+            // Some upload has not finished (or cannot be resolved yet):
+            // park the send; the flush delivers it when everything is ready.
+            reduce(.queueMessage(message: optimistic))
+            return
+        }
+        await flushableSend(requestId)
     }
 
     public func retry(messageId: String) async {
         guard
             let message = currentConversation.messages.first(where: { $0.id == messageId }),
-            let request = pendingSends[message.clientRequestId]
+            pendingSends[message.clientRequestId] != nil
         else { return }
+        if pendingAttachmentRefs[message.clientRequestId] != nil {
+            // Attachment sends re-resolve through the queue so a retry can
+            // never ship stale server ids.
+            reduce(.queueMessage(message: message))
+            enqueuePendingSend(message.clientRequestId)
+            await flushPendingTextSends()
+            return
+        }
+        guard let request = pendingSends[message.clientRequestId] else { return }
         reduce(.sendOptimisticMessage(message: message))
         await send(request)
+    }
+
+    /// Nudged by the upload pipeline when a queued upload turns ready.
+    public func flushQueuedSends() async {
+        await flushPendingTextSends()
+    }
+
+    /// Sends one queued request after substituting freshly resolved server
+    /// attachment ids; text-only requests pass through untouched.
+    @discardableResult
+    private func flushableSend(_ requestId: String) async -> Bool {
+        guard var request = pendingSends[requestId] else { return true }
+        if pendingAttachmentRefs[requestId] != nil {
+            guard let resolved = resolvedAttachmentIds(for: requestId) else { return false }
+            request = request.replacingAttachmentIds(resolved)
+            pendingSends[requestId] = request
+        }
+        return await send(request)
+    }
+
+    /// All server attachment ids for the send's refs, or nil while any
+    /// upload is still on its way. `.gone` is handled by the flush.
+    private func resolvedAttachmentIds(for requestId: String) -> [String]? {
+        guard let refs = pendingAttachmentRefs[requestId],
+              let attachmentResolver else { return nil }
+        var resolved: [String] = []
+        for ref in refs {
+            guard case .ready(let attachment) = attachmentResolver.resolution(clientUploadId: ref)
+            else { return nil }
+            resolved.append(attachment.id)
+        }
+        return resolved
     }
 
     public func loadOlder() async {
@@ -466,6 +534,13 @@ public final class ConversationStore {
         for item in pending.sorted(by: { $0.createdAt < $1.createdAt }) {
             if confirmed.contains(item.clientRequestId) {
                 try? await drafts.removePendingTextSend(clientRequestId: item.clientRequestId)
+                // The server already holds this send; any uploads it owned
+                // are finished business and their local copies can go.
+                if !item.attachmentClientUploadIds.isEmpty {
+                    attachmentResolver?.releaseQueued(
+                        clientUploadIds: item.attachmentClientUploadIds
+                    )
+                }
                 // Do not erase a newer composer value that was typed after
                 // this send was accepted by the server.
                 if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
@@ -485,6 +560,10 @@ public final class ConversationStore {
                 pendingSends[item.clientRequestId] = request
                 enqueuePendingSend(item.clientRequestId)
                 recoveredRequestIds.insert(item.clientRequestId)
+                if !item.attachmentClientUploadIds.isEmpty {
+                    pendingAttachmentRefs[item.clientRequestId] = item.attachmentClientUploadIds
+                }
+                let attachments = queuedAttachmentStates(item.attachmentClientUploadIds)
                 reduce(.queueMessage(message: ChatMessageState(
                     id: "pending-\(item.clientRequestId)",
                     conversationId: conversationId,
@@ -492,16 +571,47 @@ public final class ConversationStore {
                     senderRole: currentUserRole,
                     senderDisplayName: currentUserName,
                     body: item.body,
+                    attachments: attachments,
+                    images: attachments,
                     clientRequestId: item.clientRequestId,
                     createdAt: ChatTimestamp.string(item.createdAt),
                     replyToMessageId: item.replyToMessageId,
                     localStatus: .pending
                 )))
-                if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if item.attachmentClientUploadIds.isEmpty,
+                   draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     draft = item.body
                 }
             }
         }
+    }
+
+    /// Bubble attachments for a replayed queued send, resolved through the
+    /// upload pipeline: real server attachments when ready, local-preview
+    /// placeholders while uploading.
+    private func queuedAttachmentStates(_ clientUploadIds: [String]) -> [ChatStateAttachment]? {
+        guard !clientUploadIds.isEmpty, let attachmentResolver else { return nil }
+        let states = clientUploadIds.compactMap { ref -> ChatStateAttachment? in
+            let attachment: ChatAttachment
+            switch attachmentResolver.resolution(clientUploadId: ref) {
+            case .ready(let value), .pending(let value): attachment = value
+            case .gone: return nil
+            }
+            return ChatStateAttachment(
+                id: attachment.id,
+                kind: attachment.kind.rawValue,
+                originalName: attachment.originalName,
+                mimeType: attachment.mimeType,
+                byteSize: attachment.byteSize,
+                width: attachment.width,
+                height: attachment.height,
+                thumbnailPath: attachment.thumbnailPath,
+                displayPath: attachment.displayPath,
+                thumbnailUrl: attachment.thumbnailUrl?.absoluteString,
+                displayUrl: attachment.displayUrl?.absoluteString
+            )
+        }
+        return states.isEmpty ? nil : states
     }
 
     private func requestIdForSend(
@@ -687,6 +797,9 @@ public final class ConversationStore {
             ))
             pendingSends[request.clientRequestId] = nil
             dequeuePendingSend(request.clientRequestId)
+            if let refs = pendingAttachmentRefs.removeValue(forKey: request.clientRequestId) {
+                attachmentResolver?.releaseQueued(clientUploadIds: refs)
+            }
             if let drafts {
                 try? await drafts.removePendingTextSend(clientRequestId: request.clientRequestId)
                 try? await drafts.removeDraft(conversationId: conversationId)
@@ -707,15 +820,20 @@ public final class ConversationStore {
         _ request: SendChatMessageRequest,
         failure: ChatCommandFailure
     ) async -> Bool {
-        let isDurableTextRequest = request.gif == nil && request.stickerId == nil &&
-            request.attachmentIds.isEmpty &&
-            !request.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        if isDurableTextRequest && shouldQueueAfterFailure(failure) {
+        let hasQueuedAttachments = pendingAttachmentRefs[request.clientRequestId] != nil
+        let isDurableRequest = request.gif == nil && request.stickerId == nil &&
+            (hasQueuedAttachments ||
+                (request.attachmentIds.isEmpty &&
+                    !request.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+        if isDurableRequest && shouldQueueAfterFailure(failure) {
             if currentConversation.messages.contains(where: {
                 $0.clientRequestId == request.clientRequestId && $0.localStatus == .sent
             }) {
                 pendingSends[request.clientRequestId] = nil
                 dequeuePendingSend(request.clientRequestId)
+                if let refs = pendingAttachmentRefs.removeValue(forKey: request.clientRequestId) {
+                    attachmentResolver?.releaseQueued(clientUploadIds: refs)
+                }
                 return true
             }
             let message = currentConversation.messages.first(where: {
@@ -757,12 +875,44 @@ public final class ConversationStore {
 
     private func flushPendingTextSends() async {
         for requestId in pendingSendOrder {
-            guard let request = pendingSends[requestId] else { continue }
-            let sent = await send(request)
-            if !sent && pendingSends[request.clientRequestId] != nil {
+            guard pendingSends[requestId] != nil else { continue }
+            if let refs = pendingAttachmentRefs[requestId] {
+                guard let attachmentResolver else { break }
+                let dead = refs.contains {
+                    attachmentResolver.resolution(clientUploadId: $0) == .gone
+                }
+                if dead {
+                    await failQueuedAttachmentSend(requestId, refs: refs)
+                    continue
+                }
+                guard resolvedAttachmentIds(for: requestId) != nil else {
+                    // An upload is still on its way; hold the queue so the
+                    // conversation never reorders.
+                    break
+                }
+            }
+            let sent = await flushableSend(requestId)
+            if !sent && pendingSends[requestId] != nil {
                 break
             }
         }
+    }
+
+    /// A queued send whose staged upload is gone or permanently rejected
+    /// can never complete: fail the bubble calmly and release its bytes.
+    private func failQueuedAttachmentSend(_ requestId: String, refs: [String]) async {
+        reduce(.markMessageFailed(
+            conversationId: conversationId,
+            clientRequestId: requestId,
+            reason: "That file did not send. Pick it again to retry."
+        ))
+        pendingSends[requestId] = nil
+        dequeuePendingSend(requestId)
+        pendingAttachmentRefs[requestId] = nil
+        if let drafts {
+            try? await drafts.removePendingTextSend(clientRequestId: requestId)
+        }
+        attachmentResolver?.releaseQueued(clientUploadIds: refs)
     }
 
     private func enqueuePendingSend(_ requestId: String) {
@@ -1363,7 +1513,7 @@ public final class ConversationStore {
 
 private extension ChatSendPayload {
     var selectionIsCompatibleWithAttachments: Bool {
-        attachmentIds.isEmpty || selection == .none
+        (attachmentIds.isEmpty && attachmentClientUploadIds.isEmpty) || selection == .none
     }
 }
 
