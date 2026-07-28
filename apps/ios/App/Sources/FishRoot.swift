@@ -52,12 +52,8 @@ struct FishRoot: View {
                     LoadingView()
                 case .signedOut:
                     SignInView(model: model)
-                case .inbox:
-                    InboxView(model: model)
-                case .opening:
-                    LoadingView(message: "Opening conversation…")
-                case .conversation:
-                    ConversationView(model: model)
+                case .inbox, .opening, .conversation:
+                    ChatSplitLayout(model: model)
                 }
             }
             if let callModel = model.callModel, let callMedia = model.callMedia {

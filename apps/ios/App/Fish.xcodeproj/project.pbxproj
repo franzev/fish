@@ -25,6 +25,7 @@
 		8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */; };
 		895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */; };
 		AB69CC219E999AB31CF7F489 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 958685816BE979439E46CFFD /* LoadingView.swift */; };
+		AF5268C2B551945F6B7981BA /* ChatSplitLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7EA072CAC8BDD0E710F5F2 /* ChatSplitLayout.swift */; };
 		BB5423DD21564BBDCA8AD071 /* FishRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF901E65E85B7E257C31F2F6 /* FishRoot.swift */; };
 		BF9301FDC28A1032B398593E /* FishSharePayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */; };
 		C2DE5FA06629AD3CD8F14F9A /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AED3154D6FA543BA8BF6CED /* SignInView.swift */; };
@@ -79,6 +80,7 @@
 		03511112CED5CAB422042ACD /* SharedContentGalleryModelHolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentGalleryModelHolder.swift; sourceTree = "<group>"; };
 		03C07EDE9F9E1A9E8705CD33 /* PendingConversationDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingConversationDestination.swift; sourceTree = "<group>"; };
 		12700FF4D7F22D9479AF1D51 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1B7EA072CAC8BDD0E710F5F2 /* ChatSplitLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSplitLayout.swift; sourceTree = "<group>"; };
 		20183F23477C1DCD0B20CC9E /* FishSharePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishSharePayload.swift; sourceTree = "<group>"; };
 		20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		227E5EB18FA42EA4D7E193BB /* FishApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishApp.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 			isa = PBXGroup;
 			children = (
 				4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */,
+				1B7EA072CAC8BDD0E710F5F2 /* ChatSplitLayout.swift */,
 				C1CBFF3234C0DE8FFE5D8E08 /* ConversationDestination.swift */,
 				DD640DE98A515B929DA4E061 /* ConversationView.swift */,
 				4B52387CF5B0AAFF2A75259B /* Fish.entitlements */,
@@ -356,6 +359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D21D7B6CFE14B2F494A754ED /* CallKitCoordinator.swift in Sources */,
+				AF5268C2B551945F6B7981BA /* ChatSplitLayout.swift in Sources */,
 				3D1F5C8991AF82E86A680F96 /* ConversationDestination.swift in Sources */,
 				330070F3F6FB8E415E745FFF /* ConversationView.swift in Sources */,
 				F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */,
