@@ -9,18 +9,25 @@ public struct SignedUrlByteUploader: AttachmentByteUploading {
     private let configuration: ChatBackendConfiguration
     private let coordinator: BackgroundAttachmentUploadCoordinator
 
-    /// `sessionConfiguration` is a test seam: passing one creates a private
-    /// coordinator (and session) scoped to this instance instead of using
-    /// the shared, app-wide background session — production callers should
-    /// leave it `nil`.
+    /// `sessionConfiguration` and `completedMarks` are a paired test seam:
+    /// passing either creates a private coordinator (session + marks store)
+    /// scoped to this instance instead of using the shared, app-wide
+    /// background session and its disk-backed marks file — production
+    /// callers should leave both `nil`. Tests that pass one should pass the
+    /// other too, so an isolated session never falls back to reading or
+    /// writing the real `CompletedAttachmentUploadMarks.shared` file.
     public init(
         configuration: ChatBackendConfiguration,
-        sessionConfiguration: URLSessionConfiguration? = nil
+        sessionConfiguration: URLSessionConfiguration? = nil,
+        completedMarks: CompletedAttachmentUploadMarks? = nil
     ) {
         self.configuration = configuration
-        coordinator = sessionConfiguration.map {
-            BackgroundAttachmentUploadCoordinator(sessionConfiguration: $0)
-        } ?? .shared
+        coordinator = (sessionConfiguration != nil || completedMarks != nil)
+            ? BackgroundAttachmentUploadCoordinator(
+                sessionConfiguration: sessionConfiguration,
+                completedMarks: completedMarks
+            )
+            : .shared
     }
 
     public func upload(

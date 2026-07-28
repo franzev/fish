@@ -203,7 +203,8 @@ private struct EmptyHydration: AttachmentHydrating {
         )
         let uploader = SignedUrlByteUploader(
             configuration: backend,
-            sessionConfiguration: uploadSessionConfiguration()
+            sessionConfiguration: uploadSessionConfiguration(),
+            completedMarks: CompletedAttachmentUploadMarks(rootURL: temporaryDirectory())
         )
         await #expect(throws: AttachmentCommandFailure.self) {
             for try await _ in uploader.upload(fileUrl: root, to: base) {}
@@ -303,5 +304,10 @@ private struct EmptyHydration: AttachmentHydrating {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [AttachmentURLProtocol.self]
         return configuration
+    }
+
+    private func temporaryDirectory() -> URL {
+        FileManager.default.temporaryDirectory
+            .appending(path: "fish-attachment-adapter-\(UUID().uuidString)", directoryHint: .isDirectory)
     }
 }
