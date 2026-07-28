@@ -1,7 +1,6 @@
 import CallData
 import Calls
 import DesignSystem
-import PersonalChat
 import SwiftUI
 import TestSupport
 import UIComponents
@@ -12,12 +11,10 @@ struct CallStatesPage: View {
     private struct StateCase: Identifiable {
         let id: String
         let state: CallPanelState
-        let chatOpen: Bool
 
-        init(_ id: String, _ state: CallPanelState, chatOpen: Bool = false) {
+        init(_ id: String, _ state: CallPanelState) {
             self.id = id
             self.state = state
-            self.chatOpen = chatOpen
         }
     }
 
@@ -77,10 +74,6 @@ struct CallStatesPage: View {
             remoteMuted: true,
             speakerEnabled: true
         )),
-        StateCase("Video call, chat open", CallPanelState(
-            call: session(.active, kind: .video, cameraEnabled: true),
-            speakerEnabled: true
-        ), chatOpen: true),
         StateCase("Missed", CallPanelState(call: session(.missed))),
         StateCase("Declined", CallPanelState(call: session(.rejected))),
         StateCase("Failed with notice", CallPanelState(
@@ -92,14 +85,10 @@ struct CallStatesPage: View {
     var body: some View {
         List(cases) { item in
             NavigationLink(item.id) {
-                CallSurface(
-                    state: item.state,
-                    chatContent: item.chatOpen ? AnyView(CatalogCallTranscript()) : nil,
-                    chatOpen: item.chatOpen
-                )
-                .background(Palette.bg)
-                .navigationTitle(item.id)
-                .navigationBarTitleDisplayMode(.inline)
+                CallSurface(state: item.state)
+                    .background(Palette.bg)
+                    .navigationTitle(item.id)
+                    .navigationBarTitleDisplayMode(.inline)
             }
         }
         .navigationTitle("Call states")
@@ -169,33 +158,11 @@ struct CallDemoPage: View {
             }
             .background(Palette.bg)
 
-            CallOverlay(
-                model: environment.model,
-                chatContent: {
-                    AnyView(CatalogCallTranscript())
-                }
-            )
+            CallOverlay(model: environment.model)
         }
         .navigationTitle("Call demo")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { environment.model.shutdown() }
-    }
-}
-
-struct CatalogCallTranscript: View {
-    var body: some View {
-        PersonalChatTranscript(
-            items: TranscriptBuilder.build(
-                messages: PersonalChatFixtures.loaded.messages,
-                calendar: PersonalChatFixtures.calendar,
-                now: PersonalChatFixtures.now,
-                locale: PersonalChatFixtures.locale
-            ),
-            olderMessages: .hidden,
-            onRetryMessage: { _ in },
-            onRetryOlder: {}
-        )
-        .background(Palette.bg)
     }
 }
 

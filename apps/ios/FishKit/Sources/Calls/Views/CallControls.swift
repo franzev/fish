@@ -14,7 +14,7 @@ public struct CallPanelActions {
     public var toggleCamera: () -> Void = {}
     public var switchCamera: () -> Void = {}
     public var toggleSpeaker: () -> Void = {}
-    public var toggleChat: () -> Void = {}
+    public var openMessages: () -> Void = {}
     public var setVideoQualityPreference: (VideoQualityPreference) -> Void = { _ in }
 
     public init() {}
@@ -25,8 +25,6 @@ public struct CallPanelActions {
 struct CallControls: View {
     let state: CallPanelState
     let actions: CallPanelActions
-    let chatAvailable: Bool
-    let chatOpen: Bool
 
     @State private var settingsOpen = false
 
@@ -74,16 +72,11 @@ struct CallControls: View {
                     )
                 }
 
-                if chatAvailable {
-                    IconButton(
-                        .messages,
-                        isActive: chatOpen,
-                        accessibilityLabel: chatOpen
-                            ? CallCopy.closeChat
-                            : CallCopy.openChat,
-                        action: actions.toggleChat
-                    )
-                }
+                IconButton(
+                    .messages,
+                    accessibilityLabel: CallCopy.openMessages,
+                    action: actions.openMessages
+                )
 
                 if call.kind == .video {
                     IconButton(

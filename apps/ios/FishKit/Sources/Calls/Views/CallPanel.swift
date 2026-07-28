@@ -10,8 +10,6 @@ import UIComponents
 struct CallPanel: View {
     let state: CallPanelState
     let actions: CallPanelActions
-    let chatAvailable: Bool
-    let chatOpen: Bool
     /// Hides the header visually on the video stage (it stays available to
     /// assistive tech on the stage container) — web `sr-only` parity.
     let headerHidden: Bool
@@ -55,9 +53,7 @@ struct CallPanel: View {
             if state.isInProgress {
                 CallControls(
                     state: state,
-                    actions: actions,
-                    chatAvailable: chatAvailable,
-                    chatOpen: chatOpen
+                    actions: actions
                 )
             }
         }

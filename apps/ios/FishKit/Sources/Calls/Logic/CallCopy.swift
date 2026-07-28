@@ -119,8 +119,8 @@ public enum CallCopy {
     public static let speakerOn = "Turn speaker on"
     public static let speakerOff = "Turn speaker off"
     public static let callSettings = "Call settings"
-    public static let openChat = "Open chat"
-    public static let closeChat = "Close chat"
+    public static let openMessages = "Messages"
+    public static let returnToCall = "Return to call"
     public static let dataSaverTitle = "Use less data"
     public static let dataSaverDescription =
         "Lowers video quality to help on slower connections."
@@ -170,8 +170,4 @@ public enum CallCopy {
     public static func videoCallEntry(recipientName: String) -> String {
         "Video call \(recipientName)"
     }
-
-    // MARK: - Chat pane
-
-    public static let messagesHeading = "Messages"
 }

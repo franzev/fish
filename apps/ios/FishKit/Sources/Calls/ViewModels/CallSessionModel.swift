@@ -45,7 +45,7 @@ public struct CallPanelState: Equatable, Sendable {
     }
 
     public var isInProgress: Bool {
-        [.connecting, .active, .reconnecting].contains(call.status)
+        call.status.isInProgress
     }
 }
 

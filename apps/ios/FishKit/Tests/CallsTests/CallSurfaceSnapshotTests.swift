@@ -34,16 +34,8 @@ struct CallSurfaceSnapshotTests {
         )
     }
 
-    private func surface(
-        _ state: CallPanelState,
-        chatContent: AnyView? = nil,
-        chatOpen: Bool = false
-    ) -> some View {
-        CallSurface(
-            state: state,
-            chatContent: chatContent,
-            chatOpen: chatOpen
-        )
+    private func surface(_ state: CallPanelState) -> some View {
+        CallSurface(state: state)
     }
 
     @Test func incomingAudioRinging() {
@@ -166,29 +158,6 @@ struct CallSurfaceSnapshotTests {
                 busy: true
             )),
             named: "video-connecting"
-        )
-    }
-
-    @Test func videoActiveChatOpen() {
-        let chat = AnyView(
-            VStack {
-                Spacer()
-                Text("Conversation renders here")
-                    .textStyle(.body)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity)
-        )
-        assertThemedSnapshots(
-            of: surface(
-                CallPanelState(
-                    call: session(.active, kind: .video, cameraEnabled: true),
-                    speakerEnabled: true
-                ),
-                chatContent: chat,
-                chatOpen: true
-            ),
-            named: "video-active-chat-open"
         )
     }
 

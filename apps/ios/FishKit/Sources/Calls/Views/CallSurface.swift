@@ -12,23 +12,17 @@ public struct CallSurface: View {
     private let actions: CallPanelActions
     private let localVideo: AnyView?
     private let remoteVideo: AnyView?
-    private let chatContent: AnyView?
-    private let chatOpen: Bool
 
     public init(
         state: CallPanelState,
         actions: CallPanelActions = CallPanelActions(),
         localVideo: AnyView? = nil,
-        remoteVideo: AnyView? = nil,
-        chatContent: AnyView? = nil,
-        chatOpen: Bool = false
+        remoteVideo: AnyView? = nil
     ) {
         self.state = state
         self.actions = actions
         self.localVideo = localVideo
         self.remoteVideo = remoteVideo
-        self.chatContent = chatContent
-        self.chatOpen = chatOpen
     }
 
     public var body: some View {
@@ -45,8 +39,6 @@ public struct CallSurface: View {
         CallPanel(
             state: state,
             actions: actions,
-            chatAvailable: false,
-            chatOpen: false,
             headerHidden: false
         )
         .frame(maxWidth: Metrics.callPanel, alignment: .leading)
@@ -70,22 +62,16 @@ public struct CallSurface: View {
     private var fullScreenStage: some View {
         let copy = CallCopy.stateCopy(for: state.call)
         return VStack(spacing: 0) {
-            if chatOpen, let chatContent {
-                CallChatPane(call: state.call, content: chatContent)
-            } else {
-                CallVideoStage(
-                    state: state,
-                    remoteVideo: remoteVideo,
-                    localVideo: localVideo
-                )
-                .accessibilityLabel("\(copy.heading). \(copy.status)")
-            }
+            CallVideoStage(
+                state: state,
+                remoteVideo: remoteVideo,
+                localVideo: localVideo
+            )
+            .accessibilityLabel("\(copy.heading). \(copy.status)")
 
             CallPanel(
                 state: state,
                 actions: actions,
-                chatAvailable: chatContent != nil,
-                chatOpen: chatOpen,
                 headerHidden: true
             )
         }

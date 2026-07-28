@@ -233,12 +233,11 @@ struct LiveChatLabPage: View {
     var body: some View {
         ZStack {
             content
-            if let callModel = lab.callModel, let media = lab.callMedia, let store = lab.store {
+            if let callModel = lab.callModel, let media = lab.callMedia {
                 CallOverlay(
                     model: callModel,
                     localVideo: { media.localVideoView() },
-                    remoteVideo: { media.remoteVideoView() },
-                    chatContent: { AnyView(liveTranscript(store)) }
+                    remoteVideo: { media.remoteVideoView() }
                 )
             }
         }
@@ -318,20 +317,5 @@ struct LiveChatLabPage: View {
             busy: model.busy,
             onStartCall: { kind in Task { await lab.startCall(kind) } }
         ))
-    }
-
-    private func liveTranscript(_ store: ConversationStore) -> some View {
-        PersonalChatTranscript(
-            items: TranscriptBuilder.build(messages: store.model.messages),
-            olderMessages: store.model.olderMessages,
-            onRetryMessage: { id in Task { await store.retry(messageId: id) } },
-            onRetryOlder: { Task { await store.loadOlder() } },
-            onMessageAction: store.perform,
-            onVisibleMessage: store.visibleMessage,
-            attachmentCommands: lab.attachmentCommands,
-            imageLoader: lab.imageLoader,
-            fileDownloader: lab.fileDownloader
-        )
-        .background(Palette.bg)
     }
 }

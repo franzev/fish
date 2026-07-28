@@ -153,8 +153,7 @@ struct LiveCallLabPage: View {
                 CallOverlay(
                     model: model,
                     localVideo: { media.localVideoView() },
-                    remoteVideo: { media.remoteVideoView() },
-                    chatContent: { AnyView(CatalogCallTranscript()) }
+                    remoteVideo: { media.remoteVideoView() }
                 )
             }
         }

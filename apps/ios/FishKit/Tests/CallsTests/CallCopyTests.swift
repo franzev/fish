@@ -118,8 +118,8 @@ struct CallCopyTests {
         #expect(CallCopy.cameraOff == "Turn camera off")
         #expect(CallCopy.cameraOn == "Turn camera on")
         #expect(CallCopy.callSettings == "Call settings")
-        #expect(CallCopy.openChat == "Open chat")
-        #expect(CallCopy.closeChat == "Close chat")
+        #expect(CallCopy.openMessages == "Messages")
+        #expect(CallCopy.returnToCall == "Return to call")
         #expect(CallCopy.dataSaverTitle == "Use less data")
         #expect(CallCopy.dataSaverDescription
             == "Lowers video quality to help on slower connections.")
@@ -134,6 +134,5 @@ struct CallCopyTests {
         #expect(CallCopy.remoteMutedPill(for: video) == "Coach Mina is muted")
         #expect(CallCopy.localPreviewLabel == "Your video preview")
         #expect(CallCopy.localCameraOff == "Your camera is off")
-        #expect(CallCopy.messagesHeading == "Messages")
     }
 }

@@ -7,28 +7,27 @@ import UIKit
 #endif
 
 /// The app-level call host: binds `CallSessionModel` to the stateless
-/// `CallSurface`, owns the in-call chat toggle, starts the realtime
-/// subscription, and keeps the screen awake during video calls. Mount once
-/// above the app's content (the web layout mounts `CallPopover` the same
-/// way).
+/// `CallSurface`, starts the realtime subscription, and keeps the screen
+/// awake during video calls. Mount once above the app's content (the web
+/// layout mounts `CallPopover` the same way). The host decides what
+/// "minimized" means — `onMinimize` just signals intent, mirroring the
+/// Android `CallRoute` hoisting `minimized` state at the call site.
 public struct CallOverlay: View {
     private let model: CallSessionModel
     private let localVideo: () -> AnyView?
     private let remoteVideo: () -> AnyView?
-    private let chatContent: (() -> AnyView)?
-
-    @State private var chatOpen = false
+    private let onMinimize: () -> Void
 
     public init(
         model: CallSessionModel,
         localVideo: @escaping () -> AnyView? = { nil },
         remoteVideo: @escaping () -> AnyView? = { nil },
-        chatContent: (() -> AnyView)? = nil
+        onMinimize: @escaping () -> Void = {}
     ) {
         self.model = model
         self.localVideo = localVideo
         self.remoteVideo = remoteVideo
-        self.chatContent = chatContent
+        self.onMinimize = onMinimize
     }
 
     public var body: some View {
@@ -37,14 +36,11 @@ public struct CallOverlay: View {
             state: panel,
             actions: actions,
             localVideo: panel.localVideoAvailable ? localVideo() : nil,
-            remoteVideo: panel.remoteVideoAvailable ? remoteVideo() : nil,
-            chatContent: chatContent?(),
-            chatOpen: chatOpen
+            remoteVideo: panel.remoteVideoAvailable ? remoteVideo() : nil
         )
         .task { await model.start() }
         .onChange(of: panel.isVideoStageActive) { _, active in
             setIdleTimer(disabled: active)
-            if !active { chatOpen = false }
         }
         .onDisappear { setIdleTimer(disabled: false) }
     }
@@ -59,7 +55,7 @@ public struct CallOverlay: View {
         actions.toggleCamera = { [model] in Task { await model.toggleCamera() } }
         actions.switchCamera = { [model] in Task { await model.switchCamera() } }
         actions.toggleSpeaker = { [model] in Task { await model.toggleSpeaker() } }
-        actions.toggleChat = { chatOpen.toggle() }
+        actions.openMessages = onMinimize
         actions.setVideoQualityPreference = { [model] preference in
             Task { await model.setVideoQualityPreference(preference) }
         }

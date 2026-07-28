@@ -33,18 +33,14 @@ struct CallComponentSnapshotTests {
         let states = VStack(spacing: Spacing.md) {
             CallControls(
                 state: CallPanelState(call: session(.active)),
-                actions: CallPanelActions(),
-                chatAvailable: true,
-                chatOpen: false
+                actions: CallPanelActions()
             )
             CallControls(
                 state: CallPanelState(
                     call: session(.active, kind: .video, muted: true, cameraEnabled: true),
                     busy: true
                 ),
-                actions: CallPanelActions(),
-                chatAvailable: true,
-                chatOpen: false
+                actions: CallPanelActions()
             )
         }
         .padding(Spacing.page)
@@ -58,5 +54,28 @@ struct CallComponentSnapshotTests {
         }
         .padding(Spacing.page)
         assertThemedSnapshots(of: states, named: "call-activity-states")
+    }
+
+    @MainActor @Test func compactCallBarStates() {
+        // CompactCallBar fills its host and bottom-pins its card (so the
+        // chat screen behind it shows through the rest); bound each case to
+        // a fixed height here so the two states stack cleanly instead of
+        // splitting the whole device canvas between them.
+        let states = VStack(spacing: Spacing.md) {
+            CompactCallBar(
+                call: session(.active, kind: .video),
+                onReturn: {},
+                onEnd: {}
+            )
+            .frame(height: 160)
+            CompactCallBar(
+                call: session(.active, muted: true),
+                busy: true,
+                onReturn: {},
+                onEnd: {}
+            )
+            .frame(height: 160)
+        }
+        assertThemedSnapshots(of: states, named: "compact-call-bar-states")
     }
 }

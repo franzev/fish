@@ -20,6 +20,16 @@ public enum CallLifecycleStatus: String, Codable, Sendable {
     case cancelled
     case missed
     case failed
+
+    /// Connecting, active, or reconnecting — call media is live. The single
+    /// source of truth for "in progress" so `CallPanelState.isInProgress`
+    /// and the call-minimize reset logic can't drift apart.
+    public var isInProgress: Bool {
+        switch self {
+        case .connecting, .active, .reconnecting: true
+        case .idle, .requestingPermission, .ringing, .ended, .rejected, .cancelled, .missed, .failed: false
+        }
+    }
 }
 
 public enum CallFailureReason: String, Codable, Sendable {
