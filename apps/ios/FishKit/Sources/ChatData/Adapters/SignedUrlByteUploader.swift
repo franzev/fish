@@ -1,48 +1,48 @@
 import Foundation
 
+/// Validates a signed upload URL and hands the actual transfer to
+/// `BackgroundAttachmentUploadCoordinator`, which runs it on a single
+/// app-wide background `URLSession` so it survives backgrounding and
+/// process death. This type stays a thin, stateless validator: every
+/// session/task/delegate concern lives in the coordinator.
 public struct SignedUrlByteUploader: AttachmentByteUploading {
     private let configuration: ChatBackendConfiguration
-    private let sessionConfiguration: URLSessionConfiguration
+    private let coordinator: BackgroundAttachmentUploadCoordinator
 
+    /// `sessionConfiguration` is a test seam: passing one creates a private
+    /// coordinator (and session) scoped to this instance instead of using
+    /// the shared, app-wide background session — production callers should
+    /// leave it `nil`.
     public init(
         configuration: ChatBackendConfiguration,
         sessionConfiguration: URLSessionConfiguration? = nil
     ) {
         self.configuration = configuration
-        let networkConfiguration = sessionConfiguration ?? .ephemeral
-        networkConfiguration.waitsForConnectivity = true
-        networkConfiguration.timeoutIntervalForRequest = 60
-        networkConfiguration.timeoutIntervalForResource = 120
-        self.sessionConfiguration = networkConfiguration
+        coordinator = sessionConfiguration.map {
+            BackgroundAttachmentUploadCoordinator(sessionConfiguration: $0)
+        } ?? .shared
     }
 
     public func upload(
         fileUrl: URL,
         to authorization: AttachmentUploadAuthorization
     ) -> AsyncThrowingStream<Double, any Error> {
-        AsyncThrowingStream { continuation in
-            guard authorization.bucket == "chat-images",
-                  isTrusted(authorization.signedUploadUrl),
-                  FileManager.default.fileExists(atPath: fileUrl.path) else {
+        guard authorization.bucket == "chat-images",
+              isTrusted(authorization.signedUploadUrl),
+              FileManager.default.fileExists(atPath: fileUrl.path) else {
+            return AsyncThrowingStream { continuation in
                 continuation.finish(throwing: AttachmentCommandFailure.unavailable)
-                return
             }
-            var request = URLRequest(url: authorization.signedUploadUrl)
-            request.httpMethod = "PUT"
-            request.setValue(authorization.uploadMimeType, forHTTPHeaderField: "Content-Type")
-            request.setValue("false", forHTTPHeaderField: "x-upsert")
-            let delegate = UploadProgressDelegate(continuation: continuation)
-            let session = URLSession(
-                configuration: sessionConfiguration,
-                delegate: delegate,
-                delegateQueue: nil
-            )
-            delegate.session = session
-            let task = session.uploadTask(with: request, fromFile: fileUrl)
-            delegate.task = task
-            continuation.onTermination = { @Sendable _ in task.cancel() }
-            task.resume()
         }
+        var request = URLRequest(url: authorization.signedUploadUrl)
+        request.httpMethod = "PUT"
+        request.setValue(authorization.uploadMimeType, forHTTPHeaderField: "Content-Type")
+        request.setValue("false", forHTTPHeaderField: "x-upsert")
+        return coordinator.upload(
+            request: request,
+            fileUrl: fileUrl,
+            attachmentId: authorization.attachmentId
+        )
     }
 
     private func isTrusted(_ url: URL) -> Bool {
@@ -51,58 +51,5 @@ public struct SignedUrlByteUploader: AttachmentByteUploading {
         else { return false }
         if url.scheme == "https" { return true }
         return url.scheme == "http" && ["localhost", "127.0.0.1"].contains(url.host ?? "")
-    }
-}
-
-private final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let continuation: AsyncThrowingStream<Double, any Error>.Continuation
-    var task: URLSessionUploadTask?
-    var session: URLSession?
-
-    init(continuation: AsyncThrowingStream<Double, any Error>.Continuation) {
-        self.continuation = continuation
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didSendBodyData bytesSent: Int64,
-        totalBytesSent: Int64,
-        totalBytesExpectedToSend: Int64
-    ) {
-        guard totalBytesExpectedToSend > 0 else { return }
-        continuation.yield(min(1, max(0, Double(totalBytesSent) / Double(totalBytesExpectedToSend))))
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didCompleteWithError error: (any Error)?
-    ) {
-        defer {
-            session.finishTasksAndInvalidate()
-            self.session = nil
-            self.task = nil
-        }
-        if let error {
-            if (error as? URLError)?.code == .cancelled {
-                continuation.finish(throwing: CancellationError())
-            } else {
-                continuation.finish(throwing: AttachmentCommandFailure.unavailable)
-            }
-            return
-        }
-        guard let response = task.response as? HTTPURLResponse,
-              (200..<300).contains(response.statusCode) else {
-            let status = (task.response as? HTTPURLResponse)?.statusCode
-            continuation.finish(throwing: AttachmentCommandFailure(
-                code: status == 401 || status == 403 ? "upload_expired" : "upload_unavailable",
-                notice: "That attachment did not finish yet. Try again.",
-                statusCode: status
-            ))
-            return
-        }
-        continuation.yield(1)
-        continuation.finish()
     }
 }
