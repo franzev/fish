@@ -88,6 +88,7 @@
     "chatHeader": 64,
     "paginationSlot": 144,
     "composerMaxHeight": 160,
+    "conversationRail": 304,
     "chatContentMaxWidth": 720,
     "avatarBadge": 20,
     "avatarSm": 32,
