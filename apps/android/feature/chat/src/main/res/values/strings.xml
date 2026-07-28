@@ -25,6 +25,7 @@
     <string name="message_actions">Message actions</string>
     <string name="close_message_actions">Close message actions</string>
     <string name="more_message_actions">More actions for message</string>
+    <string name="open_message_link">Open link: %1$s</string>
     <string name="reply">Reply</string>
     <string name="copy_message">Copy</string>
     <string name="replying_to">Replying to %1$s</string>

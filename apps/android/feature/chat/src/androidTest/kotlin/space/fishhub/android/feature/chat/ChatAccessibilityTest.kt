@@ -3,7 +3,11 @@ package space.fishhub.android.feature.chat
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -63,6 +67,7 @@ import space.fishhub.android.feature.chat.viewmodels.MessageSearchUiState
 import space.fishhub.android.feature.chat.views.AttachmentViewer
 import space.fishhub.android.feature.chat.views.ChatMessageActionsSheet
 import space.fishhub.android.feature.chat.views.ConversationDetailsSheet
+import space.fishhub.android.feature.chat.views.MaxLinkAccessibilityActions
 import space.fishhub.android.feature.chat.views.MessageBubble
 import space.fishhub.android.feature.chat.views.MessageComposer
 import space.fishhub.android.feature.chat.views.PersonalChatTranscript
@@ -665,6 +670,117 @@ class ChatAccessibilityTest {
         assertTrue(opened)
         composeRule.onAllNodesWithContentDescription("More actions for message")
             .assertCountEquals(0)
+    }
+
+    @Test
+    fun markdownMessageBodyAnnouncesFlattenedPlainText() {
+        composeRule.setContent {
+            FishTheme {
+                MessageBubble(
+                    row = actionableMessage().copy(body = "**bold** and `code`").toRow(),
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription(
+            "You. bold and code. 10:30 AM",
+        ).assertExists()
+        composeRule.onAllNodesWithContentDescription(
+            "You. **bold** and `code`. 10:30 AM",
+        ).assertCountEquals(0)
+    }
+
+    @Test
+    fun markdownLinkExposesACustomAccessibilityActionToOpenIt() {
+        var openedUrl: String? = null
+        composeRule.setContent {
+            FishTheme {
+                CompositionLocalProvider(
+                    LocalUriHandler provides object : UriHandler {
+                        override fun openUri(uri: String) {
+                            openedUrl = uri
+                        }
+                    },
+                ) {
+                    MessageBubble(
+                        row = actionableMessage()
+                            .copy(body = "Check the [style guide](https://example.com/guide)")
+                            .toRow(),
+                    )
+                }
+            }
+        }
+
+        val customActions = composeRule.onNodeWithContentDescription(
+            "You. Check the style guide. 10:30 AM",
+        ).fetchSemanticsNode().config[SemanticsActions.CustomActions]
+
+        assertEquals(1, customActions.size)
+        assertEquals("Open link: style guide", customActions.single().label)
+        customActions.single().action()
+
+        assertEquals("https://example.com/guide", openedUrl)
+    }
+
+    @Test
+    fun duplicateLinkLabelsGetDistinctAccessibilityActions() {
+        var openedUrl: String? = null
+        composeRule.setContent {
+            FishTheme {
+                CompositionLocalProvider(
+                    LocalUriHandler provides object : UriHandler {
+                        override fun openUri(uri: String) {
+                            openedUrl = uri
+                        }
+                    },
+                ) {
+                    MessageBubble(
+                        row = actionableMessage()
+                            .copy(
+                                body = "Read it [here](https://example.com/a) or " +
+                                    "[here](https://example.com/b)",
+                            )
+                            .toRow(),
+                    )
+                }
+            }
+        }
+
+        val customActions = composeRule.onNodeWithContentDescription(
+            "You. Read it here or here. 10:30 AM",
+        ).fetchSemanticsNode().config[SemanticsActions.CustomActions]
+
+        assertEquals(2, customActions.size)
+        assertEquals("Open link: here (1)", customActions[0].label)
+        assertEquals("Open link: here (2)", customActions[1].label)
+
+        customActions[0].action()
+        assertEquals("https://example.com/a", openedUrl)
+
+        customActions[1].action()
+        assertEquals("https://example.com/b", openedUrl)
+    }
+
+    @Test
+    fun manyMarkdownLinksStayWellUnderComposesAccessibilityActionCeiling() {
+        // A minimal markdown link is well under 20 characters, so this easily
+        // fits inside the composer's 4,000-character message limit -- this is a
+        // realistic message, not a contrived one.
+        val linkCount = 40
+        val body = (1..linkCount).joinToString(" ") { "[link$it](https://example.com/$it)" }
+        val expectedFlattenedBody = (1..linkCount).joinToString(" ") { "link$it" }
+        composeRule.setContent {
+            FishTheme {
+                MessageBubble(row = actionableMessage().copy(body = body).toRow())
+            }
+        }
+
+        val customActions = composeRule.onNodeWithContentDescription(
+            "You. $expectedFlattenedBody. 10:30 AM",
+        ).fetchSemanticsNode().config[SemanticsActions.CustomActions]
+
+        assertEquals(MaxLinkAccessibilityActions, customActions.size)
+        assertTrue(customActions.size < 32)
     }
 
     @Test

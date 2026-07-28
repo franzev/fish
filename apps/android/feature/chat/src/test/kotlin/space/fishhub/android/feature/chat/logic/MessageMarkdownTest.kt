@@ -213,4 +213,58 @@ class MessageMarkdownTest {
     fun `plain text of an empty body is empty`() {
         assertEquals("", MessageMarkdownParser.plainText(""))
     }
+
+    // extractLinks has no reference implementation; it is new for accessibility.
+
+    @Test
+    fun `extractLinks returns an empty list when there are no links`() {
+        assertTrue(
+            MessageMarkdownParser.extractLinks("Just plain text with **bold** and _italic_.").isEmpty(),
+        )
+    }
+
+    @Test
+    fun `extractLinks finds a single link in a paragraph`() {
+        val links = MessageMarkdownParser.extractLinks("Check the [style guide](https://example.com/guide) please.")
+        assertEquals(
+            listOf(MessageMarkdownInline.Link("style guide", "https://example.com/guide")),
+            links,
+        )
+    }
+
+    @Test
+    fun `extractLinks finds multiple links in document order`() {
+        val links = MessageMarkdownParser.extractLinks(
+            "[first](https://example.com/1) link.\n\n[second](https://example.com/2) link.",
+        )
+        assertEquals(
+            listOf(
+                MessageMarkdownInline.Link("first", "https://example.com/1"),
+                MessageMarkdownInline.Link("second", "https://example.com/2"),
+            ),
+            links,
+        )
+    }
+
+    @Test
+    fun `extractLinks finds a link inside a nested list item`() {
+        val links = MessageMarkdownParser.extractLinks(
+            "- Warm up\n  - Read the [style guide](https://example.com/guide)",
+        )
+        assertEquals(
+            listOf(MessageMarkdownInline.Link("style guide", "https://example.com/guide")),
+            links,
+        )
+    }
+
+    @Test
+    fun `extractLinks finds a link inside a blockquote`() {
+        val links = MessageMarkdownParser.extractLinks(
+            "> Read the [style guide](https://example.com/guide) first.",
+        )
+        assertEquals(
+            listOf(MessageMarkdownInline.Link("style guide", "https://example.com/guide")),
+            links,
+        )
+    }
 }

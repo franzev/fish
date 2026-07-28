@@ -145,6 +145,27 @@ object MessageMarkdownParser {
             }
         }
 
+    /** Collects every link in the parsed tree, in document order, for one accessibility action per link. */
+    fun extractLinks(body: String): List<MessageMarkdownInline.Link> = parse(body).flatMap { blockLinks(it) }
+
+    private fun blockLinks(block: MessageMarkdownBlock): List<MessageMarkdownInline.Link> = when (block) {
+        is MessageMarkdownBlock.Code -> emptyList()
+        is MessageMarkdownBlock.Heading -> inlineLinks(block.content)
+        is MessageMarkdownBlock.Blockquote -> block.lines.flatMap { inlineLinks(it) }
+        is MessageMarkdownBlock.Bullets -> listLinks(block.list)
+        is MessageMarkdownBlock.Paragraph -> block.lines.flatMap { inlineLinks(it) }
+    }
+
+    private fun listLinks(list: MessageMarkdownList): List<MessageMarkdownInline.Link> =
+        list.items.flatMap { item ->
+            val own = inlineLinks(item.content)
+            val children = item.children?.let(::listLinks).orEmpty()
+            own + children
+        }
+
+    private fun inlineLinks(inlines: List<MessageMarkdownInline>): List<MessageMarkdownInline.Link> =
+        inlines.filterIsInstance<MessageMarkdownInline.Link>()
+
     private data class ListParseResult(val list: MessageMarkdownList, val nextIndex: Int)
 
     private fun parseList(lines: List<String>, start: Int, indent: Int): ListParseResult {

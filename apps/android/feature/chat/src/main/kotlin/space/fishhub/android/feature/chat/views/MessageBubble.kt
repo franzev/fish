@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -31,12 +32,53 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishButton
 import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.feature.chat.R
+import space.fishhub.android.feature.chat.logic.MessageMarkdownInline
+import space.fishhub.android.feature.chat.logic.MessageMarkdownParser
 import space.fishhub.android.feature.chat.model.MessageAction
 import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
 import space.fishhub.android.feature.chat.model.MessageRowUiModel
 import space.fishhub.android.feature.chat.model.MessageUiModel
 import space.fishhub.android.feature.chat.model.ReplyPreviewUiModel
 import space.fishhub.android.feature.chat.state.replyPreview
+
+/**
+ * Compose's accessibility delegate keeps a fixed pool of 32 custom-action IDs
+ * per node (`AndroidComposeViewAccessibilityDelegateCompat`) and throws once a
+ * node's `customActions` reaches that size. This cap is a platform ceiling, not
+ * an arbitrary UX limit -- keep it well under 32 so a link-heavy message can
+ * never crash the app for a TalkBack user. Links beyond the cap still appear in
+ * the announced plain-text body (`MessageMarkdownParser.plainText` is uncapped)
+ * but lose their individual "Open link" action -- an accepted tradeoff for an
+ * already-extreme message, not a gap left to fix later. Internal (rather than
+ * private) so MessageBubbleLinkCapTest can verify the cap directly.
+ */
+internal const val MaxLinkAccessibilityActions = 20
+
+/** Caps [links] so a link-heavy message can never reach Compose's 32-action ceiling. */
+internal fun capLinkAccessibilityActions(
+    links: List<MessageMarkdownInline.Link>,
+): List<MessageMarkdownInline.Link> = links.take(MaxLinkAccessibilityActions)
+
+/**
+ * Appends a 1-indexed occurrence suffix to a link's label when it collides with
+ * another link's label in [links] -- e.g. two "here" links become "here (1)"
+ * and "here (2)" -- so a TalkBack user can tell otherwise-identically-announced
+ * custom actions apart. Only same-label collisions are disambiguated; hrefs are
+ * not considered, and labels with no collision are returned unchanged.
+ */
+internal fun disambiguateLinkLabels(links: List<MessageMarkdownInline.Link>): List<String> {
+    val countsByLabel = links.groupingBy { it.label }.eachCount()
+    val occurrenceByLabel = mutableMapOf<String, Int>()
+    return links.map { link ->
+        if ((countsByLabel[link.label] ?: 0) <= 1) {
+            link.label
+        } else {
+            val occurrence = (occurrenceByLabel[link.label] ?: 0) + 1
+            occurrenceByLabel[link.label] = occurrence
+            "${link.label} ($occurrence)"
+        }
+    }
+}
 
 @Composable
 fun MessageBubble(
@@ -52,13 +94,28 @@ fun MessageBubble(
     val container = if (message.isOutgoing) colors.primary else colors.surfaceAlt
     val content = if (message.isOutgoing) colors.onPrimary else colors.foreground
     val author = if (message.isOutgoing) stringResource(R.string.you) else message.senderName
-    val body = if (message.deleted) stringResource(R.string.message_deleted) else message.body
+    val deletedPlaceholder = stringResource(R.string.message_deleted)
+    val accessibilityBody = remember(message.deleted, message.body, deletedPlaceholder) {
+        if (message.deleted) deletedPlaceholder else MessageMarkdownParser.plainText(message.body)
+    }
     val semantics = stringResource(
         R.string.message_accessibility,
         author,
-        body,
+        accessibilityBody,
         message.timeLabel,
     )
+    val messageLinks = remember(message.deleted, message.body) {
+        if (message.deleted) emptyList() else MessageMarkdownParser.extractLinks(message.body)
+    }
+    val uriHandler = LocalUriHandler.current
+    val cappedLinks = capLinkAccessibilityActions(messageLinks)
+    val linkLabels = disambiguateLinkLabels(cappedLinks)
+    val linkActions = cappedLinks.mapIndexed { index, link ->
+        CustomAccessibilityAction(stringResource(R.string.open_message_link, linkLabels[index])) {
+            runCatching { uriHandler.openUri(link.href) }
+            true
+        }
+    }
     val messageActionsLabel = stringResource(R.string.more_message_actions)
     val shape = messageShape(row)
 
@@ -137,17 +194,22 @@ fun MessageBubble(
                         horizontal = FishTheme.spacing.md,
                         vertical = FishTheme.spacing.sm,
                     )
-                    .clearAndSetSemantics { contentDescription = semantics },
-            ) {
-                Text(
-                    text = body,
-                    color = if (message.deleted) {
-                        if (message.isOutgoing) content.copy(alpha = 0.78f) else colors.muted
-                    } else {
-                        content
+                    .clearAndSetSemantics {
+                        contentDescription = semantics
+                        if (linkActions.isNotEmpty()) {
+                            customActions = linkActions
+                        }
                     },
-                    style = FishTheme.typography.body,
-                )
+            ) {
+                if (message.deleted) {
+                    Text(
+                        text = deletedPlaceholder,
+                        color = if (message.isOutgoing) content.copy(alpha = 0.78f) else colors.muted,
+                        style = FishTheme.typography.body,
+                    )
+                } else {
+                    MessageBody(body = message.body, isOutgoing = message.isOutgoing)
+                }
             }
         }
         message.linkPreview?.let { preview ->
