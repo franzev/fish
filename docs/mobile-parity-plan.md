@@ -1,5 +1,7 @@
 # Mobile Parity Implementation Plan
 
+**Status:** Implemented (2026-07-29) — all four tasks landed; as-built divergences are recorded in each task's checkbox notes.
+
 > **For agentic workers:** execute task-by-task with superpowers:subagent-driven-development or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the verified feature-parity gaps between the iOS and Android direct-chat apps with the smallest change that ships each capability.
