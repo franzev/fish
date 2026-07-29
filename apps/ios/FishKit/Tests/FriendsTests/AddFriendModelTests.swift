@@ -321,6 +321,40 @@ struct AddFriendModelTests {
         #expect(reviewed.requestId == "request-9")
     }
 
+    /// The search can name someone who asked first without naming the request
+    /// itself. Review must still fire — the sheet opens on the whole list —
+    /// so the card is never a dead end.
+    @Test func aPivotWithNoRequestIdStillAsksForTheReview() async {
+        let backend = ScriptedFriends(
+            searches: [
+                "sam_lee": [
+                    .candidate(
+                        FriendCandidate(
+                            status: .incomingPending,
+                            profile: FriendFixtures.sam
+                        )
+                    )
+                ]
+            ]
+        )
+        let reviewed = Reviewed()
+        let model = AddFriendModel(
+            directory: backend,
+            commands: backend,
+            onReviewRequested: {
+                reviewed.requestId = $0
+                reviewed.calls += 1
+            }
+        )
+
+        model.search("sam_lee")
+        #expect(await eventually { model.candidate != nil })
+        model.reviewRequest()
+
+        #expect(reviewed.calls == 1)
+        #expect(reviewed.requestId == nil)
+    }
+
     @Test func onlyAnIncomingCandidateCanBeReviewed() async {
         let backend = ScriptedFriends(searches: ["sam_lee": [.candidate(found(.none))]])
         let reviewed = Reviewed()

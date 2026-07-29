@@ -165,6 +165,58 @@ struct FriendRequestsModelTests {
         #expect(handled.calls == 0)
     }
 
+    /// The server's sentence was about one request. Whoever they look at
+    /// next must not open under it.
+    @Test func aRefusalStaysWithTheRequestItWasAbout() async {
+        let backend = ScriptedFriends(
+            lists: [.requests([Self.samRequest, Self.noorRequest])],
+            responses: [
+                .failure(
+                    FriendFixtures.failure(
+                        FriendCommandCode.requestAlreadyResolved,
+                        notice: "That request has already been answered."
+                    )
+                )
+            ]
+        )
+        let model = makeModel(backend)
+        model.load()
+        #expect(await eventually { model.requests.count == 2 })
+        model.select(Self.samRequest)
+        model.respond(requestId: "request-1", response: .accept)
+        #expect(await eventually { model.notice != nil })
+
+        model.select(Self.noorRequest)
+        #expect(model.notice == nil)
+        #expect(model.selectedRequest?.requestId == "request-2")
+        #expect(model.requests.count == 2)
+    }
+
+    @Test func steppingBackToTheListLeavesTheRefusalBehind() async {
+        let backend = ScriptedFriends(
+            lists: [.requests([Self.samRequest])],
+            responses: [
+                .failure(
+                    FriendFixtures.failure(
+                        FriendCommandCode.requestNotFound,
+                        notice: "That request is no longer waiting."
+                    )
+                )
+            ]
+        )
+        let model = makeModel(backend)
+        model.load()
+        #expect(await eventually { model.requests.count == 1 })
+        model.select(Self.samRequest)
+        model.respond(requestId: "request-1", response: .decline)
+        #expect(await eventually { model.notice != nil })
+
+        model.clearSelection()
+        #expect(model.notice == nil)
+        #expect(model.selectedRequest == nil)
+        #expect(model.requests.count == 1)
+    }
+
     /// A reload takes the screen over. The answer that was already in flight
     /// must not quietly edit — or empty — the list that replaced it.
     @Test func anAnswerThatLandsWhileTheListIsReloadingIsDropped() async {

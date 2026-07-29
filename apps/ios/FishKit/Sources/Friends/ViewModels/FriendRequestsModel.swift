@@ -62,11 +62,13 @@ public final class FriendRequestsModel {
     }
 
     public func select(_ request: IncomingFriendRequest) {
+        clearNotice()
         selectedRequest = request
     }
 
     public func clearSelection() {
         pendingSelectionId = nil
+        clearNotice()
         selectedRequest = nil
     }
 
@@ -117,6 +119,17 @@ public final class FriendRequestsModel {
         var freed = respondingWith
         freed[requestId] = nil
         return (requests, freed)
+    }
+
+    /// A refusal was about one request. Moving to another one — or back to
+    /// the list — must not carry the last request's sentence along, or the
+    /// next person's review opens accusing them of something that never
+    /// happened.
+    private func clearNotice() {
+        guard case .loaded(let requests, let respondingWith, let notice) = state,
+              notice != nil
+        else { return }
+        state = .loaded(requests: requests, respondingWith: respondingWith)
     }
 
     /// Server copy passes through verbatim; anything else reads as the one
