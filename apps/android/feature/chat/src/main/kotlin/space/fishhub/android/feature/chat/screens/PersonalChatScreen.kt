@@ -149,6 +149,10 @@ fun PersonalChatScreen(
                     friendsWelcome = friendsEntryPointsVisible &&
                         model.conversations.isEmpty() &&
                         model.notice == null,
+                    // A directory that will not load says nothing about the
+                    // person waiting, so the row outlives the welcome copy.
+                    friendsRequestsReachable = friendsEntryPointsVisible &&
+                        model.conversations.isEmpty(),
                     incomingRequestCount = incomingRequestCount,
                     onOpenAddFriend = onOpenAddFriend,
                     onOpenRequests = onOpenRequests,
@@ -307,48 +311,68 @@ private fun ChatUnavailable(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     friendsWelcome: Boolean,
+    friendsRequestsReachable: Boolean,
     incomingRequestCount: Int,
     onOpenAddFriend: () -> Unit,
     onOpenRequests: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        if (friendsWelcome) {
+        // Without this the only way to a waiting request would be a
+        // conversation list nobody with zero conversations can reach.
+        val showWaitingRow = friendsRequestsReachable && incomingRequestCount > 0
+        if (friendsWelcome || showWaitingRow) {
             Column(
                 modifier = Modifier.padding(horizontal = FishTheme.spacing.page),
                 verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.md),
             ) {
-                FishEmptyState(
-                    title = stringResource(R.string.no_conversations_title),
-                    description = stringResource(R.string.no_conversations_description),
-                    action = {
-                        FishButton(
-                            label = stringResource(R.string.add_a_friend),
-                            onClick = onOpenAddFriend,
-                        )
-                    },
-                )
-                // Without this the only way to a waiting request would be a
-                // conversation list nobody with zero conversations can reach.
+                if (friendsWelcome) {
+                    FriendsWelcomeState(onOpenAddFriend)
+                } else {
+                    ConversationUnavailableState(hasBack, onBack, onRetry)
+                }
                 FriendRequestsWaitingRow(
                     count = incomingRequestCount,
                     onClick = onOpenRequests,
                 )
             }
         } else {
-            FishEmptyState(
-                title = stringResource(R.string.conversation_unavailable_title),
-                description = stringResource(R.string.conversation_unavailable_description),
-                action = {
-                    FishButton(
-                        label = stringResource(
-                            if (hasBack) R.string.back else R.string.retry_conversation,
-                        ),
-                        onClick = if (hasBack) onBack else onRetry,
-                        variant = space.fishhub.android.core.designsystem.component.FishButtonVariant.Secondary,
-                    )
-                },
-            )
+            ConversationUnavailableState(hasBack, onBack, onRetry)
         }
     }
+}
+
+@Composable
+private fun FriendsWelcomeState(onOpenAddFriend: () -> Unit) {
+    FishEmptyState(
+        title = stringResource(R.string.no_conversations_title),
+        description = stringResource(R.string.no_conversations_description),
+        action = {
+            FishButton(
+                label = stringResource(R.string.add_a_friend),
+                onClick = onOpenAddFriend,
+            )
+        },
+    )
+}
+
+@Composable
+private fun ConversationUnavailableState(
+    hasBack: Boolean,
+    onBack: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    FishEmptyState(
+        title = stringResource(R.string.conversation_unavailable_title),
+        description = stringResource(R.string.conversation_unavailable_description),
+        action = {
+            FishButton(
+                label = stringResource(
+                    if (hasBack) R.string.back else R.string.retry_conversation,
+                ),
+                onClick = if (hasBack) onBack else onRetry,
+                variant = space.fishhub.android.core.designsystem.component.FishButtonVariant.Secondary,
+            )
+        },
+    )
 }

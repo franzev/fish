@@ -54,6 +54,12 @@ private fun AddFriendPreview(page: String) {
             ),
             clientRequestId = PreviewClientRequestId,
         )
+        // No id to point at is a longer route to the same place, never a card
+        // that says a request is waiting and offers no way to it.
+        "incoming-no-id" -> AddFriendUiState.Candidate(
+            candidate = FriendCandidate(FriendCandidateStatus.IncomingPending, profile),
+            clientRequestId = PreviewClientRequestId,
+        )
         "unavailable" -> AddFriendUiState.Candidate(
             candidate = FriendCandidate(FriendCandidateStatus.Unavailable),
             clientRequestId = PreviewClientRequestId,

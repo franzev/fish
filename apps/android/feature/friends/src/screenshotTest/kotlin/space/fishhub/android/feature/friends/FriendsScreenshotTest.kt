@@ -70,6 +70,11 @@ fun AddFriendIncomingRtlScreenshot() = FriendsFrame("incoming", false)
 fun AddFriendIncomingLargeFontScreenshot() = FriendsFrame("incoming", false)
 
 @PreviewTest
+@Preview(name = "add friend incoming no id", widthDp = 412, heightDp = 640, showBackground = true)
+@Composable
+fun AddFriendIncomingWithoutIdScreenshot() = FriendsFrame("incoming-no-id", false)
+
+@PreviewTest
 @Preview(name = "add friend unavailable", widthDp = 412, heightDp = 640, showBackground = true)
 @Composable
 fun AddFriendUnavailableScreenshot() = FriendsFrame("unavailable", false)

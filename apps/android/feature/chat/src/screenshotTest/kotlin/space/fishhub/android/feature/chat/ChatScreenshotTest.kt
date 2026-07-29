@@ -1200,6 +1200,24 @@ fun NoConversationsFriendsLargeFontScreenshot() {
     NoConversationsFrame(darkTheme = false, incomingRequestCount = 1)
 }
 
+@PreviewTest
+@Preview(
+    name = "no conversations friends waiting notice",
+    widthDp = 412,
+    heightDp = 915,
+    showBackground = true,
+)
+@Composable
+fun NoConversationsFriendsWaitingNoticeScreenshot() {
+    // A directory that would not load keeps its own copy, and the person
+    // waiting is still reachable underneath it.
+    NoConversationsFrame(
+        darkTheme = false,
+        incomingRequestCount = 1,
+        notice = "Conversations did not load. Try again in a moment.",
+    )
+}
+
 @Composable
 private fun ConversationListFrame(darkTheme: Boolean, incomingRequestCount: Int) {
     FishTheme(darkTheme = darkTheme, reducedMotion = true) {
@@ -1226,12 +1244,17 @@ private fun ConversationListFrame(darkTheme: Boolean, incomingRequestCount: Int)
 }
 
 @Composable
-private fun NoConversationsFrame(darkTheme: Boolean, incomingRequestCount: Int) {
+private fun NoConversationsFrame(
+    darkTheme: Boolean,
+    incomingRequestCount: Int,
+    notice: String? = null,
+) {
     FishTheme(darkTheme = darkTheme, reducedMotion = true) {
         ChatAdaptiveLayout(
             model = ChatUiModel(
                 screenState = ChatScreenState.Unavailable,
                 currentUserDisplayName = "Franz",
+                notice = notice,
             ),
             composerState = rememberTextFieldState(),
             onSend = {},

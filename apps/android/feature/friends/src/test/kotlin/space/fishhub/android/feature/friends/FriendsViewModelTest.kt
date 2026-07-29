@@ -301,6 +301,63 @@ class FriendsViewModelTest {
         }
 
     @Test
+    fun `a refusal stays with the request it was about`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Carried onto Noor's review, Sam's refusal would accuse Noor of
+            // something that never happened.
+            val repository = FakeFriendsRepository()
+            repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
+            repository.respondOutcome =
+                FriendsResult.Failure("This request isn’t available anymore.", recoverable = true)
+            val viewModel = startedViewModel(repository)
+
+            viewModel.openRequests()
+            viewModel.selectRequest(RequestFromSam)
+            viewModel.respond(RequestFromSam.requestId, FriendRequestResponse.Decline)
+            viewModel.selectRequest(RequestFromNoor)
+
+            val state = viewModel.requestsState.value as FriendRequestsUiState.Loaded
+            assertNull(state.notice)
+            assertEquals(listOf(RequestFromSam, RequestFromNoor), state.requests)
+        }
+
+    @Test
+    fun `stepping back to the list leaves the refusal behind`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeFriendsRepository()
+            repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
+            repository.respondOutcome =
+                FriendsResult.Failure("This request isn’t available anymore.", recoverable = true)
+            val viewModel = startedViewModel(repository)
+
+            viewModel.openRequests()
+            viewModel.selectRequest(RequestFromSam)
+            viewModel.respond(RequestFromSam.requestId, FriendRequestResponse.Accept)
+            viewModel.clearSelectedRequest()
+
+            assertNull((viewModel.requestsState.value as FriendRequestsUiState.Loaded).notice)
+        }
+
+    @Test
+    fun `a pending request with no id to point at still opens the list`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // The server always ships a request id with a pending status; this
+            // pins that a missing one is a longer route, never a dead end.
+            val repository = FakeFriendsRepository()
+            repository.requests = FriendsResult.Success(listOf(RequestFromSam))
+            val viewModel = startedViewModel(repository)
+
+            viewModel.reviewIncomingRequest(null)
+
+            assertTrue(viewModel.requestsVisible.value)
+            assertNull(viewModel.selectedRequest.value)
+            assertEquals(
+                listOf(RequestFromSam),
+                (viewModel.requestsState.value as FriendRequestsUiState.Loaded).requests,
+            )
+        }
+
+    @Test
     fun `accepting invalidates the conversation directory and declining does not`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()

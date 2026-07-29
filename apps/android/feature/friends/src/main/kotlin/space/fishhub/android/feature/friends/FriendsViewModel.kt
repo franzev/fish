@@ -147,19 +147,33 @@ class FriendsViewModel(
     }
 
     fun selectRequest(request: IncomingFriendRequest) {
+        clearRespondNotice()
         mutableSelectedRequest.value = request
     }
 
     fun clearSelectedRequest() {
         pendingSelectionId = null
+        clearRespondNotice()
         mutableSelectedRequest.value = null
     }
 
     /**
-     * They asked first. Leave add-a-friend and open their request so accepting
-     * is the next tap rather than a hunt through the list.
+     * A refusal belongs to the request it was about. Carried onto the next
+     * review it would open accusing that person of something that never
+     * happened.
      */
-    fun reviewIncomingRequest(requestId: String) {
+    private fun clearRespondNotice() {
+        val loaded = mutableRequestsState.value as? FriendRequestsUiState.Loaded ?: return
+        if (loaded.notice == null) return
+        mutableRequestsState.value = loaded.copy(notice = null)
+    }
+
+    /**
+     * They asked first. Leave add-a-friend and open their request so accepting
+     * is the next tap rather than a hunt through the list. Without an id to
+     * point at, the list itself is still a way through — never a dead end.
+     */
+    fun reviewIncomingRequest(requestId: String?) {
         closeAddFriend()
         pendingSelectionId = requestId
         mutableSelectedRequest.value = null

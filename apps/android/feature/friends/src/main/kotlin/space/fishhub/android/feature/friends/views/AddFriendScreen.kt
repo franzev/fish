@@ -53,7 +53,7 @@ fun AddFriendScreen(
     avatarUrls: Map<String, String>,
     onSearch: (String) -> Unit,
     onSend: () -> Unit,
-    onReviewRequest: (String) -> Unit,
+    onReviewRequest: (String?) -> Unit,
     onSearchAgain: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
@@ -167,7 +167,7 @@ private fun CandidateCard(
     state: AddFriendUiState.Candidate,
     avatarUrls: Map<String, String>,
     onSend: () -> Unit,
-    onReviewRequest: (String) -> Unit,
+    onReviewRequest: (String?) -> Unit,
     onSearchAgain: () -> Unit,
 ) {
     val profile = state.candidate.profile
@@ -220,14 +220,13 @@ private fun CandidateCard(
             // At most one primary action on the card, and never beside Search.
             when {
                 sent || state.candidate.status == FriendCandidateStatus.Friends -> Unit
-                state.candidate.status == FriendCandidateStatus.IncomingPending ->
-                    state.candidate.requestId?.let { requestId ->
-                        FishButton(
-                            label = stringResource(R.string.add_friend_review_request),
-                            onClick = { onReviewRequest(requestId) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                // Told a request is waiting and given no way to it, someone is
+                // stuck. Without an id the list still gets them there.
+                state.candidate.status == FriendCandidateStatus.IncomingPending -> FishButton(
+                    label = stringResource(R.string.add_friend_review_request),
+                    onClick = { onReviewRequest(state.candidate.requestId) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 else -> FishButton(
                     label = stringResource(R.string.add_friend_send),
                     onClick = onSend,
