@@ -17,6 +17,21 @@ struct TopBarTests {
                     action: {}
                 )
             )
+            TopBar(
+                title: "Messages",
+                trailing: [
+                    TopBarAction(
+                        icon: .personPlus,
+                        accessibilityLabel: "Add a friend",
+                        action: {}
+                    ),
+                    TopBarAction(
+                        icon: .person,
+                        accessibilityLabel: "Account settings",
+                        action: {}
+                    ),
+                ]
+            )
         }
         assertThemedSnapshots(of: states, named: "top-bar-states")
         assertAccessibilitySnapshots(of: states, named: "top-bar-states")

@@ -21,17 +21,33 @@ public struct TopBarAction {
 /// the standard 64-point height and grows when Dynamic Type needs more room.
 public struct TopBar<Content: View>: View {
     private let onBack: (() -> Void)?
-    private let trailing: TopBarAction?
+    private let trailing: [TopBarAction]
     private let content: Content
+
+    /// More than one trailing action is for a bar that genuinely carries two
+    /// errands — the inbox's add-a-friend beside the account. They read left
+    /// to right in the order given, so the account stays where it has always
+    /// been: last.
+    public init(
+        onBack: (() -> Void)? = nil,
+        trailing: [TopBarAction],
+        @ViewBuilder content: () -> Content
+    ) {
+        self.onBack = onBack
+        self.trailing = trailing
+        self.content = content()
+    }
 
     public init(
         onBack: (() -> Void)? = nil,
         trailing: TopBarAction? = nil,
         @ViewBuilder content: () -> Content
     ) {
-        self.onBack = onBack
-        self.trailing = trailing
-        self.content = content()
+        self.init(
+            onBack: onBack,
+            trailing: trailing.map { [$0] } ?? [],
+            content: content
+        )
     }
 
     public var body: some View {
@@ -46,12 +62,12 @@ public struct TopBar<Content: View>: View {
             }
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if let trailing {
+            ForEach(trailing.indices, id: \.self) { index in
                 IconButton(
-                    trailing.icon,
+                    trailing[index].icon,
                     style: .quiet,
-                    accessibilityLabel: trailing.accessibilityLabel,
-                    action: trailing.action
+                    accessibilityLabel: trailing[index].accessibilityLabel,
+                    action: trailing[index].action
                 )
             }
         }
@@ -69,7 +85,7 @@ extension TopBar where Content == AnyView {
     public init(
         title: String,
         onBack: (() -> Void)? = nil,
-        trailing: TopBarAction? = nil
+        trailing: [TopBarAction]
     ) {
         self.init(onBack: onBack, trailing: trailing) {
             AnyView(
@@ -79,5 +95,17 @@ extension TopBar where Content == AnyView {
                     .fixedSize(horizontal: false, vertical: true)
             )
         }
+    }
+
+    public init(
+        title: String,
+        onBack: (() -> Void)? = nil,
+        trailing: TopBarAction? = nil
+    ) {
+        self.init(
+            title: title,
+            onBack: onBack,
+            trailing: trailing.map { [$0] } ?? []
+        )
     }
 }
