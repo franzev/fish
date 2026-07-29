@@ -1,6 +1,6 @@
 # Android account settings implementation plan
 
-Status: implementation-ready. Platform order: Android first. Scope: the existing native direct-chat app only.
+Status: Implemented (2026-07-20, `d0764686 feat(android): add account settings sheet with theme and notification controls`); since refactored into one file per composable and screens/views/logic/model packages. Platform order: Android first. Scope: the existing native direct-chat app only.
 
 ## Outcome
 
