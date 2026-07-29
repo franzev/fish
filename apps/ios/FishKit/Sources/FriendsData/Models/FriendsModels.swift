@@ -63,7 +63,7 @@ public struct IncomingFriendRequest: Sendable, Equatable {
 /// Why a friend event arrived. Every reason means the same thing to a
 /// consumer — refetch — so an unrecognised server reason is still delivered
 /// as `unknown` rather than dropped.
-public enum FriendEventReason: Sendable, Equatable {
+public enum FriendEventReason: Sendable, Equatable, CaseIterable {
     case requestCreated
     case requestAccepted
     case requestDeclined
@@ -75,6 +75,24 @@ public enum FriendEventReason: Sendable, Equatable {
     /// delivered.
     case streamResumed
     case unknown
+
+    /// Whether this reason can mean a conversation exists that the
+    /// conversation directory has never heard of — the one thing friends
+    /// exists to prevent going unnoticed.
+    ///
+    /// The stream resuming counts: whatever happened while the channel was
+    /// down was never delivered, and a session's first subscribe resumes too,
+    /// so signing in asks once. Everything else is a request's own lifecycle,
+    /// which changes what is waiting but never what can be talked in.
+    public var refreshesDirectory: Bool {
+        switch self {
+        case .friendshipCreated, .requestAccepted, .streamResumed:
+            true
+        case .requestCreated, .requestDeclined, .requestCancelled,
+             .friendshipRemoved, .unknown:
+            false
+        }
+    }
 }
 
 /// A wake-up hint from the `friends:user:{id}` channel. The payload carries

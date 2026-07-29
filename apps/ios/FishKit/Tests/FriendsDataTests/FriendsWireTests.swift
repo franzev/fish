@@ -223,6 +223,23 @@ struct FriendsWireTests {
         #expect(FriendEventWire(reason: "streamResumed").domain.reason == .unknown)
     }
 
+    /// The rule the app leans on, checked for every reason the enum can
+    /// produce: a conversation nobody knows about is the one failure friends
+    /// exists to prevent, and a request's own lifecycle changes what is
+    /// waiting rather than what can be talked in. A reason added later
+    /// refreshes nothing until it is named here on purpose.
+    @Test(arguments: FriendEventReason.allCases)
+    func onlyTheReasonsThatCanCreateAConversationRefreshTheDirectory(
+        reason: FriendEventReason
+    ) {
+        let refreshing: [FriendEventReason] = [
+            .friendshipCreated,
+            .requestAccepted,
+            .streamResumed,
+        ]
+        #expect(reason.refreshesDirectory == refreshing.contains(reason))
+    }
+
     @Test func realtimeTopicAndEventMatchTheDeployedTriggers() {
         #expect(
             FriendsRealtimeWire.topic(userId: "user-1") == "friends:user:user-1"

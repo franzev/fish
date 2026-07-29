@@ -998,10 +998,9 @@ final class FishAppModel {
     }
 
     /// This subscription is the only thing that tells a sender their new
-    /// conversation exists. Every event refetches the count; the three that
-    /// can have created a conversation also refresh the directory — the
-    /// stream resuming among them, because whatever happened while it was
-    /// down was never delivered, and a session's first subscribe resumes too.
+    /// conversation exists. Every event refetches the count; which ones also
+    /// mean a conversation may have appeared is the event's own answer to
+    /// give — see `FriendEventReason.refreshesDirectory`.
     private func startFriendEvents(
         userId: String,
         events: some FriendEventsProviding
@@ -1012,11 +1011,8 @@ final class FishAppModel {
             for await event in events.events(userId: userId) {
                 guard let self, friendsGeneration == generation else { return }
                 refreshIncomingRequestCount()
-                switch event.reason {
-                case .friendshipCreated, .requestAccepted, .streamResumed:
+                if event.reason.refreshesDirectory {
                     await refreshDirectory()
-                default:
-                    break
                 }
             }
         }
