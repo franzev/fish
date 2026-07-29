@@ -1,8 +1,8 @@
 # Android message search implementation plan
 
-**Status:** Proposed
+**Status:** Implemented (2026-07-21, `7455aec7 feat(android): add in-chat message search`)
 
-**Priority:** Implement before the iOS message-search plan
+**Priority:** Implemented before the iOS message-search plan, as ordered
 
 **Scope:** Search within the currently open authorized direct conversation, then return to and focus the selected message
 
