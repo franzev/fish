@@ -42,7 +42,14 @@ struct FriendEventStream: Sendable {
         into continuation: AsyncStream<FriendEvent>.Continuation
     ) async {
         var joined = false
+        var dropped = false
         for await signal in attempt() {
+            // Past the drop this attempt has nothing left to say, but it is
+            // not over: its stream finishes only once its channel is torn
+            // down. Leaving early would let the next attempt open a channel
+            // while this one is still closing — same topic, same instance,
+            // resubscribed and then unmapped alive.
+            guard !dropped else { continue }
             switch signal {
             case .joined:
                 // Being back is itself news — whatever happened while the
@@ -54,9 +61,10 @@ struct FriendEventStream: Sendable {
             case .received(let event):
                 continuation.yield(event)
             case .dropped:
-                // Hand the decision back to the loop: a fresh token, a fresh
-                // channel, and a resume the consumer can act on.
-                return
+                // Hand the decision back to the loop — a fresh token, a
+                // fresh channel, and a resume the consumer can act on —
+                // once this attempt has finished closing up.
+                dropped = true
             }
         }
     }

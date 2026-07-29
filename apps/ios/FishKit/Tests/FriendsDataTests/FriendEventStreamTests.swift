@@ -27,6 +27,17 @@ struct FriendEventStreamTests {
         }
     }
 
+    /// Counts attempt starts so "the next one has not begun" is an
+    /// assertion, not a wait.
+    private actor Counter {
+        private(set) var started = 0
+
+        func start() -> Int {
+            defer { started += 1 }
+            return started
+        }
+    }
+
     private func makeLoop(_ script: Script) -> FriendEventStream {
         FriendEventStream(
             attempt: {
@@ -118,6 +129,47 @@ struct FriendEventStreamTests {
 
         #expect(events == [Self.resumed, Self.requestCreated, Self.resumed])
         #expect(!events.contains(Self.friendshipCreated))
+    }
+
+    /// A dropped attempt is still closing its channel. Starting the next one
+    /// before it finished would hand that one the same channel instance,
+    /// mid-teardown — so the loop waits, and hears nothing more meanwhile.
+    @Test func theNextAttemptWaitsForTheDroppedOneToFinish() async {
+        let closing = AsyncStream<Void>.makeStream()
+        let attempts = Counter()
+        let loop = FriendEventStream(
+            attempt: {
+                AsyncStream { continuation in
+                    Task {
+                        let index = await attempts.start()
+                        continuation.yield(.joined)
+                        if index == 0 {
+                            continuation.yield(.dropped)
+                            continuation.yield(.received(Self.friendshipCreated))
+                            // Held open the way a channel that is still
+                            // unsubscribing holds its attempt open.
+                            for await _ in closing.stream {}
+                        }
+                        continuation.finish()
+                    }
+                }
+            },
+            backoff: {}
+        )
+        let events = AsyncStream<FriendEvent>.makeStream()
+        let task = Task { await loop.run(into: events.continuation) }
+        defer { task.cancel() }
+        var iterator = events.stream.makeAsyncIterator()
+
+        #expect(await iterator.next() == Self.resumed)
+        #expect(await attempts.started == 1)
+
+        closing.continuation.finish()
+
+        // The next thing heard is the next attempt joining — never the
+        // payload that arrived after the drop.
+        #expect(await iterator.next() == Self.resumed)
+        #expect(await attempts.started == 2)
     }
 
     @Test func cancellingTheConsumerEndsTheStream() async {

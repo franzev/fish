@@ -107,7 +107,7 @@ private func friendChannelSignals(
             do {
                 try await channel.subscribeWithError()
             } catch {
-                await client.removeChannel(channel)
+                await tearDown(channel, on: client)
                 continuation.finish()
                 return
             }
@@ -137,11 +137,23 @@ private func friendChannelSignals(
                 _ = await group.next()
                 group.cancelAll()
             }
-            await client.removeChannel(channel)
+            await tearDown(channel, on: client)
             continuation.finish()
         }
         continuation.onTermination = { _ in task.cancel() }
     }
+}
+
+/// Closes a channel out completely. `removeChannel` unsubscribes only a
+/// channel that is still `subscribed`, so a channel dropped mid-rejoin would
+/// be unmapped with its in-flight join un-cancelled and its server-side
+/// membership intact — and inbound messages are routed by topic alone, so the
+/// `phx_close` that eventually arrives would land on this attempt's
+/// successor and take it down. Unsubscribing first cancels an in-flight join
+/// and sends the leave; it no-ops on a channel that is already unsubscribed.
+private func tearDown(_ channel: RealtimeChannelV2, on client: SupabaseClient) async {
+    await channel.unsubscribe()
+    await client.removeChannel(channel)
 }
 
 /// An unreadable payload still means something changed, so it is delivered as
