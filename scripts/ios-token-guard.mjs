@@ -38,52 +38,75 @@ const FORBIDDEN_IMPORTS = {
   DesignSystem: [
     "UIComponents", "ChatCore", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
+    "FriendsData", "Friends",
   ],
   UIComponents: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
+    "FriendsData", "Friends",
   ],
   ChatCore: [
     "DesignSystem", "UIComponents", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
-    "SwiftUI", "Supabase", "LiveKit",
+    "FriendsData", "Friends", "SwiftUI", "Supabase", "LiveKit",
   ],
   ChatData: [
     "DesignSystem", "UIComponents", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
+    "FriendsData", "Friends",
   ],
   PersonalChat: [
     "TestSupport", "CallData", "Calls", "CallMediaLiveKit",
-    "PresenceData", "Presence",
+    "PresenceData", "Presence", "FriendsData", "Friends",
   ],
   // The call control plane stays UI-free and SDK-free; the feature never
   // reaches the media SDK directly — only the adapter target links LiveKit.
   CallData: [
     "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
     "TestSupport", "Calls", "CallMediaLiveKit", "SwiftUI", "LiveKit",
-    "PresenceData", "Presence",
+    "PresenceData", "Presence", "FriendsData", "Friends",
   ],
   Calls: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit",
-    "PresenceData", "Presence",
+    "PresenceData", "Presence", "FriendsData", "Friends",
   ],
-  CallMediaLiveKit: ["ChatCore", "ChatData", "PersonalChat", "TestSupport", "PresenceData", "Presence"],
+  CallMediaLiveKit: [
+    "ChatCore", "ChatData", "PersonalChat", "TestSupport", "PresenceData", "Presence",
+    "FriendsData", "Friends",
+  ],
   // The presence control plane stays UI-free; only its adapters speak the
   // Supabase SDK, and the feature layer never reaches the SDK directly.
   PresenceData: [
     "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
     "TestSupport", "CallData", "Calls", "CallMediaLiveKit", "Presence",
-    "SwiftUI", "LiveKit",
+    "FriendsData", "Friends", "SwiftUI", "LiveKit",
   ],
   Presence: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
-    "CallMediaLiveKit", "Supabase", "LiveKit",
+    "CallMediaLiveKit", "FriendsData", "Friends", "Supabase", "LiveKit",
   ],
   AccountSettings: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
-    "CallMediaLiveKit", "PresenceData", "Presence", "Supabase", "LiveKit",
+    "CallMediaLiveKit", "PresenceData", "Presence", "FriendsData", "Friends",
+    "Supabase", "LiveKit",
+  ],
+  // The friends control plane stays UI-free; only its adapters speak the
+  // Supabase SDK, exactly as the module doc promises.
+  FriendsData: [
+    "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
+    "TestSupport", "CallData", "Calls", "CallMediaLiveKit", "PresenceData",
+    "Presence", "AccountSettings", "Friends", "SwiftUI", "LiveKit",
+  ],
+  Friends: [
+    "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
+    "CallMediaLiveKit", "PresenceData", "Presence", "AccountSettings",
+    "Supabase", "LiveKit",
   ],
 };
+
+// Control planes whose provider SDK stays quarantined in `Adapters/`: the rest
+// of the module is provider-neutral and must stay that way.
+const ADAPTERS_ONLY_SUPABASE = ["ChatData", "FriendsData"];
 
 function walk(directory) {
   for (const entry of readdirSync(directory)) {
@@ -107,15 +130,15 @@ function check(file) {
   const relative = path.relative(ROOT, file);
   const moduleName = relative.split(path.sep)[0];
   if (
-    moduleName === "ChatData" &&
-    !relative.startsWith(`ChatData${path.sep}Adapters${path.sep}`)
+    ADAPTERS_ONLY_SUPABASE.includes(moduleName) &&
+    !relative.startsWith(`${moduleName}${path.sep}Adapters${path.sep}`)
   ) {
     lines.forEach((line, index) => {
       if (line.trim() === "import Supabase") {
         report(
           file,
           index + 1,
-          "ChatData may import Supabase only from Adapters",
+          `${moduleName} may import Supabase only from Adapters`,
         );
       }
     });
