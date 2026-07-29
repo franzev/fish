@@ -4,13 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import space.fishhub.android.data.friends.FriendCandidateStatus
 import space.fishhub.android.data.friends.FriendEvent
@@ -39,7 +42,13 @@ class FriendsViewModel(
     private data class Session(val userId: String, val isClient: Boolean)
 
     private var session: Session? = null
-    private var eventsJob: Job? = null
+
+    /**
+     * Everything friends does belongs to one signed-in person. Scoping the work
+     * to the session means a slow answer cannot land on the next person's
+     * screen — it is cancelled with them.
+     */
+    private var sessionScope: CoroutineScope? = null
 
     /** The request the add-friend pivot asked for, before the list has arrived. */
     private var pendingSelectionId: String? = null
@@ -90,15 +99,17 @@ class FriendsViewModel(
         session = next
         mutableEntryPointsVisible.value = friendsEnabled && isClient
         if (!friendsEnabled || !isClient) return
-        eventsJob = viewModelScope.launch {
-            repository.events(userId).collect(::onFriendEvent)
-        }
+        val scope = CoroutineScope(
+            viewModelScope.coroutineContext + SupervisorJob(viewModelScope.coroutineContext.job),
+        )
+        sessionScope = scope
+        scope.launch { repository.events(userId).collect(::onFriendEvent) }
         refreshIncomingRequestCount()
     }
 
     fun stop() {
-        eventsJob?.cancel()
-        eventsJob = null
+        sessionScope?.cancel()
+        sessionScope = null
         session = null
         pendingSelectionId = null
         mutableEntryPointsVisible.value = false
@@ -157,6 +168,7 @@ class FriendsViewModel(
     }
 
     fun search(username: String) {
+        val scope = sessionScope ?: return
         val trimmed = username.trim()
         if (trimmed.isEmpty()) {
             mutableAddFriendState.value =
@@ -166,7 +178,7 @@ class FriendsViewModel(
         val current = mutableAddFriendState.value
         if (current is AddFriendUiState.Input && current.searching) return
         mutableAddFriendState.value = AddFriendUiState.Input(searching = true)
-        viewModelScope.launch {
+        scope.launch {
             when (val result = repository.searchCandidate(trimmed)) {
                 is FriendsResult.Success -> {
                     mutableAddFriendState.value = AddFriendUiState.Candidate(
@@ -187,12 +199,13 @@ class FriendsViewModel(
     }
 
     fun sendRequest() {
+        val scope = sessionScope ?: return
         val current = mutableAddFriendState.value as? AddFriendUiState.Candidate ?: return
         val profile = current.candidate.profile ?: return
         if (current.sending || current.sent) return
         if (current.candidate.status != FriendCandidateStatus.None) return
         mutableAddFriendState.value = current.copy(sending = true, notice = null)
-        viewModelScope.launch {
+        scope.launch {
             val result = repository.sendRequest(profile.id, current.clientRequestId)
             // A new search while this was in flight owns the screen now.
             val settled = (mutableAddFriendState.value as? AddFriendUiState.Candidate)
@@ -252,8 +265,9 @@ class FriendsViewModel(
     }
 
     fun loadRequests() {
+        val scope = sessionScope ?: return
         mutableRequestsState.value = FriendRequestsUiState.Loading
-        viewModelScope.launch {
+        scope.launch {
             when (val result = repository.listIncomingRequests()) {
                 is FriendsResult.Success -> {
                     mutableRequestsState.value = FriendRequestsUiState.Loaded(result.value)
@@ -272,22 +286,23 @@ class FriendsViewModel(
     }
 
     fun respond(requestId: String, response: FriendRequestResponse) {
+        val scope = sessionScope ?: return
         val current = mutableRequestsState.value as? FriendRequestsUiState.Loaded ?: return
-        if (requestId in current.busyRequestIds) return
+        if (requestId in current.respondingWith) return
         mutableRequestsState.value = current.copy(
-            busyRequestIds = current.busyRequestIds + requestId,
+            respondingWith = current.respondingWith + (requestId to response),
             notice = null,
         )
-        viewModelScope.launch {
+        scope.launch {
             val result = repository.respondRequest(requestId, response)
             val settled = mutableRequestsState.value as? FriendRequestsUiState.Loaded
                 ?: return@launch
-            val freed = settled.busyRequestIds - requestId
+            val freed = settled.respondingWith - requestId
             when (result) {
                 is FriendsResult.Success -> {
                     val remaining = settled.requests.filterNot { it.requestId == requestId }
                     mutableRequestsState.value =
-                        settled.copy(requests = remaining, busyRequestIds = freed)
+                        settled.copy(requests = remaining, respondingWith = freed)
                     if (mutableSelectedRequest.value?.requestId == requestId) {
                         mutableSelectedRequest.value = null
                     }
@@ -297,7 +312,7 @@ class FriendsViewModel(
                     refreshIncomingRequestCount()
                 }
                 is FriendsResult.Failure -> mutableRequestsState.value =
-                    settled.copy(busyRequestIds = freed, notice = result.message)
+                    settled.copy(respondingWith = freed, notice = result.message)
             }
         }
     }
@@ -317,9 +332,8 @@ class FriendsViewModel(
     }
 
     private fun refreshIncomingRequestCount() {
-        val active = session ?: return
-        if (!friendsEnabled || !active.isClient) return
-        viewModelScope.launch {
+        val scope = sessionScope ?: return
+        scope.launch {
             val result = repository.countIncomingRequests()
             if (result is FriendsResult.Success) mutableIncomingRequestCount.value = result.value
         }

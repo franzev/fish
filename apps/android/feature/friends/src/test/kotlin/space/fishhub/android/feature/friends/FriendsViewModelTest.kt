@@ -1,5 +1,6 @@
 package space.fishhub.android.feature.friends
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -42,7 +44,7 @@ class FriendsViewModelTest {
     @Test
     fun `a blank username never reaches the server`() = runTest(mainDispatcherRule.dispatcher) {
         val repository = FakeFriendsRepository()
-        val viewModel = viewModel(repository)
+        val viewModel = startedViewModel(repository)
 
         viewModel.search("   ")
 
@@ -57,7 +59,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.candidate = FriendsResult.Failure("unused", recoverable = true)
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
 
@@ -70,7 +72,7 @@ class FriendsViewModelTest {
     fun `an already pending request reads as sent`() = runTest(mainDispatcherRule.dispatcher) {
         val repository = FakeFriendsRepository()
         repository.sendOutcome = requested(status = "pending")
-        val viewModel = viewModel(repository)
+        val viewModel = startedViewModel(repository)
 
         viewModel.search("sam_lee")
         viewModel.sendRequest()
@@ -86,7 +88,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.sendOutcome = requested(status = "accepted")
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             viewModel.sendRequest()
@@ -101,7 +103,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.sendOutcome = requested(requestId = "request-1", status = "accepted")
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             viewModel.sendRequest()
@@ -126,7 +128,7 @@ class FriendsViewModelTest {
                     requestId = "request-1",
                 ),
             )
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             viewModel.sendRequest()
@@ -147,7 +149,7 @@ class FriendsViewModelTest {
                 FriendCandidate(FriendCandidateStatus.None, Sam),
             )
             repository.scriptedCandidates += FriendsResult.Failure("unused", recoverable = true)
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             viewModel.sendRequest()
@@ -162,7 +164,7 @@ class FriendsViewModelTest {
             val repository = FakeFriendsRepository()
             repository.sendOutcome =
                 FriendsResult.Failure("Pause for a moment before sending more requests.", true)
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             viewModel.sendRequest()
@@ -177,7 +179,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.sendOutcome = FriendsResult.Failure("Try again soon.", recoverable = true)
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             val firstId =
@@ -198,7 +200,7 @@ class FriendsViewModelTest {
             val repository = FakeFriendsRepository()
             repository.candidate =
                 FriendsResult.Success(FriendCandidate(FriendCandidateStatus.Unavailable))
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.search("sam_lee")
             viewModel.sendRequest()
@@ -213,7 +215,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.openRequests()
             assertEquals(
@@ -234,7 +236,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.openRequests()
             viewModel.selectRequest(RequestFromSam)
@@ -252,7 +254,7 @@ class FriendsViewModelTest {
     fun `handling the last request returns to chat`() = runTest(mainDispatcherRule.dispatcher) {
         val repository = FakeFriendsRepository()
         repository.requests = FriendsResult.Success(listOf(RequestFromSam))
-        val viewModel = viewModel(repository)
+        val viewModel = startedViewModel(repository)
 
         viewModel.openRequests()
         viewModel.respond(RequestFromSam.requestId, FriendRequestResponse.Decline)
@@ -267,7 +269,7 @@ class FriendsViewModelTest {
             val repository = FakeFriendsRepository()
             repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
             repository.holdRespond = true
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.openRequests()
             viewModel.respond(RequestFromSam.requestId, FriendRequestResponse.Accept)
@@ -275,8 +277,8 @@ class FriendsViewModelTest {
 
             assertEquals(1, repository.responses.size)
             assertEquals(
-                setOf(RequestFromSam.requestId),
-                (viewModel.requestsState.value as FriendRequestsUiState.Loaded).busyRequestIds,
+                mapOf(RequestFromSam.requestId to FriendRequestResponse.Accept),
+                (viewModel.requestsState.value as FriendRequestsUiState.Loaded).respondingWith,
             )
         }
 
@@ -287,7 +289,7 @@ class FriendsViewModelTest {
             repository.requests = FriendsResult.Success(listOf(RequestFromSam))
             repository.respondOutcome =
                 FriendsResult.Failure("This request was already handled.", recoverable = true)
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.openRequests()
             viewModel.respond(RequestFromSam.requestId, FriendRequestResponse.Accept)
@@ -295,7 +297,7 @@ class FriendsViewModelTest {
             val state = viewModel.requestsState.value as FriendRequestsUiState.Loaded
             assertEquals(listOf(RequestFromSam), state.requests)
             assertEquals("This request was already handled.", state.notice)
-            assertEquals(emptySet<String>(), state.busyRequestIds)
+            assertEquals(emptyMap<String, FriendRequestResponse>(), state.respondingWith)
         }
 
     @Test
@@ -303,7 +305,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
             val invalidations = mutableListOf<Unit>()
             val collector = launch { viewModel.directoryInvalidations.collect(invalidations::add) }
 
@@ -322,7 +324,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.requests = FriendsResult.Success(listOf(RequestFromSam, RequestFromNoor))
-            val viewModel = viewModel(repository)
+            val viewModel = startedViewModel(repository)
 
             viewModel.openAddFriend()
             viewModel.reviewIncomingRequest(RequestFromNoor.requestId)
@@ -452,7 +454,7 @@ class FriendsViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.requests = FriendsResult.Success(listOf(RequestFromSam))
-            val viewModel = viewModel(repository) { error("avatar service is down") }
+            val viewModel = startedViewModel(repository) { error("avatar service is down") }
 
             viewModel.search("sam_lee")
             viewModel.openRequests()
@@ -466,7 +468,7 @@ class FriendsViewModelTest {
     fun `a resolved avatar is remembered for the person it belongs to`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
-            val viewModel = viewModel(repository) { ids ->
+            val viewModel = startedViewModel(repository) { ids ->
                 ids.associateWith { "https://avatars.test/$it" }
             }
 
@@ -477,6 +479,75 @@ class FriendsViewModelTest {
                 viewModel.avatarUrls.value,
             )
         }
+
+    @Test
+    fun `a count still on its way when they sign out never lands`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Worst case this shows one person's waiting requests to the next
+            // person to sign in on the same phone.
+            val repository = FakeFriendsRepository()
+            repository.count = FriendsResult.Success(7)
+            repository.countGate = CompletableDeferred()
+            val viewModel = viewModel(repository)
+
+            viewModel.start(userId = "client-1", isClient = true)
+            viewModel.stop()
+            repository.countGate?.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(0, viewModel.incomingRequestCount.value)
+        }
+
+    @Test
+    fun `a search still on its way when they sign out never lands`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeFriendsRepository()
+            repository.searchGate = CompletableDeferred()
+            val viewModel = viewModel(repository)
+
+            viewModel.start(userId = "client-1", isClient = true)
+            viewModel.search("sam_lee")
+            viewModel.stop()
+            repository.searchGate?.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(AddFriendUiState.Input(), viewModel.addFriendState.value)
+        }
+
+    @Test
+    fun `a send that lands after a new search leaves the new person alone`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeFriendsRepository()
+            repository.scriptedCandidates += FriendsResult.Success(
+                FriendCandidate(FriendCandidateStatus.None, Sam),
+            )
+            repository.scriptedCandidates += FriendsResult.Success(
+                FriendCandidate(FriendCandidateStatus.None, Noor),
+            )
+            repository.sendOutcome = requested(status = "pending")
+            repository.sendGate = CompletableDeferred()
+            val viewModel = startedViewModel(repository)
+
+            viewModel.search("sam_lee")
+            val first = viewModel.addFriendState.value as AddFriendUiState.Candidate
+            viewModel.sendRequest()
+            viewModel.search("noor_h")
+            repository.sendGate?.complete(Unit)
+            advanceUntilIdle()
+
+            // Sam's answer must not mark Noor as asked.
+            val state = viewModel.addFriendState.value as AddFriendUiState.Candidate
+            assertEquals(Noor, state.candidate.profile)
+            assertNotEquals(first.clientRequestId, state.clientRequestId)
+            assertFalse(state.sent)
+        }
+
+    /** These screens only exist for a signed-in client, so most tests start there. */
+    private fun startedViewModel(
+        repository: FriendsRepository,
+        resolveAvatarUrls: suspend (List<String>) -> Map<String, String> = { emptyMap() },
+    ) = viewModel(repository, resolveAvatarUrls = resolveAvatarUrls)
+        .also { it.start(userId = "client-1", isClient = true) }
 
     private fun viewModel(
         repository: FriendsRepository,
@@ -541,6 +612,11 @@ private class FakeFriendsRepository : FriendsRepository {
     /** Leaves a response in flight so single-flight behavior is observable. */
     var holdRespond: Boolean = false
 
+    /** Gates hold an answer until a test decides it comes back. */
+    var countGate: CompletableDeferred<Unit>? = null
+    var searchGate: CompletableDeferred<Unit>? = null
+    var sendGate: CompletableDeferred<Unit>? = null
+
     val searches = mutableListOf<String>()
     val sends = mutableListOf<Pair<String, String>>()
     val responses = mutableListOf<Pair<String, FriendRequestResponse>>()
@@ -557,7 +633,9 @@ private class FakeFriendsRepository : FriendsRepository {
 
     override suspend fun searchCandidate(username: String): FriendsResult<FriendCandidate> {
         searches += username
-        return if (scriptedCandidates.isEmpty()) candidate else scriptedCandidates.removeFirst()
+        val answer = if (scriptedCandidates.isEmpty()) candidate else scriptedCandidates.removeFirst()
+        searchGate?.await()
+        return answer
     }
 
     override suspend fun listIncomingRequests(): FriendsResult<List<IncomingFriendRequest>> =
@@ -565,6 +643,7 @@ private class FakeFriendsRepository : FriendsRepository {
 
     override suspend fun countIncomingRequests(): FriendsResult<Int> {
         countCalls += 1
+        countGate?.await()
         return count
     }
 
@@ -573,6 +652,7 @@ private class FakeFriendsRepository : FriendsRepository {
         clientRequestId: String,
     ): FriendsResult<SendFriendRequestOutcome> {
         sends += targetId to clientRequestId
+        sendGate?.await()
         return sendOutcome
     }
 

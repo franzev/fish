@@ -19,11 +19,14 @@
     <string name="friend_requests_loading">Loading friend requests…</string>
     <string name="friend_requests_empty">No requests right now. New ones will appear here.</string>
     <string name="friend_requests_load_failed">Could not load friend requests.</string>
-    <string name="try_again">Try again</string>
+    <!-- Named for this module: feature/settings owns a `try_again` of its own,
+         and the app-level resource merge keeps only one of a shared name. -->
+    <string name="friend_requests_try_again">Try again</string>
     <string name="friend_request_review_body">Wants to be friends. Accept when you’re ready — there’s no rush.</string>
     <string name="friend_request_accept">Accept request</string>
     <string name="friend_request_accepting">Accepting the request…</string>
     <string name="friend_request_decline">Decline</string>
+    <string name="friend_request_declining">Declining the request…</string>
     <string name="friend_requests_waiting_one">A friend request is waiting</string>
     <string name="friend_requests_waiting_many">Friend requests are waiting</string>
 </resources>

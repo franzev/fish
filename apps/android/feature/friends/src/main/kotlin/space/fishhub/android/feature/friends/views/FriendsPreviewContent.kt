@@ -5,6 +5,7 @@ import androidx.compose.ui.res.stringResource
 import space.fishhub.android.data.friends.FriendCandidate
 import space.fishhub.android.data.friends.FriendCandidateStatus
 import space.fishhub.android.data.friends.FriendProfile
+import space.fishhub.android.data.friends.FriendRequestResponse
 import space.fishhub.android.data.friends.IncomingFriendRequest
 import space.fishhub.android.feature.friends.R
 import space.fishhub.android.feature.friends.model.AddFriendUiState
@@ -22,6 +23,7 @@ internal fun FriendsPreviewContent(page: String = "input") {
         "requests-empty",
         "requests-failed",
         "review",
+        "review-declining",
         -> RequestsPreview(page)
         else -> AddFriendPreview(page)
     }
@@ -89,11 +91,15 @@ private fun RequestsPreview(page: String) {
         "requests-failed" -> FriendRequestsUiState.Failed(
             stringResource(R.string.friend_requests_load_failed),
         )
+        "review-declining" -> FriendRequestsUiState.Loaded(
+            requests = requests,
+            respondingWith = mapOf(requests.first().requestId to FriendRequestResponse.Decline),
+        )
         else -> FriendRequestsUiState.Loaded(requests)
     }
     FriendRequestsScreen(
         state = state,
-        selectedRequest = requests.first().takeIf { page == "review" },
+        selectedRequest = requests.first().takeIf { page.startsWith("review") },
         avatarUrls = emptyMap(),
         onSelectRequest = {},
         onClearSelection = {},

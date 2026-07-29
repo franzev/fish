@@ -2,6 +2,7 @@ package space.fishhub.android.feature.friends.model
 
 import androidx.compose.runtime.Immutable
 import space.fishhub.android.data.friends.FriendCandidate
+import space.fishhub.android.data.friends.FriendRequestResponse
 import space.fishhub.android.data.friends.IncomingFriendRequest
 
 /**
@@ -37,10 +38,13 @@ sealed interface AddFriendUiState {
 sealed interface FriendRequestsUiState {
     data object Loading : FriendRequestsUiState
 
-    /** [busyRequestIds] keeps accept and decline single-flight per request. */
+    /**
+     * [respondingWith] keeps each request single-flight and remembers which
+     * answer is on its way, so the spinner sits on the button they tapped.
+     */
     data class Loaded(
         val requests: List<IncomingFriendRequest>,
-        val busyRequestIds: Set<String> = emptySet(),
+        val respondingWith: Map<String, FriendRequestResponse> = emptyMap(),
         val notice: String? = null,
     ) : FriendRequestsUiState
 

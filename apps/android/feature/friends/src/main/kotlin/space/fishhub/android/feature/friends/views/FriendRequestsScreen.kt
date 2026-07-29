@@ -37,6 +37,7 @@ import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishNotice
 import space.fishhub.android.core.designsystem.component.FishSkeleton
 import space.fishhub.android.core.designsystem.component.FishTopBar
+import space.fishhub.android.data.friends.FriendRequestResponse
 import space.fishhub.android.data.friends.IncomingFriendRequest
 import space.fishhub.android.feature.friends.R
 import space.fishhub.android.feature.friends.model.FriendRequestsUiState
@@ -75,10 +76,9 @@ fun FriendRequestsScreen(
         if (selectedRequest != null) {
             RequestReview(
                 request = selectedRequest,
-                busy = (state as? FriendRequestsUiState.Loaded)
-                    ?.busyRequestIds
-                    .orEmpty()
-                    .contains(selectedRequest.requestId),
+                respondingWith = (state as? FriendRequestsUiState.Loaded)
+                    ?.respondingWith
+                    ?.get(selectedRequest.requestId),
                 notice = (state as? FriendRequestsUiState.Loaded)?.notice,
                 avatarUrl = avatarUrls[selectedRequest.sender.id],
                 onAccept = { onAccept(selectedRequest.requestId) },
@@ -149,7 +149,7 @@ private fun RequestList(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
             FishButton(
-                label = stringResource(R.string.try_again),
+                label = stringResource(R.string.friend_requests_try_again),
                 onClick = onRetry,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -231,7 +231,7 @@ private fun RequestRow(
 @Composable
 private fun RequestReview(
     request: IncomingFriendRequest,
-    busy: Boolean,
+    respondingWith: FriendRequestResponse?,
     notice: String?,
     avatarUrl: String?,
     onAccept: () -> Unit,
@@ -271,10 +271,14 @@ private fun RequestReview(
                 color = FishTheme.colors.body,
                 style = FishTheme.typography.body,
             )
+            // The spinner belongs on the button they tapped: watching Accept
+            // spin after choosing Decline is the app telling them the wrong
+            // thing about their own choice.
             FishButton(
                 label = stringResource(R.string.friend_request_accept),
                 onClick = onAccept,
-                loading = busy,
+                enabled = respondingWith == null,
+                loading = respondingWith == FriendRequestResponse.Accept,
                 loadingDescription = stringResource(R.string.friend_request_accepting),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -282,7 +286,9 @@ private fun RequestReview(
                 label = stringResource(R.string.friend_request_decline),
                 onClick = onDecline,
                 variant = FishButtonVariant.Ghost,
-                enabled = !busy,
+                enabled = respondingWith == null,
+                loading = respondingWith == FriendRequestResponse.Decline,
+                loadingDescription = stringResource(R.string.friend_request_declining),
                 modifier = Modifier.fillMaxWidth(),
             )
         }

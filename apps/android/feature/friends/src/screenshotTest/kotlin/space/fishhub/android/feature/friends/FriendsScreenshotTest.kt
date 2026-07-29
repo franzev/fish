@@ -117,6 +117,11 @@ fun FriendRequestReviewScreenshot() = FriendsFrame("review", false)
 fun FriendRequestReviewDarkScreenshot() = FriendsFrame("review", true)
 
 @PreviewTest
+@Preview(name = "friend request declining", widthDp = 412, heightDp = 640, showBackground = true)
+@Composable
+fun FriendRequestDecliningScreenshot() = FriendsFrame("review-declining", false)
+
+@PreviewTest
 @Preview(name = "friend request review large font", widthDp = 412, heightDp = 915, fontScale = 2f)
 @Composable
 fun FriendRequestReviewLargeFontScreenshot() = FriendsFrame("review", false)
