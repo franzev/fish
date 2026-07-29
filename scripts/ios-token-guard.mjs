@@ -38,52 +38,52 @@ const FORBIDDEN_IMPORTS = {
   DesignSystem: [
     "UIComponents", "ChatCore", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
-    "FriendsData", "Friends",
+    "AccountSettings", "FriendsData", "Friends",
   ],
   UIComponents: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
-    "FriendsData", "Friends",
+    "AccountSettings", "FriendsData", "Friends",
   ],
   ChatCore: [
     "DesignSystem", "UIComponents", "ChatData", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
-    "FriendsData", "Friends", "SwiftUI", "Supabase", "LiveKit",
+    "AccountSettings", "FriendsData", "Friends", "SwiftUI", "Supabase", "LiveKit",
   ],
   ChatData: [
     "DesignSystem", "UIComponents", "PersonalChat", "TestSupport",
     "CallData", "Calls", "CallMediaLiveKit", "PresenceData", "Presence",
-    "FriendsData", "Friends",
+    "AccountSettings", "FriendsData", "Friends",
   ],
   PersonalChat: [
     "TestSupport", "CallData", "Calls", "CallMediaLiveKit",
-    "PresenceData", "Presence", "FriendsData", "Friends",
+    "PresenceData", "Presence", "AccountSettings", "FriendsData", "Friends",
   ],
   // The call control plane stays UI-free and SDK-free; the feature never
   // reaches the media SDK directly — only the adapter target links LiveKit.
   CallData: [
     "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
     "TestSupport", "Calls", "CallMediaLiveKit", "SwiftUI", "LiveKit",
-    "PresenceData", "Presence", "FriendsData", "Friends",
+    "PresenceData", "Presence", "AccountSettings", "FriendsData", "Friends",
   ],
   Calls: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallMediaLiveKit", "LiveKit",
-    "PresenceData", "Presence", "FriendsData", "Friends",
+    "PresenceData", "Presence", "AccountSettings", "FriendsData", "Friends",
   ],
   CallMediaLiveKit: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "PresenceData", "Presence",
-    "FriendsData", "Friends",
+    "AccountSettings", "FriendsData", "Friends",
   ],
   // The presence control plane stays UI-free; only its adapters speak the
   // Supabase SDK, and the feature layer never reaches the SDK directly.
   PresenceData: [
     "DesignSystem", "UIComponents", "ChatCore", "ChatData", "PersonalChat",
     "TestSupport", "CallData", "Calls", "CallMediaLiveKit", "Presence",
-    "FriendsData", "Friends", "SwiftUI", "LiveKit",
+    "AccountSettings", "FriendsData", "Friends", "SwiftUI", "LiveKit",
   ],
   Presence: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
-    "CallMediaLiveKit", "FriendsData", "Friends", "Supabase", "LiveKit",
+    "CallMediaLiveKit", "AccountSettings", "FriendsData", "Friends", "Supabase", "LiveKit",
   ],
   AccountSettings: [
     "ChatCore", "ChatData", "PersonalChat", "TestSupport", "CallData", "Calls",
@@ -106,7 +106,7 @@ const FORBIDDEN_IMPORTS = {
 
 // Control planes whose provider SDK stays quarantined in `Adapters/`: the rest
 // of the module is provider-neutral and must stay that way.
-const ADAPTERS_ONLY_SUPABASE = ["ChatData", "FriendsData"];
+const ADAPTERS_ONLY_SUPABASE = ["ChatData", "PresenceData", "FriendsData"];
 
 function walk(directory) {
   for (const entry of readdirSync(directory)) {
