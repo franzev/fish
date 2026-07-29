@@ -36,6 +36,10 @@ targets:
         product: ChatData
       - package: FishKit
         product: PersonalChat
+      - package: FishKit
+        product: FriendsData
+      - package: FishKit
+        product: Friends
     info:
       path: Sources/Info.plist
       properties:
@@ -55,6 +59,7 @@ targets:
         KLIPY_API_KEY: $(KLIPY_API_KEY)
         KLIPY_CLIENT_KEY: $(KLIPY_CLIENT_KEY)
         WEB_BASE_URL: $(WEB_BASE_URL)
+        FRIENDS_ENABLED: $(FRIENDS_ENABLED)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.fish.mobile
@@ -66,6 +71,7 @@ targets:
         KLIPY_API_KEY: ${FISH_KLIPY_API_KEY}
         KLIPY_CLIENT_KEY: ${FISH_KLIPY_CLIENT_KEY}
         WEB_BASE_URL: ${FISH_WEB_BASE_URL}
+        FRIENDS_ENABLED: ${FISH_FRIENDS_ENABLED}
         APS_ENVIRONMENT: development
         INFOPLIST_KEY_CFBundleDisplayName: FISH
       configs:

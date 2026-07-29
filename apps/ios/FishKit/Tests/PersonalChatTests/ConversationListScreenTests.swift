@@ -2,6 +2,7 @@ import ChatData
 import DesignSystem
 import SwiftUI
 import Testing
+import UIComponents
 @testable import PersonalChat
 
 struct ConversationListScreenTests {
@@ -61,6 +62,78 @@ struct ConversationListScreenTests {
                 now: now
             ),
             named: "conversation-list-failed"
+        )
+    }
+
+    @MainActor @Test func friendsSnapshots() {
+        let view = ConversationListScreen(
+            conversations: previews,
+            currentUserId: "me",
+            onOpen: { _ in },
+            trailing: [
+                TopBarAction(
+                    icon: .personPlus,
+                    accessibilityLabel: "Add a friend",
+                    action: {}
+                ),
+                TopBarAction(
+                    icon: .person,
+                    accessibilityLabel: "Account settings",
+                    action: {}
+                ),
+            ],
+            incomingRequestCount: 2,
+            onOpenRequests: {},
+            onAddFriend: {},
+            now: now
+        )
+        assertThemedSnapshots(of: view, named: "conversation-list-friends")
+        assertAccessibilitySnapshots(of: view, named: "conversation-list-friends")
+    }
+
+    /// Zero conversations and one request waiting: the row has to be here, or
+    /// the only way to it is a list this person never sees.
+    @MainActor @Test func friendsEmptySnapshots() {
+        assertThemedSnapshots(
+            of: ConversationListScreen(
+                conversations: [],
+                currentUserId: "me",
+                onOpen: { _ in },
+                incomingRequestCount: 1,
+                onOpenRequests: {},
+                onAddFriend: {},
+                now: now
+            ),
+            named: "conversation-list-friends-empty"
+        )
+        assertThemedSnapshots(
+            of: ConversationListScreen(
+                conversations: [],
+                currentUserId: "me",
+                onOpen: { _ in },
+                onAddFriend: {},
+                now: now
+            ),
+            named: "conversation-list-friends-welcome"
+        )
+    }
+
+    /// A failure keeps its own words and its own single action: the friends
+    /// welcome never talks over it.
+    @MainActor @Test func aFailureNoticeKeepsTheEmptyStateItAlwaysHad() {
+        assertThemedSnapshots(
+            of: ConversationListScreen(
+                conversations: [],
+                currentUserId: "me",
+                notice: "Conversations aren’t available yet. Try again.",
+                onOpen: { _ in },
+                onRetry: {},
+                incomingRequestCount: 1,
+                onOpenRequests: {},
+                onAddFriend: {},
+                now: now
+            ),
+            named: "conversation-list-friends-failed"
         )
     }
 

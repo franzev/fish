@@ -16,6 +16,7 @@
 		362FA6D9B02CD7BD5198C453 /* CallMediaLiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0D54CEC388E682DC72C5B43F /* CallMediaLiveKit */; };
 		3D1F5C8991AF82E86A680F96 /* ConversationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1CBFF3234C0DE8FFE5D8E08 /* ConversationDestination.swift */; };
 		3D5367D984CD655F2F2347DD /* SharedContentDocumentExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD09FECE659400B2ED0048A3 /* SharedContentDocumentExporter.swift */; };
+		477BDC267F7DC31BD41F89D5 /* Friends in Frameworks */ = {isa = PBXBuildFile; productRef = DEAA1F95851F42D2E756401B /* Friends */; };
 		4A1455C4A7ADF6D6044E50C1 /* FishNotificationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF75A9D04DB7000CC002FB35 /* FishNotificationDestination.swift */; };
 		52477F532BC4EBCB41F1433A /* FishShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4D79453224BFD04920136767 /* FishShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		53926A1ACB87D2712A10E3E9 /* FishAppConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBACEE0E901B52C5E6A2BB6 /* FishAppConfigurationTests.swift */; };
@@ -23,6 +24,7 @@
 		6D7B9C96F02D841D4E1FA73B /* FishAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667CD532DA0CF763EF131F06 /* FishAppModel.swift */; };
 		707903B14084F52D777DAEDE /* FishAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DFAA884EEF0FC33C0F033C /* FishAppDelegate.swift */; };
 		8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */; };
+		890BD8AB2F28378F4AEE0456 /* FriendsData in Frameworks */ = {isa = PBXBuildFile; productRef = B419B4F6300C997DD447F65B /* FriendsData */; };
 		895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */; };
 		AB69CC219E999AB31CF7F489 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 958685816BE979439E46CFFD /* LoadingView.swift */; };
 		AF5268C2B551945F6B7981BA /* ChatSplitLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7EA072CAC8BDD0E710F5F2 /* ChatSplitLayout.swift */; };
@@ -126,6 +128,8 @@
 				D2104016159DB2EBE41A18E2 /* ChatCore in Frameworks */,
 				E00B76BFB95EFF3C8B518FAB /* ChatData in Frameworks */,
 				1BCFA7360A64413C65EF3226 /* PersonalChat in Frameworks */,
+				890BD8AB2F28378F4AEE0456 /* FriendsData in Frameworks */,
+				477BDC267F7DC31BD41F89D5 /* Friends in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,6 +277,8 @@
 				93387073F7CC5426C86C71F1 /* ChatCore */,
 				BF3F734419E9BEC0FF504B65 /* ChatData */,
 				B821BA6D07778D0EA77672B9 /* PersonalChat */,
+				B419B4F6300C997DD447F65B /* FriendsData */,
+				DEAA1F95851F42D2E756401B /* Friends */,
 			);
 			productName = Fish;
 			productReference = 323AD597C6079F6C90636877 /* Fish.app */;
@@ -528,6 +534,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/Fish.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				FRIENDS_ENABLED = "${FISH_FRIENDS_ENABLED}";
 				INFOPLIST_FILE = Sources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FISH;
 				KLIPY_API_KEY = "${FISH_KLIPY_API_KEY}";
@@ -571,6 +578,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/Fish.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				FRIENDS_ENABLED = "${FISH_FRIENDS_ENABLED}";
 				INFOPLIST_FILE = Sources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FISH;
 				KLIPY_API_KEY = "${FISH_KLIPY_API_KEY}";
@@ -718,6 +726,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = ChatCore;
 		};
+		B419B4F6300C997DD447F65B /* FriendsData */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FriendsData;
+		};
 		B821BA6D07778D0EA77672B9 /* PersonalChat */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PersonalChat;
@@ -725,6 +737,10 @@
 		BF3F734419E9BEC0FF504B65 /* ChatData */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ChatData;
+		};
+		DEAA1F95851F42D2E756401B /* Friends */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Friends;
 		};
 		E3B497C9D85A87EC0137B354 /* Calls */ = {
 			isa = XCSwiftPackageProductDependency;

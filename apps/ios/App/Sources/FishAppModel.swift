@@ -6,6 +6,8 @@ import ChatCore
 import ChatData
 import DesignSystem
 import Foundation
+import Friends
+import FriendsData
 import Observation
 import PersonalChat
 import QuickLook
@@ -17,6 +19,15 @@ import UserNotifications
 @MainActor @Observable
 final class FishAppModel {
     enum Phase { case loading, signedOut, inbox, opening, conversation }
+
+    /// The add-friend sheet asked for a request to be reviewed. Held rather
+    /// than acted on straight away: one screen presents one sheet at a time,
+    /// so the requests sheet opens once the add sheet is actually gone.
+    private struct PendingFriendRequestReview {
+        /// `nil` opens the list unfiltered — exactly what the add sheet sends
+        /// when it never learned an id.
+        let requestId: String?
+    }
 
     let configuration: FishAppConfiguration
     let gifProvider: KlipyGifProvider
@@ -31,6 +42,13 @@ final class FishAppModel {
     var email = ""
     var password = ""
     var isShowingAccountSettings = false
+    var isShowingAddFriend = false
+    var isShowingFriendRequests = false
+    private(set) var incomingRequestCount = 0
+    /// Built fresh for each presentation, so a sheet never opens on the last
+    /// person someone looked up.
+    private(set) var addFriendModel: AddFriendModel?
+    private(set) var friendRequestsModel: FriendRequestsModel?
     private(set) var notice: String?
     private(set) var isSubmitting = false
     private(set) var session: ChatLiveSession?
@@ -70,6 +88,12 @@ final class FishAppModel {
     private var isRequestingNotifications = false
     private var isLoadingBlockedPeople = false
     private var accountSettingsGeneration = UUID()
+    private var friendDirectory: (any FriendDirectoryProviding)?
+    private var friendCommands: (any FriendCommandsProviding)?
+    private var friendEventsTask: Task<Void, Never>?
+    private var friendsGeneration = UUID()
+    private var requestCountAttempt = 0
+    private var pendingRequestReview: PendingFriendRequestReview?
     private var sharedContentStore: SharedContentStore?
     private var sharedContentMediaRuntime: SharedContentMediaRuntime?
     private var sharedContentCleanupTask: Task<Void, Never>?
@@ -132,8 +156,20 @@ final class FishAppModel {
         session?.account?.displayName ?? "Your account"
     }
 
-    var canManageBlockedPeople: Bool {
+    /// One role signal for every client-only surface. The blocked-people row
+    /// and friends read the same account, never two.
+    private var isClientAccount: Bool {
         session?.account?.role == .client
+    }
+
+    var canManageBlockedPeople: Bool {
+        isClientAccount
+    }
+
+    /// Friends belongs to clients, and only in a build that asked for it.
+    /// Off, nothing here is constructed, subscribed to, or drawn.
+    var friendsAvailable: Bool {
+        configuration.friendsEnabled && isClientAccount
     }
 
     var sharedContentNavigationContext: SharedContentNavigationContext? {
@@ -411,6 +447,69 @@ final class FishAppModel {
         loadAccountPresence()
     }
 
+    /// Guarded on being signed in rather than on the inbox phase: on iPad the
+    /// list stays on screen beside an open conversation, and the action in it
+    /// has to work from there too.
+    func showAddFriend() {
+        guard let friendDirectory, let friendCommands, isSignedInForFriends else { return }
+        notice = nil
+        pendingRequestReview = nil
+        addFriendModel = AddFriendModel(
+            directory: friendDirectory,
+            commands: friendCommands,
+            onReviewRequested: { [weak self] requestId in
+                self?.reviewFriendRequest(requestId)
+            }
+        )
+        isShowingAddFriend = true
+    }
+
+    func showFriendRequests() {
+        openFriendRequests(selecting: nil)
+    }
+
+    /// The add sheet found that the person had already asked. Closing one
+    /// sheet and opening the next is two steps because SwiftUI presents one
+    /// at a time; the request travels in `pendingRequestReview` and is picked
+    /// up the moment the add sheet is gone.
+    private func reviewFriendRequest(_ requestId: String?) {
+        pendingRequestReview = PendingFriendRequestReview(requestId: requestId)
+        isShowingAddFriend = false
+    }
+
+    func addFriendDismissed() {
+        addFriendModel = nil
+        guard let pending = pendingRequestReview else { return }
+        pendingRequestReview = nil
+        openFriendRequests(selecting: pending.requestId)
+    }
+
+    func friendRequestsDismissed() {
+        friendRequestsModel = nil
+        refreshIncomingRequestCount()
+    }
+
+    /// `requestId` travels exactly as it arrived: `nil` opens the list rather
+    /// than one person's review.
+    private func openFriendRequests(selecting requestId: String?) {
+        guard let friendDirectory, let friendCommands, isSignedInForFriends else { return }
+        notice = nil
+        let requests = FriendRequestsModel(
+            directory: friendDirectory,
+            commands: friendCommands,
+            onAllRequestsHandled: { [weak self] in
+                self?.isShowingFriendRequests = false
+            }
+        )
+        friendRequestsModel = requests
+        requests.load(selecting: requestId)
+        isShowingFriendRequests = true
+    }
+
+    private var isSignedInForFriends: Bool {
+        friendsAvailable && session != nil && directory != nil
+    }
+
     func refreshNotificationSettingsIfNeeded() {
         guard !isRefreshingNotifications else { return }
         isRefreshingNotifications = true
@@ -667,6 +766,7 @@ final class FishAppModel {
         accountPresence = AccountSettingsPresence()
         blockedPeopleState = .hidden
         isLoadingBlockedPeople = false
+        stopFriends()
         await stopConversation()
         if let draftStore {
             // Delete the account's staged outbox bytes before the records
@@ -817,6 +917,7 @@ final class FishAppModel {
             anonKey: session.backend.anonKey,
             accessToken: session.backend.accessToken
         )
+        startFriends(session)
         let callMedia = LiveKitCallMedia()
         let callModel = CallSessionModel(
             userId: session.userId,
@@ -863,6 +964,82 @@ final class FishAppModel {
         case .direct(let id): await openConversation(id)
         case .empty, .list: phase = .inbox
         }
+    }
+
+    /// Nothing exists for a coach or a build with friends off: no adapters,
+    /// no subscription, no count.
+    private func startFriends(_ session: ChatLiveSession) {
+        friendsGeneration = UUID()
+        guard friendsAvailable else { return }
+        let backend = FriendsBackendConfiguration(
+            supabaseUrl: session.backend.supabaseUrl,
+            anonKey: session.backend.anonKey,
+            accessToken: session.backend.accessToken
+        )
+        friendDirectory = RestFriendDirectory(configuration: backend)
+        friendCommands = EdgeFunctionFriendCommands(configuration: backend)
+        startFriendEvents(
+            userId: session.userId,
+            events: FriendsLive(configuration: backend)
+        )
+        refreshIncomingRequestCount()
+    }
+
+    /// This subscription is the only thing that tells a sender their new
+    /// conversation exists. Every event refetches the count; the three that
+    /// can have created a conversation also refresh the directory — the
+    /// stream resuming among them, because whatever happened while it was
+    /// down was never delivered, and a session's first subscribe resumes too.
+    private func startFriendEvents(
+        userId: String,
+        events: some FriendEventsProviding
+    ) {
+        let generation = friendsGeneration
+        friendEventsTask?.cancel()
+        friendEventsTask = Task { @MainActor [weak self] in
+            for await event in events.events(userId: userId) {
+                guard let self, friendsGeneration == generation else { return }
+                refreshIncomingRequestCount()
+                switch event.reason {
+                case .friendshipCreated, .requestAccepted, .streamResumed:
+                    await refreshDirectory()
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    /// The count is the difference between a row and no row, so a late answer
+    /// never overwrites a newer one. A refusal leaves the last known count
+    /// alone: friends being unreachable is not news worth a screen change.
+    private func refreshIncomingRequestCount() {
+        guard friendsAvailable, let friendDirectory else { return }
+        let generation = friendsGeneration
+        requestCountAttempt += 1
+        let attempt = requestCountAttempt
+        Task { @MainActor [weak self] in
+            guard let count = try? await friendDirectory.countIncomingRequests() else { return }
+            guard let self,
+                  friendsGeneration == generation,
+                  requestCountAttempt == attempt
+            else { return }
+            incomingRequestCount = count
+        }
+    }
+
+    private func stopFriends() {
+        friendsGeneration = UUID()
+        friendEventsTask?.cancel()
+        friendEventsTask = nil
+        isShowingAddFriend = false
+        isShowingFriendRequests = false
+        addFriendModel = nil
+        friendRequestsModel = nil
+        pendingRequestReview = nil
+        friendDirectory = nil
+        friendCommands = nil
+        incomingRequestCount = 0
     }
 
     private func stopConversation() async {

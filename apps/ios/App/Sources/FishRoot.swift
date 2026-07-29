@@ -6,6 +6,7 @@ import ChatCore
 import ChatData
 import DesignSystem
 import Foundation
+import Friends
 import Observation
 import PersonalChat
 import QuickLook
@@ -127,6 +128,30 @@ struct FishRoot: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+        }
+        // The add sheet's review pivot closes this one and opens the next from
+        // `onDismiss`, once SwiftUI has actually let go of the first — see
+        // `FishAppModel.reviewFriendRequest`.
+        .sheet(isPresented: $model.isShowingAddFriend, onDismiss: model.addFriendDismissed) {
+            if let addFriend = model.addFriendModel {
+                AddFriendSheet(model: addFriend) {
+                    model.isShowingAddFriend = false
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(
+            isPresented: $model.isShowingFriendRequests,
+            onDismiss: model.friendRequestsDismissed
+        ) {
+            if let requests = model.friendRequestsModel {
+                FriendRequestsSheet(model: requests) {
+                    model.isShowingFriendRequests = false
+                }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             model.sharedContentScenePhaseChanged(phase)

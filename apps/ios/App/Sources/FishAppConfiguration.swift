@@ -20,6 +20,9 @@ struct FishAppConfiguration: Sendable {
     let klipyApiKey: String?
     let klipyClientKey: String
     let webBaseURL: URL?
+    /// Adding a friend by username and reviewing requests. Off unless the
+    /// build says otherwise, mirroring the server's own fail-closed gate.
+    let friendsEnabled: Bool
     let isRelease: Bool
 
     init(
@@ -28,6 +31,7 @@ struct FishAppConfiguration: Sendable {
         klipyApiKey: String?,
         klipyClientKey: String,
         webBaseURL: URL?,
+        friendsEnabled: Bool,
         isRelease: Bool
     ) {
         self.supabaseUrl = Self.validatedBackendURL(
@@ -38,6 +42,7 @@ struct FishAppConfiguration: Sendable {
         self.klipyApiKey = klipyApiKey
         self.klipyClientKey = klipyClientKey
         self.webBaseURL = webBaseURL
+        self.friendsEnabled = friendsEnabled
         self.isRelease = isRelease
     }
 
@@ -69,6 +74,10 @@ struct FishAppConfiguration: Sendable {
             klipyApiKey: value("KLIPY_API_KEY"),
             klipyClientKey: value("KLIPY_CLIENT_KEY") ?? "fish_chat_ios",
             webBaseURL: value("WEB_BASE_URL").flatMap(URL.init(string:)),
+            // Exactly "true" turns friends on. An unset build setting, a
+            // placeholder, and anything else all mean off, so a build that
+            // never heard of this flag ships without friends.
+            friendsEnabled: value("FRIENDS_ENABLED") == "true",
             isRelease: isRelease
         )
     }
