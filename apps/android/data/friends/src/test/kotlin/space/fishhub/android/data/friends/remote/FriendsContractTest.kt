@@ -186,6 +186,9 @@ class FriendsContractTest {
         assertEquals("pending", outcome.status)
     }
 
+    // The next two cover the decoder's backstop only. In production the
+    // functions client throws before a failed response reaches the decoder, so
+    // the real failure path lives in SupabaseFriendsRemoteDataSourceTest.
     @Test
     fun failureBodyKeepsTheServersCodeAndCalmCopy() = runTest {
         val failure = runCatching {

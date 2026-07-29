@@ -1,6 +1,7 @@
 package space.fishhub.android.data.friends.remote
 
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.broadcastFlow
@@ -72,7 +73,13 @@ internal class SupabaseFriendsRemoteDataSource(
         RespondFriendRequestBody(requestId = requestId, response = response.toWire()),
     )
 
-    private suspend inline fun <reified T : Any> friendCommand(body: T): FriendRequestOutcome =
+    /**
+     * The functions client throws on any non-2xx instead of handing the
+     * response back, carrying the raw body in [RestException.error]. The
+     * server's `{code, error}` has to be recovered from there or friends loses
+     * both the codes it branches on and every calm line the server authored.
+     */
+    private suspend inline fun <reified T : Any> friendCommand(body: T): FriendRequestOutcome = try {
         client.functions.invoke(
             function = "friend-command",
             body = body,
@@ -80,6 +87,9 @@ internal class SupabaseFriendsRemoteDataSource(
                 append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             },
         ).decodeFriendRequest(json)
+    } catch (restFailure: RestException) {
+        throw readFriendCommandFailure(json, restFailure.error)
+    }
 
     override fun events(userId: String): Flow<FriendEvent> = callbackFlow {
         val channel = client.channel("friends:user:$userId") { isPrivate = true }
@@ -108,9 +118,13 @@ internal class SupabaseFriendsRemoteDataSource(
 }
 
 /**
- * The `friend-command` success body is `{request: {...}}`; every failure is
- * `{code, error}` with copy the server authored. Anything else degrades to the
- * one fallback line rather than inventing a message here.
+ * The `friend-command` success body is `{request: {...}}`. A 2xx that carries
+ * no request row still means friends could not do the thing, so it degrades to
+ * the one fallback line rather than inventing a message here.
+ *
+ * The status guard is a backstop: today the functions client raises a
+ * [RestException] before a failed response ever reaches this function, and
+ * [friendCommand] is what turns that back into a coded failure.
  */
 internal suspend fun HttpResponse.decodeFriendRequest(json: Json): FriendRequestOutcome {
     val payload = bodyAsText()
