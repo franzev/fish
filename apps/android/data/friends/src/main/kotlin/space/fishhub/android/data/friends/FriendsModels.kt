@@ -37,6 +37,13 @@ enum class FriendEventReason {
     FriendshipCreated,
     FriendshipRemoved,
     Unknown,
+
+    /**
+     * The only reason this client raises itself. The channel is back after
+     * being down, and whatever happened while it was gone was never delivered,
+     * so the surfaces behind it are due a refetch.
+     */
+    StreamResumed,
 }
 
 /**

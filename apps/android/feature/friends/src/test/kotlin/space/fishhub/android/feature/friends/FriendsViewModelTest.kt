@@ -365,6 +365,28 @@ class FriendsViewModelTest {
         }
 
     @Test
+    fun `a stream that comes back refetches the count without touching the directory`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Whatever happened while the channel was down was never delivered,
+            // so the count is refetched; what the directory missed is not
+            // knowable from a resume, so it is left alone.
+            val repository = FakeFriendsRepository()
+            val viewModel = viewModel(repository)
+            val invalidations = mutableListOf<Unit>()
+            val collector = launch { viewModel.directoryInvalidations.collect(invalidations::add) }
+
+            viewModel.start(userId = "client-1", isClient = true)
+            repository.count = FriendsResult.Success(4)
+            repository.emit(FriendEvent(FriendEventReason.StreamResumed))
+
+            assertEquals(2, repository.countCalls)
+            assertEquals(4, viewModel.incomingRequestCount.value)
+            assertEquals(0, invalidations.size)
+
+            collector.cancel()
+        }
+
+    @Test
     fun `starting twice for the same person subscribes once and a new person restarts`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()

@@ -26,6 +26,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import space.fishhub.android.data.friends.FriendCandidate
 import space.fishhub.android.data.friends.FriendEvent
+import space.fishhub.android.data.friends.FriendEventReason
 import space.fishhub.android.data.friends.FriendRequestOutcome
 import space.fishhub.android.data.friends.FriendRequestResponse
 import space.fishhub.android.data.friends.IncomingFriendRequest
@@ -100,11 +101,16 @@ internal class SupabaseFriendsRemoteDataSource(
         try {
             client.realtime.setAuth()
             channel.subscribe(blockUntilSubscribed = true)
+            // Being back is itself news: anything that happened while this
+            // channel was down was never delivered.
+            trySend(FriendEvent(FriendEventReason.StreamResumed))
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Throwable) {
-            // Events are only a nudge to refetch. Losing them keeps the surface
-            // one manual refresh behind rather than taking it down.
+        } catch (failure: Throwable) {
+            // Ending the flow hands the decision to the repository, which backs
+            // off and subscribes again. Staying open would leave a channel that
+            // looks alive and never delivers anything.
+            close(failure)
         }
         awaitClose {
             scope.launch { runCatching { client.realtime.removeChannel(channel) } }

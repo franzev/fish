@@ -1,8 +1,13 @@
 package space.fishhub.android.data.friends
 
 import java.io.IOException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -11,6 +16,7 @@ import org.junit.Test
 import space.fishhub.android.data.friends.remote.FriendsRemoteDataSource
 import space.fishhub.android.data.friends.remote.RemoteFriendCommandException
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DefaultFriendsRepositoryTest {
     @Test
     fun aSentRequestKeepsTheServersRequestAndStatus() = runTest {
@@ -177,14 +183,67 @@ class DefaultFriendsRepositoryTest {
         assertEquals(1, repository.countIncomingRequests().requireSuccess())
     }
 
+    @Test
+    fun aStreamThatFailsToOpenIsSubscribedAgainAfterABackoff() = runTest {
+        // The channel is the only thing that tells a sender their new
+        // conversation exists, so a failed subscribe may not end the stream.
+        val remote = FakeFriendsRemoteDataSource(
+            eventAttempts = listOf(
+                { throw IOException("realtime.example.test: subscribe refused") },
+                { FriendEvent(FriendEventReason.FriendshipCreated) },
+            ),
+        )
+        val received = mutableListOf<FriendEvent>()
+        val collector = launch { repository(remote).events("client-1").toList(received) }
+
+        advanceTimeBy(EventRetryDelayMs - 1)
+        assertEquals(emptyList<FriendEvent>(), received)
+
+        advanceTimeBy(2)
+        assertEquals(listOf(FriendEvent(FriendEventReason.FriendshipCreated)), received)
+        assertEquals(2, remote.eventSubscriptions)
+        assertTrue(collector.isActive)
+
+        collector.cancel()
+    }
+
+    @Test
+    fun aStreamThatEndsOnItsOwnIsSubscribedAgain() = runTest {
+        val remote = FakeFriendsRemoteDataSource(
+            eventAttempts = listOf(
+                { FriendEvent(FriendEventReason.RequestCreated) },
+                { FriendEvent(FriendEventReason.RequestAccepted) },
+            ),
+        )
+        val received = mutableListOf<FriendEvent>()
+        val collector = launch { repository(remote).events("client-1").toList(received) }
+
+        advanceTimeBy(EventRetryDelayMs + 1)
+
+        assertEquals(
+            listOf(
+                FriendEvent(FriendEventReason.RequestCreated),
+                FriendEvent(FriendEventReason.RequestAccepted),
+            ),
+            received,
+        )
+        assertTrue(collector.isActive)
+
+        collector.cancel()
+    }
+
     private fun repository(remote: FriendsRemoteDataSource): FriendsRepository =
-        DefaultFriendsRepository(remote)
+        DefaultFriendsRepository(remote, eventRetryDelayMs = EventRetryDelayMs)
 
     private fun commandFailure(code: String, message: String) =
         RemoteFriendCommandException(code, message)
 
     private fun <T> FriendsResult<T>.requireSuccess(): T =
         (this as FriendsResult.Success<T>).value
+
+    private companion object {
+        const val EventRetryDelayMs = 2_000L
+    }
 }
 
 private class FakeFriendsRemoteDataSource(
@@ -197,8 +256,13 @@ private class FakeFriendsRemoteDataSource(
     private val respondResult: () -> FriendRequestOutcome = {
         FriendRequestOutcome(requestId = "request-1", status = "accepted")
     },
+    /** One entry per subscribe: emit an event, or throw to fail the subscribe. */
+    private val eventAttempts: List<() -> FriendEvent> = emptyList(),
 ) : FriendsRemoteDataSource {
     var responded: Pair<String, FriendRequestResponse>? = null
+        private set
+
+    var eventSubscriptions = 0
         private set
 
     override suspend fun searchCandidate(username: String): FriendCandidate = searchResult()
@@ -220,5 +284,12 @@ private class FakeFriendsRemoteDataSource(
         return respondResult()
     }
 
-    override fun events(userId: String): Flow<FriendEvent> = emptyFlow()
+    override fun events(userId: String): Flow<FriendEvent> = flow {
+        val attempt = eventAttempts.getOrNull(eventSubscriptions)
+        eventSubscriptions += 1
+        // Out of script: park rather than churn, so a test only sees the
+        // subscribes it asked for.
+        if (attempt == null) awaitCancellation()
+        emit(attempt())
+    }
 }

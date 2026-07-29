@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import space.fishhub.android.data.friends.FriendCandidateStatus
 import space.fishhub.android.data.friends.FriendEvent
@@ -92,9 +91,7 @@ class FriendsViewModel(
         mutableEntryPointsVisible.value = friendsEnabled && isClient
         if (!friendsEnabled || !isClient) return
         eventsJob = viewModelScope.launch {
-            repository.events(userId)
-                .catch { }
-                .collect(::onFriendEvent)
+            repository.events(userId).collect(::onFriendEvent)
         }
         refreshIncomingRequestCount()
     }
