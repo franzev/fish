@@ -1,6 +1,10 @@
 # Native iOS (SwiftUI) chat attachments plan (photos & files)
 
-Status: proposal for review — do not implement until approved.
+Status: Implemented (2026-07-18, `96d4435f feat(ios): add native chat
+attachments`). Since extended beyond this plan's scope by camera capture,
+video rendering, background URLSession uploads, and the durable offline
+outbox — see `docs/native-mobile-feature-completion-plan.md` and
+`docs/offline-attachment-outbox-plan.md` for those as-built extensions.
 Written 2026-07-17 from a full audit of the web implementation, the backend
 contracts, the iOS codebase, and external research (Apple documentation,
 Supabase documentation, and public behavior of five established messengers).
