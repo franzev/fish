@@ -1137,6 +1137,24 @@ class ChatViewModelTest {
             viewModel.showConversationList()
             advanceUntilIdle()
             assertTrue(viewModel.uiState.value is ChatRouteUiState.ConversationList)
+
+            // A coach has no friends surface to reach, so the flag buys them
+            // nothing and their navigation is left exactly as it was.
+            val coachRepository = FakeChatRepository(
+                conversationCount = 1,
+                participantRole = UserRole.Client,
+                currentUserRole = UserRole.Coach,
+            )
+            val coach = friendsViewModel(coachRepository)
+            advanceUntilIdle()
+            coach.showConversationList()
+            advanceUntilIdle()
+            assertTrue(coach.uiState.value !is ChatRouteUiState.ConversationList)
+            assertTrue(
+                !(coach.uiState.value as ChatRouteUiState.Conversation)
+                    .model
+                    .hasPreviousDestination,
+            )
         }
 
     @Test
@@ -1186,11 +1204,12 @@ private class FakeChatRepository(
     participantRole: UserRole = UserRole.Coach,
     participantUsername: String? = null,
     participantAvatarUrl: String? = null,
+    private val currentUserRole: UserRole = UserRole.Client,
 ) : ChatRepository {
     private val conversation = AuthorizedConversation(
         conversationId = "conversation-1",
         currentUserId = "client-1",
-        currentUserRole = UserRole.Client,
+        currentUserRole = currentUserRole,
         currentUserDisplayName = "Franz",
         participantId = "coach-1",
         participantRole = participantRole,
@@ -1273,7 +1292,7 @@ private class FakeChatRepository(
             space.fishhub.android.data.chat.AuthorizedChatDirectory(
                 currentUser = space.fishhub.android.data.chat.AuthorizedChatIdentity(
                     userId = "client-1",
-                    role = space.fishhub.android.data.chat.model.UserRole.Client,
+                    role = currentUserRole,
                     displayName = "Franz",
                 ),
                 conversations = authorizedConversations,

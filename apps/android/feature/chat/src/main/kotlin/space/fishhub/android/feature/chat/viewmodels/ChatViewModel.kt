@@ -138,6 +138,15 @@ class ChatViewModel(
     val currentUserId: String?
         get() = currentUser?.userId
 
+    /**
+     * Only a client has friends surfaces to reach, so only a client gains a
+     * destination. A coach keeps today's navigation whatever the flag says —
+     * the same role signal that gates the entry points, never a second one.
+     */
+    private val friendsReachable: Boolean
+        get() = friendsEnabled &&
+            currentUserRole == space.fishhub.android.data.chat.model.UserRole.Client
+
     val currentConversation: AuthorizedConversation?
         get() = activeConversation
 
@@ -273,7 +282,7 @@ class ChatViewModel(
     }
 
     fun showConversationList() {
-        if (!friendsEnabled && conversations.size <= 1) return
+        if (!friendsReachable && conversations.size <= 1) return
         showingConversationList = true
         mutableUiState.value = ChatRouteUiState.ConversationList(
             currentUserDisplayName = currentUser?.displayName.orEmpty(),
@@ -1241,7 +1250,7 @@ class ChatViewModel(
             ),
             conversations = conversationPreviews(),
             selectedConversationId = conversation.conversationId,
-            hasPreviousDestination = friendsEnabled || conversations.size > 1,
+            hasPreviousDestination = friendsReachable || conversations.size > 1,
         )
 
     private fun List<ChatMessage>?.toUiMessages(
