@@ -8,7 +8,7 @@
 
 **Tech Stack:** Swift 6 (strict concurrency), SwiftUI, iOS 17.0 deployment floor, Swift Testing (unit), pointfree swift-snapshot-testing (visual regression), XCTest UI tests + `performAccessibilityAudit` (accessibility), Node ESM scripts via pnpm (token generation + source guards), XcodeGen (catalog app project).
 
-**Status:** Proposed implementation plan · Prepared 2026-07-16 · Companion to `docs/android-personal-chat-foundation-plan.md` — the two plans share scope boundaries, the token manifest, and the component inventory. Names differ by platform convention: the Android plan's `Fish`-prefixed wrappers are idiomatic Compose (as in Google's Now in Android), while this plan uses unprefixed descriptive names because Swift modules are the namespace (see "Naming and structure conventions").
+**Status:** Implemented (2026-07-16, `d6cf1818 feat(ios): add personal chat foundation`); the live chat built on top of it is tracked in `docs/ios-chat-parity-implementation-plan.md` · Prepared 2026-07-16 · Companion to `docs/android-personal-chat-foundation-plan.md` — the two plans share scope boundaries, the token manifest, and the component inventory. Names differ by platform convention: the Android plan's `Fish`-prefixed wrappers are idiomatic Compose (as in Google's Now in Android), while this plan uses unprefixed descriptive names because Swift modules are the namespace (see "Naming and structure conventions").
 
 ---
 
