@@ -97,6 +97,7 @@ assert.ok(
 const guardedRoots = [
   "apps/android/core/designsystem/src/main/kotlin/space/fishhub/android/core/designsystem/component",
   "apps/android/feature/chat/src/main",
+  "apps/android/feature/friends/src/main",
   "apps/android/feature/presence/src/main",
   "apps/android/feature/settings/src/main",
 ];
@@ -146,6 +147,17 @@ const importGuards = [
       /^import io\.livekit/m,
     ],
     label: "provider-neutral presence feature",
+  },
+  {
+    root: "apps/android/feature/friends/src/main",
+    forbidden: [
+      /^import io\.github\.jan\.supabase/m,
+      /^import androidx\.room/m,
+      /^import space\.fishhub\.android\.data\.friends\.remote/m,
+      // Cross-feature imports only. Friends may import its own sub-packages.
+      /^import space\.fishhub\.android\.feature\.(?!friends\.)/m,
+    ],
+    label: "provider-neutral friends feature",
   },
   {
     root: "apps/android/feature/settings/src/main",

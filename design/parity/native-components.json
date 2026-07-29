@@ -192,6 +192,26 @@
       "only": "android"
     },
     {
+      "name": "AddFriendScreen",
+      "android": {
+        "file": "apps/android/feature/friends/src/main/kotlin/space/fishhub/android/feature/friends/views/AddFriendScreen.kt",
+        "symbol": "AddFriendScreen",
+        "visibility": "public"
+      },
+      "props": [
+        "state",
+        "avatarUrls",
+        "onSearch",
+        "onSend",
+        "onReviewRequest",
+        "onSearchAgain",
+        "onClose"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
       "name": "AddReactionPill",
       "android": {
         "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/AddReactionPill.kt",
@@ -1257,6 +1277,58 @@
         "darkTheme",
         "reducedMotion",
         "content"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FriendIdentity",
+      "android": {
+        "file": "apps/android/feature/friends/src/main/kotlin/space/fishhub/android/feature/friends/views/FriendIdentity.kt",
+        "symbol": "FriendIdentity",
+        "visibility": "internal"
+      },
+      "props": [
+        "displayName",
+        "username",
+        "avatarUrl"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FriendRequestsScreen",
+      "android": {
+        "file": "apps/android/feature/friends/src/main/kotlin/space/fishhub/android/feature/friends/views/FriendRequestsScreen.kt",
+        "symbol": "FriendRequestsScreen",
+        "visibility": "public"
+      },
+      "props": [
+        "state",
+        "selectedRequest",
+        "avatarUrls",
+        "onSelectRequest",
+        "onClearSelection",
+        "onAccept",
+        "onDecline",
+        "onRetry",
+        "onClose"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FriendsPreviewContent",
+      "android": {
+        "file": "apps/android/feature/friends/src/main/kotlin/space/fishhub/android/feature/friends/views/FriendsPreviewContent.kt",
+        "symbol": "FriendsPreviewContent",
+        "visibility": "internal"
+      },
+      "props": [
+        "page"
       ],
       "previews": [],
       "previewsAligned": false,

@@ -1,0 +1,29 @@
+<resources>
+    <string name="add_friend_title">Add a friend</string>
+    <string name="add_friend_username_label">Username</string>
+    <string name="add_friend_username_placeholder">@sam_lee</string>
+    <string name="add_friend_username_hint">Usernames look like @sam_lee. Ask your friend for theirs.</string>
+    <string name="add_friend_empty_input">Add a username to search.</string>
+    <string name="add_friend_search">Search</string>
+    <string name="add_friend_searching">Searching…</string>
+    <string name="add_friend_send">Add friend</string>
+    <string name="add_friend_sending">Sending the request…</string>
+    <string name="add_friend_sent">Request sent. They’ll see it when they’re ready.</string>
+    <string name="add_friend_already_friends">You’re already friends.</string>
+    <string name="add_friend_incoming">They already sent you a request.</string>
+    <string name="add_friend_review_request">Review request</string>
+    <string name="add_friend_unavailable">That person isn’t available. Check the username and try again.</string>
+    <string name="add_friend_search_failed">The search didn’t go through. Give it a moment and try again.</string>
+    <string name="add_friend_search_again">Search again</string>
+    <string name="friend_requests_title">Friend requests</string>
+    <string name="friend_requests_loading">Loading friend requests…</string>
+    <string name="friend_requests_empty">No requests right now. New ones will appear here.</string>
+    <string name="friend_requests_load_failed">Could not load friend requests.</string>
+    <string name="try_again">Try again</string>
+    <string name="friend_request_review_body">Wants to be friends. Accept when you’re ready — there’s no rush.</string>
+    <string name="friend_request_accept">Accept request</string>
+    <string name="friend_request_accepting">Accepting the request…</string>
+    <string name="friend_request_decline">Decline</string>
+    <string name="friend_requests_waiting_one">A friend request is waiting</string>
+    <string name="friend_requests_waiting_many">Friend requests are waiting</string>
+</resources>

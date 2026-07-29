@@ -516,10 +516,43 @@ object FishIcons {
             close()
         }
     }
+
+    /** Tabler `user-plus`: the head, the shoulders, and the plus beside them. */
+    val PersonAdd: ImageVector by lazy {
+        fishIcon("PersonAdd") {
+            moveTo(12f, 3f)
+            curveTo(14.21f, 3f, 16f, 4.79f, 16f, 7f)
+            curveTo(16f, 9.21f, 14.21f, 11f, 12f, 11f)
+            curveTo(9.79f, 11f, 8f, 9.21f, 8f, 7f)
+            curveTo(8f, 4.79f, 9.79f, 3f, 12f, 3f)
+            close()
+            moveTo(6f, 21f)
+            lineTo(6f, 19f)
+            curveTo(6f, 16.79f, 7.79f, 15f, 10f, 15f)
+            lineTo(14f, 15f)
+            moveTo(16f, 19f)
+            lineTo(22f, 19f)
+            moveTo(19f, 16f)
+            lineTo(19f, 22f)
+        }
+    }
+
+    /**
+     * Tabler `chevron-right`: the quiet "this row opens" marker. It points the
+     * way forward, so it flips with the layout direction.
+     */
+    val ChevronRight: ImageVector by lazy {
+        fishIcon("ChevronRight", autoMirror = true) {
+            moveTo(9f, 6f)
+            lineTo(15f, 12f)
+            lineTo(9f, 18f)
+        }
+    }
 }
 
 private fun fishIcon(
     name: String,
+    autoMirror: Boolean = false,
     block: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit,
 ): ImageVector = ImageVector.Builder(
     name = name,
@@ -527,6 +560,7 @@ private fun fishIcon(
     defaultHeight = 24.dp,
     viewportWidth = 24f,
     viewportHeight = 24f,
+    autoMirror = autoMirror,
 ).apply {
     path(
         fill = null,
