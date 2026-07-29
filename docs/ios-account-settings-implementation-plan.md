@@ -1,6 +1,6 @@
 # iOS account settings implementation plan
 
-Status: implementation-ready. Platform order: follows the Android plan. Scope: the existing SwiftUI direct-chat app only.
+Status: Implemented (2026-07-21, `9fae7bb0 feat(ios): add account settings sheet with theme and notification controls`). Platform order: followed the Android plan. Scope: the existing SwiftUI direct-chat app only.
 
 ## Outcome
 
