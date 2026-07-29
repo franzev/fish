@@ -118,9 +118,11 @@ struct ConversationListScreenTests {
         )
     }
 
-    /// A failure keeps its own words and its own single action: the friends
-    /// welcome never talks over it.
-    @MainActor @Test func aFailureNoticeKeepsTheEmptyStateItAlwaysHad() {
+    /// A failure keeps its own words and its own one button — the friends
+    /// welcome never talks over it — but somebody waiting on an answer is not
+    /// what failed, so the row stays reachable rather than disappearing with
+    /// the copy.
+    @MainActor @Test func aFailureNoticeKeepsItsWordsWithoutHidingAWaitingRequest() {
         assertThemedSnapshots(
             of: ConversationListScreen(
                 conversations: [],
@@ -129,6 +131,21 @@ struct ConversationListScreenTests {
                 onOpen: { _ in },
                 onRetry: {},
                 incomingRequestCount: 1,
+                onOpenRequests: {},
+                onAddFriend: {},
+                now: now
+            ),
+            named: "conversation-list-friends-failed-waiting"
+        )
+        // Nothing waiting: the failure screen is exactly the screen it was
+        // before friends existed.
+        assertThemedSnapshots(
+            of: ConversationListScreen(
+                conversations: [],
+                currentUserId: "me",
+                notice: "Conversations aren’t available yet. Try again.",
+                onOpen: { _ in },
+                onRetry: {},
                 onOpenRequests: {},
                 onAddFriend: {},
                 now: now

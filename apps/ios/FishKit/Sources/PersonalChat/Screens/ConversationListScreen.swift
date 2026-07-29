@@ -62,10 +62,12 @@ public struct ConversationListScreen: View {
                             .padding(.horizontal, Spacing.page)
                     }
                     // Without this the only way to a waiting request would be a
-                    // list that someone with no conversations never sees. A
-                    // failure keeps this screen exactly as it was, down to the
-                    // one action it has always offered.
-                    if welcomesFriends, incomingRequestCount > 0, let onOpenRequests {
+                    // list that someone with no conversations never sees. It
+                    // stays through a failure too: the directory being
+                    // unreachable says nothing about the person waiting on an
+                    // answer, and the welcome copy above is what a notice
+                    // replaces, not this row.
+                    if incomingRequestCount > 0, let onOpenRequests {
                         requestsWaitingRow(onOpenRequests)
                             .padding(.horizontal, Spacing.page)
                     }
