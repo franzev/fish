@@ -326,6 +326,11 @@ class FriendsViewModel(
         when (event.reason) {
             FriendEventReason.FriendshipCreated,
             FriendEventReason.RequestAccepted,
+            // An accept that landed while the channel was down was never
+            // delivered, and a conversation nobody knows about is the one
+            // failure this feature exists to prevent. The first subscribe of a
+            // session resumes too, so signing in also asks once.
+            FriendEventReason.StreamResumed,
             -> invalidations.tryEmit(Unit)
             else -> Unit
         }

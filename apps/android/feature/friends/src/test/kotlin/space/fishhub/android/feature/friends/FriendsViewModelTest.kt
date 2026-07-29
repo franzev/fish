@@ -335,7 +335,7 @@ class FriendsViewModelTest {
         }
 
     @Test
-    fun `every friend event refetches the count and only two refresh the directory`() =
+    fun `every friend event refetches the count and only the friendship ones refresh`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeFriendsRepository()
             repository.count = FriendsResult.Success(2)
@@ -358,20 +358,24 @@ class FriendsViewModelTest {
             assertEquals(1 + quiet.size, repository.countCalls)
             assertEquals(0, invalidations.size)
 
-            repository.emit(FriendEvent(FriendEventReason.RequestAccepted))
-            repository.emit(FriendEvent(FriendEventReason.FriendshipCreated))
-            assertEquals(1 + quiet.size + 2, repository.countCalls)
-            assertEquals(2, invalidations.size)
+            val refreshing = listOf(
+                FriendEventReason.RequestAccepted,
+                FriendEventReason.FriendshipCreated,
+                FriendEventReason.StreamResumed,
+            )
+            refreshing.forEach { repository.emit(FriendEvent(it)) }
+            assertEquals(1 + quiet.size + refreshing.size, repository.countCalls)
+            assertEquals(refreshing.size, invalidations.size)
 
             collector.cancel()
         }
 
     @Test
-    fun `a stream that comes back refetches the count without touching the directory`() =
+    fun `a stream that comes back refetches the count and the directory`() =
         runTest(mainDispatcherRule.dispatcher) {
             // Whatever happened while the channel was down was never delivered,
-            // so the count is refetched; what the directory missed is not
-            // knowable from a resume, so it is left alone.
+            // so both surfaces are due a refetch: an accept inside the outage
+            // would otherwise leave a conversation nobody ever sees.
             val repository = FakeFriendsRepository()
             val viewModel = viewModel(repository)
             val invalidations = mutableListOf<Unit>()
@@ -383,7 +387,7 @@ class FriendsViewModelTest {
 
             assertEquals(2, repository.countCalls)
             assertEquals(4, viewModel.incomingRequestCount.value)
-            assertEquals(0, invalidations.size)
+            assertEquals(1, invalidations.size)
 
             collector.cancel()
         }
