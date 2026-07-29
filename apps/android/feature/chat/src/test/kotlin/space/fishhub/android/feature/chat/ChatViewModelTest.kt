@@ -1085,7 +1085,7 @@ class ChatViewModelTest {
         }
 
     @Test
-    fun `refreshes that pile up during one fetch stay one fetch`() =
+    fun `refreshes that pile up during one fetch coalesce into one more`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository(conversationCount = 2)
             val viewModel = friendsViewModel(repository)
@@ -1101,9 +1101,42 @@ class ChatViewModelTest {
             viewModel.refreshDirectory()
             assertEquals(before + 1, repository.directoryCalls)
 
+            repository.directoryGate = null
             gate.complete(Unit)
             advanceUntilIdle()
+            // The answer in flight was asked for before those events, so one
+            // more pass follows it — one, however many events arrived.
+            assertEquals(before + 2, repository.directoryCalls)
+        }
+
+    @Test
+    fun `a friendship that lands while the list is loading still arrives`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(conversationCount = 2)
+            val viewModel = friendsViewModel(repository)
+            advanceUntilIdle()
+
+            val gate = CompletableDeferred<Unit>()
+            repository.directoryGate = gate
+            viewModel.showConversationList()
+            val before = repository.directoryCalls
+
+            // The accept commits while the list's own fetch is still out, so
+            // that answer can never contain the new conversation.
+            repository.addConversation("conversation-3", "Sam Lee")
+            viewModel.refreshDirectory()
+            assertEquals(before, repository.directoryCalls)
+
+            repository.directoryGate = null
+            gate.complete(Unit)
+            advanceUntilIdle()
+
             assertEquals(before + 1, repository.directoryCalls)
+            val state = viewModel.uiState.value as ChatRouteUiState.ConversationList
+            assertEquals(
+                listOf("conversation-1", "conversation-2", "conversation-3"),
+                state.conversations.map { it.conversationId },
+            )
         }
 
     @Test
@@ -1139,22 +1172,32 @@ class ChatViewModelTest {
             assertTrue(viewModel.uiState.value is ChatRouteUiState.ConversationList)
 
             // A coach has no friends surface to reach, so the flag buys them
-            // nothing and their navigation is left exactly as it was.
-            val coachRepository = FakeChatRepository(
-                conversationCount = 1,
-                participantRole = UserRole.Client,
-                currentUserRole = UserRole.Coach,
-            )
-            val coach = friendsViewModel(coachRepository)
-            advanceUntilIdle()
-            coach.showConversationList()
-            advanceUntilIdle()
-            assertTrue(coach.uiState.value !is ChatRouteUiState.ConversationList)
-            assertTrue(
-                !(coach.uiState.value as ChatRouteUiState.Conversation)
-                    .model
-                    .hasPreviousDestination,
-            )
+            // nothing: only a second conversation still opens the list, exactly
+            // as it does today.
+            listOf(0 to false, 1 to false, 2 to true).forEach { (count, reachable) ->
+                val coachRepository = FakeChatRepository(
+                    conversationCount = count,
+                    participantRole = UserRole.Client,
+                    currentUserRole = UserRole.Coach,
+                )
+                val coach = friendsViewModel(coachRepository)
+                advanceUntilIdle()
+                assertEquals(
+                    "coach back destination at $count conversations",
+                    reachable,
+                    (coach.uiState.value as ChatRouteUiState.Conversation)
+                        .model
+                        .hasPreviousDestination,
+                )
+
+                coach.showConversationList()
+                advanceUntilIdle()
+                assertEquals(
+                    "coach list reachability at $count conversations",
+                    reachable,
+                    coach.uiState.value is ChatRouteUiState.ConversationList,
+                )
+            }
         }
 
     @Test
@@ -1287,6 +1330,9 @@ private class FakeChatRepository(
     override suspend fun listAuthorizedConversations():
         ChatResult<space.fishhub.android.data.chat.AuthorizedChatDirectory> {
         directoryCalls += 1
+        // The server answers with the directory as it stood when it was asked,
+        // so a conversation created during the flight is not in this answer.
+        val answered = authorizedConversations
         directoryGate?.await()
         return ChatResult.Success(
             space.fishhub.android.data.chat.AuthorizedChatDirectory(
@@ -1295,7 +1341,7 @@ private class FakeChatRepository(
                     role = currentUserRole,
                     displayName = "Franz",
                 ),
-                conversations = authorizedConversations,
+                conversations = answered,
             ),
         )
     }

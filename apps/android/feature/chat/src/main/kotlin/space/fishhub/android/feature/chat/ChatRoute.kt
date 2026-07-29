@@ -652,8 +652,11 @@ fun ChatRoute(
         }
     }
 
+    // A parked shared-content session must not answer back while friends is on
+    // screen, or leaving Add a friend would reopen a gallery underneath it.
     BackHandler(
-        enabled = sharedContentSessionActive && sharedContentOrigin == null,
+        enabled = sharedContentSessionActive && sharedContentOrigin == null &&
+            !addFriendVisible && !friendRequestsVisible,
     ) {
         sharedContentOrigin = sharedContentReturnOrigin ?: SharedContentOrigin.ConversationHeader
         sharedContentReturnOrigin = null

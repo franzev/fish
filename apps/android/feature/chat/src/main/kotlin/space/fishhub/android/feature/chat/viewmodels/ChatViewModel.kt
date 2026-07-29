@@ -102,6 +102,7 @@ class ChatViewModel(
     private var activeConversation: AuthorizedConversation? = null
     private var activeCollection: Job? = null
     private var directoryRefreshJob: Job? = null
+    private var directoryRefreshQueued = false
     private var draftSave: Job? = null
     private var draftObservers: Job? = null
     private var draftConversationIds: Set<String> = emptySet()
@@ -291,7 +292,7 @@ class ChatViewModel(
             notice = latestNotice,
         )
         directoryRefreshJob?.cancel()
-        directoryRefreshJob = viewModelScope.launch { refreshDirectoryInPlace() }
+        trackDirectoryRefresh(viewModelScope.launch { refreshDirectoryInPlace() })
     }
 
     /**
@@ -299,21 +300,49 @@ class ChatViewModel(
      * whoever learns about it asks for a refetch rather than reaching into chat
      * state itself.
      *
-     * Single-flight: an accept arrives as a burst — the response, the server's
-     * broadcast, and the stream resuming behind it — and that is one refetch,
-     * not a race of them.
+     * Coalesced rather than dropped: an answer already in flight was asked for
+     * before this friendship existed, so it cannot contain it. However many
+     * events arrive during that flight — the accept, the broadcast, the stream
+     * resuming behind it — they become exactly one more pass afterwards.
      */
     fun refreshDirectory() {
         if (repository.authState.value !is ChatAuthState.SignedIn) return
-        if (directoryRefreshJob?.isActive == true) return
-        directoryRefreshJob = viewModelScope.launch {
-            // With nothing open, the arrival *is* the screen: let the ordinary
-            // sign-in path pick it up and open it.
-            if (activeConversation == null && !showingConversationList) {
-                loadConversations()
-            } else {
-                refreshDirectoryInPlace()
+        if (directoryRefreshJob?.isActive == true) {
+            directoryRefreshQueued = true
+            return
+        }
+        launchDirectoryRefresh()
+    }
+
+    private fun launchDirectoryRefresh() {
+        directoryRefreshQueued = false
+        trackDirectoryRefresh(
+            viewModelScope.launch {
+                // With nothing open, the arrival *is* the screen: let the
+                // ordinary sign-in path pick it up and open it.
+                if (activeConversation == null && !showingConversationList) {
+                    loadConversations()
+                } else {
+                    refreshDirectoryInPlace()
+                }
+            },
+        )
+    }
+
+    /**
+     * Anything that fetches the directory answers for whatever was asked while
+     * it was out. A cancelled fetch leaves the flag alone: whatever replaced it
+     * is now the one that owes the answer.
+     */
+    private fun trackDirectoryRefresh(job: Job) {
+        directoryRefreshJob = job
+        job.invokeOnCompletion { cause ->
+            if (cause != null || !directoryRefreshQueued) return@invokeOnCompletion
+            if (repository.authState.value !is ChatAuthState.SignedIn) {
+                directoryRefreshQueued = false
+                return@invokeOnCompletion
             }
+            launchDirectoryRefresh()
         }
     }
 
