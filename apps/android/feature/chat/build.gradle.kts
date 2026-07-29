@@ -27,6 +27,7 @@ android {
 dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":data:chat"))
+    implementation(project(":feature:friends"))
     implementation(project(":feature:presence"))
     implementation(project(":feature:settings"))
     implementation(platform(libs.androidx.compose.bom))

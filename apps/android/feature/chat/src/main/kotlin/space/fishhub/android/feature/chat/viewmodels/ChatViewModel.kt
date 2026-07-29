@@ -81,6 +81,12 @@ class ChatViewModel(
     private val formatter: ChatTextFormatter,
     private val gifRepository: GifRepository = NoOpGifRepository,
     private val mediaCatalog: ChatMediaCatalog = ChatMediaCatalog.Empty,
+    /**
+     * With friends on, someone can arrive at their own conversation list to add
+     * a friend, so the list stops being a place only a second conversation can
+     * unlock.
+     */
+    private val friendsEnabled: Boolean = false,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<ChatRouteUiState>(ChatRouteUiState.Loading)
     val uiState: StateFlow<ChatRouteUiState> = mutableUiState.asStateFlow()
@@ -127,6 +133,10 @@ class ChatViewModel(
 
     val currentUserRole: space.fishhub.android.data.chat.model.UserRole?
         get() = currentUser?.role
+
+    /** Known from the moment the directory answers, conversations or not. */
+    val currentUserId: String?
+        get() = currentUser?.userId
 
     val currentConversation: AuthorizedConversation?
         get() = activeConversation
@@ -263,7 +273,7 @@ class ChatViewModel(
     }
 
     fun showConversationList() {
-        if (conversations.size <= 1) return
+        if (!friendsEnabled && conversations.size <= 1) return
         showingConversationList = true
         mutableUiState.value = ChatRouteUiState.ConversationList(
             currentUserDisplayName = currentUser?.displayName.orEmpty(),
@@ -272,21 +282,47 @@ class ChatViewModel(
             notice = latestNotice,
         )
         directoryRefreshJob?.cancel()
+        directoryRefreshJob = viewModelScope.launch { refreshDirectoryInPlace() }
+    }
+
+    /**
+     * A friendship creates a conversation this directory has never heard of, so
+     * whoever learns about it asks for a refetch rather than reaching into chat
+     * state itself.
+     *
+     * Single-flight: an accept arrives as a burst — the response, the server's
+     * broadcast, and the stream resuming behind it — and that is one refetch,
+     * not a race of them.
+     */
+    fun refreshDirectory() {
+        if (repository.authState.value !is ChatAuthState.SignedIn) return
+        if (directoryRefreshJob?.isActive == true) return
         directoryRefreshJob = viewModelScope.launch {
-            val result = repository.listAuthorizedConversations()
-            if (result !is ChatResult.Success) return@launch
-            currentUser = result.value.currentUser
-            conversations = result.value.conversations
-            observeConversationDrafts()
-            val activeId = activeConversation?.conversationId
-            if (activeId != null && conversations.none { it.conversationId == activeId }) {
-                handleConversationUnavailable(activeId)
-                return@launch
+            // With nothing open, the arrival *is* the screen: let the ordinary
+            // sign-in path pick it up and open it.
+            if (activeConversation == null && !showingConversationList) {
+                loadConversations()
+            } else {
+                refreshDirectoryInPlace()
             }
-            activeConversation = conversations.firstOrNull { it.conversationId == activeId }
-                ?: activeConversation
-            publish()
         }
+    }
+
+    /** Refetches the directory without moving anyone off the screen they are on. */
+    private suspend fun refreshDirectoryInPlace() {
+        val result = repository.listAuthorizedConversations()
+        if (result !is ChatResult.Success) return
+        currentUser = result.value.currentUser
+        conversations = result.value.conversations
+        observeConversationDrafts()
+        val activeId = activeConversation?.conversationId
+        if (activeId != null && conversations.none { it.conversationId == activeId }) {
+            handleConversationUnavailable(activeId)
+            return
+        }
+        activeConversation = conversations.firstOrNull { it.conversationId == activeId }
+            ?: activeConversation
+        publish()
     }
 
     fun retryConversation() {
@@ -1205,7 +1241,7 @@ class ChatViewModel(
             ),
             conversations = conversationPreviews(),
             selectedConversationId = conversation.conversationId,
-            hasPreviousDestination = conversations.size > 1,
+            hasPreviousDestination = friendsEnabled || conversations.size > 1,
         )
 
     private fun List<ChatMessage>?.toUiMessages(

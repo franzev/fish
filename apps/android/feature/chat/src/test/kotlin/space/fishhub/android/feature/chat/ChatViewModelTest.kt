@@ -1043,6 +1043,133 @@ class ChatViewModelTest {
             val state = viewModel.uiState.value as ChatRouteUiState.Conversation
             assertTrue(state.model.participant?.friendSafetyAvailable == false)
         }
+
+    @Test
+    fun `refreshing the directory shows a conversation that did not exist before`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(conversationCount = 2)
+            val viewModel = friendsViewModel(repository)
+            advanceUntilIdle()
+            viewModel.showConversationList()
+            advanceUntilIdle()
+
+            repository.addConversation("conversation-3", "Sam Lee")
+            viewModel.refreshDirectory()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ChatRouteUiState.ConversationList
+            assertEquals(
+                listOf("conversation-1", "conversation-2", "conversation-3"),
+                state.conversations.map { it.conversationId },
+            )
+            assertEquals("Sam Lee", state.conversations.last().participantName)
+        }
+
+    @Test
+    fun `a first conversation opens when the directory refresh finds it`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(conversationCount = 0)
+            val viewModel = friendsViewModel(repository)
+            advanceUntilIdle()
+            assertEquals(
+                ChatScreenState.Unavailable,
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.screenState,
+            )
+
+            repository.addConversation("conversation-9", "Sam Lee")
+            viewModel.refreshDirectory()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals("conversation-9", state.model.selectedConversationId)
+        }
+
+    @Test
+    fun `refreshes that pile up during one fetch stay one fetch`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(conversationCount = 2)
+            val viewModel = friendsViewModel(repository)
+            advanceUntilIdle()
+            viewModel.showConversationList()
+            advanceUntilIdle()
+            val before = repository.directoryCalls
+
+            val gate = CompletableDeferred<Unit>()
+            repository.directoryGate = gate
+            viewModel.refreshDirectory()
+            viewModel.refreshDirectory()
+            viewModel.refreshDirectory()
+            assertEquals(before + 1, repository.directoryCalls)
+
+            gate.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(before + 1, repository.directoryCalls)
+        }
+
+    @Test
+    fun `the conversation list stays out of reach until friends or a second conversation`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            listOf(0, 1).forEach { count ->
+                val closed = FakeChatRepository(conversationCount = count)
+                val withoutFriends = ChatViewModel(closed, SavedStateHandle(), TestFormatter)
+                advanceUntilIdle()
+                withoutFriends.showConversationList()
+                advanceUntilIdle()
+                assertTrue(
+                    "$count conversations without friends must not reach the list",
+                    withoutFriends.uiState.value !is ChatRouteUiState.ConversationList,
+                )
+
+                val open = FakeChatRepository(conversationCount = count)
+                val withFriends = friendsViewModel(open)
+                advanceUntilIdle()
+                withFriends.showConversationList()
+                advanceUntilIdle()
+                assertTrue(
+                    "$count conversations with friends must reach the list",
+                    withFriends.uiState.value is ChatRouteUiState.ConversationList,
+                )
+            }
+
+            val two = FakeChatRepository(conversationCount = 2)
+            val viewModel = ChatViewModel(two, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+            viewModel.showConversationList()
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value is ChatRouteUiState.ConversationList)
+        }
+
+    @Test
+    fun `back to the list appears for a sole conversation only with friends on`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            fun destinationFor(count: Int, friendsEnabled: Boolean): Boolean {
+                val repository = FakeChatRepository(conversationCount = count)
+                val viewModel = if (friendsEnabled) {
+                    friendsViewModel(repository)
+                } else {
+                    ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+                }
+                advanceUntilIdle()
+                return (viewModel.uiState.value as ChatRouteUiState.Conversation)
+                    .model
+                    .hasPreviousDestination
+            }
+
+            // Nothing to go back to yet, so the empty state keeps its one action.
+            assertTrue(!destinationFor(count = 0, friendsEnabled = false))
+            assertTrue(!destinationFor(count = 0, friendsEnabled = true))
+            assertTrue(!destinationFor(count = 1, friendsEnabled = false))
+            assertTrue(destinationFor(count = 1, friendsEnabled = true))
+            assertTrue(destinationFor(count = 2, friendsEnabled = false))
+            assertTrue(destinationFor(count = 2, friendsEnabled = true))
+        }
+
+    private fun friendsViewModel(repository: FakeChatRepository) = ChatViewModel(
+        repository,
+        SavedStateHandle(),
+        TestFormatter,
+        friendsEnabled = true,
+    )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -1079,7 +1206,7 @@ private class FakeChatRepository(
     private val drafts = MutableStateFlow("")
     private val attachmentDrafts = MutableStateFlow<List<LocalAttachmentDraft>>(emptyList())
     val realtime = MutableStateFlow<ChatRealtimeEvent>(ChatRealtimeEvent.Connected)
-    private val authorizedConversations = buildList {
+    var authorizedConversations = buildList {
         if (conversationCount > 0) add(conversation)
         if (conversationCount > 1) {
             add(
@@ -1095,6 +1222,8 @@ private class FakeChatRepository(
         ChatAuthState.SignedIn("client-1", "client@example.com"),
     )
     var savedDraft: String = ""
+    var directoryCalls: Int = 0
+    var directoryGate: CompletableDeferred<Unit>? = null
     var sendCalls: Int = 0
     var flushCalls: Int = 0
     var readFails: Boolean = false
@@ -1136,16 +1265,31 @@ private class FakeChatRepository(
     override fun observeRealtime(conversationId: String): Flow<ChatRealtimeEvent> = realtime
     override suspend fun signIn(email: String, password: String): ChatResult<Unit> = ChatResult.Success(Unit)
     override suspend fun signOut() = Unit
-    override suspend fun listAuthorizedConversations() = ChatResult.Success(
-        space.fishhub.android.data.chat.AuthorizedChatDirectory(
-            currentUser = space.fishhub.android.data.chat.AuthorizedChatIdentity(
-                userId = "client-1",
-                role = space.fishhub.android.data.chat.model.UserRole.Client,
-                displayName = "Franz",
+    override suspend fun listAuthorizedConversations():
+        ChatResult<space.fishhub.android.data.chat.AuthorizedChatDirectory> {
+        directoryCalls += 1
+        directoryGate?.await()
+        return ChatResult.Success(
+            space.fishhub.android.data.chat.AuthorizedChatDirectory(
+                currentUser = space.fishhub.android.data.chat.AuthorizedChatIdentity(
+                    userId = "client-1",
+                    role = space.fishhub.android.data.chat.model.UserRole.Client,
+                    displayName = "Franz",
+                ),
+                conversations = authorizedConversations,
             ),
-            conversations = authorizedConversations,
-        ),
-    )
+        )
+    }
+
+    /** Stands in for a friendship that just created a conversation server-side. */
+    fun addConversation(conversationId: String, participantName: String) {
+        authorizedConversations = authorizedConversations + conversation.copy(
+            conversationId = conversationId,
+            participantId = "friend-$conversationId",
+            participantRole = UserRole.Client,
+            participantDisplayName = participantName,
+        )
+    }
     override suspend fun syncNewest(conversationId: String) = ChatResult.Success(
         ConversationSnapshot(
             authorizedConversations.first { it.conversationId == conversationId },

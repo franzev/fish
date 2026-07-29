@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.ChatDataModule
 import space.fishhub.android.data.chat.ChatRealtimeEvent
+import space.fishhub.android.data.friends.FriendRequestResponse
 import space.fishhub.android.data.presence.PresenceConnectionState
 import space.fishhub.android.data.presence.PresenceDisplayStatus
 import space.fishhub.android.data.presence.PresenceDuration
@@ -68,6 +69,9 @@ import space.fishhub.android.feature.chat.viewmodels.MessageSearchViewModel
 import space.fishhub.android.feature.chat.views.AttachmentSourceSheet
 import space.fishhub.android.feature.chat.views.AttachmentViewer
 import space.fishhub.android.feature.chat.views.mediapicker.MediaPickerSheet
+import space.fishhub.android.feature.friends.FriendsViewModel
+import space.fishhub.android.feature.friends.views.AddFriendScreen
+import space.fishhub.android.feature.friends.views.FriendRequestsScreen
 import space.fishhub.android.feature.presence.PresenceAccountTrigger
 import space.fishhub.android.feature.presence.PresenceUiState
 import space.fishhub.android.feature.presence.PresenceViewModel
@@ -87,6 +91,7 @@ fun ChatRoute(
     mediaPickerViewModel: MediaPickerViewModel,
     messageSearchViewModel: MessageSearchViewModel,
     presenceViewModel: PresenceViewModel,
+    friendsViewModel: FriendsViewModel,
     mediaCatalog: ChatMediaCatalog,
     onStartAudioCall: (ParticipantUiModel) -> Unit = {},
     onStartVideoCall: (ParticipantUiModel) -> Unit = {},
@@ -134,6 +139,16 @@ fun ChatRoute(
     val messageSearchState by messageSearchViewModel.uiState.collectAsStateWithLifecycle()
     val presenceState by presenceViewModel.uiState.collectAsStateWithLifecycle()
     val blockedPeopleState by viewModel.blockedPeople.collectAsStateWithLifecycle()
+    val friendsEntryPointsVisible by friendsViewModel.entryPointsVisible
+        .collectAsStateWithLifecycle()
+    val incomingRequestCount by friendsViewModel.incomingRequestCount
+        .collectAsStateWithLifecycle()
+    val addFriendVisible by friendsViewModel.addFriendVisible.collectAsStateWithLifecycle()
+    val friendRequestsVisible by friendsViewModel.requestsVisible.collectAsStateWithLifecycle()
+    val addFriendState by friendsViewModel.addFriendState.collectAsStateWithLifecycle()
+    val friendRequestsState by friendsViewModel.requestsState.collectAsStateWithLifecycle()
+    val selectedFriendRequest by friendsViewModel.selectedRequest.collectAsStateWithLifecycle()
+    val friendAvatarUrls by friendsViewModel.avatarUrls.collectAsStateWithLifecycle()
     val composerState = rememberTextFieldState()
     val selectedConversationId = (routeState as? ChatRouteUiState.Conversation)
         ?.model
@@ -182,6 +197,26 @@ fun ChatRoute(
                 )
             }
         }
+
+    // Friends belongs to the signed-in person, so it follows the identity the
+    // directory answered with rather than the screen anyone happens to be on.
+    // A mid-session reload keeps that identity, so the subscription survives it.
+    val friendsSession = if (routeState is ChatRouteUiState.SignedOut) {
+        null
+    } else {
+        viewModel.currentUserId?.let { FriendsSession(it, canManageBlockedPeople) }
+    }
+    LaunchedEffect(friendsViewModel, friendsSession) {
+        val session = friendsSession
+        if (session == null) friendsViewModel.stop() else friendsViewModel.start(
+            userId = session.userId,
+            isClient = session.isClient,
+        )
+    }
+    LaunchedEffect(friendsViewModel, viewModel) {
+        // A friendship exists now; only chat knows how to go and find it.
+        friendsViewModel.directoryInvalidations.collect { viewModel.refreshDirectory() }
+    }
 
     LaunchedEffect(presenceViewModel) {
         presenceViewModel.preferenceConfirmed.collectLatest {
@@ -324,262 +359,297 @@ fun ChatRoute(
         }
     }
 
-    when (val state = routeState) {
-        ChatRouteUiState.Loading -> ChatAdaptiveLayout(
-            model = ChatSamples.loading,
-            composerState = composerState,
-            onSend = {},
-            onBack = {},
-            onRetryEarlier = {},
-            onSelectConversation = {},
+    when {
+        // A friends screen owns the whole screen while it is up, the way
+        // message search does, so nothing behind it can be tapped by mistake.
+        addFriendVisible -> AddFriendScreen(
+            state = addFriendState,
+            avatarUrls = friendAvatarUrls,
+            onSearch = friendsViewModel::search,
+            onSend = friendsViewModel::sendRequest,
+            onReviewRequest = friendsViewModel::reviewIncomingRequest,
+            onSearchAgain = friendsViewModel::searchAgain,
+            onClose = friendsViewModel::closeAddFriend,
             modifier = modifier,
         )
-        is ChatRouteUiState.SignedOut -> SignInScreen(
-            state = state,
-            onEmailChange = viewModel::updateEmail,
-            onPasswordChange = viewModel::updatePassword,
-            onSignIn = viewModel::signIn,
-            onForgotPassword = onOpenPasswordRecovery,
+        friendRequestsVisible -> FriendRequestsScreen(
+            state = friendRequestsState,
+            selectedRequest = selectedFriendRequest,
+            avatarUrls = friendAvatarUrls,
+            onSelectRequest = friendsViewModel::selectRequest,
+            onClearSelection = friendsViewModel::clearSelectedRequest,
+            onAccept = { friendsViewModel.respond(it, FriendRequestResponse.Accept) },
+            onDecline = { friendsViewModel.respond(it, FriendRequestResponse.Decline) },
+            onRetry = friendsViewModel::loadRequests,
+            onClose = friendsViewModel::closeRequests,
             modifier = modifier,
         )
-        is ChatRouteUiState.Conversation -> {
-            val composerAttachments = state.attachmentDrafts
-                .filter { it.inComposer }
-                .sortedWith(compareBy({ it.position }, { it.id }))
-            val previewAttachments = state.attachmentDrafts
-                .filter { it.inPreview }
-                .sortedWith(compareBy({ it.position }, { it.id }))
-            ComposerStateBridge(
-                state = composerState,
-                protocolDraft = state.draft,
-                onDraftChanged = viewModel::draftChanged,
+        else ->
+        when (val state = routeState) {
+            ChatRouteUiState.Loading -> ChatAdaptiveLayout(
+                model = ChatSamples.loading,
+                composerState = composerState,
+                onSend = {},
+                onBack = {},
+                onRetryEarlier = {},
+                onSelectConversation = {},
+                modifier = modifier,
             )
-            val galleryOrigin = sharedContentOrigin
-            if (galleryOrigin != null && gallerySession != null) {
-                val session = gallerySession
-                val previewItem = sharedContentPreviewId?.let { id ->
-                    val acceptedItem = galleryItems
-                        .firstOrNull { it.itemId == id }
-                    acceptedItem?.toPreviewItem(
-                        senderName = sharedContentSenderName(
-                            acceptedItem,
-                            currentUserDisplayName,
-                            currentConversation,
-                        ),
-                    )
-                }
-                if (previewItem != null) {
-                    SharedContentPreviewScreen(
-                        item = previewItem,
-                        onBack = { sharedContentPreviewId = null },
-                        onOpenSource = { messageId ->
-                            sharedContentReturnOrigin = galleryOrigin
-                            sharedContentPreviewId = null
-                            sharedContentOrigin = null
+            is ChatRouteUiState.SignedOut -> SignInScreen(
+                state = state,
+                onEmailChange = viewModel::updateEmail,
+                onPasswordChange = viewModel::updatePassword,
+                onSignIn = viewModel::signIn,
+                onForgotPassword = onOpenPasswordRecovery,
+                modifier = modifier,
+            )
+            is ChatRouteUiState.Conversation -> {
+                val composerAttachments = state.attachmentDrafts
+                    .filter { it.inComposer }
+                    .sortedWith(compareBy({ it.position }, { it.id }))
+                val previewAttachments = state.attachmentDrafts
+                    .filter { it.inPreview }
+                    .sortedWith(compareBy({ it.position }, { it.id }))
+                ComposerStateBridge(
+                    state = composerState,
+                    protocolDraft = state.draft,
+                    onDraftChanged = viewModel::draftChanged,
+                )
+                val galleryOrigin = sharedContentOrigin
+                if (galleryOrigin != null && gallerySession != null) {
+                    val session = gallerySession
+                    val previewItem = sharedContentPreviewId?.let { id ->
+                        val acceptedItem = galleryItems
+                            .firstOrNull { it.itemId == id }
+                        acceptedItem?.toPreviewItem(
+                            senderName = sharedContentSenderName(
+                                acceptedItem,
+                                currentUserDisplayName,
+                                currentConversation,
+                            ),
+                        )
+                    }
+                    if (previewItem != null) {
+                        SharedContentPreviewScreen(
+                            item = previewItem,
+                            onBack = { sharedContentPreviewId = null },
+                            onOpenSource = { messageId ->
+                                sharedContentReturnOrigin = galleryOrigin
+                                sharedContentPreviewId = null
+                                sharedContentOrigin = null
+                                viewModel.focusCurrentMessage(messageId)
+                            },
+                            onNativeAction = { action ->
+                                val attachmentAction = action in setOf(
+                                    SharedContentNativeAction.Share,
+                                    SharedContentNativeAction.Save,
+                                    SharedContentNativeAction.Download,
+                                    SharedContentNativeAction.Open,
+                                )
+                                val opensAttachment = action == SharedContentNativeAction.Open &&
+                                    previewItem.kind in setOf("video", "document", "voice")
+                                val needsVerifiedContent = previewItem.attachmentId != null &&
+                                    attachmentAction &&
+                                    (previewItem.canTransfer || opensAttachment)
+                                val verified = if (needsVerifiedContent) {
+                                    previewItem.attachmentId.let { attachmentId ->
+                                        previewItem.byteSize?.let { byteSize ->
+                                            sharedContentRuntime.loadVerifiedContent(
+                                                ChatDataModule.SharedContentFullContentRequest(
+                                                    ownerIdentityId = session.key.ownerIdentityId,
+                                                    conversationId = session.key.conversationId,
+                                                    identityGeneration = session.key.identityGeneration,
+                                                    attachmentId = attachmentId,
+                                                    name = previewItem.originalName ?: previewItem.title,
+                                                    mimeType = previewItem.mimeType ?: "application/octet-stream",
+                                                    expectedByteSize = byteSize,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    null
+                                }
+                                if (needsVerifiedContent && verified == null) {
+                                    SharedContentNativeActionResult.Unavailable
+                                } else {
+                                    onSharedContentAction(previewItem, action, verified)
+                                }
+                            },
+                            onDelete = { messageId ->
+                                viewModel.deleteSharedContentSource(messageId) { session.store.realtime() }
+                            },
+                            modifier = modifier,
+                            thumbnailLoader = { handle ->
+                                val item = galleryItems.firstOrNull { it.itemId == handle.itemId }
+                                item?.thumbnailRequest(session.key, mediaCatalog)
+                                    ?.let { sharedContentRuntime.loadThumbnail(it) }
+                            },
+                        )
+                    } else {
+                        SharedContentGalleryScreen(
+                            presenter = gallerySession.presenter,
+                            onBack = {
+                                session.close()
+                                onSharedContentStoreChanged(null)
+                                sharedContentSessionActive = false
+                                sharedContentPreviewId = null
+                                sharedContentOrigin = null
+                                focusReturn = when (galleryOrigin) {
+                                    SharedContentOrigin.ConversationHeader ->
+                                        SharedContentFocusReturn.HeaderSharedContent
+                                    SharedContentOrigin.ConversationDetails ->
+                                        SharedContentFocusReturn.DetailsSharedContent
+                                }
+                            },
+                            modifier = modifier,
+                            thumbnailLoader = { handle ->
+                                val item = galleryItems.firstOrNull { it.itemId == handle.itemId }
+                                val request = item?.thumbnailRequest(session.key, mediaCatalog)
+                                request?.let { sharedContentRuntime.loadThumbnail(it) }
+                            },
+                        )
+                    }
+                } else if (messageSearchState.visible && currentConversation != null) {
+                    MessageSearchScreen(
+                        state = messageSearchState,
+                        onQueryChanged = messageSearchViewModel::updateQuery,
+                        onSubmitQuery = messageSearchViewModel::submitQuery,
+                        onRetry = messageSearchViewModel::retry,
+                        onLoadMore = messageSearchViewModel::loadMore,
+                        onResultSelected = { messageId ->
+                            messageSearchViewModel.close()
                             viewModel.focusCurrentMessage(messageId)
                         },
-                        onNativeAction = { action ->
-                            val attachmentAction = action in setOf(
-                                SharedContentNativeAction.Share,
-                                SharedContentNativeAction.Save,
-                                SharedContentNativeAction.Download,
-                                SharedContentNativeAction.Open,
-                            )
-                            val opensAttachment = action == SharedContentNativeAction.Open &&
-                                previewItem.kind in setOf("video", "document", "voice")
-                            val needsVerifiedContent = previewItem.attachmentId != null &&
-                                attachmentAction &&
-                                (previewItem.canTransfer || opensAttachment)
-                            val verified = if (needsVerifiedContent) {
-                                previewItem.attachmentId.let { attachmentId ->
-                                    previewItem.byteSize?.let { byteSize ->
-                                        sharedContentRuntime.loadVerifiedContent(
-                                            ChatDataModule.SharedContentFullContentRequest(
-                                                ownerIdentityId = session.key.ownerIdentityId,
-                                                conversationId = session.key.conversationId,
-                                                identityGeneration = session.key.identityGeneration,
-                                                attachmentId = attachmentId,
-                                                name = previewItem.originalName ?: previewItem.title,
-                                                mimeType = previewItem.mimeType ?: "application/octet-stream",
-                                                expectedByteSize = byteSize,
-                                            ),
-                                        )
-                                    }
-                                }
-                            } else {
-                                null
-                            }
-                            if (needsVerifiedContent && verified == null) {
-                                SharedContentNativeActionResult.Unavailable
-                            } else {
-                                onSharedContentAction(previewItem, action, verified)
-                            }
-                        },
-                        onDelete = { messageId ->
-                            viewModel.deleteSharedContentSource(messageId) { session.store.realtime() }
-                        },
+                        onClose = messageSearchViewModel::close,
                         modifier = modifier,
-                        thumbnailLoader = { handle ->
-                            val item = galleryItems.firstOrNull { it.itemId == handle.itemId }
-                            item?.thumbnailRequest(session.key, mediaCatalog)
-                                ?.let { sharedContentRuntime.loadThumbnail(it) }
-                        },
                     )
                 } else {
-                    SharedContentGalleryScreen(
-                        presenter = gallerySession.presenter,
-                        onBack = {
-                            session.close()
-                            onSharedContentStoreChanged(null)
-                            sharedContentSessionActive = false
-                            sharedContentPreviewId = null
-                            sharedContentOrigin = null
-                            focusReturn = when (galleryOrigin) {
-                                SharedContentOrigin.ConversationHeader ->
-                                    SharedContentFocusReturn.HeaderSharedContent
-                                SharedContentOrigin.ConversationDetails ->
-                                    SharedContentFocusReturn.DetailsSharedContent
+                    ChatAdaptiveLayout(
+                        model = state.model.copy(notice = state.notice),
+                        composerState = composerState,
+                        emojiCatalog = mediaCatalog,
+                        onSend = viewModel::sendMessage,
+                        onBack = viewModel::showConversationList,
+                        onRetryConversation = viewModel::retryConversation,
+                        onRetryEarlier = viewModel::loadEarlier,
+                        onSelectConversation = viewModel::selectConversation,
+                        pendingMedia = state.pendingMedia,
+                        onOpenMediaPicker = { mediaPickerVisible = true },
+                        onRemovePendingMedia = viewModel::removePendingMedia,
+                        pendingAttachments = composerAttachments,
+                        onOpenAttachmentPicker = { attachmentSourceVisible = true },
+                        onRemovePendingAttachment = viewModel::removeAttachmentDraft,
+                        onRetryPendingAttachment = viewModel::retryAttachmentDraft,
+                        onRetryMessage = viewModel::retryMessage,
+                        onCopyMessage = { body ->
+                            clipboardScope.launch {
+                                clipboard.setClipEntry(ClipData.newPlainText("message", body).toClipEntry())
                             }
                         },
+                        onReportGif = viewModel::reportGif,
+                        onReplyMessage = viewModel::replyToMessage,
+                        onEditMessage = viewModel::editMessage,
+                        onDeleteMessage = viewModel::deleteMessage,
+                        onToggleReaction = viewModel::toggleReaction,
+                        onFocusMessage = viewModel::focusCurrentMessage,
+                        onOpenMessageSearch = {
+                            currentConversation?.let(messageSearchViewModel::open)
+                        },
+                        onOpenSharedContentFromHeader = {
+                            participantDetailsVisible = false
+                            sharedContentEntry += 1
+                            sharedContentSessionActive = true
+                            sharedContentOrigin = SharedContentOrigin.ConversationHeader
+                        },
+                        onOpenSharedContentFromDetails = {
+                            sharedContentEntry += 1
+                            sharedContentSessionActive = true
+                            sharedContentOrigin = SharedContentOrigin.ConversationDetails
+                        },
+                        participantDetailsVisible = participantDetailsVisible,
+                        onOpenParticipantDetails = {
+                            participantDetailsVisible = true
+                        },
+                        onDismissParticipantDetails = {
+                            participantDetailsVisible = false
+                            focusReturn = SharedContentFocusReturn.ParticipantDetails
+                        },
+                        sharedContentHeaderModifier = Modifier.focusRequester(
+                            sharedContentHeaderFocus,
+                        ),
+                        sharedContentDetailsFocusRequested =
+                            focusReturn == SharedContentFocusReturn.DetailsSharedContent,
+                        participantDetailsModifier = Modifier.focusRequester(
+                            participantDetailsFocus,
+                        ),
+                        onClearReplyTarget = viewModel::clearReplyTarget,
+                        onRemoveFriend = viewModel::removeFriend,
+                        onBlockParticipant = viewModel::blockParticipant,
+                        onSetQuiet = viewModel::setQuiet,
+                        onPhotoAttachmentClick = { attachmentId ->
+                            selectedPhotoId = attachmentId
+                            viewModel.refreshAttachment(attachmentId)
+                        },
+                        onFileAttachmentClick = viewModel::openFileAttachment,
+                        onFileAttachmentShare = viewModel::shareFileAttachment,
+                        onAttachmentLoadError = viewModel::refreshAttachment,
+                        onStartAudioCall = onStartAudioCall,
+                        onStartVideoCall = onStartVideoCall,
+                        onCallBack = onCallBack,
+                        voiceRecording = voiceRecording,
+                        voiceRecordingEnabled = voiceRecordingEnabled,
+                        onStartVoiceRecording = onStartVoiceRecording,
+                        onFinishVoiceRecording = onFinishVoiceRecording,
+                        onCancelVoiceRecording = onCancelVoiceRecording,
+                        participantPresence = presenceState.presentationFor(state.model.participant?.id),
+                        accountContent = accountContent,
+                        friendsEntryPointsVisible = friendsEntryPointsVisible,
+                        incomingRequestCount = incomingRequestCount,
+                        onOpenAddFriend = friendsViewModel::openAddFriend,
+                        onOpenRequests = friendsViewModel::openRequests,
                         modifier = modifier,
-                        thumbnailLoader = { handle ->
-                            val item = galleryItems.firstOrNull { it.itemId == handle.itemId }
-                            val request = item?.thumbnailRequest(session.key, mediaCatalog)
-                            request?.let { sharedContentRuntime.loadThumbnail(it) }
+                    )
+                }
+                if (attachmentImportState.active || previewAttachments.isNotEmpty()) {
+                    AttachmentPreviewScreen(
+                        attachments = previewAttachments,
+                        importing = attachmentImportState.importing,
+                        notice = attachmentImportState.notice,
+                        onRemove = viewModel::removeAttachmentDraft,
+                        onAddToMessage = {
+                            viewModel.commitAttachmentPreview()
+                            onAttachmentFlowFinished()
+                        },
+                        onDismiss = {
+                            viewModel.discardAttachmentPreview()
+                            onAttachmentFlowFinished()
                         },
                     )
                 }
-            } else if (messageSearchState.visible && currentConversation != null) {
-                MessageSearchScreen(
-                    state = messageSearchState,
-                    onQueryChanged = messageSearchViewModel::updateQuery,
-                    onSubmitQuery = messageSearchViewModel::submitQuery,
-                    onRetry = messageSearchViewModel::retry,
-                    onLoadMore = messageSearchViewModel::loadMore,
-                    onResultSelected = { messageId ->
-                        messageSearchViewModel.close()
-                        viewModel.focusCurrentMessage(messageId)
-                    },
-                    onClose = messageSearchViewModel::close,
-                    modifier = modifier,
-                )
-            } else {
-                ChatAdaptiveLayout(
-                    model = state.model.copy(notice = state.notice),
-                    composerState = composerState,
-                    emojiCatalog = mediaCatalog,
-                    onSend = viewModel::sendMessage,
-                    onBack = viewModel::showConversationList,
-                    onRetryConversation = viewModel::retryConversation,
-                    onRetryEarlier = viewModel::loadEarlier,
-                    onSelectConversation = viewModel::selectConversation,
-                    pendingMedia = state.pendingMedia,
-                    onOpenMediaPicker = { mediaPickerVisible = true },
-                    onRemovePendingMedia = viewModel::removePendingMedia,
-                    pendingAttachments = composerAttachments,
-                    onOpenAttachmentPicker = { attachmentSourceVisible = true },
-                    onRemovePendingAttachment = viewModel::removeAttachmentDraft,
-                    onRetryPendingAttachment = viewModel::retryAttachmentDraft,
-                    onRetryMessage = viewModel::retryMessage,
-                    onCopyMessage = { body ->
-                        clipboardScope.launch {
-                            clipboard.setClipEntry(ClipData.newPlainText("message", body).toClipEntry())
-                        }
-                    },
-                    onReportGif = viewModel::reportGif,
-                    onReplyMessage = viewModel::replyToMessage,
-                    onEditMessage = viewModel::editMessage,
-                    onDeleteMessage = viewModel::deleteMessage,
-                    onToggleReaction = viewModel::toggleReaction,
-                    onFocusMessage = viewModel::focusCurrentMessage,
-                    onOpenMessageSearch = {
-                        currentConversation?.let(messageSearchViewModel::open)
-                    },
-                    onOpenSharedContentFromHeader = {
-                        participantDetailsVisible = false
-                        sharedContentEntry += 1
-                        sharedContentSessionActive = true
-                        sharedContentOrigin = SharedContentOrigin.ConversationHeader
-                    },
-                    onOpenSharedContentFromDetails = {
-                        sharedContentEntry += 1
-                        sharedContentSessionActive = true
-                        sharedContentOrigin = SharedContentOrigin.ConversationDetails
-                    },
-                    participantDetailsVisible = participantDetailsVisible,
-                    onOpenParticipantDetails = {
-                        participantDetailsVisible = true
-                    },
-                    onDismissParticipantDetails = {
-                        participantDetailsVisible = false
-                        focusReturn = SharedContentFocusReturn.ParticipantDetails
-                    },
-                    sharedContentHeaderModifier = Modifier.focusRequester(
-                        sharedContentHeaderFocus,
-                    ),
-                    sharedContentDetailsFocusRequested =
-                        focusReturn == SharedContentFocusReturn.DetailsSharedContent,
-                    participantDetailsModifier = Modifier.focusRequester(
-                        participantDetailsFocus,
-                    ),
-                    onClearReplyTarget = viewModel::clearReplyTarget,
-                    onRemoveFriend = viewModel::removeFriend,
-                    onBlockParticipant = viewModel::blockParticipant,
-                    onSetQuiet = viewModel::setQuiet,
-                    onPhotoAttachmentClick = { attachmentId ->
-                        selectedPhotoId = attachmentId
-                        viewModel.refreshAttachment(attachmentId)
-                    },
-                    onFileAttachmentClick = viewModel::openFileAttachment,
-                    onFileAttachmentShare = viewModel::shareFileAttachment,
-                    onAttachmentLoadError = viewModel::refreshAttachment,
-                    onStartAudioCall = onStartAudioCall,
-                    onStartVideoCall = onStartVideoCall,
-                    onCallBack = onCallBack,
-                    voiceRecording = voiceRecording,
-                    voiceRecordingEnabled = voiceRecordingEnabled,
-                    onStartVoiceRecording = onStartVoiceRecording,
-                    onFinishVoiceRecording = onFinishVoiceRecording,
-                    onCancelVoiceRecording = onCancelVoiceRecording,
-                    participantPresence = presenceState.presentationFor(state.model.participant?.id),
-                    accountContent = accountContent,
-                    modifier = modifier,
-                )
+                LaunchedEffect(state.model.selectedConversationId, state.pendingGifQuery) {
+                    mediaPickerViewModel.restoreGifQuery(state.pendingGifQuery)
+                }
+                LaunchedEffect(state.model.connection) {
+                    mediaPickerViewModel.setOnline(
+                        state.model.connection != ChatConnectionUiState.Offline,
+                    )
+                }
             }
-            if (attachmentImportState.active || previewAttachments.isNotEmpty()) {
-                AttachmentPreviewScreen(
-                    attachments = previewAttachments,
-                    importing = attachmentImportState.importing,
-                    notice = attachmentImportState.notice,
-                    onRemove = viewModel::removeAttachmentDraft,
-                    onAddToMessage = {
-                        viewModel.commitAttachmentPreview()
-                        onAttachmentFlowFinished()
-                    },
-                    onDismiss = {
-                        viewModel.discardAttachmentPreview()
-                        onAttachmentFlowFinished()
-                    },
-                )
-            }
-            LaunchedEffect(state.model.selectedConversationId, state.pendingGifQuery) {
-                mediaPickerViewModel.restoreGifQuery(state.pendingGifQuery)
-            }
-            LaunchedEffect(state.model.connection) {
-                mediaPickerViewModel.setOnline(
-                    state.model.connection != ChatConnectionUiState.Offline,
-                )
-            }
+            is ChatRouteUiState.ConversationList -> ConversationListScreen(
+                currentUserDisplayName = state.currentUserDisplayName,
+                conversations = state.conversations,
+                selectedConversationId = state.selectedConversationId,
+                notice = state.notice,
+                onSelectConversation = viewModel::selectConversation,
+                accountContent = accountContent,
+                friendsEntryPointsVisible = friendsEntryPointsVisible,
+                incomingRequestCount = incomingRequestCount,
+                onOpenAddFriend = friendsViewModel::openAddFriend,
+                onOpenRequests = friendsViewModel::openRequests,
+                modifier = modifier,
+            )
         }
-        is ChatRouteUiState.ConversationList -> ConversationListScreen(
-            currentUserDisplayName = state.currentUserDisplayName,
-            conversations = state.conversations,
-            selectedConversationId = state.selectedConversationId,
-            notice = state.notice,
-            onSelectConversation = viewModel::selectConversation,
-            accountContent = accountContent,
-            modifier = modifier,
-        )
     }
 
     BackHandler(
@@ -696,6 +766,12 @@ fun ChatRoute(
         )
     }
 }
+
+/**
+ * Who friends is running for. Held as one value so the subscription restarts
+ * when the person changes and stays put when only the screen does.
+ */
+private data class FriendsSession(val userId: String, val isClient: Boolean)
 
 private enum class SharedContentFocusReturn {
     None,

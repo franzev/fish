@@ -837,7 +837,11 @@
         "onFinishVoiceRecording",
         "onCancelVoiceRecording",
         "participantPresence",
-        "accountContent"
+        "accountContent",
+        "friendsEntryPointsVisible",
+        "incomingRequestCount",
+        "onOpenAddFriend",
+        "onOpenRequests"
       ],
       "previews": [],
       "previewsAligned": false,
@@ -919,6 +923,7 @@
         "mediaPickerViewModel",
         "messageSearchViewModel",
         "presenceViewModel",
+        "friendsViewModel",
         "mediaCatalog",
         "onStartAudioCall",
         "onStartVideoCall",
@@ -1053,7 +1058,11 @@
           "selectedConversationId",
           "notice",
           "onSelectConversation",
-          "accountContent"
+          "accountContent",
+          "friendsEntryPointsVisible",
+          "incomingRequestCount",
+          "onOpenAddFriend",
+          "onOpenRequests"
         ],
         "ios": [
           "conversations",
@@ -1315,6 +1324,21 @@
         "onDecline",
         "onRetry",
         "onClose"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "android"
+    },
+    {
+      "name": "FriendRequestsWaitingRow",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/FriendRequestsWaitingRow.kt",
+        "symbol": "FriendRequestsWaitingRow",
+        "visibility": "internal"
+      },
+      "props": [
+        "count",
+        "onClick"
       ],
       "previews": [],
       "previewsAligned": false,
@@ -2094,7 +2118,11 @@
           "onFinishVoiceRecording",
           "onCancelVoiceRecording",
           "participantPresence",
-          "accountContent"
+          "accountContent",
+          "friendsEntryPointsVisible",
+          "incomingRequestCount",
+          "onOpenAddFriend",
+          "onOpenRequests"
         ],
         "ios": [
           "model",

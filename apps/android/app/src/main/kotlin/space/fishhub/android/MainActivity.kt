@@ -66,6 +66,8 @@ import space.fishhub.android.feature.chat.viewmodels.MediaPickerViewModel
 import space.fishhub.android.feature.chat.viewmodels.MessageSearchViewModel
 import space.fishhub.android.feature.chat.model.ParticipantUiModel
 import space.fishhub.android.feature.chat.model.VoiceRecordingUiState
+import space.fishhub.android.feature.friends.FriendsViewModel
+import space.fishhub.android.feature.friends.logic.AndroidFriendsNotices
 import space.fishhub.android.feature.presence.PresenceFormatter
 import space.fishhub.android.feature.presence.PresenceViewModel
 import space.fishhub.android.feature.settings.model.AccountSettingsMotion
@@ -344,6 +346,7 @@ class MainActivity : ComponentActivity() {
                             formatter = formatter,
                             gifRepository = gifRepository,
                             mediaCatalog = mediaCatalog,
+                            friendsEnabled = BuildConfig.FRIENDS_ENABLED,
                         )
                     }
                 }
@@ -379,10 +382,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            val friendsFactory = remember(fishApplication.friendsRepository, repository) {
+                viewModelFactory {
+                    initializer {
+                        FriendsViewModel(
+                            repository = fishApplication.friendsRepository,
+                            notices = AndroidFriendsNotices(applicationContext),
+                            friendsEnabled = BuildConfig.FRIENDS_ENABLED,
+                            // Friends shows the same faces chat already shows,
+                            // through the same signed-URL path. A picture that
+                            // will not load leaves initials, never an error.
+                            resolveAvatarUrls = repository::resolveAvatarUrls,
+                        )
+                    }
+                }
+            }
             val chatViewModel: ChatViewModel = viewModel(factory = factory)
             val mediaPickerViewModel: MediaPickerViewModel = viewModel(factory = mediaPickerFactory)
             val messageSearchViewModel: MessageSearchViewModel = viewModel(factory = messageSearchFactory)
             val presenceViewModel: PresenceViewModel = viewModel(factory = presenceFactory)
+            val friendsViewModel: FriendsViewModel = viewModel(factory = friendsFactory)
             val chatRouteState by chatViewModel.uiState.collectAsStateWithLifecycle()
             val callMinimized by minimized.collectAsStateWithLifecycle()
             val pip by pictureInPicture.collectAsStateWithLifecycle()
@@ -435,6 +454,7 @@ class MainActivity : ComponentActivity() {
                         mediaPickerViewModel = mediaPickerViewModel,
                         messageSearchViewModel = messageSearchViewModel,
                         presenceViewModel = presenceViewModel,
+                        friendsViewModel = friendsViewModel,
                         mediaCatalog = mediaCatalog,
                         onStartAudioCall = { requestOutgoing(it, CallKind.Audio) },
                         onStartVideoCall = { requestOutgoing(it, CallKind.Video) },

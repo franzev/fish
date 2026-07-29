@@ -786,6 +786,14 @@ internal class DefaultChatRepository(
         "That person is still blocked. Try again.",
     ) { remote.unblockUser(userId) }
 
+    override suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> = try {
+        remote.resolveAvatarUrls(profileIds)
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Throwable) {
+        emptyMap()
+    }
+
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = resultOf(
         ChatOperation.ReportGif,
         "That GIF report did not send yet. Try again.",

@@ -33,6 +33,12 @@ val firebaseSenderId = providers.environmentVariable("FISH_FIREBASE_SENDER_ID")
 val webBaseUrl = providers.environmentVariable("FISH_ANDROID_WEB_BASE_URL")
     .orElse(providers.gradleProperty("FISH_ANDROID_WEB_BASE_URL"))
     .getOrElse("")
+// Fails closed like the Edge function's own gate: anything but an explicit
+// "true" leaves every friends surface out of the build's reach.
+val friendsEnabled = providers.environmentVariable("FISH_ANDROID_FRIENDS_ENABLED")
+    .orElse(providers.gradleProperty("FISH_ANDROID_FRIENDS_ENABLED"))
+    .getOrElse("false")
+    .equals("true", ignoreCase = true)
 val releaseStorePath = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PATH")
     .orElse(providers.gradleProperty("FISH_ANDROID_KEYSTORE_PATH"))
 val releaseStorePassword = providers.environmentVariable("FISH_ANDROID_KEYSTORE_PASSWORD")
@@ -90,6 +96,7 @@ android {
         buildConfigField("String", "FIREBASE_API_KEY", firebaseApiKey.asBuildConfigString())
         buildConfigField("String", "FIREBASE_SENDER_ID", firebaseSenderId.asBuildConfigString())
         buildConfigField("String", "WEB_BASE_URL", webBaseUrl.asBuildConfigString())
+        buildConfigField("boolean", "FRIENDS_ENABLED", friendsEnabled.toString())
     }
 
     buildTypes {
@@ -114,10 +121,12 @@ dependencies {
     implementation(project(":core:supabase"))
     implementation(project(":feature:chat"))
     implementation(project(":feature:call"))
+    implementation(project(":feature:friends"))
     implementation(project(":feature:presence"))
     implementation(project(":feature:settings"))
     implementation(project(":data:chat"))
     implementation(project(":data:call"))
+    implementation(project(":data:friends"))
     implementation(project(":data:presence"))
 
     implementation(libs.androidx.core.ktx)

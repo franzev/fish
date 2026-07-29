@@ -10,6 +10,8 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.GifRepository
+import space.fishhub.android.data.friends.FriendsDataModule
+import space.fishhub.android.data.friends.FriendsRepository
 import space.fishhub.android.data.presence.PresenceDataModule
 import space.fishhub.android.data.presence.PresenceRepository
 import space.fishhub.android.feature.call.CallCoordinator
@@ -55,6 +57,10 @@ class FishApplication : Application(), Configuration.Provider {
         PresenceDataModule.create(supabaseClient)
     }
 
+    private val friendsDependencies by lazy {
+        FriendsDataModule.create(supabaseClient)
+    }
+
     private val callDependencies by lazy {
         CallDataModule.create(this, supabaseClient)
     }
@@ -83,6 +89,7 @@ class FishApplication : Application(), Configuration.Provider {
     val sharedContentGalleryRuntime: ChatDataModule.SharedContentGalleryRuntime
         get() = chatDependencies.sharedContentGalleryRuntime
     val presenceRepository: PresenceRepository get() = presenceDependencies.repository
+    val friendsRepository: FriendsRepository get() = friendsDependencies.repository
 
     fun replaceActiveSharedContentStore(next: SharedContentStore?) {
         val previous = activeSharedContentStore.getAndSet(next)

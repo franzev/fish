@@ -69,6 +69,9 @@
     <string name="message_accessibility">%1$s. %2$s. %3$s</string>
     <string name="personal_messages">Personal messages</string>
     <string name="conversation_list_description">Open an assigned personal conversation.</string>
+    <string name="add_a_friend">Add a friend</string>
+    <string name="no_conversations_title">No conversations yet</string>
+    <string name="no_conversations_description">Add a friend to start talking.</string>
     <string name="sign_in_title">Welcome back</string>
     <string name="sign_in_description">Sign in to open your personal coaching conversation.</string>
     <string name="forgot_password">Forgot password</string>

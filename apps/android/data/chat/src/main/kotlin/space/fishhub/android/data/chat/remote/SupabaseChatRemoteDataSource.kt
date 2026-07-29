@@ -542,7 +542,7 @@ internal class SupabaseChatRemoteDataSource(
         )
     }
 
-    private suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> {
+    override suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> {
         if (profileIds.isEmpty()) return emptyMap()
         return try {
             val response = client.functions.invoke(

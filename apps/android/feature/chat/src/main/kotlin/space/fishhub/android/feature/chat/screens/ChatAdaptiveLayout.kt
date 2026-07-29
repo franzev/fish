@@ -23,11 +23,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.core.designsystem.component.FishDivider
+import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.feature.chat.R
 import space.fishhub.android.feature.chat.views.ConversationRow
+import space.fishhub.android.feature.chat.views.FriendRequestsWaitingRow
 import space.fishhub.android.feature.chat.logic.ChatMediaCatalog
 import space.fishhub.android.feature.chat.model.ChatUiModel
 import space.fishhub.android.feature.chat.model.ComposerMediaUiModel
@@ -90,6 +93,10 @@ fun ChatAdaptiveLayout(
     onCancelVoiceRecording: () -> Unit = {},
     participantPresence: PresencePresentation = PresencePresentation(),
     accountContent: (@Composable () -> Unit)? = null,
+    friendsEntryPointsVisible: Boolean = false,
+    incomingRequestCount: Int = 0,
+    onOpenAddFriend: () -> Unit = {},
+    onOpenRequests: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
@@ -105,6 +112,10 @@ fun ChatAdaptiveLayout(
                     conversations = model.conversations,
                     selectedConversationId = model.selectedConversationId,
                     onSelect = onSelectConversation,
+                    friendsEntryPointsVisible = friendsEntryPointsVisible,
+                    incomingRequestCount = incomingRequestCount,
+                    onOpenAddFriend = onOpenAddFriend,
+                    onOpenRequests = onOpenRequests,
                     modifier = Modifier.width(FishTheme.sizes.conversationRail),
                 )
                 Box(Modifier.width(FishTheme.spacing.threeXs)) { FishDivider() }
@@ -165,6 +176,10 @@ fun ChatAdaptiveLayout(
                         onCancelVoiceRecording = onCancelVoiceRecording,
                         participantPresence = participantPresence,
                         accountContent = accountContent,
+                        friendsEntryPointsVisible = friendsEntryPointsVisible,
+                        incomingRequestCount = incomingRequestCount,
+                        onOpenAddFriend = onOpenAddFriend,
+                        onOpenRequests = onOpenRequests,
                         modifier = Modifier
                             .fillMaxHeight()
                             .widthIn(max = FishTheme.sizes.chatContentMax),
@@ -226,6 +241,10 @@ fun ChatAdaptiveLayout(
                     onCancelVoiceRecording = onCancelVoiceRecording,
                     participantPresence = participantPresence,
                     accountContent = accountContent,
+                    friendsEntryPointsVisible = friendsEntryPointsVisible,
+                    incomingRequestCount = incomingRequestCount,
+                    onOpenAddFriend = onOpenAddFriend,
+                    onOpenRequests = onOpenRequests,
                     modifier = Modifier
                         .fillMaxSize()
                         .widthIn(max = FishTheme.sizes.chatContentMax),
@@ -240,6 +259,10 @@ private fun ConversationRail(
     conversations: List<ConversationPreviewUiModel>,
     selectedConversationId: String?,
     onSelect: (String) -> Unit,
+    friendsEntryPointsVisible: Boolean,
+    incomingRequestCount: Int,
+    onOpenAddFriend: () -> Unit,
+    onOpenRequests: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -249,16 +272,35 @@ private fun ConversationRail(
             .statusBarsPadding()
             .padding(FishTheme.spacing.sm),
     ) {
-        Text(
-            text = stringResource(R.string.personal_messages),
+        Row(
             modifier = Modifier.padding(
                 start = FishTheme.spacing.sm,
                 top = FishTheme.spacing.sm,
                 bottom = FishTheme.spacing.md,
             ),
-            color = FishTheme.colors.foreground,
-            style = FishTheme.typography.heading,
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.personal_messages),
+                modifier = Modifier.weight(1f),
+                color = FishTheme.colors.foreground,
+                style = FishTheme.typography.heading,
+            )
+            if (friendsEntryPointsVisible) {
+                FishIconButton(
+                    icon = FishIcons.PersonAdd,
+                    contentDescription = stringResource(R.string.add_a_friend),
+                    onClick = onOpenAddFriend,
+                )
+            }
+        }
+        if (friendsEntryPointsVisible) {
+            FriendRequestsWaitingRow(
+                count = incomingRequestCount,
+                onClick = onOpenRequests,
+                modifier = Modifier.padding(bottom = FishTheme.spacing.md),
+            )
+        }
         LazyColumn {
             items(conversations, key = { it.conversationId }) { conversation ->
                 ConversationRow(

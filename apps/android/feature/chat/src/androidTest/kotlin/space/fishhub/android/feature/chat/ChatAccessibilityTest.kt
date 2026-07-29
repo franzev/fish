@@ -46,6 +46,8 @@ import space.fishhub.android.feature.chat.model.AttachmentTransferUiState
 import space.fishhub.android.feature.chat.model.AttachmentUiKind
 import space.fishhub.android.feature.chat.model.AttachmentUiModel
 import space.fishhub.android.feature.chat.model.ChatRouteUiState
+import space.fishhub.android.feature.chat.model.ChatScreenState
+import space.fishhub.android.feature.chat.model.ChatUiModel
 import space.fishhub.android.feature.chat.model.ComposerMediaUiModel
 import space.fishhub.android.feature.chat.model.LocalAttachmentUiModel
 import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
@@ -58,6 +60,7 @@ import space.fishhub.android.feature.chat.model.ReactionUiModel
 import space.fishhub.android.feature.chat.model.StickerUiModel
 import space.fishhub.android.feature.chat.screens.AttachmentPreviewScreen
 import space.fishhub.android.feature.chat.screens.ChatAdaptiveLayout
+import space.fishhub.android.feature.chat.screens.ConversationListScreen
 import space.fishhub.android.feature.chat.screens.MessageSearchScreen
 import space.fishhub.android.feature.chat.screens.SignInScreen
 import space.fishhub.android.feature.chat.viewmodels.MediaPickerTab
@@ -842,6 +845,72 @@ class ChatAccessibilityTest {
         composeRule.onNodeWithText("Unfriend").performClick()
         assertTrue(removed)
         assertTrue(dismissed)
+    }
+
+    @Test
+    fun friendsEntryPointsKeepAccessibleNamesAndTargets() {
+        var addFriend = 0
+        var openRequests = 0
+        composeRule.setContent {
+            FishTheme {
+                ConversationListScreen(
+                    currentUserDisplayName = "Franz",
+                    conversations = ChatSamples.loaded.conversations,
+                    selectedConversationId = "conversation-1",
+                    notice = null,
+                    onSelectConversation = {},
+                    friendsEntryPointsVisible = true,
+                    incomingRequestCount = 1,
+                    onOpenAddFriend = { addFriend += 1 },
+                    onOpenRequests = { openRequests += 1 },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithContentDescription("Add a friend")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithContentDescription("A friend request is waiting")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        assertEquals(1, addFriend)
+        assertEquals(1, openRequests)
+    }
+
+    @Test
+    fun theEmptyStateOffersAddAFriendOnlyWhileFriendsIsOn() {
+        var addFriend = 0
+        val friendsOn = mutableStateOf(true)
+        composeRule.setContent {
+            FishTheme {
+                ChatAdaptiveLayout(
+                    model = ChatUiModel(
+                        screenState = ChatScreenState.Unavailable,
+                        currentUserDisplayName = "Franz",
+                    ),
+                    composerState = rememberTextFieldState(),
+                    onSend = {},
+                    onBack = {},
+                    onRetryEarlier = {},
+                    onSelectConversation = {},
+                    friendsEntryPointsVisible = friendsOn.value,
+                    onOpenAddFriend = { addFriend += 1 },
+                )
+            }
+        }
+        composeRule.enableAccessibilityChecks()
+
+        composeRule.onNodeWithText("No conversations yet").assertExists()
+        composeRule.onNodeWithText("Add a friend")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(1, addFriend)
+
+        composeRule.runOnIdle { friendsOn.value = false }
+        composeRule.onAllNodesWithText("No conversations yet").assertCountEquals(0)
+        composeRule.onNodeWithText("This conversation isn't available").assertExists()
     }
 
     @Composable

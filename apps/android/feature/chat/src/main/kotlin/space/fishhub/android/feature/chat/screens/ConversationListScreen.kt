@@ -21,10 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
+import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishNotice
 import space.fishhub.android.feature.chat.R
 import space.fishhub.android.feature.chat.views.ConversationRow
+import space.fishhub.android.feature.chat.views.FriendRequestsWaitingRow
 import space.fishhub.android.feature.chat.model.ConversationPreviewUiModel
 
 @Composable
@@ -35,6 +38,10 @@ fun ConversationListScreen(
     notice: String?,
     onSelectConversation: (String) -> Unit,
     accountContent: (@Composable () -> Unit)? = null,
+    friendsEntryPointsVisible: Boolean = false,
+    incomingRequestCount: Int = 0,
+    onOpenAddFriend: () -> Unit = {},
+    onOpenRequests: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -58,6 +65,13 @@ fun ConversationListScreen(
                     color = FishTheme.colors.foreground,
                     style = FishTheme.typography.heading,
                 )
+                if (friendsEntryPointsVisible) {
+                    FishIconButton(
+                        icon = FishIcons.PersonAdd,
+                        contentDescription = stringResource(R.string.add_a_friend),
+                        onClick = onOpenAddFriend,
+                    )
+                }
                 accountContent?.invoke()
             }
             Text(
@@ -66,6 +80,13 @@ fun ConversationListScreen(
                 color = FishTheme.colors.body,
                 style = FishTheme.typography.ui,
             )
+            if (friendsEntryPointsVisible) {
+                FriendRequestsWaitingRow(
+                    count = incomingRequestCount,
+                    onClick = onOpenRequests,
+                    modifier = Modifier.padding(top = FishTheme.spacing.md),
+                )
+            }
             if (notice != null) {
                 FishNotice(
                     title = notice,

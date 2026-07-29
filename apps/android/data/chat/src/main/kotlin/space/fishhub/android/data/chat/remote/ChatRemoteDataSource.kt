@@ -85,6 +85,12 @@ internal interface ChatRemoteDataSource {
     suspend fun blockUser(userId: String): Unit = error("Friend commands are not configured.")
     suspend fun listBlockedPeople(): List<BlockedPerson> = error("Blocked people are not configured.")
     suspend fun unblockUser(userId: String): Unit = error("Friend commands are not configured.")
+
+    /**
+     * Signed avatar URLs for people this account may already see. An empty
+     * answer is a normal answer: the caller falls back to initials.
+     */
+    suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> = emptyMap()
     suspend fun reportGif(messageId: String)
     suspend fun markRead(
         conversationId: String,

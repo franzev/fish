@@ -1,6 +1,7 @@
 package space.fishhub.android.feature.chat.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +42,7 @@ import space.fishhub.android.feature.chat.model.VoiceRecordingUiState
 import space.fishhub.android.feature.chat.views.ChatConnectionNotice
 import space.fishhub.android.feature.chat.views.ChatMessageActionsSheet
 import space.fishhub.android.feature.chat.views.ConversationDetailsSheet
+import space.fishhub.android.feature.chat.views.FriendRequestsWaitingRow
 import space.fishhub.android.feature.chat.views.MessageComposer
 import space.fishhub.android.feature.chat.views.PersonalChatTopBar
 import space.fishhub.android.feature.chat.views.PersonalChatTranscript
@@ -98,6 +100,10 @@ fun PersonalChatScreen(
     onCancelVoiceRecording: () -> Unit = {},
     participantPresence: PresencePresentation = PresencePresentation(),
     accountContent: (@Composable () -> Unit)? = null,
+    friendsEntryPointsVisible: Boolean = false,
+    incomingRequestCount: Int = 0,
+    onOpenAddFriend: () -> Unit = {},
+    onOpenRequests: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedMessageId by remember(model.selectedConversationId) { mutableStateOf<String?>(null) }
@@ -137,6 +143,15 @@ fun PersonalChatScreen(
                     hasBack = model.hasPreviousDestination,
                     onBack = onBack,
                     onRetry = onRetryConversation,
+                    // Nobody to talk to yet is a beginning, not a broken
+                    // conversation. A notice means something actually failed,
+                    // and that state keeps its own words.
+                    friendsWelcome = friendsEntryPointsVisible &&
+                        model.conversations.isEmpty() &&
+                        model.notice == null,
+                    incomingRequestCount = incomingRequestCount,
+                    onOpenAddFriend = onOpenAddFriend,
+                    onOpenRequests = onOpenRequests,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -291,21 +306,49 @@ private fun ChatUnavailable(
     hasBack: Boolean,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    friendsWelcome: Boolean,
+    incomingRequestCount: Int,
+    onOpenAddFriend: () -> Unit,
+    onOpenRequests: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        FishEmptyState(
-            title = stringResource(R.string.conversation_unavailable_title),
-            description = stringResource(R.string.conversation_unavailable_description),
-            action = {
-                FishButton(
-                    label = stringResource(
-                        if (hasBack) R.string.back else R.string.retry_conversation,
-                    ),
-                    onClick = if (hasBack) onBack else onRetry,
-                    variant = space.fishhub.android.core.designsystem.component.FishButtonVariant.Secondary,
+        if (friendsWelcome) {
+            Column(
+                modifier = Modifier.padding(horizontal = FishTheme.spacing.page),
+                verticalArrangement = Arrangement.spacedBy(FishTheme.spacing.md),
+            ) {
+                FishEmptyState(
+                    title = stringResource(R.string.no_conversations_title),
+                    description = stringResource(R.string.no_conversations_description),
+                    action = {
+                        FishButton(
+                            label = stringResource(R.string.add_a_friend),
+                            onClick = onOpenAddFriend,
+                        )
+                    },
                 )
-            },
-        )
+                // Without this the only way to a waiting request would be a
+                // conversation list nobody with zero conversations can reach.
+                FriendRequestsWaitingRow(
+                    count = incomingRequestCount,
+                    onClick = onOpenRequests,
+                )
+            }
+        } else {
+            FishEmptyState(
+                title = stringResource(R.string.conversation_unavailable_title),
+                description = stringResource(R.string.conversation_unavailable_description),
+                action = {
+                    FishButton(
+                        label = stringResource(
+                            if (hasBack) R.string.back else R.string.retry_conversation,
+                        ),
+                        onClick = if (hasBack) onBack else onRetry,
+                        variant = space.fishhub.android.core.designsystem.component.FishButtonVariant.Secondary,
+                    )
+                },
+            )
+        }
     }
 }

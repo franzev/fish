@@ -33,6 +33,7 @@ import space.fishhub.android.feature.chat.model.AttachmentFailureUiReason
 import space.fishhub.android.feature.chat.model.AttachmentTransferUiState
 import space.fishhub.android.feature.chat.model.AttachmentUiKind
 import space.fishhub.android.feature.chat.model.AttachmentUiModel
+import space.fishhub.android.feature.chat.model.ChatScreenState
 import space.fishhub.android.feature.chat.model.ChatUiModel
 import space.fishhub.android.feature.chat.model.ComposerMediaUiModel
 import space.fishhub.android.feature.chat.model.LocalAttachmentUiModel
@@ -40,6 +41,7 @@ import space.fishhub.android.feature.chat.model.MessageUiModel
 import space.fishhub.android.feature.chat.model.StickerUiModel
 import space.fishhub.android.feature.chat.screens.AttachmentPreviewScreen
 import space.fishhub.android.feature.chat.screens.ChatAdaptiveLayout
+import space.fishhub.android.feature.chat.screens.ConversationListScreen
 import space.fishhub.android.feature.chat.screens.MessageSearchScreen
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentDecodedMedia
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentEarlierState
@@ -63,6 +65,9 @@ import space.fishhub.android.feature.chat.views.AttachmentViewerContent
 import space.fishhub.android.feature.chat.views.MessageAttachments
 import space.fishhub.android.feature.chat.views.StagedAttachmentStrip
 import space.fishhub.android.feature.chat.views.mediapicker.ChatMediaPickerContent
+import space.fishhub.android.data.presence.PresenceDisplayStatus
+import space.fishhub.android.feature.presence.PresenceAccountTrigger
+import space.fishhub.android.feature.presence.PresencePresentation
 
 @PreviewTest
 @Preview(name = "loaded phone light", widthDp = 412, heightDp = 915, showBackground = true)
@@ -1133,3 +1138,118 @@ private val screenshotStickers = listOf(
         keywords = listOf("great"),
     ),
 )
+
+@PreviewTest
+@Preview(name = "conversation list friends", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun ConversationListFriendsScreenshot() {
+    ConversationListFrame(darkTheme = false, incomingRequestCount = 1)
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation list friends dark",
+    widthDp = 412,
+    heightDp = 915,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+)
+@Composable
+fun ConversationListFriendsDarkScreenshot() {
+    ConversationListFrame(darkTheme = true, incomingRequestCount = 3)
+}
+
+@PreviewTest
+@Preview(name = "conversation list friends rtl", widthDp = 412, heightDp = 915, locale = "ar")
+@Composable
+fun ConversationListFriendsRtlScreenshot() {
+    ConversationListFrame(darkTheme = false, incomingRequestCount = 2)
+}
+
+@PreviewTest
+@Preview(name = "conversation list friends large font", widthDp = 412, heightDp = 915, fontScale = 2f)
+@Composable
+fun ConversationListFriendsLargeFontScreenshot() {
+    ConversationListFrame(darkTheme = false, incomingRequestCount = 1)
+}
+
+@PreviewTest
+@Preview(name = "no conversations friends", widthDp = 412, heightDp = 915, showBackground = true)
+@Composable
+fun NoConversationsFriendsScreenshot() {
+    NoConversationsFrame(darkTheme = false, incomingRequestCount = 0)
+}
+
+@PreviewTest
+@Preview(
+    name = "no conversations friends waiting dark",
+    widthDp = 412,
+    heightDp = 915,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+)
+@Composable
+fun NoConversationsFriendsWaitingDarkScreenshot() {
+    NoConversationsFrame(darkTheme = true, incomingRequestCount = 1)
+}
+
+@PreviewTest
+@Preview(name = "no conversations friends large font", widthDp = 412, heightDp = 915, fontScale = 2f)
+@Composable
+fun NoConversationsFriendsLargeFontScreenshot() {
+    NoConversationsFrame(darkTheme = false, incomingRequestCount = 1)
+}
+
+@Composable
+private fun ConversationListFrame(darkTheme: Boolean, incomingRequestCount: Int) {
+    FishTheme(darkTheme = darkTheme, reducedMotion = true) {
+        ConversationListScreen(
+            currentUserDisplayName = "Franz",
+            conversations = ChatSamples.loaded.conversations,
+            selectedConversationId = "conversation-1",
+            notice = null,
+            onSelectConversation = {},
+            accountContent = {
+                PresenceAccountTrigger(
+                    displayName = "Franz",
+                    presence = PresencePresentation(
+                        status = PresenceDisplayStatus.Online,
+                        label = "Online",
+                    ),
+                    onClick = {},
+                )
+            },
+            friendsEntryPointsVisible = true,
+            incomingRequestCount = incomingRequestCount,
+        )
+    }
+}
+
+@Composable
+private fun NoConversationsFrame(darkTheme: Boolean, incomingRequestCount: Int) {
+    FishTheme(darkTheme = darkTheme, reducedMotion = true) {
+        ChatAdaptiveLayout(
+            model = ChatUiModel(
+                screenState = ChatScreenState.Unavailable,
+                currentUserDisplayName = "Franz",
+            ),
+            composerState = rememberTextFieldState(),
+            onSend = {},
+            onBack = {},
+            onRetryEarlier = {},
+            onSelectConversation = {},
+            accountContent = {
+                PresenceAccountTrigger(
+                    displayName = "Franz",
+                    presence = PresencePresentation(
+                        status = PresenceDisplayStatus.Online,
+                        label = "Online",
+                    ),
+                    onClick = {},
+                )
+            },
+            friendsEntryPointsVisible = true,
+            incomingRequestCount = incomingRequestCount,
+        )
+    }
+}

@@ -398,6 +398,14 @@ interface ChatRepository {
     suspend fun blockUser(userId: String): ChatResult<Unit>
     suspend fun listBlockedPeople(): ChatResult<List<BlockedPerson>>
     suspend fun unblockUser(userId: String): ChatResult<Unit>
+
+    /**
+     * Signed avatar URLs keyed by profile id, for people this account may
+     * already see. Deliberately not a [ChatResult]: a picture that will not
+     * load is not worth a notice, so an empty map is the whole failure story
+     * and the caller shows initials.
+     */
+    suspend fun resolveAvatarUrls(profileIds: List<String>): Map<String, String> = emptyMap()
     suspend fun reportGif(messageId: String): ChatResult<Unit>
     suspend fun markRead(
         conversationId: String,
