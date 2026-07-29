@@ -39,14 +39,15 @@ target until direct chat has been validated end to end.
 ## Friends
 
 `FISH_FRIENDS_ENABLED` becomes the `FRIENDS_ENABLED` Info.plist value that
-`FishAppConfiguration` reads. Only the exact string `true` turns on adding a
-friend by username and reviewing friend requests; unset, unsubstituted, and
-anything else leave every friends surface out of the build — no top-bar
-action, no requests row, no realtime subscription, and no change to today's
-screens. Turning it on also requires `FRIENDS_ENABLED=true` in the target
-project's Edge Function environment; the server refuses friend commands
-without it. Entry points additionally require a client account, so a coach
-never sees them however the build is configured.
+`FishAppConfiguration` reads. Only `true` — the word itself, give or take
+surrounding whitespace — turns on adding a friend by username and reviewing
+friend requests; unset, unsubstituted, differently cased, and anything else
+leave every friends surface out of the build: no top-bar action, no requests
+row, no realtime subscription, and no change to today's screens. Turning it
+on also requires `FRIENDS_ENABLED=true` in the target project's Edge Function
+environment; the server refuses friend commands without it. Entry points
+additionally require a client account, so a coach never sees them however the
+build is configured.
 
 Friends still owes a two-device pass before it is enabled for anyone. It needs
 a backend nobody has stood up locally yet, so it rides the outstanding

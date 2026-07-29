@@ -92,6 +92,7 @@ final class FishAppModel {
     private var friendCommands: (any FriendCommandsProviding)?
     private var friendEventsTask: Task<Void, Never>?
     private var friendsGeneration = UUID()
+    private var friendRequestsPresentation: UUID?
     private var requestCountAttempt = 0
     private var pendingRequestReview: PendingFriendRequestReview?
     private var sharedContentStore: SharedContentStore?
@@ -494,11 +495,18 @@ final class FishAppModel {
     private func openFriendRequests(selecting requestId: String?) {
         guard let friendDirectory, let friendCommands, isSignedInForFriends else { return }
         notice = nil
+        // A dismissed sheet's model outlives the sheet for as long as its own
+        // answer is in flight, and finishing the last request closes whatever
+        // is open. Tying "leave" to the presentation that asked for it means a
+        // late answer cannot close a sheet somebody has since reopened.
+        let presentation = UUID()
+        friendRequestsPresentation = presentation
         let requests = FriendRequestsModel(
             directory: friendDirectory,
             commands: friendCommands,
             onAllRequestsHandled: { [weak self] in
-                self?.isShowingFriendRequests = false
+                guard let self, friendRequestsPresentation == presentation else { return }
+                isShowingFriendRequests = false
             }
         )
         friendRequestsModel = requests
@@ -917,6 +925,10 @@ final class FishAppModel {
             anonKey: session.backend.anonKey,
             accessToken: session.backend.accessToken
         )
+        // Ahead of the conversation directory below: the first join's
+        // `.streamResumed` can land before `directory` exists, and refreshing
+        // nothing is harmless because `directory.start()` is the fetch it
+        // would have asked for.
         startFriends(session)
         let callMedia = LiveKitCallMedia()
         let callModel = CallSessionModel(
@@ -1036,6 +1048,7 @@ final class FishAppModel {
         isShowingFriendRequests = false
         addFriendModel = nil
         friendRequestsModel = nil
+        friendRequestsPresentation = nil
         pendingRequestReview = nil
         friendDirectory = nil
         friendCommands = nil
