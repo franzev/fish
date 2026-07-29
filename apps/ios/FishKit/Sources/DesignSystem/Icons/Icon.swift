@@ -9,6 +9,7 @@ public enum Icon: String, CaseIterable, Sendable {
     case retry = "rotate"
     case close = "x"
     case person = "user"
+    case personPlus = "user-plus"
     case lock
     case info = "info-circle"
     case warning = "alert-triangle"

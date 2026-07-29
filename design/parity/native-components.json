@@ -198,18 +198,30 @@
         "symbol": "AddFriendScreen",
         "visibility": "public"
       },
-      "props": [
-        "state",
-        "avatarUrls",
-        "onSearch",
-        "onSend",
-        "onReviewRequest",
-        "onSearchAgain",
-        "onClose"
-      ],
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/Friends/Views/AddFriendSheet.swift",
+        "symbol": "AddFriendSheet",
+        "visibility": "public"
+      },
+      "props": {
+        "android": [
+          "state",
+          "avatarUrls",
+          "onSearch",
+          "onSend",
+          "onReviewRequest",
+          "onSearchAgain",
+          "onClose"
+        ],
+        "ios": [
+          "model",
+          "onClose"
+        ]
+      },
       "previews": [],
+      "propsAligned": false,
       "previewsAligned": false,
-      "only": "android"
+      "propsBreak": "state-bundling"
     },
     {
       "name": "AddReactionPill",
@@ -1298,14 +1310,41 @@
         "symbol": "FriendIdentity",
         "visibility": "internal"
       },
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/Friends/Views/FriendIdentity.swift",
+        "symbol": "FriendIdentity",
+        "visibility": "internal"
+      },
+      "props": {
+        "android": [
+          "displayName",
+          "username",
+          "avatarUrl"
+        ],
+        "ios": [
+          "displayName",
+          "username"
+        ]
+      },
+      "previews": [],
+      "propsAligned": false,
+      "previewsAligned": false,
+      "propsBreak": "platform-idiom"
+    },
+    {
+      "name": "FriendRequestRow",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/Friends/Views/FriendRequestRow.swift",
+        "symbol": "FriendRequestRow",
+        "visibility": "internal"
+      },
       "props": [
-        "displayName",
-        "username",
-        "avatarUrl"
+        "request",
+        "onSelect"
       ],
       "previews": [],
       "previewsAligned": false,
-      "only": "android"
+      "only": "ios"
     },
     {
       "name": "FriendRequestsScreen",
@@ -1314,20 +1353,32 @@
         "symbol": "FriendRequestsScreen",
         "visibility": "public"
       },
-      "props": [
-        "state",
-        "selectedRequest",
-        "avatarUrls",
-        "onSelectRequest",
-        "onClearSelection",
-        "onAccept",
-        "onDecline",
-        "onRetry",
-        "onClose"
-      ],
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/Friends/Views/FriendRequestsSheet.swift",
+        "symbol": "FriendRequestsSheet",
+        "visibility": "public"
+      },
+      "props": {
+        "android": [
+          "state",
+          "selectedRequest",
+          "avatarUrls",
+          "onSelectRequest",
+          "onClearSelection",
+          "onAccept",
+          "onDecline",
+          "onRetry",
+          "onClose"
+        ],
+        "ios": [
+          "model",
+          "onClose"
+        ]
+      },
       "previews": [],
+      "propsAligned": false,
       "previewsAligned": false,
-      "only": "android"
+      "propsBreak": "state-bundling"
     },
     {
       "name": "FriendRequestsWaitingRow",

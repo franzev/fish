@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "PresenceData", targets: ["PresenceData"]),
         .library(name: "Presence", targets: ["Presence"]),
         .library(name: "FriendsData", targets: ["FriendsData"]),
+        .library(name: "Friends", targets: ["Friends"]),
         .library(name: "AccountSettings", targets: ["AccountSettings"]),
         .library(name: "TestSupport", targets: ["TestSupport"]),
     ],
@@ -78,6 +79,10 @@ let package = Package(
             ]
         ),
         .target(
+            name: "Friends",
+            dependencies: ["DesignSystem", "UIComponents", "FriendsData"]
+        ),
+        .target(
             name: "AccountSettings",
             dependencies: ["DesignSystem", "UIComponents"]
         ),
@@ -124,6 +129,13 @@ let package = Package(
         .testTarget(
             name: "FriendsDataTests",
             dependencies: ["FriendsData"]
+        ),
+        .testTarget(
+            name: "FriendsTests",
+            dependencies: [
+                "Friends", "FriendsData", "DesignSystem",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+            ]
         ),
         .testTarget(
             name: "AccountSettingsTests",
