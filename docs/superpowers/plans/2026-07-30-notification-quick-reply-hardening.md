@@ -652,7 +652,7 @@ Code review found a cold-start defect plus four smaller items; any re-run must i
 4. `apps/android/app/src/main/kotlin/space/fishhub/android/messaging/SuspendRunCatching.kt` adds `internal suspend fun <T> suspendRunCatching(block: suspend () -> T): T?`, which rethrows `CancellationException`. The service uses it instead of `runCatching { … }.getOrNull()`; Tasks 5–6 use it for every guarded suspend call — a swallowed cancellation would keep a cancelled worker looping and break `withTimeoutOrNull`.
 5. The resolver's KDoc names the real transport (chat-command Edge Function plus hydration queries, several sequential round trips) rather than "the RLS read".
 
-Consciously accepted from the same review: FCM serializes `onMessageReceived` on one thread, so a burst can queue at up to 5 s per message. Offline backlogs collapse to one push per conversation via the existing `fish_message_<conversationId>` collapse key, and the degraded outcome is the generic line — never loss — so no batch budget was added. Also accepted: a push for a conversation not yet in the Room cache (a brand-new conversation's first message) renders the generic line; and a foreground push duplicates work realtime is already doing.
+Consciously accepted from the same review: FCM serializes `onMessageReceived` on one thread, so a burst queues at up to 5 s per message. Collapse keys (`fish_message_<conversationId>`) bound only the offline backlog — a live burst still serializes on-device and delays the tail notification (roughly 25 s across six rapid messages). Accepted because a live burst usually means the user is already at the device, the eventual outcome is at worst the generic line — never loss — and a batch budget is real complexity; revisit with device evidence. Also accepted: a push for a conversation not yet in the Room cache (a brand-new conversation's first message) renders the generic line; and a foreground push duplicates work realtime is already doing.
 
 Tests grew to five: the two review cases are `ignores a fetched message from another conversation` and `settled waits out the loading state` (asserted via the `SignedOut` data object so no `SignedIn` construction is needed).
 
@@ -1017,6 +1017,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.withTimeoutOrNull
 import space.fishhub.android.FishApplication
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.OutgoingMessageContent
@@ -1034,10 +1035,13 @@ internal class ChatReplyDrainWorker(
     override suspend fun doWork(): Result {
         val app = applicationContext as? FishApplication ?: return Result.success()
         val repository = app.chatRepository
-        // Wait out Loading (cold starts settle asynchronously), then stop
-        // quietly when signed out — the auth collector in FishApplication
-        // re-enqueues this work when sign-in completes.
-        if (repository.authState.settled() !is ChatAuthState.SignedIn) return Result.success()
+        // Wait out Loading with a bound (cold starts settle asynchronously; a
+        // hung refresh must not park the execution slot), retry when
+        // unsettled, and stop quietly when signed out — the auth collector in
+        // FishApplication re-enqueues this work when sign-in completes.
+        val auth = withTimeoutOrNull(30_000) { repository.authState.settled() }
+            ?: return Result.retry()
+        if (auth !is ChatAuthState.SignedIn) return Result.success()
         val drain = ChatReplyDrain(
             pending = { ChatReplyStore.pending(app) },
             remove = { ChatReplyStore.remove(app, it) },
