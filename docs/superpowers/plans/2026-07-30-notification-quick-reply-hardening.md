@@ -1709,6 +1709,12 @@ git add apps/ios/App/Sources/DrainReadiness.swift apps/ios/App/Sources/FishAppMo
 git commit -m "feat(ios): drain notification replies immediately under background time"
 ```
 
+#### As-built amendments
+
+Swift 6 required `DrainReadiness.waitUntilReady`'s closure parameters to be `@MainActor`-annotated (the wired `isReady` reads main-actor model state), awaited inside the loop; the model's injected `application` property is used instead of `UIApplication.shared`; the regenerated pbxproj is committed alongside. Review then produced a follow-up commit ("fix(ios): coalesce start and stop polling when signed out"): `start()` gained task coalescing (it now has two concurrent callers — FishRoot's `.task` and the background drain — and its `phase == .loading` guard doesn't close until `attach()` completes, so overlapping calls duplicated directory/call-model subscriptions), and the readiness poll treats `phase == .signedOut` as terminal instead of burning the full ~15 s assertion.
+
+Accepted residuals from this review: the poll and the drain share one ~30 s background budget (expiry degrades to "stays queued"); a second reply arriving mid-drain is sent under the first drain's assertion after releasing its own; a cancelled drain would spin its remaining polls without delay (nothing cancels it today); the app-target tests compile at Swift 5 while the app compiles at Swift 6, so strict-concurrency shapes are proven at the app call sites, not in tests.
+
 ---
 
 ### Task 10: Docs — retire the stale quick-reply references
