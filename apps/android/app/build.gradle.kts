@@ -151,6 +151,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     testImplementation(libs.junit4)
+    // Real org.json impl so JSON-codec unit tests run for real: the Android
+    // unit-test stub jar throws "not mocked" for every org.json call, and this
+    // module has no Robolectric to shadow it.
+    testImplementation(libs.org.json)
     baselineProfile(project(":benchmarks"))
 }
 
