@@ -1,9 +1,12 @@
 package space.fishhub.android.messaging
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.FailureCategory
 import space.fishhub.android.data.chat.model.ChatMessage
@@ -86,5 +89,27 @@ class ChatPushContentResolverTest {
                 refreshMessages = { _, _ -> ChatResult.Success(listOf(message("msg-1", "   "))) },
             ),
         )
+    }
+
+    @Test
+    fun `ignores a fetched message from another conversation`() = runBlocking {
+        assertNull(
+            ChatPushContentResolver.resolve(
+                push,
+                isSignedIn = { true },
+                refreshMessages = { _, _ ->
+                    ChatResult.Success(listOf(message("msg-1", "Hi").copy(conversationId = "other")))
+                },
+            ),
+        )
+    }
+
+    @Test
+    fun `settled waits out the loading state`() = runBlocking {
+        val states = MutableStateFlow<ChatAuthState>(ChatAuthState.Loading)
+        launch {
+            states.value = ChatAuthState.SignedOut
+        }
+        assertEquals(ChatAuthState.SignedOut, states.settled())
     }
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import space.fishhub.android.messaging.ChatNotificationFactory
 import space.fishhub.android.messaging.ChatPushContentResolver
 import space.fishhub.android.messaging.ChatPushMessage
+import space.fishhub.android.messaging.suspendRunCatching
 
 // Current FCM FID mode replaces the deprecated onNewToken callback with
 // onRegistered/onUnregistered. Android lint still checks the legacy contract.
@@ -31,14 +32,14 @@ class CallPushMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         ChatPushMessage.parse(message.data)?.let { push ->
+            if (!ChatNotificationFactory.canNotify(this)) return
             val app = application as FishApplication
             // onMessageReceived already runs on a background thread; FCM allows
             // brief work here. Bounded so a slow network can never stall the
             // notification past the delivery window.
             val content = runBlocking {
                 withTimeoutOrNull(5_000) {
-                    runCatching { ChatPushContentResolver.resolve(push, app.chatRepository) }
-                        .getOrNull()
+                    suspendRunCatching { ChatPushContentResolver.resolve(push, app.chatRepository) }
                 }
             }
             ChatNotificationFactory.show(this, push, content)

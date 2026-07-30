@@ -121,7 +121,7 @@ internal object ChatNotificationFactory {
     private const val MessageIdRangeSize = 1_000_000
     private const val FailureIdRangeStart = 2_000_000
 
-    private fun canNotify(context: Context): Boolean =
+    internal fun canNotify(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
