@@ -21,7 +21,7 @@ internal class ChatReplyReceiver : BroadcastReceiver() {
             ?: return
 
         val app = context.applicationContext as? FishApplication ?: return
-        ChatReplyStore.enqueue(app, conversationId, body)
+        ChatReplyStore.enqueue(app, conversationId, body, messageId = null)
         ChatNotificationFactory.clear(app, conversationId)
         app.callScope.launch { app.processPendingChatReplies() }
     }

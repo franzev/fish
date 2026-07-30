@@ -1,0 +1,32 @@
+package space.fishhub.android.messaging
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class ChatReplyCodecTest {
+    @Test
+    fun `round trips replies with and without message id`() {
+        val replies = listOf(
+            PendingChatReply("id-1", "conv-1", "hello", "msg-1"),
+            PendingChatReply("id-2", "conv-2", "there", null),
+        )
+        assertEquals(replies, ChatReplyCodec.decode(ChatReplyCodec.encode(replies)))
+    }
+
+    @Test
+    fun `decodes legacy entries without a message id`() {
+        val legacy = """[{"id":"id-1","conversationId":"conv-1","body":"hello"}]"""
+        assertEquals(
+            listOf(PendingChatReply("id-1", "conv-1", "hello", null)),
+            ChatReplyCodec.decode(legacy),
+        )
+    }
+
+    @Test
+    fun `skips entries missing required fields and tolerates garbage`() {
+        assertEquals(emptyList<PendingChatReply>(), ChatReplyCodec.decode("not json"))
+        assertEquals(emptyList<PendingChatReply>(), ChatReplyCodec.decode(null))
+        val partial = """[{"id":"","conversationId":"conv","body":"x"},{"id":"a","conversationId":"conv","body":"  "}]"""
+        assertEquals(emptyList<PendingChatReply>(), ChatReplyCodec.decode(partial))
+    }
+}
