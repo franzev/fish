@@ -601,8 +601,11 @@ iOS simulator.
      and the text is a failed transcript message or composer draft.
    - iOS: a lock-screen reply with the app terminated sends without opening
      the app; the badge settles after the drain.
-   - iOS: a reply to a revoked conversation produces "Your reply didn’t send"
-     once per conversation; tapping it opens the app calmly.
+   - iOS: a reply whose send is rejected (401/403/`conversation_not_available`)
+     produces "Your reply didn’t send" once per conversation and the text
+     survives as the composer draft; a reply to a conversation missing from
+     the local directory is preserved as a draft with no notice; a failed
+     directory read keeps replies queued for the next drain.
    - Both: no message text, token, or ID appears in logs during any of the
      above.
 
