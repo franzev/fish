@@ -67,6 +67,10 @@ final class FishAppModel {
     private var cacheStore: (any ChatDirectoryCaching)?
     private let notificationReplyStore = FileChatNotificationReplyStore.shared
     private var isProcessingNotificationReplies = false
+    /// Set when `.fishQuickReply` fires again while a drain pass is already
+    /// running; the in-flight pass loops once more instead of the trigger
+    /// being silently dropped until the next unrelated invocation.
+    private var notificationReplyDrainRequested = false
     private(set) var accountPresence = AccountSettingsPresence()
     private(set) var blockedPeopleState = AccountSettingsBlockedPeopleState.hidden
     private let pushInstallationId: UUID
@@ -1195,14 +1199,20 @@ final class FishAppModel {
     }
 
     private func processPendingNotificationReplies() async {
-        guard !isProcessingNotificationReplies,
-              let session,
+        if isProcessingNotificationReplies {
+            // A pass is already running; ask it to loop again once it
+            // finishes instead of dropping this trigger on the floor.
+            notificationReplyDrainRequested = true
+            return
+        }
+        guard let session,
               let directory,
               directory.phase != .loading
         else { return }
         isProcessingNotificationReplies = true
         defer { isProcessingNotificationReplies = false }
         let conversationIds = Set(directory.conversations.map(\.conversationId))
+        let ownerId = session.userId
         let drainer = NotificationReplyDrainer(
             pendingReplies: { [notificationReplyStore] in
                 (try? await notificationReplyStore.pendingReplies()) ?? []
@@ -1222,11 +1232,7 @@ final class FishAppModel {
                     )
                     return .sent
                 } catch let failure as ChatCommandFailure {
-                    if failure.statusCode == 401 || failure.statusCode == 403 ||
-                        ["conversation_not_available", "invalid_request"].contains(failure.code) {
-                        return .terminal
-                    }
-                    return .retryLater
+                    return NotificationReplyDrainer.outcome(for: failure)
                 } catch {
                     return .retryLater
                 }
@@ -1238,23 +1244,48 @@ final class FishAppModel {
                     lastReadMessageId: messageId
                 )
             },
-            saveDraft: { [draftStore] conversationId, body in
-                guard let draftStore else { return }
-                let existing = (try? await draftStore.draft(for: conversationId))?.body
-                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let joined = [existing, body]
-                    .filter { !$0.isEmpty }
-                    .joined(separator: "\n")
-                try? await draftStore.saveDraft(joined, conversationId: conversationId)
+            saveDraft: { [weak self] conversationId, body in
+                guard let self else { return false }
+                // A live composer for this conversation must receive the
+                // append directly — writing through the file-layer draft
+                // store instead would get silently clobbered when that
+                // conversation's `persistDraft()` debounce (250 ms) flushes
+                // its own, now-stale, in-memory text minutes later.
+                if let store = conversationStore, store.conversationId == conversationId {
+                    store.draft = NotificationReplyDrainer.joinedDraft(existing: store.draft, reply: body)
+                    return true
+                }
+                guard let draftStore else { return false }
+                do {
+                    let existing = try? await draftStore.draft(for: conversationId)
+                    let joined = NotificationReplyDrainer.joinedDraft(existing: existing?.body, reply: body)
+                    try await draftStore.saveDraft(joined, conversationId: conversationId)
+                    return true
+                } catch {
+                    return false
+                }
             },
-            postFailureNotice: { [notificationCenter] reply in
-                await Self.postReplyFailureNotice(for: reply, center: notificationCenter)
-            }
+            postFailureNotice: { [weak self, notificationCenter] reply in
+                // The delegate suppresses foreground banners for realtime
+                // parity (`willPresent` returns no options), so a system
+                // notification would silently vanish while the app is
+                // active. Surface the same calm message through the app's
+                // own notice surface instead.
+                if UIApplication.shared.applicationState == .active {
+                    self?.notice = "Your reply didn’t send. It’s kept as a draft in the conversation."
+                } else {
+                    await Self.postReplyFailureNotice(for: reply, center: notificationCenter)
+                }
+            },
+            isStillCurrentAccount: { [weak self] in self?.session?.userId == ownerId }
         )
-        let sentAny = await drainer.run()
-        if sentAny {
-            await refreshDirectory()
-        }
+        repeat {
+            notificationReplyDrainRequested = false
+            let sentAny = await drainer.run()
+            if sentAny {
+                await refreshDirectory()
+            }
+        } while notificationReplyDrainRequested
     }
 
     private static func postReplyFailureNotice(
@@ -1264,13 +1295,17 @@ final class FishAppModel {
         let content = UNMutableNotificationContent()
         content.title = "Your reply didn’t send"
         content.body = "Tap to open the conversation and try again."
+        content.threadIdentifier = reply.conversationId
         var userInfo: [String: Any] = ["conversationId": reply.conversationId]
         if let messageId = reply.messageId {
             userInfo["messageId"] = messageId
         }
         content.userInfo = userInfo
         let request = UNNotificationRequest(
-            identifier: "fish.reply-failure.\(reply.id)",
+            // Keyed by conversation, not reply id: repeat failures for the
+            // same conversation replace the existing notice instead of
+            // stacking a fresh banner per failed attempt.
+            identifier: "fish.reply-failure.\(reply.conversationId)",
             content: content,
             trigger: nil
         )
