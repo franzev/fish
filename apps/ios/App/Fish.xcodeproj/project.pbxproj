@@ -25,12 +25,14 @@
 		5C24F41D8C2845280E583402 /* UIComponents in Frameworks */ = {isa = PBXBuildFile; productRef = 20E83DC5C6A63E1B069F468B /* UIComponents */; };
 		6D7B9C96F02D841D4E1FA73B /* FishAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667CD532DA0CF763EF131F06 /* FishAppModel.swift */; };
 		707903B14084F52D777DAEDE /* FishAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DFAA884EEF0FC33C0F033C /* FishAppDelegate.swift */; };
+		83DD508D2E23BAEBE4D00839 /* DrainReadinessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FFBA05F4508466A77AE0C3 /* DrainReadinessTests.swift */; };
 		8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */; };
 		890BD8AB2F28378F4AEE0456 /* FriendsData in Frameworks */ = {isa = PBXBuildFile; productRef = B419B4F6300C997DD447F65B /* FriendsData */; };
 		895644C52920325615D61EEA /* VoipPushCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */; };
 		AB69CC219E999AB31CF7F489 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 958685816BE979439E46CFFD /* LoadingView.swift */; };
 		AF5268C2B551945F6B7981BA /* ChatSplitLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7EA072CAC8BDD0E710F5F2 /* ChatSplitLayout.swift */; };
 		BB5423DD21564BBDCA8AD071 /* FishRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF901E65E85B7E257C31F2F6 /* FishRoot.swift */; };
+		BEFA272B455913B6A8E96A9B /* DrainReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E68C1D377854DDEAF280CC /* DrainReadiness.swift */; };
 		BF9301FDC28A1032B398593E /* FishSharePayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */; };
 		C2DE5FA06629AD3CD8F14F9A /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AED3154D6FA543BA8BF6CED /* SignInView.swift */; };
 		CBA7E24FB23A3803FC4B9FEC /* FishSharePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20183F23477C1DCD0B20CC9E /* FishSharePayload.swift */; };
@@ -89,6 +91,7 @@
 		20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		227E5EB18FA42EA4D7E193BB /* FishApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishApp.swift; sourceTree = "<group>"; };
 		323AD597C6079F6C90636877 /* Fish.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Fish.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		36E68C1D377854DDEAF280CC /* DrainReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainReadiness.swift; sourceTree = "<group>"; };
 		399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitCoordinatorTests.swift; sourceTree = "<group>"; };
 		3CB721A8188B0CBDCCBE62E1 /* VoipPushCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoipPushCoordinator.swift; sourceTree = "<group>"; };
 		443D4337196AD1103BDDCADE /* FishTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FishTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -111,6 +114,7 @@
 		A1ECDB7260CBFB8C6ACB4ADB /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		BE7FAEA8901C9CAF92B1DC4B /* FishAppConveniences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishAppConveniences.swift; sourceTree = "<group>"; };
 		C1CBFF3234C0DE8FFE5D8E08 /* ConversationDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationDestination.swift; sourceTree = "<group>"; };
+		C6FFBA05F4508466A77AE0C3 /* DrainReadinessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainReadinessTests.swift; sourceTree = "<group>"; };
 		CD09FECE659400B2ED0048A3 /* SharedContentDocumentExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentDocumentExporter.swift; sourceTree = "<group>"; };
 		DD640DE98A515B929DA4E061 /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		DF901E65E85B7E257C31F2F6 /* FishRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishRoot.swift; sourceTree = "<group>"; };
@@ -152,6 +156,7 @@
 			isa = PBXGroup;
 			children = (
 				399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */,
+				C6FFBA05F4508466A77AE0C3 /* DrainReadinessTests.swift */,
 				5BBACEE0E901B52C5E6A2BB6 /* FishAppConfigurationTests.swift */,
 				648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */,
 				7759E66CA4D478C4CEE6CA2C /* NotificationReplyDrainerTests.swift */,
@@ -177,6 +182,7 @@
 				1B7EA072CAC8BDD0E710F5F2 /* ChatSplitLayout.swift */,
 				C1CBFF3234C0DE8FFE5D8E08 /* ConversationDestination.swift */,
 				DD640DE98A515B929DA4E061 /* ConversationView.swift */,
+				36E68C1D377854DDEAF280CC /* DrainReadiness.swift */,
 				4B52387CF5B0AAFF2A75259B /* Fish.entitlements */,
 				227E5EB18FA42EA4D7E193BB /* FishApp.swift */,
 				FB7E78540F408953F390C460 /* FishAppConfiguration.swift */,
@@ -360,6 +366,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */,
+				83DD508D2E23BAEBE4D00839 /* DrainReadinessTests.swift in Sources */,
 				53926A1ACB87D2712A10E3E9 /* FishAppConfigurationTests.swift in Sources */,
 				BF9301FDC28A1032B398593E /* FishSharePayloadTests.swift in Sources */,
 				36CD2FECD35F41FD5913CC4B /* NotificationReplyDrainerTests.swift in Sources */,
@@ -375,6 +382,7 @@
 				AF5268C2B551945F6B7981BA /* ChatSplitLayout.swift in Sources */,
 				3D1F5C8991AF82E86A680F96 /* ConversationDestination.swift in Sources */,
 				330070F3F6FB8E415E745FFF /* ConversationView.swift in Sources */,
+				BEFA272B455913B6A8E96A9B /* DrainReadiness.swift in Sources */,
 				F3E795CBB85C1D3244EFEA91 /* FishApp.swift in Sources */,
 				DCA60A8DE6BE13506E70E80A /* FishAppConfiguration.swift in Sources */,
 				3013013A6210434934F164D8 /* FishAppConveniences.swift in Sources */,

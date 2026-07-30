@@ -1193,9 +1193,42 @@ final class FishAppModel {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                await self?.processPendingNotificationReplies()
+                await self?.drainNotificationRepliesWithBackgroundTime()
             }
         }
+    }
+
+    /// Sends a quick reply right away, even when the notification action
+    /// launched the app straight into the background — `start()` is otherwise
+    /// only driven by FishRoot's `.task`, which a background launch never
+    /// reaches. The assertion keeps the process alive for the attempt; a
+    /// reply that cannot finish in time stays durably queued exactly as
+    /// before.
+    func drainNotificationRepliesWithBackgroundTime() async {
+        var taskId = UIBackgroundTaskIdentifier.invalid
+        var ended = false
+        func endAssertion() {
+            guard !ended, taskId != .invalid else { return }
+            ended = true
+            application.endBackgroundTask(taskId)
+        }
+        taskId = application.beginBackgroundTask(withName: "fish.quick-reply-drain") {
+            endAssertion()
+        }
+        defer { endAssertion() }
+        if phase == .loading {
+            await start()
+        }
+        // Up to ~15 s in 250 ms steps; well inside the ~30 s the system grants.
+        _ = await DrainReadiness.waitUntilReady(
+            isReady: { [weak self] in
+                guard let self else { return true }
+                return session != nil && directory != nil && directory?.phase != .loading
+            },
+            attempts: 60,
+            sleep: { try? await Task.sleep(nanoseconds: 250_000_000) }
+        )
+        await processPendingNotificationReplies()
     }
 
     private func processPendingNotificationReplies() async {
