@@ -430,11 +430,26 @@ git add apps/android/app/src/main/kotlin/space/fishhub/android/messaging/ChatNot
 git commit -m "feat(android): render chat notifications with MessagingStyle and widened ids"
 ```
 
+#### As-built amendments (post-review; commit "fix(android): quiet reply echoes and carry real message timestamps")
+
+Code review against the androidx sources changed six things relative to the block above; any re-run must include them:
+
+1. `appendReply`'s rebuilt notification adds `.setOnlyAlertOnce(true)` — the recover-builder does not carry a set flag, so without it replying re-alerts the user for their own message.
+2. `showReplyFailure`'s builder adds `.setOnlyAlertOnce(true)` — several failures can land on one notification ID and must alert once. `build()` deliberately does NOT set it; inbound messages still alert.
+3. `messageText: String?` became `message: ChatNotificationMessage?` where `internal data class ChatNotificationMessage(val text: String, val sentAtMillis: Long?)` sits above the factory object — FCM delivery can lag (Doze), so lines render with the server's sent time, falling back to now when `sentAtMillis` is null.
+4. `build()` is private — `show` is its only caller and it is not a pure builder (it reads active notifications).
+5. `showReplyFailure` computes its notification ID once and builds one intent, adding the deep-link action/extras onto it only when both IDs are present.
+6. `contentIntent`'s request code is `notificationId(push.conversationId)` (not the raw hash) so content and failure request codes are disjoint by construction.
+
+The ID test gained two cases: distinctness across the 500 fixed samples (threshold `>= samples.size - 2` tolerates deterministic birthday collisions while failing loudly on any 800-bucket regression) and per-conversation disjointness of message/failure/call IDs, calling `CallNotificationFactory.notificationId` directly.
+
+Consciously declined from the same review: sourcing notification history from Room instead of the active-notification extract. The shade-extract race can drop one echoed line when two pushes land back-to-back; the newest message always renders and the store keeps the reply durable, so the failure is cosmetic and self-healing. Revisit only with device evidence.
+
 ---
 
 ### Task 3: Android — fetch the pushed message text on receipt
 
-Payloads stay content-free. On push receipt, fetch the message body over the existing authorized `refreshMessages` read, bounded to 5 seconds, falling back to the generic line on any failure (signed out, offline, unknown conversation, deleted or bodyless message).
+Payloads stay content-free. On push receipt, fetch the message over the existing authorized `refreshMessages` read, bounded to 5 seconds, falling back to the generic line on any failure (signed out, offline, unknown conversation, deleted or bodyless message). The resolver returns a `ChatNotificationMessage` (text plus the server's sent time parsed from `createdAt`; `sentAtMillis` null when unparseable) so the notification renders real timestamps.
 
 **Files:**
 - Create: `apps/android/app/src/main/kotlin/space/fishhub/android/messaging/ChatPushContentResolver.kt`
@@ -464,24 +479,40 @@ class ChatPushContentResolverTest {
         unreadCount = 1,
     )
 
-    private fun message(id: String, body: String) = ChatMessage(
+    private fun message(
+        id: String,
+        body: String,
+        createdAt: String = "1970-01-01T00:00:02Z",
+    ) = ChatMessage(
         id = id,
         conversationId = "conv-1",
         senderId = "sender-1",
         senderRole = UserRole.Coach,
         body = body,
         clientRequestId = "req-$id",
-        createdAt = "2026-07-30T00:00:00Z",
+        createdAt = createdAt,
     )
 
     @Test
-    fun `returns the fetched body for the pushed message`() = runBlocking {
-        val text = ChatPushContentResolver.resolve(
+    fun `returns the fetched body and sent time for the pushed message`() = runBlocking {
+        val resolved = ChatPushContentResolver.resolve(
             push,
             isSignedIn = { true },
             refreshMessages = { _, _ -> ChatResult.Success(listOf(message("msg-1", "Hi there"))) },
         )
-        assertEquals("Hi there", text)
+        assertEquals(ChatNotificationMessage("Hi there", 2_000L), resolved)
+    }
+
+    @Test
+    fun `keeps the text but drops the timestamp when createdAt is unparseable`() = runBlocking {
+        val resolved = ChatPushContentResolver.resolve(
+            push,
+            isSignedIn = { true },
+            refreshMessages = { _, _ ->
+                ChatResult.Success(listOf(message("msg-1", "Hi", createdAt = "not-a-time")))
+            },
+        )
+        assertEquals(ChatNotificationMessage("Hi", null), resolved)
     }
 
     @Test
@@ -534,17 +565,19 @@ Create `ChatPushContentResolver.kt`:
 ```kotlin
 package space.fishhub.android.messaging
 
+import java.time.Instant
 import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.model.ChatMessage
 
 /**
- * Resolves the pushed message's text over the authorized RLS read. Payloads
- * stay content-free; any failure falls back to the generic notification line.
+ * Resolves the pushed message's content over the authorized RLS read.
+ * Payloads stay content-free; any failure falls back to the generic
+ * notification line.
  */
 internal object ChatPushContentResolver {
-    suspend fun resolve(push: ChatPushMessage, repository: ChatRepository): String? =
+    suspend fun resolve(push: ChatPushMessage, repository: ChatRepository): ChatNotificationMessage? =
         resolve(
             push,
             isSignedIn = { repository.authState.value is ChatAuthState.SignedIn },
@@ -555,14 +588,18 @@ internal object ChatPushContentResolver {
         push: ChatPushMessage,
         isSignedIn: () -> Boolean,
         refreshMessages: suspend (String, List<String>) -> ChatResult<List<ChatMessage>>,
-    ): String? {
+    ): ChatNotificationMessage? {
         if (!isSignedIn()) return null
         val result = refreshMessages(push.conversationId, listOf(push.messageId))
         val message = (result as? ChatResult.Success)?.value
             ?.firstOrNull { it.id == push.messageId }
             ?: return null
         if (message.deletedAt != null) return null
-        return message.body.takeIf(String::isNotBlank)
+        val text = message.body.takeIf(String::isNotBlank) ?: return null
+        return ChatNotificationMessage(
+            text = text,
+            sentAtMillis = runCatching { Instant.parse(message.createdAt).toEpochMilli() }.getOrNull(),
+        )
     }
 }
 ```
@@ -576,13 +613,13 @@ In `CallPushMessagingService.kt`, replace the chat branch of `onMessageReceived`
             // onMessageReceived already runs on a background thread; FCM allows
             // brief work here. Bounded so a slow network can never stall the
             // notification past the delivery window.
-            val text = runBlocking {
+            val content = runBlocking {
                 withTimeoutOrNull(5_000) {
                     runCatching { ChatPushContentResolver.resolve(push, app.chatRepository) }
                         .getOrNull()
                 }
             }
-            ChatNotificationFactory.show(this, push, text)
+            ChatNotificationFactory.show(this, push, content)
             return
         }
         CallPushMessage.parse(message.data)?.let {
