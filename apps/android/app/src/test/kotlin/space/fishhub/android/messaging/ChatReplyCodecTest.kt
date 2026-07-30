@@ -29,4 +29,22 @@ class ChatReplyCodecTest {
         val partial = """[{"id":"","conversationId":"conv","body":"x"},{"id":"a","conversationId":"conv","body":"  "}]"""
         assertEquals(emptyList<PendingChatReply>(), ChatReplyCodec.decode(partial))
     }
+
+    @Test
+    fun `treats explicit json nulls as absent`() {
+        val nulls = """[{"id":null,"conversationId":"c","body":"x"},{"id":"a","conversationId":"c","body":"hi","messageId":null}]"""
+        assertEquals(
+            listOf(PendingChatReply("a", "c", "hi", null)),
+            ChatReplyCodec.decode(nulls),
+        )
+    }
+
+    @Test
+    fun `keeps valid entries when others are invalid`() {
+        val mixed = """[{"id":"","conversationId":"c","body":"x"},{"id":"ok","conversationId":"c","body":"hi"}]"""
+        assertEquals(
+            listOf(PendingChatReply("ok", "c", "hi", null)),
+            ChatReplyCodec.decode(mixed),
+        )
+    }
 }

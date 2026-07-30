@@ -24,12 +24,15 @@ internal object ChatReplyCodec {
         return buildList {
             for (index in 0 until json.length()) {
                 val item = json.optJSONObject(index) ?: continue
-                val id = item.optString("id").takeIf(String::isNotBlank) ?: continue
-                val conversationId = item.optString("conversationId").takeIf(String::isNotBlank) ?: continue
-                val body = item.optString("body").trim().takeIf(String::isNotBlank) ?: continue
-                val messageId = item.optString("messageId").takeIf(String::isNotBlank)
+                val id = item.nonNullString("id") ?: continue
+                val conversationId = item.nonNullString("conversationId") ?: continue
+                val body = item.nonNullString("body")?.trim()?.takeIf(String::isNotBlank) ?: continue
+                val messageId = item.nonNullString("messageId")
                 add(PendingChatReply(id, conversationId, body, messageId))
             }
         }
     }
+
+    private fun JSONObject.nonNullString(key: String): String? =
+        if (isNull(key)) null else optString(key).takeIf(String::isNotBlank)
 }
