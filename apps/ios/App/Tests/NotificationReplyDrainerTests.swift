@@ -74,18 +74,31 @@ final class NotificationReplyDrainerTests: XCTestCase {
         XCTAssertEqual(events, [.sent("reply-1"), .removed("reply-1")])
     }
 
-    func testUnauthorizedReplyIsRemovedWithoutMarkReadOrSend() async {
+    func testUnauthorizedReplyIsPreservedAsDraftThenRemoved() async {
         let recorder = Recorder()
         let entries = [reply("reply-a", conversationId: "conv-x"), reply("reply-b", conversationId: "conv-1")]
         let sentAny = await drainer(recorder: recorder, replies: entries).run()
         XCTAssertTrue(sentAny)
         let events = await recorder.events
         XCTAssertEqual(events, [
+            .draft("conv-x", "hi"),
             .removed("reply-a"),
             .markedRead("conv-1", "msg-1"),
             .sent("reply-b"),
             .removed("reply-b"),
         ])
+    }
+
+    func testUnauthorizedReplyWithFailedPreservationIsKept() async {
+        let recorder = Recorder()
+        let sentAny = await drainer(
+            recorder: recorder,
+            replies: [reply(conversationId: "conv-x")],
+            draftSucceeds: false
+        ).run()
+        XCTAssertFalse(sentAny)
+        let events = await recorder.events
+        XCTAssertEqual(events, [.draft("conv-x", "hi")])
     }
 
     func testTerminalFailureStillMarksReadThenPreservesNoticesRemoves() async {

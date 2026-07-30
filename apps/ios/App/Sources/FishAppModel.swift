@@ -1258,7 +1258,7 @@ final class FishAppModel {
         }
         guard let session,
               let directory,
-              directory.phase != .loading
+              directory.phase == .ready
         else { return }
         isProcessingNotificationReplies = true
         defer { isProcessingNotificationReplies = false }
@@ -1268,17 +1268,11 @@ final class FishAppModel {
         let ownerId = session.userId
         repeat {
             notificationReplyDrainRequested = false
-            // Re-snapshot every pass, not just once before the loop: pass 1
-            // may have called refreshDirectory() below, so a reply that
-            // arrived mid-drain for a conversation that just became
-            // authorized must be judged against the fresh set — a stale
-            // snapshot would silently destroy it instead. `self.directory`
-            // reads as a settled value here: there is no suspension between
-            // the previous pass's `while` check and this line, so it
-            // reflects exactly the state as of that pass's refresh. Falls
-            // back to the guard-unwrapped `directory` if the property ever
-            // went nil mid-drain (e.g. a racing sign-out).
-            let conversationIds = Set((self.directory ?? directory).conversations.map(\.conversationId))
+            // Only a ready directory can answer authorization. A failed read
+            // must keep replies queued — never silent loss — and sign-out
+            // clears the store, so nothing leaks across accounts.
+            guard let currentDirectory = self.directory, currentDirectory.phase == .ready else { return }
+            let conversationIds = Set(currentDirectory.conversations.map(\.conversationId))
             let drainer = NotificationReplyDrainer(
                 pendingReplies: { [notificationReplyStore] in
                     (try? await notificationReplyStore.pendingReplies()) ?? []

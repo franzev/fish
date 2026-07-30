@@ -47,9 +47,13 @@ struct NotificationReplyDrainer {
         for reply in await pendingReplies() {
             guard isStillCurrentAccount() else { return sentAny }
             guard isAuthorized(reply.conversationId) else {
-                // The current account cannot access this conversation. Do not
-                // retain a reply that could be sent after an account switch.
-                await remove(reply.id)
+                // Same-account "not in the directory" is ambiguous — revoked,
+                // or a cache that predates this conversation. Preserve the
+                // text; sign-out clears the store, so account switches cannot
+                // resurrect it. No notice: there is nowhere useful to link.
+                if await saveDraft(reply.conversationId, reply.body) {
+                    await remove(reply.id)
+                }
                 continue
             }
             if let messageId = reply.messageId {
