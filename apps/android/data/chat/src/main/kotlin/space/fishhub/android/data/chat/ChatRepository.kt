@@ -386,6 +386,8 @@ interface ChatRepository {
     ): ChatResult<ChatMessage>
     /** Flushes plain-text sends saved locally while the device was offline. */
     suspend fun flushTextOutbox(conversationId: String): ChatResult<Unit> = ChatResult.Success(Unit)
+    /** Number of plain-text sends still queued locally for this conversation. */
+    suspend fun pendingTextSendCount(conversationId: String): Int = 0
     suspend fun editMessage(messageId: String, body: String): ChatResult<ChatMessage>
     suspend fun deleteMessage(messageId: String): ChatResult<ChatMessage>
     suspend fun deleteMessage(

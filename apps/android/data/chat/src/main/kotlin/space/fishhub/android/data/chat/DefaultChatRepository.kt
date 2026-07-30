@@ -642,6 +642,11 @@ internal class DefaultChatRepository(
             ChatResult.Success(Unit)
         }
 
+    override suspend fun pendingTextSendCount(conversationId: String): Int {
+        val conversation = dao.conversation(conversationId)?.toDomain() ?: return 0
+        return dao.pendingTextSends(conversationId, conversation.currentUserId).size
+    }
+
     /** A queued send that can no longer complete: fail the bubble calmly and release its drafts. */
     private suspend fun failQueuedSend(
         conversation: AuthorizedConversation,
