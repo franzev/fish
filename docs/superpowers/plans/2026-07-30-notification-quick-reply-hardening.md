@@ -1070,11 +1070,11 @@ internal class ChatReplyDrainWorker(
             flushOutbox = { repository.flushTextOutbox(it) },
             pendingOutboxCount = { repository.pendingTextSendCount(it) },
             saveDraft = { conversationId, body ->
-                // saveDraft silently no-ops when the conversation row is
-                // missing or owned by another account. The drain reaches this
-                // only after a successful directory read, which upserts the
-                // row, so a normal return means the draft persisted.
-                suspendRunCatching { repository.saveDraft(conversationId, body) } != null
+                // appendDraft reports real persistence and joins onto any
+                // existing composer text instead of replacing it. The drain
+                // reaches this only after a successful directory read, which
+                // upserts the conversation row the owner check needs.
+                suspendRunCatching { repository.appendDraft(conversationId, body) } == true
             },
             notifyFailure = { conversationId, messageId ->
                 ChatNotificationFactory.showReplyFailure(app, conversationId, messageId)
@@ -1176,6 +1176,16 @@ Expected: BUILD SUCCESSFUL (worker, receiver, and application compile together).
 git add apps/android/app/src/main/kotlin/space/fishhub/android/messaging/ChatReplyDrainWorker.kt apps/android/app/src/main/kotlin/space/fishhub/android/messaging/ChatReplyReceiver.kt apps/android/app/src/main/kotlin/space/fishhub/android/FishApplication.kt
 git commit -m "feat(android): drain notification replies through WorkManager with reply echo"
 ```
+
+#### As-built amendments (post-review; commit "fix(android): append notification reply drafts and confirm persistence")
+
+The wiring block above originally adapted preservation over `repository.saveDraft`, which returns Unit and silently no-ops on its owner/row guards — so "didn't throw" was reported as "persisted", and the underlying `upsertDraft` REPLACE would have destroyed the user's in-progress composer text. As built instead:
+
+1. The data module gained `ChatRepository.appendDraft(conversationId, text): Boolean` (default false) with a `DefaultChatRepository` implementation that returns false on both guards, reads the existing draft via a new one-shot `ChatDao.draft` query (query-only; no schema change), joins the failed reply onto it with a newline, and returns true only after the upsert. `saveDraft` keeps its composer replace semantics untouched.
+2. The worker's `saveDraft` lambda adapts `appendDraft` with `== true`, so "threw" and "no-opped" both mean "not preserved" and the drain keeps the entry.
+3. The drain's KDoc was corrected (exhausted entries never mark read), and two tests were added: negative codec `attempts` decode as zero, and an empty store with a failing directory still returns Retry (pinning the outbox's claim on the retry chain).
+
+Accepted residuals recorded during this review: a conversation whose composer attachment tray is non-empty rejects body-only sends with a Local failure, so a notification reply to it burns its seven attempts (~31 minutes of backoff) and then lands on the — now non-destructive — draft-plus-notice path; a `sendMessage` variant that ignores the composer tray would fix it and is deferred until device evidence says it matters. Unbounded (but backoff-paced and self-healing) retries remain possible for an empty store with a persistently failing directory read or a stuck attachment upload holding outbox rows; sign-out cancels the chain.
 
 ---
 
