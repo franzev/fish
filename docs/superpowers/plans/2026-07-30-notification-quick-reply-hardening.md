@@ -642,6 +642,20 @@ git add apps/android/app/src/main/kotlin/space/fishhub/android/messaging/ChatPus
 git commit -m "feat(android): show real message text in chat notifications via the authorized read"
 ```
 
+#### As-built amendments (post-review; commit "fix(android): await settled auth and guard the push content fetch")
+
+Code review found a cold-start defect plus four smaller items; any re-run must include:
+
+1. The auth gate awaits settled state instead of snapshotting: `internal suspend fun StateFlow<ChatAuthState>.settled(): ChatAuthState = first { it !is ChatAuthState.Loading }` (in ChatPushContentResolver.kt) and the production binding is `isSignedIn = { repository.authState.settled() is ChatAuthState.SignedIn }`, with the seam widened to `isSignedIn: suspend () -> Boolean`. Without this, an FCM cold start reads `Loading` and silently renders the generic line exactly when the app has been closed longest.
+2. The fetched message must match the push's conversation too: `firstOrNull { it.id == push.messageId && it.conversationId == push.conversationId }` — a malformed push can otherwise render one conversation's text in another's thread and reconcile it into the wrong Room rows.
+3. The service skips the fetch entirely when notifications cannot post: `if (!ChatNotificationFactory.canNotify(this)) return` before the fetch (`canNotify` became internal).
+4. `apps/android/app/src/main/kotlin/space/fishhub/android/messaging/SuspendRunCatching.kt` adds `internal suspend fun <T> suspendRunCatching(block: suspend () -> T): T?`, which rethrows `CancellationException`. The service uses it instead of `runCatching { … }.getOrNull()`; Tasks 5–6 use it for every guarded suspend call — a swallowed cancellation would keep a cancelled worker looping and break `withTimeoutOrNull`.
+5. The resolver's KDoc names the real transport (chat-command Edge Function plus hydration queries, several sequential round trips) rather than "the RLS read".
+
+Consciously accepted from the same review: FCM serializes `onMessageReceived` on one thread, so a burst can queue at up to 5 s per message. Offline backlogs collapse to one push per conversation via the existing `fish_message_<conversationId>` collapse key, and the degraded outcome is the generic line — never loss — so no batch budget was added. Also accepted: a push for a conversation not yet in the Room cache (a brand-new conversation's first message) renders the generic line; and a foreground push duplicates work realtime is already doing.
+
+Tests grew to five: the two review cases are `ignores a fetched message from another conversation` and `settled waits out the loading state` (asserted via the `SignedOut` data object so no `SignedIn` construction is needed).
+
 ---
 
 ### Task 4: Android — expose the pending text-outbox count
@@ -914,7 +928,7 @@ internal class ChatReplyDrain(
         if (entries.isEmpty()) return Outcome.Done
         if (attempt >= MaxAttempts) {
             entries.forEach { reply ->
-                runCatching { saveDraft(reply.conversationId, reply.body) }
+                suspendRunCatching { saveDraft(reply.conversationId, reply.body) }
                 notifyFailure(reply.conversationId, reply.messageId)
                 remove(reply.id)
             }
@@ -935,7 +949,7 @@ internal class ChatReplyDrain(
                 return@forEach
             }
             reply.messageId?.let { messageId ->
-                runCatching { markRead(reply.conversationId, messageId) }
+                suspendRunCatching { markRead(reply.conversationId, messageId) }
             }
             when (val result = send(reply.conversationId, reply.body, reply.id)) {
                 is ChatResult.Success -> {
@@ -952,8 +966,8 @@ internal class ChatReplyDrain(
             }
         }
         flushTargets.forEach { conversationId ->
-            runCatching { flushOutbox(conversationId) }
-            val remaining = runCatching { pendingOutboxCount(conversationId) }.getOrDefault(0)
+            suspendRunCatching { flushOutbox(conversationId) }
+            val remaining = suspendRunCatching { pendingOutboxCount(conversationId) } ?: 0
             if (remaining > 0) retry = true
         }
         return if (retry) Outcome.Retry else Outcome.Done
@@ -1020,9 +1034,10 @@ internal class ChatReplyDrainWorker(
     override suspend fun doWork(): Result {
         val app = applicationContext as? FishApplication ?: return Result.success()
         val repository = app.chatRepository
-        // Signed out (or still loading): stop quietly. The auth collector in
-        // FishApplication re-enqueues this work when sign-in completes.
-        if (repository.authState.value !is ChatAuthState.SignedIn) return Result.success()
+        // Wait out Loading (cold starts settle asynchronously), then stop
+        // quietly when signed out — the auth collector in FishApplication
+        // re-enqueues this work when sign-in completes.
+        if (repository.authState.settled() !is ChatAuthState.SignedIn) return Result.success()
         val drain = ChatReplyDrain(
             pending = { ChatReplyStore.pending(app) },
             remove = { ChatReplyStore.remove(app, it) },
