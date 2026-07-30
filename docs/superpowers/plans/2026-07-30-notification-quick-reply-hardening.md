@@ -991,6 +991,16 @@ git add apps/android/app/src/main/kotlin/space/fishhub/android/messaging/ChatRep
 git commit -m "feat(android): add the notification reply drain with read marking and honest failure"
 ```
 
+#### As-built amendments (post-review; commit "fix(android): expire replies per entry and flush the whole outbox from the drain")
+
+Review found two contract defects in the block above, so the drain was redesigned; the committed `ChatReplyDrain.kt` is the reference and supersedes the code block above. The redesign, which any re-run must implement instead:
+
+1. **Per-entry attempt budgets.** `PendingChatReply` gained `attempts: Int = 0` (codec always writes it; legacy entries decode to 0; `ChatReplyStore.recordAttempt(context, id)` increments it under the lock). `run()` takes no attempt parameter — WorkManager's `runAttemptCount` resets on every `APPEND_OR_REPLACE` chain, so a run-level counter both guillotined never-tried replies at minute 31 and granted old entries a fresh budget on every new enqueue. An entry expires only when its own `attempts >= MaxAttempts` (checked per entry inside the loop, after the authorization gate), and `recordAttempt` fires only on kept (non-terminal-failure) sends — directory-failure runs spend no budget.
+2. **The flush stage iterates every authorized conversation, not this run's successes.** The old flush-target set was provably inert on a retry run (the store is empty by then → early Done), which stalled offline-queued replies until the user opened that conversation. Now every `allowed` conversation with `pendingTextSendCount > 0` is flushed each run, so the worker really owns final delivery for the whole text outbox — including composer-queued sends.
+3. **Preservation is confirmed before the text is destroyed.** `saveDraft` returns `Boolean`; an exhausted entry is removed (with its notice) only when the draft reports persisted, else it stays queued and the run signals Retry so a later run retries the draft. The directory read is documented as load-bearing: its success upserts conversation rows into Room, which both `sendMessage` and `saveDraft` require — exhausted entries are processed only after a successful read.
+4. **`notifyFailure` is guarded** (`runCatching`) at all three call sites — an OEM `NotificationManager.notify` throw must not strand sibling entries or fail the worker's chain.
+5. Directory failure now always returns Retry (sign-out clears the store and cancels the worker, bounding it), and the tests grew to thirteen, covering: markRead firing on the authorization-failure path, unauthorized entries never reaching send or flush, mixed success/failure runs, empty-store outbox flushing, retry-while-rows-remain, exhausted-beside-fresh entries, failed-draft retention, and the attempt boundary. The test fake derives before/after outbox counts from the recorded flush list.
+
 ---
 
 ### Task 6: Android — worker, receiver echo, and application wiring
@@ -1045,6 +1055,7 @@ internal class ChatReplyDrainWorker(
         val drain = ChatReplyDrain(
             pending = { ChatReplyStore.pending(app) },
             remove = { ChatReplyStore.remove(app, it) },
+            recordAttempt = { ChatReplyStore.recordAttempt(app, it) },
             listConversations = { repository.listAuthorizedConversations() },
             send = { conversationId, body, clientRequestId ->
                 repository.sendMessage(
@@ -1058,12 +1069,18 @@ internal class ChatReplyDrainWorker(
             },
             flushOutbox = { repository.flushTextOutbox(it) },
             pendingOutboxCount = { repository.pendingTextSendCount(it) },
-            saveDraft = { conversationId, body -> repository.saveDraft(conversationId, body) },
+            saveDraft = { conversationId, body ->
+                // saveDraft silently no-ops when the conversation row is
+                // missing or owned by another account. The drain reaches this
+                // only after a successful directory read, which upserts the
+                // row, so a normal return means the draft persisted.
+                suspendRunCatching { repository.saveDraft(conversationId, body) } != null
+            },
             notifyFailure = { conversationId, messageId ->
                 ChatNotificationFactory.showReplyFailure(app, conversationId, messageId)
             },
         )
-        return when (drain.run(runAttemptCount)) {
+        return when (drain.run()) {
             ChatReplyDrain.Outcome.Done -> Result.success()
             ChatReplyDrain.Outcome.Retry -> Result.retry()
         }
