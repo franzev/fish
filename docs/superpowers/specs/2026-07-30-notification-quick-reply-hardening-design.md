@@ -48,8 +48,9 @@ This design supersedes both references; fixing them is part of the work.
 Push payloads remain content-free — that privacy stance (message text never
 transits FCM/APNs) is kept. Android pushes are data-only and the app already
 builds the notification locally, so on receipt it performs a bounded (~5 s)
-authorized fetch of the pushed message by ID (the fetch-by-ID read added for
-message search) and shows real text. Any fetch failure — offline, revoked,
+authorized fetch of the pushed message by ID and shows real text. The chat
+data layer has no single-message read today (search and refresh are list
+reads), so Android adds one narrow authorized read at that boundary. Any fetch failure — offline, revoked,
 timeout — falls back to today's generic copy. iOS alerts stay "New message";
 showing content there requires a Notification Service Extension with session
 access, which is deliberately deferred to a future slice.
@@ -91,18 +92,23 @@ fetched text or the generic fallback line. A quick reply appends the user's
 text to the existing notification instead of dismissing it, restoring prior
 lines via the standard extract-from-active-notification pattern — no new
 persistence. The channel keeps `VISIBILITY_PRIVATE`, so secure lock screens
-continue redacting. The notification ID drops the 800-bucket modulo for the
-full hash space, kept clear of the call-notification ID range.
+continue redacting. The notification ID derivation widens from its 800-bucket
+modulo to a range large enough that same-range collisions are negligible,
+chosen disjoint from the call-notification IDs (calls occupy 6100–6899 via
+their own 800-bucket scheme).
 
 ### Mark read on reply (both)
 
 Reply store entries gain the pushed `messageId` (entries persisted before this
-change may lack it; tolerate that). After a reply sends successfully, call the
-existing `mark-read-state` command up to the notified message — never beyond
-what the notification represented — clamped so it cannot regress a
-further-along read state. If the clamp cannot be established from local state,
-skip the call rather than guess. iOS refreshes the app badge through its
-existing badge path; the Android badge already rides on the notification.
+change may lack it; those skip the mark-read call). After a reply sends
+successfully, call the existing `mark-read-state` command with the notified
+message ID — never a newer one, so the client claims only what the
+notification represented. No client-side clamp is needed: the
+`mark_chat_read_state` RPC already keeps the later of the stored and
+submitted markers per column (`private.later_chat_message_id`, under a row
+lock), so the call can never regress a further-along read state. iOS
+refreshes the app badge through its existing badge path; the Android badge
+already rides on the notification.
 
 ### Honest failure (both)
 
