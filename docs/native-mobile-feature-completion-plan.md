@@ -637,8 +637,10 @@ iOS simulator.
 ## Deferred until there is concrete need
 
 - Link previews, message forwarding, and pinning.
-- Notification quick reply, custom notification actions, quiet hours, and
-  per-conversation notification settings.
+- Custom notification actions beyond Reply, quiet hours, and per-conversation
+  notification settings beyond the shipped mute. (Notification quick reply
+  shipped after this plan and was hardened by
+  `docs/superpowers/specs/2026-07-30-notification-quick-reply-hardening-design.md`.)
 - Truthful iOS app-icon unread counts across background and multiple devices;
   wait until a user asks for them because each APNs payload needs a
   recipient-specific absolute unread count and multi-device reconciliation.

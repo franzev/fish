@@ -46,8 +46,9 @@ the iOS call experience is ready.
 
 ## Categories and actions requiring product approval
 
-- Direct message: Open. No inline reply until privacy, moderation, and draft
-  behavior are approved.
+- Direct message: Open, plus an inline Reply text action (shipped after this
+  plan; hardened by
+  `docs/superpowers/specs/2026-07-30-notification-quick-reply-hardening-design.md`).
 - Incoming call: deferred with iOS call push.
 - Missed call: deferred with iOS call push.
 - No streak, score, urgency, or scolding copy; previews respect the system's
