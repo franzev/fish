@@ -590,6 +590,21 @@ iOS simulator.
    permission restoration from Settings.
 7. Run one coach/client usability pass focused only on finding the next action,
    answering a call, returning to chat, copying a phrase, and taking a photo.
+8. Quick-reply hardening rows (from
+   `docs/superpowers/plans/2026-07-30-notification-quick-reply-hardening.md`):
+   - Android: a push shows the real message text; offline receipt falls back
+     to "Sent you a message".
+   - Android: a quick reply appends "You: …" to the notification instead of
+     dismissing it, without re-alerting; the conversation opens read.
+   - Android: a reply in airplane mode survives process death and sends when
+     connectivity returns; after seven failed attempts the calm notice appears
+     and the text is a failed transcript message or composer draft.
+   - iOS: a lock-screen reply with the app terminated sends without opening
+     the app; the badge settles after the drain.
+   - iOS: a reply to a revoked conversation produces "Your reply didn’t send"
+     once per conversation; tapping it opens the app calmly.
+   - Both: no message text, token, or ID appears in logs during any of the
+     above.
 
 ### Completion criteria
 

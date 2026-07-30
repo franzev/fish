@@ -1,5 +1,10 @@
 # Notification Quick Reply Hardening Implementation Plan
 
+Status: Implemented (2026-07-30) — all 11 tasks landed with two-stage review
+and fix loops per task (see the per-task "As-built amendments"); every gate
+passed at the closing commit; the physical-device rows joined
+`docs/native-mobile-feature-completion-plan.md`'s execution matrix (item 8).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Harden the shipped notification quick reply on Android and iOS: content-rich Android notifications with reply echo, WorkManager-owned durable delivery, immediate iOS background drain, mark-read on reply, and honest failure notices.

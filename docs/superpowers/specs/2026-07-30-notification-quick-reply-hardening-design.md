@@ -1,6 +1,8 @@
 # Notification quick reply hardening — design
 
-Status: Approved design (2026-07-30); implementation plan to follow
+Status: Implemented (2026-07-30) — see
+`docs/superpowers/plans/2026-07-30-notification-quick-reply-hardening.md` for
+the as-built record; physical-device rows joined the outstanding release pass
 Scope: the existing native direct-chat apps only. Platform order: Android first.
 
 ## Background
