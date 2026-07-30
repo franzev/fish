@@ -33,6 +33,13 @@ internal object ChatReplyCodec {
         }
     }
 
+    /**
+     * Android's org.json turns an explicit JSON null into the literal string
+     * "null" via optString; the JVM reference implementation returns "". The
+     * isNull guard is what keeps both behaviors identical. Unit tests load
+     * only the JVM implementation, so they stay green even without the guard
+     * — do not remove it as redundant.
+     */
     private fun JSONObject.nonNullString(key: String): String? =
         if (isNull(key)) null else optString(key).takeIf(String::isNotBlank)
 }
