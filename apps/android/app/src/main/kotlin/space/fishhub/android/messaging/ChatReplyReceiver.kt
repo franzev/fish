@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.RemoteInput
-import kotlinx.coroutines.launch
 import space.fishhub.android.FishApplication
 
 internal class ChatReplyReceiver : BroadcastReceiver() {
@@ -13,6 +12,9 @@ internal class ChatReplyReceiver : BroadcastReceiver() {
             ?.trim()
             ?.takeIf(String::isNotEmpty)
             ?: return
+        val messageId = intent.getStringExtra(ChatIntents.ExtraMessageId)
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
         val body = RemoteInput.getResultsFromIntent(intent)
             ?.getCharSequence(RemoteInputKey)
             ?.toString()
@@ -21,9 +23,9 @@ internal class ChatReplyReceiver : BroadcastReceiver() {
             ?: return
 
         val app = context.applicationContext as? FishApplication ?: return
-        ChatReplyStore.enqueue(app, conversationId, body, messageId = null)
-        ChatNotificationFactory.clear(app, conversationId)
-        app.callScope.launch { app.processPendingChatReplies() }
+        ChatReplyStore.enqueue(app, conversationId, body, messageId)
+        ChatNotificationFactory.appendReply(app, conversationId, body)
+        ChatReplyDrainWorker.enqueue(app)
     }
 
     companion object {

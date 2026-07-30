@@ -7,8 +7,6 @@ import space.fishhub.android.data.call.CallDataModule
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatDataModule
 import space.fishhub.android.data.chat.ChatAuthState
-import space.fishhub.android.data.chat.ChatResult
-import space.fishhub.android.data.chat.OutgoingMessageContent
 import space.fishhub.android.data.chat.GifRepository
 import space.fishhub.android.data.friends.FriendsDataModule
 import space.fishhub.android.data.friends.FriendsRepository
@@ -16,6 +14,7 @@ import space.fishhub.android.data.presence.PresenceDataModule
 import space.fishhub.android.data.presence.PresenceRepository
 import space.fishhub.android.feature.call.CallCoordinator
 import space.fishhub.android.settings.AppPreferenceStore
+import space.fishhub.android.messaging.ChatReplyDrainWorker
 import space.fishhub.android.messaging.ChatReplyStore
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
@@ -96,32 +95,6 @@ class FishApplication : Application(), Configuration.Provider {
         if (previous !== next) previous?.close()
     }
 
-    suspend fun processPendingChatReplies() {
-        val auth = chatRepository.authState.value
-        if (auth !is ChatAuthState.SignedIn) return
-        val directory = (chatRepository.listAuthorizedConversations() as? ChatResult.Success)
-            ?.value
-            ?: return
-        val allowed = directory.conversations.mapTo(mutableSetOf()) { it.conversationId }
-        ChatReplyStore.pending(this).forEach { reply ->
-            if (!allowed.contains(reply.conversationId)) {
-                ChatReplyStore.remove(this, reply.id)
-                return@forEach
-            }
-            when (val result = chatRepository.sendMessage(
-                conversationId = reply.conversationId,
-                content = OutgoingMessageContent(body = reply.body),
-                clientRequestId = reply.id,
-            )) {
-                is ChatResult.Success -> ChatReplyStore.remove(this, reply.id)
-                is ChatResult.Failure -> if (
-                    result.category == space.fishhub.android.data.chat.FailureCategory.Authentication ||
-                    result.category == space.fishhub.android.data.chat.FailureCategory.Authorization
-                ) ChatReplyStore.remove(this, reply.id)
-            }
-        }
-    }
-
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(chatDependencies.workerFactory)
@@ -144,8 +117,12 @@ class FishApplication : Application(), Configuration.Provider {
         callScope.launch {
             chatRepository.authState.collectLatest { auth ->
                 when (auth) {
-                    is ChatAuthState.SignedIn -> processPendingChatReplies()
-                    ChatAuthState.SignedOut -> ChatReplyStore.clear(this@FishApplication)
+                    is ChatAuthState.SignedIn ->
+                        ChatReplyDrainWorker.enqueue(this@FishApplication)
+                    ChatAuthState.SignedOut -> {
+                        ChatReplyStore.clear(this@FishApplication)
+                        ChatReplyDrainWorker.cancel(this@FishApplication)
+                    }
                     ChatAuthState.Loading -> Unit
                 }
             }
