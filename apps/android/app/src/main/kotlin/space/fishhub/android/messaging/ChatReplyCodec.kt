@@ -12,6 +12,7 @@ internal object ChatReplyCodec {
                 .put("id", reply.id)
                 .put("conversationId", reply.conversationId)
                 .put("body", reply.body)
+                .put("attempts", reply.attempts)
             reply.messageId?.let { item.put("messageId", it) }
             json.put(item)
         }
@@ -28,7 +29,8 @@ internal object ChatReplyCodec {
                 val conversationId = item.nonNullString("conversationId") ?: continue
                 val body = item.nonNullString("body")?.trim()?.takeIf(String::isNotBlank) ?: continue
                 val messageId = item.nonNullString("messageId")
-                add(PendingChatReply(id, conversationId, body, messageId))
+                val attempts = item.optInt("attempts", 0).coerceAtLeast(0)
+                add(PendingChatReply(id, conversationId, body, messageId, attempts))
             }
         }
     }

@@ -8,6 +8,7 @@ internal data class PendingChatReply(
     val conversationId: String,
     val body: String,
     val messageId: String? = null,
+    val attempts: Int = 0,
 )
 
 /** Small durable inbox used by notification actions before chat auth is ready. */
@@ -33,6 +34,17 @@ internal object ChatReplyStore {
 
     fun remove(context: Context, id: String) {
         synchronized(lock) { save(context, load(context).filterNot { it.id == id }) }
+    }
+
+    fun recordAttempt(context: Context, id: String) {
+        synchronized(lock) {
+            save(
+                context,
+                load(context).map { reply ->
+                    if (reply.id == id) reply.copy(attempts = reply.attempts + 1) else reply
+                },
+            )
+        }
     }
 
     fun clear(context: Context) {

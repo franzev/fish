@@ -7,7 +7,7 @@ class ChatReplyCodecTest {
     @Test
     fun `round trips replies with and without message id`() {
         val replies = listOf(
-            PendingChatReply("id-1", "conv-1", "hello", "msg-1"),
+            PendingChatReply("id-1", "conv-1", "hello", "msg-1", attempts = 3),
             PendingChatReply("id-2", "conv-2", "there", null),
         )
         assertEquals(replies, ChatReplyCodec.decode(ChatReplyCodec.encode(replies)))
@@ -20,6 +20,12 @@ class ChatReplyCodecTest {
             listOf(PendingChatReply("id-1", "conv-1", "hello", null)),
             ChatReplyCodec.decode(legacy),
         )
+    }
+
+    @Test
+    fun `legacy entries decode with zero attempts`() {
+        val legacy = """[{"id":"id-1","conversationId":"conv-1","body":"hello"}]"""
+        assertEquals(0, ChatReplyCodec.decode(legacy).single().attempts)
     }
 
     @Test
