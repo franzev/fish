@@ -14,8 +14,10 @@
 		3013013A6210434934F164D8 /* FishAppConveniences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7FAEA8901C9CAF92B1DC4B /* FishAppConveniences.swift */; };
 		330070F3F6FB8E415E745FFF /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD640DE98A515B929DA4E061 /* ConversationView.swift */; };
 		362FA6D9B02CD7BD5198C453 /* CallMediaLiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0D54CEC388E682DC72C5B43F /* CallMediaLiveKit */; };
+		36CD2FECD35F41FD5913CC4B /* NotificationReplyDrainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7759E66CA4D478C4CEE6CA2C /* NotificationReplyDrainerTests.swift */; };
 		3D1F5C8991AF82E86A680F96 /* ConversationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1CBFF3234C0DE8FFE5D8E08 /* ConversationDestination.swift */; };
 		3D5367D984CD655F2F2347DD /* SharedContentDocumentExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD09FECE659400B2ED0048A3 /* SharedContentDocumentExporter.swift */; };
+		4351582F6B6658990AA0A4C3 /* NotificationReplyDrainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557FB57316685538270E943F /* NotificationReplyDrainer.swift */; };
 		477BDC267F7DC31BD41F89D5 /* Friends in Frameworks */ = {isa = PBXBuildFile; productRef = DEAA1F95851F42D2E756401B /* Friends */; };
 		4A1455C4A7ADF6D6044E50C1 /* FishNotificationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF75A9D04DB7000CC002FB35 /* FishNotificationDestination.swift */; };
 		52477F532BC4EBCB41F1433A /* FishShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4D79453224BFD04920136767 /* FishShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -95,11 +97,13 @@
 		4B2613D85D027D2C4F87612F /* CallKitCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallKitCoordinator.swift; sourceTree = "<group>"; };
 		4B52387CF5B0AAFF2A75259B /* Fish.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fish.entitlements; sourceTree = "<group>"; };
 		4D79453224BFD04920136767 /* FishShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FishShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		557FB57316685538270E943F /* NotificationReplyDrainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationReplyDrainer.swift; sourceTree = "<group>"; };
 		5BBACEE0E901B52C5E6A2BB6 /* FishAppConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishAppConfigurationTests.swift; sourceTree = "<group>"; };
 		648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishSharePayloadTests.swift; sourceTree = "<group>"; };
 		667CD532DA0CF763EF131F06 /* FishAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishAppModel.swift; sourceTree = "<group>"; };
 		68DFAA884EEF0FC33C0F033C /* FishAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FishAppDelegate.swift; sourceTree = "<group>"; };
 		6AED3154D6FA543BA8BF6CED /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		7759E66CA4D478C4CEE6CA2C /* NotificationReplyDrainerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationReplyDrainerTests.swift; sourceTree = "<group>"; };
 		89AAFB7A8309ADCB125EF882 /* FishKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FishKit; path = ../FishKit; sourceTree = SOURCE_ROOT; };
 		958685816BE979439E46CFFD /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoipPushCoordinatorTests.swift; sourceTree = "<group>"; };
@@ -150,6 +154,7 @@
 				399C7DF8C433A2352E80A319 /* CallKitCoordinatorTests.swift */,
 				5BBACEE0E901B52C5E6A2BB6 /* FishAppConfigurationTests.swift */,
 				648219743F13763A84ABCFBD /* FishSharePayloadTests.swift */,
+				7759E66CA4D478C4CEE6CA2C /* NotificationReplyDrainerTests.swift */,
 				99BF48D3052D69141B345257 /* VoipPushCoordinatorTests.swift */,
 			);
 			path = Tests;
@@ -183,6 +188,7 @@
 				4478CE7CA0FB32C094EC5045 /* InboxView.swift */,
 				4775B54857D0E072B6B0E150 /* Info.plist */,
 				958685816BE979439E46CFFD /* LoadingView.swift */,
+				557FB57316685538270E943F /* NotificationReplyDrainer.swift */,
 				03C07EDE9F9E1A9E8705CD33 /* PendingConversationDestination.swift */,
 				20AFE7883C6EA469B5C5BE05 /* PrivacyInfo.xcprivacy */,
 				CD09FECE659400B2ED0048A3 /* SharedContentDocumentExporter.swift */,
@@ -356,6 +362,7 @@
 				8636EB7EDF97CF387BDACBC5 /* CallKitCoordinatorTests.swift in Sources */,
 				53926A1ACB87D2712A10E3E9 /* FishAppConfigurationTests.swift in Sources */,
 				BF9301FDC28A1032B398593E /* FishSharePayloadTests.swift in Sources */,
+				36CD2FECD35F41FD5913CC4B /* NotificationReplyDrainerTests.swift in Sources */,
 				F3FAE6AA07276C657AD3D96E /* VoipPushCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -378,6 +385,7 @@
 				CBA7E24FB23A3803FC4B9FEC /* FishSharePayload.swift in Sources */,
 				D6E68B4D8C678D945F0564DD /* InboxView.swift in Sources */,
 				AB69CC219E999AB31CF7F489 /* LoadingView.swift in Sources */,
+				4351582F6B6658990AA0A4C3 /* NotificationReplyDrainer.swift in Sources */,
 				EA6AA6E7B2607DF0A9F4410A /* PendingConversationDestination.swift in Sources */,
 				3D5367D984CD655F2F2347DD /* SharedContentDocumentExporter.swift in Sources */,
 				D19456786E8B005871750CCE /* SharedContentGalleryModelHolder.swift in Sources */,

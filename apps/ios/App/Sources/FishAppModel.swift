@@ -1202,33 +1202,79 @@ final class FishAppModel {
         else { return }
         isProcessingNotificationReplies = true
         defer { isProcessingNotificationReplies = false }
-        let replies = (try? await notificationReplyStore.pendingReplies()) ?? []
-        for reply in replies {
-            guard directory.conversations.contains(where: {
-                $0.conversationId == reply.conversationId
-            }) else {
-                // The current account cannot access this conversation. Do not
-                // retain a reply that could be sent after an account switch.
-                try? await notificationReplyStore.remove(id: reply.id)
-                continue
-            }
-            let request = SendChatMessageRequest(
-                conversationId: reply.conversationId,
-                body: reply.body,
-                clientRequestId: reply.id
-            )
-            do {
-                _ = try await session.messaging.send(request)
-                try? await notificationReplyStore.remove(id: reply.id)
-            } catch let failure as ChatCommandFailure {
-                if failure.statusCode == 401 || failure.statusCode == 403 ||
-                    ["conversation_not_available", "invalid_request"].contains(failure.code) {
-                    try? await notificationReplyStore.remove(id: reply.id)
+        let conversationIds = Set(directory.conversations.map(\.conversationId))
+        let drainer = NotificationReplyDrainer(
+            pendingReplies: { [notificationReplyStore] in
+                (try? await notificationReplyStore.pendingReplies()) ?? []
+            },
+            remove: { [notificationReplyStore] id in
+                try? await notificationReplyStore.remove(id: id)
+            },
+            isAuthorized: { conversationIds.contains($0) },
+            send: { reply in
+                do {
+                    _ = try await session.messaging.send(
+                        SendChatMessageRequest(
+                            conversationId: reply.conversationId,
+                            body: reply.body,
+                            clientRequestId: reply.id
+                        )
+                    )
+                    return .sent
+                } catch let failure as ChatCommandFailure {
+                    if failure.statusCode == 401 || failure.statusCode == 403 ||
+                        ["conversation_not_available", "invalid_request"].contains(failure.code) {
+                        return .terminal
+                    }
+                    return .retryLater
+                } catch {
+                    return .retryLater
                 }
-            } catch {
-                // Keep network failures durable for the next foreground pass.
+            },
+            markRead: { conversationId, messageId in
+                _ = try? await session.commands.markReadState(
+                    conversationId: conversationId,
+                    lastDeliveredMessageId: messageId,
+                    lastReadMessageId: messageId
+                )
+            },
+            saveDraft: { [draftStore] conversationId, body in
+                guard let draftStore else { return }
+                let existing = (try? await draftStore.draft(for: conversationId))?.body
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let joined = [existing, body]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: "\n")
+                try? await draftStore.saveDraft(joined, conversationId: conversationId)
+            },
+            postFailureNotice: { [notificationCenter] reply in
+                await Self.postReplyFailureNotice(for: reply, center: notificationCenter)
             }
+        )
+        let sentAny = await drainer.run()
+        if sentAny {
+            await refreshDirectory()
         }
+    }
+
+    private static func postReplyFailureNotice(
+        for reply: ChatNotificationReply,
+        center: UNUserNotificationCenter
+    ) async {
+        let content = UNMutableNotificationContent()
+        content.title = "Your reply didn’t send"
+        content.body = "Tap to open the conversation and try again."
+        var userInfo: [String: Any] = ["conversationId": reply.conversationId]
+        if let messageId = reply.messageId {
+            userInfo["messageId"] = messageId
+        }
+        content.userInfo = userInfo
+        let request = UNNotificationRequest(
+            identifier: "fish.reply-failure.\(reply.id)",
+            content: content,
+            trigger: nil
+        )
+        try? await center.add(request)
     }
 
     private func registerPushDeviceIfPossible() async {
