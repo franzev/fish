@@ -421,6 +421,12 @@ interface ChatRepository {
         quietPeriod: ConversationQuietPeriod?,
     ): ChatResult<ConversationMute>
     suspend fun saveDraft(conversationId: String, draft: String)
+    /**
+     * Appends [text] to the conversation's composer draft on its own line,
+     * preserving anything already typed. True only when the draft was
+     * actually persisted for the signed-in owner of the conversation.
+     */
+    suspend fun appendDraft(conversationId: String, text: String): Boolean = false
     suspend fun importAttachments(
         conversationId: String,
         sources: List<AttachmentImportSource>,

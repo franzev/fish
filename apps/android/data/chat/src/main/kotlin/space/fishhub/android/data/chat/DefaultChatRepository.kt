@@ -844,6 +844,15 @@ internal class DefaultChatRepository(
         dao.upsertDraft(DraftEntity(conversationId, userId, draft, now()))
     }
 
+    override suspend fun appendDraft(conversationId: String, text: String): Boolean {
+        val userId = (authState.value as? ChatAuthState.SignedIn)?.userId ?: return false
+        if (dao.conversation(conversationId)?.currentUserId != userId) return false
+        val existing = dao.draft(conversationId, userId)?.trim().orEmpty()
+        val joined = listOf(existing, text).filter { it.isNotBlank() }.joinToString("\n")
+        dao.upsertDraft(DraftEntity(conversationId, userId, joined, now()))
+        return true
+    }
+
     override suspend fun importAttachments(
         conversationId: String,
         sources: List<AttachmentImportSource>,

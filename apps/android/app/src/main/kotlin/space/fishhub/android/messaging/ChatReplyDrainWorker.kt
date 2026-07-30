@@ -53,11 +53,11 @@ internal class ChatReplyDrainWorker(
             flushOutbox = { repository.flushTextOutbox(it) },
             pendingOutboxCount = { repository.pendingTextSendCount(it) },
             saveDraft = { conversationId, body ->
-                // saveDraft silently no-ops when the conversation row is
-                // missing or owned by another account. The drain reaches this
-                // only after a successful directory read, which upserts the
-                // row, so a normal return means the draft persisted.
-                suspendRunCatching { repository.saveDraft(conversationId, body) } != null
+                // appendDraft reports real persistence and joins onto any
+                // existing composer text instead of replacing it. The drain
+                // reaches this only after a successful directory read, which
+                // upserts the conversation row the owner check needs.
+                suspendRunCatching { repository.appendDraft(conversationId, body) } == true
             },
             notifyFailure = { conversationId, messageId ->
                 ChatNotificationFactory.showReplyFailure(app, conversationId, messageId)

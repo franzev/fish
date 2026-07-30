@@ -53,4 +53,10 @@ class ChatReplyCodecTest {
             ChatReplyCodec.decode(mixed),
         )
     }
+
+    @Test
+    fun `negative attempts decode as zero`() {
+        val negative = """[{"id":"a","conversationId":"c","body":"hi","attempts":-3}]"""
+        assertEquals(0, ChatReplyCodec.decode(negative).single().attempts)
+    }
 }

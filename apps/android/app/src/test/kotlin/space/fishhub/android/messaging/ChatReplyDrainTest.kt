@@ -235,6 +235,20 @@ class ChatReplyDrainTest {
         assertTrue(recorder.removed.isEmpty() && recorder.flushed.isEmpty() && recorder.sendCalls.isEmpty())
     }
 
+    @Test
+    fun `empty store with a failing directory still retries for the outbox`() = runBlocking {
+        val recorder = Recorder()
+        val outcome = drain(
+            recorder,
+            entries = emptyList(),
+            listConversations = {
+                ChatResult.Failure("offline", recoverable = true, category = FailureCategory.Network)
+            },
+        ).run()
+        assertEquals(ChatReplyDrain.Outcome.Retry, outcome)
+        assertTrue(recorder.flushed.isEmpty())
+    }
+
     private fun sampleConversation(id: String) = AuthorizedConversation(
         conversationId = id,
         currentUserId = "me",

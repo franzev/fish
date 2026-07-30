@@ -9,9 +9,9 @@ import space.fishhub.android.data.chat.model.ChatMessage
  * Delivery logic for queued notification replies. The worker owns retry
  * pacing; this class owns the decisions, and each entry carries its own
  * attempt budget so chained work runs can neither destroy a fresh reply
- * nor grant an old one a new budget. Marking read happens as soon as the
- * reply is processed for an authorized conversation — replying proves the
- * user read the notified message, independent of the send outcome.
+ * nor grant an old one a new budget. Marking read happens as soon as an
+ * authorized, unexpired entry is processed — replying proves the user read
+ * the notified message, independent of the send outcome.
  */
 internal class ChatReplyDrain(
     private val pending: () -> List<PendingChatReply>,

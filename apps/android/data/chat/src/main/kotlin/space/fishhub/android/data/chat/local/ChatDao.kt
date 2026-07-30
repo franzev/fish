@@ -327,6 +327,15 @@ interface ChatDao {
     )
     fun observeDraft(conversationId: String, userId: String): Flow<String?>
 
+    @Query(
+        """
+        SELECT body FROM drafts
+        WHERE conversation_id = :conversationId AND user_id = :userId
+        LIMIT 1
+        """,
+    )
+    suspend fun draft(conversationId: String, userId: String): String?
+
     @Query("SELECT * FROM conversations WHERE conversation_id = :conversationId LIMIT 1")
     suspend fun conversation(conversationId: String): ConversationEntity?
 
