@@ -106,6 +106,7 @@ final class FishAppModel {
     private var sharedContentRouteGeneration = UUID()
     private var sharedContentNetworkTask: Task<Void, Never>?
     private var sharedContentRealtimeTask: Task<Void, Never>?
+    private var startTask: Task<Void, Never>?
 
     init(
         configuration: FishAppConfiguration,
@@ -712,7 +713,24 @@ final class FishAppModel {
         }
     }
 
+    /// `start()` is called from both FishRoot's task and the background
+    /// drain; the phase guard alone doesn't close the window while
+    /// `attach()` is in flight, so a second concurrent call would run it
+    /// twice. Coalescing onto one in-flight task keeps the concurrent
+    /// callers from being the ones to notice.
     func start() async {
+        if let startTask {
+            await startTask.value
+            return
+        }
+        let task = Task { @MainActor [weak self] in
+            _ = await self?.performStart()
+        }
+        startTask = task
+        await task.value
+    }
+
+    private func performStart() async {
         guard phase == .loading else { return }
         guard let supabaseUrl = configuration.supabaseUrl,
               let anonKey = configuration.anonKey
@@ -1221,9 +1239,9 @@ final class FishAppModel {
         }
         // Up to ~15 s in 250 ms steps; well inside the ~30 s the system grants.
         _ = await DrainReadiness.waitUntilReady(
-            isReady: { [weak self] in
-                guard let self else { return true }
-                return session != nil && directory != nil && directory?.phase != .loading
+            isReady: {
+                self.phase == .signedOut ||
+                    (self.session != nil && self.directory != nil && self.directory?.phase != .loading)
             },
             attempts: 60,
             sleep: { try? await Task.sleep(nanoseconds: 250_000_000) }
