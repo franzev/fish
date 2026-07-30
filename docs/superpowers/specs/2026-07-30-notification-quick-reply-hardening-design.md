@@ -48,9 +48,10 @@ This design supersedes both references; fixing them is part of the work.
 Push payloads remain content-free — that privacy stance (message text never
 transits FCM/APNs) is kept. Android pushes are data-only and the app already
 builds the notification locally, so on receipt it performs a bounded (~5 s)
-authorized fetch of the pushed message by ID and shows real text. The chat
-data layer has no single-message read today (search and refresh are list
-reads), so Android adds one narrow authorized read at that boundary. Any fetch failure — offline, revoked,
+authorized fetch of the pushed message by ID and shows real text, reusing the
+repository's existing `refreshMessages(conversationId, messageIds)` read. A
+conversation not yet present in the local cache (a brand-new conversation's
+first message) falls back to the generic line. Any fetch failure — offline, revoked,
 timeout — falls back to today's generic copy. iOS alerts stay "New message";
 showing content there requires a Notification Service Extension with session
 access, which is deliberately deferred to a future slice.
@@ -65,15 +66,21 @@ platforms generic (quick reply stays reply-without-reading).
 WorkManager work with a network constraint and backoff. The worker holds the
 existing drain logic: signed-in gate, authorized-conversation filter, removal
 on success and on terminal failures (authentication, authorization,
-`conversation_not_available`, `invalid_request`). One behavior change: the
-worker's send does not hand off to the composer's Room outbox on network
-failure — the reply stays in the notification reply store and WorkManager's
-backoff owns the retry. One queue, one owner. The worker infrastructure
-(worker factory, DI) already exists for attachment uploads.
+`conversation_not_available`, `invalid_request`). Delivery ownership is
+unified rather than duplicated: when a send hands the message to the
+composer's Room text outbox (the repository does this on a network failure,
+reporting optimistic success), the reply leaves the notification store and the
+worker takes responsibility for flushing that outbox — it calls the existing
+`flushTextOutbox` for every conversation it touched and keeps retrying with
+backoff until no pending sends remain. One delivery owner, no phantom
+transcript states, and the composer send path is untouched. The worker
+infrastructure (worker factory, DI) already exists for attachment uploads.
 
 Rejected: keeping `callScope` with more triggers (still dies with the
-process); merging into the Room text outbox (drags the composer path into this
-change; the two queues have different ownership semantics).
+process); a send variant that bypasses the Room outbox (leaves the optimistic
+transcript message stranded in a failed state while retries continue);
+rewriting reply capture onto the Room outbox directly (drags the composer
+path into this change).
 
 ### iOS drain: immediately, under a background-task assertion
 
@@ -113,10 +120,13 @@ already rides on the notification.
 ### Honest failure (both)
 
 On terminal failure or retry exhaustion, post one calm notice-toned
-notification — copy in the app's voice, e.g. "Your reply didn't send. Tap to
+notification — copy in the app's voice, e.g. "Your reply didn’t send. Tap to
 open the conversation and try again." — whose tap deep-links into the
-conversation with the reply text preserved as a composer draft. Never silent
-loss, never alarming red, no repeat nagging.
+conversation. The reply text is preserved: on Android, a reply that reached
+the send pipeline survives as the transcript's failed message with its
+existing retry affordance, and a reply that never got that far is saved as
+the composer draft; on iOS, terminal failures save the composer draft. Never
+silent loss, never alarming red, no repeat nagging.
 
 ## Constraints carried over
 
