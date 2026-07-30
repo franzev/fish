@@ -1540,6 +1540,20 @@ git add apps/ios/App/Sources/NotificationReplyDrainer.swift apps/ios/App/Sources
 git commit -m "feat(ios): mark read, save drafts, and notice failures when draining replies"
 ```
 
+#### As-built amendments
+
+Two compile-reality corrections in the first commit: `markReadState` lives on `session.commands` (`ChatCommandProviding`), not `session.messaging` — wired to match `ConversationStore`'s existing call site — and `run()` carries `@MainActor` (the wired drainer captures the model's non-Sendable `UNUserNotificationCenter`, which puts the value in the main-actor region under Swift 6). The regenerated `Fish.xcodeproj/project.pbxproj` is committed alongside per repo precedent for new App-target files.
+
+Review then produced a follow-up commit ("fix(ios): preserve reply text and quiet failure notices in the drain") that any re-run must include:
+
+1. **Preservation is confirmed before removal** — the same contract Android ships: `saveDraft` returns `Bool`; the terminal branch posts the notice and removes only when the draft persisted, else the entry stays durably queued for a later drain.
+2. **The drain stops on account switch** — an `isStillCurrentAccount` closure (owner id captured at construction, re-checked per entry) prevents a mid-drain sign-out from sending through a revoked session or writing drafts for a signed-out account.
+3. **A live `ConversationStore` gets the draft append directly** (its in-memory draft otherwise clobbers a file-layer write arbitrarily later); the file path is the fallback, joined via the testable `joinedDraft(existing:reply:)` static. The terminal-code mapping likewise moved into a tested `outcome(for:)` static.
+4. **Notices collapse per conversation** (identifier keyed by conversationId, `threadIdentifier` set) instead of stacking per reply, and a foreground drain routes the failure to the model's calm `notice` surface — the delegate suppresses banners while active, so the local notification would silently vanish.
+5. **Replies enqueued during an in-flight drain re-run it** (a requested bit and a repeat loop) instead of waiting for the next launch.
+
+Accepted residuals recorded during this review: iOS has no background owner for the composer text outbox (Android's worker flushes it; on iOS a queued send whose conversation is closed waits for that conversation to reopen — the largest remaining platform divergence, deferred as its own future slice); a draft saved for a `conversation_not_available` failure lands in a conversation whose notice tap cannot open it; unauthorized entries are removed silently (plan-mandated, unlike Android's generic notice); the badge can stay stale until the next refresh when nothing sent; mark-read re-fires per drain pass for stuck entries (server-monotonic, paced); notice copy is a hardcoded literal (no string catalog exists in the App target).
+
 ---
 
 ### Task 9: iOS — drain immediately under background execution time
