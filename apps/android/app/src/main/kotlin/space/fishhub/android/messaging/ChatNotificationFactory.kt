@@ -16,22 +16,33 @@ import androidx.core.content.ContextCompat
 import space.fishhub.android.MainActivity
 import space.fishhub.android.R
 
+/**
+ * Resolved content for one pushed message. [sentAtMillis] is null when the
+ * server timestamp was absent or unparseable; render falls back to now.
+ */
+internal data class ChatNotificationMessage(val text: String, val sentAtMillis: Long?)
+
 internal object ChatNotificationFactory {
     const val ChannelId = "fish-messages-v1"
 
-    fun show(context: Context, push: ChatPushMessage, messageText: String?) {
+    fun show(context: Context, push: ChatPushMessage, message: ChatNotificationMessage?) {
         if (!canNotify(context)) return
         val manager = context.getSystemService(NotificationManager::class.java)
         ensureChannel(context, manager)
-        manager.notify(notificationId(push.conversationId), build(context, push, messageText))
+        manager.notify(notificationId(push.conversationId), build(context, push, message))
     }
 
-    fun build(context: Context, push: ChatPushMessage, messageText: String?): Notification {
+    private fun build(
+        context: Context,
+        push: ChatPushMessage,
+        message: ChatNotificationMessage?,
+    ): Notification {
         val sender = Person.Builder().setName(push.senderName).setKey(push.senderId).build()
-        val line = messageText ?: context.getString(R.string.chat_notification_message)
+        val line = message?.text ?: context.getString(R.string.chat_notification_message)
+        val timestamp = message?.sentAtMillis ?: System.currentTimeMillis()
         val style = activeMessagingStyle(context, push.conversationId)
             ?: NotificationCompat.MessagingStyle(selfPerson(context))
-        style.addMessage(line, System.currentTimeMillis(), sender)
+        style.addMessage(line, timestamp, sender)
         return NotificationCompat.Builder(context, ChannelId)
             .setSmallIcon(R.drawable.ic_call_notification)
             .setContentTitle(push.senderName)
@@ -57,6 +68,7 @@ internal object ChatNotificationFactory {
         style.addMessage(body, System.currentTimeMillis(), null as Person?)
         val rebuilt = NotificationCompat.Builder(context, active)
             .setStyle(style)
+            .setOnlyAlertOnce(true)
             .build()
         manager.notify(id, rebuilt)
     }
@@ -66,19 +78,17 @@ internal object ChatNotificationFactory {
         if (!canNotify(context)) return
         val manager = context.getSystemService(NotificationManager::class.java)
         ensureChannel(context, manager)
-        val intent = if (conversationId != null && messageId != null) {
-            Intent(context, MainActivity::class.java)
-                .setAction(ChatIntents.ActionOpenMessage)
+        val id = replyFailureNotificationId(conversationId.orEmpty())
+        val intent = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        if (conversationId != null && messageId != null) {
+            intent.setAction(ChatIntents.ActionOpenMessage)
                 .putExtra(ChatIntents.ExtraConversationId, conversationId)
                 .putExtra(ChatIntents.ExtraMessageId, messageId)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        } else {
-            Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            replyFailureNotificationId(conversationId.orEmpty()),
+            id,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -90,9 +100,10 @@ internal object ChatNotificationFactory {
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setOnlyAlertOnce(true)
             .setAutoCancel(true)
             .build()
-        manager.notify(replyFailureNotificationId(conversationId.orEmpty()), notification)
+        manager.notify(id, notification)
     }
 
     fun clear(context: Context, conversationId: String) {
@@ -145,7 +156,7 @@ internal object ChatNotificationFactory {
     private fun contentIntent(context: Context, push: ChatPushMessage): PendingIntent =
         PendingIntent.getActivity(
             context,
-            push.conversationId.hashCode(),
+            notificationId(push.conversationId),
             Intent(context, MainActivity::class.java)
                 .setAction(ChatIntents.ActionOpenMessage)
                 .putExtra(ChatIntents.ExtraConversationId, push.conversationId)

@@ -3,6 +3,7 @@ package space.fishhub.android.messaging
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import space.fishhub.android.calling.CallNotificationFactory
 
 class ChatNotificationIdsTest {
     private val samples = (0 until 500).map { "conversation-$it" }
@@ -30,5 +31,25 @@ class ChatNotificationIdsTest {
         // chat scheme occupied 7_100 until 7_900. Both new ranges start above.
         assertTrue(ChatNotificationFactory.notificationId("any") >= 100_000)
         assertTrue(ChatNotificationFactory.replyFailureNotificationId("any") >= 2_000_000)
+    }
+
+    @Test
+    fun `distinct conversations rarely share a message id`() {
+        // 500 fixed samples over 1M buckets: tolerate the deterministic
+        // birthday collisions, still fail loudly on any 800-bucket regression.
+        val distinct = samples.map(ChatNotificationFactory::notificationId).distinct().size
+        assertTrue(distinct >= samples.size - 2)
+    }
+
+    @Test
+    fun `message, failure, and call ids never collide for the same conversation`() {
+        samples.forEach { conversationId ->
+            val message = ChatNotificationFactory.notificationId(conversationId)
+            val failure = ChatNotificationFactory.replyFailureNotificationId(conversationId)
+            val call = CallNotificationFactory.notificationId(conversationId)
+            assertTrue(message != failure)
+            assertTrue(message != call)
+            assertTrue(failure != call)
+        }
     }
 }

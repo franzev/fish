@@ -28,7 +28,7 @@ class CallPushMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         ChatPushMessage.parse(message.data)?.let {
-            ChatNotificationFactory.show(this, it, messageText = null)
+            ChatNotificationFactory.show(this, it, message = null)
             return
         }
         CallPushMessage.parse(message.data)?.let {
