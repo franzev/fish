@@ -121,7 +121,11 @@ final class FishAppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserN
                     completionHandler()
                     return
                 }
-                let reply = ChatNotificationReply(conversationId: conversationId, body: body)
+                let reply = ChatNotificationReply(
+                    conversationId: conversationId,
+                    body: body,
+                    messageId: messageId
+                )
                 Task { @MainActor [notificationReplyStore] in
                     try? await notificationReplyStore.enqueue(reply)
                     NotificationCenter.default.post(
