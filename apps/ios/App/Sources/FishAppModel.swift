@@ -1244,76 +1244,89 @@ final class FishAppModel {
         else { return }
         isProcessingNotificationReplies = true
         defer { isProcessingNotificationReplies = false }
-        let conversationIds = Set(directory.conversations.map(\.conversationId))
+        // Frozen for the whole call: the sign-out guard below must keep
+        // comparing against the account that started this drain, even
+        // across repeat passes triggered by a follow-up `.fishQuickReply`.
         let ownerId = session.userId
-        let drainer = NotificationReplyDrainer(
-            pendingReplies: { [notificationReplyStore] in
-                (try? await notificationReplyStore.pendingReplies()) ?? []
-            },
-            remove: { [notificationReplyStore] id in
-                try? await notificationReplyStore.remove(id: id)
-            },
-            isAuthorized: { conversationIds.contains($0) },
-            send: { reply in
-                do {
-                    _ = try await session.messaging.send(
-                        SendChatMessageRequest(
-                            conversationId: reply.conversationId,
-                            body: reply.body,
-                            clientRequestId: reply.id
-                        )
-                    )
-                    return .sent
-                } catch let failure as ChatCommandFailure {
-                    return NotificationReplyDrainer.outcome(for: failure)
-                } catch {
-                    return .retryLater
-                }
-            },
-            markRead: { conversationId, messageId in
-                _ = try? await session.commands.markReadState(
-                    conversationId: conversationId,
-                    lastDeliveredMessageId: messageId,
-                    lastReadMessageId: messageId
-                )
-            },
-            saveDraft: { [weak self] conversationId, body in
-                guard let self else { return false }
-                // A live composer for this conversation must receive the
-                // append directly — writing through the file-layer draft
-                // store instead would get silently clobbered when that
-                // conversation's `persistDraft()` debounce (250 ms) flushes
-                // its own, now-stale, in-memory text minutes later.
-                if let store = conversationStore, store.conversationId == conversationId {
-                    store.draft = NotificationReplyDrainer.joinedDraft(existing: store.draft, reply: body)
-                    return true
-                }
-                guard let draftStore else { return false }
-                do {
-                    let existing = try? await draftStore.draft(for: conversationId)
-                    let joined = NotificationReplyDrainer.joinedDraft(existing: existing?.body, reply: body)
-                    try await draftStore.saveDraft(joined, conversationId: conversationId)
-                    return true
-                } catch {
-                    return false
-                }
-            },
-            postFailureNotice: { [weak self, notificationCenter] reply in
-                // The delegate suppresses foreground banners for realtime
-                // parity (`willPresent` returns no options), so a system
-                // notification would silently vanish while the app is
-                // active. Surface the same calm message through the app's
-                // own notice surface instead.
-                if UIApplication.shared.applicationState == .active {
-                    self?.notice = "Your reply didn’t send. It’s kept as a draft in the conversation."
-                } else {
-                    await Self.postReplyFailureNotice(for: reply, center: notificationCenter)
-                }
-            },
-            isStillCurrentAccount: { [weak self] in self?.session?.userId == ownerId }
-        )
         repeat {
             notificationReplyDrainRequested = false
+            // Re-snapshot every pass, not just once before the loop: pass 1
+            // may have called refreshDirectory() below, so a reply that
+            // arrived mid-drain for a conversation that just became
+            // authorized must be judged against the fresh set — a stale
+            // snapshot would silently destroy it instead. `self.directory`
+            // reads as a settled value here: there is no suspension between
+            // the previous pass's `while` check and this line, so it
+            // reflects exactly the state as of that pass's refresh. Falls
+            // back to the guard-unwrapped `directory` if the property ever
+            // went nil mid-drain (e.g. a racing sign-out).
+            let conversationIds = Set((self.directory ?? directory).conversations.map(\.conversationId))
+            let drainer = NotificationReplyDrainer(
+                pendingReplies: { [notificationReplyStore] in
+                    (try? await notificationReplyStore.pendingReplies()) ?? []
+                },
+                remove: { [notificationReplyStore] id in
+                    try? await notificationReplyStore.remove(id: id)
+                },
+                isAuthorized: { conversationIds.contains($0) },
+                send: { reply in
+                    do {
+                        _ = try await session.messaging.send(
+                            SendChatMessageRequest(
+                                conversationId: reply.conversationId,
+                                body: reply.body,
+                                clientRequestId: reply.id
+                            )
+                        )
+                        return .sent
+                    } catch let failure as ChatCommandFailure {
+                        return NotificationReplyDrainer.outcome(for: failure)
+                    } catch {
+                        return .retryLater
+                    }
+                },
+                markRead: { conversationId, messageId in
+                    _ = try? await session.commands.markReadState(
+                        conversationId: conversationId,
+                        lastDeliveredMessageId: messageId,
+                        lastReadMessageId: messageId
+                    )
+                },
+                saveDraft: { [weak self] conversationId, body in
+                    guard let self else { return false }
+                    // A live composer for this conversation must receive the
+                    // append directly — writing through the file-layer draft
+                    // store instead would get silently clobbered when that
+                    // conversation's `persistDraft()` debounce (250 ms) flushes
+                    // its own, now-stale, in-memory text minutes later.
+                    if let store = conversationStore, store.conversationId == conversationId {
+                        store.draft = NotificationReplyDrainer.joinedDraft(existing: store.draft, reply: body)
+                        return true
+                    }
+                    guard let draftStore else { return false }
+                    do {
+                        let existing = try? await draftStore.draft(for: conversationId)
+                        let joined = NotificationReplyDrainer.joinedDraft(existing: existing?.body, reply: body)
+                        try await draftStore.saveDraft(joined, conversationId: conversationId)
+                        return true
+                    } catch {
+                        return false
+                    }
+                },
+                postFailureNotice: { [weak self, application, notificationCenter] reply in
+                    // The delegate suppresses foreground banners for realtime
+                    // parity (`willPresent` returns no options), so a system
+                    // notification would silently vanish while the app is
+                    // active. Surface the same calm message through the app's
+                    // own notice surface instead.
+                    if application.applicationState == .active {
+                        self?.notice = "Your reply didn’t send. It’s kept as a draft in the conversation."
+                    } else {
+                        await Self.postReplyFailureNotice(for: reply, center: notificationCenter)
+                    }
+                },
+                isStillCurrentAccount: { [weak self] in self?.session?.userId == ownerId }
+            )
             let sentAny = await drainer.run()
             if sentAny {
                 await refreshDirectory()
