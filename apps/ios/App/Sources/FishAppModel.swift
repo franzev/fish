@@ -987,6 +987,7 @@ final class FishAppModel {
         )
         self.directory = directory
         await directory.start()
+        await flushPendingTextOutbox()
         await updateApplicationBadge()
         await processPendingNotificationReplies()
         if pendingConversation != nil {
@@ -1344,6 +1345,15 @@ final class FishAppModel {
                 await refreshDirectory()
             }
         } while notificationReplyDrainRequested
+        await flushPendingTextOutbox()
+    }
+
+    private func flushPendingTextOutbox() async {
+        guard let session, let draftStore else { return }
+        _ = await ChatTextOutboxFlusher(
+            drafts: draftStore,
+            messaging: session.messaging
+        ).flush()
     }
 
     private static func postReplyFailureNotice(
