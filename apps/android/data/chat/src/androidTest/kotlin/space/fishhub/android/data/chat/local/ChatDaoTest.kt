@@ -202,6 +202,52 @@ class ChatDaoTest {
         assertTrue(dao.verifyOwnerPurged("owner-a", "conversation-1"))
     }
 
+    @Test
+    fun pinUpsertReplacesTheConversationsSinglePinAndDeleteClearsIt() = runTest {
+        assertEquals(null, dao.observePin("conversation-1").first())
+
+        dao.upsertPin(pinEntity(messageId = "message-1"))
+        assertEquals("message-1", dao.observePin("conversation-1").first()?.messageId)
+
+        // One pin per conversation, last write wins: pinning again replaces it
+        // rather than adding a second row, since conversationId is the primary key.
+        dao.upsertPin(pinEntity(messageId = "message-2"))
+        assertEquals("message-2", dao.observePin("conversation-1").first()?.messageId)
+
+        dao.deletePin("conversation-1")
+        assertEquals(null, dao.observePin("conversation-1").first())
+    }
+
+    @Test
+    fun deletingAConversationClearsItsPin() = runTest {
+        dao.upsertConversation(conversation())
+        dao.upsertPin(pinEntity(messageId = "message-1"))
+
+        dao.deleteConversationData("conversation-1")
+
+        assertEquals(null, dao.observePin("conversation-1").first())
+    }
+
+    private fun pinEntity(messageId: String) = ConversationPinEntity(
+        conversationId = "conversation-1",
+        messageId = messageId,
+        pinnedBy = "client-1",
+        pinnedAt = "2026-07-31T00:00:00Z",
+    )
+
+    private fun conversation() = AuthorizedConversation(
+        conversationId = "conversation-1",
+        currentUserId = "client-1",
+        currentUserRole = UserRole.Client,
+        currentUserDisplayName = "Franz",
+        participantId = "coach-1",
+        participantRole = UserRole.Coach,
+        participantDisplayName = "Coach Jordan",
+        latestMessageText = null,
+        latestMessageCreatedAt = null,
+        unreadCount = 0,
+    ).toEntity()
+
     private fun message(id: String, body: String, status: String) = MessageEntity(
         id = id,
         conversationId = "conversation-1",

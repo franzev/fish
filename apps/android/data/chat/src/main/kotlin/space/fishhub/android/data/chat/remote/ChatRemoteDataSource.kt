@@ -9,6 +9,7 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.BlockedPerson
 import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationPin
 import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.MessagePage
 import space.fishhub.android.data.chat.MessageSearchCursor
@@ -102,6 +103,9 @@ internal interface ChatRemoteDataSource {
         conversationId: String,
         quietPeriod: ConversationQuietPeriod?,
     ): ConversationMute
+    suspend fun pinnedMessage(conversationId: String): ConversationPin? = null
+    suspend fun setPinnedMessage(conversationId: String, messageId: String?): ConversationPin? =
+        error("Pin commands are not configured.")
     fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent>
 }
 

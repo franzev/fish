@@ -356,3 +356,18 @@ internal data class ConversationMuteDto(
     val muted: Boolean = false,
     @SerialName("muted_until") val mutedUntil: String? = null,
 )
+
+@Serializable
+internal data class ConversationPinDto(
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("message_id") val messageId: String,
+    @SerialName("pinned_by") val pinnedBy: String,
+    @SerialName("pinned_at") val pinnedAt: String,
+)
+
+@Serializable
+internal data class SetPinnedMessageRequest(
+    val action: String = "set-pinned-message",
+    val conversationId: String,
+    val messageId: String?,
+)

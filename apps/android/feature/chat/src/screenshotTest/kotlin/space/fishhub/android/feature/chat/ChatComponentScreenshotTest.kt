@@ -15,6 +15,7 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.chat.ConversationMute
 import space.fishhub.android.feature.chat.views.ConversationQuietRow
 import space.fishhub.android.feature.chat.views.ConversationRow
+import space.fishhub.android.feature.chat.views.PinnedMessageBanner
 import space.fishhub.android.feature.chat.sharedcontent.ShowEarlierBoundary
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentUnavailableState
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentGallerySkeleton
@@ -543,6 +544,39 @@ fun ConversationQuietOptionsLightScreenshot() {
 @Composable
 fun ConversationQuietOptionsDarkScreenshot() {
     ComponentStrip(darkTheme = true) { ConversationQuietOptionStates() }
+}
+
+/** The pinned-message banner: a short snippet and one that must tail-truncate. */
+@Composable
+private fun PinnedMessageBannerStates() {
+    PinnedMessageBanner(
+        snippet = "Keep this handy: I would like to practice.",
+        onClick = {},
+    )
+    PinnedMessageBanner(
+        snippet = "This is a much longer pinned phrase than the banner row can " +
+            "show on one line, so it must truncate with an ellipsis instead of wrapping.",
+        onClick = {},
+    )
+}
+
+@PreviewTest
+@Preview(name = "pinned-message-banner-light", widthDp = 412, showBackground = true)
+@Composable
+fun PinnedMessageBannerLightScreenshot() {
+    ComponentStrip(darkTheme = false) { PinnedMessageBannerStates() }
+}
+
+@PreviewTest
+@Preview(
+    name = "pinned-message-banner-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun PinnedMessageBannerDarkScreenshot() {
+    ComponentStrip(darkTheme = true) { PinnedMessageBannerStates() }
 }
 
 @Composable

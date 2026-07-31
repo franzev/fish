@@ -30,7 +30,20 @@ data class ChatUiModel(
     val hasPreviousDestination: Boolean = false,
     val isSending: Boolean = false,
     val mute: ConversationMute = ConversationMute.On,
+    val pinnedMessage: PinnedMessageUiModel? = null,
     val notice: String? = null,
+)
+
+/**
+ * The conversation's single pinned phrase, already resolved to a snippet the
+ * banner can render. Null whenever there is no pin or the pinned message
+ * cannot be read from what this device has cached — the banner then shows
+ * nothing rather than an error.
+ */
+@Immutable
+data class PinnedMessageUiModel(
+    val messageId: String,
+    val snippet: String,
 )
 
 enum class ChatScreenState { Loading, Available, Unavailable }

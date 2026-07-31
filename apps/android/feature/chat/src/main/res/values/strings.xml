@@ -28,6 +28,9 @@
     <string name="open_message_link">Open link: %1$s</string>
     <string name="reply">Reply</string>
     <string name="copy_message">Copy</string>
+    <string name="pin_message">Pin</string>
+    <string name="unpin_message">Unpin</string>
+    <string name="pinned_message_accessibility">Pinned message: %1$s</string>
     <string name="replying_to">Replying to %1$s</string>
     <string name="cancel_reply">Cancel reply</string>
     <string name="edit_message">Edit message</string>

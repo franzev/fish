@@ -25,6 +25,7 @@ internal enum class ChatOperation {
     MarkRead,
     ConversationMute,
     SetConversationMute,
+    SetPinnedMessage,
     ReconnectBackfill,
     Realtime,
 }

@@ -273,6 +273,43 @@ class SupabaseContractTest {
     }
 
     @Test
+    fun pinRowUsesCurrentDatabaseFieldNames() {
+        val row = json.decodeFromString<ConversationPinDto>(
+            """
+            {
+              "conversation_id":"conversation-1",
+              "message_id":"message-1",
+              "pinned_by":"client-1",
+              "pinned_at":"2026-07-31T00:00:00Z"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("conversation-1", row.conversationId)
+        assertEquals("message-1", row.messageId)
+        assertEquals("client-1", row.pinnedBy)
+    }
+
+    @Test
+    fun setPinnedMessageCommandCarriesTheEdgeFunctionDiscriminatorAndNullableMessageId() {
+        val pinPayload = json.encodeToString(
+            SetPinnedMessageRequest(conversationId = "conversation-1", messageId = "message-1"),
+        )
+        val unpinPayload = json.encodeToString(
+            SetPinnedMessageRequest(conversationId = "conversation-1", messageId = null),
+        )
+
+        assertTrue(pinPayload.contains("\"action\":\"set-pinned-message\""))
+        assertTrue(pinPayload.contains("\"conversationId\":\"conversation-1\""))
+        assertTrue(pinPayload.contains("\"messageId\":\"message-1\""))
+        assertTrue(unpinPayload.contains("\"action\":\"set-pinned-message\""))
+        // explicitNulls is off for this Json instance, so an unpin omits the
+        // key entirely rather than writing `"messageId":null` — the edge
+        // function reads both the same way via `?? null`.
+        assertTrue(!unpinPayload.contains("messageId"))
+    }
+
+    @Test
     fun reportCommandUsesExistingChatCommandAction() {
         val payload = json.encodeToString(ReportGifRequest(messageId = "message-1"))
 

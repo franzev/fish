@@ -24,6 +24,7 @@ import space.fishhub.android.data.chat.AttachmentDelivery
 import space.fishhub.android.data.chat.ChatCallActivity
 import space.fishhub.android.data.chat.BlockedPerson
 import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationPin
 import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.SharedContentDataCursor
 import space.fishhub.android.data.chat.SharedContentDataItem
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -641,6 +643,39 @@ internal class SupabaseChatRemoteDataSource(
         return json.decodeFromJsonElement(ConversationMuteDto.serializer(), element).toDomain()
     }
 
+    override suspend fun pinnedMessage(conversationId: String): ConversationPin? =
+        client.from("conversation_pins").select {
+            filter { eq("conversation_id", conversationId) }
+        }.decodeSingleOrNull<ConversationPinDto>()?.toDomain()
+
+    override suspend fun setPinnedMessage(
+        conversationId: String,
+        messageId: String?,
+    ): ConversationPin? {
+        val response = client.functions.invoke(
+            function = "chat-command",
+            body = SetPinnedMessageRequest(conversationId = conversationId, messageId = messageId),
+            headers = headers {
+                append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            },
+        )
+        val payload = response.bodyAsText()
+        if (!response.status.isSuccess()) {
+            throw RemoteCommandException(readError(payload, DefaultPinError))
+        }
+        val element = json.parseToJsonElement(payload).jsonObject["pin"]
+            ?: throw RemoteCommandException(DefaultPinError)
+        if (element is JsonNull) return null
+        return json.decodeFromJsonElement(ConversationPinDto.serializer(), element).toDomain()
+    }
+
+    private fun ConversationPinDto.toDomain(): ConversationPin = ConversationPin(
+        conversationId = conversationId,
+        messageId = messageId,
+        pinnedBy = pinnedBy,
+        pinnedAt = pinnedAt,
+    )
+
     override fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent> = callbackFlow {
         trySend(ChatRealtimeEvent.Connecting)
         val channel = client.channel("conversation:${conversation.conversationId}:android")
@@ -658,6 +693,10 @@ internal class SupabaseChatRemoteDataSource(
         }
         val reactionChanges = channel.postgresChangeFlow<PostgresAction>("public") {
             table = "message_reactions"
+            filter("conversation_id", FilterOperator.EQ, conversation.conversationId)
+        }
+        val pinChanges = channel.postgresChangeFlow<PostgresAction>("public") {
+            table = "conversation_pins"
             filter("conversation_id", FilterOperator.EQ, conversation.conversationId)
         }
         val typingChanges = typingChannel.broadcastFlow<TypingBroadcastDto>("typing")
@@ -706,6 +745,26 @@ internal class SupabaseChatRemoteDataSource(
                 refreshMessage(conversation, messageId)?.let { refreshed ->
                     trySend(ChatRealtimeEvent.MessageChanged(refreshed))
                 }
+            }
+        }
+        launch {
+            pinChanges.collectLatest {
+                // Inserts, updates, and the delete-to-unpin all resolve the
+                // same way: re-read the row, like refreshMessage does above.
+                // A refetch failure must not read as an unpin, so nothing is
+                // sent unless the read actually succeeded — `null` here is
+                // only ever "confirmed no pin", never "could not tell".
+                var pin: ConversationPin? = null
+                var refetched = false
+                try {
+                    pin = pinnedMessage(conversation.conversationId)
+                    refetched = true
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Throwable) {
+                    // Left unset; the next change on this table will retry.
+                }
+                if (refetched) trySend(ChatRealtimeEvent.PinChanged(pin))
             }
         }
         launch {
@@ -1107,6 +1166,7 @@ internal class SupabaseChatRemoteDataSource(
         const val DefaultReadError = "Your read position did not update yet. Your messages are still here."
         const val DefaultReportError = "That GIF report did not send yet. Try again."
         const val DefaultMuteError = "That did not save yet. Keep this open and try again."
+        const val DefaultPinError = "That did not save yet. Keep this open and try again."
         const val DefaultCommandError = "That did not save yet. Keep this open and try again."
         const val DefaultFriendError = "Friends is taking a break. Chat still works."
         const val DefaultAttachmentError = "That attachment did not load yet. Try again."

@@ -548,6 +548,24 @@ object FishIcons {
             lineTo(9f, 18f)
         }
     }
+
+    /** A location-pin teardrop: the pinned-message banner's only glyph. */
+    val Pin: ImageVector by lazy {
+        fishIcon("Pin") {
+            moveTo(12f, 21f)
+            curveTo(12f, 21f, 5f, 14.5f, 5f, 10f)
+            curveTo(5f, 6.13f, 8.13f, 3f, 12f, 3f)
+            curveTo(15.87f, 3f, 19f, 6.13f, 19f, 10f)
+            curveTo(19f, 14.5f, 12f, 21f, 12f, 21f)
+            close()
+            moveTo(12f, 12.5f)
+            curveTo(13.38f, 12.5f, 14.5f, 11.38f, 14.5f, 10f)
+            curveTo(14.5f, 8.62f, 13.38f, 7.5f, 12f, 7.5f)
+            curveTo(10.62f, 7.5f, 9.5f, 8.62f, 9.5f, 10f)
+            curveTo(9.5f, 11.38f, 10.62f, 12.5f, 12f, 12.5f)
+            close()
+        }
+    }
 }
 
 private fun fishIcon(

@@ -40,6 +40,14 @@ private const val MessageBodyLimit = 4_000
 
 private enum class MessageActionsView { Actions, Reactions, Edit, Delete }
 
+/**
+ * Text-only, same rule as the Copy row: not deleted, not still sending or
+ * failed, and something to actually snippet. Mirrors the server's own
+ * eligibility check for `set_pinned_message`.
+ */
+internal fun MessageUiModel.canPin(): Boolean = !deleted && body.isNotBlank() &&
+    delivery != MessageDeliveryUiState.Sending && delivery != MessageDeliveryUiState.Failed
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatMessageActionsSheet(
@@ -50,6 +58,9 @@ fun ChatMessageActionsSheet(
     onEdit: (String) -> Unit,
     onDelete: () -> Unit,
     onReact: (String) -> Unit,
+    onPin: (String) -> Unit = {},
+    onUnpin: (String) -> Unit = {},
+    isPinned: Boolean = false,
     emojiCatalog: ChatMediaCatalog = ChatMediaCatalog.Empty,
     showReactionsInitially: Boolean = false,
 ) {
@@ -114,6 +125,19 @@ fun ChatMessageActionsSheet(
                             label = stringResource(R.string.copy_message),
                             onClick = {
                                 onCopy(message.body)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            variant = FishButtonVariant.Secondary,
+                        )
+                    }
+                    if (message.canPin()) {
+                        FishButton(
+                            label = stringResource(
+                                if (isPinned) R.string.unpin_message else R.string.pin_message,
+                            ),
+                            onClick = {
+                                if (isPinned) onUnpin(message.id) else onPin(message.id)
                                 onDismiss()
                             },
                             modifier = Modifier.fillMaxWidth(),

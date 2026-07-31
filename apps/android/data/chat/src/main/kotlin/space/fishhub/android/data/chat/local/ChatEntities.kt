@@ -158,6 +158,15 @@ data class AttachmentDraftEntity(
     @ColumnInfo(name = "tus_expires_at") val tusExpiresAt: String? = null,
 )
 
+@Entity(tableName = "conversation_pins")
+data class ConversationPinEntity(
+    @androidx.room.PrimaryKey
+    @ColumnInfo(name = "conversation_id") val conversationId: String,
+    @ColumnInfo(name = "message_id") val messageId: String,
+    @ColumnInfo(name = "pinned_by") val pinnedBy: String,
+    @ColumnInfo(name = "pinned_at") val pinnedAt: String,
+)
+
 @Entity(
     tableName = "shared_content_cache_owners",
     primaryKeys = ["owner_identity_id", "conversation_id"],

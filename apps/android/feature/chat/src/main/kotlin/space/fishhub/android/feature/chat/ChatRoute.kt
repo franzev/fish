@@ -547,6 +547,8 @@ fun ChatRoute(
                                 clipboard.setClipEntry(ClipData.newPlainText("message", body).toClipEntry())
                             }
                         },
+                        onPinMessage = viewModel::onPin,
+                        onUnpinMessage = viewModel::onUnpin,
                         onReportGif = viewModel::reportGif,
                         onReplyMessage = viewModel::replyToMessage,
                         onEditMessage = viewModel::editMessage,

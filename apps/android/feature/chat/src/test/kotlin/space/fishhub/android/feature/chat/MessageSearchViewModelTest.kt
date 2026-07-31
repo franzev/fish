@@ -24,6 +24,7 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationPin
 import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationSnapshot
@@ -312,6 +313,11 @@ private class RecordingSearchRepository : ChatRepository {
         conversationId: String,
         quietPeriod: ConversationQuietPeriod?,
     ) = ChatResult.Success(ConversationMute(isMuted = quietPeriod != null))
+    override fun observePinnedMessage(conversationId: String): Flow<ConversationPin?> = flowOf(null)
+    override suspend fun setPinnedMessage(
+        conversationId: String,
+        messageId: String?,
+    ): ChatResult<ConversationPin?> = ChatResult.Success(null)
     override suspend fun saveDraft(conversationId: String, draft: String) = Unit
     override suspend fun importAttachments(
         conversationId: String,

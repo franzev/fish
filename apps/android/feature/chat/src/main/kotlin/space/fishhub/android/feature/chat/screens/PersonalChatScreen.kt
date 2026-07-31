@@ -46,6 +46,7 @@ import space.fishhub.android.feature.chat.views.FriendRequestsWaitingRow
 import space.fishhub.android.feature.chat.views.MessageComposer
 import space.fishhub.android.feature.chat.views.PersonalChatTopBar
 import space.fishhub.android.feature.chat.views.PersonalChatTranscript
+import space.fishhub.android.feature.chat.views.PinnedMessageBanner
 import space.fishhub.android.feature.presence.PresencePresentation
 
 @Composable
@@ -66,6 +67,8 @@ fun PersonalChatScreen(
     onRetryPendingAttachment: (String) -> Unit = {},
     onRetryMessage: (String) -> Unit = {},
     onCopyMessage: (String) -> Unit = {},
+    onPinMessage: (String) -> Unit = {},
+    onUnpinMessage: (String) -> Unit = {},
     onReportGif: (String) -> Unit = {},
     onReplyMessage: (String) -> Unit = {},
     onEditMessage: (String, String) -> Unit = { _, _ -> },
@@ -194,6 +197,16 @@ fun PersonalChatScreen(
                         ),
                     )
                 }
+                model.pinnedMessage?.let { pinned ->
+                    PinnedMessageBanner(
+                        snippet = pinned.snippet,
+                        onClick = { onFocusMessage(pinned.messageId) },
+                        modifier = Modifier.padding(
+                            horizontal = FishTheme.spacing.page,
+                            vertical = FishTheme.spacing.xs,
+                        ),
+                    )
+                }
                 PersonalChatTranscript(
                     messages = model.messages,
                     callActivities = model.callActivities,
@@ -257,6 +270,9 @@ fun PersonalChatScreen(
             message = selectedMessage,
             onDismiss = { selectedMessageId = null },
             onCopy = onCopyMessage,
+            onPin = onPinMessage,
+            onUnpin = onUnpinMessage,
+            isPinned = model.pinnedMessage?.messageId == selectedMessage.id,
             onReply = {
                 selectedMessageId = null
                 onReplyMessage(selectedMessage.id)

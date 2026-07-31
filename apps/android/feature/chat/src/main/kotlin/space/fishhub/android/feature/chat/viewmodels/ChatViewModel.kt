@@ -30,6 +30,7 @@ import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationPin
 import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.GifPage
 import space.fishhub.android.data.chat.GifRepository
@@ -61,6 +62,7 @@ import space.fishhub.android.feature.chat.model.MessageDeliveryUiState
 import space.fishhub.android.feature.chat.model.MessageUiModel
 import space.fishhub.android.feature.chat.model.OlderMessagesUiState
 import space.fishhub.android.feature.chat.model.ParticipantUiModel
+import space.fishhub.android.feature.chat.model.PinnedMessageUiModel
 import space.fishhub.android.feature.chat.model.ReactionUiModel
 import space.fishhub.android.feature.chat.model.ReplyPreviewUiModel
 import space.fishhub.android.feature.chat.model.StickerUiModel
@@ -125,6 +127,7 @@ class ChatViewModel(
     private var attachmentDrafts: List<LocalAttachmentUiModel> = emptyList()
     private var callActivities: List<ChatCallActivity> = emptyList()
     private var mute: ConversationMute = ConversationMute.On
+    private var pinnedMessage: ConversationPin? = null
     private var pendingVoiceDraftId: String? = null
     private var pendingVoiceConversationId: String? = null
     private var selectionRevision = 0L
@@ -959,6 +962,7 @@ class ChatViewModel(
         activeConversation = conversation
         callActivities = emptyList()
         mute = ConversationMute.On
+        pinnedMessage = null
         lastMarkedReadMessageId = null
         markingReadMessageId = null
         mutableUiState.value = ChatRouteUiState.Conversation(
@@ -1018,6 +1022,16 @@ class ChatViewModel(
                             repository.flushTextOutbox(conversation.conversationId)
                         }
                     }
+                }
+            }
+            launch {
+                // Room is already the reconciled single source of truth for a
+                // pin (the repository upserts it from both realtime and the
+                // conversation-open fetch), so the view model just mirrors it
+                // rather than also consuming PinChanged events directly.
+                repository.observePinnedMessage(conversation.conversationId).collectLatest { pin ->
+                    pinnedMessage = pin
+                    publish()
                 }
             }
             launch {
@@ -1120,6 +1134,60 @@ class ChatViewModel(
                 }
                 is ChatResult.Failure -> {
                     mute = previous
+                    latestNotice = result.message
+                }
+            }
+            publish()
+        }
+    }
+
+    /**
+     * Applies the new pin optimistically, same shape as [setQuiet]: set it
+     * immediately, publish, then put the previous pin back if the command
+     * fails. [messageId] is not used to decide the outcome — this
+     * conversation has at most one pin — but it is kept on the signature so
+     * the actions sheet can pass the message it was opened for.
+     */
+    fun onPin(messageId: String) {
+        val conversationId = activeConversation?.conversationId ?: return
+        val userId = currentUserId ?: return
+        val previous = pinnedMessage
+        pinnedMessage = ConversationPin(
+            conversationId = conversationId,
+            messageId = messageId,
+            pinnedBy = userId,
+            pinnedAt = Instant.now().toString(),
+        )
+        publish()
+        viewModelScope.launch {
+            when (val result = repository.setPinnedMessage(conversationId, messageId)) {
+                is ChatResult.Success -> {
+                    pinnedMessage = result.value
+                    latestNotice = null
+                }
+                is ChatResult.Failure -> {
+                    pinnedMessage = previous
+                    latestNotice = result.message
+                }
+            }
+            publish()
+        }
+    }
+
+    /** A null pin turns the banner off; see [onPin] for the shared revert shape. */
+    fun onUnpin(messageId: String) {
+        val conversationId = activeConversation?.conversationId ?: return
+        val previous = pinnedMessage
+        pinnedMessage = null
+        publish()
+        viewModelScope.launch {
+            when (val result = repository.setPinnedMessage(conversationId, null)) {
+                is ChatResult.Success -> {
+                    pinnedMessage = result.value
+                    latestNotice = null
+                }
+                is ChatResult.Failure -> {
+                    pinnedMessage = previous
                     latestNotice = result.message
                 }
             }
@@ -1249,6 +1317,11 @@ class ChatViewModel(
             focusedMessageId = focusedMessageId,
             isSending = sending,
             mute = mute,
+            pinnedMessage = pinnedMessage?.let { pin ->
+                current?.messages?.firstOrNull { it.id == pin.messageId }
+                    ?.toPinnedSnippet()
+                    ?.let { snippet -> PinnedMessageUiModel(messageId = pin.messageId, snippet = snippet) }
+            },
             notice = latestNotice,
         )
         mutableUiState.value = ChatRouteUiState.Conversation(
@@ -1441,6 +1514,15 @@ class ChatViewModel(
         },
         snippet = messageSnippet(this),
     )
+
+    /**
+     * Null for anything the banner must not show as pinned text: a deleted
+     * message (the server already cascades the pin away, but a realtime event
+     * can lag) or a blank body, which a pin is never issued for in the first
+     * place.
+     */
+    private fun ChatMessage.toPinnedSnippet(): String? =
+        takeIf { it.deletedAt == null && it.body.isNotBlank() }?.let(::messageSnippet)
 
     private fun updateLocalTyping(hasDraft: Boolean) {
         val conversation = activeConversation ?: return

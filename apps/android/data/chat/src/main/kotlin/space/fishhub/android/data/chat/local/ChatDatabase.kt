@@ -17,8 +17,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SharedContentCacheOwnerEntity::class,
         SharedContentCachePageEntity::class,
         SharedContentCacheItemEntity::class,
+        ConversationPinEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -267,6 +268,22 @@ val MIGRATION_10_11: Migration = object : Migration(10, 11) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             "ALTER TABLE pending_text_sends ADD COLUMN attachment_draft_ids TEXT",
+        )
+    }
+}
+
+val MIGRATION_11_12: Migration = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `conversation_pins` (
+                `conversation_id` TEXT NOT NULL,
+                `message_id` TEXT NOT NULL,
+                `pinned_by` TEXT NOT NULL,
+                `pinned_at` TEXT NOT NULL,
+                PRIMARY KEY(`conversation_id`)
+            )
+            """.trimIndent(),
         )
     }
 }

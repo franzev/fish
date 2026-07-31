@@ -782,6 +782,54 @@ class DefaultChatRepositoryTest {
         )
     }
 
+    @Test
+    fun setPinnedMessageProxiesToRemoteAndUpsertsRoomThenUnpinDeletesIt() = runTest {
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+
+        val pinned = repository.setPinnedMessage("conversation-1", "message-1")
+        assertTrue(pinned is ChatResult.Success)
+        assertEquals(
+            "message-1",
+            (pinned as ChatResult.Success).value?.messageId,
+        )
+        assertEquals(
+            "message-1",
+            repository.observePinnedMessage("conversation-1").first()?.messageId,
+        )
+
+        val unpinned = repository.setPinnedMessage("conversation-1", null)
+        assertTrue(unpinned is ChatResult.Success)
+        assertNull((unpinned as ChatResult.Success).value)
+        assertNull(repository.observePinnedMessage("conversation-1").first())
+    }
+
+    @Test
+    fun setPinnedMessageFailureLeavesTheRoomCachedPinUntouched() = runTest {
+        database.chatDao().upsertConversation(remote.conversation.toEntity())
+        repository.setPinnedMessage("conversation-1", "message-1")
+        remote.failPinCommand = true
+
+        val result = repository.setPinnedMessage("conversation-1", "message-2")
+
+        assertTrue(result is ChatResult.Failure)
+        assertEquals(
+            "message-1",
+            repository.observePinnedMessage("conversation-1").first()?.messageId,
+        )
+    }
+
+    @Test
+    fun syncNewestHydratesThePinAlreadySetBeforeThisSessionOpened() = runTest {
+        remote.storedPin = ConversationPin("conversation-1", "message-1", "coach-1", "2026-07-31T00:00:00Z")
+
+        assertTrue(repository.syncNewest("conversation-1") is ChatResult.Success)
+
+        assertEquals(
+            "message-1",
+            repository.observePinnedMessage("conversation-1").first()?.messageId,
+        )
+    }
+
     private fun readyDraft(name: String, position: Int) = AttachmentDraftEntity(
         id = "draft-$name",
         conversationId = "conversation-1",
@@ -1013,6 +1061,20 @@ private class FakeRemote : ChatRemoteDataSource {
         conversationId: String,
         quietPeriod: ConversationQuietPeriod?,
     ) = ConversationMute(isMuted = quietPeriod != null)
+    var storedPin: ConversationPin? = null
+    var failPinCommand = false
+    var pinnedMessageCalls = 0
+    override suspend fun pinnedMessage(conversationId: String): ConversationPin? {
+        pinnedMessageCalls += 1
+        return storedPin
+    }
+    override suspend fun setPinnedMessage(conversationId: String, messageId: String?): ConversationPin? {
+        if (failPinCommand) throw IOException("offline")
+        storedPin = messageId?.let {
+            ConversationPin(conversationId, it, "client-1", "2026-07-31T00:00:00Z")
+        }
+        return storedPin
+    }
     override fun realtime(conversation: AuthorizedConversation): Flow<ChatRealtimeEvent> = flow {
         realtimeAttempts += 1
         if (realtimeFailuresRemaining > 0) {

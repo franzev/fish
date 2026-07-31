@@ -339,6 +339,18 @@ interface ChatDao {
     @Query("SELECT * FROM conversations WHERE conversation_id = :conversationId LIMIT 1")
     suspend fun conversation(conversationId: String): ConversationEntity?
 
+    @Query("SELECT * FROM conversation_pins WHERE conversation_id = :conversationId LIMIT 1")
+    fun observePin(conversationId: String): Flow<ConversationPinEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertPin(pin: ConversationPinEntity)
+
+    @Query("DELETE FROM conversation_pins WHERE conversation_id = :conversationId")
+    suspend fun deletePin(conversationId: String)
+
+    @Query("DELETE FROM conversation_pins")
+    suspend fun clearPins()
+
     @Query(
         """
         SELECT * FROM conversations
@@ -994,6 +1006,7 @@ interface ChatDao {
         deleteConversationReadStates(conversationId)
         deleteConversationDrafts(conversationId)
         deleteConversationPendingTextSends(conversationId)
+        deletePin(conversationId)
         deleteConversation(conversationId)
     }
 
@@ -1005,6 +1018,7 @@ interface ChatDao {
         clearReadStates()
         clearDrafts()
         clearPendingTextSends()
+        clearPins()
         clearConversations()
     }
 

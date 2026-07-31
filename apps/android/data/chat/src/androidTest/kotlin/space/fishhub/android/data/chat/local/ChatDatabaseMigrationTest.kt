@@ -407,10 +407,77 @@ class ChatDatabaseMigrationTest {
                 assertTrue(cursor.moveToFirst())
                 assertEquals(
                     "ChatDatabase schema version drifted from the migration chain",
-                    11,
+                    12,
                     cursor.getInt(0),
                 )
             }
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun migrationElevenToTwelveAddsThePinTableWithoutTouchingExistingRows() {
+        helper.createDatabase(DatabaseName, 11).apply {
+            execSQL(
+                """
+                INSERT INTO messages (
+                    id, conversation_id, sender_id, sender_role, sender_display_name,
+                    body, sticker_id, gif_json, link_preview_json, client_request_id,
+                    created_at, edited_at, deleted_at, reply_to_message_id,
+                    reactions_json, local_status, failure_reason
+                ) VALUES (
+                    'message-pin', 'conversation-1', 'coach-1', 'coach', 'Coach Jordan',
+                    'Keep this handy', NULL, NULL, NULL, 'request-pin',
+                    '2026-07-31T00:00:00Z', NULL, NULL, NULL, NULL, 'sent', NULL
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(DatabaseName, 12, true, MIGRATION_11_12).use { database ->
+            database.query("SELECT count(*) FROM messages WHERE id = 'message-pin'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1, cursor.getInt(0))
+            }
+            database.execSQL(
+                """
+                INSERT INTO conversation_pins (
+                    conversation_id, message_id, pinned_by, pinned_at
+                ) VALUES (
+                    'conversation-1', 'message-pin', 'client-1', '2026-07-31T00:00:01Z'
+                )
+                """.trimIndent(),
+            )
+            database.query(
+                "SELECT message_id, pinned_by FROM conversation_pins WHERE conversation_id = 'conversation-1'",
+            ).use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("message-pin", cursor.getString(0))
+                assertEquals("client-1", cursor.getString(1))
+            }
+        }
+    }
+
+    @Test
+    fun currentVersionRoundTripsThePinnedMessage() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val database = Room.inMemoryDatabaseBuilder(context, ChatDatabase::class.java).build()
+        try {
+            val pin = space.fishhub.android.data.chat.ConversationPin(
+                conversationId = "conversation-1",
+                messageId = "message-pin",
+                pinnedBy = "client-1",
+                pinnedAt = "2026-07-31T00:00:00Z",
+            )
+            database.chatDao().upsertPin(pin.toEntity())
+
+            val restored = database.chatDao().observePin("conversation-1").first()
+            assertEquals(pin, restored?.toDomain())
+
+            database.chatDao().deletePin("conversation-1")
+            assertEquals(null, database.chatDao().observePin("conversation-1").first())
         } finally {
             database.close()
         }

@@ -28,6 +28,7 @@ import space.fishhub.android.data.chat.local.MIGRATION_7_8
 import space.fishhub.android.data.chat.local.MIGRATION_8_9
 import space.fishhub.android.data.chat.local.MIGRATION_9_10
 import space.fishhub.android.data.chat.local.MIGRATION_10_11
+import space.fishhub.android.data.chat.local.MIGRATION_11_12
 import space.fishhub.android.data.chat.sharedcontent.RoomSharedContentCacheStore
 import space.fishhub.android.data.chat.sharedcontent.IdentityGeneration
 import space.fishhub.android.data.chat.sharedcontent.SharedContentIdentityCoordinator
@@ -437,6 +438,7 @@ object ChatDataModule {
             MIGRATION_8_9,
             MIGRATION_9_10,
             MIGRATION_10_11,
+            MIGRATION_11_12,
         ).build()
         val remote = SupabaseChatRemoteDataSource(supabaseClient, scope, onBeforeSignOut)
         val attachmentImporter = AttachmentImporter(context.applicationContext)
@@ -655,6 +657,11 @@ internal object UnconfiguredChatRepository : ChatRepository {
         conversationId: String,
         quietPeriod: ConversationQuietPeriod?,
     ): ChatResult<ConversationMute> = failure
+    override fun observePinnedMessage(conversationId: String): Flow<ConversationPin?> = flowOf(null)
+    override suspend fun setPinnedMessage(
+        conversationId: String,
+        messageId: String?,
+    ): ChatResult<ConversationPin?> = failure
     override suspend fun saveDraft(conversationId: String, draft: String) = Unit
     override suspend fun importAttachments(
         conversationId: String,

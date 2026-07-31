@@ -11,6 +11,7 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ChatResult
+import space.fishhub.android.data.chat.ConversationPin
 import space.fishhub.android.data.chat.ConversationSnapshot
 import space.fishhub.android.data.chat.FailureCategory
 import space.fishhub.android.data.chat.MessagePage
@@ -144,6 +145,12 @@ internal class DefaultChatRepository(
                             dao.upsertReadStates(
                                 listOf(event.readState.toEntity(conversation.conversationId)),
                             )
+                        is ChatRealtimeEvent.PinChanged ->
+                            if (event.pin != null) {
+                                dao.upsertPin(event.pin.toEntity())
+                            } else {
+                                dao.deletePin(conversation.conversationId)
+                            }
                         ChatRealtimeEvent.Connected -> reconnectBackfill(conversation)
                         else -> Unit
                     }
@@ -235,9 +242,25 @@ internal class DefaultChatRepository(
                 ?: throw ConversationUnavailableException()
             val page = remote.loadMessages(conversation)
             val readStates = remote.loadReadStates(conversationId)
+            // A pin refresh is a supplementary read: a transient failure here
+            // must not fail the whole conversation open, so it degrades to
+            // "leave the cached pin as it was" like resolveAvatarUrls does.
+            var pin: ConversationPin? = null
+            var pinRefreshed = false
+            try {
+                pin = remote.pinnedMessage(conversationId)
+                pinRefreshed = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                // Left unset; the cached pin, if any, is untouched below.
+            }
             dao.upsertConversation(conversation.toEntity())
             reconcileMessages(page.messages)
             dao.upsertReadStates(readStates.map { it.toEntity(conversationId) })
+            if (pinRefreshed) {
+                if (pin != null) dao.upsertPin(pin.toEntity()) else dao.deletePin(conversationId)
+            }
             ConversationSnapshot(
                 conversation = conversation,
                 messages = page.messages,
@@ -839,6 +862,21 @@ internal class DefaultChatRepository(
         remote.setConversationMute(conversationId, quietPeriod)
     }
 
+    override fun observePinnedMessage(conversationId: String): Flow<ConversationPin?> =
+        dao.observePin(conversationId).map { it?.toDomain() }
+
+    override suspend fun setPinnedMessage(
+        conversationId: String,
+        messageId: String?,
+    ): ChatResult<ConversationPin?> = resultOf(
+        ChatOperation.SetPinnedMessage,
+        DefaultPinError,
+    ) {
+        val pin = remote.setPinnedMessage(conversationId, messageId)
+        if (pin != null) dao.upsertPin(pin.toEntity()) else dao.deletePin(conversationId)
+        pin
+    }
+
     override suspend fun saveDraft(conversationId: String, draft: String) {
         val userId = (authState.value as? ChatAuthState.SignedIn)?.userId ?: return
         if (dao.conversation(conversationId)?.currentUserId != userId) return
@@ -1312,6 +1350,7 @@ internal class DefaultChatRepository(
 private class ConversationUnavailableException : IllegalStateException()
 
 private const val DefaultQuietError = "That did not save yet. Keep this open and try again."
+private const val DefaultPinError = "That did not save yet. Keep this open and try again."
 private const val DefaultRealtimeRetryDelayMs = 5_000L
 private const val MaxMessageAttachments = 5
 private const val MaxRefreshMessageCount = 50

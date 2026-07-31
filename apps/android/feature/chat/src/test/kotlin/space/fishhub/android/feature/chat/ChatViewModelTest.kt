@@ -32,6 +32,7 @@ import space.fishhub.android.data.chat.ChatAuthState
 import space.fishhub.android.data.chat.ChatRealtimeEvent
 import space.fishhub.android.data.chat.ChatRepository
 import space.fishhub.android.data.chat.ConversationMute
+import space.fishhub.android.data.chat.ConversationPin
 import space.fishhub.android.data.chat.ConversationQuietPeriod
 import space.fishhub.android.data.chat.ChatResult
 import space.fishhub.android.data.chat.ConversationSnapshot
@@ -246,6 +247,147 @@ class ChatViewModelTest {
             val row = (viewModel.uiState.value as ChatRouteUiState.Conversation)
                 .model.conversations.single()
             assertEquals(false, row.isQuiet)
+        }
+
+    @Test
+    fun `pinning a message shows it immediately then keeps the server's confirmed value`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitMessages(listOf(incomingMessage("message-1")))
+            advanceUntilIdle()
+
+            viewModel.onPin("message-1")
+            advanceUntilIdle()
+
+            assertEquals(
+                "message-1",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage?.messageId,
+            )
+            assertEquals(listOf("message-1"), repository.pinRequests)
+        }
+
+    @Test
+    fun `pinning a second message replaces the first`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitMessages(listOf(incomingMessage("message-1"), incomingMessage("message-2")))
+            advanceUntilIdle()
+            viewModel.onPin("message-1")
+            advanceUntilIdle()
+
+            viewModel.onPin("message-2")
+            advanceUntilIdle()
+
+            assertEquals(
+                "message-2",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage?.messageId,
+            )
+            assertEquals(listOf("message-1", "message-2"), repository.pinRequests)
+        }
+
+    @Test
+    fun `a failed pin command puts the previous pin back and explains`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitMessages(listOf(incomingMessage("message-1"), incomingMessage("message-2")))
+            advanceUntilIdle()
+            viewModel.onPin("message-1")
+            advanceUntilIdle()
+
+            repository.pinWriteFails = true
+            viewModel.onPin("message-2")
+            advanceUntilIdle()
+
+            assertEquals(
+                "message-1",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage?.messageId,
+            )
+            assertEquals(
+                "That did not save yet. Keep this open and try again.",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.notice,
+            )
+        }
+
+    @Test
+    fun `unpinning clears the banner and keeps the server's confirmed value`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitMessages(listOf(incomingMessage("message-1")))
+            advanceUntilIdle()
+            viewModel.onPin("message-1")
+            advanceUntilIdle()
+
+            viewModel.onUnpin("message-1")
+            advanceUntilIdle()
+
+            assertEquals(
+                null,
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage,
+            )
+            assertEquals(listOf("message-1", null), repository.pinRequests)
+        }
+
+    @Test
+    fun `a failed unpin command restores the pinned banner`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitMessages(listOf(incomingMessage("message-1")))
+            advanceUntilIdle()
+            viewModel.onPin("message-1")
+            advanceUntilIdle()
+
+            repository.pinWriteFails = true
+            viewModel.onUnpin("message-1")
+            advanceUntilIdle()
+
+            assertEquals(
+                "message-1",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage?.messageId,
+            )
+        }
+
+    @Test
+    fun `a Room reconciled pin change updates the banner without a view model command`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            repository.emitMessages(listOf(incomingMessage("message-1")))
+            advanceUntilIdle()
+
+            // Stands in for what DefaultChatRepository does after a realtime
+            // PinChanged event: it reconciles Room and this flow republishes.
+            repository.emitPinnedMessage(
+                ConversationPin("conversation-1", "message-1", "coach-1", "2026-07-31T00:00:00Z"),
+            )
+            advanceUntilIdle()
+
+            assertEquals(
+                "message-1",
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage?.messageId,
+            )
+        }
+
+    @Test
+    fun `a pin whose message is not loaded yet renders no banner`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository()
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            repository.emitPinnedMessage(
+                ConversationPin("conversation-1", "message-missing", "coach-1", "2026-07-31T00:00:00Z"),
+            )
+            advanceUntilIdle()
+
+            assertEquals(
+                null,
+                (viewModel.uiState.value as ChatRouteUiState.Conversation).model.pinnedMessage,
+            )
         }
 
     @Test
@@ -1295,6 +1437,9 @@ private class FakeChatRepository(
     var muteWriteFails: Boolean = false
     var muteGate: CompletableDeferred<Unit>? = null
     val quietRequests = mutableListOf<ConversationQuietPeriod?>()
+    private val pinnedMessages = MutableStateFlow<ConversationPin?>(null)
+    var pinWriteFails: Boolean = false
+    val pinRequests = mutableListOf<String?>()
 
     companion object {
         /**
@@ -1541,6 +1686,29 @@ private class FakeChatRepository(
             },
         )
         return ChatResult.Success(storedMute)
+    }
+
+    override fun observePinnedMessage(conversationId: String): Flow<ConversationPin?> = pinnedMessages
+
+    override suspend fun setPinnedMessage(
+        conversationId: String,
+        messageId: String?,
+    ): ChatResult<ConversationPin?> {
+        pinRequests += messageId
+        if (pinWriteFails) {
+            return ChatResult.Failure(
+                "That did not save yet. Keep this open and try again.",
+                true,
+                space.fishhub.android.data.chat.FailureCategory.Network,
+            )
+        }
+        val pin = messageId?.let { ConversationPin(conversationId, it, "client-1", "2026-07-16T00:00:00Z") }
+        pinnedMessages.value = pin
+        return ChatResult.Success(pin)
+    }
+
+    fun emitPinnedMessage(pin: ConversationPin?) {
+        pinnedMessages.value = pin
     }
 
     override suspend fun saveDraft(conversationId: String, draft: String) {

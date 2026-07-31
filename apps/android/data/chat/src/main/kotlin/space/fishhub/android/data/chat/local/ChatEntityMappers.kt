@@ -11,6 +11,7 @@ import space.fishhub.android.data.chat.model.ChatLinkPreview
 import space.fishhub.android.data.chat.model.ChatReaction
 import space.fishhub.android.data.chat.AuthorizedConversation
 import space.fishhub.android.data.chat.AttachmentDelivery
+import space.fishhub.android.data.chat.ConversationPin
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -155,6 +156,20 @@ internal fun ConversationEntity.toDomain(): AuthorizedConversation = AuthorizedC
     latestMessageText = latestMessageText,
     latestMessageCreatedAt = latestMessageCreatedAt,
     unreadCount = unreadCount,
+)
+
+internal fun ConversationPinEntity.toDomain(): ConversationPin = ConversationPin(
+    conversationId = conversationId,
+    messageId = messageId,
+    pinnedBy = pinnedBy,
+    pinnedAt = pinnedAt,
+)
+
+internal fun ConversationPin.toEntity(): ConversationPinEntity = ConversationPinEntity(
+    conversationId = conversationId,
+    messageId = messageId,
+    pinnedBy = pinnedBy,
+    pinnedAt = pinnedAt,
 )
 
 internal val UserRole.wireValue: String

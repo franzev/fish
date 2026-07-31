@@ -68,6 +68,20 @@ data class AuthorizedChatIdentity(
     val displayName: String,
 )
 
+/**
+ * The conversation's single pinned phrase. Timestamps stay wire-format strings
+ * rather than [java.time.Instant], matching every other chat timestamp in this
+ * module (`ChatMessage.createdAt`, `ChatReadState.readAt`, …) — there is no
+ * Room `Instant` converter anywhere in this database, and adding one just for
+ * this field would be new infrastructure for a value nothing here parses.
+ */
+data class ConversationPin(
+    val conversationId: String,
+    val messageId: String,
+    val pinnedBy: String,
+    val pinnedAt: String,
+)
+
 data class BlockedPerson(
     val userId: String,
     val displayName: String,
@@ -328,6 +342,7 @@ sealed interface ChatRealtimeEvent {
     data class MessageChanged(val message: ChatMessage) : ChatRealtimeEvent
     data class ReadStateChanged(val readState: ChatReadState) : ChatRealtimeEvent
     data class TypingChanged(val typing: Boolean) : ChatRealtimeEvent
+    data class PinChanged(val pin: ConversationPin?) : ChatRealtimeEvent
 }
 
 interface ChatRepository {
@@ -426,6 +441,9 @@ interface ChatRepository {
         conversationId: String,
         quietPeriod: ConversationQuietPeriod?,
     ): ChatResult<ConversationMute>
+    fun observePinnedMessage(conversationId: String): Flow<ConversationPin?>
+    /** A null [messageId] unpins whatever this conversation currently has pinned. */
+    suspend fun setPinnedMessage(conversationId: String, messageId: String?): ChatResult<ConversationPin?>
     suspend fun saveDraft(conversationId: String, draft: String)
     /**
      * Appends [text] to the conversation's composer draft on its own line,
