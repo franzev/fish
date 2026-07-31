@@ -22,7 +22,9 @@ public final class ConversationStore {
         didSet {
             guard draft != oldValue else { return }
             reduce(.draftChanged(conversationId: conversationId, draft: draft))
-            scheduleTyping(for: draft)
+            if !isApplyingDraftQuietly {
+                scheduleTyping(for: draft)
+            }
             persistDraft()
         }
     }
@@ -39,6 +41,7 @@ public final class ConversationStore {
     private let drafts: (any ChatDraftProviding)?
     private let cache: (any ChatDirectoryCaching)?
     private var draftSaveTask: Task<Void, Never>?
+    private var isApplyingDraftQuietly = false
 
     private var state = ChatState()
     private var phase = PersonalChatPhase.loading
@@ -136,7 +139,7 @@ public final class ConversationStore {
         started = true
         phase = .loading
         if let drafts, let restored = try? await drafts.draft(for: conversationId) {
-            draft = restored.body
+            setDraft(restored.body, quietly: true)
         }
         if let cache, let cached = try? await cache.window(conversationId: conversationId) {
             reduce(.hydrateWindow(
@@ -518,6 +521,24 @@ public final class ConversationStore {
         Task { await subscription?.sendTyping(false) }
     }
 
+    /// Appends background-recovered text to the composer without telling the
+    /// other participant that the user is typing.
+    public func appendDraft(_ body: String) {
+        let existing = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let incoming = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let joined = [existing, incoming]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        setDraft(joined, quietly: true)
+    }
+
+    private func setDraft(_ value: String, quietly: Bool) {
+        guard draft != value else { return }
+        isApplyingDraftQuietly = quietly
+        draft = value
+        isApplyingDraftQuietly = false
+    }
+
     private func persistDraft() {
         guard let drafts else { return }
         let body = draft
@@ -588,7 +609,7 @@ public final class ConversationStore {
                 )))
                 if item.attachmentItemIds.isEmpty,
                    draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    draft = item.body
+                    setDraft(item.body, quietly: true)
                 }
             }
         }

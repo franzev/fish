@@ -1312,7 +1312,7 @@ final class FishAppModel {
                     // conversation's `persistDraft()` debounce (250 ms) flushes
                     // its own, now-stale, in-memory text minutes later.
                     if let store = conversationStore, store.conversationId == conversationId {
-                        store.draft = NotificationReplyDrainer.joinedDraft(existing: store.draft, reply: body)
+                        store.appendDraft(body)
                         return true
                     }
                     guard let draftStore else { return false }

@@ -1122,6 +1122,17 @@ struct ConversationStoreTests {
         store.stop()
     }
 
+    @Test func backgroundDraftAppendDoesNotBroadcastTyping() async throws {
+        let (store, _, _, realtime) = makeStore(window: storeWindow([]))
+        await store.start()
+
+        store.appendDraft("Recovered reply")
+
+        #expect(store.draft == "Recovered reply")
+        #expect(realtime.typing.isEmpty)
+        store.stop()
+    }
+
     @Test func reconnectGapBeyondOnePageResetsToNewestWindow() async throws {
         let first = storeMessage("m1", sender: "them", at: 100)
         let newest = storeMessage("m9", sender: "them", at: 900)
