@@ -66,6 +66,12 @@ public protocol ChatCommandProviding: Sendable {
         conversationId: String,
         quietPeriod: ConversationQuietPeriod?
     ) async throws -> ConversationMute
+    func pinnedMessage(conversationId: String) async throws -> ConversationPin?
+    /// A `nil` message id unpins the conversation.
+    func setPinnedMessage(
+        conversationId: String,
+        messageId: String?
+    ) async throws -> ConversationPin?
 }
 
 public protocol ConversationDirectoryProviding: Sendable {

@@ -220,6 +220,7 @@ public struct PersonalChatScreen: View {
             case .loading:
                 TranscriptSkeleton()
             case .ready:
+                PinnedMessageBanner(pin: model.pinnedMessage, onTap: onFocusMessage)
                 if model.messages.isEmpty && model.callActivities.isEmpty {
                     Spacer()
                     EmptyState(
@@ -242,6 +243,7 @@ public struct PersonalChatScreen: View {
                         onRetryOlder: onRetryOlder,
                         onMessageAction: onMessageAction,
                         focusedMessageId: model.focusedMessageId,
+                        pinnedMessageId: model.pinnedMessage?.messageId,
                         onFocusMessage: onFocusMessage,
                         onVisibleMessage: onVisibleMessage,
                         onCallBack: onCallBack,

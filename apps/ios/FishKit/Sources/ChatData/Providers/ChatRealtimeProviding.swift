@@ -18,6 +18,9 @@ public enum ChatRealtimeWire {
     public static func typingTopic(_ conversationId: String) -> String {
         "conversation:\(conversationId):typing"
     }
+    public static func pinTopic(_ conversationId: String) -> String {
+        "conversation:\(conversationId):pins"
+    }
 }
 
 public enum ChatRealtimeConnection: Equatable, Sendable {
@@ -32,6 +35,9 @@ public enum ChatRealtimeEvent: Equatable, Sendable {
     case readStateChanged(ChatReadState)
     case reactionsChanged(messageId: String)
     case typingChanged(userId: String, typing: Bool)
+    /// `nil` means the conversation's pin was removed. Unlike message and
+    /// reaction changes, an unpin is a real row delete, not a soft update.
+    case pinChanged(ConversationPin?)
 }
 
 public final class ChatRealtimeSubscription: @unchecked Sendable {

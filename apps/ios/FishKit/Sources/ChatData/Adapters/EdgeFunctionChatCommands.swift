@@ -105,12 +105,51 @@ public struct EdgeFunctionChatCommands: ChatCommandProviding {
         return try JSONDecoder().decode(MuteResponse.self, from: data).mute.domain
     }
 
+    public func pinnedMessage(conversationId: String) async throws -> ConversationPin? {
+        let data = try await get(
+            table: "conversation_pins",
+            query: [URLQueryItem(name: "conversation_id", value: "eq.\(conversationId)")]
+        )
+        guard let row = try ChatWireDecoder.make().decode(
+            [ConversationPinWire].self,
+            from: data
+        ).first else { return nil }
+        return row.domain
+    }
+
+    public func setPinnedMessage(
+        conversationId: String,
+        messageId: String?
+    ) async throws -> ConversationPin? {
+        let body = PinCommand(conversationId: conversationId, messageId: messageId)
+        let data = try await post(AnyEncodable(body))
+        return try ChatWireDecoder.make().decode(PinResponse.self, from: data).pin?.domain
+    }
+
     private func post(_ body: AnyEncodable) async throws -> Data {
         try await send(path: "functions/v1/chat-command", body: body)
     }
 
     private func rpc(_ name: String, body: some Encodable) async throws -> Data {
         try await send(path: "rest/v1/rpc/\(name)", body: AnyEncodable(body))
+    }
+
+    private func get(table: String, query: [URLQueryItem]) async throws -> Data {
+        guard var components = URLComponents(
+            url: configuration.supabaseUrl.appending(path: "rest/v1/\(table)"),
+            resolvingAgainstBaseURL: false
+        ) else { throw ChatCommandFailure.unavailable }
+        components.queryItems = query
+        guard let url = components.url else { throw ChatCommandFailure.unavailable }
+        guard let token = await configuration.accessToken() else {
+            throw ChatCommandFailure.notAuthenticated
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 15
+        request.setValue(configuration.anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await responseData(for: request)
     }
 
     private func send(path: String, body: AnyEncodable) async throws -> Data {
@@ -187,6 +226,12 @@ private struct MuteCommand: Encodable {
     let durationSeconds: Int?
 }
 
+private struct PinCommand: Encodable {
+    let action = "set-pinned-message"
+    let conversationId: String
+    let messageId: String?
+}
+
 /// Shared by every RPC that takes only the conversation it acts on.
 private struct ConversationQuery: Encodable {
     let conversationId: String
@@ -197,6 +242,7 @@ private struct MessageResponse: Decodable { let message: ChatMessageWire }
 private struct ReportResponse: Decodable { let reported: Bool }
 private struct ReadResponse: Decodable { let readState: ChatReadStateWire }
 private struct MuteResponse: Decodable { let mute: ConversationMuteWire }
+private struct PinResponse: Decodable { let pin: ConversationPinWire? }
 
 private struct ConversationMuteWire: Decodable {
     let muted: Bool

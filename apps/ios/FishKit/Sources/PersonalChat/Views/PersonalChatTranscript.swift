@@ -17,6 +17,7 @@ public struct PersonalChatTranscript: View {
     private let imageLoader: MessageImageLoader
     private let fileDownloader: AttachmentFileDownloader
     private let focusedMessageId: String?
+    private let pinnedMessageId: String?
     @Environment(\.fishReduceMotion) private var reduceMotion
 
     public init(
@@ -26,6 +27,7 @@ public struct PersonalChatTranscript: View {
         onRetryOlder: @escaping () -> Void,
         onMessageAction: @escaping (MessageAction) -> Void = { _ in },
         focusedMessageId: String? = nil,
+        pinnedMessageId: String? = nil,
         onFocusMessage: @escaping (String) -> Void = { _ in },
         onVisibleMessage: @escaping (String) -> Void = { _ in },
         onCallBack: @escaping (String) -> Void = { _ in },
@@ -40,6 +42,7 @@ public struct PersonalChatTranscript: View {
         self.onRetryOlder = onRetryOlder
         self.onMessageAction = onMessageAction
         self.focusedMessageId = focusedMessageId
+        self.pinnedMessageId = pinnedMessageId
         self.onFocusMessage = onFocusMessage
         self.onVisibleMessage = onVisibleMessage
         self.onCallBack = onCallBack
@@ -68,6 +71,7 @@ public struct PersonalChatTranscript: View {
                         focusTreatment(
                             MessageBubble(
                                 row: row,
+                                isPinned: pinnedMessageId == row.id,
                                 onAction: { action in
                                     // Jumping to a quoted message is transcript
                                     // navigation, not a store command.

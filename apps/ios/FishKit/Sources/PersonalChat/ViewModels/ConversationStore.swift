@@ -31,6 +31,7 @@ public final class ConversationStore {
     public var selection = ComposerSelection.none
     public var presence: PresenceUiModel?
     public private(set) var mute = ConversationMute.on
+    public private(set) var pinnedMessageId: String?
 
     private let messaging: any ChatMessagingProviding
     private let commands: any ChatCommandProviding
@@ -130,8 +131,21 @@ public final class ConversationStore {
             isParticipantTyping: participantTyping,
             composerContext: composerContext(conversation),
             notice: notice,
-            focusedMessageId: focusedMessageId
+            focusedMessageId: focusedMessageId,
+            pinnedMessage: pinnedMessagePreview(conversation)
         )
+    }
+
+    /// Resolves the pin from the loaded window only — never a fetch-by-id, so
+    /// the banner never blocks on network the way `focusMessage` may.
+    private func pinnedMessagePreview(_ conversation: ChatConversationState) -> PinnedMessageUiModel? {
+        guard let pinnedMessageId,
+              let message = conversation.messages.first(where: { $0.id == pinnedMessageId }),
+              message.deletedAt == nil
+        else { return nil }
+        let snippet = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !snippet.isEmpty else { return nil }
+        return PinnedMessageUiModel(messageId: message.id, snippet: snippet)
     }
 
     public func start() async {
@@ -182,6 +196,7 @@ public final class ConversationStore {
                 limit: 50
             )) ?? []
             mute = (try? await commands.conversationMute(conversationId: conversationId)) ?? .on
+            pinnedMessageId = (try? await commands.pinnedMessage(conversationId: conversationId))?.messageId
             phase = .ready
             subscribe()
             if let incoming = latestIncomingMessageId() {
@@ -219,6 +234,26 @@ public final class ConversationStore {
             notice = failure.notice
         } catch {
             mute = previous
+            notice = ChatCommandFailure.unavailable.notice
+        }
+    }
+
+    /// Applies the new pin optimistically, and puts the previous one back if
+    /// the command does not land. A `nil` message id unpins.
+    public func setPinnedMessage(_ messageId: String?) async {
+        let previous = pinnedMessageId
+        pinnedMessageId = messageId
+        do {
+            pinnedMessageId = try await commands.setPinnedMessage(
+                conversationId: conversationId,
+                messageId: messageId
+            )?.messageId
+            notice = nil
+        } catch let failure as ChatCommandFailure {
+            pinnedMessageId = previous
+            notice = failure.notice
+        } catch {
+            pinnedMessageId = previous
             notice = ChatCommandFailure.unavailable.notice
         }
     }
@@ -681,6 +716,8 @@ public final class ConversationStore {
         // Transcript navigation: the view scrolls to the quoted message
         // and the store holds no state for it.
         case .openReplyPreview: break
+        case .pin(let id): Task { await setPinnedMessage(id) }
+        case .unpin: Task { await setPinnedMessage(nil) }
         }
     }
 
@@ -775,6 +812,8 @@ public final class ConversationStore {
         case .typingChanged(let userId, let isTyping):
             guard userId == participantId else { return }
             receiveTyping(isTyping)
+        case .pinChanged(let pin):
+            pinnedMessageId = pin?.messageId
         }
     }
 

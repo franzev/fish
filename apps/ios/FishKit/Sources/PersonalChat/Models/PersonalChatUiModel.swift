@@ -36,6 +36,19 @@ public enum ComposerContextUiModel: Sendable, Equatable {
     case edit
 }
 
+/// The conversation's single pinned message, resolved to a snippet the banner
+/// can render directly. `nil` on the screen model means no pin, or one that
+/// cannot currently be read — both render nothing, never a placeholder.
+public struct PinnedMessageUiModel: Sendable, Equatable {
+    public let messageId: String
+    public let snippet: String
+
+    public init(messageId: String, snippet: String) {
+        self.messageId = messageId
+        self.snippet = snippet
+    }
+}
+
 public struct PersonalChatUiModel: Sendable, Equatable {
     public let participantName: String
     public let presence: PresenceUiModel?
@@ -49,6 +62,7 @@ public struct PersonalChatUiModel: Sendable, Equatable {
     public let composerContext: ComposerContextUiModel?
     public let notice: String?
     public let focusedMessageId: String?
+    public let pinnedMessage: PinnedMessageUiModel?
 
     public init(
         participantName: String,
@@ -62,7 +76,8 @@ public struct PersonalChatUiModel: Sendable, Equatable {
         isParticipantTyping: Bool = false,
         composerContext: ComposerContextUiModel? = nil,
         notice: String? = nil,
-        focusedMessageId: String? = nil
+        focusedMessageId: String? = nil,
+        pinnedMessage: PinnedMessageUiModel? = nil
     ) {
         self.participantName = participantName
         self.presence = presence
@@ -76,6 +91,7 @@ public struct PersonalChatUiModel: Sendable, Equatable {
         self.composerContext = composerContext
         self.notice = notice
         self.focusedMessageId = focusedMessageId
+        self.pinnedMessage = pinnedMessage
     }
 }
 

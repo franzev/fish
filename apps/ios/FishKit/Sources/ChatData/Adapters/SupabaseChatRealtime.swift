@@ -122,6 +122,7 @@ private func runChatChannels(
     let messageChannel = client.channel(ChatRealtimeWire.messageTopic(conversationId))
     let readChannel = client.channel(ChatRealtimeWire.readTopic(conversationId))
     let reactionChannel = client.channel(ChatRealtimeWire.reactionTopic(conversationId))
+    let pinChannel = client.channel(ChatRealtimeWire.pinTopic(conversationId))
     let typingChannel = client.channel(ChatRealtimeWire.typingTopic(conversationId)) {
         $0.broadcast.receiveOwnBroadcasts = false
     }
@@ -145,9 +146,15 @@ private func runChatChannels(
         table: "message_reactions",
         filter: .eq("conversation_id", value: conversationId)
     )
+    let pinChanges = pinChannel.postgresChange(
+        AnyAction.self,
+        schema: "public",
+        table: "conversation_pins",
+        filter: .eq("conversation_id", value: conversationId)
+    )
     let typingBroadcasts = typingChannel.broadcastStream(event: ChatRealtimeWire.typingEvent)
 
-    let postgresChannels = [messageChannel, readChannel, reactionChannel]
+    let postgresChannels = [messageChannel, readChannel, reactionChannel, pinChannel]
     let channels = postgresChannels + [typingChannel]
     let lifecycle = ChatChannelLifecycle(expected: channels.count)
     let statusStreams = channels.map { ($0.topic, $0.statusChange) }
@@ -205,6 +212,13 @@ private func runChatChannels(
             }
         }
         group.addTask {
+            for await action in pinChanges {
+                if let event = pinEvent(from: action) {
+                    events.yield(event)
+                }
+            }
+        }
+        group.addTask {
             for await envelope in typingBroadcasts {
                 guard
                     let payload = envelope["payload"]?.objectValue,
@@ -251,6 +265,23 @@ private func readState(from action: AnyAction) -> ChatReadState? {
     case .delete: return nil
     }
     return try? record.decode(as: ChatReadStateWire.self).domain
+}
+
+/// A deleted pin is a real unpin, unlike the soft-deleted rows the other
+/// tables emit — a `.delete` action always yields `.pinChanged(nil)` rather
+/// than being dropped.
+private func pinEvent(from action: AnyAction) -> ChatRealtimeEvent? {
+    let record: JSONObject
+    switch action {
+    case .insert(let value): record = value.record
+    case .update(let value): record = value.record
+    case .delete: return .pinChanged(nil)
+    }
+    guard let pin = try? record.decode(
+        as: ConversationPinWire.self,
+        decoder: ChatWireDecoder.make()
+    ).domain else { return nil }
+    return .pinChanged(pin)
 }
 
 private struct ReactionMessageId: Decodable {

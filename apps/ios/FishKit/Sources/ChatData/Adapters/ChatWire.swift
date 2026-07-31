@@ -203,6 +203,29 @@ struct ChatReadStateWire: Decodable {
     }
 }
 
+struct ConversationPinWire: Decodable {
+    let conversationId: String
+    let messageId: String
+    let pinnedBy: String
+    let pinnedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId = "conversation_id"
+        case messageId = "message_id"
+        case pinnedBy = "pinned_by"
+        case pinnedAt = "pinned_at"
+    }
+
+    var domain: ConversationPin {
+        ConversationPin(
+            conversationId: conversationId,
+            messageId: messageId,
+            pinnedBy: pinnedBy,
+            pinnedAt: pinnedAt
+        )
+    }
+}
+
 struct ChatCallActivityWire: Decodable {
     let id: String
     let kind: String

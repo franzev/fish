@@ -103,7 +103,8 @@ public enum PersonalChatFixtures {
         presence: PresenceUiModel? = PresenceUiModel(
             label: "Online",
             tone: .online
-        )
+        ),
+        pinnedMessage: PinnedMessageUiModel? = nil
     ) -> PersonalChatUiModel {
         PersonalChatUiModel(
             participantName: participantName,
@@ -113,7 +114,8 @@ public enum PersonalChatFixtures {
             olderMessages: older,
             messages: messages,
             unreadAfterMessageId: unreadAfter,
-            isParticipantTyping: typing
+            isParticipantTyping: typing,
+            pinnedMessage: pinnedMessage
         )
     }
 
@@ -126,6 +128,10 @@ public enum PersonalChatFixtures {
     public static let empty = model(older: .hidden, messages: [])
     public static let loaded = model()
     public static let unread = model(unreadAfter: "m3")
+    public static let pinned = model(pinnedMessage: PinnedMessageUiModel(
+        messageId: "m2",
+        snippet: "Remember — pause before your key point. It gives your listeners time to catch up."
+    ))
     public static let loadingEarlier = model(older: .loading)
     public static let earlierFailed = model(older: .failed)
     public static let typing = model(typing: true)

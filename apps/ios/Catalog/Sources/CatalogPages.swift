@@ -208,6 +208,7 @@ struct ChatStatesPage: View {
         ("Empty", PersonalChatFixtures.empty),
         ("Loaded", PersonalChatFixtures.loaded),
         ("Unread", PersonalChatFixtures.unread),
+        ("Pinned message", PersonalChatFixtures.pinned),
         ("Loading earlier", PersonalChatFixtures.loadingEarlier),
         ("Earlier failed", PersonalChatFixtures.earlierFailed),
         ("Sending", PersonalChatFixtures.sending),

@@ -136,6 +136,9 @@ private actor StoreCommands: ChatCommandProviding {
     var quietRequests: [ConversationQuietPeriod?] = []
     var muteReadsFail = false
     var nextMuteWriteDelay: Duration?
+    var storedPin: ConversationPin?
+    var pinRequests: [String?] = []
+    var nextPinWriteDelay: Duration?
 
     func execute(_ command: ChatMessageCommand) async throws -> ChatMessage {
         executed.append(command)
@@ -225,6 +228,38 @@ private actor StoreCommands: ChatCommandProviding {
     func failMuteReads() { muteReadsFail = true }
     func delayNextMuteWrite(_ duration: Duration) { nextMuteWriteDelay = duration }
     func quietPeriodRequests() -> [ConversationQuietPeriod?] { quietRequests }
+
+    func pinnedMessage(conversationId: String) async throws -> ConversationPin? {
+        storedPin
+    }
+
+    func setPinnedMessage(
+        conversationId: String,
+        messageId: String?
+    ) async throws -> ConversationPin? {
+        pinRequests.append(messageId)
+        if let delay = nextPinWriteDelay {
+            nextPinWriteDelay = nil
+            try await Task.sleep(for: delay)
+        }
+        if let failure = nextFailure {
+            nextFailure = nil
+            throw failure
+        }
+        storedPin = messageId.map {
+            ConversationPin(
+                conversationId: conversationId,
+                messageId: $0,
+                pinnedBy: "me",
+                pinnedAt: Date(timeIntervalSince1970: 900)
+            )
+        }
+        return storedPin
+    }
+
+    func stubPin(_ pin: ConversationPin?) { storedPin = pin }
+    func delayNextPinWrite(_ duration: Duration) { nextPinWriteDelay = duration }
+    func pinWriteRequests() -> [String?] { pinRequests }
 
     func failNext(_ failure: ChatCommandFailure = .unavailable) { nextFailure = failure }
     func delayNextExecution(_ duration: Duration) { nextExecutionDelay = duration }
@@ -1339,6 +1374,107 @@ struct ConversationStoreTests {
 
         #expect(store.mute == before)
         #expect(store.model.notice == ChatCommandFailure.unavailable.notice)
+    }
+
+    @Test func pinIsVisibleAfterStart() async throws {
+        let message = storeMessage("m1", sender: "them", body: "Keep this handy", at: 100)
+        let (store, _, commands, _) = makeStore(window: storeWindow([message]))
+        await commands.stubPin(ConversationPin(
+            conversationId: "c1",
+            messageId: "m1",
+            pinnedBy: "them",
+            pinnedAt: Date(timeIntervalSince1970: 90)
+        ))
+
+        await store.start()
+
+        #expect(store.pinnedMessageId == "m1")
+        #expect(store.model.pinnedMessage?.messageId == "m1")
+        #expect(store.model.pinnedMessage?.snippet == "Keep this handy")
+        store.stop()
+    }
+
+    @Test func realtimePinChangedUpdatesPinnedMessageId() async throws {
+        let message = storeMessage("m1", sender: "them", at: 100)
+        let (store, _, _, realtime) = makeStore(window: storeWindow([message]))
+        await store.start()
+        #expect(store.pinnedMessageId == nil)
+
+        realtime.event(.pinChanged(ConversationPin(
+            conversationId: "c1",
+            messageId: "m1",
+            pinnedBy: "me",
+            pinnedAt: Date(timeIntervalSince1970: 500)
+        )))
+        #expect(await eventually { store.pinnedMessageId == "m1" })
+
+        realtime.event(.pinChanged(nil))
+        #expect(await eventually { store.pinnedMessageId == nil })
+        store.stop()
+    }
+
+    @Test func setPinnedMessageOptimisticUpdateRevertsOnFailureWithNotice() async throws {
+        let message = storeMessage("m1", sender: "them", at: 100)
+        let (store, _, commands, _) = makeStore(window: storeWindow([message]))
+        await store.start()
+        await commands.delayNextPinWrite(.milliseconds(50))
+
+        let write = Task { await store.setPinnedMessage("m1") }
+        #expect(await eventually { store.pinnedMessageId == "m1" })
+        await write.value
+        #expect(store.pinnedMessageId == "m1")
+        #expect(store.model.notice == nil)
+
+        await commands.failNext()
+        await store.setPinnedMessage(nil)
+
+        #expect(store.pinnedMessageId == "m1")
+        #expect(store.model.notice == ChatCommandFailure.unavailable.notice)
+        #expect(await commands.pinWriteRequests() == ["m1", nil])
+        store.stop()
+    }
+
+    @Test func performPinAndUnpinDispatchThroughSetPinnedMessage() async throws {
+        let message = storeMessage("m1", sender: "me", at: 100)
+        let (store, _, commands, _) = makeStore(window: storeWindow([message]))
+        await store.start()
+
+        store.perform(.pin("m1"))
+        #expect(await eventually { store.pinnedMessageId == "m1" })
+
+        store.perform(.unpin("m1"))
+        #expect(await eventually { store.pinnedMessageId == nil })
+        #expect(await commands.pinWriteRequests() == ["m1", nil])
+        store.stop()
+    }
+
+    @Test func focusingAPinnedMessageOutsideTheLoadedWindowUsesFetchByID() async throws {
+        let visible = storeMessage("m2", sender: "them", at: 200)
+        let older = storeMessage("m1", sender: "them", body: "An earlier note", at: 100)
+        let (store, messaging, commands, _) = makeStore(
+            window: storeWindow([visible], hasMore: true)
+        )
+        await messaging.put(older)
+        await commands.stubPin(ConversationPin(
+            conversationId: "c1",
+            messageId: "m1",
+            pinnedBy: "them",
+            pinnedAt: Date(timeIntervalSince1970: 90)
+        ))
+        await store.start()
+
+        #expect(store.pinnedMessageId == "m1")
+        // Not in the loaded window yet — the banner has nothing to show and
+        // must not force a fetch to find out.
+        #expect(store.model.pinnedMessage == nil)
+        #expect(await messaging.requestedMessageIDs().isEmpty)
+
+        await store.focusMessage("m1")
+
+        #expect(store.model.focusedMessageId == "m1")
+        #expect(store.model.messages.map(\.id) == ["m1", "m2"])
+        #expect(await messaging.requestedMessageIDs() == [["m1"]])
+        store.stop()
     }
 
     @Test func attachmentSendQueuesUntilItsUploadResolvesThenFlushes() async throws {

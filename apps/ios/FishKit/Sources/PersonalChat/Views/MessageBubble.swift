@@ -8,6 +8,7 @@ import UIComponents
 /// delivery meaning always includes text.
 public struct MessageBubble: View {
     private let row: MessageRowUiModel
+    private let isPinned: Bool
     private let onRetry: ((String) -> Void)?
     private let onAction: (MessageAction) -> Void
     private let reactionsEnabled: Bool
@@ -22,6 +23,7 @@ public struct MessageBubble: View {
 
     public init(
         row: MessageRowUiModel,
+        isPinned: Bool = false,
         onAction: @escaping (MessageAction) -> Void = { _ in },
         onRetry: ((String) -> Void)? = nil,
         reactionsEnabled: Bool = true,
@@ -30,6 +32,7 @@ public struct MessageBubble: View {
         fileDownloader: AttachmentFileDownloader = AttachmentFileDownloader()
     ) {
         self.row = row
+        self.isPinned = isPinned
         self.onRetry = onRetry
         self.onAction = onAction
         self.reactionsEnabled = reactionsEnabled
@@ -160,6 +163,15 @@ public struct MessageBubble: View {
             if canCopyMessage {
                 Button("Copy", systemImage: "doc.on.doc") {
                     UIPasteboard.general.string = row.message.body
+                }
+                if isPinned {
+                    Button("Unpin", systemImage: "pin.slash") {
+                        onAction(.unpin(row.message.id))
+                    }
+                } else {
+                    Button("Pin", systemImage: "pin") {
+                        onAction(.pin(row.message.id))
+                    }
                 }
             }
             if isOutgoing && !row.message.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

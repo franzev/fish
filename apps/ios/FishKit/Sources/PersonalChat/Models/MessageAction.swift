@@ -6,4 +6,6 @@ public enum MessageAction: Equatable, Sendable {
     case reportGif(String)
     /// The viewer tapped a reply preview to jump to the quoted message.
     case openReplyPreview(String)
+    case pin(String)
+    case unpin(String)
 }
