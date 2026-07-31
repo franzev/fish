@@ -122,6 +122,23 @@ class ChatReplyDrainTest {
     }
 
     @Test
+    fun `retries when the directory is only a cache fallback`() = runBlocking {
+        val recorder = Recorder()
+        val outcome = drain(
+            recorder,
+            listConversations = {
+                ChatResult.Success(
+                    directory("conv-1").value.copy(isAuthoritative = false),
+                )
+            },
+        ).run()
+        assertEquals(ChatReplyDrain.Outcome.Retry, outcome)
+        assertTrue(recorder.removed.isEmpty())
+        assertTrue(recorder.sendCalls.isEmpty())
+        assertTrue(recorder.attemptsRecorded.isEmpty())
+    }
+
+    @Test
     fun `authorization failure drops with a notice but still marks read`() = runBlocking {
         val recorder = Recorder()
         val outcome = drain(

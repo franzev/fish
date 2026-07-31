@@ -38,7 +38,13 @@ internal class ChatReplyDrain(
         // store and cancels the worker, so a revoked session cannot retry
         // forever, and entry budgets are not spent on runs that never
         // reached a send.
-        if (directory !is ChatResult.Success) return Outcome.Retry
+        if (directory !is ChatResult.Success || !directory.value.isAuthoritative) {
+            // A cached directory is safe for rendering but cannot prove that
+            // a conversation is still authorized. Keep every reply queued so
+            // a new conversation that has never reached Room cannot lose its
+            // text while the remote authorization read is unavailable.
+            return Outcome.Retry
+        }
         val allowed = directory.value.conversations.mapTo(mutableSetOf()) { it.conversationId }
         var retry = false
         entries.forEach { reply ->

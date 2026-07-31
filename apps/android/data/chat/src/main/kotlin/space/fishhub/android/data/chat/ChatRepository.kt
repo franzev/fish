@@ -117,6 +117,12 @@ data class ConversationMute(
 data class AuthorizedChatDirectory(
     val currentUser: AuthorizedChatIdentity,
     val conversations: List<AuthorizedConversation>,
+    /**
+     * False when this directory came from a local cache after the remote
+     * authorization read failed. Cached rows are useful for rendering, but
+     * they must not authorize destructive background work.
+     */
+    val isAuthoritative: Boolean = true,
 )
 
 data class ConversationSnapshot(

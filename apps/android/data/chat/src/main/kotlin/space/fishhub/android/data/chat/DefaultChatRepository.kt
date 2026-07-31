@@ -219,6 +219,7 @@ internal class DefaultChatRepository(
                         first.currentUserDisplayName,
                     ),
                     conversations = cached,
+                    isAuthoritative = false,
                 ),
             )
         } else remoteResult
