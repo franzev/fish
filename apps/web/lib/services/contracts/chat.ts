@@ -2,6 +2,11 @@ import type { ChatGif, ChatStickerId } from "@fish/core/chat";
 import type { ServiceResult } from "../errors";
 
 export interface ClientChatReaction { emoji: string; count: number; byMe: boolean }
+export interface ClientConversationPin {
+  messageId: string;
+  pinnedBy: string;
+  pinnedAt: string;
+}
 export interface ClientChatAttachment {
   id: string; status: "ready"; kind?: "image" | "file"; originalName: string;
   mimeType?: string; byteSize?: number; width?: number; height?: number;
@@ -67,6 +72,7 @@ export interface ClientChatData {
   participantPresence?: ClientChatPresence;
   searchMembers?: ClientChatSearchMember[]; searchChannels?: ClientChatSearchChannel[];
   hasMoreOlder?: boolean; oldestCursor?: { createdAt: string; id: string } | null;
+  pinnedMessage?: ClientConversationPin | null;
 }
 
 export interface ChatRepository {
@@ -145,6 +151,7 @@ export interface EditMessageInput { messageId: string; body: string }
 export interface DeleteMessageInput { messageId: string }
 export interface SetReactionInput { messageId: string; emoji: string; active: boolean }
 export interface ReportGifInput { messageId: string }
+export interface SetPinnedMessageInput { conversationId: string; messageId: string | null }
 export type ChatMessageCommand =
   | ({ kind: "edit" } & EditMessageInput)
   | ({ kind: "delete" } & DeleteMessageInput)
@@ -174,6 +181,9 @@ export interface ChatCommandService {
   sendMessage(input: SendMessageInput): Promise<ChatOperationResult<ClientChatMessage>>;
   executeMessageCommand(command: ChatMessageCommand): Promise<ChatOperationResult<ClientChatMessage>>;
   reportGif(input: ReportGifInput): Promise<ChatOperationResult<void>>;
+  setPinnedMessage(
+    input: SetPinnedMessageInput
+  ): Promise<ChatOperationResult<ClientConversationPin | null>>;
   markReadState(input: MarkReadStateInput): Promise<ChatOperationResult<ClientChatReadState>>;
   refreshMessages(input: RefreshMessagesInput): Promise<ChatOperationResult<ClientChatMessage[]>>;
   refreshConversation(input: ConversationInput): Promise<ChatOperationResult<{
@@ -204,5 +214,6 @@ export interface ChatRealtimeService {
   subscribeToMessages(conversationId: string, onMessage: (message: ClientChatMessage) => void, onReconnected?: () => void, onDisconnected?: () => void): () => void;
   subscribeToReadStates(conversationId: string, onReadState: (state: ClientChatReadState) => void, onReconnected?: () => void): () => void;
   subscribeToReactionChanges(conversationId: string, onReactionChange: (messageId: string) => void, onReconnected?: () => void): () => void;
+  subscribeToPinChanges(conversationId: string, onPinChange: (pin: ClientConversationPin | null) => void, onReconnected?: () => void): () => void;
   subscribeToTyping(conversationId: string, currentUserId: string, onChange: (typing: boolean) => void): ConversationTypingController;
 }

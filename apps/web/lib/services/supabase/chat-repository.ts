@@ -2,6 +2,7 @@ import { generalChannelId, generalChannelName, generalChannelSlug } from "@/lib/
 import { serviceFailure, serviceSuccess, type ServiceResult } from "@/lib/services/errors";
 import { getUnreadMessageSummary } from "@fish/core/chat-state";
 import type {
+  ConversationPinRow,
   ConversationRow,
   MessageAttachmentRow,
   MessageGifRow,
@@ -17,6 +18,7 @@ import type {
 } from "../contracts";
 import {
   toClientChatMessage as mapClientChatMessage,
+  toClientConversationPin,
   type MessageResponseRow,
   toClientReadState,
 } from "./chat-mapping";
@@ -507,6 +509,23 @@ export class SupabaseChatRepository implements ChatRepository {
         );
       }
 
+      const { data: pinRow, error: pinError } = (await this.client
+        .from("conversation_pins")
+        .select("*")
+        .eq("conversation_id", conversation.id)
+        .maybeSingle()) as SupabaseResponse<ConversationPinRow>;
+
+      if (pinError) {
+        return serviceFailure(
+          mapSupabaseError(pinError, {
+            code: "database",
+            fallbackMessage: "Could not load the pinned message.",
+            operation: "chat.getAssignedConversation.pin",
+            recoverable: true,
+          })
+        );
+      }
+
       const unreadSummary = await this.getUnreadSummary(conversation.id);
 
       const participantRole = participant.role === "client" ? "client" : "coach";
@@ -614,6 +633,7 @@ export class SupabaseChatRepository implements ChatRepository {
         })),
         hasMoreOlder,
         oldestCursor,
+        pinnedMessage: pinRow ? toClientConversationPin(pinRow) : null,
       });
     });
   }

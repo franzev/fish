@@ -1,6 +1,11 @@
 import { chatLimits } from "@fish/core/chat";
 import type { ClientChatData } from "@/lib/services";
-import type { ReportGifActionState, SendMessageActionState } from "@/features/chat/contracts";
+import type {
+  PinnedMessageActionState,
+  ReportGifActionState,
+  SendMessageActionState,
+} from "@/features/chat/contracts";
+import type { ChatPinState } from "@/features/chat/model/store";
 import type { LocalMessage } from "./use-chat-messages";
 import {
   chatStore,
@@ -28,14 +33,18 @@ interface UseMessageMutationsOptions {
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   setReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
   reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
+  setPinnedMessageAction?: (input: unknown) => Promise<PinnedMessageActionState>;
   setReplyTarget: (conversationId: string, messageId: string | null) => void;
   setNotice: (notice: string | null) => void;
   mergeRemoteMessage: (message: LocalMessage) => void;
   requestDelete: (conversationId: string, messageId: string, at: string) => void;
   failDelete: (conversationId: string, messageId: string) => void;
+  pinnedMessage: ChatPinState | null;
+  setPinnedMessage: (pin: ChatPinState | null) => void;
 }
 
 const deleteRollbackNotice = "That message is still here. Try deleting it again.";
+const pinRollbackNotice = "That pin did not save yet. Keep this open and try again.";
 
 function deletionFailureNotice(notice?: string): string {
   const normalized = notice?.trim();
@@ -51,17 +60,21 @@ export function useMessageMutations({
   deleteMessageAction,
   setReactionAction,
   reportGifAction,
+  setPinnedMessageAction,
   setReplyTarget,
   setNotice,
   mergeRemoteMessage,
   requestDelete,
   failDelete,
+  pinnedMessage,
+  setPinnedMessage,
 }: UseMessageMutationsOptions) {
   const [editSession, setEditSession] = useState<EditSessionState | null>(null);
   const [pendingReactionMessageIds, setPendingReactionMessageIds] = useState<Set<string>>(
     () => new Set()
   );
   const pendingReactionMessageIdsRef = useRef(new Set<string>());
+  const [pendingPinMessageId, setPendingPinMessageId] = useState<string | null>(null);
   const activeConversationIdRef = useRef(chat.conversationId);
   useEffect(() => {
     activeConversationIdRef.current = chat.conversationId;
@@ -175,6 +188,42 @@ export function useMessageMutations({
     setNotice(result.status === "sent" ? "Thanks. This GIF was reported." : result.notice ?? "That report did not send yet. Try again.");
   }
 
+  async function handleTogglePin(message: LocalMessage): Promise<MessageMutationResult> {
+    if (pendingPinMessageId) return { ok: false, notice: pinRollbackNotice };
+    if (!setPinnedMessageAction) {
+      return { ok: false, notice: "Pinning is not available yet." };
+    }
+    setNotice(null);
+    const wasPinned = pinnedMessage?.messageId === message.id;
+    const previousPin = pinnedMessage;
+    setPendingPinMessageId(message.id);
+    setPinnedMessage(
+      wasPinned
+        ? null
+        : { messageId: message.id, pinnedBy: chat.currentUserId, pinnedAt: new Date().toISOString() }
+    );
+    try {
+      const result = await setPinnedMessageAction({
+        conversationId: chat.conversationId,
+        messageId: wasPinned ? null : message.id,
+      }).catch(() => ({
+        status: "notice" as const,
+        values: {},
+        notice: pinRollbackNotice,
+      }));
+      if (result.status !== "sent") {
+        setPinnedMessage(previousPin);
+        const notice = result.notice ?? pinRollbackNotice;
+        setNotice(notice);
+        return { ok: false, notice };
+      }
+      setPinnedMessage(result.pin ?? null);
+      return { ok: true };
+    } finally {
+      setPendingPinMessageId((current) => (current === message.id ? null : current));
+    }
+  }
+
   function startEditingMessage(message: LocalMessage) {
     setReplyTarget(chat.conversationId, null);
     setEditSession({ conversationId: chat.conversationId, messageId: message.id, draft: message.body, notice: null, saving: false });
@@ -200,6 +249,8 @@ export function useMessageMutations({
     handleToggleReaction,
     isReactionPending: (messageId: string) => pendingReactionMessageIds.has(messageId),
     handleReportGif,
+    handleTogglePin,
+    isPinPending: (messageId: string) => pendingPinMessageId === messageId,
     startEditingMessage,
     handleEditDraftChange,
     handleSaveEdit,

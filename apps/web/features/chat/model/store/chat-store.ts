@@ -7,6 +7,7 @@ import {
   type ChatMessageState,
   type ChatReadState,
   type ChatState,
+  type ChatUserId,
   type RealtimeConnectionState,
 } from "@fish/core/chat-state";
 import type { ChatStickerId } from "@fish/core/chat";
@@ -15,9 +16,31 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 
 export { createChatHydrationKey } from "@fish/core/chat-state";
 
+// A conversation's single pinned message. Kept as a Zustand-only slice
+// alongside (not inside) the portable `ChatConversationState` — pinning is a
+// web-parity feature, not part of the cross-platform chat-state protocol
+// (packages/core/docs/chat-state-protocol.md) whose fixture vectors and
+// Android/iOS parity tests enumerate an exact, hardcoded event/case list.
+export interface ChatPinState {
+  messageId: ChatMessageId;
+  pinnedBy: ChatUserId;
+  pinnedAt: string;
+}
+
+function pinStatesEqual(a: ChatPinState | null, b: ChatPinState | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.messageId === b.messageId &&
+    a.pinnedBy === b.pinnedBy &&
+    a.pinnedAt === b.pinnedAt
+  );
+}
+
 export interface ChatStoreState {
   conversations: ChatState["conversations"];
   hydrationKeys: Record<ChatConversationId, string>;
+  pinnedMessages: Record<ChatConversationId, ChatPinState | null>;
   dispatchChatEvent: (event: ChatEvent) => void;
   hydrateConversation: (
     conversationId: ChatConversationId,
@@ -58,6 +81,10 @@ export interface ChatStoreState {
   mergeReadState: (
     conversationId: ChatConversationId,
     readState: ChatReadState
+  ) => void;
+  setPinnedMessage: (
+    conversationId: ChatConversationId,
+    pin: ChatPinState | null
   ) => void;
   setDraft: (conversationId: ChatConversationId, draft: string) => void;
   setReplyTarget: (
@@ -108,6 +135,7 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
   return {
     conversations: {},
     hydrationKeys: {},
+    pinnedMessages: {},
     dispatchChatEvent,
     hydrateConversation: (conversationId, messages, readStates, hydrationKey) => {
       set((state) => {
@@ -203,6 +231,21 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
     mergeReadState: (conversationId, readState) => {
       dispatchChatEvent({ type: "mergeReadState", conversationId, readState });
     },
+    setPinnedMessage: (conversationId, pin) => {
+      set((state) => {
+        const current = state.pinnedMessages[conversationId] ?? null;
+        if (pinStatesEqual(current, pin)) {
+          return state;
+        }
+
+        return {
+          pinnedMessages: {
+            ...state.pinnedMessages,
+            [conversationId]: pin,
+          },
+        };
+      });
+    },
     setDraft: (conversationId, draft) => {
       dispatchChatEvent({ type: "draftChanged", conversationId, draft });
     },
@@ -232,9 +275,11 @@ function createChatStoreState(set: ChatStoreSet): ChatStoreState {
       set((state) => {
         const conversations = { ...state.conversations };
         const hydrationKeys = { ...state.hydrationKeys };
+        const pinnedMessages = { ...state.pinnedMessages };
         delete conversations[conversationId];
         delete hydrationKeys[conversationId];
-        return { conversations, hydrationKeys };
+        delete pinnedMessages[conversationId];
+        return { conversations, hydrationKeys, pinnedMessages };
       });
     },
   };

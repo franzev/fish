@@ -5,6 +5,7 @@ import type {
   ChatSearchActionState,
   MarkReadStateActionState,
   MessagePopoverActionState,
+  PinnedMessageActionState,
   SendMessageActionState,
   ReportGifActionState,
   UnreadSummaryActionState,
@@ -81,6 +82,12 @@ export async function reportGifAction(
   input: unknown
 ): Promise<ReportGifActionState> {
   return (await handlers()).reportGif(input);
+}
+
+export async function setPinnedMessageAction(
+  input: unknown
+): Promise<PinnedMessageActionState> {
+  return (await handlers()).setPinnedMessage(input);
 }
 
 export async function markReadStateAction(

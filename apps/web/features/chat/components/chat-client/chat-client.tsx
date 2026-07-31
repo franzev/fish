@@ -10,6 +10,7 @@ import {
 } from "react";
 import type {
   ChatSearchActionState,
+  PinnedMessageActionState,
   ReportGifActionState,
   SendMessageActionState,
   UnreadSummaryActionState,
@@ -56,6 +57,7 @@ export interface ChatClientProps {
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   setReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
   reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
+  setPinnedMessageAction?: (input: unknown) => Promise<PinnedMessageActionState>;
   markReadStateAction?: (input: unknown) => Promise<{
     status: "sent" | "notice";
     values: unknown;
@@ -95,6 +97,7 @@ export function ChatClient({
   deleteMessageAction,
   setReactionAction,
   reportGifAction,
+  setPinnedMessageAction,
   markReadStateAction,
   refreshUnreadSummaryAction,
   refreshMessagesAction,
@@ -121,6 +124,8 @@ export function ChatClient({
     hasMoreOlder,
     isLoadingOlder,
     hasLoadError,
+    pinnedMessage,
+    setPinnedMessage,
   } = useChatMessages({
     chat,
     refreshMessagesAction,
@@ -205,6 +210,7 @@ export function ChatClient({
   } = useChatRealtime({
     chat,
     mergeReadState,
+    mergePinnedMessage: setPinnedMessage,
     refreshMessages,
     refreshConversation,
     applyGapBackfill,
@@ -214,10 +220,18 @@ export function ChatClient({
   );
   // Full messages array (not filteredMessages): search filtering must never
   // trigger scroll behavior.
+  // The pinned banner reuses this exact focus-by-message-ID path (the same
+  // one search/notification deep links drive via the focusMessageId prop)
+  // instead of a second scroll mechanism: a manual override layered on top
+  // of the server-supplied focusMessageId, reset per conversation alongside
+  // the other conversation-scoped state below.
+  const [manualFocusMessageId, setManualFocusMessageId] = useState<string | null>(null);
+  const activeFocusMessageId = manualFocusMessageId ?? focusMessageId ?? null;
+  const requestFocusMessage = (messageId: string) => setManualFocusMessageId(messageId);
   const { viewportRef, showNewMessages, scrollToBottom } = useStickToBottom({
     messages,
     currentUserId: chat.currentUserId,
-    suspendAutoScroll: Boolean(focusMessageId),
+    suspendAutoScroll: Boolean(activeFocusMessageId),
   });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const requestedFocusMessageRef = useRef<string | null>(null);
@@ -230,26 +244,26 @@ export function ChatClient({
     onLoadOlder: loadOlderMessages,
   });
   useEffect(() => {
-    if (!focusMessageId || messages.some((message) => message.id === focusMessageId)) {
+    if (!activeFocusMessageId || messages.some((message) => message.id === activeFocusMessageId)) {
       return;
     }
-    if (requestedFocusMessageRef.current === focusMessageId) return;
-    requestedFocusMessageRef.current = focusMessageId;
-    void refreshMessages([focusMessageId]);
-  }, [focusMessageId, messages, refreshMessages]);
+    if (requestedFocusMessageRef.current === activeFocusMessageId) return;
+    requestedFocusMessageRef.current = activeFocusMessageId;
+    void refreshMessages([activeFocusMessageId]);
+  }, [activeFocusMessageId, messages, refreshMessages]);
 
   useEffect(() => {
-    if (!focusMessageId || !messages.some((message) => message.id === focusMessageId)) {
+    if (!activeFocusMessageId || !messages.some((message) => message.id === activeFocusMessageId)) {
       return;
     }
     const frame = requestAnimationFrame(() => {
-      document.getElementById(`message-${focusMessageId}`)?.scrollIntoView({
+      document.getElementById(`message-${activeFocusMessageId}`)?.scrollIntoView({
         block: "center",
         behavior: "auto",
       });
     });
     return () => cancelAnimationFrame(frame);
-  }, [focusMessageId, messages]);
+  }, [activeFocusMessageId, messages]);
   // "Reconnecting…" is only calm/true once the conversation has genuinely
   // connected before — the very first mount also passes through
   // "connecting", and that ordinary initial load must never read as a
@@ -271,6 +285,7 @@ export function ChatClient({
     setPreviousConversationId(chat.conversationId);
     setPreviousRealtimeStatus(realtimeStatus);
     setHasConnected(realtimeStatus === "connected");
+    setManualFocusMessageId(null);
   } else if (realtimeStatus !== previousRealtimeStatus) {
     setPreviousRealtimeStatus(realtimeStatus);
     if (realtimeStatus === "connected") {
@@ -298,6 +313,8 @@ export function ChatClient({
     handleToggleReaction,
     isReactionPending,
     handleReportGif,
+    handleTogglePin,
+    isPinPending,
     startReplyingToMessage,
     startEditingMessage,
     handleEditDraftChange,
@@ -317,6 +334,9 @@ export function ChatClient({
     deleteMessageAction,
     setReactionAction,
     reportGifAction,
+    setPinnedMessageAction,
+    pinnedMessage,
+    setPinnedMessage,
     sendLocalTyping,
     stopLocalTyping,
     scheduleLocalTypingStop,
@@ -325,6 +345,13 @@ export function ChatClient({
     // render immediately without downloading its just-uploaded image again.
     clearPendingImages: () => imageUploads.clear({ preservePreviewUrls: true }),
   });
+  const resolvedPinnedMessage = useMemo(
+    () =>
+      pinnedMessage
+        ? messages.find((message) => message.id === pinnedMessage.messageId) ?? null
+        : null,
+    [messages, pinnedMessage]
+  );
   // Legacy fixtures may omit the member directory. Keep their count useful by
   // deriving it from everyone the room has already seen.
   const observedMemberCount = useMemo(() => {
@@ -427,19 +454,29 @@ export function ChatClient({
           latestMineRequestId,
           unreadBoundary,
           friendActionsEnabled,
-          focusMessageId,
+          focusMessageId: activeFocusMessageId,
+          pinnedMessageId: pinnedMessage?.messageId ?? null,
           getAuthorName: getMessageAuthorName,
           getAuthorAvatar: getMessageAuthorAvatar,
           getAuthorMember: getMessageAuthorMember,
         }}
+        pinnedMessage={{
+          message: resolvedPinnedMessage,
+          onFocus: () => {
+            if (resolvedPinnedMessage) requestFocusMessage(resolvedPinnedMessage.id);
+          },
+        }}
         actions={{
           canDelete: Boolean(deleteMessageAction),
+          canPin: Boolean(setPinnedMessageAction),
           reply: startReplyingToMessage,
           toggleReaction: handleToggleReaction,
           isReactionPending,
           reportGif: handleReportGif,
           delete: handleDeleteMessage,
           retry: sendWithRequestId,
+          togglePin: handleTogglePin,
+          isPinPending,
         }}
         editing={{
           enabled: Boolean(editMessageAction),

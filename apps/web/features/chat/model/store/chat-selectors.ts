@@ -7,7 +7,7 @@ import type {
   ChatReadState,
   RealtimeConnectionState,
 } from "@fish/core/chat-state";
-import type { ChatStoreState } from "./chat-store";
+import type { ChatPinState, ChatStoreState } from "./chat-store";
 
 const emptyComposer: ChatComposerState = {
   draft: "",
@@ -89,6 +89,13 @@ export function selectHasLoadErrorForConversation(
   return (
     selectConversationState(state, conversationId)?.pagination.hasLoadError ?? false
   );
+}
+
+export function selectPinnedMessageForConversation(
+  state: Pick<ChatStoreState, "pinnedMessages">,
+  conversationId: ChatConversationId
+): ChatPinState | null {
+  return state.pinnedMessages[conversationId] ?? null;
 }
 
 export function selectOldestCursorForConversation(

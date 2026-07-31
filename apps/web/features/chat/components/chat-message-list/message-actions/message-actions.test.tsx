@@ -9,11 +9,14 @@ function props() {
     canEdit: true,
     canDelete: true,
     canReportGif: false,
+    canPin: false,
+    pinned: false,
     onReply: vi.fn(),
     onReact: vi.fn(),
     onEdit: vi.fn(),
     onDelete: vi.fn(async (): Promise<MessageActionResult> => ({ ok: true })),
     onReportGif: vi.fn(),
+    onTogglePin: vi.fn(),
   };
 }
 
@@ -198,5 +201,52 @@ describe("MessageActions", () => {
     expect(
       screen.getByRole("button", { name: "Back to message actions" })
     ).toBeInTheDocument();
+  });
+
+  describe("pin eligibility", () => {
+    it("hides the pin entry for an ineligible message (deleted or empty body)", () => {
+      render(<MessageActions {...props()} canPin={false} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "More actions for message" }));
+
+      expect(screen.queryByRole("button", { name: "Pin message" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Unpin message" })).toBeNull();
+    });
+
+    it("shows Pin message for an eligible, not-yet-pinned message on either participant's messages", () => {
+      render(<MessageActions {...props()} canPin mine={false} pinned={false} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "More actions for message" }));
+
+      expect(screen.getByRole("button", { name: "Pin message" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Unpin message" })).toBeNull();
+    });
+
+    it("shows Unpin message once this message is the conversation's current pin", () => {
+      render(<MessageActions {...props()} canPin pinned />);
+
+      fireEvent.click(screen.getByRole("button", { name: "More actions for message" }));
+
+      expect(screen.getByRole("button", { name: "Unpin message" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Pin message" })).toBeNull();
+    });
+
+    it("invokes onTogglePin when the entry is selected", () => {
+      const viewProps = { ...props(), canPin: true, pinned: false };
+      render(<MessageActions {...viewProps} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "More actions for message" }));
+      fireEvent.click(screen.getByRole("button", { name: "Pin message" }));
+
+      expect(viewProps.onTogglePin).toHaveBeenCalledOnce();
+    });
+
+    it("disables the pin entry while a toggle is already in flight", () => {
+      render(<MessageActions {...props()} canPin pinPending />);
+
+      fireEvent.click(screen.getByRole("button", { name: "More actions for message" }));
+
+      expect(screen.getByRole("button", { name: "Pin message" })).toBeDisabled();
+    });
   });
 });

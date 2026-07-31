@@ -12,6 +12,8 @@ import {
   IconMoodPlus,
   IconMoodSmile,
   IconPencil,
+  IconPin,
+  IconPinnedOff,
   IconTrash,
 } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
@@ -28,12 +30,16 @@ export interface MessageActionsProps {
   canEdit: boolean;
   canDelete: boolean;
   canReportGif: boolean;
+  canPin: boolean;
+  pinned: boolean;
+  pinPending?: boolean;
   reactionsDisabled?: boolean;
   onReply: () => void;
   onReact: (emoji: string) => void;
   onEdit: () => void;
   onDelete: () => Promise<MessageActionResult>;
   onReportGif: () => void;
+  onTogglePin: () => void;
 }
 
 type MoreView = "actions" | "reactions" | "delete";
@@ -49,12 +55,16 @@ export function MessageActions({
   canEdit,
   canDelete,
   canReportGif,
+  canPin,
+  pinned,
+  pinPending = false,
   reactionsDisabled = false,
   onReply,
   onReact,
   onEdit,
   onDelete,
   onReportGif,
+  onTogglePin,
 }: MessageActionsProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<MoreView>("actions");
@@ -217,6 +227,24 @@ export function MessageActions({
                     >
                       <IconPencil size={20} stroke={1.75} aria-hidden="true" />
                       Edit message
+                    </button>
+                  )}
+                  {canPin && (
+                    <button
+                      type="button"
+                      disabled={pinPending}
+                      onClick={() => selectAction(onTogglePin)}
+                      className={cn(
+                        popoverActionClass,
+                        "disabled:cursor-not-allowed disabled:opacity-50"
+                      )}
+                    >
+                      {pinned ? (
+                        <IconPinnedOff size={20} stroke={1.75} aria-hidden="true" />
+                      ) : (
+                        <IconPin size={20} stroke={1.75} aria-hidden="true" />
+                      )}
+                      {pinned ? "Unpin message" : "Pin message"}
                     </button>
                   )}
                   {canReportGif && (

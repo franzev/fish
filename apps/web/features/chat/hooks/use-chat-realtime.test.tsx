@@ -8,6 +8,7 @@ const realtime = vi.hoisted(() => ({
   messages: [] as Array<(...args: unknown[]) => void>,
   reads: [] as Array<(...args: unknown[]) => void>,
   reactions: [] as Array<(...args: unknown[]) => void>,
+  pins: [] as Array<(...args: unknown[]) => void>,
   typing: [] as Array<(...args: unknown[]) => void>,
 }));
 
@@ -34,6 +35,13 @@ vi.mock("../model/realtime", () => ({
     );
     return vi.fn();
   }),
+  subscribeToConversationPinChanges: vi.fn((...args: unknown[]) => {
+    realtime.pins.push(
+      args[1] as (...args: unknown[]) => void,
+      args[2] as (...args: unknown[]) => void
+    );
+    return vi.fn();
+  }),
   subscribeToConversationTyping: vi.fn((...args: unknown[]) => {
     realtime.typing.push(args[2] as (...args: unknown[]) => void);
     return { sendTyping: vi.fn(), unsubscribe: vi.fn() };
@@ -48,6 +56,7 @@ function Harness({
   const state = useChatRealtime({
     chat,
     mergeReadState: () => undefined,
+    mergePinnedMessage: () => undefined,
     refreshMessages: async () => undefined,
     refreshConversation: async () => undefined,
     applyGapBackfill,
@@ -60,6 +69,7 @@ beforeEach(() => {
   realtime.messages.length = 0;
   realtime.reads.length = 0;
   realtime.reactions.length = 0;
+  realtime.pins.length = 0;
   realtime.typing.length = 0;
 });
 

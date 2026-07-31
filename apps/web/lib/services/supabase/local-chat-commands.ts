@@ -4,6 +4,7 @@ import type {
   ChatOperationResult,
   ClientChatMessage,
   ClientChatReadState,
+  ClientConversationPin,
   ConversationInput,
   LoadNewestMessagesInput,
   LoadOlderMessagesInput,
@@ -11,6 +12,7 @@ import type {
   RefreshMessagesInput,
   ReportGifInput,
   SendMessageInput,
+  SetPinnedMessageInput,
 } from "../contracts";
 import type { Json } from "@fish/supabase";
 import { createServerSupabaseClient } from "./server";
@@ -18,6 +20,9 @@ import type { AppSupabaseClient } from "./types";
 import {
   chatOlderPageSize,
   mapChatErrorNotice,
+  pinNotice,
+  toClientConversationPin,
+  type ConversationPinResponseRow,
   type MessageResponseRow,
   type ReadStateResponseRow,
   saveNotice,
@@ -253,6 +258,35 @@ export async function commandMessageViaLocalRpc(
 
   const [mapped] = await toClientChatMessagesWithSenders([message], context);
   return { ok: true, data: mapped };
+}
+
+export async function setPinnedMessageViaLocalRpc(
+  values: SetPinnedMessageInput,
+  contextOverride?: LocalChatCommandContext | null
+): Promise<ChatOperationResult<ClientConversationPin | null>> {
+  const context = contextOverride === undefined ? await getLocalFallbackContext() : contextOverride;
+  if (!context) {
+    return { ok: false, notice: pinNotice };
+  }
+
+  const { data, error } = await context.client.rpc("set_pinned_message", {
+    p_conversation_id: values.conversationId,
+    // The RPC's generated Args type collapses this required-but-nullable
+    // uuid parameter to `string` (see set_pinned_message in
+    // database.generated.ts); a null value legitimately means "unpin" and
+    // must still be sent, unlike the omit-when-null pattern used for
+    // genuinely optional RPC args elsewhere in this file.
+    p_message_id: values.messageId as string,
+  });
+
+  if (error) {
+    return { ok: false, notice: mapChatErrorNotice(error, pinNotice) };
+  }
+
+  return {
+    ok: true,
+    data: data ? toClientConversationPin(data as ConversationPinResponseRow) : null,
+  };
 }
 
 export async function markReadStateViaLocalRpc(

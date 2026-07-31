@@ -19,11 +19,14 @@ const meta = {
     canEdit: false,
     canDelete: false,
     canReportGif: false,
+    canPin: false,
+    pinned: false,
     onReply: fn(),
     onReact: fn(),
     onEdit: fn(),
     onDelete: fn(async () => ({ ok: true })),
     onReportGif: fn(),
+    onTogglePin: fn(),
   },
 } satisfies Meta<typeof MessageActions>;
 
@@ -44,6 +47,20 @@ export const OwnEditableMessage: Story = {
 
 export const CommunityMessage: Story = {
   args: { layout: "community" },
+};
+
+export const PinnableMessage: Story = {
+  args: { canPin: true },
+  play: async ({ canvasElement }) => {
+    (await revealActions(canvasElement)).click();
+  },
+};
+
+export const PinnedMessage: Story = {
+  args: { canPin: true, pinned: true },
+  play: async ({ canvasElement }) => {
+    (await revealActions(canvasElement)).click();
+  },
 };
 
 export const ReportableGif: Story = {

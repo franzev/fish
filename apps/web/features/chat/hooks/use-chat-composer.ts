@@ -1,6 +1,11 @@
 import { type ChatStickerId } from "@fish/core/chat";
 import type { ClientChatData, ClientChatGif } from "@/lib/services";
-import type { ReportGifActionState, SendMessageActionState } from "@/features/chat/contracts";
+import type {
+  PinnedMessageActionState,
+  ReportGifActionState,
+  SendMessageActionState,
+} from "@/features/chat/contracts";
+import type { ChatPinState } from "@/features/chat/model/store";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import type { LocalMessage } from "./use-chat-messages";
 import type { PendingChatImage } from "./use-chat-image-uploads";
@@ -11,6 +16,11 @@ import {
 import { useMessageMutations } from "./use-message-mutations";
 import { useSendMessage, type SendWithRequestIdOptions } from "./use-send-message";
 
+function noopSetPinnedMessage() {
+  // Callers that don't wire pin state (e.g. presentations without a pin
+  // surface, or existing tests) get an inert setter instead of a crash.
+}
+
 interface UseChatComposerOptions {
   chat: ClientChatData;
   messages: LocalMessage[];
@@ -19,6 +29,9 @@ interface UseChatComposerOptions {
   deleteMessageAction?: (input: unknown) => Promise<SendMessageActionState>;
   setReactionAction?: (input: unknown) => Promise<SendMessageActionState>;
   reportGifAction?: (input: unknown) => Promise<ReportGifActionState>;
+  setPinnedMessageAction?: (input: unknown) => Promise<PinnedMessageActionState>;
+  pinnedMessage?: ChatPinState | null;
+  setPinnedMessage?: (pin: ChatPinState | null) => void;
   sendLocalTyping: (typing: boolean) => void;
   stopLocalTyping: () => void;
   scheduleLocalTypingStop: () => void;
@@ -34,6 +47,9 @@ export function useChatComposer({
   deleteMessageAction,
   setReactionAction,
   reportGifAction,
+  setPinnedMessageAction,
+  pinnedMessage = null,
+  setPinnedMessage = noopSetPinnedMessage,
   sendLocalTyping,
   stopLocalTyping,
   scheduleLocalTypingStop,
@@ -120,11 +136,14 @@ export function useChatComposer({
     deleteMessageAction,
     setReactionAction,
     reportGifAction,
+    setPinnedMessageAction,
     setReplyTarget,
     setNotice,
     mergeRemoteMessage,
     requestDelete,
     failDelete,
+    pinnedMessage,
+    setPinnedMessage,
   });
 
   function startReplyingToMessage(message: LocalMessage) {

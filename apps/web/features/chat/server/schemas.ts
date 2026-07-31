@@ -90,6 +90,11 @@ export const reportGifSchema = z.strictObject({
   messageId: z.string().uuid(),
 });
 
+export const setPinnedMessageSchema = z.strictObject({
+  conversationId: z.string().uuid(),
+  messageId: z.string().uuid().nullable(),
+});
+
 export const markReadStateSchema = z.strictObject({
   conversationId: z.string().uuid(),
   lastDeliveredMessageId: z.string().trim().min(1).nullable(),

@@ -7,6 +7,7 @@ import type {
 import { chatLimits } from "@fish/core/chat";
 import type {
   MarkReadStateActionState,
+  PinnedMessageActionState,
   SendMessageActionState,
 } from "../contracts";
 import { sendNotice } from "./constants";
@@ -21,6 +22,7 @@ import {
   refreshMessagesSchema,
   reportGifSchema,
   sendMessageSchema,
+  setPinnedMessageSchema,
   setReactionSchema,
 } from "./schemas";
 
@@ -145,6 +147,17 @@ export function createChatActionHandlers(chat: ChatCommandService) {
       return result.ok
         ? { status: "sent" as const, values: parsed.data }
         : { status: "notice" as const, values: parsed.data, notice: result.notice };
+    },
+
+    async setPinnedMessage(input: unknown): Promise<PinnedMessageActionState> {
+      const parsed = setPinnedMessageSchema.safeParse(input);
+      if (!parsed.success) {
+        return { status: "notice", values: input, notice: sendNotice };
+      }
+      const result = await chat.setPinnedMessage(parsed.data);
+      return result.ok
+        ? { status: "sent", values: parsed.data, pin: result.data }
+        : { status: "notice", values: parsed.data, notice: result.notice };
     },
 
     async markReadState(input: unknown): Promise<MarkReadStateActionState> {

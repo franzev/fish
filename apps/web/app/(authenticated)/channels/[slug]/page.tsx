@@ -13,6 +13,7 @@ import {
   reportGifAction,
   sendMessageAction,
   searchChatMessagesAction,
+  setPinnedMessageAction,
   setReactionAction,
 } from "@/features/chat/server";
 import { authRedirects } from "@/features/auth/redirects";
@@ -70,6 +71,7 @@ export default async function ChannelPage({
       deleteMessageAction={deleteMessageAction}
       setReactionAction={setReactionAction}
       reportGifAction={reportGifAction}
+      setPinnedMessageAction={setPinnedMessageAction}
       markReadStateAction={markReadStateAction}
       refreshUnreadSummaryAction={refreshUnreadSummaryAction}
       refreshMessagesAction={refreshMessagesAction}

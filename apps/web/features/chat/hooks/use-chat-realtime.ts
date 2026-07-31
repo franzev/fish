@@ -1,4 +1,8 @@
-import type { ClientChatData, ClientChatReadState } from "@/lib/services";
+import type {
+  ClientChatData,
+  ClientChatReadState,
+  ClientConversationPin,
+} from "@/lib/services";
 import { resolveRealtimeSenderName } from "@/features/chat/model/chat-state";
 import {
   useCallback,
@@ -9,6 +13,7 @@ import {
 import {
   type ConversationTypingSubscription,
   subscribeToConversationMessages,
+  subscribeToConversationPinChanges,
   subscribeToConversationReactionChanges,
   subscribeToConversationReadStates,
   subscribeToConversationTyping,
@@ -32,11 +37,12 @@ import {
 // initial subscribes are skipped (SSR data is already current) and only a
 // channel's genuine re-subscribe after a drop is eligible to backfill
 // (review HIGH 10-03).
-type ReconnectChannelKey = "messages" | "reads" | "reactions";
+type ReconnectChannelKey = "messages" | "reads" | "reactions" | "pins";
 
 interface UseChatRealtimeOptions {
   chat: ClientChatData;
   mergeReadState: (readState: ClientChatReadState) => void;
+  mergePinnedMessage: (pin: ClientConversationPin | null) => void;
   refreshMessages: (messageIds: string[]) => Promise<void>;
   refreshConversation: () => Promise<void>;
   /**
@@ -51,6 +57,7 @@ interface UseChatRealtimeOptions {
 export function useChatRealtime({
   chat,
   mergeReadState,
+  mergePinnedMessage,
   refreshMessages,
   refreshConversation,
   applyGapBackfill,
@@ -256,6 +263,32 @@ export function useChatRealtime({
       unsubscribe();
     };
   }, [chat.conversationId, handleReconnected, refreshMessages]);
+
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribeToConversationPinChanges(
+      chat.conversationId,
+      (pin) => {
+        if (!active) {
+          return;
+        }
+
+        mergePinnedMessage(pin);
+      },
+      () => {
+        if (!active) {
+          return;
+        }
+
+        handleReconnected("pins");
+      }
+    );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [chat.conversationId, handleReconnected, mergePinnedMessage]);
 
   useEffect(() => {
     const subscription = subscribeToConversationTyping(

@@ -19,6 +19,7 @@ import {
   refreshUnreadSummaryAction,
   reportGifAction,
   sendMessageAction,
+  setPinnedMessageAction,
   setReactionAction,
 } from "@/features/chat/server";
 import {
@@ -79,6 +80,7 @@ export default async function DirectMessagePage({
         deleteMessageAction={deleteMessageAction}
         setReactionAction={setReactionAction}
         reportGifAction={reportGifAction}
+        setPinnedMessageAction={setPinnedMessageAction}
         markReadStateAction={markReadStateAction}
         refreshUnreadSummaryAction={refreshUnreadSummaryAction}
         refreshMessagesAction={refreshMessagesAction}

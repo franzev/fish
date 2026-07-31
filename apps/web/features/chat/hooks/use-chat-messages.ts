@@ -13,6 +13,7 @@ import {
 import {
   chatStore,
   useChatStore,
+  type ChatPinState,
 } from "@/features/chat/model/store";
 import { useHydratedConversation } from "./use-hydrated-conversation";
 import {
@@ -22,6 +23,7 @@ import {
   selectIsLoadingOlderForConversation,
   selectMessagesForConversation,
   selectOldestCursorForConversation,
+  selectPinnedMessageForConversation,
 } from "@/features/chat/model/store";
 
 export type LocalStatus = "pending" | "sending" | "sent" | "failed";
@@ -96,6 +98,14 @@ export function useChatMessages({
   const hasLoadError = useChatStore((state) =>
     selectHasLoadErrorForConversation(state, chat.conversationId)
   );
+  const pinnedMessage = useChatStore((state) =>
+    selectPinnedMessageForConversation(state, chat.conversationId)
+  );
+  const applyPinnedMessage = useChatStore((state) => state.setPinnedMessage);
+  const setPinnedMessage = useCallback(
+    (pin: ChatPinState | null) => applyPinnedMessage(chat.conversationId, pin),
+    [chat.conversationId, applyPinnedMessage]
+  );
   const hydrateWindow = useChatStore((state) => state.hydrateWindow);
   const requestOlderMessages = useChatStore((state) => state.requestOlderMessages);
   const applyOlderPage = useChatStore((state) => state.applyOlderPage);
@@ -113,6 +123,7 @@ export function useChatMessages({
   );
   const initialMessages = useMemo(() => chat.messages.map(toLocalMessage), [chat.messages]);
   const initialReadStates = useMemo(() => chat.readStates ?? [], [chat.readStates]);
+  const initialPinnedMessage = useMemo(() => chat.pinnedMessage ?? null, [chat.pinnedMessage]);
   const { hydrationKey } = useHydratedConversation(initialMessages, initialReadStates);
   const messages =
     storedHydrationKey === hydrationKey ? storeMessages : initialMessages;
@@ -135,6 +146,14 @@ export function useChatMessages({
     initialMessages,
     initialReadStates,
   ]);
+
+  // Server-hydrated pin state (SSR/navigation only — see initialPinnedMessage
+  // memoization) seeds the store the same way initialMessages/initialReadStates
+  // do above. setPinnedMessage no-ops when the value is unchanged, so this is
+  // safe to re-run whenever chat.pinnedMessage's identity is stable.
+  useEffect(() => {
+    setPinnedMessage(initialPinnedMessage);
+  }, [initialPinnedMessage, setPinnedMessage]);
 
   useEffect(() => {
     messageIdsRef.current = messages.map((message) => message.id);
@@ -183,6 +202,25 @@ export function useChatMessages({
     },
     [dispatchChatEvent, refreshMessagesAction]
   );
+
+  // The pinned banner needs the pinned message's body to render a snippet.
+  // A pin set while this window wasn't loaded (an old message scrolled past,
+  // or the pin arrived from another device) isn't in `messages` yet — fetch
+  // it once, the same fallback `focusMessageId` already relies on in
+  // ChatClient. refreshMessages' own cooldown/dedup guards a refetch storm;
+  // this ref only avoids re-issuing the request every render.
+  const requestedPinnedMessageIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pinnedMessage || messages.some((message) => message.id === pinnedMessage.messageId)) {
+      requestedPinnedMessageIdRef.current = null;
+      return;
+    }
+    if (requestedPinnedMessageIdRef.current === pinnedMessage.messageId) {
+      return;
+    }
+    requestedPinnedMessageIdRef.current = pinnedMessage.messageId;
+    void refreshMessages([pinnedMessage.messageId]);
+  }, [messages, pinnedMessage, refreshMessages]);
 
   // Cursor-based "load earlier" page (CLOAD-03). Guarded by an in-flight ref
   // (same idiom as refreshingMessageIdsRef) so a second call while a load is
@@ -371,5 +409,7 @@ export function useChatMessages({
     hasMoreOlder,
     isLoadingOlder,
     hasLoadError,
+    pinnedMessage,
+    setPinnedMessage,
   };
 }

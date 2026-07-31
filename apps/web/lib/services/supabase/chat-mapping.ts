@@ -2,12 +2,15 @@ import type {
   ClientChatGif,
   ClientChatMessage,
   ClientChatReadState,
+  ClientConversationPin,
 } from "../contracts";
 
 export const sendNotice =
   "That did not send yet. Keep this open and try again.";
 export const saveNotice =
   "That did not save yet. Keep this open and try again.";
+export const pinNotice =
+  "That pin did not save yet. Keep this open and try again.";
 export const chatOlderPageSize = 40;
 
 /** Persisted sticker references are deliberately more permissive than send
@@ -83,6 +86,13 @@ export interface ReadStateResponseRow {
   read_at: string | null;
 }
 
+export interface ConversationPinResponseRow {
+  conversation_id: string;
+  message_id: string;
+  pinned_by: string;
+  pinned_at: string;
+}
+
 export function toClientChatMessage(
   row: MessageResponseRow
 ): ClientChatMessage {
@@ -151,6 +161,16 @@ export function toClientReadState(
     deliveredAt: row.delivered_at,
     lastReadMessageId: row.last_read_message_id,
     readAt: row.read_at,
+  };
+}
+
+export function toClientConversationPin(
+  row: ConversationPinResponseRow
+): ClientConversationPin {
+  return {
+    messageId: row.message_id,
+    pinnedBy: row.pinned_by,
+    pinnedAt: row.pinned_at,
   };
 }
 

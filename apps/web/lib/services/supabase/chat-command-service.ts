@@ -5,6 +5,7 @@ import type {
   ChatOperationResult,
   ClientChatMessage,
   ClientChatReadState,
+  ClientConversationPin,
   ConversationInput,
   LoadNewestMessagesInput,
   LoadOlderMessagesInput,
@@ -12,10 +13,14 @@ import type {
   RefreshMessagesInput,
   ReportGifInput,
   SendMessageInput,
+  SetPinnedMessageInput,
 } from "../contracts";
 import {
+  pinNotice,
   sendNotice,
+  toClientConversationPin,
   toClientReadState,
+  type ConversationPinResponseRow,
   type MessageResponseRow,
   type ReadStateResponseRow,
 } from "./chat-mapping";
@@ -33,6 +38,7 @@ import {
   refreshMessagesViaLocalRpc,
   reportGifViaLocalRpc,
   sendMessageViaLocalRpc,
+  setPinnedMessageViaLocalRpc,
   toClientChatMessagesWithSenders,
   getLocalFallbackContext,
 } from "./local-chat-commands";
@@ -166,6 +172,33 @@ export class SupabaseChatCommandService implements ChatCommandService {
       };
     }
     return { ok: true, data: undefined };
+  }
+
+  async setPinnedMessage(
+    input: SetPinnedMessageInput
+  ): Promise<ChatOperationResult<ClientConversationPin | null>> {
+    const edge = await this.post("chat-command", {
+      action: "set-pinned-message",
+      conversationId: input.conversationId,
+      messageId: input.messageId,
+    });
+    if (!edge) return setPinnedMessageViaLocalRpc(input, await this.localContext());
+    if (!edge.response.ok) {
+      return {
+        ok: false,
+        notice:
+          typeof edge.payload?.error === "string"
+            ? edge.payload.error
+            : pinNotice,
+      };
+    }
+    const pin = edge.payload?.pin;
+    return {
+      ok: true,
+      data: pin
+        ? toClientConversationPin(pin as ConversationPinResponseRow)
+        : null,
+    };
   }
 
   async markReadState(

@@ -3,6 +3,7 @@ import type {
   ClientChatMessage,
   ClientChatReadState,
   ClientChatUnreadSummary,
+  ClientConversationPin,
   ClientDirectConversationPreview,
 } from "@/lib/services";
 
@@ -40,6 +41,13 @@ export interface ReportGifActionState {
   status: "sent" | "notice";
   values: unknown;
   notice?: string;
+}
+
+export interface PinnedMessageActionState {
+  status: "sent" | "notice";
+  values: unknown;
+  notice?: string;
+  pin?: ClientConversationPin | null;
 }
 
 export interface ChatSearchActionState {

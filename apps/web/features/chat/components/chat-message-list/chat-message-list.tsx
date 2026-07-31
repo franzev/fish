@@ -16,15 +16,19 @@ import type { MessageActionResult } from "./message-actions";
 import type { SendWithRequestIdOptions } from "@/features/chat/hooks/use-send-message";
 import { OlderMessagesControl } from "./older-messages-control";
 import { findFirstUnreadMessageId } from "./first-unread";
+import { PinnedMessageBanner } from "../pinned-message-banner";
 
 export interface ChatMessageActions {
   canDelete: boolean;
+  canPin: boolean;
   reply: (message: LocalMessage) => void;
   toggleReaction: (message: LocalMessage, emoji: string) => Promise<void>;
   isReactionPending?: (messageId: string) => boolean;
   delete: (message: LocalMessage) => Promise<MessageActionResult>;
   reportGif: (message: LocalMessage) => Promise<void>;
   retry: (options: SendWithRequestIdOptions) => Promise<void>;
+  togglePin: (message: LocalMessage) => Promise<MessageActionResult>;
+  isPinPending?: (messageId: string) => boolean;
 }
 
 export interface ChatMessageEditingState {
@@ -65,9 +69,14 @@ interface ChatMessageListProps {
     unreadBoundary: ClientChatUnreadSummary;
     friendActionsEnabled: boolean;
     focusMessageId?: string | null;
+    pinnedMessageId?: string | null;
     getAuthorName: (message: LocalMessage) => string;
     getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
     getAuthorMember: (message: LocalMessage) => CommunityMemberProfile;
+  };
+  pinnedMessage: {
+    message: LocalMessage | null;
+    onFocus: () => void;
   };
   actions: ChatMessageActions;
   editing: ChatMessageEditingState;
@@ -79,6 +88,7 @@ export function ChatMessageList({
   viewport,
   pagination,
   transcript,
+  pinnedMessage,
   actions,
   editing,
 }: ChatMessageListProps) {
@@ -94,6 +104,7 @@ export function ChatMessageList({
     unreadBoundary,
     friendActionsEnabled,
     focusMessageId,
+    pinnedMessageId,
     getAuthorName,
     getAuthorAvatar,
     getAuthorMember,
@@ -114,6 +125,10 @@ export function ChatMessageList({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
+      <PinnedMessageBanner
+        message={pinnedMessage.message}
+        onFocus={pinnedMessage.onFocus}
+      />
       <ScrollArea
         className="flex-1"
         viewportRef={viewport.ref}
@@ -156,6 +171,7 @@ export function ChatMessageList({
                   latestMineRequestId={latestMineRequestId}
                   showUnreadDivider={message.id === firstLoadedUnreadMessageId}
                   isFocused={message.id === focusMessageId}
+                  isPinned={message.id === pinnedMessageId}
                   getAuthorName={getAuthorName}
                   getAuthorAvatar={getAuthorAvatar}
                   getAuthorMember={getAuthorMember}

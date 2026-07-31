@@ -11,6 +11,7 @@ export function createChatRealtimeBindings(realtime: ChatRealtimeService) {
     subscribeToConversationReadStates: realtime.subscribeToReadStates.bind(realtime),
     subscribeToConversationReactionChanges:
       realtime.subscribeToReactionChanges.bind(realtime),
+    subscribeToConversationPinChanges: realtime.subscribeToPinChanges.bind(realtime),
     subscribeToConversationTyping: realtime.subscribeToTyping.bind(realtime),
   };
 }
@@ -26,5 +27,7 @@ export const subscribeToConversationReadStates: Realtime["subscribeToReadStates"
   (...args) => runtimeBindings().subscribeToConversationReadStates(...args);
 export const subscribeToConversationReactionChanges: Realtime["subscribeToReactionChanges"] =
   (...args) => runtimeBindings().subscribeToConversationReactionChanges(...args);
+export const subscribeToConversationPinChanges: Realtime["subscribeToPinChanges"] =
+  (...args) => runtimeBindings().subscribeToConversationPinChanges(...args);
 export const subscribeToConversationTyping: Realtime["subscribeToTyping"] =
   (...args) => runtimeBindings().subscribeToConversationTyping(...args);

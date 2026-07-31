@@ -12,6 +12,7 @@ function chatFake(
     sendMessage: unexpected,
     executeMessageCommand: unexpected,
     reportGif: unexpected,
+    setPinnedMessage: unexpected,
     markReadState: unexpected,
     refreshMessages: unexpected,
     refreshConversation: unexpected,
@@ -232,5 +233,74 @@ describe("createChatActionHandlers", () => {
 
     expect(result).toEqual({ status: "sent", values: { messageId } });
     expect(reportGif).toHaveBeenCalledWith({ messageId });
+  });
+
+  describe("setPinnedMessage", () => {
+    const conversationId = "11111111-1111-4111-8111-111111111111";
+    const messageId = "22222222-2222-4222-8222-222222222222";
+
+    it("pins a message through the command boundary", async () => {
+      const pin = {
+        messageId,
+        pinnedBy: "coach-1",
+        pinnedAt: "2026-07-31T00:00:00.000Z",
+      };
+      const setPinnedMessage = vi.fn(async () => ({ ok: true as const, data: pin }));
+      const handlers = createChatActionHandlers(chatFake({ setPinnedMessage }));
+
+      const result = await handlers.setPinnedMessage({ conversationId, messageId });
+
+      expect(result).toEqual({
+        status: "sent",
+        values: { conversationId, messageId },
+        pin,
+      });
+      expect(setPinnedMessage).toHaveBeenCalledWith({ conversationId, messageId });
+    });
+
+    it("unpins by sending a null message id", async () => {
+      const setPinnedMessage = vi.fn(async () => ({ ok: true as const, data: null }));
+      const handlers = createChatActionHandlers(chatFake({ setPinnedMessage }));
+
+      const result = await handlers.setPinnedMessage({
+        conversationId,
+        messageId: null,
+      });
+
+      expect(result).toEqual({
+        status: "sent",
+        values: { conversationId, messageId: null },
+        pin: null,
+      });
+    });
+
+    it("rejects a malformed conversation id before crossing the command boundary", async () => {
+      const setPinnedMessage = vi.fn();
+      const handlers = createChatActionHandlers(chatFake({ setPinnedMessage }));
+
+      const result = await handlers.setPinnedMessage({
+        conversationId: "not-a-uuid",
+        messageId,
+      });
+
+      expect(result.status).toBe("notice");
+      expect(setPinnedMessage).not.toHaveBeenCalled();
+    });
+
+    it("surfaces the calm notice when the pin command fails", async () => {
+      const setPinnedMessage = vi.fn(async () => ({
+        ok: false as const,
+        notice: "That pin did not save yet. Keep this open and try again.",
+      }));
+      const handlers = createChatActionHandlers(chatFake({ setPinnedMessage }));
+
+      const result = await handlers.setPinnedMessage({ conversationId, messageId });
+
+      expect(result).toEqual({
+        status: "notice",
+        values: { conversationId, messageId },
+        notice: "That pin did not save yet. Keep this open and try again.",
+      });
+    });
   });
 });

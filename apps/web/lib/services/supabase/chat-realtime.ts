@@ -5,11 +5,12 @@ import {
 import type {
   ClientChatMessage,
   ClientChatReadState,
+  ClientConversationPin,
 } from "@/lib/services";
 import type { ChatRealtimeService } from "../contracts";
 import { createBrowserSupabaseClient } from "./browser";
 import type { AppSupabaseClient } from "./types";
-import type { MessageReadRow, MessageRow } from "@fish/supabase";
+import type { ConversationPinRow, MessageReadRow, MessageRow } from "@fish/supabase";
 import { chatTypingContract, type ChatTypingPayload } from "@fish/core";
 import {
   toClientChatMessage as mapClientChatMessage,
@@ -108,6 +109,14 @@ function toRealtimeChatMessage(row: MessageRow): ClientChatMessage | null {
     reactions: [],
     images: [],
   } satisfies MessageResponseRow);
+}
+
+function toRealtimePin(row: ConversationPinRow): ClientConversationPin {
+  return {
+    messageId: row.message_id,
+    pinnedBy: row.pinned_by,
+    pinnedAt: row.pinned_at,
+  };
 }
 
 function toRealtimeReadState(row: MessageReadRow): ClientChatReadState {
@@ -268,6 +277,47 @@ export function subscribeToConversationReactionChanges(
   return deferred.unsubscribe;
 }
 
+export function subscribeToConversationPinChanges(
+  conversationId: string,
+  onPinChange: (pin: ClientConversationPin | null) => void,
+  onReconnected?: () => void
+): () => void {
+  const deferred = subscribeAfterAuth((supabase) => supabase
+    .channel(`conversation:${conversationId}:pins`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "conversation_pins",
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload: RealtimePostgresChangesPayload<ConversationPinRow>) => {
+        // Unlike insert/update, a delete row's `new` is always `{}` (see
+        // RealtimePostgresDeletePayload) — check eventType first rather than
+        // truthiness of `payload.new`, so an unpin is never missed.
+        if (payload.eventType === "DELETE") {
+          onPinChange(null);
+          return;
+        }
+        onPinChange(toRealtimePin(payload.new));
+      }
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        onReconnected?.();
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        reportFailedResult({ ok: false, code: status }, {
+          operation: "realtime.chat.pins.subscribe",
+          recoverable: true,
+          runtime: "browser",
+        });
+      }
+    }));
+
+  return deferred.unsubscribe;
+}
+
 export function subscribeToConversationTyping(
   conversationId: string,
   currentUserId: string,
@@ -315,5 +365,6 @@ export const supabaseChatRealtimeService: ChatRealtimeService = {
   subscribeToMessages: subscribeToConversationMessages,
   subscribeToReadStates: subscribeToConversationReadStates,
   subscribeToReactionChanges: subscribeToConversationReactionChanges,
+  subscribeToPinChanges: subscribeToConversationPinChanges,
   subscribeToTyping: subscribeToConversationTyping,
 };

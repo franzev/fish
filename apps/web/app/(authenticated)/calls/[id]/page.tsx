@@ -12,6 +12,7 @@ import {
   refreshUnreadSummaryAction,
   reportGifAction,
   sendMessageAction,
+  setPinnedMessageAction,
   setReactionAction,
 } from "@/features/chat/server";
 import { getCallChatData } from "@/features/chat/server/page-data";
@@ -36,6 +37,7 @@ export default async function CallPage({
           deleteMessageAction={deleteMessageAction}
           setReactionAction={setReactionAction}
           reportGifAction={reportGifAction}
+          setPinnedMessageAction={setPinnedMessageAction}
           markReadStateAction={markReadStateAction}
           refreshUnreadSummaryAction={refreshUnreadSummaryAction}
           refreshMessagesAction={refreshMessagesAction}

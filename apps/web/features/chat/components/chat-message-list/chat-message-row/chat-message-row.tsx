@@ -50,6 +50,7 @@ interface ChatMessageRowProps {
   latestMineRequestId: string | null;
   showUnreadDivider?: boolean;
   isFocused?: boolean;
+  isPinned?: boolean;
   getAuthorName: (message: LocalMessage) => string;
   getAuthorAvatar: (message: LocalMessage) => string | null | undefined;
   getAuthorMember: (message: LocalMessage) => CommunityMemberProfile;
@@ -72,6 +73,7 @@ export function ChatMessageRow({
   latestMineRequestId,
   showUnreadDivider = false,
   isFocused = false,
+  isPinned = false,
   getAuthorName,
   getAuthorAvatar,
   getAuthorMember,
@@ -112,6 +114,11 @@ export function ChatMessageRow({
     : "sent";
   const showMessageActions =
     message.localStatus === "sent" && !message.deletedAt && !interactionDisabled;
+  // Text messages only, matching set_pinned_message's server-side rule: not
+  // deleted (already guaranteed by showMessageActions) and a non-empty body.
+  // Also gated on the pin command actually being wired (mirrors canDelete).
+  const canPin = actions.canPin && Boolean(message.body.trim());
+  const pinActionPending = Boolean(actions.isPinPending?.(message.id));
   const authorMember = getAuthorMember(message);
   const attachments = message.attachments ?? message.images ?? [];
 
@@ -207,12 +214,16 @@ export function ChatMessageRow({
       canEdit={editing.enabled && Boolean(message.body.trim())}
       canDelete={actions.canDelete}
       canReportGif={Boolean(message.gif)}
+      canPin={canPin}
+      pinned={isPinned}
+      pinPending={pinActionPending}
       reactionsDisabled={reactionsDisabled}
       onReply={() => actions.reply(message)}
       onReact={(emoji) => void actions.toggleReaction(message, emoji)}
       onEdit={() => editing.start(message)}
       onDelete={() => actions.delete(message)}
       onReportGif={() => void actions.reportGif(message)}
+      onTogglePin={() => void actions.togglePin(message)}
     />
   ) : null;
 
