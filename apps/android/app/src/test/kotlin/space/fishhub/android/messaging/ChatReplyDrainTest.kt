@@ -35,17 +35,18 @@ class ChatReplyDrainTest {
         createdAt = "2026-07-30T00:00:00Z",
     )
 
-    private fun directory(vararg conversationIds: String): ChatResult<AuthorizedChatDirectory> =
-        ChatResult.Success(
-            AuthorizedChatDirectory(
-                currentUser = AuthorizedChatIdentity(
-                    userId = "me",
-                    role = UserRole.Client,
-                    displayName = "Me",
-                ),
-                conversations = conversationIds.map { sampleConversation(it) },
+    private fun directoryValue(vararg conversationIds: String): AuthorizedChatDirectory =
+        AuthorizedChatDirectory(
+            currentUser = AuthorizedChatIdentity(
+                userId = "me",
+                role = UserRole.Client,
+                displayName = "Me",
             ),
+            conversations = conversationIds.map { sampleConversation(it) },
         )
+
+    private fun directory(vararg conversationIds: String): ChatResult<AuthorizedChatDirectory> =
+        ChatResult.Success(directoryValue(*conversationIds))
 
     private fun drain(
         recorder: Recorder,
@@ -128,7 +129,7 @@ class ChatReplyDrainTest {
             recorder,
             listConversations = {
                 ChatResult.Success(
-                    directory("conv-1").value.copy(isAuthoritative = false),
+                    directoryValue("conv-1").copy(isAuthoritative = false),
                 )
             },
         ).run()
