@@ -1,9 +1,9 @@
 # Quick reply hardening — remaining work
 
-Status: open items after the implementation shipped (2026-07-30, commits
-`13016c0c..464d5dd3`). All eleven plan tasks landed with review sign-off and
-every automated gate green; this file lists what is NOT done yet. Full
-as-built record:
+Status: code follow-ups complete; physical-device verification remains
+release-blocking (2026-07-31). The original implementation shipped in commits
+`13016c0c..464d5dd3`; the follow-ups below are now implemented in the working
+tree. Full as-built record:
 `docs/superpowers/plans/2026-07-30-notification-quick-reply-hardening.md`.
 
 ## 1. Physical-device verification (blocks release)
@@ -31,37 +31,35 @@ environment, signed device builds):
 6. Both: no message text, token, or ID appears in logs during any of the
    above.
 
-## 2. Follow-up: Android trusts a stale directory (last text-destroy path)
+## 2. Completed: Android trusts a stale directory (last text-destroy path)
 
 `DefaultChatRepository.listAuthorizedConversations` falls back to the Room
-cache on remote failure but still reports `Success`, so the drain can treat a
-stale conversation list as authoritative and remove a reply to a brand-new,
-not-yet-cached conversation with no draft (`appendDraft` also fails there —
-no Room row). Two-condition coincidence, strictly better than pre-plan
-behavior, but it is the only place the feature still destroys user-typed
-text. Fix: surface the cache fallback as non-authoritative (flag on
-`AuthorizedChatDirectory` or a drain-only authoritative read) and return
-`Retry` with the entry intact — mirroring the iOS fix in `c8eb0d67`.
+cache on remote failure. The fallback now marks the directory
+`isAuthoritative = false`, and `ChatReplyDrain` returns `Retry` before
+mutating any queued reply. The cached directory remains available for
+rendering, but cannot authorize destructive background work.
 
-## 3. Follow-up: iOS has no background owner for the text outbox
+## 3. Completed: iOS has no background owner for the text outbox
 
 Android's worker flushes the composer text outbox for every authorized
-conversation each run; on iOS, queued sends are only reconciled inside
-`ConversationStore`, so an optimistically-queued message whose conversation
-screen was closed waits until the user reopens that exact conversation. The
-largest remaining platform divergence. Fix: a model-level background flusher
-(session attach + after the notification-reply drain), reusing stored
-`clientRequestId`s for idempotency.
+conversation each run. iOS now has a model-level
+`ChatTextOutboxFlusher` invoked on session attach and after notification-reply
+draining. It flushes text-only rows without requiring a conversation screen,
+preserves per-conversation order, and reuses stored `clientRequestId`s for
+idempotency. Attachment rows remain with the live store, which owns their
+upload resolver.
 
-## 4. Follow-up: programmatic iOS draft writes fire a false typing signal
+## 4. Completed: programmatic iOS draft writes fire a false typing signal
 
 `ConversationStore.draft`'s `didSet` schedules a typing broadcast, so the
-drain's live-store draft append (and two pre-existing programmatic call
-sites) makes the other participant see "typing…" from a background process.
-Fix: a `ConversationStore.appendDraft(_:)`/quiet setter that persists without
-scheduling typing, used at all three programmatic sites.
+drain's live-store draft append (and two pre-existing recovery call sites)
+made the other participant see "typing…" from a background process.
+`ConversationStore.appendDraft(_:)` and its quiet setter now persist recovered
+text without scheduling typing, and all three recovery sites use it.
 
-(Items 2–4 have one-click task chips already queued in this session.)
+Items 2–4 are implemented. Item 1 still requires signed physical-device
+verification with APNs/FCM credentials and cannot be completed by simulator
+builds alone.
 
 ## 5. Smaller accepted residuals (awareness, no action planned)
 
