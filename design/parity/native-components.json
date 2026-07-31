@@ -1779,15 +1779,25 @@
         "symbol": "MessageBubble",
         "visibility": "public"
       },
-      "props": [
-        "row",
-        "onAction",
-        "onRetry",
-        "reactionsEnabled"
-      ],
+      "props": {
+        "android": [
+          "row",
+          "onAction",
+          "onRetry",
+          "reactionsEnabled"
+        ],
+        "ios": [
+          "row",
+          "isPinned",
+          "onAction",
+          "onRetry",
+          "reactionsEnabled"
+        ]
+      },
       "previews": [],
-      "propsAligned": true,
-      "previewsAligned": false
+      "propsAligned": false,
+      "previewsAligned": false,
+      "propsBreak": "platform-idiom"
     },
     {
       "name": "MessageComposer",
@@ -2298,6 +2308,34 @@
       "propsAligned": false,
       "previewsAligned": false,
       "propsBreak": "state-bundling"
+    },
+    {
+      "name": "PinnedMessageBanner",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/PinnedMessageBanner.kt",
+        "symbol": "PinnedMessageBanner",
+        "visibility": "public"
+      },
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/PinnedMessageBanner.swift",
+        "symbol": "PinnedMessageBanner",
+        "visibility": "public"
+      },
+      "props": {
+        "android": [
+          "snippet",
+          "onClick",
+          "modifier"
+        ],
+        "ios": [
+          "pin",
+          "onTap"
+        ]
+      },
+      "previews": [],
+      "propsAligned": false,
+      "previewsAligned": false,
+      "propsBreak": "platform-idiom"
     },
     {
       "name": "PresenceAccountSheet",
