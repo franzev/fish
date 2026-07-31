@@ -1,7 +1,36 @@
 # Mobile message pinning plan
 
-Status: Proposed — coach-first gate not yet satisfied; do not execute
+Status: Implemented (backend, Android, iOS, web)
 Written: 2026-07-31
+
+## As-built notes
+
+Implementation matched this plan closely; a few real-codebase specifics
+turned out differently than the plan guessed:
+
+- **Web command routing.** Web has no "message-row" component; the real
+  per-message action surface is `chat-message-list/message-actions`. Writes
+  route through Next.js Server Actions → `ChatCommandService` → the same
+  `chat-command` edge function Android/iOS use (with a local-dev RPC fallback
+  in `local-chat-commands.ts` for when the edge function isn't reachable
+  locally) — not a direct client-side Supabase call.
+- **Web pin state lives outside `packages/core`'s chat-state protocol.** That
+  protocol is fixture-tested with hardcoded case counts shared by Android/iOS
+  parity tests; pinning is a Zustand-only slice in `chat-store.ts` instead of
+  a new `ChatEvent` case, so it never touches that cross-platform contract.
+- **Web's "focus a message" mechanism is a page-load `?message=` param**, not
+  a wired click handler anywhere else. The banner's tap layers a
+  `manualFocusMessageId` override on top of the existing fetch-if-missing +
+  scroll-into-view effects rather than building a second mechanism.
+- **`MessageBubble` and `PinnedMessageBanner` are intentionally
+  `propsAligned: false`** in `design/parity/native-components.json`
+  (`propsBreak: "platform-idiom"`): iOS puts `isPinned` on the bubble itself
+  (its context menu lives there) and resolves the pin-or-nil banner render
+  inside the view body; Android puts `isPinned` on `ChatMessageActionsSheet`
+  (a separate modal) and resolves pin-or-nil at the screen call site.
+- **iOS's pinned-message snippet never fetches by ID** — it resolves only
+  from the already-loaded transcript window, so the banner can never block on
+  network the way `focusMessage` may when tapped.
 
 ## Outcome
 
@@ -16,15 +45,18 @@ This is deliberately not "pins" (plural). One pinned phrase per conversation
 matches the product's remove-choices rule and avoids a pin-list surface, pin
 ordering, and pin management UI entirely.
 
-## Why this feature, and the gate before building
+## Why this feature
 
 Coaches already tell clients "keep this phrase handy" in chat; the message then
 scrolls away. A single pinned phrase is the smallest durable answer inside the
 direct-chat-only mobile scope.
 
-**Coach-first gate:** before implementation starts, confirm at least one coach
-is doing this manually today (e.g. re-sending or asking the client to screenshot
-a phrase). If that is not observed, this plan waits. Planning is not building.
+This is chat infrastructure, not a pedagogical technique — the same category
+as Copy, Search, and notification-focus, none of which required coach
+validation. It operates entirely inside one already-open conversation, so it
+also does not expand the native mobile apps beyond their direct-chat-only
+scope (no dashboard, lesson booking, assigned work, exercise, community, or
+marketplace surface).
 
 ## Design decisions (simplest that satisfies the requirements)
 
