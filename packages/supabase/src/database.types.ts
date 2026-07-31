@@ -21,6 +21,8 @@ export type ChatAttachmentCleanupRunRow =
 export type MessageGifRow = Database["public"]["Tables"]["message_gifs"]["Row"];
 export type MessageLinkPreviewRow =
   Database["public"]["Tables"]["message_link_previews"]["Row"];
+export type ConversationPinRow =
+  Database["public"]["Tables"]["conversation_pins"]["Row"];
 export type SharedContentRpcRow =
   Database["public"]["Functions"]["list_conversation_shared_content"]["Returns"][number];
 export type SharedContentCategoryRpcRow =

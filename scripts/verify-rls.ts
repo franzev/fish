@@ -459,6 +459,15 @@ function toChatMessage(data: unknown): ChatMessageRow | null {
   return (data as ChatMessageRow | null) ?? null;
 }
 
+// A function returning a single composite row comes back from PostgREST as
+// either a bare object or a one-element array depending on the client.
+function getPayloadRow(data: unknown): { message_id?: string } | null {
+  if (Array.isArray(data)) {
+    return (data[0] as { message_id?: string } | undefined) ?? null;
+  }
+  return (data as { message_id?: string } | null) ?? null;
+}
+
 async function getClientOneId(label: string): Promise<string | null> {
   const clientSession = await signInAs(client1.email, client1.password);
   return getOwnUserId(label, clientSession);
@@ -1419,6 +1428,163 @@ async function checkConversationMuteBoundary(): Promise<void> {
   );
 }
 
+async function checkConversationPinBoundary(): Promise<void> {
+  const label = "CHAT-12 pin";
+  const conversation = await getClientOneConversationFixture(label);
+  if (!conversation) return;
+
+  const member = await signInAs(client1.email, client1.password);
+  const outsider = await signInAs(client2.email, client2.password);
+
+  const { data: firstSend, error: firstSendError } = await member.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "Pin probe one",
+    p_client_request_id: "verify-chat-pin-one",
+  });
+  checkNoRecursion(`${label}: setup send one`, firstSendError);
+  const firstMessageId = toChatMessage(firstSend)?.id;
+  if (!firstMessageId) {
+    report(`${label}: setup send one succeeds`, false, firstSendError?.message);
+    return;
+  }
+
+  const { data: secondSend, error: secondSendError } = await member.rpc("send_chat_message", {
+    p_conversation_id: conversation.id,
+    p_body: "Pin probe two",
+    p_client_request_id: "verify-chat-pin-two",
+  });
+  checkNoRecursion(`${label}: setup send two`, secondSendError);
+  const secondMessageId = toChatMessage(secondSend)?.id;
+  if (!secondMessageId) {
+    report(`${label}: setup send two succeeds`, false, secondSendError?.message);
+    return;
+  }
+
+  const { error: outsiderWriteError } = await outsider.rpc("set_pinned_message", {
+    p_conversation_id: conversation.id,
+    p_message_id: firstMessageId,
+  });
+  report(
+    `${label}: a non-member cannot pin someone else's conversation`,
+    !!outsiderWriteError,
+    outsiderWriteError?.message ?? "accepted",
+  );
+
+  const { data: pinned, error: pinError } = await member.rpc("set_pinned_message", {
+    p_conversation_id: conversation.id,
+    p_message_id: firstMessageId,
+  });
+  checkNoRecursion(`${label}: member pin`, pinError);
+  report(
+    `${label}: a member can pin a message`,
+    !pinError && getPayloadRow(pinned)?.message_id === firstMessageId,
+    pinError?.message ?? JSON.stringify(pinned),
+  );
+
+  const { data: outsiderRows, error: outsiderReadError } = await outsider
+    .from("conversation_pins")
+    .select("conversation_id")
+    .eq("conversation_id", conversation.id);
+  report(
+    `${label}: a non-member cannot read the pin`,
+    !!outsiderReadError || (outsiderRows ?? []).length === 0,
+    outsiderReadError?.message ?? `rows=${(outsiderRows ?? []).length}`,
+  );
+
+  const { data: replaced, error: replaceError } = await member.rpc("set_pinned_message", {
+    p_conversation_id: conversation.id,
+    p_message_id: secondMessageId,
+  });
+  checkNoRecursion(`${label}: replace`, replaceError);
+  report(
+    `${label}: pinning again replaces the prior pin`,
+    !replaceError && getPayloadRow(replaced)?.message_id === secondMessageId,
+    replaceError?.message ?? JSON.stringify(replaced),
+  );
+
+  const { data: readBack } = await member
+    .from("conversation_pins")
+    .select("message_id")
+    .eq("conversation_id", conversation.id);
+  report(
+    `${label}: the conversation holds exactly one pin`,
+    (readBack ?? []).length === 1 && readBack?.[0]?.message_id === secondMessageId,
+    JSON.stringify(readBack),
+  );
+
+  const { error: deletedError } = await member.rpc("delete_chat_message", {
+    p_message_id: firstMessageId,
+  });
+  report(`${label}: setup delete succeeds`, !deletedError, deletedError?.message);
+
+  const { error: pinDeletedError } = await member.rpc("set_pinned_message", {
+    p_conversation_id: conversation.id,
+    p_message_id: firstMessageId,
+  });
+  report(
+    `${label}: a deleted message cannot be pinned`,
+    !!pinDeletedError,
+    pinDeletedError?.message ?? "accepted",
+  );
+
+  const { data: blankMessage, error: blankInsertError } = await admin
+    .from("messages")
+    .insert({
+      conversation_id: conversation.id,
+      sender_id: conversation.client_id,
+      sender_role: "client",
+      body: "",
+      client_request_id: "verify-chat-pin-blank-body",
+    })
+    .select("id")
+    .single();
+  report(`${label}: setup blank-body fixture succeeds`, !blankInsertError, blankInsertError?.message);
+  if (blankMessage?.id) {
+    const { error: pinBlankError } = await member.rpc("set_pinned_message", {
+      p_conversation_id: conversation.id,
+      p_message_id: blankMessage.id,
+    });
+    report(
+      `${label}: an attachment-only (blank body) message cannot be pinned`,
+      !!pinBlankError,
+      pinBlankError?.message ?? "accepted",
+    );
+  }
+
+  const { error: unpinError } = await member.rpc("set_pinned_message", {
+    p_conversation_id: conversation.id,
+    p_message_id: null,
+  });
+  report(`${label}: unpin succeeds`, !unpinError, unpinError?.message);
+
+  const { data: afterUnpin } = await member
+    .from("conversation_pins")
+    .select("conversation_id")
+    .eq("conversation_id", conversation.id);
+  report(
+    `${label}: unpin removes the row`,
+    (afterUnpin ?? []).length === 0,
+    JSON.stringify(afterUnpin),
+  );
+
+  const { error: idempotentUnpinError } = await member.rpc("set_pinned_message", {
+    p_conversation_id: conversation.id,
+    p_message_id: null,
+  });
+  report(`${label}: unpinning an already-unpinned conversation is idempotent`, !idempotentUnpinError, idempotentUnpinError?.message);
+
+  const { error: directInsertError } = await member.from("conversation_pins").insert({
+    conversation_id: conversation.id,
+    message_id: secondMessageId,
+    pinned_by: conversation.client_id,
+  });
+  report(
+    `${label}: a direct table insert is rejected outside the function`,
+    !!directInsertError,
+    directInsertError?.message ?? "insert succeeded",
+  );
+}
+
 async function main(): Promise<void> {
   await checkClientBoundary();
   await checkCoachBoundary();
@@ -1447,6 +1613,7 @@ async function main(): Promise<void> {
   await checkChatGifBoundaries();
   await checkChatStickerBoundaries();
   await checkConversationMuteBoundary();
+  await checkConversationPinBoundary();
 
   console.log(`\n${failures === 0 ? "All assertions passed." : `${failures} assertion(s) failed.`}`);
   process.exit(failures === 0 ? 0 : 1);

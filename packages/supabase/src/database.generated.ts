@@ -534,6 +534,85 @@ export type Database = {
           },
         ]
       }
+      conversation_mutes: {
+        Row: {
+          conversation_id: string
+          muted_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          muted_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          muted_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_mutes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_mutes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_pins: {
+        Row: {
+          conversation_id: string
+          message_id: string
+          pinned_at: string
+          pinned_by: string
+        }
+        Insert: {
+          conversation_id: string
+          message_id: string
+          pinned_at?: string
+          pinned_by: string
+        }
+        Update: {
+          conversation_id?: string
+          message_id?: string
+          pinned_at?: string
+          pinned_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_pins_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_pins_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_pins_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           client_id: string
@@ -2114,6 +2193,14 @@ export type Database = {
         Args: { p_cleanup_secret: string; p_project_url: string }
         Returns: undefined
       }
+      conversation_mute: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          conversation_id: string
+          muted: boolean
+          muted_until: string
+        }[]
+      }
       count_chat_messages: {
         Args: {
           p_author_types?: string[]
@@ -2710,6 +2797,8 @@ export type Database = {
           latest_message_created_at: string
           latest_message_sender_id: string
           latest_message_text: string
+          muted: boolean
+          muted_until: string
           participant_display_name: string
           participant_id: string
           participant_role: string
@@ -3127,6 +3216,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_conversation_mute: {
+        Args: {
+          p_conversation_id: string
+          p_duration_seconds?: number
+          p_muted: boolean
+        }
+        Returns: {
+          conversation_id: string
+          muted: boolean
+          muted_until: string
+        }[]
+      }
       set_message_reaction: {
         Args: { p_active: boolean; p_emoji: string; p_message_id: string }
         Returns: {
@@ -3147,6 +3248,21 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_pinned_message: {
+        Args: { p_conversation_id: string; p_message_id: string }
+        Returns: {
+          conversation_id: string
+          message_id: string
+          pinned_at: string
+          pinned_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "conversation_pins"
           isOneToOne: true
           isSetofReturn: false
         }

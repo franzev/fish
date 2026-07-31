@@ -38,6 +38,11 @@ type ChatCommand =
       durationSeconds: number | null;
     }
   | {
+      action: "set-pinned-message";
+      conversationId: string;
+      messageId: string | null;
+    }
+  | {
       action: "refresh-messages";
       messageIds: string[];
     }
@@ -312,6 +317,15 @@ Deno.serve(async (request) => {
       p_muted: command.muted,
       p_duration_seconds: durationSeconds,
     });
+  } else if (command.action === "set-pinned-message") {
+    if (!command.conversationId) {
+      return calmError("That conversation is not available.", 400);
+    }
+
+    response = await rpc(supabaseUrl, apiKey, authHeader, "set_pinned_message", {
+      p_conversation_id: command.conversationId,
+      p_message_id: command.messageId ?? null,
+    });
   } else if (command.action === "refresh-messages") {
     const messageIds = Array.isArray(command.messageIds)
       ? [...new Set(command.messageIds.filter((id) => typeof id === "string" && id))]
@@ -414,6 +428,10 @@ Deno.serve(async (request) => {
 
   if (command.action === "set-conversation-mute") {
     return Response.json({ mute: getPayloadMessage(payload) }, { headers: jsonHeaders });
+  }
+
+  if (command.action === "set-pinned-message") {
+    return Response.json({ pin: getPayloadMessage(payload) }, { headers: jsonHeaders });
   }
 
   const message = getPayloadMessage(payload);
