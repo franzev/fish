@@ -21,6 +21,7 @@ internal enum class ChatOperation {
     BlockUser,
     ListBlockedPeople,
     UnblockUser,
+    ReportUser,
     ReportGif,
     MarkRead,
     ConversationMute,

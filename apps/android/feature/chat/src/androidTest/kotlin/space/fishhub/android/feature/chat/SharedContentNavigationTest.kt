@@ -348,6 +348,7 @@ private fun SharedContentNavigationContract() {
                 onOpenSharedContent = { openGallery(NavigationOrigin.Details) },
                 onRemoveFriend = {},
                 onBlock = {},
+                onReport = {},
                 sharedContentModifier = Modifier.testTag(DetailsSharedContentTag),
                 requestSharedContentFocus =
                     focusReturn == FocusReturn.DetailsSharedContent,

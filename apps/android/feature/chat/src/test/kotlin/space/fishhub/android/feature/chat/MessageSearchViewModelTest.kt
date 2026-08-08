@@ -301,6 +301,7 @@ private class RecordingSearchRepository : ChatRepository {
     override suspend fun blockUser(userId: String): ChatResult<Unit> = ChatResult.Success(Unit)
     override suspend fun listBlockedPeople(): ChatResult<List<BlockedPerson>> = ChatResult.Success(emptyList())
     override suspend fun unblockUser(userId: String): ChatResult<Unit> = ChatResult.Success(Unit)
+    override suspend fun reportUser(userId: String): ChatResult<Unit> = ChatResult.Success(Unit)
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = ChatResult.Success(Unit)
     override suspend fun markRead(
         conversationId: String,

@@ -588,6 +588,7 @@ fun ChatRoute(
                         onClearReplyTarget = viewModel::clearReplyTarget,
                         onRemoveFriend = viewModel::removeFriend,
                         onBlockParticipant = viewModel::blockParticipant,
+                        onReportParticipant = viewModel::reportParticipant,
                         onSetQuiet = viewModel::setQuiet,
                         onPhotoAttachmentClick = { attachmentId ->
                             selectedPhotoId = attachmentId

@@ -645,6 +645,7 @@ internal object UnconfiguredChatRepository : ChatRepository {
     override suspend fun blockUser(userId: String): ChatResult<Unit> = failure
     override suspend fun listBlockedPeople(): ChatResult<List<BlockedPerson>> = failure
     override suspend fun unblockUser(userId: String): ChatResult<Unit> = failure
+    override suspend fun reportUser(userId: String): ChatResult<Unit> = failure
     override suspend fun reportGif(messageId: String): ChatResult<Unit> = failure
     override suspend fun markRead(
         conversationId: String,

@@ -1187,6 +1187,43 @@ class ChatViewModelTest {
         }
 
     @Test
+    fun `reporting a friend shows a calm notice and keeps the conversation open`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(participantRole = UserRole.Client)
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.reportParticipant()
+            advanceUntilIdle()
+
+            assertEquals(listOf("coach-1"), repository.reportedUserIds)
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals("Thanks — we’ve got your report about Coach Jordan.", state.model.notice)
+            assertEquals(ChatScreenState.Available, state.model.screenState)
+        }
+
+    @Test
+    fun `reporting fails with the server notice and keeps the conversation open`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeChatRepository(participantRole = UserRole.Client).apply {
+                reportResult = ChatResult.Failure(
+                    "That report did not go through. Try again.",
+                    true,
+                    space.fishhub.android.data.chat.FailureCategory.Network,
+                )
+            }
+            val viewModel = ChatViewModel(repository, SavedStateHandle(), TestFormatter)
+            advanceUntilIdle()
+
+            viewModel.reportParticipant()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as ChatRouteUiState.Conversation
+            assertEquals("That report did not go through. Try again.", state.model.notice)
+            assertEquals(ChatScreenState.Available, state.model.screenState)
+        }
+
+    @Test
     fun `refreshing the directory shows a conversation that did not exist before`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeChatRepository(conversationCount = 2)
@@ -1463,6 +1500,8 @@ private class FakeChatRepository(
     var listBlockedCalls: Int = 0
     val unblockCalls = mutableListOf<String>()
     var unblockResult: ChatResult<Unit> = ChatResult.Success(Unit)
+    val reportedUserIds = mutableListOf<String>()
+    var reportResult: ChatResult<Unit> = ChatResult.Success(Unit)
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> = messages
     override fun observeReadStates(conversationId: String): Flow<List<ChatReadState>> = readStates
@@ -1634,6 +1673,10 @@ private class FakeChatRepository(
     override suspend fun unblockUser(userId: String): ChatResult<Unit> {
         unblockCalls += userId
         return unblockResult
+    }
+    override suspend fun reportUser(userId: String): ChatResult<Unit> {
+        reportedUserIds += userId
+        return reportResult
     }
     override suspend fun markRead(
         conversationId: String,

@@ -229,6 +229,10 @@ class SupabaseContractTest {
             "{\"action\":\"unblock-user\",\"targetId\":\"friend-1\"}",
             json.encodeToString(FriendCommandRequest("unblock-user", "friend-1")),
         )
+        assertEquals(
+            "{\"action\":\"report-user\",\"targetId\":\"friend-1\"}",
+            json.encodeToString(FriendCommandRequest("report-user", "friend-1")),
+        )
     }
 
     @Test

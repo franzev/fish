@@ -45,7 +45,7 @@ import space.fishhub.android.feature.chat.model.ParticipantUiModel
 import space.fishhub.android.feature.presence.PresenceAvatar
 import space.fishhub.android.feature.presence.PresencePresentation
 
-private enum class SafetyConfirmation { Remove, Block }
+private enum class SafetyConfirmation { Remove, Block, Report }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +56,7 @@ fun ConversationDetailsSheet(
     onOpenSharedContent: () -> Unit = {},
     onRemoveFriend: () -> Unit,
     onBlock: () -> Unit,
+    onReport: () -> Unit,
     mute: ConversationMute = ConversationMute.On,
     onSetQuiet: (ConversationQuietPeriod?) -> Unit = {},
     sharedContentModifier: Modifier = Modifier,
@@ -192,6 +193,12 @@ fun ConversationDetailsSheet(
                             modifier = Modifier.fillMaxWidth(),
                             variant = FishButtonVariant.Ghost,
                         )
+                        FishButton(
+                            label = stringResource(R.string.report_participant, participant.displayName),
+                            onClick = { confirmation = SafetyConfirmation.Report },
+                            modifier = Modifier.fillMaxWidth(),
+                            variant = FishButtonVariant.Ghost,
+                        )
                     }
                     SafetyConfirmation.Remove -> SafetyConfirmationContent(
                         message = stringResource(
@@ -214,6 +221,18 @@ fun ConversationDetailsSheet(
                         onConfirm = {
                             onDismiss()
                             onBlock()
+                        },
+                        onBack = { confirmation = null },
+                    )
+                    SafetyConfirmation.Report -> SafetyConfirmationContent(
+                        message = stringResource(
+                            R.string.report_confirmation,
+                            participant.displayName,
+                        ),
+                        confirmLabel = stringResource(R.string.report),
+                        onConfirm = {
+                            onDismiss()
+                            onReport()
                         },
                         onBack = { confirmation = null },
                     )

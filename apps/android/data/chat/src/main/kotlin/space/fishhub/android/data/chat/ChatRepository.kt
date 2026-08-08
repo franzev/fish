@@ -421,6 +421,7 @@ interface ChatRepository {
     suspend fun blockUser(userId: String): ChatResult<Unit>
     suspend fun listBlockedPeople(): ChatResult<List<BlockedPerson>>
     suspend fun unblockUser(userId: String): ChatResult<Unit>
+    suspend fun reportUser(userId: String): ChatResult<Unit>
 
     /**
      * Signed avatar URLs keyed by profile id, for people this account may

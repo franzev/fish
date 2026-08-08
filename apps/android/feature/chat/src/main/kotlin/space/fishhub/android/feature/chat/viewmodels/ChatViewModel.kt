@@ -492,6 +492,21 @@ class ChatViewModel(
         }
     }
 
+    fun reportParticipant() {
+        val conversation = activeConversation ?: return
+        if (conversation.currentUserRole != space.fishhub.android.data.chat.model.UserRole.Client ||
+            conversation.participantRole != space.fishhub.android.data.chat.model.UserRole.Client
+        ) return
+        viewModelScope.launch {
+            latestNotice = when (val result = repository.reportUser(conversation.participantId)) {
+                is ChatResult.Success ->
+                    "Thanks — we’ve got your report about ${conversation.participantDisplayName}."
+                is ChatResult.Failure -> result.message
+            }
+            publish()
+        }
+    }
+
     fun toggleReaction(messageId: String, emoji: String) {
         val message = activeConversation?.let { conversation ->
             chatState.conversations[conversation.conversationId]

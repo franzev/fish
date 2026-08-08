@@ -832,6 +832,7 @@ class ChatAccessibilityTest {
                     onDismiss = { dismissed = true },
                     onRemoveFriend = { removed = true },
                     onBlock = {},
+                    onReport = {},
                 )
             }
         }

@@ -163,6 +163,9 @@
     <string name="block_participant">Block %1$s</string>
     <string name="unfriend_confirmation">Unfriend %1$s? You can add each other again later.</string>
     <string name="block_confirmation">Block %1$s? They won’t be able to find you or send requests, and they won’t be told.</string>
+    <string name="report">Report</string>
+    <string name="report_participant">Report %1$s</string>
+    <string name="report_confirmation">Report %1$s to the team? They won’t be told.</string>
     <string name="photo_attachment_accessibility">%1$s. Photo: %2$s. %3$s</string>
     <string name="file_attachment_accessibility">%1$s. File: %2$s. %3$s. %4$s</string>
     <string name="photo_viewer_accessibility">Photo viewer: %1$s. Pinch to zoom.</string>

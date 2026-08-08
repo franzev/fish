@@ -86,6 +86,7 @@ internal interface ChatRemoteDataSource {
     suspend fun blockUser(userId: String): Unit = error("Friend commands are not configured.")
     suspend fun listBlockedPeople(): List<BlockedPerson> = error("Blocked people are not configured.")
     suspend fun unblockUser(userId: String): Unit = error("Friend commands are not configured.")
+    suspend fun reportUser(userId: String): Unit = error("Friend commands are not configured.")
 
     /**
      * Signed avatar URLs for people this account may already see. An empty

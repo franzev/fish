@@ -510,6 +510,8 @@ internal class SupabaseChatRemoteDataSource(
 
     override suspend fun unblockUser(userId: String) = friendCommand("unblock-user", userId)
 
+    override suspend fun reportUser(userId: String) = friendCommand("report-user", userId)
+
     private suspend fun friendCommand(action: String, userId: String) {
         val response = client.functions.invoke(
             function = "friend-command",
