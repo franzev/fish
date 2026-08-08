@@ -58,6 +58,11 @@ is done.
       feature; the function fails closed (503, chat unaffected) until that
       secret is explicitly set to `true`, mirroring `AVATAR_UPLOADS_ENABLED`
       below.
+- [ ] Note the friends gate is two switches: besides the Edge secret above,
+      `require_client_caller` checks the `feature_flags` row with key
+      `friends` in the database (off by default), so every friends RPC —
+      including block and report — stays refused until that row is also
+      flipped to enabled. Turn both on together, or neither.
 - [ ] Deploy `presence-command` with JWT verification, then change a staging
       user's status through the account menu and confirm a trusted viewer sees
       the update.
