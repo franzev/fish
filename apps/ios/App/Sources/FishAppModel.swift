@@ -864,13 +864,16 @@ final class FishAppModel {
                 currentUserId: session.userId,
                 participantId: preview.participantId,
                 participantName: preview.participantDisplayName,
+                participantRole: preview.participantRole == "client" ? .client : .coach,
                 currentUserRole: preview.participantRole == "client" ? .coach : .client,
                 messaging: session.messaging,
                 commands: session.commands,
                 realtime: session.realtime,
                 gifProvider: gifProvider,
                 drafts: draftStore,
-                cache: cacheStore
+                cache: cacheStore,
+                friendCommands: friendsAvailable ? friendCommands : nil,
+                onBlocked: { [weak self] in self?.closeConversation() }
             )
             let staging = try AttachmentStaging()
             let uploads = AttachmentUploadsModel(

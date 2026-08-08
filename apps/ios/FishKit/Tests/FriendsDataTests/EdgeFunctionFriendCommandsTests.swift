@@ -168,6 +168,36 @@ struct EdgeFunctionFriendCommandsTests {
         }
     }
 
+    @Test func blockPostsTheTargetIdAndSucceedsOnDone() async throws {
+        let recorded = CommandStubURLProtocol.record(status: 200, body: #"{"done":true}"#)
+
+        try await makeCommands().blockUser(targetId: "33333333-3333-4333-8333-333333333333")
+
+        #expect(try #require(recorded.bodyJSON) == [
+            "action": "block-user",
+            "targetId": "33333333-3333-4333-8333-333333333333",
+        ])
+    }
+
+    @Test func reportPostsTheTargetIdAndSucceedsOnDone() async throws {
+        let recorded = CommandStubURLProtocol.record(status: 200, body: #"{"done":true}"#)
+
+        try await makeCommands().reportUser(targetId: "33333333-3333-4333-8333-333333333333")
+
+        #expect(try #require(recorded.bodyJSON) == [
+            "action": "report-user",
+            "targetId": "33333333-3333-4333-8333-333333333333",
+        ])
+    }
+
+    @Test func blockWithoutAReadableDoneIsUnavailable() async throws {
+        _ = CommandStubURLProtocol.record(status: 200, body: "{}")
+
+        await #expect(throws: FriendCommandFailure.unavailable) {
+            try await makeCommands().blockUser(targetId: "33333333-3333-4333-8333-333333333333")
+        }
+    }
+
     @Test func missingSessionFailsWithoutNetwork() async throws {
         let recorded = CommandStubURLProtocol.record(
             status: 200,

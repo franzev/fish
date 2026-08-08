@@ -56,6 +56,8 @@ actor ScriptedFriends: FriendDirectoryProviding, FriendCommandsProviding {
     private(set) var searchedUsernames: [String] = []
     private(set) var sentRequests: [SentRequest] = []
     private(set) var respondedRequests: [RespondedRequest] = []
+    private(set) var blockedUserIds: [String] = []
+    private(set) var reportedUserIds: [String] = []
     private(set) var listCalls = 0
 
     init(
@@ -134,6 +136,14 @@ actor ScriptedFriends: FriendDirectoryProviding, FriendCommandsProviding {
 
         await waitAtCommandGate()
         return try unwrap(claimed)
+    }
+
+    func blockUser(targetId: String) async throws {
+        blockedUserIds.append(targetId)
+    }
+
+    func reportUser(targetId: String) async throws {
+        reportedUserIds.append(targetId)
     }
 
     // MARK: - Gates

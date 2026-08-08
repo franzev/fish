@@ -231,6 +231,7 @@ struct ConversationView: View {
                     onSetQuiet: { period in
                         Task { await store.setQuiet(period) }
                     },
+                    safetyContent: safetyContent(for: store),
                     requestedFocus: $requestedFocus
                 )
             } else {
@@ -293,6 +294,16 @@ struct ConversationView: View {
                 LoadingView(message: "Opening shared content…")
             }
         }
+    }
+
+    /// Block/report only make sense for a friend, never a coach.
+    private func safetyContent(for store: ConversationStore) -> AnyView? {
+        guard store.participantRole == .client, let model = store.conversationSafety else {
+            return nil
+        }
+        return AnyView(
+            ConversationSafetyView(model: model)
+        )
     }
 
     private func openSharedContent(_ intent: SharedContentNavigationIntent) {

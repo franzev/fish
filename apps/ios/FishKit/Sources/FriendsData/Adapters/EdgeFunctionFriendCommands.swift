@@ -43,12 +43,42 @@ public struct EdgeFunctionFriendCommands: FriendCommandsProviding {
         )
     }
 
+    public func blockUser(targetId: String) async throws {
+        try await sendCommand(BlockUserBody(targetId: targetId))
+    }
+
+    public func reportUser(targetId: String) async throws {
+        try await sendCommand(ReportUserBody(targetId: targetId))
+    }
+
     /// The success body is `{request: {...}}`. A 2xx carrying no request row
     /// still means friends could not do the thing, so it degrades to the one
     /// fallback line rather than inventing a message here.
     private func send<Request: Encodable>(
         _ body: Request
     ) async throws -> FriendRequestOutcome {
+        let data = try await post(body)
+        guard let outcome = try? JSONDecoder()
+            .decode(FriendCommandResponseWire.self, from: data)
+            .request?.domain
+        else {
+            throw FriendCommandFailure.unavailable
+        }
+        return outcome
+    }
+
+    /// block-user/unblock-user/report-user share the `{done: boolean}` body
+    /// instead of `send`'s `{request: {...}}` — a 2xx with no readable `done`
+    /// still means the command did not go through.
+    private func sendCommand<Request: Encodable>(_ body: Request) async throws {
+        let data = try await post(body)
+        guard (try? JSONDecoder().decode(FriendCommandDoneWire.self, from: data))?.done == true
+        else {
+            throw FriendCommandFailure.unavailable
+        }
+    }
+
+    private func post<Request: Encodable>(_ body: Request) async throws -> Data {
         guard let token = await configuration.accessToken() else {
             throw FriendCommandFailure.notAuthenticated
         }
@@ -75,12 +105,6 @@ public struct EdgeFunctionFriendCommands: FriendCommandsProviding {
         guard let http, (200..<300).contains(http.statusCode) else {
             throw friendFailure(data: data, statusCode: http?.statusCode)
         }
-        guard let outcome = try? JSONDecoder()
-            .decode(FriendCommandResponseWire.self, from: data)
-            .request?.domain
-        else {
-            throw FriendCommandFailure.unavailable
-        }
-        return outcome
+        return data
     }
 }

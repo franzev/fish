@@ -28,6 +28,9 @@ public protocol FriendCommandsProviding: Sendable {
         requestId: String,
         response: FriendRequestResponse
     ) async throws -> FriendRequestOutcome
+
+    func blockUser(targetId: String) async throws
+    func reportUser(targetId: String) async throws
 }
 
 /// Live wake-up hints for the signed-in person. The stream stays open for as

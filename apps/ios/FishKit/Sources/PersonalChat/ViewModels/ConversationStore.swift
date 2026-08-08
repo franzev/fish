@@ -1,6 +1,7 @@
 import ChatCore
 import ChatData
 import Foundation
+import FriendsData
 import Observation
 
 @MainActor @Observable
@@ -14,9 +15,14 @@ public final class ConversationStore {
     public let currentUserId: String
     public let participantId: String
     public let participantName: String
+    public let participantRole: ChatUserRole
     public let currentUserName: String
     public let currentUserRole: ChatUserRole
     public let messageSearch: MessageSearchModel
+    /// `nil` only when no friend-command provider was wired in (a preview or
+    /// a build without `FriendsData` configured); the client/coach check that
+    /// gates whether `safetyContent` is shown at all lives at the call site.
+    public let conversationSafety: ConversationSafetyModel?
 
     public var draft = "" {
         didSet {
@@ -79,6 +85,7 @@ public final class ConversationStore {
         currentUserId: String,
         participantId: String,
         participantName: String,
+        participantRole: ChatUserRole = .client,
         currentUserName: String = "You",
         currentUserRole: ChatUserRole = .client,
         messaging: any ChatMessagingProviding,
@@ -91,12 +98,15 @@ public final class ConversationStore {
             try await Task.sleep(for: $0)
         },
         drafts: (any ChatDraftProviding)? = nil,
-        cache: (any ChatDirectoryCaching)? = nil
+        cache: (any ChatDirectoryCaching)? = nil,
+        friendCommands: (any FriendCommandsProviding)? = nil,
+        onBlocked: @escaping () -> Void = {}
     ) {
         self.conversationId = conversationId
         self.currentUserId = currentUserId
         self.participantId = participantId
         self.participantName = participantName
+        self.participantRole = participantRole
         self.currentUserName = currentUserName
         self.currentUserRole = currentUserRole
         self.messaging = messaging
@@ -108,6 +118,14 @@ public final class ConversationStore {
         self.sleep = sleep
         self.drafts = drafts
         self.cache = cache
+        self.conversationSafety = friendCommands.map {
+            ConversationSafetyModel(
+                targetId: participantId,
+                targetDisplayName: participantName,
+                commands: $0,
+                onBlocked: onBlocked
+            )
+        }
         self.messageSearch = MessageSearchModel(
             conversationId: conversationId,
             currentUserId: currentUserId,

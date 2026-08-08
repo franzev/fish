@@ -118,8 +118,23 @@ struct RespondFriendRequestBody: Encodable {
     let response: String
 }
 
+struct BlockUserBody: Encodable {
+    let action = "block-user"
+    let targetId: String
+}
+
+struct ReportUserBody: Encodable {
+    let action = "report-user"
+    let targetId: String
+}
+
 struct FriendCommandResponseWire: Decodable {
     let request: FriendRequestWire?
+}
+
+/// The success body for block-user/unblock-user/report-user.
+struct FriendCommandDoneWire: Decodable {
+    let done: Bool
 }
 
 struct FriendRequestWire: Decodable {
