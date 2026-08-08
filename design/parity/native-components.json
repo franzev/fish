@@ -1030,6 +1030,7 @@
           "onOpenSharedContent",
           "onRemoveFriend",
           "onBlock",
+          "onReport",
           "mute",
           "onSetQuiet",
           "sharedContentModifier",
@@ -1148,6 +1149,20 @@
       "previews": [],
       "previewsAligned": false,
       "only": "android"
+    },
+    {
+      "name": "ConversationSafetyView",
+      "ios": {
+        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ConversationSafetyView.swift",
+        "symbol": "ConversationSafetyView",
+        "visibility": "public"
+      },
+      "props": [
+        "model"
+      ],
+      "previews": [],
+      "previewsAligned": false,
+      "only": "ios"
     },
     {
       "name": "EmojiPanel",
