@@ -15,6 +15,8 @@ import space.fishhub.android.core.designsystem.FishTheme
 import space.fishhub.android.data.chat.ConversationMute
 import space.fishhub.android.feature.chat.views.ConversationQuietRow
 import space.fishhub.android.feature.chat.views.ConversationRow
+import space.fishhub.android.feature.chat.views.ConversationSafetySection
+import space.fishhub.android.feature.chat.views.SafetyConfirmation
 import space.fishhub.android.feature.chat.views.PinnedMessageBanner
 import space.fishhub.android.feature.chat.sharedcontent.ShowEarlierBoundary
 import space.fishhub.android.feature.chat.sharedcontent.SharedContentUnavailableState
@@ -618,4 +620,115 @@ fun ConversationRowStatesLightScreenshot() {
 @Composable
 fun ConversationRowStatesDarkScreenshot() {
     ComponentStrip(darkTheme = true) { ConversationRowStates() }
+}
+
+@PreviewTest
+@Preview(name = "conversation-safety-entry-light", widthDp = 412, showBackground = true)
+@Composable
+fun ConversationSafetyEntryLightScreenshot() {
+    ComponentStrip(darkTheme = false) {
+        ConversationSafetySection(
+            displayName = "Sam Lee",
+            confirmation = null,
+            onConfirmationChange = {},
+            onRemoveFriend = {},
+            onBlock = {},
+            onReport = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation-safety-entry-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ConversationSafetyEntryDarkScreenshot() {
+    ComponentStrip(darkTheme = true) {
+        ConversationSafetySection(
+            displayName = "Sam Lee",
+            confirmation = null,
+            onConfirmationChange = {},
+            onRemoveFriend = {},
+            onBlock = {},
+            onReport = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "conversation-safety-confirming-block-light", widthDp = 412, showBackground = true)
+@Composable
+fun ConversationSafetyConfirmingBlockLightScreenshot() {
+    ComponentStrip(darkTheme = false) {
+        ConversationSafetySection(
+            displayName = "Sam Lee",
+            confirmation = SafetyConfirmation.Block,
+            onConfirmationChange = {},
+            onRemoveFriend = {},
+            onBlock = {},
+            onReport = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation-safety-confirming-block-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ConversationSafetyConfirmingBlockDarkScreenshot() {
+    ComponentStrip(darkTheme = true) {
+        ConversationSafetySection(
+            displayName = "Sam Lee",
+            confirmation = SafetyConfirmation.Block,
+            onConfirmationChange = {},
+            onRemoveFriend = {},
+            onBlock = {},
+            onReport = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "conversation-safety-confirming-report-light", widthDp = 412, showBackground = true)
+@Composable
+fun ConversationSafetyConfirmingReportLightScreenshot() {
+    ComponentStrip(darkTheme = false) {
+        ConversationSafetySection(
+            displayName = "Sam Lee",
+            confirmation = SafetyConfirmation.Report,
+            onConfirmationChange = {},
+            onRemoveFriend = {},
+            onBlock = {},
+            onReport = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(
+    name = "conversation-safety-confirming-report-dark",
+    widthDp = 412,
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+)
+@Composable
+fun ConversationSafetyConfirmingReportDarkScreenshot() {
+    ComponentStrip(darkTheme = true) {
+        ConversationSafetySection(
+            displayName = "Sam Lee",
+            confirmation = SafetyConfirmation.Report,
+            onConfirmationChange = {},
+            onRemoveFriend = {},
+            onBlock = {},
+            onReport = {},
+        )
+    }
 }

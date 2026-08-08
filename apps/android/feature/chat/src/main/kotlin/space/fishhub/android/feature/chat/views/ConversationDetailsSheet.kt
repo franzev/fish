@@ -34,8 +34,6 @@ import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.flow.first
 import space.fishhub.android.core.designsystem.FishIcons
 import space.fishhub.android.core.designsystem.FishTheme
-import space.fishhub.android.core.designsystem.component.FishButton
-import space.fishhub.android.core.designsystem.component.FishButtonVariant
 import space.fishhub.android.core.designsystem.component.FishIconButton
 import space.fishhub.android.core.designsystem.component.FishModalBottomSheet
 import space.fishhub.android.data.chat.ConversationMute
@@ -44,8 +42,6 @@ import space.fishhub.android.feature.chat.R
 import space.fishhub.android.feature.chat.model.ParticipantUiModel
 import space.fishhub.android.feature.presence.PresenceAvatar
 import space.fishhub.android.feature.presence.PresencePresentation
-
-private enum class SafetyConfirmation { Remove, Block, Report }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,92 +175,24 @@ fun ConversationDetailsSheet(
                 },
             )
             if (participant.friendSafetyAvailable) {
-                when (confirmation) {
-                    null -> {
-                        FishButton(
-                            label = stringResource(R.string.unfriend),
-                            onClick = { confirmation = SafetyConfirmation.Remove },
-                            modifier = Modifier.fillMaxWidth(),
-                            variant = FishButtonVariant.Secondary,
-                        )
-                        FishButton(
-                            label = stringResource(R.string.block_participant, participant.displayName),
-                            onClick = { confirmation = SafetyConfirmation.Block },
-                            modifier = Modifier.fillMaxWidth(),
-                            variant = FishButtonVariant.Ghost,
-                        )
-                        FishButton(
-                            label = stringResource(R.string.report_participant, participant.displayName),
-                            onClick = { confirmation = SafetyConfirmation.Report },
-                            modifier = Modifier.fillMaxWidth(),
-                            variant = FishButtonVariant.Ghost,
-                        )
-                    }
-                    SafetyConfirmation.Remove -> SafetyConfirmationContent(
-                        message = stringResource(
-                            R.string.unfriend_confirmation,
-                            participant.displayName,
-                        ),
-                        confirmLabel = stringResource(R.string.unfriend),
-                        onConfirm = {
-                            onDismiss()
-                            onRemoveFriend()
-                        },
-                        onBack = { confirmation = null },
-                    )
-                    SafetyConfirmation.Block -> SafetyConfirmationContent(
-                        message = stringResource(
-                            R.string.block_confirmation,
-                            participant.displayName,
-                        ),
-                        confirmLabel = stringResource(R.string.block),
-                        onConfirm = {
-                            onDismiss()
-                            onBlock()
-                        },
-                        onBack = { confirmation = null },
-                    )
-                    SafetyConfirmation.Report -> SafetyConfirmationContent(
-                        message = stringResource(
-                            R.string.report_confirmation,
-                            participant.displayName,
-                        ),
-                        confirmLabel = stringResource(R.string.report),
-                        onConfirm = {
-                            onDismiss()
-                            onReport()
-                        },
-                        onBack = { confirmation = null },
-                    )
-                }
+                ConversationSafetySection(
+                    displayName = participant.displayName,
+                    confirmation = confirmation,
+                    onConfirmationChange = { confirmation = it },
+                    onRemoveFriend = {
+                        onDismiss()
+                        onRemoveFriend()
+                    },
+                    onBlock = {
+                        onDismiss()
+                        onBlock()
+                    },
+                    onReport = {
+                        onDismiss()
+                        onReport()
+                    },
+                )
             }
         }
     }
-}
-
-@Composable
-private fun SafetyConfirmationContent(
-    message: String,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onBack: () -> Unit,
-) {
-    Text(
-        text = message,
-        modifier = Modifier.fillMaxWidth(),
-        color = FishTheme.colors.body,
-        style = FishTheme.typography.body,
-    )
-    FishButton(
-        label = confirmLabel,
-        onClick = onConfirm,
-        modifier = Modifier.fillMaxWidth(),
-        variant = FishButtonVariant.Secondary,
-    )
-    FishButton(
-        label = stringResource(R.string.back),
-        onClick = onBack,
-        modifier = Modifier.fillMaxWidth(),
-        variant = FishButtonVariant.Ghost,
-    )
 }

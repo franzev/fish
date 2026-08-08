@@ -1152,17 +1152,33 @@
     },
     {
       "name": "ConversationSafetyView",
+      "android": {
+        "file": "apps/android/feature/chat/src/main/kotlin/space/fishhub/android/feature/chat/views/ConversationSafetySection.kt",
+        "symbol": "ConversationSafetySection",
+        "visibility": "internal"
+      },
       "ios": {
         "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ConversationSafetyView.swift",
         "symbol": "ConversationSafetyView",
         "visibility": "public"
       },
-      "props": [
-        "model"
-      ],
+      "props": {
+        "android": [
+          "displayName",
+          "confirmation",
+          "onConfirmationChange",
+          "onRemoveFriend",
+          "onBlock",
+          "onReport"
+        ],
+        "ios": [
+          "model"
+        ]
+      },
       "previews": [],
+      "propsAligned": false,
       "previewsAligned": false,
-      "only": "ios"
+      "propsBreak": "state-bundling"
     },
     {
       "name": "EmojiPanel",
