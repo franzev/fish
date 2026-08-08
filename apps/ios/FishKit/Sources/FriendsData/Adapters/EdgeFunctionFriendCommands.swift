@@ -67,9 +67,11 @@ public struct EdgeFunctionFriendCommands: FriendCommandsProviding {
         return outcome
     }
 
-    /// block-user/unblock-user/report-user share the `{done: boolean}` body
-    /// instead of `send`'s `{request: {...}}` — a 2xx with no readable `done`
-    /// still means the command did not go through.
+    /// block-user and report-user answer `{done: boolean}` instead of
+    /// `send`'s `{request: {...}}` — a 2xx with no readable `done` still
+    /// means the command did not go through. Careful before routing
+    /// unblock-user here: its RPC returns `false` for a no-op unblock, which
+    /// this helper would misread as a failure.
     private func sendCommand<Request: Encodable>(_ body: Request) async throws {
         let data = try await post(body)
         guard (try? JSONDecoder().decode(FriendCommandDoneWire.self, from: data))?.done == true

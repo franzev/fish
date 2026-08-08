@@ -344,6 +344,10 @@ struct ConversationView: View {
             model.closeSharedContentRoute()
             requestedFocus = intent.focusTarget
         case .details:
+            // The details sheet is gone; a half-armed Block/Report
+            // confirmation (or a lingering thanks notice) must not greet the
+            // next visit. Matches Android's per-presentation reset.
+            model.conversationStore?.conversationSafety?.cancelConfirming()
             requestedFocus = .participantDetails
         }
     }
