@@ -1,3 +1,4 @@
+import ChatCore
 import Foundation
 import Testing
 @testable import ChatData
@@ -58,5 +59,23 @@ struct AccountSafetyWireTests {
                 from: Data(#"{"mode":"online"}"#.utf8)
             )
         }
+    }
+}
+
+/// Regression coverage for the role fix: the account profile decides the
+/// signed-in person's own role, and the participant-inversion fallback only
+/// applies when the profile read failed.
+struct CurrentUserRoleTests {
+    @Test func accountProfileWinsForClientToClientConversations() {
+        // A client talking to a friend (another client): the old inversion
+        // would have mislabelled them as a coach.
+        #expect(ChatUserRole.currentUser(account: .client, participantRole: "client") == .client)
+        #expect(ChatUserRole.currentUser(account: .client, participantRole: "coach") == .client)
+        #expect(ChatUserRole.currentUser(account: .coach, participantRole: "client") == .coach)
+    }
+
+    @Test func missingAccountProfileFallsBackToInversion() {
+        #expect(ChatUserRole.currentUser(account: nil, participantRole: "client") == .coach)
+        #expect(ChatUserRole.currentUser(account: nil, participantRole: "coach") == .client)
     }
 }

@@ -1,8 +1,27 @@
+import ChatCore
 import Foundation
 
 public enum ChatAccountRole: String, Codable, Sendable, Equatable {
     case client
     case coach
+}
+
+public extension ChatUserRole {
+    /// The signed-in person's own role for a conversation. The account
+    /// profile is authoritative; inverting the participant's role is only a
+    /// last resort for a session whose profile read failed, because the
+    /// inversion assumes every conversation is coach-and-client — false for
+    /// a friend (client-to-client) conversation.
+    static func currentUser(
+        account: ChatAccountRole?,
+        participantRole: String
+    ) -> ChatUserRole {
+        switch account {
+        case .client: .client
+        case .coach: .coach
+        case nil: participantRole == "client" ? .coach : .client
+        }
+    }
 }
 
 public struct ChatAccountProfile: Sendable, Equatable {

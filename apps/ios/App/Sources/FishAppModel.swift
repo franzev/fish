@@ -865,7 +865,10 @@ final class FishAppModel {
                 participantId: preview.participantId,
                 participantName: preview.participantDisplayName,
                 participantRole: preview.participantRole == "client" ? .client : .coach,
-                currentUserRole: preview.participantRole == "client" ? .coach : .client,
+                currentUserRole: .currentUser(
+                    account: session.account?.role,
+                    participantRole: preview.participantRole
+                ),
                 messaging: session.messaging,
                 commands: session.commands,
                 realtime: session.realtime,
