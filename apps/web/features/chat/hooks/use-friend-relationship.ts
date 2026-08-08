@@ -39,6 +39,7 @@ export function useFriendRelationship({
   const [sendingRequest, setSendingRequest] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [clientRequestId, setClientRequestId] = useState<string | null>(null);
   const { begin, isLatest, invalidate } = useLatestRequest(member.id);
@@ -88,6 +89,7 @@ export function useFriendRelationship({
     setLoadingRelationship(false);
     setSendingRequest(false);
     setBlocking(false);
+    setReporting(false);
     setNotice(null);
   }, [invalidate]);
 
@@ -140,6 +142,30 @@ export function useFriendRelationship({
     }
   }, [begin, blocking, commandsOverride, isLatest, member.id]);
 
+  /// Unlike blocking, a report changes nothing about the relationship, so
+  /// success leaves every other state alone; the caller chooses the notice.
+  const reportMember = useCallback(async () => {
+    if (reporting) return false;
+    const sequence = begin();
+    setReporting(true);
+    setNotice(null);
+    try {
+      const result = await getFriendCommandService(commandsOverride).reportUser(member.id);
+      if (!isLatest(sequence)) return false;
+      setReporting(false);
+      if (!result.ok) {
+        setNotice(result.notice);
+        return false;
+      }
+      return true;
+    } catch {
+      if (!isLatest(sequence)) return false;
+      setReporting(false);
+      setNotice("That report didn’t send yet. Try again.");
+      return false;
+    }
+  }, [begin, commandsOverride, isLatest, member.id, reporting]);
+
   return {
     canCheckFriendStatus,
     candidate,
@@ -147,11 +173,13 @@ export function useFriendRelationship({
     sendingRequest,
     blocking,
     blocked,
+    reporting,
     notice,
     open,
     close,
     sendFriendRequest,
     blockMember,
+    reportMember,
     setNotice,
   };
 }

@@ -15,7 +15,7 @@ import type {
 } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
-import { IconBan, IconDots, IconX } from "@tabler/icons-react";
+import { IconBan, IconDots, IconFlag, IconX } from "@tabler/icons-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useFriendRelationship } from "@/features/chat/hooks/use-friend-relationship";
 import { Avatar } from "../avatar";
@@ -57,7 +57,7 @@ export function MemberProfilePopover({
   commands: commandsOverride,
 }: MemberProfilePopoverProps) {
   const [open, setOpen] = useState(false);
-  const [confirmingBlock, setConfirmingBlock] = useState(false);
+  const [confirmingAction, setConfirmingAction] = useState<"block" | "report" | null>(null);
   const {
     canCheckFriendStatus,
     candidate,
@@ -65,11 +65,13 @@ export function MemberProfilePopover({
     sendingRequest,
     blocking,
     blocked,
+    reporting,
     notice,
     open: openRelationship,
     close: closeRelationship,
     sendFriendRequest,
     blockMember,
+    reportMember,
     setNotice,
   } = useFriendRelationship({
     member,
@@ -81,11 +83,11 @@ export function MemberProfilePopover({
   });
   const closeRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
-  const confirmBlockRef = useRef<HTMLButtonElement>(null);
+  const confirmActionRef = useRef<HTMLButtonElement>(null);
   const relationshipConfirmsClient =
     member.role === "client" ||
     Boolean(candidate?.profile) ||
-    confirmingBlock ||
+    confirmingAction !== null ||
     blocked;
   const showRelationshipSection =
     canCheckFriendStatus &&
@@ -96,30 +98,40 @@ export function MemberProfilePopover({
 
     if (!nextOpen) {
       closeRelationship();
-      setConfirmingBlock(false);
+      setConfirmingAction(null);
       return;
     }
 
-    setConfirmingBlock(false);
+    setConfirmingAction(null);
     openRelationship();
   }
 
-  function startBlockConfirmation() {
+  function startConfirmation(action: "block" | "report") {
     setNotice(null);
-    setConfirmingBlock(true);
-    requestAnimationFrame(() => confirmBlockRef.current?.focus());
+    setConfirmingAction(action);
+    requestAnimationFrame(() => confirmActionRef.current?.focus());
   }
 
-  function cancelBlockConfirmation() {
-    setConfirmingBlock(false);
+  function cancelConfirmation() {
+    setConfirmingAction(null);
     setNotice(null);
     requestAnimationFrame(() => moreRef.current?.focus());
   }
 
-  async function handleBlockMember() {
-    if (await blockMember()) {
-      setConfirmingBlock(false);
-      requestAnimationFrame(() => closeRef.current?.focus());
+  async function handleConfirm() {
+    if (confirmingAction === "block") {
+      if (await blockMember()) {
+        setConfirmingAction(null);
+        requestAnimationFrame(() => closeRef.current?.focus());
+      }
+      return;
+    }
+    // A report changes nothing about the relationship: thank them and put
+    // the profile back the way it was.
+    if (await reportMember()) {
+      setConfirmingAction(null);
+      setNotice(`Thanks — we’ve got your report about ${member.displayName}.`);
+      requestAnimationFrame(() => moreRef.current?.focus());
     }
   }
 
@@ -224,7 +236,7 @@ export function MemberProfilePopover({
         >
           <Popover.Popup
             aria-busy={
-              loadingRelationship || sendingRequest || blocking || undefined
+              loadingRelationship || sendingRequest || blocking || reporting || undefined
             }
             className="max-sm:m-0 data-[side=bottom]:mt-xs data-[side=left]:mr-xs data-[side=right]:ml-xs data-[side=top]:mb-xs w-member-profile max-w-member-profile-mobile rounded-card border border-divider bg-surface p-md text-body outline-none"
             initialFocus={closeRef}
@@ -252,7 +264,7 @@ export function MemberProfilePopover({
                 {canCheckFriendStatus &&
                   relationshipConfirmsClient &&
                   !blocked &&
-                  !confirmingBlock && (
+                  !confirmingAction && (
                   <ActionMenuRoot modal={false}>
                     <ActionMenuTrigger
                       render={
@@ -266,11 +278,17 @@ export function MemberProfilePopover({
                     />
                     <ActionMenuPopup className="mt-2xs">
                           <ActionMenuItem
-                            onClick={startBlockConfirmation}
+                            onClick={() => startConfirmation("block")}
                             className="text-notice"
                           >
                             <IconBan size={20} stroke={1.75} aria-hidden="true" />
                             Block member
+                          </ActionMenuItem>
+                          <ActionMenuItem
+                            onClick={() => startConfirmation("report")}
+                          >
+                            <IconFlag size={20} stroke={1.75} aria-hidden="true" />
+                            Report member
                           </ActionMenuItem>
                     </ActionMenuPopup>
                   </ActionMenuRoot>
@@ -298,32 +316,41 @@ export function MemberProfilePopover({
                     {member.displayName} is blocked. You’ll still see each
                     other’s messages in community channels.
                   </Alert>
-                ) : confirmingBlock ? (
+                ) : confirmingAction ? (
                   <div className="flex flex-col gap-md">
                     {notice && <Alert tone="notice">{notice}</Alert>}
                     <p className="text-ui text-body">
-                      Block {member.displayName}? They won’t be able to find you
-                      or send friend requests. Any friendship will be removed.
-                      You’ll still see each other’s community messages, and
-                      they won’t be told.
+                      {confirmingAction === "block" ? (
+                        <>
+                          Block {member.displayName}? They won’t be able to
+                          find you or send friend requests. Any friendship
+                          will be removed. You’ll still see each other’s
+                          community messages, and they won’t be told.
+                        </>
+                      ) : (
+                        <>
+                          Report {member.displayName} to the team? They won’t
+                          be told.
+                        </>
+                      )}
                     </p>
                     <div className="flex flex-col gap-xs">
                       <Button
-                        ref={confirmBlockRef}
+                        ref={confirmActionRef}
                         type="button"
                         variant="secondary"
                         fullWidth
-                        loading={blocking}
-                        onClick={() => void handleBlockMember()}
+                        loading={confirmingAction === "block" ? blocking : reporting}
+                        onClick={() => void handleConfirm()}
                       >
-                        Block
+                        {confirmingAction === "block" ? "Block" : "Report"}
                       </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         fullWidth
-                        disabled={blocking}
-                        onClick={cancelBlockConfirmation}
+                        disabled={blocking || reporting}
+                        onClick={cancelConfirmation}
                       >
                         Go back
                       </Button>

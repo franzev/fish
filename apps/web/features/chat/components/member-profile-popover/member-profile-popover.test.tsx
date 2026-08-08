@@ -79,7 +79,7 @@ function makeCommands(overrides: Partial<FriendCommandService> = {}) {
     removeFriend: vi.fn(),
     blockUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     unblockUser: vi.fn(),
-    reportUser: vi.fn(),
+    reportUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     markNotificationsRead: vi.fn(),
     ...overrides,
   } as FriendCommandService;
@@ -391,6 +391,67 @@ describe("MemberProfilePopover", () => {
     expect(
       screen.getByRole("button", { name: `Close ${member.displayName} profile` })
     ).toHaveFocus();
+  });
+
+  it("reports only after confirming, thanks calmly, and leaves the profile unchanged", async () => {
+    const { repository } = makeRepository(friendCandidate("friends"));
+    const reportUser = vi.fn(async () => ({
+      ok: true as const,
+      data: undefined,
+    }));
+    renderPopover({
+      repository,
+      commands: makeCommands({ reportUser }),
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: `More actions for ${member.displayName}`,
+      })
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Report member" }));
+
+    expect(reportUser).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/Report Sam Okafor to the team\? They won’t be told\./)
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /^Report$/ }));
+
+    await waitFor(() => expect(reportUser).toHaveBeenCalledWith(member.id));
+    expect(
+      await screen.findByText(/Thanks — we’ve got your report about Sam Okafor\./)
+    ).toBeVisible();
+    // The relationship is unchanged: the actions menu comes back.
+    expect(
+      screen.getByRole("button", { name: `More actions for ${member.displayName}` })
+    ).toBeVisible();
+  });
+
+  it("keeps the confirmation available when reporting fails", async () => {
+    const { repository } = makeRepository(friendCandidate("friends"));
+    const reportUser = vi.fn(async () => ({
+      ok: false as const,
+      code: "rate_limited",
+      notice: "Give it a moment before reporting again.",
+    }));
+    renderPopover({
+      repository,
+      commands: makeCommands({ reportUser }),
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: `More actions for ${member.displayName}`,
+      })
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Report member" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Report$/ }));
+
+    expect(
+      await screen.findByText("Give it a moment before reporting again.")
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Report$/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Go back" })).toBeVisible();
   });
 
   it("keeps the confirmation available when blocking fails", async () => {

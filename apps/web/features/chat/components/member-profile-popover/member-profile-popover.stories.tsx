@@ -66,6 +66,7 @@ const failingRepository = {
 const commands = {
   sendRequest: async () => ({ ok: true as const, data: request }),
   blockUser: async () => ({ ok: true as const, data: undefined }),
+  reportUser: async () => ({ ok: true as const, data: undefined }),
 } as unknown as FriendCommandService;
 
 const meta = {
@@ -167,6 +168,17 @@ export const Blocked: Story = {
     await body.getByRole("button", { name: `More actions for ${member.displayName}` }).click();
     await body.getByRole("menuitem", { name: "Block member" }).click();
     await body.getByRole("button", { name: /^Block$/ }).click();
+  },
+};
+
+export const Reported: Story = {
+  args: { repository: repository("friends") },
+  play: async ({ canvasElement }) => {
+    await openProfile(canvasElement, member.displayName);
+    const body = within(canvasElement.ownerDocument.body);
+    await body.getByRole("button", { name: `More actions for ${member.displayName}` }).click();
+    await body.getByRole("menuitem", { name: "Report member" }).click();
+    await body.getByRole("button", { name: /^Report$/ }).click();
   },
 };
 
