@@ -1931,6 +1931,45 @@ export type Database = {
           },
         ]
       }
+      user_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          reporter_id: string | null
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id?: string | null
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          reporter_id?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -3087,6 +3126,7 @@ export type Database = {
         }[]
       }
       report_message_gif: { Args: { p_message_id: string }; Returns: boolean }
+      report_user: { Args: { p_target_id: string }; Returns: boolean }
       resolve_avatar_paths: {
         Args: { p_profile_ids: string[]; p_variant?: string }
         Returns: {

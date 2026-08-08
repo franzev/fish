@@ -27,6 +27,7 @@ const commandSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("remove-friend"), targetId: z.uuid() }),
   z.object({ action: z.literal("block-user"), targetId: z.uuid() }),
   z.object({ action: z.literal("unblock-user"), targetId: z.uuid() }),
+  z.object({ action: z.literal("report-user"), targetId: z.uuid() }),
   z.object({
     action: z.literal("mark-notifications-read"),
     notificationIds: z.array(z.uuid()).min(1).max(100),
@@ -84,6 +85,13 @@ function rpcError(message: string): Response {
       "request_already_resolved",
       "This request was already handled.",
       409,
+    );
+  }
+  if (normalized.includes("report rate limited")) {
+    return calmError(
+      "rate_limited",
+      "Give it a moment before reporting again.",
+      429,
     );
   }
   if (normalized.includes("rate limited")) {
@@ -198,6 +206,8 @@ Deno.serve(async (request) => {
     ? { rpc: "block_user", args: { p_target_id: command.targetId } }
     : command.action === "unblock-user"
     ? { rpc: "unblock_user", args: { p_target_id: command.targetId } }
+    : command.action === "report-user"
+    ? { rpc: "report_user", args: { p_target_id: command.targetId } }
     : {
       rpc: "mark_friend_notifications_read",
       args: { p_notification_ids: command.notificationIds },
