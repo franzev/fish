@@ -22,6 +22,7 @@ function makeCommands(
     removeFriend: vi.fn(async () => ({ ok: true as const, data: undefined })),
     blockUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     unblockUser: vi.fn(),
+    reportUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     markNotificationsRead: vi.fn(),
     ...overrides,
   } as FriendCommandService;
@@ -80,6 +81,45 @@ describe("FriendSafetyActions", () => {
     expect(screen.getByRole("button", { name: "Block @sam_lee" })).toBeVisible();
     expect(commands.removeFriend).not.toHaveBeenCalled();
     expect(commands.blockUser).not.toHaveBeenCalled();
+  });
+
+  it("reports after confirming, stays put, and explains no one is notified", async () => {
+    pushMock.mockClear();
+    const commands = makeCommands();
+    render(<FriendSafetyActions friend={friend} commands={commands} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Report @sam_lee" }));
+    expect(commands.reportUser).not.toHaveBeenCalled();
+    expect(screen.getByText(/Report Sam Lee to the team\?/)).toBeVisible();
+    expect(screen.getByText(/they won’t be told/i)).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Report" }));
+
+    await waitFor(() =>
+      expect(commands.reportUser).toHaveBeenCalledWith("user-sam")
+    );
+    expect(
+      await screen.findByText(/Thanks.*report about Sam Lee/i)
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Report @sam_lee" })
+    ).toBeVisible();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("does not carry a report's thank-you notice into the next confirmation", async () => {
+    pushMock.mockClear();
+    const commands = makeCommands();
+    render(<FriendSafetyActions friend={friend} commands={commands} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Report @sam_lee" }));
+    fireEvent.click(screen.getByRole("button", { name: "Report" }));
+    await screen.findByText(/Thanks.*report about Sam Lee/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Unfriend" }));
+
+    expect(screen.queryByText(/Thanks.*report about Sam Lee/i)).toBeNull();
+    expect(screen.getByText(/Unfriend Sam Lee\?/)).toBeVisible();
   });
 
   it("returns to a supplied surface after the friendship changes", async () => {

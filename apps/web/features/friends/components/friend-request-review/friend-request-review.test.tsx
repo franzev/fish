@@ -43,6 +43,7 @@ function makeCommands(
     removeFriend: vi.fn(),
     blockUser: vi.fn(),
     unblockUser: vi.fn(),
+    reportUser: vi.fn(),
     markNotificationsRead: vi.fn(),
     ...overrides,
   } as FriendCommandService;

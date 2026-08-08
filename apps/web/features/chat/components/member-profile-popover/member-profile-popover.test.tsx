@@ -79,6 +79,7 @@ function makeCommands(overrides: Partial<FriendCommandService> = {}) {
     removeFriend: vi.fn(),
     blockUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     unblockUser: vi.fn(),
+    reportUser: vi.fn(),
     markNotificationsRead: vi.fn(),
     ...overrides,
   } as FriendCommandService;

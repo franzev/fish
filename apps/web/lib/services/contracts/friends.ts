@@ -50,6 +50,7 @@ export interface FriendCommandService {
   removeFriend(targetId: string): Promise<FriendCommandResult<void>>;
   blockUser(targetId: string): Promise<FriendCommandResult<void>>;
   unblockUser(targetId: string): Promise<FriendCommandResult<void>>;
+  reportUser(targetId: string): Promise<FriendCommandResult<void>>;
   markNotificationsRead(notificationIds: string[]): Promise<FriendCommandResult<number>>;
 }
 export interface FriendRealtimeEvent { requestId?: string; friendshipId?: string; reason: string; occurredAt: string }

@@ -50,6 +50,11 @@ export class SupabaseFriendCommandService implements FriendCommandService {
     return result.ok ? { ok: true, data: undefined } : result;
   }
 
+  async reportUser(targetId: string): Promise<FriendCommandResult<void>> {
+    const result = await this.invoke({ action: "report-user", targetId });
+    return result.ok ? { ok: true, data: undefined } : result;
+  }
+
   async markNotificationsRead(
     notificationIds: string[]
   ): Promise<FriendCommandResult<number>> {

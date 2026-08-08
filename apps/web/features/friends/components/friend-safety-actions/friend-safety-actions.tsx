@@ -13,13 +13,20 @@ interface FriendSafetyActionsProps {
   successHref?: string;
 }
 
-type SafetyAction = "remove" | "block";
+type SafetyAction = "remove" | "block" | "report";
 
 const confirmCopy: Record<SafetyAction, (name: string) => string> = {
   remove: (name) =>
     `Unfriend ${name}? You can add each other again later.`,
   block: (name) =>
     `Block ${name}? They won’t be able to find you or send requests, and they won’t be told.`,
+  report: (name) => `Report ${name} to the team? They won’t be told.`,
+};
+
+const confirmLabel: Record<SafetyAction, string> = {
+  remove: "Unfriend",
+  block: "Block",
+  report: "Report",
 };
 
 export function FriendSafetyActions({
@@ -36,16 +43,29 @@ export function FriendSafetyActions({
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  function startConfirming(action: SafetyAction) {
+    setNotice(null);
+    setConfirming(action);
+  }
+
   async function run(action: SafetyAction) {
     if (working) return;
     setWorking(true);
     setNotice(null);
     const result = action === "remove"
       ? await commands.removeFriend(friend.id)
-      : await commands.blockUser(friend.id);
+      : action === "block"
+      ? await commands.blockUser(friend.id)
+      : await commands.reportUser(friend.id);
     if (!result.ok) {
       setWorking(false);
       setNotice(result.notice);
+      return;
+    }
+    if (action === "report") {
+      setWorking(false);
+      setConfirming(null);
+      setNotice(`Thanks — we’ve got your report about ${friend.displayName}.`);
       return;
     }
     router.push(
@@ -68,7 +88,7 @@ export function FriendSafetyActions({
           className={confirming === "block" ? "text-error hover:text-error" : undefined}
           onClick={() => void run(confirming)}
         >
-          {confirming === "remove" ? "Unfriend" : "Block"}
+          {confirmLabel[confirming]}
         </Button>
         <Button
           type="button"
@@ -90,7 +110,7 @@ export function FriendSafetyActions({
         type="button"
         variant="secondary"
         fullWidth
-        onClick={() => setConfirming("remove")}
+        onClick={() => startConfirming("remove")}
       >
         Unfriend
       </Button>
@@ -99,9 +119,17 @@ export function FriendSafetyActions({
         variant="ghost"
         fullWidth
         className="text-error hover:text-error"
-        onClick={() => setConfirming("block")}
+        onClick={() => startConfirming("block")}
       >
         Block @{friend.username}
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        fullWidth
+        onClick={() => startConfirming("report")}
+      >
+        Report @{friend.username}
       </Button>
     </div>
   );

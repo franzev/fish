@@ -20,6 +20,7 @@ function makeCommands(): FriendCommandService {
     removeFriend: vi.fn(async () => ({ ok: true as const, data: undefined })),
     blockUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     unblockUser: vi.fn(),
+    reportUser: vi.fn(async () => ({ ok: true as const, data: undefined })),
     markNotificationsRead: vi.fn(),
   } as FriendCommandService;
 }
@@ -48,6 +49,9 @@ describe("FriendConversationActions", () => {
     expect(screen.getByRole("button", { name: "Unfriend" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Block @sam_lee" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Report @sam_lee" })
     ).toBeInTheDocument();
     expect(screen.queryByText("Friendship")).toBeNull();
     expect(screen.queryByText("Sam Lee")).toBeNull();
