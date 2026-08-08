@@ -1,8 +1,11 @@
+import Friends
 import FriendsData
-import PersonalChat
 import Testing
 
-private actor FakeFriendCommands: FriendCommandsProviding {
+/// Scriptable block/report outcomes; `ScriptedFriends` can't fail those two
+/// calls, so the safety tests keep their own fake. Shared with the snapshot
+/// suite in this target.
+actor FakeFriendCommands: FriendCommandsProviding {
     enum Outcome: Sendable {
         case success
         case failure(FriendCommandFailure)
@@ -59,17 +62,6 @@ private actor FakeFriendCommands: FriendCommandsProviding {
         reportGate?.resume()
         reportGate = nil
     }
-}
-
-@MainActor
-private func eventually(
-    _ condition: @escaping @MainActor () -> Bool
-) async -> Bool {
-    for _ in 0..<100 {
-        if condition() { return true }
-        try? await Task.sleep(for: .milliseconds(10))
-    }
-    return condition()
 }
 
 @MainActor

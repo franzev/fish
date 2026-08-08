@@ -102,7 +102,7 @@ public final class FriendRequestsModel {
                 state = .loaded(
                     requests: settled.requests,
                     respondingWith: settled.respondingWith,
-                    notice: notice(for: error)
+                    notice: FriendCommandFailure.calmNotice(for: error)
                 )
             }
         }
@@ -132,9 +132,4 @@ public final class FriendRequestsModel {
         state = .loaded(requests: requests, respondingWith: respondingWith)
     }
 
-    /// Server copy passes through verbatim; anything else reads as the one
-    /// calm fallback line.
-    private func notice(for error: Error) -> String {
-        (error as? FriendCommandFailure)?.notice ?? FriendCommandFailure.unavailable.notice
-    }
 }

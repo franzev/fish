@@ -622,20 +622,23 @@ fun ConversationRowStatesDarkScreenshot() {
     ComponentStrip(darkTheme = true) { ConversationRowStates() }
 }
 
+@Composable
+private fun ConversationSafetyState(confirmation: SafetyConfirmation?) {
+    ConversationSafetySection(
+        displayName = "Sam Lee",
+        confirmation = confirmation,
+        onConfirmationChange = {},
+        onRemoveFriend = {},
+        onBlock = {},
+        onReport = {},
+    )
+}
+
 @PreviewTest
 @Preview(name = "conversation-safety-entry-light", widthDp = 412, showBackground = true)
 @Composable
 fun ConversationSafetyEntryLightScreenshot() {
-    ComponentStrip(darkTheme = false) {
-        ConversationSafetySection(
-            displayName = "Sam Lee",
-            confirmation = null,
-            onConfirmationChange = {},
-            onRemoveFriend = {},
-            onBlock = {},
-            onReport = {},
-        )
-    }
+    ComponentStrip(darkTheme = false) { ConversationSafetyState(confirmation = null) }
 }
 
 @PreviewTest
@@ -647,32 +650,14 @@ fun ConversationSafetyEntryLightScreenshot() {
 )
 @Composable
 fun ConversationSafetyEntryDarkScreenshot() {
-    ComponentStrip(darkTheme = true) {
-        ConversationSafetySection(
-            displayName = "Sam Lee",
-            confirmation = null,
-            onConfirmationChange = {},
-            onRemoveFriend = {},
-            onBlock = {},
-            onReport = {},
-        )
-    }
+    ComponentStrip(darkTheme = true) { ConversationSafetyState(confirmation = null) }
 }
 
 @PreviewTest
 @Preview(name = "conversation-safety-confirming-block-light", widthDp = 412, showBackground = true)
 @Composable
 fun ConversationSafetyConfirmingBlockLightScreenshot() {
-    ComponentStrip(darkTheme = false) {
-        ConversationSafetySection(
-            displayName = "Sam Lee",
-            confirmation = SafetyConfirmation.Block,
-            onConfirmationChange = {},
-            onRemoveFriend = {},
-            onBlock = {},
-            onReport = {},
-        )
-    }
+    ComponentStrip(darkTheme = false) { ConversationSafetyState(confirmation = SafetyConfirmation.Block) }
 }
 
 @PreviewTest
@@ -684,32 +669,14 @@ fun ConversationSafetyConfirmingBlockLightScreenshot() {
 )
 @Composable
 fun ConversationSafetyConfirmingBlockDarkScreenshot() {
-    ComponentStrip(darkTheme = true) {
-        ConversationSafetySection(
-            displayName = "Sam Lee",
-            confirmation = SafetyConfirmation.Block,
-            onConfirmationChange = {},
-            onRemoveFriend = {},
-            onBlock = {},
-            onReport = {},
-        )
-    }
+    ComponentStrip(darkTheme = true) { ConversationSafetyState(confirmation = SafetyConfirmation.Block) }
 }
 
 @PreviewTest
 @Preview(name = "conversation-safety-confirming-report-light", widthDp = 412, showBackground = true)
 @Composable
 fun ConversationSafetyConfirmingReportLightScreenshot() {
-    ComponentStrip(darkTheme = false) {
-        ConversationSafetySection(
-            displayName = "Sam Lee",
-            confirmation = SafetyConfirmation.Report,
-            onConfirmationChange = {},
-            onRemoveFriend = {},
-            onBlock = {},
-            onReport = {},
-        )
-    }
+    ComponentStrip(darkTheme = false) { ConversationSafetyState(confirmation = SafetyConfirmation.Report) }
 }
 
 @PreviewTest
@@ -721,14 +688,5 @@ fun ConversationSafetyConfirmingReportLightScreenshot() {
 )
 @Composable
 fun ConversationSafetyConfirmingReportDarkScreenshot() {
-    ComponentStrip(darkTheme = true) {
-        ConversationSafetySection(
-            displayName = "Sam Lee",
-            confirmation = SafetyConfirmation.Report,
-            onConfirmationChange = {},
-            onRemoveFriend = {},
-            onBlock = {},
-            onReport = {},
-        )
-    }
+    ComponentStrip(darkTheme = true) { ConversationSafetyState(confirmation = SafetyConfirmation.Report) }
 }

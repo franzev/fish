@@ -54,6 +54,9 @@ final class FishAppModel {
     private(set) var session: ChatLiveSession?
     private(set) var directory: ConversationDirectoryStore?
     private(set) var conversationStore: ConversationStore?
+    /// Built only for a friend (client-to-client) conversation with friends
+    /// enabled — the same composition-root gating every friends surface uses.
+    private(set) var conversationSafety: ConversationSafetyModel?
     private(set) var uploads: AttachmentUploadsModel?
     private(set) var currentUserId = ""
     private(set) var notificationStatus: AccountNotificationAuthorization = .notDetermined
@@ -874,9 +877,7 @@ final class FishAppModel {
                 realtime: session.realtime,
                 gifProvider: gifProvider,
                 drafts: draftStore,
-                cache: cacheStore,
-                friendCommands: friendsAvailable ? friendCommands : nil,
-                onBlocked: { [weak self] in self?.closeConversation() }
+                cache: cacheStore
             )
             let staging = try AttachmentStaging()
             let uploads = AttachmentUploadsModel(
@@ -891,6 +892,18 @@ final class FishAppModel {
                 Task { await store?.flushQueuedSends() }
             }
             conversationStore = store
+            conversationSafety = if friendsAvailable,
+                preview.participantRole == "client",
+                let friendCommands {
+                ConversationSafetyModel(
+                    targetId: preview.participantId,
+                    targetDisplayName: preview.participantDisplayName,
+                    commands: friendCommands,
+                    onBlocked: { [weak self] in self?.closeConversation() }
+                )
+            } else {
+                nil
+            }
             self.uploads = uploads
             fileDownloader = AttachmentFileDownloader(
                 allowedHost: session.backend.supabaseUrl.host,
@@ -1088,6 +1101,7 @@ final class FishAppModel {
             conversationStore.stop()
         }
         conversationStore = nil
+        conversationSafety = nil
         uploads = nil
     }
 

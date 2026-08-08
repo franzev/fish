@@ -471,11 +471,16 @@ class ChatViewModel(
 
     fun blockParticipant() = runFriendSafetyAction(block = true)
 
+    /** The active conversation only when both sides are clients — the gate for every friend-safety command. */
+    private fun clientFriendConversation(): AuthorizedConversation? {
+        val conversation = activeConversation ?: return null
+        val client = space.fishhub.android.data.chat.model.UserRole.Client
+        if (conversation.currentUserRole != client || conversation.participantRole != client) return null
+        return conversation
+    }
+
     private fun runFriendSafetyAction(block: Boolean) {
-        val conversation = activeConversation ?: return
-        if (conversation.currentUserRole != space.fishhub.android.data.chat.model.UserRole.Client ||
-            conversation.participantRole != space.fishhub.android.data.chat.model.UserRole.Client
-        ) return
+        val conversation = clientFriendConversation() ?: return
         viewModelScope.launch {
             val result = if (block) {
                 repository.blockUser(conversation.participantId)
@@ -493,10 +498,7 @@ class ChatViewModel(
     }
 
     fun reportParticipant() {
-        val conversation = activeConversation ?: return
-        if (conversation.currentUserRole != space.fishhub.android.data.chat.model.UserRole.Client ||
-            conversation.participantRole != space.fishhub.android.data.chat.model.UserRole.Client
-        ) return
+        val conversation = clientFriendConversation() ?: return
         viewModelScope.launch {
             latestNotice = when (val result = repository.reportUser(conversation.participantId)) {
                 is ChatResult.Success ->

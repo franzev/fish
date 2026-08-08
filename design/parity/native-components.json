@@ -1158,7 +1158,7 @@
         "visibility": "internal"
       },
       "ios": {
-        "file": "apps/ios/FishKit/Sources/PersonalChat/Views/ConversationSafetyView.swift",
+        "file": "apps/ios/FishKit/Sources/Friends/Views/ConversationSafetyView.swift",
         "symbol": "ConversationSafetyView",
         "visibility": "public"
       },

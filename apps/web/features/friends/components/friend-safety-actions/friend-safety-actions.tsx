@@ -6,6 +6,7 @@ import { getFriendCommandService } from "@/lib/services/runtime/browser";
 import type { FriendCommandService, FriendProfile } from "@/lib/services";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { reportConfirmCopy, reportThanksCopy } from "../../safety-copy";
 
 interface FriendSafetyActionsProps {
   friend: FriendProfile;
@@ -20,7 +21,7 @@ const confirmCopy: Record<SafetyAction, (name: string) => string> = {
     `Unfriend ${name}? You can add each other again later.`,
   block: (name) =>
     `Block ${name}? They won’t be able to find you or send requests, and they won’t be told.`,
-  report: (name) => `Report ${name} to the team? They won’t be told.`,
+  report: reportConfirmCopy,
 };
 
 const confirmLabel: Record<SafetyAction, string> = {
@@ -65,7 +66,7 @@ export function FriendSafetyActions({
     if (action === "report") {
       setWorking(false);
       setConfirming(null);
-      setNotice(`Thanks — we’ve got your report about ${friend.displayName}.`);
+      setNotice(reportThanksCopy(friend.displayName));
       return;
     }
     router.push(

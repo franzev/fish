@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Popover } from "@base-ui/react/popover";
 import { IconBan, IconDots, IconFlag, IconX } from "@tabler/icons-react";
 import { useRef, useState, type ReactNode } from "react";
+import { reportConfirmCopy, reportThanksCopy } from "@/features/friends";
 import { useFriendRelationship } from "@/features/chat/hooks/use-friend-relationship";
 import { Avatar } from "../avatar";
 
@@ -130,7 +131,7 @@ export function MemberProfilePopover({
     // the profile back the way it was.
     if (await reportMember()) {
       setConfirmingAction(null);
-      setNotice(`Thanks — we’ve got your report about ${member.displayName}.`);
+      setNotice(reportThanksCopy(member.displayName));
       requestAnimationFrame(() => moreRef.current?.focus());
     }
   }
@@ -328,10 +329,7 @@ export function MemberProfilePopover({
                           community messages, and they won’t be told.
                         </>
                       ) : (
-                        <>
-                          Report {member.displayName} to the team? They won’t
-                          be told.
-                        </>
+                        reportConfirmCopy(member.displayName)
                       )}
                     </p>
                     <div className="flex flex-col gap-xs">
@@ -340,7 +338,7 @@ export function MemberProfilePopover({
                         type="button"
                         variant="secondary"
                         fullWidth
-                        loading={confirmingAction === "block" ? blocking : reporting}
+                        loading={blocking || reporting}
                         onClick={() => void handleConfirm()}
                       >
                         {confirmingAction === "block" ? "Block" : "Report"}

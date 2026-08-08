@@ -54,7 +54,7 @@ let package = Package(
         ),
         .target(
             name: "PersonalChat",
-            dependencies: ["DesignSystem", "UIComponents", "ChatCore", "ChatData", "FriendsData"],
+            dependencies: ["DesignSystem", "UIComponents", "ChatCore", "ChatData"],
             resources: [.copy("Resources/ChatMedia")]
         ),
         .target(name: "CallData"),
@@ -171,7 +171,6 @@ let package = Package(
             name: "PersonalChatTests",
             dependencies: [
                 "PersonalChat",
-                "FriendsData",
                 "TestSupport",
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ]

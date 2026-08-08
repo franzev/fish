@@ -28,6 +28,12 @@ public struct FriendCommandFailure: Error, Equatable, Sendable {
         notice: "Sign in to manage friends.",
         statusCode: 401
     )
+
+    /// Server copy passes through verbatim; anything else reads as the one
+    /// calm fallback line.
+    public static func calmNotice(for error: Error) -> String {
+        (error as? Self)?.notice ?? Self.unavailable.notice
+    }
 }
 
 /// The `friend-command` codes a client branches on. Every other code is just

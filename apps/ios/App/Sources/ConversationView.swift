@@ -6,6 +6,7 @@ import ChatCore
 import ChatData
 import DesignSystem
 import Foundation
+import Friends
 import Observation
 import PersonalChat
 import QuickLook
@@ -231,7 +232,7 @@ struct ConversationView: View {
                     onSetQuiet: { period in
                         Task { await store.setQuiet(period) }
                     },
-                    safetyContent: safetyContent(for: store),
+                    safetyContent: safetyContent,
                     requestedFocus: $requestedFocus
                 )
             } else {
@@ -296,14 +297,10 @@ struct ConversationView: View {
         }
     }
 
-    /// Block/report only make sense for a friend, never a coach.
-    private func safetyContent(for store: ConversationStore) -> AnyView? {
-        guard store.participantRole == .client, let model = store.conversationSafety else {
-            return nil
-        }
-        return AnyView(
-            ConversationSafetyView(model: model)
-        )
+    /// The app model builds the safety model only for a friend conversation
+    /// with friends enabled, so presence alone is the gate here.
+    private var safetyContent: AnyView? {
+        model.conversationSafety.map { AnyView(ConversationSafetyView(model: $0)) }
     }
 
     private func openSharedContent(_ intent: SharedContentNavigationIntent) {
@@ -347,7 +344,7 @@ struct ConversationView: View {
             // The details sheet is gone; a half-armed Block/Report
             // confirmation (or a lingering thanks notice) must not greet the
             // next visit. Matches Android's per-presentation reset.
-            model.conversationStore?.conversationSafety?.cancelConfirming()
+            model.conversationSafety?.cancelConfirming()
             requestedFocus = .participantDetails
         }
     }

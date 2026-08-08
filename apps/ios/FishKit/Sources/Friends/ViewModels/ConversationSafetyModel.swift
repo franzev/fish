@@ -68,7 +68,11 @@ public final class ConversationSafetyModel {
                 state = .confirming(action, isWorking: false)
             } catch {
                 guard isWorkingOn(action) else { return }
-                state = .confirming(action, isWorking: false, notice: notice(for: error))
+                state = .confirming(
+                    action,
+                    isWorking: false,
+                    notice: FriendCommandFailure.calmNotice(for: error)
+                )
             }
         }
     }
@@ -82,9 +86,5 @@ public final class ConversationSafetyModel {
             return currentAction == action
         }
         return false
-    }
-
-    private func notice(for error: Error) -> String {
-        (error as? FriendCommandFailure)?.notice ?? FriendCommandFailure.unavailable.notice
     }
 }
