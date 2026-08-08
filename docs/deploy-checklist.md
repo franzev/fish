@@ -27,20 +27,37 @@ is done.
 ## 3. Push migrations to the hosted database
 
 - [ ] Run `supabase db push` against the linked project. This applies every
-      committed migration through `0054_ios_direct_message_push.sql`, including profiles,
+      committed migration through `0067_user_reports.sql`, including profiles,
       client profiles, assignments, chat, realtime features, reactions, the
       seeded `general` channel, call control plane, presence, notifications,
-      and conflict-safe lesson slots.
+      conflict-safe lesson slots, friendships/blocks/reports, conversation
+      mutes, and conversation pins.
 - [ ] Spot-check that RLS is enabled on `profiles`, `client_profiles`,
       `coach_clients`, `channels`, `conversations`, `messages`,
-      `message_reads`, `message_reactions`, `presence_sessions`, and
-      `lesson_slots`, and `push_devices`.
+      `message_reads`, `message_reactions`, `presence_sessions`,
+      `lesson_slots`, `push_devices`, `friend_requests`, `friendships`,
+      `user_blocks`, `user_reports`, `conversation_mutes`, and
+      `conversation_pins`.
 - [ ] Deploy the chat and notification command functions:
       `supabase functions deploy send-message`,
       `supabase functions deploy chat-command`, and
       `supabase functions deploy notification-command`.
 - [ ] Confirm all three functions require JWT verification and preserve the caller's
       bearer token when invoking PostgREST/RPCs.
+- [ ] Deploy `chat-image-command` with JWT verification. Set
+      `CHAT_ATTACHMENT_CLEANUP_SECRET` (and, if using an external scanner,
+      `CHAT_ATTACHMENT_SCANNER_URL`/`CHAT_ATTACHMENT_SCANNER_TOKEN`) as Edge
+      Function secrets and wire the cleanup cron job — see
+      `docs/chat-attachments-operations.md` for the exact secret format and
+      cron invocation.
+- [ ] Deploy `link-preview` with JWT verification; it only needs the standard
+      `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` values already present in every
+      Edge Function environment.
+- [ ] Deploy `friend-command` with JWT verification and its `FRIENDS_ENABLED`
+      secret left `false`/unset until a coach has validated the friends
+      feature; the function fails closed (503, chat unaffected) until that
+      secret is explicitly set to `true`, mirroring `AVATAR_UPLOADS_ENABLED`
+      below.
 - [ ] Deploy `presence-command` with JWT verification, then change a staging
       user's status through the account menu and confirm a trusted viewer sees
       the update.
