@@ -34,6 +34,7 @@ vi.mock("@/features/chat/server", () => ({
   refreshUnreadSummaryAction: vi.fn(),
   reportGifAction: vi.fn(),
   sendMessageAction: vi.fn(),
+  setPinnedMessageAction: vi.fn(),
   setReactionAction: vi.fn(),
 }));
 
