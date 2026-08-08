@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.110.0";
 import { z } from "npm:zod@4.4.3";
+import { friendCommandError } from "../_shared/friend-command-errors.ts";
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -66,76 +67,8 @@ function clientRequest(request: FriendRequestRow) {
 }
 
 function rpcError(message: string): Response {
-  const normalized = message.toLowerCase();
-  if (normalized.includes("already friends")) {
-    return calmError("already_friends", "You’re already friends.", 409);
-  }
-  if (normalized.includes("incoming request exists")) {
-    return calmError(
-      "incoming_request_exists",
-      "They already sent you a request. Review it when you’re ready.",
-      409,
-    );
-  }
-  if (normalized.includes("request pending")) {
-    return calmError("request_pending", "Your request is already on its way.", 409);
-  }
-  if (normalized.includes("already resolved")) {
-    return calmError(
-      "request_already_resolved",
-      "This request was already handled.",
-      409,
-    );
-  }
-  if (normalized.includes("report rate limited")) {
-    return calmError(
-      "rate_limited",
-      "Give it a moment before reporting again.",
-      429,
-    );
-  }
-  if (normalized.includes("rate limited")) {
-    return calmError(
-      "rate_limited",
-      "Pause for a moment before sending more requests.",
-      429,
-    );
-  }
-  if (normalized.includes("conflicts")) {
-    return calmError(
-      "request_conflict",
-      "That friend request is already in progress.",
-      409,
-    );
-  }
-  if (normalized.includes("friends not available")) {
-    return calmError(
-      "friends_unavailable",
-      "Friends isn’t available for this account.",
-      403,
-    );
-  }
-  if (normalized.includes("request not found")) {
-    return calmError(
-      "request_not_found",
-      "This request isn’t available anymore.",
-      404,
-    );
-  }
-  if (
-    normalized.includes("unavailable") ||
-    normalized.includes("not found")
-  ) {
-    return calmError("person_unavailable", "That person isn’t available.", 404);
-  }
-  if (normalized.includes("not authenticated")) {
-    return calmError("not_authenticated", "Sign in to manage friends.", 401);
-  }
-  return calmError(
-    "friends_unavailable",
-    "Friends is taking a break. Chat still works.",
-    503,
-  );
+  const failure = friendCommandError(message);
+  return calmError(failure.code, failure.error, failure.status);
 }
 
 Deno.serve(async (request) => {
