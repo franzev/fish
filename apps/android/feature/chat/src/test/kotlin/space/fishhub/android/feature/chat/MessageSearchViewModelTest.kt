@@ -338,6 +338,7 @@ private object SearchTestFormatter : ChatTextFormatter {
     override val attachmentUnavailable = "That attachment did not load yet. Try again."
     override val messageUnavailable = "Earlier message unavailable"
     override fun participantContext(role: UserRole) = "Context"
+    override fun reportThanks(displayName: String) = "Thanks — we’ve got your report about $displayName."
     override fun timeLabel(timestamp: String) = "10:30 AM"
     override fun dateLabel(timestamp: String) = "Today"
 }

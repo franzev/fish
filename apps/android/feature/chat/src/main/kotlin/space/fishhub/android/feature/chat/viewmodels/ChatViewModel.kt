@@ -500,7 +500,7 @@ class ChatViewModel(
         viewModelScope.launch {
             latestNotice = when (val result = repository.reportUser(conversation.participantId)) {
                 is ChatResult.Success ->
-                    "Thanks — we’ve got your report about ${conversation.participantDisplayName}."
+                    formatter.reportThanks(conversation.participantDisplayName)
                 is ChatResult.Failure -> result.message
             }
             publish()

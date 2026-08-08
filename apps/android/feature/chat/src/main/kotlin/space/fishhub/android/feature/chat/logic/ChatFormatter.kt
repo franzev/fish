@@ -17,6 +17,7 @@ interface ChatTextFormatter {
     val attachmentUnavailable: String
     val messageUnavailable: String
     fun participantContext(role: UserRole): String
+    fun reportThanks(displayName: String): String
     fun timeLabel(timestamp: String): String
     fun dateLabel(timestamp: String): String
 }
@@ -46,6 +47,9 @@ class AndroidChatFormatter(context: Context) : ChatTextFormatter {
             UserRole.Client -> R.string.client_context
         },
     )
+
+    override fun reportThanks(displayName: String): String =
+        applicationContext.getString(R.string.report_thanks, displayName)
 
     override fun timeLabel(timestamp: String): String = runCatching {
         DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)

@@ -166,6 +166,7 @@
     <string name="report">Report</string>
     <string name="report_participant">Report %1$s</string>
     <string name="report_confirmation">Report %1$s to the team? They won’t be told.</string>
+    <string name="report_thanks">Thanks — we’ve got your report about %1$s.</string>
     <string name="photo_attachment_accessibility">%1$s. Photo: %2$s. %3$s</string>
     <string name="file_attachment_accessibility">%1$s. File: %2$s. %3$s. %4$s</string>
     <string name="photo_viewer_accessibility">Photo viewer: %1$s. Pinch to zoom.</string>

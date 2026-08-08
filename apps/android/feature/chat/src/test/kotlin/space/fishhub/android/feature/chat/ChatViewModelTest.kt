@@ -1903,6 +1903,7 @@ private object TestFormatter : ChatTextFormatter {
         UserRole.Coach -> "Your English coach"
         UserRole.Client -> "Personal coaching conversation"
     }
+    override fun reportThanks(displayName: String) = "Thanks — we’ve got your report about $displayName."
     override fun timeLabel(timestamp: String) = timestamp
     override fun dateLabel(timestamp: String) = timestamp
 }
